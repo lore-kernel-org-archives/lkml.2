@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab2COKs5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:48:57 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47841 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab2COKsy (ORCPT
+	id S1760408Ab2COKtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:49:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50162 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759503Ab2COKtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:48:54 -0400
-Message-ID: <4F61C911.5010204@suse.cz>
-Date: Thu, 15 Mar 2012 11:48:49 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+	Thu, 15 Mar 2012 06:49:36 -0400
+Date: Thu, 15 Mar 2012 10:49:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFC/RFT 1/2] regulator: Fix da9052 ldo regulator names
+Message-ID: <20120315104930.GE3138@opensource.wolfsonmicro.com>
+References: <1331077370.20711.2.camel@phoenix>
+ <20120314140909.GN3133@opensource.wolfsonmicro.com>
+ <CAF+7xWnNjJbdG2G8RBG_n5KdzCLXNe0RpJ2F99gFoP+R+AMYDA@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: stable-3.0: s390 build breakage [was: Linux 3.0.24]
-References: <20120312203451.GA16773@kroah.com>
-In-Reply-To: <20120312203451.GA16773@kroah.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cPi+lWm09sJ+d57q"
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWnNjJbdG2G8RBG_n5KdzCLXNe0RpJ2F99gFoP+R+AMYDA@mail.gmail.com>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 09:34 PM, Greg KH wrote:
-> I'm announcing the release of the 3.0.24 kernel.
-...
-> Heiko Carstens (1): compat: fix compile breakage on s390
 
-It looks like we need the same fix as for 2.6.32.59:
-arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
-arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
-(first use in this function)
-arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
-reported only once
-arch/s390/kernel/setup.c:328: error: for each function it appears in.)
+--cPi+lWm09sJ+d57q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-regards,
--- 
-js
-suse labs
+On Thu, Mar 15, 2012 at 07:42:53AM +0800, Axel Lin wrote:
+
+> commit 4adf9beda5 regulator: Fix mask parameter in da9052_reg_update calls
+> commit 7b95765 regulator: Set n_voltages for da9052 regulators
+> commit 93651218 regulator: da9052: Ensure the selected voltage falls
+> within the specified range
+
+> I'm not sure if I should re-generate these 2 patches against
+> topic/drivers branch because
+> you will have conflict when merge them to for-next branch then.
+
+Those are bug fixes which are going to Linus, I guess I can merge them
+over though as there's a direct conflict.  Can you please resend the
+patches as they were, I deleted them when they didn't apply?
+
+--cPi+lWm09sJ+d57q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYckzAAoJEBus8iNuMP3deggP/01wrzlaM6YpoWHkVvgws6hm
+og6ohmPUUDVh3zoK1FI+ObI9etmJjaQUv6TcOoHkPg1PpEFeOGLLTO+zmg+mCedT
+o7WkA1K0djQ3NgDVRzwvtAwW8z8U9k6eBgf+4vtKSqB6Ony9n6KP74Zl9hF32htg
+EXRmGSMy1fb1sA5qoep16ogcBh2usfpQwjtLmwEqc3/4vzhiMv/9PWyxe5W1TrLT
+iPgb+WK1uns7AUMd1oDSymtrcZLRl0eIwBsAB7Avh3AKhHMg3drL1+6WWS9yi+a8
++A6C8k0hvvMVExta7RWmjGcr9IaPrO3z35PLoopv2Nmfp8ytv+RSmQvuiKqbq6RJ
+/2ybXlS8FBpLVa2c/UX449GuEo8JCsgXXjx/s4l9u7+hdOF4KdgJ/YmT2qSI6g44
+3YhLoLBGjvqG5FDTYaNUfZWahnAhjfDhj+eOViBbcrUIbrWcGyqTbKYccv3jF3gD
+/dlz+1GEF/8Z0w6z+fxDmYcEUqPsBuxqav+hdyCdeyxGCAoRfeAvztTDEPlMcsk/
+iQ7nzc+hrMHAqSJzqYWkkC2ABSP78o1fe65/49juoRRyqoVlBjIliQlRx1KKV/H2
+jy1t4y/xl+0PtDE7AjiCO2LE7VMR0rPaKEJv7eGOuhi6OUUj6a78qkLvpQAfP8+b
+i5dgkFj0I5Zokl3UHaAu
+=7300
+-----END PGP SIGNATURE-----
+
+--cPi+lWm09sJ+d57q--
