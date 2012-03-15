@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161406Ab2COUSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:18:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161119Ab2COUSr convert rfc822-to-8bit (ORCPT
+	id S1161415Ab2COUTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:19:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42913 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161119Ab2COUTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:18:47 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4F608A15.9030609@snapgear.com>
-References: <4F608A15.9030609@snapgear.com> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233816.13888.142.stgit@warthog.procyon.org.uk>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: dhowells@redhat.com, paul.gortmaker@windriver.com, hpa@zytor.com,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, arnd@arndb.de, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 13/35] Disintegrate asm/system.h for M68K [ver #2]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 15 Mar 2012 20:18:33 +0000
-Message-ID: <7100.1331842713@redhat.com>
+	Thu, 15 Mar 2012 16:19:15 -0400
+Date: Thu, 15 Mar 2012 13:19:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-mm@kvack.org, Jiri Slaby <jirislaby@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Too much free memory (not used for FS cache)
+Message-Id: <20120315131913.657d4f3d.akpm@linux-foundation.org>
+In-Reply-To: <4F624C88.6050503@suse.cz>
+References: <4F624C88.6050503@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Ungerer <gerg@snapgear.com> wrote:
+On Thu, 15 Mar 2012 21:09:44 +0100
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-> This breaks compilation for m68k targets with:
+> since today's -next (20120315), the MM/VFS system is very sluggish.
+> Especially when committing, diffing and similar with git. I still have
+> 2G of 6G of memory free. But with each commit I have to wait for git to
+> fetch all data from disk.
 > 
->   CC      net/ipv4/ip_input.o
-> In file included from
-> /home/gerg/new-wave.320/linux-3.x/arch/m68k/include/asm/system.h:3:0,
->                  from net/ipv4/ip_input.c:116:
-> /home/gerg/new-wave.320/linux-3.x/arch/m68k/include/asm/cmpxchg.h: In function
-> ‘__xchg’:
-> /home/gerg/new-wave.320/linux-3.x/arch/m68k/include/asm/cmpxchg.h:33:3: error:
-> implicit declaration of function ‘BUG’
+> I'm using ext4 on a raid for the partition with git kernel repository if
+> that matters.
 > 
-> The old system.h included linux/kernel.h which includes asm/bug.h.
-> Just including asm/bug.h here in cmpxchg.h is not enough to fix it.
-> If you include linux/kernel.h though it compiles cleanly.
+> Any idea what that could be?
 
-Which targets, btw?
+The last mm->next update was March 5th so it won't be from stuff in the
+-mm queue.
 
-David
+Are you sure it's reclaim-related?  Perhaps something in the IO system
+got slow?
+
+
+
+
