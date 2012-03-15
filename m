@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762103Ab2COVDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 17:03:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51174 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762052Ab2COVDh (ORCPT
+	id S1161755Ab2COVEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:04:07 -0400
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:35360 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161673Ab2COU7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 17:03:37 -0400
-Date: Thu, 15 Mar 2012 14:03:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, devel@driverdev.osuosl.org,
-        Brian Swetland <swetland@google.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Mar 15 (staging/android/ram_console.c)
-Message-ID: <20120315210333.GA6647@kroah.com>
-References: <20120315185935.a0c475a30b2836765273a1e5@canb.auug.org.au>
- <4F62118A.2070403@xenotime.net>
+	Thu, 15 Mar 2012 16:59:39 -0400
+Date: Thu, 15 Mar 2012 21:59:36 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] usb/ub: deprecate & schedule for removal the "Low
+ Performance USB Block" driver
+Message-ID: <20120315205935.GB6123@breakpoint.cc>
+References: <1331758372-9851-1-git-send-email-sebastian@breakpoint.cc>
+ <20120315093331.6472333e@lembas.zaitcev.lan>
+ <20120315153747.GA23515@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F62118A.2070403@xenotime.net>
+In-Reply-To: <20120315153747.GA23515@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 08:58:02AM -0700, Randy Dunlap wrote:
-> On 03/15/2012 12:59 AM, Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > News: the build system (see below) has had its toolchains for most
-> > architectures updated to gcc 4.6.3.  People might like to check the build
-> > results and consider if this change has caused any problems.  There are
-> > also a number of architectures that are building today for the first
-> > time.  Thanks to Tony Breeds for his efforts in providing toolchains.
-> > 
-> > Changes since 20120314:
-> 
-> 
-> 
-> on x86_64 when CONFIG_PRINTK is not enabled:
-> 
-> 
-> drivers/staging/android/ram_console.c:99:6: error: 'dmesg_restrict' undeclared (first use in this function)
+Deprecate this driver. All devices which can be handled by this driver
+can also be handled by the usb-storage driver.
 
-This patch should solve this, right?
+Cc: Pete Zaitcev <zaitcev@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+v1..v2: remove "can't use SCSI commands" and "does not use libusual". I meant
+libunusual but it probably does not matter.
 
+ Documentation/feature-removal-schedule.txt |   11 +++++++++++
+ drivers/block/Kconfig                      |    2 +-
+ drivers/block/ub.c                         |    2 ++
+ 3 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-index 2918bc1..ce140ff 100644
---- a/drivers/staging/android/ram_console.c
-+++ b/drivers/staging/android/ram_console.c
-@@ -85,6 +85,10 @@ static int __init ram_console_module_init(void)
- 	return platform_driver_probe(&ram_console_driver, ram_console_probe);
- }
- 
-+#ifndef CONFIG_PRINTK
-+#define dmesg_restrict	0
-+#endif
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index a0ffac0..d5dc80f 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -524,3 +524,14 @@ Files:	arch/arm/mach-at91/at91cap9.c
+ Why:	The code is not actively maintained and platforms are now hard to find.
+ Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
+ 	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 +
- static ssize_t ram_console_read_old(struct file *file, char __user *buf,
- 				    size_t len, loff_t *offset)
- {
++----------------------------
++
++What:	Low Performance USB Block driver ("CONFIG_BLK_DEV_UB")
++When:	3.6
++Why:	This driver provides support for USB storage devices like "USB
++	sticks". As of now, it is deactivated in Debian, Fedora and
++        Ubuntu. All current users can switch over to usb-storage
++        (CONFIG_USB_STORAGE) which only drawback is the additional SCSI
++        stack.
++Who:	Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 4e4c8a4..a796407 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -354,7 +354,7 @@ config BLK_DEV_SX8
+ 	  Use devices /dev/sx8/$N and /dev/sx8/$Np$M.
+ 
+ config BLK_DEV_UB
+-	tristate "Low Performance USB Block driver"
++	tristate "Low Performance USB Block driver (deprecated)"
+ 	depends on USB
+ 	help
+ 	  This driver supports certain USB attached storage devices
+diff --git a/drivers/block/ub.c b/drivers/block/ub.c
+index 298ac75..fcec022 100644
+--- a/drivers/block/ub.c
++++ b/drivers/block/ub.c
+@@ -2440,6 +2440,8 @@ static int __init ub_init(void)
+ 	int rc;
+ 	int i;
+ 
++	pr_info("'Low Performance USB Block' driver is deprecated. "
++			"Please switch to usb-storage\n");
+ 	for (i = 0; i < UB_QLOCK_NUM; i++)
+ 		spin_lock_init(&ub_qlockv[i]);
+ 
+-- 
+1.7.9.1
