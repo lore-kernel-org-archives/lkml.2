@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760250Ab2COSMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:12:34 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:35350 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2COSMa (ORCPT
+	id S1760573Ab2COSSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:18:18 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:47559 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756305Ab2COSSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:12:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6650"; a="170513534"
-Message-ID: <4F623107.2040108@codeaurora.org>
-Date: Thu, 15 Mar 2012 23:42:23 +0530
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Daniel Walker <dwalker@fifo99.com>
-CC: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        gregkh@linuxfoundation.org, Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
- DMA APIs
-References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org> <20120312201421.GA3459@fifo99.com> <4F5F41AF.1090907@codeaurora.org> <20120314150533.GA8757@fifo99.com> <20120314201929.GA17259@codeaurora.org>
-In-Reply-To: <20120314201929.GA17259@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Mar 2012 14:18:16 -0400
+From: Aneesh V <aneesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Aneesh V <aneesh@ti.com>, Greg KH <greg@kroah.com>
+Subject: [PATCH v2 0/7] Add TI EMIF SDRAM controller driver
+Date: Thu, 15 Mar 2012 23:47:30 +0530
+Message-Id: <1331835457-5390-1-git-send-email-aneesh@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/15/2012 1:49 AM, David Brown wrote:
-> On Wed, Mar 14, 2012 at 08:05:53AM -0700, Daniel Walker wrote:
->> On Tue, Mar 13, 2012 at 06:16:39PM +0530, Ravi Kumar V wrote:
->>> On 3/13/2012 1:44 AM, Daniel Walker wrote:
->>>> On Mon, Mar 12, 2012 at 04:02:44PM +0530, Ravi Kumar V wrote:
->>>>> Add DMAEngine based driver using the old MSM DMA APIs internally.
->>>>
->>>> What do you mean by this?
->>>>
->>> There is a MSM DMA driver in arch/arm/mach-msm/ which is not in
->>> dmaengine framework standards, but that driver is been used by
->>> client drivers nand, eMMC and serial drivers. Now if we implement
->>> the whole dma driver using dmaengine framework then nand, eMMC like
->>> drivers will be failed as they are using old dma driver API's, so
->>> instead of implementing new driver from scratch we are keeping the
->>> old dma API's as it is and using those API's in new dmaengine
->>> framework.So that we can convert clients drivers to use dma engine
->>> framework.
->>
->> Did you investigate converting the drivers (nand, eMMC, serialied ) ? It
->> seems like there would be a 1:1 mapping between the API's , so it might
->> only be a find->replace operation.
->
-> Only at a very superficial level--they both do DMA.  The ADM driver
-> wants its scatterlists constructed manually by the caller (in DMA-able
-> memory) and just the pointer handed over.  The drivers will have to be
-> converted to use the abstracted scatterlists that dmaengine wants.
-> Drivers like msm_sdcc are currently fairly intimitely tied to flow
-> that is specific to ADM.  The msm_sdcc driver also needs use of the
-> ADM's "box" mode, which has to be made to work with DMAEngine as well.
->
-> Providing both APIs is really the only practical way to get this in
-> without having to rewrite several other drivers.
->
-> The nand driver (which doesn't seem to have made it in yet,
-> https://lkml.org/lkml/2011/2/28/570) is much worse.  About half of the
-> code is constructing ADM specific command blocks.  I'm not even sure
-> it will be practical to even migrate that driver to DMAEngine, since
-> the nand controller hardware is so intimately tied to the functioning
-> of the ADM.
->
-> David
->
+Add a driver for the EMIF SDRAM controller used in TI SoCs
 
-Yes i have tried to convert these drivers, but mostly we need to add 
-DMAEngine stuff like requesting channel, creating the descriptors, 
-passing these descriptors to channel etc which are different from old 
-implementation.So we have choose this path not to disturb the existing 
-drivers while converting a driver.
+EMIF is an SDRAM controller that supports, based on its revision,
+one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+for LPDDR2.
 
-Thanks
-Ravi Kumar V
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+The driver supports the following features:
+- Calculates the DDR AC timing parameters to be set in EMIF
+  registers using data from the device data-sheets and based
+  on the DDR frequency. If data from data-sheets is not available
+  default timing values from the JEDEC spec are used. These
+  will be safe, but not necessarily optimal
+- API for changing timings during DVFS or at boot-up
+- Temperature alert configuration and handling of temperature
+  alerts, if any for LPDDR2 devices
+  * temperature alert is based on periodic polling of MR4 mode
+    register in DDR devices automatically performed by hardware
+  * timings are de-rated and brought back to nominal when
+    temperature raises and falls respectively
+- Cache of calculated register values to avoid re-calculating
+  them
+
+The driver will need some minor updates when it is eventually
+integrated with Dynamic Voltage and Frequency Scaling (DVFS).
+This can not be done now as DVFS support is not available in
+the mainline yet.
+
+Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
+were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+<vvardhan@gmail.com> did the initial code snippet for thermal
+handling.
+
+Testing: 
+- The driver is tested on OMAP4430 SDP.
+- The driver in a slightly adapted form is also tested on OMAP5.
+- Since mainline kernel doesn't have DVFS support yet,
+  testing was done using a test module.
+- Temperature alert handling was tested with simulated interrupts
+  and faked temperature values as testing all cases in real-life
+  scenarios is difficult.
+- Tested the driver as a module
+
+Cc: Greg KH <greg@kroah.com>
+
+v2:
+- Fixed a bug found in the implementation of errata i728
+  workaround
+- Fixed the value of frequency printed in debugfs
+- Dropped the hwmod patch as Paul has already posted a
+  a hwmod series [1] that adds hwmod for EMIF
+- Converted instances of __init to __init_or_module
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/72855
+
+Aneesh V (7):
+  misc: ddr: add LPDDR2 data from JESD209-2
+  misc: emif: add register definitions for EMIF
+  misc: emif: add basic infrastructure for EMIF driver
+  misc: emif: handle frequency and voltage change events
+  misc: emif: add interrupt and temperature handling
+  misc: emif: add one-time settings
+  misc: emif: add debugfs entries for emif
+
+ Documentation/misc-devices/ti-emif.txt  |   58 ++
+ drivers/misc/Kconfig                    |   12 +
+ drivers/misc/Makefile                   |    1 +
+ drivers/misc/emif.c                     | 1670 +++++++++++++++++++++++++++++++
+ drivers/misc/emif.h                     |  589 +++++++++++
+ include/linux/platform_data/emif_plat.h |  128 +++
+ include/misc/jedec_ddr.h                |  177 ++++
+ lib/Kconfig                             |    8 +
+ lib/Makefile                            |    3 +
+ lib/jedec_ddr_data.c                    |  135 +++
+ 10 files changed, 2781 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/misc-devices/ti-emif.txt
+ create mode 100644 drivers/misc/emif.c
+ create mode 100644 drivers/misc/emif.h
+ create mode 100644 include/linux/platform_data/emif_plat.h
+ create mode 100644 include/misc/jedec_ddr.h
+ create mode 100644 lib/jedec_ddr_data.c
+
