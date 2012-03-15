@@ -1,102 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031302Ab2COASc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 20:18:32 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36775 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760898Ab2COAS3 (ORCPT
+	id S1031357Ab2COAUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 20:20:31 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27523 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab2COAU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 20:18:29 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F6134E1.5090601@jp.fujitsu.com>
-Date: Thu, 15 Mar 2012 09:16:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 14 Mar 2012 20:20:28 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 108.39.66.94
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/SfmtwbdQ0BuHQxR67K1+hOBO3mW3c+bg=
+Date: Wed, 14 Mar 2012 20:20:20 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, Michael Walle <michael@walle.cc>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (arm-soc tree related)
+Message-ID: <20120315002020.GA16189@titan.lakedaemon.net>
+References: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, gthelen@google.com,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC REPOST] cgroup: removing css reference drain wait during
- cgroup removal
-References: <20120312213155.GE23255@google.com> <20120312213343.GF23255@google.com> <20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com> <20120313163914.GD7349@google.com> <20120314092828.3321731c.kamezawa.hiroyu@jp.fujitsu.com> <4F6068F4.4090909@parallels.com>
-In-Reply-To: <4F6068F4.4090909@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/14 18:46), Glauber Costa wrote:
-
-> On 03/14/2012 04:28 AM, KAMEZAWA Hiroyuki wrote:
->> IIUC, in general, even in the processes are in a tree, in major case
->> of servers, their workloads are independent.
->> I think FLAT mode is the dafault. 'heararchical' is a crazy thing which
->> cannot be managed.
+On Thu, Mar 15, 2012 at 10:59:01AM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Better pay attention to the current overall cgroups discussions being 
-> held by Tejun then. ([RFD] cgroup: about multiple hierarchies)
+> After merging the final tree, today's linux-next build (powerpc
+> allmodconfig) failed like this:
 > 
-> The topic of whether of adapting all cgroups to be hierarchical by 
-> deafult is a recurring one.
+> drivers/ata/sata_mv.c:4185:1: error: '__mod_of_device_table' aliased to undefined symbol 'mvsdio_dt_ids'
 > 
-> I personally think that it is not unachievable to make res_counters 
-> cheaper, therefore making this less of a problem.
-> 
+> Caused by commit f1e1e148c5cb ("ARM: kirkwood: sata_mv: add device tree
+> binding").
 
+Stephen,
 
-I thought of this a little yesterday. Current my idea is applying following
-rule for res_counter.
+That's my mistake.  I did a pull request for the wrong branch.  Olof,
+could you please drop the offending branch and I'll submit a new pull
+request once I have a chance to test Arnd's irq patch?
 
-1. All res_counter is hierarchical. But behavior should be optimized.
+thx,
 
-2. If parent res_counter has UNLIMITED limit, 'usage' will not be propagated
-   to its parent at _charge_.
-
-3. If a res_counter has UNLIMITED limit, at reading usage, it must visit
-   all children and returns a sum of them.
-
-Then,
-	/cgroup/
-		memory/                       (unlimited)
-			libivirt/             (unlimited)
-				 qeumu/       (unlimited)
-				        guest/(limited)
-
-All dir can show hierarchical usage and the guest will not have
-any lock contention at runtime.
-
-
-By this
- 1. no runtime overhead if the parent has unlimited limit.
- 2. All res_counter can show aggregate resource usage of children.
-
-To do this
- 1. res_coutner should have children list by itself.
-
-Implementation problem
- - What should happens when a user set new limit to a res_counter which have
-   childrens ? Shouldn't we allow it ? Or take all locks of children and
-   update in atomic ?
- - memory.use_hierarchy should be obsolete ?
-
-Other problem I'm not sure at all
- - blkcg doesn't support hierarchy at all.
-
-Hmm. 
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
+Jason.
