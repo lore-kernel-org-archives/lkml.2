@@ -1,280 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab2COSur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:50:47 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:42880 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932425Ab2COSun (ORCPT
+	id S965390Ab2COSvC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:51:02 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50999 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1031066Ab2COSu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:50:43 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/3] mfd: db8500-prcmu: remove obsolete hwacc implementation
-Date: Thu, 15 Mar 2012 19:50:26 +0100
-Message-ID: <1331837426-17761-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Thu, 15 Mar 2012 14:50:57 -0400
+Date: Thu, 15 Mar 2012 14:50:54 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC] rcu: Make rcu_barrier() less disruptive
+Message-ID: <20120315185054.GA1764@Krystal>
+References: <20120315164839.GA1657@linux.vnet.ibm.com> <20120315174527.GA775@Krystal> <20120315182159.GJ2381@linux.vnet.ibm.com> <20120315183143.GA4472@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120315183143.GA4472@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:50:16 up 477 days, 23:53,  5 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Thu, Mar 15, 2012 at 11:21:59AM -0700, Paul E. McKenney wrote:
+> > On Thu, Mar 15, 2012 at 01:45:27PM -0400, Mathieu Desnoyers wrote:
+> > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > The rcu_barrier() primitive interrupts each and every CPU, registering
+> > > > a callback on every CPU.  Once all of these callbacks have been invoked,
+> > > > rcu_barrier() knows that every callback that was registered before
+> > > > the call to rcu_barrier() has also been invoked.
+> > > > 
+> > > > However, there is no point in registering a callback on a CPU that
+> > > > currently has no callbacks, most especially if that CPU is in a
+> > > > deep idle state.  This commit therefore makes rcu_barrier() avoid
+> > > > interrupting CPUs that have no callbacks.  Doing this requires reworking
+> > > > the handling of orphaned callbacks, otherwise callbacks could slip through
+> > > > rcu_barrier()'s net by being orphaned from a CPU that rcu_barrier() had
+> > > > not yet interrupted to a CPU that rcu_barrier() had already interrupted.
+> > > > This reworking was needed anyway to take a first step towards weaning
+> > > > RCU from the CPU_DYING notifier's use of stop_cpu().
+> > > 
+> > > Quoting Documentation/RCU/rcubarrier.txt:
+> > > 
+> > > "We instead need the rcu_barrier() primitive. This primitive is similar
+> > > to synchronize_rcu(), but instead of waiting solely for a grace
+> > > period to elapse, it also waits for all outstanding RCU callbacks to
+> > > complete. Pseudo-code using rcu_barrier() is as follows:"
+> > > 
+> > > The patch you propose seems like a good approach to make rcu_barrier
+> > > less disruptive, but everyone need to be aware that rcu_barrier() would
+> > > quit having the side-effect of doing the equivalent of
+> > > "synchronize_rcu()" from now on: within this new approach, in the case
+> > > where there are no pending callbacks, rcu_barrier() could, AFAIU, return
+> > > without waiting for the current grace period to complete.
+> > > 
+> > > Any use of rcu_barrier() that would assume that a synchronize_rcu() is
+> > > implicit with the rcu_barrier() execution would be a bug anyway, but
+> > > those might only show up after this patch is applied. I would therefore
+> > > recommend to audit all rcu_barrier() users to ensure none is expecting
+> > > rcu_barrier to act as a synchronize_rcu before pushing this change.
+> > 
+> > Good catch!
+> > 
+> > I am going to chicken out and explicitly wait for a grace period if there
+> > were no callbacks.  Having rcu_barrier() very rarely be a quick no-op does
+> > sound like a standing invitation for subtle non-reproducible bugs.  ;-)
+> 
+> I take it back...
+> 
+> After adopting callbacks (rcu_adopt_orphan_cbs()), _rcu_barrier()
+> unconditionally posts a callback on the current CPU and waits for it.
+> So _rcu_barrier() actually does always wait for a grace period.
 
-This patch removes the obsolete hwacc implementation in the
-DB8500 PRCMU driver.
+Ah ok, that should handle it then.
 
-Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
-Reviewed-by: Jonas Aberg <jonas.aberg@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/db8500-prcmu.c       |  155 --------------------------------------
- include/linux/mfd/db8500-prcmu.h |   43 -----------
- 2 files changed, 198 deletions(-)
+> 
+> Yes, I could be more dainty and make rcu_adopt_orphan_cbs() return an
+> indication of whether there were any callbacks, and then post the callback
+> only if either there were some callbacks adopted or if there were no calls
+> to smp_call_function_single().  But that adds complexity for almost no
+> benefit -- and no one can accuse _rcu_barrier() of being a fastpath!  ;-)
+> 
+> Or am I missing something here?
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 128b5f4..c1addd7 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -515,35 +515,6 @@ static struct dsiescclk dsiescclk[3] = {
- 	}
- };
- 
--static struct regulator *hwacc_regulator[NUM_HW_ACC];
--static struct regulator *hwacc_ret_regulator[NUM_HW_ACC];
--
--static bool hwacc_enabled[NUM_HW_ACC];
--static bool hwacc_ret_enabled[NUM_HW_ACC];
--
--static const char *hwacc_regulator_name[NUM_HW_ACC] = {
--	[HW_ACC_SVAMMDSP]	= "hwacc-sva-mmdsp",
--	[HW_ACC_SVAPIPE]	= "hwacc-sva-pipe",
--	[HW_ACC_SIAMMDSP]	= "hwacc-sia-mmdsp",
--	[HW_ACC_SIAPIPE]	= "hwacc-sia-pipe",
--	[HW_ACC_SGA]		= "hwacc-sga",
--	[HW_ACC_B2R2]		= "hwacc-b2r2",
--	[HW_ACC_MCDE]		= "hwacc-mcde",
--	[HW_ACC_ESRAM1]		= "hwacc-esram1",
--	[HW_ACC_ESRAM2]		= "hwacc-esram2",
--	[HW_ACC_ESRAM3]		= "hwacc-esram3",
--	[HW_ACC_ESRAM4]		= "hwacc-esram4",
--};
--
--static const char *hwacc_ret_regulator_name[NUM_HW_ACC] = {
--	[HW_ACC_SVAMMDSP]	= "hwacc-sva-mmdsp-ret",
--	[HW_ACC_SIAMMDSP]	= "hwacc-sia-mmdsp-ret",
--	[HW_ACC_ESRAM1]		= "hwacc-esram1-ret",
--	[HW_ACC_ESRAM2]		= "hwacc-esram2-ret",
--	[HW_ACC_ESRAM3]		= "hwacc-esram3-ret",
--	[HW_ACC_ESRAM4]		= "hwacc-esram4-ret",
--};
--
- /*
- * Used by MCDE to setup all necessary PRCMU registers
- */
-@@ -1181,132 +1152,6 @@ static int request_pll(u8 clock, bool enable)
- }
- 
- /**
-- * prcmu_set_hwacc - set the power state of a h/w accelerator
-- * @hwacc_dev: The hardware accelerator (enum hw_acc_dev).
-- * @state: The new power state (enum hw_acc_state).
-- *
-- * This function sets the power state of a hardware accelerator.
-- * This function should not be called from interrupt context.
-- *
-- * NOTE! Deprecated, to be removed when all users switched over to use the
-- * regulator framework API.
-- */
--int prcmu_set_hwacc(u16 hwacc_dev, u8 state)
--{
--	int r = 0;
--	bool ram_retention = false;
--	bool enable, enable_ret;
--
--	/* check argument */
--	BUG_ON(hwacc_dev >= NUM_HW_ACC);
--
--	/* get state of switches */
--	enable = hwacc_enabled[hwacc_dev];
--	enable_ret = hwacc_ret_enabled[hwacc_dev];
--
--	/* set flag if retention is possible */
--	switch (hwacc_dev) {
--	case HW_ACC_SVAMMDSP:
--	case HW_ACC_SIAMMDSP:
--	case HW_ACC_ESRAM1:
--	case HW_ACC_ESRAM2:
--	case HW_ACC_ESRAM3:
--	case HW_ACC_ESRAM4:
--		ram_retention = true;
--		break;
--	}
--
--	/* check argument */
--	BUG_ON(state > HW_ON);
--	BUG_ON(state == HW_OFF_RAMRET && !ram_retention);
--
--	/* modify enable flags */
--	switch (state) {
--	case HW_OFF:
--		enable_ret = false;
--		enable = false;
--		break;
--	case HW_ON:
--		enable = true;
--		break;
--	case HW_OFF_RAMRET:
--		enable_ret = true;
--		enable = false;
--		break;
--	}
--
--	/* get regulator (lazy) */
--	if (hwacc_regulator[hwacc_dev] == NULL) {
--		hwacc_regulator[hwacc_dev] = regulator_get(NULL,
--			hwacc_regulator_name[hwacc_dev]);
--		if (IS_ERR(hwacc_regulator[hwacc_dev])) {
--			pr_err("prcmu: failed to get supply %s\n",
--				hwacc_regulator_name[hwacc_dev]);
--			r = PTR_ERR(hwacc_regulator[hwacc_dev]);
--			goto out;
--		}
--	}
--
--	if (ram_retention) {
--		if (hwacc_ret_regulator[hwacc_dev] == NULL) {
--			hwacc_ret_regulator[hwacc_dev] = regulator_get(NULL,
--				hwacc_ret_regulator_name[hwacc_dev]);
--			if (IS_ERR(hwacc_ret_regulator[hwacc_dev])) {
--				pr_err("prcmu: failed to get supply %s\n",
--					hwacc_ret_regulator_name[hwacc_dev]);
--				r = PTR_ERR(hwacc_ret_regulator[hwacc_dev]);
--				goto out;
--			}
--		}
--	}
--
--	/* set regulators */
--	if (ram_retention) {
--		if (enable_ret && !hwacc_ret_enabled[hwacc_dev]) {
--			r = regulator_enable(hwacc_ret_regulator[hwacc_dev]);
--			if (r < 0) {
--				pr_err("prcmu_set_hwacc: ret enable failed\n");
--				goto out;
--			}
--			hwacc_ret_enabled[hwacc_dev] = true;
--		}
--	}
--
--	if (enable && !hwacc_enabled[hwacc_dev]) {
--		r = regulator_enable(hwacc_regulator[hwacc_dev]);
--		if (r < 0) {
--			pr_err("prcmu_set_hwacc: enable failed\n");
--			goto out;
--		}
--		hwacc_enabled[hwacc_dev] = true;
--	}
--
--	if (!enable && hwacc_enabled[hwacc_dev]) {
--		r = regulator_disable(hwacc_regulator[hwacc_dev]);
--		if (r < 0) {
--			pr_err("prcmu_set_hwacc: disable failed\n");
--			goto out;
--		}
--		hwacc_enabled[hwacc_dev] = false;
--	}
--
--	if (ram_retention) {
--		if (!enable_ret && hwacc_ret_enabled[hwacc_dev]) {
--			r = regulator_disable(hwacc_ret_regulator[hwacc_dev]);
--			if (r < 0) {
--				pr_err("prcmu_set_hwacc: ret disable failed\n");
--				goto out;
--			}
--			hwacc_ret_enabled[hwacc_dev] = false;
--		}
--	}
--
--out:
--	return r;
--}
--EXPORT_SYMBOL(prcmu_set_hwacc);
--
--/**
-  * db8500_prcmu_set_epod - set the state of a EPOD (power domain)
-  * @epod_id: The EPOD to set
-  * @epod_state: The new EPOD state
-diff --git a/include/linux/mfd/db8500-prcmu.h b/include/linux/mfd/db8500-prcmu.h
-index 636423b..a0ac1d2 100644
---- a/include/linux/mfd/db8500-prcmu.h
-+++ b/include/linux/mfd/db8500-prcmu.h
-@@ -439,43 +439,6 @@ enum auto_enable {
- /* End of file previously known as prcmu-fw-defs_v1.h */
- 
- /**
-- * enum hw_acc_dev - enum for hw accelerators
-- * @HW_ACC_SVAMMDSP: for SVAMMDSP
-- * @HW_ACC_SVAPIPE:  for SVAPIPE
-- * @HW_ACC_SIAMMDSP: for SIAMMDSP
-- * @HW_ACC_SIAPIPE: for SIAPIPE
-- * @HW_ACC_SGA: for SGA
-- * @HW_ACC_B2R2: for B2R2
-- * @HW_ACC_MCDE: for MCDE
-- * @HW_ACC_ESRAM1: for ESRAM1
-- * @HW_ACC_ESRAM2: for ESRAM2
-- * @HW_ACC_ESRAM3: for ESRAM3
-- * @HW_ACC_ESRAM4: for ESRAM4
-- * @NUM_HW_ACC: number of hardware accelerators
-- *
-- * Different hw accelerators which can be turned ON/
-- * OFF or put into retention (MMDSPs and ESRAMs).
-- * Used with EPOD API.
-- *
-- * NOTE! Deprecated, to be removed when all users switched over to use the
-- * regulator API.
-- */
--enum hw_acc_dev {
--	HW_ACC_SVAMMDSP,
--	HW_ACC_SVAPIPE,
--	HW_ACC_SIAMMDSP,
--	HW_ACC_SIAPIPE,
--	HW_ACC_SGA,
--	HW_ACC_B2R2,
--	HW_ACC_MCDE,
--	HW_ACC_ESRAM1,
--	HW_ACC_ESRAM2,
--	HW_ACC_ESRAM3,
--	HW_ACC_ESRAM4,
--	NUM_HW_ACC
--};
--
--/**
-  * enum prcmu_power_status - results from set_power_state
-  * @PRCMU_SLEEP_OK: Sleep went ok
-  * @PRCMU_DEEP_SLEEP_OK: DeepSleep went ok
-@@ -552,8 +515,6 @@ bool prcmu_has_arm_maxopp(void);
- struct prcmu_fw_version *prcmu_get_fw_version(void);
- int prcmu_request_ape_opp_100_voltage(bool enable);
- int prcmu_release_usb_wakeup_state(void);
--/* NOTE! Use regulator framework instead */
--int prcmu_set_hwacc(u16 hw_acc_dev, u8 state);
- void prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
- 	struct prcmu_auto_pm_config *idle);
- bool prcmu_is_auto_pm_enabled(void);
-@@ -661,10 +622,6 @@ static inline int db8500_prcmu_get_ddr_opp(void)
- 	return DDR_100_OPP;
- }
- 
--static inline int prcmu_set_hwacc(u16 hw_acc_dev, u8 state)
--{
--	return 0;
--}
- static inline void prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
- 	struct prcmu_auto_pm_config *idle)
- {
+Nope, I think it all makes sense.
+
+Thanks,
+
+Mathieu
+
+> 
+> 							Thanx, Paul
+> 
+
 -- 
-1.7.9.2
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
