@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161215Ab2CORxq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:53:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41871 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031933Ab2CORxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:53:45 -0400
-Date: Thu, 15 Mar 2012 18:53:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [patch 1/5] seqlock: Remove unused functions
-In-Reply-To: <20120315173937.GC8943@ZenIV.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1203151842180.2466@ionos>
-References: <20120314170736.617746873@linutronix.de> <20120314170918.404528547@linutronix.de> <CA+55aFzCQEiV2ZfB3s983fe-zpyFhhc+QvpA58qeLWJxRJtU0A@mail.gmail.com> <20120315173937.GC8943@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1161225Ab2CORx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:53:56 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:60199 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031933Ab2CORxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 13:53:52 -0400
+Date: Thu, 15 Mar 2012 10:48:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Chris Boot <bootc@bootc.net>, linux1394-devel@lists.sourceforge.net,
+        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        agrover@redhat.com, clemens@ladisch.de, nab@linux-iscsi.org
+Subject: Re: [PATCH v2 08/11] firewire-sbp-target: Add sbp_login.{c,h}
+Message-ID: <20120315174837.GH2381@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+ <1329317248-94128-1-git-send-email-bootc@bootc.net>
+ <1329317248-94128-9-git-send-email-bootc@bootc.net>
+ <20120215220052.040e680a@stein>
+ <4F3CE6A1.9050602@bootc.net>
+ <20120303183722.04cdbfee@stein>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120303183722.04cdbfee@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031517-8974-0000-0000-00000748B2DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, Al Viro wrote:
-> On Thu, Mar 15, 2012 at 09:29:50AM -0700, Linus Torvalds wrote:
-> > So I have to say, I hate this entire series.
-> > 
-> > Seriously, what the heck is the point of this churn? It's all entirely
-> > pointless searc-and-replace as far as I can tell, with absolutely zero
-> > upside.
-> > 
-> > It makes the low-level filesystems have to be aware of things that
-> > they don't want to know and *shouldn't* know. Why should a filesystem
-> > care that d_lock is a seqlock, and have to use a locking function that
-> > they've never seen before and is very specialized?
-> > 
-> > The "seq" part of the dentry is something only the lookup code and the
-> > internal dentry code should care about. NOBODY ELSE should ever care.
+On Sat, Mar 03, 2012 at 06:37:22PM +0100, Stefan Richter wrote:
+> On Feb 16 Chris Boot wrote:
+
+[ . . . ]
+
+> > I guess I need to protect access to 
+> > the entire session really. Possibly even rwlocks due to only the 
+> > management processes ever changing anything, but lots of reads during 
+> > command handling.
 > 
-> *nod*
+> The use case for rwlocks is not really the case where infrequent write
+> access meets frequent read access.  Rather, the use case is when it is
+> important to reduce or prevent contention between readers.
 > 
-> There's another issue I have with that on API level, leaving aside any
-> questions of that being a good fit for dcache.  It's simply a bad interface:
-> we have variants that lock and play with d_seq, variants that play with
-> d_seq alone and, most commonly used, variant that locks but does not
-> touch d_seq at all.  IOW, we have traded "writes to d_seq must be under
-> d_lock" with "update-seq-without-locking primitive must be used after we'd
-> used lock-without-touching-seq one".  Which is not an improvement at all.
-> Sure, you can make a direct product out of anything; that doesn't make
-> the result a natural object.
+> Rwlocks come with their own downsides though.  I guess the somewhat
+> costlier lock implementation could counter the benefit of allowing
+> concurrent readers.  Or maybe latency spikes around a write access could be
+> an issue.
 > 
-> The _only_ relationship between d_seq and d_lock is that the latter happens
-> to be serializing updates of the former.  For RT there's another one -
-> ->d_lock taken to protect ->d_seq modifications really should not be
-> preempted in favour of anything that might do read_seqcount_begin on
-> ->d_seq.  The biggest such section is in __d_move(), AFAICS, and it's not
-> _that_ big; can't RT simply have them protected by whatever it has that
-> really prevents preempt?
+> I believe I have read somewhere that one should rather use a simple
+> spinlock unless exhaustive tests prove that an rwlock really performs
+> better.  Furthermore, in many if not all use cases of rwlocks, RCU is
+> available as another alternative.  RCU comes with its own set of downsides
+> though, for example not being as well and widely understood by programmers
+> compared to locking, being less easy to debug (may have improved
+> recently), and posing some challenges to RT-PREEMPT kernels.
+
+The preemptible RCU implementations (TREE_PREEMPT_RCU and TINY_PREEMPT_RCU)
+handle the -rt tree.
+
+> AFAIU the above considerations cannot be applied 100 % to able-to-sleep
+> reader-writer locks, i.e. the kernel's rwsem.  Still, the use case of an
+> rwsem (in contrast to a mutex) is not particularly where a datum is rarely
+> written and often read, but where it is desirable to let multiple readers
+> not block each other.
 > 
-> IOW, instead of all that stuff, how about
-> 	about_to_modify_seq_holding_lock(&dentry->d_seq, &dentry->d_lock);
-> 	done_modifying_seq(&dentry->d_seq, &dentry->d_lock);
-> around those 3 or 4 areas in fs/dcache.c, to give RT the missing information?
+> [Somebody correct me where I'm wrong.]
 
-Fair enough. I thought about that earlier, but I was looking for a
-solution which does not required to add extra code to every place
-where the sequence count is updated. I accept, that I went overboard
-with that approach.
+And you can use SRCU if readers need to block.
 
-Just come up with another idea, which restricts the lock annotation to
-the init function.
+That said, even I agree that RCU is not always the right tool for the job.
 
-struct seqcount {
-       unsigned int seq;
-#ifdef CONFIG_LOCKDEP       
-       spinlock_t *lock;
-#endif
-};
+							;-), Paul
 
-	seqcount_init(&seq, &protecting_lock);
-
-That way we could do the lock held assertions in the write_seqcount
-functions when LOCKDEP is enabled instead of having them in the code
-which uses the write_seqcount functions.
-
-RT could enable that as well and use it for its own purposes. Would
-something like that work for you?
-
-Thanks,
-
-	tglx
-
-
-
-
-
+> PS, I cloned your git tree not long ago, but again various distractions
+> kept me from having a broader look at your code...
+> -- 
+> Stefan Richter
+> -=====-===-- --== ---==
+> http://arcgraph.de/sr/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
