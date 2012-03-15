@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161182Ab2CORrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:47:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42540 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418Ab2CORrj convert rfc822-to-8bit (ORCPT
+	id S1161199Ab2CORth (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:49:37 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:16418 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031939Ab2CORte convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:47:39 -0400
+	Thu, 15 Mar 2012 13:49:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWvOpJ1N=QLQ3MHRqVGw7pz1Fuma60pJSwzqP5Jc5PF3Q@mail.gmail.com>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
- <1331362837-10740-24-git-send-email-yinghai@kernel.org> <CAErSpo5cCC4HySedQ85BFKkPQ0VuYWX+NTjZLd4GpcATh1ix3g@mail.gmail.com>
- <CAE9FiQWvOpJ1N=QLQ3MHRqVGw7pz1Fuma60pJSwzqP5Jc5PF3Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 15 Mar 2012 11:47:18 -0600
-Message-ID: <CAErSpo7qi8pE-tiXriMcF5LLY6c=BWnVy-G3MYmjh=1XrqypGA@mail.gmail.com>
-Subject: Re: [PATCH v2 23/37] PCI, ACPI: Add pci_root_hp hot add hotplug notification
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <ac318852-4ccd-4739-893c-52f5cddee6c7@default>
+Date: Thu, 15 Mar 2012 10:49:19 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Avi Kivity <avi@redhat.com>, Akshay Karle <akshay.a.karle@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        kvm@vger.kernel.org, ashu tripathi <er.ashutripathi@gmail.com>,
+        nishant gulhane <nishant.s.gulhane@gmail.com>,
+        amarmore2006 <amarmore2006@gmail.com>,
+        Shreyas Mahure <shreyas.mahure@gmail.com>,
+        mahesh mohan <mahesh6490@gmail.com>
+Subject: RE: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+References: <1331224181.2585.16.camel@aks> <4F621FC0.7050800@redhat.com>
+In-Reply-To: <4F621FC0.7050800@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F622BAB.0085,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 12:03 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Mar 12, 2012 at 8:22 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> It is from acpiphp_glue.c
->>>
->>> How to use it?
->>> Find out root bus number to acpi root name mapping from dmesg or /sys
->>>
->>>  echo "\_SB.PCIB 0" > /proc/acpi/sci/notify
->>> to add it back
->>
->> Nope.  That might be a way to exercise this for debug purposes (and it
->> only works when /proc/acpi/sci/notify is compiled in), but we
->> definitely don't want normal users to deal with ACPI pathnames like
->> this.
->
-> before this patch set, only way is: Users really put one root bus in
-> and press buton etc to trigger notification
-> to get it work.
->
->>
->> Most of this functionality belongs in the ACPI core, not here.  The
->> core should be handling these notify events and turning them into
->> .add() and .remove() calls to the driver.
->>
->> But since the ACPI core doesn't do that yet, we have to do it in the
->> driver, like we do for CPU, memory, etc.  That part is fine.  But I
->> think it at least belongs *in* the driver, i.e., in pci_root.c, not in
->> a new pci_root_hp.c file.
->
-> don't want to pollute pci_root.c.
->
-> in separated file, we can use CONFIG_HOTPLUG in Makefile instead of pci_root.c
+> From: Avi Kivity [mailto:avi@redhat.com]
+> Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+> 
+> On 03/08/2012 06:29 PM, Akshay Karle wrote:
+> > Hi,
+> >
+> > We are undergraduate engineering students of Maharashtra Academy of
+> > Engineering, Pune, India and we are working on a project entitled
+> > 'Transcendent Memory on KVM' as a part of our academics.
+> >
+> > Since kvm is one of the most popular hypervisors available,
+> > we decided to implement this technique for kvm.
+> >
+> > Any comments/feedback would be appreciated and will help us a lot with our work.
+> 
+> One of the potential problems with tmem is reduction in performance when
+> the cache hit rate is low, for example when streaming.
+> 
+> Can you test this by creating a large file, for example with
+> 
+>   dd < /dev/urandom > file bs=1M count=100000
+> 
+> and then measuring the time to stream it, using
+> 
+>   time dd < file > /dev/null
+> 
+> with and without the patch?
+> 
+> Should be done on a cleancache enabled guest filesystem backed by a
+> virtio disk with cache=none.
+> 
+> It would be interesting to compare kvm_stat during the streaming, with
+> and without the patch.
 
-I don't buy this argument.  Most of this functionality should someday
-be in the ACPI core.  Until then, it is intimately connected to the
-stuff in pci_root.c.  It is not "pollution."
+Hi Avi --
 
->> There definitely should not be another acpi_walk_namespace() and
->> another list of ACPI host bridges.  The core *does* already walk the
->> namespace and call acpi_pci_root_add() for us.  And the driver already
->> has a list of host bridges (acpi_pci_roots).
->
-> no, we may not have acpi_pci_root there.
+The "WasActive" patch (https://lkml.org/lkml/2012/1/25/300) 
+is intended to avoid the streaming situation you are creating here.
+It increases the "quality" of cached pages placed into zcache
+and should probably also be used on the guest-side stubs (and/or maybe
+the host-side zcache... I don't know KVM well enough to determine
+if that would work).
 
-I don't understand what you're saying here.  I think you should be
-basically implementing the "turn notify events into add/remove calls"
-functionality.  This is what *should* be in the ACPI core, but isn't
-yet.  If you put this in the driver, and hopefully follow the style
-already used by the processor/memory/etc. drivers, it will be easier
-to someday move it into the ACPI core.
+As Dave Hansen pointed out, the WasActive patch is not yet correct
+and, as akpm points out, pageflag bits are scarce on 32-bit systems,
+so it remains to be seen if the WasActive patch can be upstreamed.
+Or maybe there is a different way to achieve the same goal.
+But I wanted to let you know that the streaming issue is understood
+and needs to be resolved for some cleancache backends just as it was
+resolved in the core mm code.
 
-Bjorn
+The measurement you suggest would still be interesting even
+without the WasActive patch as it measures a "worst case".
+
+Dan
