@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030446Ab2COOyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:54:14 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43951 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964859Ab2COOyI (ORCPT
+	id S965226Ab2COO5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:57:50 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:64383 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab2COO5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:54:08 -0400
-Date: Thu, 15 Mar 2012 14:54:03 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, matt.fleming@intel.com
-Subject: Re: [PATCH] EFI: Only set regions uncacheable if they support it
-Message-ID: <20120315145403.GA5321@srcf.ucam.org>
-References: <1331819798-1955-1-git-send-email-mjg@redhat.com>
- <4F61F5E6.8060509@zytor.com>
- <20120315140708.GA3395@srcf.ucam.org>
- <4F61FA14.6020203@zytor.com>
- <20120315142445.GA4357@srcf.ucam.org>
- <4F61FC8E.8070109@zytor.com>
- <20120315143308.GA4382@srcf.ucam.org>
- <4F61FE7E.9060600@zytor.com>
- <20120315144236.GB4650@srcf.ucam.org>
- <4F62011D.4000708@zytor.com>
+	Thu, 15 Mar 2012 10:57:47 -0400
+Date: Thu, 15 Mar 2012 07:57:43 -0700
+From: gregkh <gregkh@linuxfoundation.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        "Sharp, Sarah A" <sarah.a.sharp@intel.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+Message-ID: <20120315145743.GA7928@kroah.com>
+References: <1331787186.2979.71.camel@debian>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F62011D.4000708@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1331787186.2979.71.camel@debian>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 07:47:57AM -0700, H. Peter Anvin wrote:
+On Thu, Mar 15, 2012 at 12:53:06PM +0800, Alex Shi wrote:
+> 
+> According to Felipe and Alan's comments the second parameter of irq
+> handler should be 'void *' not a specific structure pointer. 
+> So change it.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  drivers/usb/host/xhci-ring.c |    2 +-
+>  drivers/usb/host/xhci.c      |    4 ++--
+>  drivers/usb/host/xhci.h      |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
 
-> WTF?!  That should be UC at all times... it isn't even WC-capable.
-> Furthermore, we may need this region (assuming there is actually a video
-> card there.)
+Is this needed in my -next tree now?  Or is it something for later?
 
-I don't think we'll ever use this region on UEFI. What I have from Intel 
-is:
+Any reason you did not put Sarah on the To: line here?  She's the one
+that needs to ack it before I can accept it.
 
-"It looks like this is happening when the kernel iterates over the 
-various regions in the EFI memory map. It hits a region starting at 
-0xA0000 and attempts to do a CLFLUSH instruction on that address. This 
-is explicitly forbidden by the SAD in (codename), thus the Machine 
-Check."
+thanks,
 
-> What do the fixed MTRRs look like?
-
-Unsure. I'll try to find out.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+greg k-h
