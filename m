@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031700Ab2COQ0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:26:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35592 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031664Ab2COQ0x (ORCPT
+	id S1031716Ab2COQ1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:27:34 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39133 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031664Ab2COQ1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:26:53 -0400
-Subject: Re: [PATCH 6/7] module: add two missing synchronize_sched()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Dennis1.Chen@amd.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-In-Reply-To: <1331822941-19938-6-git-send-email-xiyou.wangcong@gmail.com>
-References: <1331822941-19938-1-git-send-email-xiyou.wangcong@gmail.com>
-	 <1331822941-19938-6-git-send-email-xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Mar 2012 09:26:49 -0700
-Message-ID: <1331828809.4874.15.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 15 Mar 2012 12:27:32 -0400
+Message-ID: <4F62186E.4050806@suse.cz>
+Date: Thu, 15 Mar 2012 17:27:26 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+MIME-Version: 1.0
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: stable-3.0: s390 build breakage [was: Linux 3.0.24]
+References: <20120312203451.GA16773@kroah.com> <4F61C911.5010204@suse.cz>
+In-Reply-To: <4F61C911.5010204@suse.cz>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 22:49 +0800, Cong Wang wrote:
-> In RCU doc, it said synchronize_sched() is used to mark the end
-> of update, so two synchronize_sched() are missing after
-> module list add/del.
+On 03/15/2012 11:48 AM, Jiri Slaby wrote:
+> On 03/12/2012 09:34 PM, Greg KH wrote:
+>> I'm announcing the release of the 3.0.24 kernel.
+> ...
+>> Heiko Carstens (1): compat: fix compile breakage on s390
 > 
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-> ---
->  kernel/module.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 06e7dc5..2e7a5c5 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -1775,6 +1775,7 @@ static void free_module(struct module *mod)
->  	mutex_lock(&module_mutex);
->  	stop_machine(__unlink_module, mod, NULL);
->  	mutex_unlock(&module_mutex);
-> +	synchronize_sched();
->  	mod_sysfs_teardown(mod);
->  
->  	/* Remove dynamic debug info */
-> @@ -2928,6 +2929,7 @@ static struct module *load_module(void __user *umod,
->  	module_bug_finalize(info.hdr, info.sechdrs, mod);
->  	list_add_rcu(&mod->list, &modules);
->  	mutex_unlock(&module_mutex);
-> +	synchronize_sched();
->  
->  	/* Module is ready to execute: parsing args may do that. */
->  	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
+> It looks like we need the same fix as for 2.6.32.59:
+> arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
+> arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
+> (first use in this function)
+> arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
+> reported only once
+> arch/s390/kernel/setup.c:328: error: for each function it appears in.)
 
-Have a look at stop_machine() first
+And when that one is fixed, there is another error:
+drivers/s390/char/fs3270.c: In function 'fs3270_ioctl':
+drivers/s390/char/fs3270.c:335: error: implicit declaration of function
+'compat_ptr'
+drivers/s390/char/fs3270.c:335: warning: assignment makes pointer from
+integer without a cast
 
-after list_add_rcu(), there is absolutely no such requirement.
+> regards,
+-- 
+js
 
-
-
+-- 
+js
+suse labs
