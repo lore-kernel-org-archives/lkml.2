@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760348Ab2COIRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 04:17:43 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59025 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab2COIRj (ORCPT
+	id S1760246Ab2COITZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 04:19:25 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33370 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756256Ab2COITF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 04:17:39 -0400
-Date: Thu, 15 Mar 2012 19:17:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Mar 15
-Message-Id: <20120315191731.779ecc72e58f256d3817d117@canb.auug.org.au>
-In-Reply-To: <CAMuHMdUAOgU8k_icVfvqVFkDhAuH2CWV-DwuRr6K3f=4a-7Z5g@mail.gmail.com>
-References: <20120315185935.a0c475a30b2836765273a1e5@canb.auug.org.au>
-	<CAMuHMdUAOgU8k_icVfvqVFkDhAuH2CWV-DwuRr6K3f=4a-7Z5g@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve"
+	Thu, 15 Mar 2012 04:19:05 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>, Yongsul@vger.kernel.org, Oh@vger.kernel.org
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "yongsul96.oh@samsung.com" <yongsul96.oh@samsung.com>
+Subject: Re: [PATCH] USB: Gadget: Composite: Added error handling codes to
+ prevent a memory leak case when the configuration's bind function failed
+References: <1331774635-21217-1-git-send-email-yongsul96.oh@samsung.com>
+Date: Thu, 15 Mar 2012 09:19:01 +0100
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wa7ddzix3l0zgt@mpn-glaptop>
+In-Reply-To: <1331774635-21217-1-git-send-email-yongsul96.oh@samsung.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 15 Mar 2012 02:23:55 +0100, <Yongsul@vger.kernel.org> wrote:
+>  In some usb gadget driver, for example usb gadget serial driver(serial.c),
+> multifunction composite driver(multi,c), nokia composite gadget driver(nokia.c),
+> HID composite driver(hid.c), CDC composite driver(cdc2.c).., the configuration's
+> bind function by called the 'usb_add_config()' has multiple bind config functions
+> for each functionality, for example cdc2 configuration bind function -'cdc_do_config()'
+> has two functionality bind config functions -'ecm_bind_config()' & 'acm_bind_config()'
+> in CDC composite driver.
+>  In each functionality bind config function, new instance for each functionality is
+> allocated & initialized by 'kzalloc()' ,and finally the new instance is added by
+> 'usb_add_function()'. After 'usb_add_function' state, already created the instance
+> is only handled by its configuration & freed from functionality unbind function.
+>  So, If an error occurred during the second functionality bind config state, for example
+> an error occurred at 'acm_bind_config()' after succeeding 'ecm_bind_function()',
+> The created instance by 'acm_bind_config()' cannot be freed.
+> And it makes memory leak situation.
 
-Hi Geert,
+It may be my poor English skills, but this is very hard to read.
 
-On Thu, 15 Mar 2012 09:02:01 +0100 Geert Uytterhoeven <geert@linux-m68k.org=
-> wrote:
+Also, should this be handled in usb_gadget_probe_driver() instead?  Ie. on error
+recovery path, should usb_gadget_probe_driver() call usb_gadget_remove_driver()?
+
+In particular, if I'm not mistaken, for (some?) gadgets with two configurations
+(like g_multi), if the second configuration fails, the first one will not get
+removed, so the memory will still leak, no?
+
+> Signed-off-by: yongsul96.oh@samsung.com <yongsul96.oh@samsung.com>
+> ---
+>  drivers/usb/gadget/composite.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
 >
-> On Thu, Mar 15, 2012 at 08:59, Stephen Rothwell <sfr@canb.auug.org.au> wr=
-ote:
-> > News: the build system (see below) has had its toolchains for most
-> > architectures updated to gcc 4.6.3. =C2=A0People might like to check th=
-e build
->=20
-> What does the "see below" (also in yesterday's report) refer to? I don't =
-see any
-> more toolchain info there.
+> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+> index baaebf2..4cb1801 100644
+> --- a/drivers/usb/gadget/composite.c
+> +++ b/drivers/usb/gadget/composite.c
+> @@ -737,6 +737,19 @@ int usb_add_config(struct usb_composite_dev *cdev,
+> 	status = bind(config);
+>  	if (status < 0) {
+> +		while (!list_empty(&config->functions)) {
+> +			struct usb_function		*f;
+> +
+> +			f = list_first_entry(&config->functions,
+> +					struct usb_function, list);
+> +			list_del(&f->list);
+> +			if (f->unbind) {
+> +				DBG(cdev, "unbind function '%s'/%p\n",
+> +					f->name, f);
+> +				f->unbind(config, f);
+> +				/* may free memory for "f" */
+> +			}
+> +		}
+>  		list_del(&config->list);
+>  		config->cdev = NULL;
+>  	} else {
 
-It refers to the paragraph:
 
-"Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds."
-
-further down in the email (i.e. "the build system").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYaWbAAoJEECxmPOUX5FEpnQP/3dhxbKiB3xewKRZRdZrOkQ7
-44ibjW+GMr5r6zVFB++JbvxeuYk35/NpvjoUzha6+TgwJsReWS2+E95r+UhUOkfx
-XSyIY+RerYQnHlWMS/NHGwjbQ++ThDQHzTm87OurIPy/3X1vAlWJ+8yqKh4hvVIp
-U65EbGHNqK6oeRfy04klUb1c5olOwKvJz1LdxxrOqrYWGQrXiMtu1ejQPhB/Yal/
-tEzcLE9lxWAicBdyBsdDvomdxHjIGn+cG5q8TFF2S+5JCgBxyDkMS4uMbM55GjJc
-crbmoprmNOKmFMVCCV7CXEqoDquJvsZ8iR/w7AMv8iylj1NurXAjYU8U/SqIVhM8
-YlX0Pytdl6z55kRoE+OvblqBpIs2dAfBzVP6l/x5kxsqiRY81ln/wENdX61nzajA
-AueEQTyhp8XkSxHwyfoEtilIrJ82G0UK3ad5mH1lvddZmUrtJC9V8KLd1N37Gecb
-ZWrSDTwFnAegrhM0EwQdU2H3vsCcYWSh0oiTcclN+fLraHYJP59a+XfcqFEnn/1o
-IJ8eLRbU+Ste8GwTyxawGTSdZG73t6Qv0VoQ+RFv+skvkBMaS4Vc9FzFsf6Nf4PX
-CAdDd5NN+0gADt6xiy2KFS6bli4GvGaxrEGX9HCMajysRWFLjwWPr0RZULTB3NyG
-5qAW4oQ8f0dpkSl/xdsj
-=KgrY
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve--
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
