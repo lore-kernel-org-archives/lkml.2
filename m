@@ -1,67 +1,1011 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030619Ab2COO7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:59:35 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51320 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965388Ab2COO71 (ORCPT
+	id S1030642Ab2COPAC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:00:02 -0400
+Received: from HSI-KBW-109-192-167-159.hsi6.kabel-badenwuerttemberg.de ([109.192.167.159]:38403
+	"EHLO rack0slot8.osadl.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030379Ab2COO7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:59:27 -0400
-Message-ID: <4F6203C9.3010608@monstr.eu>
-Date: Thu, 15 Mar 2012 15:59:21 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: John Williams <john.williams@petalogix.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        John Linn <John.Linn@xilinx.com>
-Subject: microblaze: clone syscall: Potentially ABI breaking by passing parent/child_tidptr
- - old glibc 2.3.6.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Mar 2012 10:59:04 -0400
+Message-Id: <20120315145827.772186873@osadl.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 15 Mar 2012 15:56:24 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Keith Packard <keithp@keithp.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [V5 PATCH 1/4] drivers-gpu-drm-allow-to-load-edid-firmware.patch
+References: <20120315145623.486070468@osadl.org>
+Content-Disposition: inline; filename=drivers-gpu-drm-allow-to-load-edid-firmware.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Broken monitors and/or broken graphic boards may send erroneous or no
+EDID data. This also applies to broken KVM devices that are unable to
+correctly forward the EDID data of the connected monitor but invent
+their own fantasy data.
 
-We have updated our toolchain to the latest & greatest based on an eglibc with ntpl for microblaze.
-And I would like to check one thing with you to be sure that we don't break ABI compatibility.
+This patch allows to specify an EDID data set to be used instead of
+probing the monitor for it. It contains built-in data sets of frequently
+used screen resolutions. In addition, a particular EDID data set may be
+provided in the /lib/firmware directory and loaded via the firmware
+interface. The name is passed to the kernel as module parameter of the
+drm_kms_helper module either when loaded
+  options drm_kms_helper edid_firmware=edid/1280x1024.bin
+or as kernel commandline parameter
+  drm_kms_helper.edid_firmware=edid/1280x1024.bin  
 
-In current kernel code (without ntpl), kernel sys_clone wrapper(in entry.S) clears 2 arguments (or setup them to NULL)
-which is parent_tidptr and child_tidptr.
-Obviously we have to use these two parameters to get things to work on eglibc that's why I have to remove
-that clearing.
+The built-in data sets are
+Resolution    Name
+--------------------------------
+1024x768      edid/1024x768.bin
+1280x1024     edid/1280x1024.bin
+1680x1050     edid/1680x1050.bin
+1920x1080     edid/1920x1080.bin
 
-I have looked at the kernel code(fork.c and core.c files) and I haven't found any reason why
-passing parent_tidptr and child_tidptr from glibc and not to clearing them in the kernel should break
-old glibc toolchain and break ABI.
+They are ignored, if a file with the same name is available in the
+/lib/firmware directory.
 
-For old glibc if clone_flags is setup to (CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_CHILD_SETTID)
-to get parent/child_tidptr use in the kernel (but both are NULL).
- From code I have seen it always ends with unsuccessful attempt to return value back to user space
-because kernel ignores return values from put_user macros (It also means that put_user fails
-because pointer is NULL).
-For new case(with passing parent/child_tidptr) from old glibc, kernel will just do what it is expected
-to do which is setup/clear proper values to provided pointers.
+The built-in EDID data sets are based on standard timings that may not
+apply to a particular monitor and even crash it. Ideally, EDID data of
+the connected monitor should be used. They may be obtained through the 
+drm/cardX/cardX-<connector>/edid entry in the /sys/devices PCI directory
+of a correctly working graphics adapter.
 
-Also from man page if I compare both cases (with setup pointers to NULL and passing them from glibc)
-kernel will setup/clear thread ID to proper location prepared by glibc.
+It is also possible to specify the name of an EDID data set on-the-fly
+via the /sys/module interface, e.g.
+echo edid/myedid.bin >/sys/module/drm_kms_helper/parameters/edid_firmware
+The new screen mode is considered when the related kernel function is
+called for the first time after the change. Such calls are made when the
+X server is started or when the display settings dialog is opened in an
+already running X server.
 
-My point is if there is any option if we start to pass parent/child_tidptr for old glibc that it will
-break anything.
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 
-Can you correct my understanding?
+---
+ Documentation/EDID/1024x768.S       |   44 ++++++
+ Documentation/EDID/1280x1024.S      |   44 ++++++
+ Documentation/EDID/1680x1050.S      |   44 ++++++
+ Documentation/EDID/1920x1080.S      |   44 ++++++
+ Documentation/EDID/HOWTO.txt        |   39 +++++
+ Documentation/EDID/Makefile         |   26 +++
+ Documentation/EDID/edid.S           |  261 ++++++++++++++++++++++++++++++++++++
+ Documentation/EDID/hex              |    1 
+ Documentation/kernel-parameters.txt |   12 +
+ drivers/gpu/drm/Kconfig             |   12 +
+ drivers/gpu/drm/Makefile            |    3 
+ drivers/gpu/drm/drm_crtc_helper.c   |    8 -
+ drivers/gpu/drm/drm_edid.c          |    4 
+ drivers/gpu/drm/drm_edid_load.c     |  241 +++++++++++++++++++++++++++++++++
+ include/drm/drm_crtc.h              |    1 
+ include/drm/drm_edid.h              |    1 
+ 16 files changed, 782 insertions(+), 3 deletions(-)
 
-Thanks,
-Michal
+Index: linux-3.3-rc7/Documentation/EDID/1024x768.S
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/1024x768.S
+@@ -0,0 +1,44 @@
++/*
++   1024x768.S: EDID data set for standard 1024x768 60 Hz monitor
++
++   Copyright (C) 2011 Carsten Emde <C.Emde@osadl.org>
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
++*/
++
++/* EDID */
++#define VERSION 1
++#define REVISION 3
++
++/* Display */
++#define CLOCK 65000 /* kHz */
++#define XPIX 1024
++#define YPIX 768
++#define XY_RATIO XY_RATIO_4_3
++#define XBLANK 320
++#define YBLANK 38
++#define XOFFSET 8
++#define XPULSE 144
++#define YOFFSET (63+3)
++#define YPULSE (63+6)
++#define DPI 72
++#define VFREQ 60 /* Hz */
++#define TIMING_NAME "Linux XGA"
++#define ESTABLISHED_TIMINGS_BITS 0x08 /* Bit 3 -> 1024x768 @60 Hz */
++#define HSYNC_POL 0
++#define VSYNC_POL 0
++#define CRC 0x55
++
++#include "edid.S"
+Index: linux-3.3-rc7/Documentation/EDID/1280x1024.S
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/1280x1024.S
+@@ -0,0 +1,44 @@
++/*
++   1280x1024.S: EDID data set for standard 1280x1024 60 Hz monitor
++
++   Copyright (C) 2011 Carsten Emde <C.Emde@osadl.org>
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
++*/
++
++/* EDID */
++#define VERSION 1
++#define REVISION 3
++
++/* Display */
++#define CLOCK 108000 /* kHz */
++#define XPIX 1280
++#define YPIX 1024
++#define XY_RATIO XY_RATIO_5_4
++#define XBLANK 408
++#define YBLANK 42
++#define XOFFSET 48
++#define XPULSE 112
++#define YOFFSET (63+1)
++#define YPULSE (63+3)
++#define DPI 72
++#define VFREQ 60 /* Hz */
++#define TIMING_NAME "Linux SXGA"
++#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
++#define HSYNC_POL 1
++#define VSYNC_POL 1
++#define CRC 0xa0
++
++#include "edid.S"
+Index: linux-3.3-rc7/Documentation/EDID/1680x1050.S
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/1680x1050.S
+@@ -0,0 +1,44 @@
++/*
++   1680x1050.S: EDID data set for standard 1680x1050 60 Hz monitor
++
++   Copyright (C) 2012 Carsten Emde <C.Emde@osadl.org>
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
++*/
++
++/* EDID */
++#define VERSION 1
++#define REVISION 3
++
++/* Display */
++#define CLOCK 146250 /* kHz */
++#define XPIX 1680
++#define YPIX 1050
++#define XY_RATIO XY_RATIO_16_10
++#define XBLANK 560
++#define YBLANK 39
++#define XOFFSET 104
++#define XPULSE 176
++#define YOFFSET (63+3)
++#define YPULSE (63+6)
++#define DPI 96
++#define VFREQ 60 /* Hz */
++#define TIMING_NAME "Linux WSXGA"
++#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
++#define HSYNC_POL 1
++#define VSYNC_POL 1
++#define CRC 0x26
++
++#include "edid.S"
+Index: linux-3.3-rc7/Documentation/EDID/1920x1080.S
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/1920x1080.S
+@@ -0,0 +1,44 @@
++/*
++   1920x1080.S: EDID data set for standard 1920x1080 60 Hz monitor
++
++   Copyright (C) 2012 Carsten Emde <C.Emde@osadl.org>
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
++*/
++
++/* EDID */
++#define VERSION 1
++#define REVISION 3
++
++/* Display */
++#define CLOCK 148500 /* kHz */
++#define XPIX 1920
++#define YPIX 1080
++#define XY_RATIO XY_RATIO_16_9
++#define XBLANK 280
++#define YBLANK 45
++#define XOFFSET 88
++#define XPULSE 44
++#define YOFFSET (63+4)
++#define YPULSE (63+5)
++#define DPI 96
++#define VFREQ 60 /* Hz */
++#define TIMING_NAME "Linux FHD"
++#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
++#define HSYNC_POL 1
++#define VSYNC_POL 1
++#define CRC 0x05
++
++#include "edid.S"
+Index: linux-3.3-rc7/Documentation/EDID/HOWTO.txt
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/HOWTO.txt
+@@ -0,0 +1,39 @@
++In the good old days when graphics parameters were configured explicitly
++in a file called xorg.conf, even broken hardware could be managed.
++
++Today, with the advent of Kernel Mode Setting, a graphics board is
++either correctly working because all components follow the standards -
++or the computer is unusable, because the screen remains dark after
++booting or it displays the wrong area. Cases when this happens are:
++- The graphics board does not recognize the monitor.
++- The graphics board is unable to detect any EDID data.
++- The graphics board incorrectly forwards EDID data to the driver.
++- The monitor sends no or bogus EDID data.
++- A KVM sends its own EDID data instead of querying the connected monitor.
++Adding the kernel parameter "nomodeset" helps in most cases, but causes
++restrictions later on.
++
++As a remedy for such situations, the kernel configuration item
++CONFIG_DRM_LOAD_EDID_FIRMWARE was introduced. It allows to provide an
++individually prepared or corrected EDID data set in the /lib/firmware
++directory from where it is loaded via the firmware interface. The code
++(see drivers/gpu/drm/drm_edid_load.c) contains built-in data sets for
++commonly used screen resolutions (1024x768, 1280x1024, 1680x1050,
++1920x1080) as binary blobs, but the kernel source tree does not contain
++code to create these data. In order to elucidate the origin of the
++built-in binary EDID blobs and to facilitate the creation of individual
++data for a specific misbehaving monitor, commented sources and a
++Makefile environment are given here.
++
++To create binary EDID and C source code files from the existing data
++material, simply type "make".
++
++If you want to create your own EDID file, copy the file 1024x768.S and
++replace the settings with your own data. The CRC value in the last line
++  #define CRC 0x55
++is a bit tricky. After a first version of the binary data set is
++created, it must be be checked with the "edid-decode" utility which will
++most probably complain about a wrong CRC. Fortunately, the utility also
++displays the correct CRC which must then be inserted into the source
++file. After the make procedure is repeated, the EDID data set is ready
++to be used.
+Index: linux-3.3-rc7/Documentation/EDID/Makefile
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/Makefile
+@@ -0,0 +1,26 @@
++
++SOURCES	:= $(wildcard [0-9]*x[0-9]*.S)
++
++BIN	:= $(patsubst %.S, %.bin, $(SOURCES))
++
++IHEX	:= $(patsubst %.S, %.bin.ihex, $(SOURCES))
++
++CODE	:= $(patsubst %.S, %.c, $(SOURCES))
++
++all:	$(BIN) $(IHEX) $(CODE)
++
++clean:
++	@rm -f *.o *.bin.ihex *.bin *.c
++
++%.o:	%.S
++	@cc -c $^
++
++%.bin:	%.o
++	@objcopy -Obinary $^ $@
++
++%.bin.ihex:	%.o
++	@objcopy -Oihex $^ $@
++	@dos2unix $@ 2>/dev/null
++
++%.c:	%.bin
++	@echo "{" >$@; hexdump -f hex $^ >>$@; echo "};" >>$@
+Index: linux-3.3-rc7/Documentation/EDID/edid.S
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/edid.S
+@@ -0,0 +1,261 @@
++/*
++   edid.S: EDID data template
++
++   Copyright (C) 2012 Carsten Emde <C.Emde@osadl.org>
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
++*/
++
++
++/* Manufacturer */
++#define MFG_LNX1 'L'
++#define MFG_LNX2 'N'
++#define MFG_LNX3 'X'
++#define SERIAL 0
++#define YEAR 2012
++#define WEEK 5
++
++/* EDID 1.3 standard definitions */
++#define XY_RATIO_16_10	0b00
++#define XY_RATIO_4_3	0b01
++#define XY_RATIO_5_4	0b10
++#define XY_RATIO_16_9	0b11
++
++#define mfgname2id(v1,v2,v3) \
++	((((v1-'@')&0x1f)<<10)+(((v2-'@')&0x1f)<<5)+((v3-'@')&0x1f))
++#define swap16(v1) ((v1>>8)+((v1&0xff)<<8))
++#define msbs2(v1,v2) ((((v1>>8)&0x0f)<<4)+((v2>>8)&0x0f))
++#define msbs4(v1,v2,v3,v4) \
++	(((v1&0x03)>>2)+((v2&0x03)>>4)+((v3&0x03)>>6)+((v4&0x03)>>8))
++#define pixdpi2mm(pix,dpi) ((pix*25)/dpi)
++#define xsize pixdpi2mm(XPIX,DPI)
++#define ysize pixdpi2mm(YPIX,DPI)
++
++		.data
++
++/* Fixed header pattern */
++header:		.byte	0x00,0xff,0xff,0xff,0xff,0xff,0xff,0x00
++
++mfg_id:		.word	swap16(mfgname2id(MFG_LNX1, MFG_LNX2, MFG_LNX3))
++
++prod_code:	.word	0
++
++/* Serial number. 32 bits, little endian. */
++serial_number:	.long	SERIAL
++
++/* Week of manufacture */
++week:		.byte	WEEK
++
++/* Year of manufacture, less 1990. (1990-2245)
++   If week=255, it is the model year instead */
++year:		.byte	YEAR-1990
++
++version:	.byte	VERSION 	/* EDID version, usually 1 (for 1.3) */
++revision:	.byte	REVISION	/* EDID revision, usually 3 (for 1.3) */
++
++/* If Bit 7=1	Digital input. If set, the following bit definitions apply:
++     Bits 6-1	Reserved, must be 0
++     Bit 0	Signal is compatible with VESA DFP 1.x TMDS CRGB,
++		  1 pixel per clock, up to 8 bits per color, MSB aligned,
++   If Bit 7=0	Analog input. If clear, the following bit definitions apply:
++     Bits 6-5	Video white and sync levels, relative to blank
++		  00=+0.7/-0.3 V; 01=+0.714/-0.286 V;
++		  10=+1.0/-0.4 V; 11=+0.7/0 V
++   Bit 4	Blank-to-black setup (pedestal) expected
++   Bit 3	Separate sync supported
++   Bit 2	Composite sync (on HSync) supported
++   Bit 1	Sync on green supported
++   Bit 0	VSync pulse must be serrated when somposite or
++		  sync-on-green is used. */
++video_parms:	.byte	0x6d
++
++/* Maximum horizontal image size, in centimetres
++   (max 292 cm/115 in at 16:9 aspect ratio) */
++max_hor_size:	.byte	xsize/10
++
++/* Maximum vertical image size, in centimetres.
++   If either byte is 0, undefined (e.g. projector) */
++max_vert_size:	.byte	ysize/10
++
++/* Display gamma, minus 1, times 100 (range 1.00-3.5 */
++gamma:		.byte	120
++
++/* Bit 7	DPMS standby supported
++   Bit 6	DPMS suspend supported
++   Bit 5	DPMS active-off supported
++   Bits 4-3	Display type: 00=monochrome; 01=RGB colour;
++		  10=non-RGB multicolour; 11=undefined
++   Bit 2	Standard sRGB colour space. Bytes 25-34 must contain
++		  sRGB standard values.
++   Bit 1	Preferred timing mode specified in descriptor block 1.
++   Bit 0	GTF supported with default parameter values. */
++dsp_features:	.byte	0xea
++
++/* Chromaticity coordinates. */
++/* Red and green least-significant bits
++   Bits 7-6	Red x value least-significant 2 bits
++   Bits 5-4	Red y value least-significant 2 bits
++   Bits 3-2	Green x value lst-significant 2 bits
++   Bits 1-0	Green y value least-significant 2 bits */
++red_green_lsb:	.byte	0x5e
++
++/* Blue and white least-significant 2 bits */
++blue_white_lsb:	.byte	0xc0
++
++/* Red x value most significant 8 bits.
++   0-255 encodes 0-0.996 (255/256); 0-0.999 (1023/1024) with lsbits */
++red_x_msb:	.byte	0xa4
++
++/* Red y value most significant 8 bits */
++red_y_msb:	.byte	0x59
++
++/* Green x and y value most significant 8 bits */
++green_x_y_msb:	.byte	0x4a,0x98
++
++/* Blue x and y value most significant 8 bits */
++blue_x_y_msb:	.byte	0x25,0x20
++
++/* Default white point x and y value most significant 8 bits */
++white_x_y_msb:	.byte	0x50,0x54
++
++/* Established timings */
++/* Bit 7	720x400 @ 70 Hz
++   Bit 6	720x400 @ 88 Hz
++   Bit 5	640x480 @ 60 Hz
++   Bit 4	640x480 @ 67 Hz
++   Bit 3	640x480 @ 72 Hz
++   Bit 2	640x480 @ 75 Hz
++   Bit 1	800x600 @ 56 Hz
++   Bit 0	800x600 @ 60 Hz */
++estbl_timing1:	.byte	0x00
++
++/* Bit 7	800x600 @ 72 Hz
++   Bit 6	800x600 @ 75 Hz
++   Bit 5	832x624 @ 75 Hz
++   Bit 4	1024x768 @ 87 Hz, interlaced (1024x768)
++   Bit 3	1024x768 @ 60 Hz
++   Bit 2	1024x768 @ 72 Hz
++   Bit 1	1024x768 @ 75 Hz
++   Bit 0	1280x1024 @ 75 Hz */
++estbl_timing2:	.byte	ESTABLISHED_TIMINGS_BITS
++
++/* Bit 7	1152x870 @ 75 Hz (Apple Macintosh II)
++   Bits 6-0 	Other manufacturer-specific display mod */
++estbl_timing3:	.byte	0x00
++
++/* Standard timing */
++/* X resolution, less 31, divided by 8 (256-2288 pixels) */
++std_xres:	.byte	(XPIX/8)-31
++/* Y resolution, X:Y pixel ratio
++   Bits 7-6	X:Y pixel ratio: 00=16:10; 01=4:3; 10=5:4; 11=16:9.
++   Bits 5-0	Vertical frequency, less 60 (60-123 Hz) */
++std_vres:	.byte	(XY_RATIO<<6)+VFREQ-60
++		.fill	7,2,0x0101	/* Unused */
++
++descriptor1:
++/* Pixel clock in 10 kHz units. (0.-655.35 MHz, little-endian) */
++clock:		.word	CLOCK/10
++
++/* Horizontal active pixels 8 lsbits (0-4095) */
++x_act_lsb:	.byte	XPIX&0xff
++/* Horizontal blanking pixels 8 lsbits (0-4095)
++   End of active to start of next active. */
++x_blk_lsb:	.byte	XBLANK&0xff
++/* Bits 7-4 	Horizontal active pixels 4 msbits
++   Bits 3-0	Horizontal blanking pixels 4 msbits */
++x_msbs:		.byte	msbs2(XPIX,XBLANK)
++
++/* Vertical active lines 8 lsbits (0-4095) */
++y_act_lsb:	.byte	YPIX&0xff
++/* Vertical blanking lines 8 lsbits (0-4095) */
++y_blk_lsb:	.byte	YBLANK&0xff
++/* Bits 7-4 	Vertical active lines 4 msbits
++   Bits 3-0 	Vertical blanking lines 4 msbits */
++y_msbs:		.byte	msbs2(YPIX,YBLANK)
++
++/* Horizontal sync offset pixels 8 lsbits (0-1023) From blanking start */
++x_snc_off_lsb:	.byte	XOFFSET&0xff
++/* Horizontal sync pulse width pixels 8 lsbits (0-1023) */
++x_snc_pls_lsb:	.byte	XPULSE&0xff
++/* Bits 7-4 	Vertical sync offset lines 4 lsbits -63)
++   Bits 3-0 	Vertical sync pulse width lines 4 lsbits -63) */
++y_snc_lsb:	.byte	((YOFFSET-63)<<4)+(YPULSE-63)
++/* Bits 7-6 	Horizontal sync offset pixels 2 msbits
++   Bits 5-4 	Horizontal sync pulse width pixels 2 msbits
++   Bits 3-2 	Vertical sync offset lines 2 msbits
++   Bits 1-0 	Vertical sync pulse width lines 2 msbits */
++xy_snc_msbs:	.byte	msbs4(XOFFSET,XPULSE,YOFFSET,YPULSE)
++
++/* Horizontal display size, mm, 8 lsbits (0-4095 mm, 161 in) */
++x_dsp_size:	.byte	xsize&0xff
++
++/* Vertical display size, mm, 8 lsbits (0-4095 mm, 161 in) */
++y_dsp_size:	.byte	ysize&0xff
++
++/* Bits 7-4 	Horizontal display size, mm, 4 msbits
++   Bits 3-0 	Vertical display size, mm, 4 msbits */
++dsp_size_mbsb:	.byte	msbs2(xsize,ysize)
++
++/* Horizontal border pixels (each side; total is twice this) */
++x_border:	.byte	0
++/* Vertical border lines (each side; total is twice this) */
++y_border:	.byte	0
++
++/* Bit 7 	Interlaced
++   Bits 6-5 	Stereo mode: 00=No stereo; other values depend on bit 0:
++   Bit 0=0: 01=Field sequential, sync=1 during right; 10=similar,
++     sync=1 during left; 11=4-way interleaved stereo
++   Bit 0=1 2-way interleaved stereo: 01=Right image on even lines;
++     10=Left image on even lines; 11=side-by-side
++   Bits 4-3 	Sync type: 00=Analog composite; 01=Bipolar analog composite;
++     10=Digital composite (on HSync); 11=Digital separate
++   Bit 2 	If digital separate: Vertical sync polarity (1=positive)
++   Other types: VSync serrated (HSync during VSync)
++   Bit 1 	If analog sync: Sync on all 3 RGB lines (else green only)
++   Digital: HSync polarity (1=positive)
++   Bit 0 	2-way line-interleaved stereo, if bits 4-3 are not 00. */
++features:	.byte	0x18+(VSYNC_POL<<2)+(HSYNC_POL<<1)
++
++descriptor2:	.byte	0,0	/* Not a detailed timing descriptor */
++		.byte	0	/* Must be zero */
++		.byte	0xff	/* Descriptor is monitor serial number (text) */
++		.byte	0	/* Must be zero */
++start1:		.ascii	"Linux #0"
++end1:		.byte	0x0a	/* End marker */
++		.fill	12-(end1-start1), 1, 0x20 /* Padded spaces */
++descriptor3:	.byte	0,0	/* Not a detailed timing descriptor */
++		.byte	0	/* Must be zero */
++		.byte	0xfd	/* Descriptor is monitor range limits */
++		.byte	0	/* Must be zero */
++start2:		.byte	VFREQ-1	/* Minimum vertical field rate (1-255 Hz) */
++		.byte	VFREQ+1	/* Maximum vertical field rate (1-255 Hz) */
++		.byte	(CLOCK/(XPIX+XBLANK))-1 /* Minimum horizontal line rate
++						    (1-255 kHz) */
++		.byte	(CLOCK/(XPIX+XBLANK))+1 /* Maximum horizontal line rate
++						    (1-255 kHz) */
++		.byte	(CLOCK/10000)+1	/* Maximum pixel clock rate, rounded up
++					   to 10 MHz multiple (10-2550 MHz) */
++		.byte	0	/* No extended timing information type */
++end2:		.byte	0x0a	/* End marker */
++		.fill	12-(end2-start2), 1, 0x20 /* Padded spaces */
++descriptor4:	.byte	0,0	/* Not a detailed timing descriptor */
++		.byte	0	/* Must be zero */
++		.byte	0xfc	/* Descriptor is text */
++		.byte	0	/* Must be zero */
++start3:		.ascii	TIMING_NAME
++end3:		.byte	0x0a	/* End marker */
++		.fill	12-(end3-start3), 1, 0x20 /* Padded spaces */
++extensions:	.byte	0	/* Number of extensions to follow */
++checksum:	.byte	CRC	/* Sum of all bytes must be 0 */
+Index: linux-3.3-rc7/Documentation/EDID/hex
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/Documentation/EDID/hex
+@@ -0,0 +1 @@
++"\t" 8/1 "0x%02x, " "\n"
+Index: linux-3.3-rc7/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-3.3-rc7.orig/Documentation/kernel-parameters.txt
++++ linux-3.3-rc7/Documentation/kernel-parameters.txt
+@@ -713,6 +713,18 @@ bytes respectively. Such letter suffixes
+ 			The filter can be disabled or changed to another
+ 			driver later using sysfs.
+ 
++	drm_kms_helper.edid_firmware=<file>
++			Broken monitors, graphic adapters and KVMs may
++			send no or broken EDID data sets. This parameter
++			allows to specify an EDID data set in the
++			/lib/firmware directory that is used instead.
++			Generic built-in EDID data sets are used, if one of
++			edid/1024x768.bin, edid/1280x1024.bin,
++			edid/1680x1050.bin, or edid/1920x1080.bin is given
++			and no file with the same name exists. Details and
++			instructions how to build your own EDID data are
++			given in Documentation/EDID/HOWTO.txt.
++
+ 	dscc4.setup=	[NET]
+ 
+ 	earlycon=	[KNL] Output early console device and options.
+Index: linux-3.3-rc7/drivers/gpu/drm/Kconfig
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/Kconfig
++++ linux-3.3-rc7/drivers/gpu/drm/Kconfig
+@@ -27,6 +27,18 @@ config DRM_KMS_HELPER
+ 	help
+ 	  FB and CRTC helpers for KMS drivers.
+ 
++config DRM_LOAD_EDID_FIRMWARE
++	bool "Allow to specify an EDID data set instead of probing for it"
++	depends on DRM_KMS_HELPER
++	help
++	  Say Y here, if you want to use EDID data to be loaded from the
++	  /lib/firmware directory or one of the provided built-in
++	  data sets. This may be necessary, if the graphics adapter or
++	  monitor are unable to provide appropriate EDID data. Since this
++	  feature is provided as a workaround for broken hardware, the
++	  default case is N. Details and instructions how to build your own
++	  EDID data are given in Documentation/EDID/HOWTO.txt.
++
+ config DRM_TTM
+ 	tristate
+ 	depends on DRM
+Index: linux-3.3-rc7/drivers/gpu/drm/Makefile
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/Makefile
++++ linux-3.3-rc7/drivers/gpu/drm/Makefile
+@@ -17,6 +17,9 @@ drm-y       :=	drm_auth.o drm_buffer.o d
+ drm-$(CONFIG_COMPAT) += drm_ioc32.o
+ 
+ drm_kms_helper-y := drm_fb_helper.o drm_crtc_helper.o drm_dp_i2c_helper.o
++ifdef CONFIG_DRM_LOAD_EDID_FIRMWARE
++drm_kms_helper-y += drm_edid_load.o
++endif
+ 
+ obj-$(CONFIG_DRM_KMS_HELPER) += drm_kms_helper.o
+ 
+Index: linux-3.3-rc7/drivers/gpu/drm/drm_crtc_helper.c
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/drm_crtc_helper.c
++++ linux-3.3-rc7/drivers/gpu/drm/drm_crtc_helper.c
+@@ -37,6 +37,7 @@
+ #include "drm_fourcc.h"
+ #include "drm_crtc_helper.h"
+ #include "drm_fb_helper.h"
++#include "drm_edid.h"
+ 
+ static bool drm_kms_helper_poll = true;
+ module_param_named(poll, drm_kms_helper_poll, bool, 0600);
+@@ -118,7 +119,12 @@ int drm_helper_probe_single_connector_mo
+ 		goto prune;
+ 	}
+ 
+-	count = (*connector_funcs->get_modes)(connector);
++#ifdef CONFIG_DRM_LOAD_EDID_FIRMWARE
++	count = load_edid_firmware(connector);
++	if (count == 0)
++#endif
++		count = (*connector_funcs->get_modes)(connector);
++
+ 	if (count == 0 && connector->status == connector_status_connected)
+ 		count = drm_add_modes_noedid(connector, 1024, 768);
+ 	if (count == 0)
+Index: linux-3.3-rc7/drivers/gpu/drm/drm_edid.c
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/drm_edid.c
++++ linux-3.3-rc7/drivers/gpu/drm/drm_edid.c
+@@ -149,8 +149,7 @@ EXPORT_SYMBOL(drm_edid_header_is_valid);
+  * Sanity check the EDID block (base or extension).  Return 0 if the block
+  * doesn't check out, or 1 if it's valid.
+  */
+-static bool
+-drm_edid_block_valid(u8 *raw_edid)
++bool drm_edid_block_valid(u8 *raw_edid)
+ {
+ 	int i;
+ 	u8 csum = 0;
+@@ -203,6 +202,7 @@ bad:
+ 	}
+ 	return 0;
+ }
++EXPORT_SYMBOL(drm_edid_block_valid);
+ 
+ /**
+  * drm_edid_is_valid - sanity check EDID data
+Index: linux-3.3-rc7/drivers/gpu/drm/drm_edid_load.c
+===================================================================
+--- /dev/null
++++ linux-3.3-rc7/drivers/gpu/drm/drm_edid_load.c
+@@ -0,0 +1,241 @@
++/*
++   drm_edid_load.c: use a built-in EDID data set or load it via the firmware
++		    interface
++
++   Copyright (C) 2012 Carsten Emde <C.Emde@osadl.org>
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
++*/
++
++#include <linux/module.h>
++#include <linux/firmware.h>
++#include "drmP.h"
++#include "drm_crtc.h"
++#include "drm_crtc_helper.h"
++#include "drm_edid.h"
++
++static char edid_firmware[PATH_MAX];
++module_param_string(edid_firmware, edid_firmware, sizeof(edid_firmware), 0644);
++MODULE_PARM_DESC(edid_firmware, "Do not probe monitor, use specified EDID blob "
++	"from built-in data or /lib/firmware instead. ");
++
++#define GENERIC_EDIDS 4
++static char *generic_edid_name[GENERIC_EDIDS] = {
++	"edid/1024x768.bin",
++	"edid/1280x1024.bin",
++	"edid/1680x1050.bin",
++	"edid/1920x1080.bin",
++};
++
++static u8 generic_edid[GENERIC_EDIDS][128] = {
++	{
++	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
++	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++	0x05, 0x16, 0x01, 0x03, 0x6d, 0x23, 0x1a, 0x78,
++	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
++	0x20, 0x50, 0x54, 0x00, 0x08, 0x00, 0x61, 0x40,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x64, 0x19,
++	0x00, 0x40, 0x41, 0x00, 0x26, 0x30, 0x08, 0x90,
++	0x36, 0x00, 0x63, 0x0a, 0x11, 0x00, 0x00, 0x18,
++	0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
++	0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
++	0x3d, 0x2f, 0x31, 0x07, 0x00, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
++	0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x58,
++	0x47, 0x41, 0x0a, 0x20, 0x20, 0x20, 0x00, 0x55,
++	},
++	{
++	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
++	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++	0x05, 0x16, 0x01, 0x03, 0x6d, 0x2c, 0x23, 0x78,
++	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
++	0x20, 0x50, 0x54, 0x00, 0x00, 0x00, 0x81, 0x80,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x30, 0x2a,
++	0x00, 0x98, 0x51, 0x00, 0x2a, 0x40, 0x30, 0x70,
++	0x13, 0x00, 0xbc, 0x63, 0x11, 0x00, 0x00, 0x1e,
++	0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
++	0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
++	0x3d, 0x3e, 0x40, 0x0b, 0x00, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
++	0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x53,
++	0x58, 0x47, 0x41, 0x0a, 0x20, 0x20, 0x00, 0xa0,
++	},
++	{
++	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
++	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++	0x05, 0x16, 0x01, 0x03, 0x6d, 0x2b, 0x1b, 0x78,
++	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
++	0x20, 0x50, 0x54, 0x00, 0x00, 0x00, 0xb3, 0x00,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x21, 0x39,
++	0x90, 0x30, 0x62, 0x1a, 0x27, 0x40, 0x68, 0xb0,
++	0x36, 0x00, 0xb5, 0x11, 0x11, 0x00, 0x00, 0x1e,
++	0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
++	0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
++	0x3d, 0x40, 0x42, 0x0f, 0x00, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
++	0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x57,
++	0x53, 0x58, 0x47, 0x41, 0x0a, 0x20, 0x00, 0x26,
++	},
++	{
++	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
++	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++	0x05, 0x16, 0x01, 0x03, 0x6d, 0x32, 0x1c, 0x78,
++	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
++	0x20, 0x50, 0x54, 0x00, 0x00, 0x00, 0xd1, 0xc0,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
++	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x3a,
++	0x80, 0x18, 0x71, 0x38, 0x2d, 0x40, 0x58, 0x2c,
++	0x45, 0x00, 0xf4, 0x19, 0x11, 0x00, 0x00, 0x1e,
++	0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
++	0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
++	0x3d, 0x42, 0x44, 0x0f, 0x00, 0x0a, 0x20, 0x20,
++	0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
++	0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x46,
++	0x48, 0x44, 0x0a, 0x20, 0x20, 0x20, 0x00, 0x05,
++	},
++};
++
++static int edid_load(struct drm_connector *connector, char *name,
++		     char *connector_name)
++{
++	const struct firmware *fw;
++	struct platform_device *pdev;
++	u8 *fwdata = NULL, *edid;
++	int fwsize, expected;
++	int builtin = 0, err = 0;
++	int i, valid_extensions = 0;
++
++	pdev = platform_device_register_simple(connector_name, -1, NULL, 0);
++	if (IS_ERR(pdev)) {
++		DRM_ERROR("Failed to register EDID firmware platform device "
++		    "for connector \"%s\"\n", connector_name);
++		err = -EINVAL;
++		goto out;
++	}
++
++	err = request_firmware(&fw, name, &pdev->dev);
++	platform_device_unregister(pdev);
++
++	if (err) {
++		i = 0;
++		while (i < GENERIC_EDIDS && strcmp(name, generic_edid_name[i]))
++			i++;
++		if (i < GENERIC_EDIDS) {
++			err = 0;
++			builtin = 1;
++			fwdata = generic_edid[i];
++			fwsize = sizeof(generic_edid[i]);
++		}
++	}
++
++	if (err) {
++		DRM_ERROR("Requesting EDID firmware \"%s\" failed (err=%d)\n",
++		    name, err);
++		goto out;
++	}
++
++	if (fwdata == NULL) {
++		fwdata = (u8 *) fw->data;
++		fwsize = fw->size;
++	}
++
++	expected = (fwdata[0x7e] + 1) * EDID_LENGTH;
++	if (expected != fwsize) {
++		DRM_ERROR("Size of EDID firmware \"%s\" is invalid "
++		    "(expected %d, got %d)\n", name, expected, (int) fwsize);
++		err = -EINVAL;
++		goto relfw_out;
++	}
++
++	edid = kmalloc(fwsize, GFP_KERNEL);
++	if (edid == NULL) {
++		err = -ENOMEM;
++		goto relfw_out;
++	}
++	memcpy(edid, fwdata, fwsize);
++
++	if (!drm_edid_block_valid(edid)) {
++		DRM_ERROR("Base block of EDID firmware \"%s\" is invalid ",
++		    name);
++		kfree(edid);
++		err = -EINVAL;
++		goto relfw_out;
++	}
++
++	for (i = 1; i <= edid[0x7e]; i++) {
++		if (i != valid_extensions + 1)
++			memcpy(edid + (valid_extensions + 1) * EDID_LENGTH,
++			    edid + i * EDID_LENGTH, EDID_LENGTH);
++		if (drm_edid_block_valid(edid + i * EDID_LENGTH))
++			valid_extensions++;
++	}
++
++	if (valid_extensions != edid[0x7e]) {
++		edid[EDID_LENGTH-1] += edid[0x7e] - valid_extensions;
++		DRM_INFO("Found %d valid extensions instead of %d in EDID data "
++		    "\"%s\" for connector \"%s\"\n", valid_extensions,
++		    edid[0x7e], name, connector_name);
++		edid[0x7e] = valid_extensions;
++		edid = krealloc(edid, (valid_extensions + 1) * EDID_LENGTH,
++		    GFP_KERNEL);
++		if (edid == NULL) {
++			err = -ENOMEM;
++			goto relfw_out;
++		}
++	}
++
++	connector->display_info.raw_edid = edid;
++	DRM_INFO("Got %s EDID base block and %d extension%s from "
++	    "\"%s\" for connector \"%s\"\n", builtin ? "built-in" :
++	    "external", valid_extensions, valid_extensions == 1 ? "" : "s",
++	    name, connector_name);
++
++relfw_out:
++	release_firmware(fw);
++
++out:
++	return err;
++}
++
++int load_edid_firmware(struct drm_connector *connector)
++{
++	char *connector_name = drm_get_connector_name(connector);
++	char *last;
++	int ret = 0;
++
++	if (edid_firmware[0] == '\0')
++		return ret;
++
++	last = edid_firmware + strlen(edid_firmware) - 1;
++	if (*last == '\n')
++		*last = '\0';
++
++	ret = edid_load(connector, edid_firmware, connector_name);
++	if (ret)
++		return 0;
++
++	drm_mode_connector_update_edid_property(connector,
++	    (struct edid *) connector->display_info.raw_edid);
++
++	return drm_add_edid_modes(connector, (struct edid *)
++	    connector->display_info.raw_edid);
++}
+Index: linux-3.3-rc7/include/drm/drm_crtc.h
+===================================================================
+--- linux-3.3-rc7.orig/include/drm/drm_crtc.h
++++ linux-3.3-rc7/include/drm/drm_crtc.h
+@@ -995,6 +995,7 @@ extern int drm_add_modes_noedid(struct d
+ 				int hdisplay, int vdisplay);
+ 
+ extern int drm_edid_header_is_valid(const u8 *raw_edid);
++extern bool drm_edid_block_valid(u8 *raw_edid);
+ extern bool drm_edid_is_valid(struct edid *edid);
+ struct drm_display_mode *drm_mode_find_dmt(struct drm_device *dev,
+ 					   int hsize, int vsize, int fresh);
+Index: linux-3.3-rc7/include/drm/drm_edid.h
+===================================================================
+--- linux-3.3-rc7.orig/include/drm/drm_edid.h
++++ linux-3.3-rc7/include/drm/drm_edid.h
+@@ -238,5 +238,6 @@ int drm_av_sync_delay(struct drm_connect
+ 		      struct drm_display_mode *mode);
+ struct drm_connector *drm_select_eld(struct drm_encoder *encoder,
+ 				     struct drm_display_mode *mode);
++int load_edid_firmware(struct drm_connector *connector);
+ 
+ #endif /* __DRM_EDID_H__ */
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
