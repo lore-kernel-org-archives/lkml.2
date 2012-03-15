@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161192Ab2COR7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:59:35 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:49515 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1031066Ab2COR7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:59:34 -0400
-Date: Thu, 15 Mar 2012 12:59:33 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have
- been online
-Message-ID: <20120315175933.GB8705@sgi.com>
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
- <1331717099.5752.15.camel@marge.simpson.net>
- <1331728841.7465.7.camel@marge.simpson.net>
- <20120314130801.GA11722@sgi.com>
- <20120314151717.GA2435@linux.vnet.ibm.com>
- <20120314165657.GA19117@linux.vnet.ibm.com>
- <1331779343.14263.6.camel@marge.simpson.net>
- <1331780831.14263.15.camel@marge.simpson.net>
+	id S1758740Ab2COSBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:01:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57453 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900Ab2COSBN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 14:01:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331780831.14263.15.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAErSpo4KhQJOpKk8OOtcSxWc3wwkhLix8ECZhGtTnQ2WgQH7iw@mail.gmail.com>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
+	<1331362837-10740-25-git-send-email-yinghai@kernel.org>
+	<CAErSpo6g3pei2+oW0wLEpytBTh6wGTyzo28oVVzFECxZdta+FA@mail.gmail.com>
+	<CAE9FiQWfYxD2OAmXF5UdQMkPt33xeoSu489N6KtU3k5VE3jUXw@mail.gmail.com>
+	<CAErSpo4KhQJOpKk8OOtcSxWc3wwkhLix8ECZhGtTnQ2WgQH7iw@mail.gmail.com>
+Date: Thu, 15 Mar 2012 11:01:12 -0700
+X-Google-Sender-Auth: jqfm3MrXmYTK4-3963uUx57vCsw
+Message-ID: <CAE9FiQV8XsLZfZLLWsdkQ+EVvPV7Z70Xaz_utOcaDBU8hm4gpg@mail.gmail.com>
+Subject: Re: [PATCH v2 24/37] PCI, ACPI: Add pci_root_hp hot removal
+ notification support.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:07:11AM +0100, Mike Galbraith wrote:
-> On Thu, 2012-03-15 at 03:42 +0100, Mike Galbraith wrote: 
-> > On Wed, 2012-03-14 at 09:56 -0700, Paul E. McKenney wrote:
-> > 
-> > > Does the following work better?  It does pass my fake-big-system tests
-> > > (more testing in the works).
-> > 
-> > Yup, tip booted fine.  Thanks!  I'll test, see if it gets upset.
-> 
-> Wedged into 3.0 enterprise booted fine too, is now running rcutorture.
-> I'll add hotplug after it runs explosion free for a while.  Any
-> suggestions for giving both virgin and 3.0 a thorough trouncing?
+On Thu, Mar 15, 2012 at 10:53 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Sure, the 'echo "\_SB.PCIB 3" > /proc/acpi/sci/notify' way looks more
+> like physical hotadd/remove because it is basically injecting the
+> notify event that the hardware/BIOS should be generating itself.  But
+> it is platform-specific and therefore unacceptable as a general user
+> interface.
+>
+> Using /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove would be a
+> more generic way.  The PNP0A08:00/remove implementation would
+> basically turn into an acpi_pci_root_remove() call, just like the
+> 'echo "\_SB.PCIB 3" > /proc/acpi/sci/notify' does.
 
-Mike,
+if the users can not find _SB.PCIB etc, they may not find
+LNXSYSTM:00/device:00/PNP0A08:00.
 
-Could I try your 3.0 enterprise patch?
+so /sys/class/pci_bus/0000:80/remove is more easy for them?
+
+Yinghai
