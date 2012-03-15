@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031969Ab2CORBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:01:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15982 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161096Ab2CORB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:01:29 -0400
-Date: Thu, 15 Mar 2012 13:01:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH block/for-3.4/core] cfq: fix cfqg ref handling when
- BLK_CGROUP && !CFQ_GROUP_IOSCHED
-Message-ID: <20120315170100.GF3253@redhat.com>
-References: <20120315094945.GA3205@localhost>
- <20120315163546.GA32137@google.com>
- <20120315164621.GD3253@redhat.com>
- <20120315165057.GB32137@google.com>
+	id S1161149Ab2CORDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:03:52 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54008 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161086Ab2CORDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 13:03:48 -0400
+Date: Thu, 15 Mar 2012 10:02:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
+ online
+Message-ID: <20120315170236.GF2381@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120314002414.GA21561@linux.vnet.ibm.com>
+ <1331717099.5752.15.camel@marge.simpson.net>
+ <1331728841.7465.7.camel@marge.simpson.net>
+ <20120314130801.GA11722@sgi.com>
+ <20120314151717.GA2435@linux.vnet.ibm.com>
+ <20120314165657.GA19117@linux.vnet.ibm.com>
+ <1331779343.14263.6.camel@marge.simpson.net>
+ <1331780831.14263.15.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120315165057.GB32137@google.com>
+In-Reply-To: <1331780831.14263.15.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031517-5518-0000-0000-000002FA02E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 09:50:57AM -0700, Tejun Heo wrote:
-
-> > [..]
-> > > @@ -3533,7 +3551,7 @@ static int cfq_init_queue(struct request
-> > >  
-> > >  	spin_lock_irq(q->queue_lock);
-> > >  	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, cfqd->root_group);
-> > > -	blkg_put(cfqg_to_blkg(cfqd->root_group));
-> > > +	cfqg_put(cfqd->root_group);
+On Thu, Mar 15, 2012 at 04:07:11AM +0100, Mike Galbraith wrote:
+> On Thu, 2012-03-15 at 03:42 +0100, Mike Galbraith wrote: 
+> > On Wed, 2012-03-14 at 09:56 -0700, Paul E. McKenney wrote:
 > > 
-> > This seems to be a spurious cfqg_put()? Which reference we are putting
-> > down here?
+> > > Does the following work better?  It does pass my fake-big-system tests
+> > > (more testing in the works).
+> > 
+> > Yup, tip booted fine.  Thanks!  I'll test, see if it gets upset.
 > 
-> The extra ref from cfq_link_cfqq_cfqg() for oom_cfqq; otherwise, we
-> need an extra cfq_put() in cfq_exit_queue().  I thought I wrote
-> comment about that somewhere.  Hmmm.... apparently not.  The thing is
-> that oom_cfqq doesn't go through proper cfqq destruction and thus
-> never puts the extra ref to root cfqg.
+> Wedged into 3.0 enterprise booted fine too, is now running rcutorture.
+> I'll add hotplug after it runs explosion free for a while.  Any
+> suggestions for giving both virgin and 3.0 a thorough trouncing?
 
-Ok. Is cfq_exit_queue() a better place to put down this reference
-explicitly with a comment. Even if you keep it here, atleast a comment
-is required. It is not obvious at all (atleast to me).
+It would be good to check the latency of RCU's grace-period
+initialization, and comparing the results with and without this patch.
+Dimitri might have scripting for that.
 
-Thanks
-Vivek
+							Thanx, Paul
+
