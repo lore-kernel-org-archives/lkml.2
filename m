@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760916Ab2COJHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 05:07:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50163 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759588Ab2COJHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 05:07:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v9] mfd: Add anatop mfd driver
-Date: Thu, 15 Mar 2012 09:07:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        linaro-dev@lists.linaro.org, Samuel Ortiz <sameo@linux.intel.com>,
-        patches@linaro.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-References: <1331797421-23731-1-git-send-email-paul.liu@linaro.org>
-In-Reply-To: <1331797421-23731-1-git-send-email-paul.liu@linaro.org>
+	id S932161Ab2COJI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 05:08:28 -0400
+Received: from dwdmx5.dwd.de ([141.38.3.242]:40946 "EHLO dwdmx5.dwd.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760930Ab2COJIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 05:08:13 -0400
+Date: Thu, 15 Mar 2012 09:08:07 +0000 (GMT)
+From: Holger Kiehl <Holger.Kiehl@dwd.de>
+X-X-Sender: kiehl@diagnostix.dwd.de
+To: Shaohua Li <shli@kernel.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>, "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
+In-Reply-To: <CANejiEX=-y6Kgtmfg1efqn_Ufdnn=Ls-4Nne3RYAWdt07+4o2A@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1203150857190.4562@diagnostix.dwd.de>
+References: <20120312030412.375458948@fusionio.com> <alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de> <4F5EFEB6.4060402@kernel.org> <alpine.LRH.2.02.1203131213480.15848@diagnostix.dwd.de> <CANejiEWYCxY_hLwgyN08_cXC64c82irkNPytTjOpYyER7pTGow@mail.gmail.com>
+ <alpine.LRH.2.02.1203131521190.29286@diagnostix.dwd.de> <CANejiEW=a1piMYvSYM5GmtxKsWYpZj+kjnmNsNUDmW9ydDBjBw@mail.gmail.com> <alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de> <CANejiEXP9ORKTfE4O9khaHSp-Y8yOQU1LLUD5Q5pBJOGR+A-aA@mail.gmail.com>
+ <alpine.LRH.2.02.1203142101290.6232@diagnostix.dwd.de> <CANejiEX=-y6Kgtmfg1efqn_Ufdnn=Ls-4Nne3RYAWdt07+4o2A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203150907.29895.arnd@arndb.de>
-X-Provags-ID: V02:K0:hlcUMcuuQcN2i1wyUL3TckAyEyFclK0B2xhGniEW0Od
- k9YXzaGTLpGX47aSJBLorQkqTcP4t2RaRa8EeBWXSOoKkdY2Rs
- PqCtyxtJAMHi2X/T23yO4rC6qt4EDloapJ23nOBtRkxMstI7w3
- aEJHUgZEQCKvT7gJCU1y1MiOsChA4boLOVWMZSbLWmciOFJr5/
- D7DNojWF10CCbXrqe/+efPozk4zP2LdZ/aABBOdDymcsJsLpPs
- tQjbwYGkNNjFnlu8jyABVRake422Z2t94ApnMRR99gxinHmlYN
- eJtvtN2/2a4K0PoRBCeAPjrkfXUrPiH/8d7OrR1fOqhj6qPBdb
- E86gVs0Yc4XgkAJXJ2aI=
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 March 2012, Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-> 
-> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
-> Anatop provides regulators and thermal.
-> This driver handles the address space and the operation of the mfd device.
+On Thu, 15 Mar 2012, Shaohua Li wrote:
 
-Hi Paul,
+> 2012/3/15 Holger Kiehl <Holger.Kiehl@dwd.de>:
+>> On Wed, 14 Mar 2012, Shaohua Li wrote:
+>>
+>>> Maybe the discard runs slow with small size request in the disk.
+>>> please drop patch "blk: add plug for blkdev_issue_discard" and try again.
+>>> Since
+>>> we can't do merge, the plug just introduces latency.
+>>>
+>> Tried again without the patch applied, but there is only a very small
+>> performance increase (520->600 agains 4000 fps without discard).
+>>
+>> The benchmark creates lots of small files (2 KiB) and deletes them again.
+>>
+>>
+>>> if it doesn't help, please capture a blktrace when you do the benchmark
+>>> and
+>>> send it to me.
+>>>
+>> Ok, I will do this tomorrow. Need some sleep :-)
+>>
+>> Thanks for your work on supporting discard in MD!
+> I tried your benchmark, create 2000k 2k files and delete them and
+> follows a sync.
+> the discard runs pretty fast for both raid 0/1. So can't reproduce the
+> issue. I'm using
+> a fusionio card though. I'm afraid nothing I can do till get you blktrace.
+>
+The blktrace is a bit large so I have uploaded it to:
 
-This looks like a very nice and clean driver, good work!
+    ftp://ftp.dwd.de/pub/afd/test/trim/trace
 
-Very broadly speaking, I wonder whether we could use the regmap
-infrastructure for these things in the future, but I would first
-need to understand whether that is actually in the scope of regmap.
+This is while the benchmark was running. Just a reminder, md2 is
+/home under which the benchmark was running. And md2 is a raid0 of
+sda3, sdb3 and sdc3. While md1 is / and also raid0 of ada2, sdb2 and
+sdc2.
 
-It seems that you just need a subset of what regmap provides,
-so it could work, but it might not actually be better than what
-you have now.
+There is also another blktarce when all files are deleted and note
+this is only part of it (10 min), it takes about 30 minutes to delete
+all. You can find this here:
 
-Mark, can you comment on that?
+    ftp://ftp.dwd.de/pub/afd/test/trim/trace2
 
-> +u32 anatop_get_bits(struct anatop *adata, u32 addr, int bit_shift,
-> +		    int bit_width)
-> +{
-> +	u32 val, mask;
-> +
-> +	if (bit_width == 32)
-> +		mask = ~0;
-> +	else
-> +		mask = (1 << bit_width) - 1;
-> +
-> +	val = readl(adata->ioreg + addr);
-> +	val = (val >> bit_shift) & mask;
-> +
-> +	return val;
-> +}
-> +EXPORT_SYMBOL(anatop_get_bits);
+Please tell me if you need more information or what else I can do to
+help find the problem.
 
-I think the exports here should be EXPORT_SYMBOL_GPL. There is no reason
-why an out of tree driver would ever use these.
-
-> +static const struct of_device_id of_anatop_subdevice_match[] = {
-> +	{ .compatible = "fsl,anatop-regulator", },
-> +	{ .compatible = "fsl,anatop-thermal", },
-> +	{ },
-> +};
-> +
-> +static int __devinit of_anatop_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	void *ioreg;
-> +	struct anatop *drvdata;
-> +
-> +	ioreg = of_iomap(np, 0);
-> +	if (!ioreg)
-> +		return -EADDRNOTAVAIL;
-> +	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-> +	if (!drvdata)
-> +		return -ENOMEM;
-> +	drvdata->ioreg = ioreg;
-> +	spin_lock_init(&drvdata->reglock);
-> +	platform_set_drvdata(pdev, drvdata);
-> +	of_platform_bus_probe(np, of_anatop_subdevice_match, dev);
-> +
-> +	return 0;
-> +}
-
-Why do you list the subdevices in of_anatop_subdevice_match()? I think you
-should just use 
-
-	of_platform_bus_probe(np, of_anatop_match, dev);
-
-here, using the same match table that you have in the platform_driver.
-That will automatically create platform devices for any children of this
-device, so you don't have to update the list above when you get new
-child drivers.
-
-	Arnd
+Thanks,
+Holger
