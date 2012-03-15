@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761545Ab2COVKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 17:10:37 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52072 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab2COVKf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 17:10:35 -0400
+	id S1761970Ab2COVPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:15:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47636 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756405Ab2COVPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 17:15:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: jean.pihet@newoldbits.com
+Subject: Re: [PATCH 10/10] ARM: OMAP: SmartReflex: Move smartreflex driver to drivers/
+Date: Thu, 15 Mar 2012 22:19:22 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <j-pihet@ti.com>
+References: <1331829845-9526-1-git-send-email-j-pihet@ti.com> <1331829845-9526-11-git-send-email-j-pihet@ti.com>
+In-Reply-To: <1331829845-9526-11-git-send-email-j-pihet@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <0F08A04750B6BE499D6FAC390A6128A231758C32@DBDE01.ent.ti.com>
-References: <4f623469.634cb40a.5d79.ffff841d@mx.google.com>
-	<CAEnQRZBDxB5Vb7XTFKmdrvQOcWKQU0SWO4HExvDmFbEv_AMnQw@mail.gmail.com>
-	<0F08A04750B6BE499D6FAC390A6128A231758C32@DBDE01.ent.ti.com>
-Date: Thu, 15 Mar 2012 23:10:33 +0200
-Message-ID: <CAMFpKOjymX4N-w=cKMUaM6k3xBnN_SYVk9eDBhi37xjT4D0YWQ@mail.gmail.com>
-Subject: Re: [PATCH] ti-st: Enhange logging for Shared Transport - TI driver
-From: Alexandra Sava <alexandrasava18@gmail.com>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>
-Cc: Daniel Baluta <daniel.baluta@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mgherzan@gmail.com" <mgherzan@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203152219.22985.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 March 2012 22:29, Savoy, Pavan <pavan_savoy@ti.com> wrote:
-> Daniel Baluta wrote:
->> Adding Greg's new email address.
->>
->> On Thu, Mar 15, 2012 at 8:26 PM,  <alexandrasava18@gmail.com> wrote:
->>> From: Alexandra Sava <alexandrasava18@gmail.com>
->>>
->>> * added new module parameter named debug_mask to control displayed
->>> messages verbosity
->>> * the logging mechanism is enabled via CONFIG_TI_ST_DEBUG Kconfig
->>> option
->
-> Any specific reason you want to have this ? Custom logging ?
-> Also please fix the spelling in the subject line.
->
+On Thursday, March 15, 2012, jean.pihet@newoldbits.com wrote:
+> From: Jean Pihet <j-pihet@ti.com>
+> 
+> After a clean-up of the interfaces the OMAP IP driver and class
+> support code is now a generic driver.
+> Move it to drivers/power/avs/.
+> 
+> The build is controlled by the following Kconfig options:
+>  . CONFIG_POWER_AVS: general knob for Adaptive Voltage Scaling support,
+>  . CONFIG_POWER_AVS_OMAP: AVS support on OMAP containing the version 1
+>     or version 2 of the SmartReflex IP,
+>  . CONFIG_POWER_AVS_OMAP_CLASS3: Class 3 implementation of Smartreflex.
+> 
+> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+> ---
+[...]
+> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+> index e429008..e4a8fd2 100644
+> --- a/drivers/power/Makefile
+> +++ b/drivers/power/Makefile
+> @@ -41,3 +41,5 @@ obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
+>  obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
+>  obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
+>  obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
+> +
+> +obj-$(CONFIG_POWER_AVS)		+= avs/
+> diff --git a/drivers/power/avs/Kconfig b/drivers/power/avs/Kconfig
+> new file mode 100644
+> index 0000000..35b21c4
+> --- /dev/null
+> +++ b/drivers/power/avs/Kconfig
+> @@ -0,0 +1,45 @@
+> +menuconfig POWER_AVS
+> +	tristate "Adaptive Voltage Scaling class support"
+> +	help
+> +	  AVS is a power management technique which finely controls the
+> +	  operating voltage of a device in order to optimize (i.e. reduce)
+> +	  its power consumption.
+> +	  At a given operating point the voltage is adapted depending on
+> +	  static factors (chip manufacturing process) and dynamic factors
+> +	  (temperature depending performance).
+> +	  AVS is also called SmartReflex on OMAP devices.
+> +
+> +	  Say Y here to enable Adaptive Voltage Scaling class support.
+> +
+> +if POWER_AVS
+> +
+> +config POWER_AVS_OMAP
 
-The logging for this driver is too verbose, and I thought it would be
-better to implement a configurable mechanism which can enable/disable
-the log messages (not only via the global CONFIG_DYNAMIC_DEBUG).
-So, I think there are two ways:
+I think it would be better to keep this and the next one in the OMAP
+arch Kconfig.
+
+> +	bool "AVS support for the OMAP IP versions 1&2"
+> +	depends on (ARCH_OMAP3 || ARCH_OMAP4) && PM
+> +	help
+> +	  Say Y to enable AVS support on OMAP containing the version 1 or
+> +	  version 2 of the SmartReflex IP.
+> +	  V1 is the 65nm version used in OMAP3430.
+> +	  V2 is the update for the 45nm version of the IP used in OMAP3630
+> +	  and OMAP4430
+> +
+> +	  Please note, that by default SmartReflex is only
+> +	  initialized and not enabled. To enable the automatic voltage
+> +	  compensation for vdd mpu and vdd core from user space,
+> +	  user must write 1 to
+> +		/debug/smartreflex/sr_<X>/autocomp,
+> +	  where X is mpu_iva or core for OMAP3.
+> +	  Optionally autocompensation can be enabled in the kernel
+> +	  by default during system init via the enable_on_init flag
+> +	  which an be passed as platform data to the smartreflex driver.
+> +
+> +config POWER_AVS_OMAP_CLASS3
+> +	bool "Class 3 mode of Smartreflex Implementation"
+> +	depends on POWER_AVS_OMAP && TWL4030_CORE
+> +	help
+> +	  Say Y to enable Class 3 implementation of Smartreflex
+> +
+> +	  Class 3 implementation of Smartreflex employs continuous hardware
+> +	  voltage calibration.
+> +
+> +endif # POWER_AVS
+
+Thanks,
+Rafael
