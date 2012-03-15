@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760419Ab2COObQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:31:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56346 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759489Ab2COObP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:31:15 -0400
-X-IronPort-AV: E=Sophos;i="4.73,591,1325433600"; 
-   d="scan'208";a="4543469"
-Message-ID: <4F61FCF8.1040304@cn.fujitsu.com>
-Date: Thu, 15 Mar 2012 22:30:16 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "Rajak, Rishikesh Kumar (FEL/PQSi)" <rishikesh.rajak@hp.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "ltp-list@lists.sourceforge.net" <ltp-list@lists.sourceforge.net>,
-        "vapier@gentoo.org" <vapier@gentoo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "risrajak@linux.vnet.ibm.com" <risrajak@linux.vnet.ibm.com>
-Subject: Re: [LTP] [PATCH] MAINTAINERS: update the maintain-ship of LTP
-References: <1331820621-10095-1-git-send-email-gaowanlong@cn.fujitsu.com> <80145D4278C2654ABC4879063FB2FFA9530ACB12@G4W3231.americas.hpqcorp.net>
-In-Reply-To: <80145D4278C2654ABC4879063FB2FFA9530ACB12@G4W3231.americas.hpqcorp.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-15 22:29:09,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-15 22:29:09,
-	Serialize complete at 2012-03-15 22:29:09
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1761017Ab2COOc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:32:56 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:22049 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760113Ab2COOcv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 10:32:51 -0400
+Date: Thu, 15 Mar 2012 15:32:40 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Ville =?UTF-8?B?U3lyasOkbMOk?= <syrjala@sci.fi>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, ben-linux@fluff.org
+Subject: Re: [PATCH] i2c-algo-bit: Fix spurious SCL timeouts under heavy
+ load
+Message-ID: <20120315153240.75efc254@endymion.delvare>
+In-Reply-To: <1331713973-7711-1-git-send-email-syrjala@sci.fi>
+References: <1331713973-7711-1-git-send-email-syrjala@sci.fi>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 10:19 PM, Rajak, Rishikesh Kumar (FEL/PQSi) wrote:
+Hi Ville,
 
-> Hi Wanlong,
+On Wed, 14 Mar 2012 10:32:52 +0200, Ville Syrjälä wrote:
+> When the system is under heavy load, there can be a significant delay
+> between the getscl() and time_after() calls inside sclhi(). That delay
+> may cause the time_after() check to trigger after SCL has gone high,
+> causing sclhi() to return -ETIMEDOUT.
 > 
-> Review-By: Rishikesh K Rajak <rishikesh.rajak@hp.com>
+> To fix the problem, double check that SCL is still low after the
+> timeout has been reached, before deciding to return -ETIMEDOUT.
 > 
-> No issue with me. But still I am closely watching this place though my responsibilities have changed.
-
-
-Thank you for your previous great work, Rishikesh.
-
-Regards,
-Wanlong Gao
-
-> 
-> Regards
-> Rishi
-> 
-> -----Original Message-----
-> From: Wanlong Gao [mailto:gaowanlong@cn.fujitsu.com]
-> Sent: Thursday, March 15, 2012 7:40 PM
-> To: akpm@linux-foundation.org
-> Cc: ltp-list@lists.sourceforge.net; vapier@gentoo.org; linux-kernel@vger.kernel.org; risrajak@linux.vnet.ibm.com
-> Subject: [LTP] [PATCH] MAINTAINERS: update the maintain-ship of LTP
-> 
-> The maintain-ship of LTP is out of date, so update it.
-> 
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
-> Signed-off-by: Caspar Zhang <caspar@casparzhang.com>
+> Signed-off-by: Ville Syrjälä <syrjala@sci.fi>
 > ---
->  MAINTAINERS |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 95e4e43..3e10e6f 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4173,12 +4173,14 @@ F:      Documentation/hwmon/ltc4261
->  F:     drivers/hwmon/ltc4261.c
-> 
->  LTP (Linux Test Project)
-> -M:     Rishikesh K Rajak <risrajak@linux.vnet.ibm.com>
-> -M:     Garrett Cooper <yanegomi@gmail.com>
-> +M:     Shubham Goyal <shubham@linux.vnet.ibm.com>
->  M:     Mike Frysinger <vapier@gentoo.org>
-> -M:     Subrata Modak <subrata@linux.vnet.ibm.com>
-> +M:     Cyril Hrubis <chrubis@suse.cz>
-> +M:     Caspar Zhang <caspar@casparzhang.com>
-> +M:     Wanlong Gao <gaowanlong@cn.fujitsu.com>
->  L:     ltp-list@lists.sourceforge.net (subscribers-only)
->  W:     http://ltp.sourceforge.net/
-> +T:     git git://github.com/linux-test-project/ltp.git
->  T:     git git://ltp.git.sourceforge.net/gitroot/ltp/ltp-dev
->  S:     Maintained
-> 
-> --
-> 1.7.10.rc1
-> 
-> 
-> ------------------------------------------------------------------------------
-> This SF email is sponsosred by:
-> Try Windows Azure free for 90 days Click Here
-> http://p.sf.net/sfu/sfd2d-msazure
-> _______________________________________________
-> Ltp-list mailing list
-> Ltp-list@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/ltp-list
-> 
+> I can easily reproduce these spurious timeouts on my HP-compaq nc6000
+> laptop with the radeon kms driver. It's enough to have a -j2 kernel
+> build running, and simultaneosly issue xrandr commands in a
+> terminal. Calling xrandr will cause the driver to re-read the EDID
+> from the display. A significant number of the EDID reads will fail.
+> With this fix I have yet to see any failed EDID reads.
 
+Thanks for describing a test case, I was able to reproduce the problem
+easily by following your instructions. The problem is real, even with
+the pending fixes I have to radeon's I2C implementation.
 
+I only have one concern about your implementation:
+
+> 
+>  drivers/i2c/algos/i2c-algo-bit.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/i2c/algos/i2c-algo-bit.c b/drivers/i2c/algos/i2c-algo-bit.c
+> index 525c734..d25112e 100644
+> --- a/drivers/i2c/algos/i2c-algo-bit.c
+> +++ b/drivers/i2c/algos/i2c-algo-bit.c
+> @@ -104,9 +104,11 @@ static int sclhi(struct i2c_algo_bit_data *adap)
+>  		 * are processing data internally.
+>  		 */
+>  		if (time_after(jiffies, start + adap->timeout))
+> -			return -ETIMEDOUT;
+> +			break;
+>  		cond_resched();
+>  	}
+> +	if (!getscl(adap))
+> +		return -ETIMEDOUT;
+
+This means double-check even in the most common case where time_after()
+didn't cause the loop break. From a performance perspective, this seems
+undesirable. What would you think of the alternative fix below?
+
+--- linux-3.3-rc7.orig/drivers/i2c/algos/i2c-algo-bit.c	2012-03-15 09:33:10.232176790 +0100
++++ linux-3.3-rc7/drivers/i2c/algos/i2c-algo-bit.c	2012-03-15 14:52:48.127778459 +0100
+@@ -103,8 +103,14 @@ static int sclhi(struct i2c_algo_bit_dat
+ 		 * chips may hold it low ("clock stretching") while they
+ 		 * are processing data internally.
+ 		 */
+-		if (time_after(jiffies, start + adap->timeout))
++		if (time_after(jiffies, start + adap->timeout)) {
++			/* Test one last time, as we may have been preempted
++			 * between last check and timeout test.
++			 */
++			if (getscl(adap))
++				break;
+ 			return -ETIMEDOUT;
++		}
+ 		cond_resched();
+ 	}
+ #ifdef DEBUG
+
+Functionally it should be equivalent to your proposal, but faster. I'll
+apply that (and send for stable inclusion.)
+
+Thanks,
+-- 
+Jean Delvare
