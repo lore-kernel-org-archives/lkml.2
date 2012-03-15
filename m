@@ -1,236 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab2CODb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 23:31:27 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:20716
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755199Ab2CODbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 23:31:25 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zzbb2dI9371I179dN1432N98dK853kzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 15 Mar 2012 11:32:58 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>
-Subject: Re: [PATCH] dt: pinctrl: Document device tree binding
-Message-ID: <20120315033257.GD13022@shlinux2.ap.freescale.net>
-References: <1331316873-20052-1-git-send-email-swarren@wwwdotorg.org>
- <20120312143407.GA4513@shlinux2.ap.freescale.net>
- <4F5E2F63.6070303@wwwdotorg.org>
- <20120313032010.GB4513@shlinux2.ap.freescale.net>
- <4F5F9F9E.7030706@wwwdotorg.org>
+	id S1756386Ab2CODlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 23:41:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38654 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753273Ab2CODlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 23:41:36 -0400
+Date: Wed, 14 Mar 2012 23:41:12 -0400
+From: Dave Jones <davej@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kevin Hilman <khilman@ti.com>, Jaecheol Lee <jc.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: linux-next: manual merge of the cpufreq tree with the
+ cpufreq-current tree
+Message-ID: <20120315034111.GA31961@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Russell King <rmk+kernel@arm.linux.org.uk>,
+	Kevin Hilman <khilman@ti.com>, Jaecheol Lee <jc.lee@samsung.com>,
+	Kukjin Kim <kgene.kim@samsung.com>
+References: <20120315132352.b8c8bbf0242c1f3b31333675@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F5F9F9E.7030706@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20120315132352.b8c8bbf0242c1f3b31333675@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 03:27:26AM +0800, Stephen Warren wrote:
-> On 03/12/2012 09:20 PM, Dong Aisheng wrote:
-> > On Tue, Mar 13, 2012 at 01:16:19AM +0800, Stephen Warren wrote:
-> >> On 03/12/2012 08:34 AM, Dong Aisheng wrote:
-> >>> On Sat, Mar 10, 2012 at 02:14:33AM +0800, Stephen Warren wrote:
-> >>>> The core pin controller bindings define:
-> >>>> * The fact that pin controllers expose pin configurations as nodes in
-> >>>>   device tree.
-> >>>> * That the bindings for those pin configuration nodes is defined by the
-> >>>>   individual pin controller drivers.
-> >>>> * A standardized set of properties for client devices to define numbered
-> >>>>   or named pin configuration states, each referring to some number of the
-> >>>>   afore-mentioned pin configuration nodes.
-> >>>> * That the bindings for the client devices determines the set of numbered
-> >>>>   or named states that must exist.
-> ...
-> >>>> +Required properties:
-> >>>> +pinctrl-0:	List of phandles, each pointing at a pin configuration
-> >>>> +		node. These referenced pin configuration nodes must be child
-> >>>> +		nodes of the pin controller that they configure. Multiple
-> >>>> +		entries may exist in this list so that multiple pin
-> >>>> +		controllers may be configured, or so that a state may be built
-> >>>> +		from multiple nodes for a single pin controller, each
-> >>>> +		contributing part of the overall configuration. See the next
-> >>>> +		section of this document for details of the format of these
-> >>>> +		pin configuration nodes.
-> >>>> +
-> >>>> +		In some cases, it may be useful to define a state, but for it
-> >>>> +		to be empty. This may be required when a common IP block is
-> >>>> +		used in an SoC either without a pin controller, or where the
-> >>>> +		pin controller does not affect the HW module in question. If
-> >>>> +		the binding for that IP block requires certain pin states to
-> >>>> +		exist, they must still be defined, but may be left empty.
-> >>>> +
-> >>>
-> >>> It looks this functions similar as the PIN_MAP_DUMMY_STATE you introduced
-> >>> before to address the issues that the shared IP block may need or not need
-> >>> pinctrl configuration on different platforms(correct me if wrong).
-> >>
-> >> Yes, it's to generate the dummy states.
-> >>
-> >>> Then, there may be cases like below which may look a bit confusing
-> >>> to people.
-> >>> device {
-> >>> 	pinctrl-names = "active", "idle";
-> >>> 	pinctrl-0;
-> >>> 	pinctrl-1;
-> >>> };
-> >>
-> >> I'd personally expect the syntax to look like:
-> >>
-> >> device {
-> >> 	pinctrl-names = "active", "idle";
-> >> 	pinctrl-0 = <>;
-> >> 	pinctrl-1 = <>;
-> >> };
-> >>
-> >> which has an explicitly empty value. Admittedly, these would both
-> >> compile down to the exact same thing in the DTB, but I think the
-> >> interpretation of the above is pretty readable.
-> >>
-> >>> I'm wondering if we can let each individual driver to handle this special case?
-> >>> Like checking device id then make decision whether call pinctrl_* APIs.
-> >>> Then we can just do not define those properties for devices who
-> >>> do not need pin configurations.
-> >>
-> >> The individual client drivers certainly could work that way.
-> >>
-> >> However, the disadvantage is that the client driver then needs explicit
-> >> code to deal with this case, and this needs to be triggered by using a
-> >
-> > Since this is purely specific to IP block(e.g. the driver knows this ip used
-> > in which platform does not need pin configuration), so i guess it's natural
-> > that the driver can also handle it instead of device tree, just like
-> > a lot of existing drivers in kernel do similar things for tricks
-> > on different SoCs.
-> 
-> Well, the entire point is that the driver for the IP block shouldn't
-> know anything about which SoC it's included in, or whether pinmux is
-> needed, or what pinmux is needed, beyond what's expressed in platform
-> data or device tree. The whole point of the pinctrl is to completely
-> remove this knowledge from the driver, and centralize it in the mapping
-> table.
-> 
-Good point to me.
-The driver does not need to know which SoC it's included in,
-but it has to support that SoC first.
+On Thu, Mar 15, 2012 at 01:23:52PM +1100, Stephen Rothwell wrote:
+ > Hi Dave,
+ > 
+ > Today's linux-next merge of the cpufreq tree got a conflict in
+ > drivers/cpufreq/Makefile between commit b09db45c56c2 ("cpufreq: OMAP
+ > driver depends CPUfreq tables") from the cpufreq-current tree and commit
+ > a35c50510dd4 ("EXYNOS4X12: Add support cpufreq for EXYNOS4X12") from the
+ > cpufreq tree.
+ > 
+ > Just context changes.  I fixed it up (see below) and can carry the fix as
+ > necessary.
 
-> >> different compatible flag (or perhaps some other explicit property).
-> >> You'd have to write this code over and over for each individual driver.
-> >
-> > I still do not understand why need a more special compatible flag?
-> > My understanding is that in device driver side, they can do:
-> > if (is_soc_a || is_soc_b) {
-> > 	pinctrl_get(dev, "default");
-> > 	....
-> > } else if (is_soc_c) {
-> > 	/* do nothing */
-> > }
-> 
-> Drivers aren't supposed to contain "is_soc_foo" or "is_machine_foo"
-> calls. Indeed, in the case of "is_soc_foo", I don't think such an API
-> even exists. Instead, platform data or device tree should represent the
-> information that drivers need.
-> 
-Hmm, whatever platform data or device tree or device id, we can use a way
-to tell driver which SoC it is running on.
-The driver private is_soc_a macro or function can be implemented based
-that information.
+Argh, I've managed to get "for 3.4" patches on my fixes branch by mistake.
+Given how close we are to 3.3 now, I'll just have Linus pull both branches
+when 3.4 opens up.
 
-> > I can't see why we still need a special compatible flag to tell driver.
-> > Just do not define pinctrl-* properties for that devices in device tree.
-> > Did i understand wrong?
-> 
-> The compatible property would be the only way to implement anything like
-> is_soc_foo. However, it's a bad idea to overload the compatible property
-> in this way.
-> 
-I guess i might not describe my idea clearly.
-My idea is that the compatible string does that work.
-For example:
-static const struct of_device_id mxs_mmc_dt_ids[] = {
-        { .compatible = "fsl,imx23-mmc", .data = NULL, },
-        { .compatible = "fsl,imx28-mmc", .data = NULL, },
-        { /* sentinel */ }
-};
-MODULE_DEVICE_TABLE(of, mxs_mmc_dt_ids);
-Replace NULL to some special data like SOC_MX23 or SOC_MX28 can let driver
-driver know which SoC it's running on.
-Then driver can use private macro like is_soc_foo.
+thanks for catching this.
 
-> >> That also means that if you were the first user of an IP block in a
-> >> system which didn't need pin muxing for it, you'd have to modify the
-> >> kernel to support pinctrl being optional before you could use that device.
-> >
-> > Why need modify the kernel?
-> > Assuming above example.
-> > I'm a bit confused.
-> 
-> If the driver contains code like:
-> 
-> if (is_soc_a) {
->     ...
-> } else if (is_soc_b) {
->    ...
-> }
-> ...
-> 
-> Then in order to support a new SoC, even if the driver doesn't need to
-> do anything different, you'd need to go and edit the code to add an "if
-> (is_soc_c)" condition into that list.
-> 
-No.
-No changes needed if the driver does not need to do anything different.
-Compatible string does that work
-For example, in a new soc which is fully compatible with current driver.
-It can just add device like:
-mmc@80010000 {
-	compatible = "fsl, xxx-mmc", "fsl,imx28-mmc";
-	reg = <..>;
-	...
-}
-
-> >> If the pinctrl subsystem itself hides this from the client driver, then
-> >> you'd never need to add any code to any driver to support this case, and
-> >> all you'd need to do is write a few lines of device tree to use the
-> >> driver; no code changes.
-> >>
-> > Yes, that is the benefit.
-> >
-> > My only concern is that if this may make people confuse when see
-> > such code in device tree since we,i guess, still do not have such examples
-> > in device tree. And i'm afraid this is a bit not HW oriented.
-> > device {
-> > 	pinctrl-names = "active", "idle";
-> > 	pinctrl-0 = <>;
-> > 	pinctrl-1 = <>;
-> > };
-> > So i'm asking if we do it in driver.
-> > Maybe device tree people can give some comments.
-> 
-> I personally don't think it's that confusing. A zero-length list is
-> after all still a list. That said, let me see if I can add such an
-> example to the binding document; the documentation does talk about this
-> case, but we can certainly add another example to highlight it.
-> 
-If dt does allow this, i'm also ok with it.
-
-Regards
-Dong Aisheng
-
+	Dave
