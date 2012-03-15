@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab2COCYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 22:24:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33893 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab2COCYE (ORCPT
+	id S1756951Ab2COCfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 22:35:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37865 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419Ab2COCfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 22:24:04 -0400
-Date: Thu, 15 Mar 2012 13:23:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kevin Hilman <khilman@ti.com>, Jaecheol Lee <jc.lee@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: linux-next: manual merge of the cpufreq tree with the
- cpufreq-current tree
-Message-Id: <20120315132352.b8c8bbf0242c1f3b31333675@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Mar_2012_13_23_52_+1100_9s.b80lUciam_sVZ"
+	Wed, 14 Mar 2012 22:35:44 -0400
+Message-ID: <4F61537C.8030309@gmail.com>
+Date: Thu, 15 Mar 2012 02:27:08 +0000
+From: Vasco Dias <rafa.vasco@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: =?UTF-8?B?TW90aWVqdXMgSmFrxaF0eXM=?= <desired.mta@gmail.com>
+CC: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        mikew@google.com
+Subject: Re: Problem with efibootmgr on asus 1215b
+References: <20120312143806.GB12382@srcf.ucam.org> <20120315012941.GA24251@pierce>
+In-Reply-To: <20120315012941.GA24251@pierce>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Mar_2012_13_23_52_+1100_9s.b80lUciam_sVZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu 15 Mar 2012 01:29:41 AM WET, Motiejus Jakštys wrote:
+>> Somewhat late to this I know, but:
+>>
+>> On Fri, Jan 20, 2012 at 11:48:26AM +0000, Matt Fleming wrote:
+>>> [  441.370854] BUG: unable to handle kernel paging request at 00000000ffe1fbc8
+>>
+>> So it's attempting a direct access to 00000000ffe1fbc8, which, if I had
+>> to guess, is probably where the flash is located. That makes sense from
+>> the perspective of it being used in efivars. The obvious sadness here is
+>> that it's doing this with a physical address rather than a virtual one.
+>> It's possible that the machine is too broken to live - does Windows
+>> succeed in performing a UEFI install? If it does then I think we need to
+>> just accept that life is ugly and map the UEFI runtime areas with a 1:1
+>> mapping as well as into virtual address space. That would also fix the
+>> problem we see right now where the reboot call often uses a physical
+>> address rather than a virtual one.
+>
+> Just to let you know I apparently have exactly the same issue with the same
+> laptop. If it can help, I could try installing the M$ Student Edition during
+> the weekend and report the results.
+>
+> Windows Server 2008 64-bit, fresh GPT partition table will be my lab
+> environment. Standard installation procedure.
+>
+> I am running Ubuntu 12.04 with 3.2.0-18-generic.
+>
+> Motiejus
 
-Hi Dave,
+I have to say that before installing linux i tried installing windows 
+right after
+converting the system to gpt and after selecting the partition to 
+install it it
+would just BSOD.
 
-Today's linux-next merge of the cpufreq tree got a conflict in
-drivers/cpufreq/Makefile between commit b09db45c56c2 ("cpufreq: OMAP
-driver depends CPUfreq tables") from the cpufreq-current tree and commit
-a35c50510dd4 ("EXYNOS4X12: Add support cpufreq for EXYNOS4X12") from the
-cpufreq tree.
+I downloaded windows from my msdna account, converted it to boot from 
+the usb drive and manually selected the efi file from the drive to 
+launch
+the windows setup. 
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Sometimes it would reboot just after starting, other times it would BSOD
+after selecting the partition and clicking next and yet other times it 
+would
+start installing and then BSOD.
 
-diff --cc drivers/cpufreq/Makefile
-index fda94c7,3cbbcd0..0000000
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@@ -44,7 -45,9 +45,9 @@@ obj-$(CONFIG_ARM_S3C64XX_CPUFREQ)	+=3D s3
-  obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+=3D s5pv210-cpufreq.o
-  obj-$(CONFIG_ARM_EXYNOS_CPUFREQ)	+=3D exynos-cpufreq.o
-  obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+=3D exynos4210-cpufreq.o
-+ obj-$(CONFIG_ARM_EXYNOS4X12_CPUFREQ)	+=3D exynos4x12-cpufreq.o
-+ obj-$(CONFIG_ARM_EXYNOS5250_CPUFREQ)	+=3D exynos5250-cpufreq.o
- -obj-$(CONFIG_ARCH_OMAP2PLUS)            +=3D omap-cpufreq.o
- +obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)     +=3D omap-cpufreq.o
- =20
-  #########################################################################=
-#########
-  # PowerPC platform drivers
+After at least 20 different attemps there was just one time that before 
+going into BSOD that it successfuly registered the microsoft boot 
+program with the efi boot variables.
 
---Signature=_Thu__15_Mar_2012_13_23_52_+1100_9s.b80lUciam_sVZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYVK4AAoJEECxmPOUX5FEGTAP/2+ZYK0MEdgV0b4YjkqF9MVL
-jgneot+kg/9dDE2nJzu2M5tqG6vZrR5+bmT09g8Z9/+9gCV6ZaClaRmqefbZ5/vC
-9fDKbRRBOLHKfdlrYf0qsXRQLrI5qvUeEL31oCTXISNTpUGTfLMub753+RX/d7Rb
-G24frYnQZ6hmQdM5ogBg03Th5qTsGEJ7+OgjyMU4YFPBfAXRJZUl1NjO+qpsRTWF
-3teP+SDPrqIsC0Xo4kVCCa0MRxd76V8Pesd0xHbtDgdZBU/1lvr6bC6Rvmn/a3w0
-anwXUPjxDv4VrqGPJPRbSke35DA3bbLrp5i0uBqCmngsDPjEINOefo1REPG+qpbz
-36VG7jR1+85cj8P63+lIQvRgFvompZu4pyUrgtvzMcVq3JOUZqT4+j59sNujWdCl
-1pG1FgxL1GQ2gl5rMnIozMWYGtXnFIHXaIYXfoT4Olov6S7iGPj1qDDC4YJMVyyv
-0jxxDmyA26i6ghmH727+dkTofXjIoMwyhYOUuynJYD8ixqtQ8MI6zjbCeSPZp7dx
-GfUPzPQQ962U7pPJ+L53OzbFqqvek2r+xfs8JfzQYRKFMUYN9Cbby8+YWp4nHaLo
-MQYuEvYt044yoEOnq7npd8CQdl86vfFayvTeWw/tbWhojSf0psQ0AqIWAVQOQV/f
-H1HicqZBwY/DSkyn2f1K
-=qLer
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Mar_2012_13_23_52_+1100_9s.b80lUciam_sVZ--
+All that assuming the files on the usb drive were not corrupted ;)
+(it would be fun if they were)
