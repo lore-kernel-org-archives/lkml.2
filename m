@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031453Ab2COPvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:51:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53884 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030550Ab2COPvH (ORCPT
+	id S1031431Ab2COPvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:51:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44592 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030550Ab2COPvR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:51:07 -0400
-Date: Thu, 15 Mar 2012 10:51:05 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org
-Subject: Re: [PATCH v4 0/3] Expanded hotkey support
-Message-ID: <20120315155105.GF9673@ubuntu-macmini>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	platform-driver-x86@vger.kernel.org,
-	Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
-	lenb@kernel.org
-References: <20120305220407.GA16312@ubuntu-macmini>
- <1331004633-11862-1-git-send-email-seth.forshee@canonical.com>
- <20120312140652.GA11375@srcf.ucam.org>
+	Thu, 15 Mar 2012 11:51:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120312140652.GA11375@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hy5r1vpch.wl%tiwai@suse.de>
+References: <CA+1xoqfKE2u7mm=o507TvoFw8oqtKq8RRaJ5jU4c=J-GAH0APw@mail.gmail.com>
+ <s5h4ntpx4hk.wl%tiwai@suse.de> <CA+1xoqeL96L9SvtQ2ckXez-Kye4D9qRhuREd9Bq97wGU468R3w@mail.gmail.com>
+ <s5hy5r1vpch.wl%tiwai@suse.de>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 15 Mar 2012 17:50:55 +0200
+Message-ID: <CA+1xoqfR6K=Hw+kWMUncXQj74EYDOj6f4gAnJzetCHjv2s+xow@mail.gmail.com>
+Subject: Re: sound: BUG: unable to handle kernel irq event stamp: 2013419
+To: Takashi Iwai <tiwai@suse.de>
+Cc: perex@perex.cz, lucas.demarchi@profusion.mobi,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 02:06:52PM +0000, Matthew Garrett wrote:
-> On Mon, Mar 05, 2012 at 09:30:30PM -0600, Seth Forshee wrote:
-> > New version of the patches which remove the need to modify the EC
-> > driver.
-> > 
-> > Changes since v3:
-> > 
-> >  * Drop patch to add ec_get_handle()
-> >  * Use acpi_get_devices() to get EC handle
-> 
-> I'm not thrilled by this. I think making the change in the ec driver is 
-> the appropriate thing to do rather than duplicating this code elsewhere 
-> - Len, what's the holdup in merging that?
+On Thu, Mar 15, 2012 at 5:46 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Thu, 15 Mar 2012 17:36:44 +0200,
+> Sasha Levin wrote:
+>>
+>> On Thu, Mar 15, 2012 at 5:34 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > The bug seems coming from the old OSS driver.  Do you enable any OSS
+>> > drivers?
+>>
+>> They're most likely compiled in (kernel is pretty close to a 'make
+>> allyesconfig'), but I haven't done anything in particular to start
+>> them.
+>
+> What does trinity at all?
 
-Still no response. Do we have any other options? I'd like to get these
-changes in 3.4 if at all possible so I'm not working with a forked
-version of the driver.
-
-Seth
-
+It's a syscall fuzzer which can be found here:
+codemonkey.org.uk/projects/trinity/trinity.git
