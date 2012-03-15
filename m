@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761141Ab2COK7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:59:40 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:21330
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753638Ab2COK7j (ORCPT
+	id S1761223Ab2COLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 07:00:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52465 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757074Ab2COLAz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:59:39 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0XAJ4-02-290-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH] iommu/amd: Update git-tree in MAINTAINERS
-Date: Thu, 15 Mar 2012 11:59:09 +0100
-Message-ID: <1331809149-2652-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Thu, 15 Mar 2012 07:00:55 -0400
+Message-ID: <1331809239.18960.168.camel@twins>
+Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
+ loaded system
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Thu, 15 Mar 2012 12:00:39 +0100
+In-Reply-To: <20120315014511.GT27051@google.com>
+References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
+	 <20120314161906.e53359d3.akpm@linux-foundation.org>
+	 <20120315014511.GT27051@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the kernel.org relaunch the URL for the IOMMU git tree
-changed. Update MAINTAINERS file accordingly.
+On Wed, 2012-03-14 at 18:45 -0700, Mandeep Singh Baines wrote:
+> You could make MAX_RT_PRIO greater than MAX_USER_RT_PRIO but that
+> might
+> have some impact on real-time applications. A simple one-line patch:
+> 
+> - #define MAX_RT_PRIO           MAX_USER_RT_PRIO
+> + #define MAX_RT_PRIO           (MAX_USER_RT_PRIO + 1)
+> 
+> would prevent user-space from causing a false lockup detection.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 75a9a5f..6f93a8d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -503,7 +503,7 @@ F:	arch/x86/include/asm/geode.h
- AMD IOMMU (AMD-VI)
- M:	Joerg Roedel <joerg.roedel@amd.com>
- L:	iommu@lists.linux-foundation.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-iommu.git
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git
- S:	Supported
- F:	drivers/iommu/amd_iommu*.[ch]
- F:	include/linux/amd-iommu.h
--- 
-1.7.5.4
+We're so not going to muck with the fifo priorities just for this stupid
+soft watchdog,.. I already hate that I can't disable the piece of crap,
+making it more involved is just really not going to happen.
 
 
