@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030564Ab2COO7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:59:09 -0400
-Received: from HSI-KBW-109-192-167-159.hsi6.kabel-badenwuerttemberg.de ([109.192.167.159]:38398
+	id S965378Ab2COO7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:59:11 -0400
+Received: from HSI-KBW-109-192-167-159.hsi6.kabel-badenwuerttemberg.de ([109.192.167.159]:38399
 	"EHLO rack0slot8.osadl.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932396Ab2COO7B (ORCPT
+	by vger.kernel.org with ESMTP id S965121Ab2COO7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:59:01 -0400
-Message-Id: <20120315145829.555961411@osadl.org>
+	Thu, 15 Mar 2012 10:59:03 -0400
+Message-Id: <20120315145828.898778929@osadl.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 15 Mar 2012 15:56:27 +0100
+Date: Thu, 15 Mar 2012 15:56:26 +0100
 From: Carsten Emde <C.Emde@osadl.org>
 To: David Airlie <airlied@linux.ie>
 Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
@@ -20,45 +20,116 @@ Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [V5 PATCH 4/4] drivers-gpu-drm-i915-panel-invert-brightness-acer-aspire-5734z.patch
+Subject: [V5 PATCH 3/4] drivers-gpu-drm-i915-panel-invert-brightness-via-quirk.patch
 References: <20120315145623.486070468@osadl.org>
-Content-Disposition: inline; filename=drivers-gpu-drm-i915-panel-invert-brightness-acer-aspire-5734z.patch
+Content-Disposition: inline; filename=drivers-gpu-drm-i915-panel-invert-brightness-via-quirk.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark the Acer Aspire 5734Z that this machines requires the module to
-invert the panel backlight brightness value after reading from and prior
-to writing to the PCI configuration space.
+A machine may need to invert the panel backlight brightness value. This
+patch adds the infrastructure for a quirk to do so.
 
 Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ Documentation/kernel-parameters.txt  |   17 +++++++++++------
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    9 +++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |   15 +++++++++++----
+ 4 files changed, 32 insertions(+), 10 deletions(-)
 
+Index: linux-3.3-rc7/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-3.3-rc7.orig/Documentation/kernel-parameters.txt
++++ linux-3.3-rc7/Documentation/kernel-parameters.txt
+@@ -979,14 +979,19 @@ bytes respectively. Such letter suffixes
+ 	i8k.restricted	[HW] Allow controlling fans only if SYS_ADMIN
+ 			capability is set.
+ 
+-	i915.invert_brightness
++	i915.invert_brightness=
+ 			[DRM] Invert the sense of the variable that is used to
+ 			set the brightness of the panel backlight. Normally a
+-			value of 0 indicates backlight switched off, and the
+-			maximum value sets the backlight to maximum brightness.
+-			If this parameter is specified, a value of 0 sets the
+-			backlight to maximum brightness, and the maximum value
+-			switches the backlight off.
++			brightness value of 0 indicates backlight switched off,
++			and the maximum of the brightness value sets the backlight
++			to maximum brightness. If this parameter is set to 0
++			(default) and the machine requires it, or this parameter
++			is set to 1, a brightness value of 0 sets the backlight
++			to maximum brightness, and the maximum of the brightness
++			value switches the backlight off.
++			-1 -- never invert brightness
++			 0 -- machine default
++			 1 -- force brightness inversion
+ 
+ 	icn=		[HW,ISDN]
+ 			Format: <io>[,<membase>[,<icn_id>[,<icn_id2>]]]
+Index: linux-3.3-rc7/drivers/gpu/drm/i915/i915_drv.h
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/i915/i915_drv.h
++++ linux-3.3-rc7/drivers/gpu/drm/i915/i915_drv.h
+@@ -275,6 +275,7 @@ enum intel_pch {
+ 
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
++#define QUIRK_INVERT_BRIGHTNESS (1<<2)
+ 
+ struct intel_fbdev;
+ struct intel_fbc_work;
 Index: linux-3.3-rc7/drivers/gpu/drm/i915/intel_display.c
 ===================================================================
 --- linux-3.3-rc7.orig/drivers/gpu/drm/i915/intel_display.c
 +++ linux-3.3-rc7/drivers/gpu/drm/i915/intel_display.c
-@@ -8951,7 +8951,8 @@ static void quirk_ssc_force_disable(stru
+@@ -8950,6 +8950,15 @@ static void quirk_ssc_force_disable(stru
+ 	dev_priv->quirks |= QUIRK_LVDS_SSC_DISABLE;
  }
  
- /*
-- * A machine may need to invert the panel backlight brightness value
-+ * A machine (e.g. Acer Aspire 5734Z) may need to invert the panel backlight
-+ * brightness value
-  */
- static void quirk_invert_brightness(struct drm_device *dev)
- {
-@@ -8993,6 +8994,9 @@ struct intel_quirk intel_quirks[] = {
- 
- 	/* Sony Vaio Y cannot use SSC on LVDS */
- 	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
++/*
++ * A machine may need to invert the panel backlight brightness value
++ */
++static void quirk_invert_brightness(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_INVERT_BRIGHTNESS;
++}
 +
-+	/* Acer Aspire 5734Z must invert backlight brightness */
-+	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
- };
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+Index: linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/i915/intel_panel.c
++++ linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
+@@ -192,15 +192,22 @@ u32 intel_panel_get_max_backlight(struct
+ 	return max;
+ }
  
- static void intel_init_quirks(struct drm_device *dev)
+-static bool i915_panel_invert_brightness;
+-MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness, please "
++static int i915_panel_invert_brightness;
++MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness "
++	"(-1 force normal, 0 machine defaults, 1 force inversion), please "
+ 	"report PCI device ID, subsystem vendor and subsystem device ID "
+ 	"to dri-devel@lists.freedesktop.org, if your machine needs it. "
+ 	"It will then be included in an upcoming module version.");
+-module_param_named(invert_brightness, i915_panel_invert_brightness, bool, 0600);
++module_param_named(invert_brightness, i915_panel_invert_brightness, int, 0600);
+ static u32 intel_panel_compute_brightness(struct drm_device *dev, u32 val)
+ {
+-	if (i915_panel_invert_brightness)
++	struct drm_i915_private *dev_priv = dev->dev_private;
++
++	if (i915_panel_invert_brightness < 0)
++		return val;
++
++	if (i915_panel_invert_brightness > 0 ||
++	    dev_priv->quirks & QUIRK_INVERT_BRIGHTNESS)
+ 		return intel_panel_get_max_backlight(dev) - val;
+ 
+ 	return val;
 
