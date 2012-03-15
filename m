@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161149Ab2CORDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:03:52 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54008 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161086Ab2CORDs (ORCPT
+	id S1161163Ab2CORD7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:03:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38908 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161152Ab2CORDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:03:48 -0400
-Date: Thu, 15 Mar 2012 10:02:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
- online
-Message-ID: <20120315170236.GF2381@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
- <1331717099.5752.15.camel@marge.simpson.net>
- <1331728841.7465.7.camel@marge.simpson.net>
- <20120314130801.GA11722@sgi.com>
- <20120314151717.GA2435@linux.vnet.ibm.com>
- <20120314165657.GA19117@linux.vnet.ibm.com>
- <1331779343.14263.6.camel@marge.simpson.net>
- <1331780831.14263.15.camel@marge.simpson.net>
+	Thu, 15 Mar 2012 13:03:55 -0400
+Date: Thu, 15 Mar 2012 21:03:50 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>
+Subject: Re: [PATCH] power_supply: charger-manager: Clean up for better
+ readability
+Message-ID: <20120315170350.GB11441@oksana.dev.rtsoft.ru>
+References: <1326344195.7311.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1331780831.14263.15.camel@marge.simpson.net>
+In-Reply-To: <1326344195.7311.1.camel@phoenix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031517-5518-0000-0000-000002FA02E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:07:11AM +0100, Mike Galbraith wrote:
-> On Thu, 2012-03-15 at 03:42 +0100, Mike Galbraith wrote: 
-> > On Wed, 2012-03-14 at 09:56 -0700, Paul E. McKenney wrote:
-> > 
-> > > Does the following work better?  It does pass my fake-big-system tests
-> > > (more testing in the works).
-> > 
-> > Yup, tip booted fine.  Thanks!  I'll test, see if it gets upset.
+On Thu, Jan 12, 2012 at 12:56:35PM +0800, Axel Lin wrote:
+> This patch includes below changes:
 > 
-> Wedged into 3.0 enterprise booted fine too, is now running rcutorture.
-> I'll add hotplug after it runs explosion free for a while.  Any
-> suggestions for giving both virgin and 3.0 a thorough trouncing?
+> * Some code change for better readability.
+> * Current code in probe already ensures desc->charger_regulators is not NULL.
+>   No need to check if it is NULL or not before calling regulator_bulk_free().
+> * Use dev_get_drvdata() in cm_suspend_prepare() and cm_suspend_complete()
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
 
-It would be good to check the latency of RCU's grace-period
-initialization, and comparing the results with and without this patch.
-Dimitri might have scripting for that.
+Applied, thanks a lot!
 
-							Thanx, Paul
 
+FWIW, I also applied the following patch:
+
+commit f304f0a31442f4c8b98208acedc3da2f6c60a771
+Author: Anton Vorontsov <anton.vorontsov@linaro.org>
+Date:   Thu Mar 15 21:01:28 2012 +0400
+
+    charger-manager: Simplify charger_get_property(), get rid of a warning
+    
+    This patch fixes the following warning and makes the code a little
+    bit more simpler:
+    
+      CC      drivers/power/charger-manager.o
+    charger-manager.c: In function 'charger_get_property':
+    charger-manager.c:429:15: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
+    
+    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index e610e6b..9eca9f1 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -399,7 +399,8 @@ static int charger_get_property(struct power_supply *psy,
+ 	struct charger_manager *cm = container_of(psy,
+ 			struct charger_manager, charger_psy);
+ 	struct charger_desc *desc = cm->desc;
+-	int i, ret = 0, uV;
++	int ret = 0;
++	int uV;
+ 
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_STATUS:
+@@ -425,8 +426,7 @@ static int charger_get_property(struct power_supply *psy,
+ 			val->intval = 0;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		ret = get_batt_uV(cm, &i);
+-		val->intval = i;
++		ret = get_batt_uV(cm, &val->intval);
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+ 		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
