@@ -1,54 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030837Ab2COPW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:22:29 -0400
-Received: from nm10-vm2.bullet.mail.sg3.yahoo.com ([106.10.148.225]:47036 "HELO
-	nm10-vm2.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932409Ab2COPW0 (ORCPT
+	id S1030848Ab2COPXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:23:52 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:52458 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421Ab2COPXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:22:26 -0400
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Mar 2012 11:22:26 EDT
-X-Yahoo-Newman-Id: 589480.49650.bm@omp1002.mail.cnh.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: mMXhpYEVM1mWhaZHzK5W4G41ogNtHnmDOBDDFK9iNFDrMhm
- VDgdVCswmIIxDU0GrIom466ZcpHU64iQFbmbEVRwgq6tPy_lLa.Ikq9UBx8o
- e0zHvzvHTOxnMs_muIdno8BOE7R1xxZT6GqYSvPWO2xXmr86IXKpKYtlghmU
- _NAyrzF8qapAzTp8JqX_deSgTt3kNj9sA7_c2ojKSDIlOAlsRqOu1Vtjyy1t
- 8oISFUX9HV4g_lbCFnrxgysLxvQGQCa1C.khKKI_cEQxnuGNMHffoUu5Bcgx
- wi6ACpURbNQNjcpKBOH0zvub0aDcTq8NgPF.rWjt9_Cuq90nhLmN6LtM40Dz
- ZBci8.FNNCJs2EEoIf6ZYpyyOdV4pDvYb57g-
-X-Yahoo-SMTP: xT3c7NiswBBqEPrLalWg7yYhRAWIAZscKXr.3ZwHBNE-
-Message-ID: <23AA6B0EE3587E4F35D9E2FDF5D3178D@ff>
-From: "xeilyv" <jinhuobycw@yahoo.cn>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?B?IyPku6Pplovnpajmk5og6IGU57O75omL5py677yaMTM2MzI4Mzc=?=
-	=?utf-8?B?NTI5IA==?=
-Date: Thu, 15 Mar 2012 23:16:00 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
+	Thu, 15 Mar 2012 11:23:50 -0400
+Message-ID: <1331824997.14217.127.camel@aeonflux>
+Subject: Re: [PATCH 2/2] bluetooth: hci_core: fix NULL-pointer dereference
+ at unregister
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, David Herrmann <dh.herrmann@googlemail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, stable <stable@vger.kernel.org>
+Date: Thu, 15 Mar 2012 08:23:17 -0700
+In-Reply-To: <1331819321-13018-2-git-send-email-jhovold@gmail.com>
+References: <20120315134735.GA19821@localhost>
+	 <1331819321-13018-1-git-send-email-jhovold@gmail.com>
+	 <1331819321-13018-2-git-send-email-jhovold@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2FFMYIG004367
 
-linux-kernelï¼Œ
+Hi Johan,
 
- è²¡å‹™/æ‚¨å¥½ï¼
-      
-  æœ¬å…¬å¸ä»£é–‹å„åœ°ç™¼ç¥¨é»æ•¸å„ªæƒ ï¼Œ
+> Make sure hci_dev_open returns immediately if hci_dev_unregister has
+> been called.
+> 
+> This fixes a race between hci_dev_open and hci_dev_unregister which can
+> lead to a NULL-pointer dereference.
+> 
+> Bug is 100% reproducible using hciattach and a disconnected serial port:
+> 
+> 0. # hciattach -n /dev/ttyO1 any noflow
+> 
+> 1. hci_dev_open called from hci_power_on grabs req lock
+> 2. hci_init_req executes but device fails to initialise (times out
+>    eventually)
+> 3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
+> 4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
+>    hci_dev_do_close
+> 5. hci_dev_open (1) releases req lock
+> 6. hci_dev_do_close grabs req lock and returns as device is not up
+> 7. hci_dev_unregister sleeps in destroy_workqueue
+> 8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
+> 9. hci_dev_unregister finishes, while hci_dev_open is still running...
+> 
+> [   79.627136] INFO: trying to register non-static key.
+> [   79.632354] the code is fine but needs lockdep annotation.
+> [   79.638122] turning off the locking correctness validator.
+> [   79.643920] [<c00188bc>] (unwind_backtrace+0x0/0xf8) from [<c00729c4>] (__lock_acquire+0x1590/0x1ab0)
+> [   79.653594] [<c00729c4>] (__lock_acquire+0x1590/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
+> [   79.663085] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0040a88>] (run_timer_softirq+0x150/0x3ac)
+> [   79.672668] [<c0040a88>] (run_timer_softirq+0x150/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
+> [   79.682281] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
+> [   79.690856] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
+> [   79.699157] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
+> [   79.708648] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
+> [   79.718048] Exception stack(0xcf281fb0 to 0xcf281ff8)
+> [   79.723358] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
+> [   79.731933] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
+> [   79.740509] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
+> [   79.747497] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> [   79.756011] pgd = cf3b4000
+> [   79.758850] [00000000] *pgd=8f0c7831, *pte=00000000, *ppte=00000000
+> [   79.765502] Internal error: Oops: 80000007 [#1]
+> [   79.770294] Modules linked in:
+> [   79.773529] CPU: 0    Tainted: G        W     (3.3.0-rc6-00002-gb5d5c87 #421)
+> [   79.781066] PC is at 0x0
+> [   79.783721] LR is at run_timer_softirq+0x16c/0x3ac
+> [   79.788787] pc : [<00000000>]    lr : [<c0040aa4>]    psr: 60000113
+> [   79.788787] sp : cf281ee0  ip : 00000000  fp : cf280000
+> [   79.800903] r10: 00000004  r9 : 00000100  r8 : b6f234d0
+> [   79.806427] r7 : c0519c28  r6 : cf093488  r5 : c0561a00  r4 : 00000000
+> [   79.813323] r3 : 00000000  r2 : c054eee0  r1 : 00000001  r0 : 00000000
+> [   79.820190] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [   79.827728] Control: 10c5387d  Table: 8f3b4019  DAC: 00000015
+> [   79.833801] Process gpsd (pid: 1265, stack limit = 0xcf2802e8)
+> [   79.839965] Stack: (0xcf281ee0 to 0xcf282000)
+> [   79.844573] 1ee0: 00000002 00000000 c0040a24 00000000 00000002 cf281f08 00200200 00000000
+> [   79.853210] 1f00: 00000000 cf281f18 cf281f08 00000000 00000000 00000000 cf281f18 cf281f18
+> [   79.861816] 1f20: 00000000 00000001 c056184c 00000000 00000001 b6f234d0 c0561848 00000004
+> [   79.870452] 1f40: cf280000 c003a3b8 c051e79c 00000001 00000000 00000100 3fa9e7b8 0000000a
+> [   79.879089] 1f60: 00000025 cf280000 00000025 00000000 00000000 b6f234d0 00000000 00000004
+> [   79.887756] 1f80: 00000000 c003a924 c053ad38 c0013a50 fa200000 cf281fb0 ffffffff c0008530
+> [   79.896362] 1fa0: 0001e6a0 0000aab8 80000010 c037499c 0001e6a0 be8dab00 0001e698 00036698
+> [   79.904998] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
+> [   79.913665] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff 00fbf700 04ffff00
+> [   79.922302] [<c0040aa4>] (run_timer_softirq+0x16c/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
+> [   79.931945] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
+> [   79.940582] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
+> [   79.948913] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
+> [   79.958404] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
+> [   79.967773] Exception stack(0xcf281fb0 to 0xcf281ff8)
+> [   79.973083] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
+> [   79.981658] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
+> [   79.990234] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
+> [   79.997161] Code: bad PC value
+> [   80.000396] ---[ end trace 6f6739840475f9ee ]---
+> [   80.005279] Kernel panic - not syncing: Fatal exception in interrupt
+> 
+> Cc: stable <stable@vger.kernel.org>
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> ---
+>  include/net/bluetooth/hci.h |    1 +
+>  net/bluetooth/hci_core.c    |    7 +++++++
+>  2 files changed, 8 insertions(+), 0 deletions(-)
 
-     å¯é©—è­‰å¾Œä»˜æ¬¾,è²´å…¬å¸å¦‚æœ‰éœ€è¦å¯ä¾†é›»è©³è«‡ï¼š
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
 
-        è”ç³»äººï¼šé»„å°å§                                                                                                       
-            è”ç³»æ‰‹æœºï¼š13632837529 
-       
-           è”ç³»QQï¼š2250353897 
-   xeilyv
-   2012-3-15
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards
+
+Marcel
+
+
