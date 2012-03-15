@@ -1,87 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab2COC6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 22:58:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38199 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab2COC6t (ORCPT
+	id S1755835Ab2CODAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 23:00:32 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:40063 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752818Ab2CODAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 22:58:49 -0400
-Date: Thu, 15 Mar 2012 13:58:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Hugh Dickins <hughd@google.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, akpm@linux-foundation.org,
-        rob.lee@linaro.org, j-pihet@ti.com, khilman@ti.com,
-        deepthi@linux.vnet.ibm.com, dan.carpenter@oracle.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.kucheria@linaro.org
-Subject: Re: [PATCH] cpuidle : fix random hangs with intel_idle
-Message-Id: <20120315135841.affff2d75681451d9ddd1a58@canb.auug.org.au>
-In-Reply-To: <alpine.LSU.2.00.1203141720360.2003@eggly.anvils>
-References: <alpine.LSU.2.00.1203131454500.1335@eggly.anvils>
-	<1331770181-800-1-git-send-email-daniel.lezcano@linaro.org>
-	<20120315111415.cd119171ac86967aebe85545@canb.auug.org.au>
-	<alpine.LSU.2.00.1203141720360.2003@eggly.anvils>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Mar_2012_13_58_41_+1100_NzEer013tQ8qAe_i"
+	Wed, 14 Mar 2012 23:00:31 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 15 Mar 2012 11:02:07 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120315030206.GB13022@shlinux2.ap.freescale.net>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-2-git-send-email-b29396@freescale.com>
+ <20120313172351.97C5E3E053B@localhost>
+ <20120314124512.GG1180@shlinux2.ap.freescale.net>
+ <20120314141643.GP3852@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120314141643.GP3852@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Mar_2012_13_58_41_+1100_NzEer013tQ8qAe_i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 14, 2012 at 10:16:43PM +0800, s.hauer@pengutronix.de wrote:
+> On Wed, Mar 14, 2012 at 08:45:23PM +0800, Dong Aisheng wrote:
+> > On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
+> > > On Tue, 13 Mar 2012 16:47:04 +0800, Dong Aisheng <b29396@freescale.com> wrote:
+> > > > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > > > 
+> > > > This patch includes basic dt support which can boot via nfs rootfs.
+> > > > 
+> > > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > > > ---
+> > > >  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
+> > > >  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
+> > > >  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
+> > > >  arch/arm/mach-mxs/Kconfig                     |    9 +++
+> > > >  arch/arm/mach-mxs/Makefile                    |    1 +
+> > > >  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
+> > > >  6 files changed, 200 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
+> > > > index 54bddda..9f21faf 100644
+> > > > --- a/Documentation/devicetree/bindings/arm/fsl.txt
+> > > > +++ b/Documentation/devicetree/bindings/arm/fsl.txt
+> > > > @@ -1,6 +1,10 @@
+> > > >  Freescale i.MX Platforms Device Tree Bindings
+> > > >  -----------------------------------------------
+> > > >  
+> > > > +i.MX28 Evaluation Kit
+> > > > +Required root node properties:
+> > > > +    - compatible = "fsl,imx28-evk", "fsl,imx28";
+> > > > +
+> > > >  i.MX51 Babbage Board
+> > > >  Required root node properties:
+> > > >      - compatible = "fsl,imx51-babbage", "fsl,imx51";
+> > > > diff --git a/arch/arm/boot/dts/imx28-evk.dts b/arch/arm/boot/dts/imx28-evk.dts
+> > > > new file mode 100644
+> > > > index 0000000..9758dc4
+> > > > --- /dev/null
+> > > > +++ b/arch/arm/boot/dts/imx28-evk.dts
+> > > > @@ -0,0 +1,31 @@
+> > > > +/*
+> > > > + * Copyright 2012 Freescale Semiconductor, Inc.
+> > > > + *
+> > > > + * The code contained herein is licensed under the GNU General Public
+> > > > + * License. You may obtain a copy of the GNU General Public License
+> > > > + * Version 2 or later at the following locations:
+> > > > + *
+> > > > + * http://www.opensource.org/licenses/gpl-license.html
+> > > > + * http://www.gnu.org/copyleft/gpl.html
+> > > > + */
+> > > > +
+> > > > +/dts-v1/;
+> > > > +/include/ "imx28.dtsi"
+> > > > +
+> > > > +/ {
+> > > > +	model = "Freescale i.MX28 Evaluation Kit";
+> > > > +	compatible = "fsl,imx28-evk", "fsl,imx28";
+> > > > +
+> > > > +	memory {
+> > > > +		device_type = "memory";
+> > > > +		reg = <0x40000000 0x08000000>;
+> > > > +	};
+> > > > +
+> > > > +	ahb@80080000 {
+> > > > +		fec@800f0000 {
+> > > > +			phy-mode = "rmii";
+> > > > +			local-mac-address = [00 04 9F 01 7D 5B];
+> > > 
+> > > Generally a bad idea to put a specific mac address into the device tree.
+> > > Better to fill it with zeros.  Otherwise all the dev boards will end up using
+> > > the same value.
+> > > 
+> > Yes, this issue also exists on other platfroms like mx6q.
+> > One way is to dynamically get mac address by reading otp register as non-dt does
+> > like:
+> > static int __init mx28evk_fec_get_mac(void)
+> > {
+> >         int i;
+> >         u32 val;
+> >         const u32 *ocotp = mxs_get_ocotp();
+> > 
+> >         if (!ocotp)
+> >                 return -ETIMEDOUT;
+> > 
+> >         /*
+> >          * OCOTP only stores the last 4 octets for each mac address,
+> >          * so hard-code Freescale OUI (00:04:9f) here.
+> >          */
+> >         for (i = 0; i < 2; i++) {
+> >                 val = ocotp[i];
+> >                 mx28_fec_pdata[i].mac[0] = 0x00;
+> >                 mx28_fec_pdata[i].mac[1] = 0x04;
+> >                 mx28_fec_pdata[i].mac[2] = 0x9f;
+> >                 mx28_fec_pdata[i].mac[3] = (val >> 16) & 0xff;
+> >                 mx28_fec_pdata[i].mac[4] = (val >> 8) & 0xff;
+> >                 mx28_fec_pdata[i].mac[5] = (val >> 0) & 0xff;
+> >         }
+> > 
+> >         return 0;
+> > }
+> > 
+> > But it seems this needs pass mac address to fec driver via platforom data which is
+> > not friendly to dt.
+> > 
+> > Another way may be changing fec driver to get the fixed part of mac address(first
+> > two bytes) from device tree and read the left dynamical part from otp which i'm not
+> > sure is better enough.
+> > 
+> > BTW, filling with zeros seems not work since it's invalid mac address.
+> 
+> Yes, that's the idea of using this value...
+> 
+But comparing to use an invalid value, why not just do not define that
+local-mac-address property?
 
-Hi Hugh,
+Regards
+Dong Aisheng
 
-On Wed, 14 Mar 2012 17:23:26 -0700 (PDT) Hugh Dickins <hughd@google.com> wr=
-ote:
->
-> On Thu, 15 Mar 2012, Stephen Rothwell wrote:
-> >=20
-> > So this needs to go into Rob's tree.  Maybe after Hugh verifies that it
-> > fixes his problem.
->=20
-> Yes, Daniel got me to try it offline before he posted it.
->=20
-> Tested-by: Hugh Dickins <hughd@google.com>
-
-Excellent.
-
-> Personally, I'd recommend including it even before it gets into Rob's
-> tree (where it may well be improved upon first): it does a lot to
-> improve the usability of linux-next.
-
-OK, so I will add this patch to today's tree (on the assumption that it,
-or something better, will be added to Rob's tree soon).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__15_Mar_2012_13_58_41_+1100_NzEer013tQ8qAe_i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYVrhAAoJEECxmPOUX5FEJx0P/399KGKIvXTRKmCo0reZxUjl
-jhL2SR1/1/olupaco8aZbkMXrSlpTyj3Ps9NOMzosKVf6kVRSp2sAaJO1tsr62xs
-sXm5sY85rK4e/XntHu5GquEZVDqvYJzTI1VPArZ4npOsC8DWDIn6a/WuZQsqJ2JL
-6oEh/kwDQLKB/QFHqJFTStydc+tG5sNpJZwpHiu61a0ZE1veoA+I5FAoNJkf65AE
-6hD1jUBtdl+vyA1ByTzMS1sLC/g3a3Vj+cOpJavLGQ+CU0KiStc0e79TLQf7kY1p
-WNdeFNtloKiIRA4BstYfM3tfMX+Ka0C3myrYzeX20+YaTsYVgGLPvgwAstqiOPm2
-ujUzIcviOx3I2oYJ0ClO2MORefxRJYScnWJi+MsjneY/7+J0IIYb8AlJtPiwoU5B
-hk6zQ4uy35gDhaTCo7nw1wa2Ttq0MU+pXVnYbRyIn7367UEFyR7JwczfvFr9H86X
-fdOaW78u0fAqCF58nCaCb9f8J3XrVqLF/Cg1/HySMCA1XGPisr0GzEKW5Ny/E5JI
-CbHL7/oLnQ791XvSJgG34Fi/SmrSjG9CkRaYWnk2MLx4lVn7HHCXmlyRqcVwTAPC
-MRxIahCoOLpD9V1ipV0dA6SqhEejls9tsusGFYRWvaNLrAHl254cu1V8V7KUAk5H
-U41wfATtqngZFamjoN9s
-=g2rM
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Mar_2012_13_58_41_+1100_NzEer013tQ8qAe_i--
