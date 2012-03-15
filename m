@@ -1,194 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032087Ab2COR7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:59:01 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:36915 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1031199Ab2COR67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:58:59 -0400
-Date: Thu, 15 Mar 2012 12:58:57 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have
- been online
-Message-ID: <20120315175857.GA8705@sgi.com>
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
- <1331717099.5752.15.camel@marge.simpson.net>
- <1331728841.7465.7.camel@marge.simpson.net>
- <20120314130801.GA11722@sgi.com>
- <20120314151717.GA2435@linux.vnet.ibm.com>
- <20120314165657.GA19117@linux.vnet.ibm.com>
+	id S1032185Ab2COR7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:59:08 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:38271 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1031199Ab2COR7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 13:59:03 -0400
+Message-ID: <4F622DCE.4090608@fb.com>
+Date: Thu, 15 Mar 2012 10:58:38 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314165657.GA19117@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v4)
+References: <1331746607-6706-1-git-send-email-asharma@fb.com> <20120315141402.GA550@somewhere.redhat.com>
+In-Reply-To: <20120315141402.GA550@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-03-15_04:2012-03-15,2012-03-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 09:56:57AM -0700, Paul E. McKenney wrote:
-> On Wed, Mar 14, 2012 at 08:17:17AM -0700, Paul E. McKenney wrote:
-> > On Wed, Mar 14, 2012 at 08:08:01AM -0500, Dimitri Sivanich wrote:
-> > > On Wed, Mar 14, 2012 at 01:40:41PM +0100, Mike Galbraith wrote:
-> > > > On Wed, 2012-03-14 at 10:24 +0100, Mike Galbraith wrote: 
-> > > > > On Tue, 2012-03-13 at 17:24 -0700, Paul E. McKenney wrote: 
-> > > > > > The following builds, but is only very lightly tested.  Probably full
-> > > > > > of bug, especially when exercising CPU hotplug.
-> > > > > 
-> > > > > You didn't say RFT, but...
-> > > > > 
-> > > > > To beat on this in a rotund 3.0 kernel, the equivalent patch would be
-> > > > > the below?  My box may well answer that before you can.. hope not ;-)
-> > > > 
-> > > > (Darn, it did.  Box says boot stall with virgin patch in tip too though.
-> > > > Wedging it straight into 3.0 was perhaps a tad premature;)
-> > > 
-> > > I saw the same thing with 3.3.0-rc7+ and virgin patch on UV.  Boots fine without the patch.
-> > 
-> > Right...  Bozo here forgot to set the kernel parameters for large-system
-> > emulation during testing.  Apologies for the busted patch, will fix.
-> > 
-> > And thank you both for the testing!!!
-> > 
-> > Hey, at least I labeled it "RFC".  ;-)
-> 
-> Does the following work better?  It does pass my fake-big-system tests
-> (more testing in the works).
+On 3/15/12 7:14 AM, Frederic Weisbecker wrote:
 
-This one stalls for me at the same place the other one did.  Once again,
-if I remove the patch and rebuild, it boots just fine.
+> I still feel concerned about this.
+>
+> If I have only one event with a period of 1 and with that callchain:
+>
+> 	a ->  b ->  c
+>
+> Then I produce three hists
+>
+> 	1) a ->  b ->  c
+> 	2) a ->  b
+> 	3) a
+>
+> Each hist have a period of 1, but the total period is 1.
+> So the end result should be (IIUC):
+>
+> 100%    foo     a
+> 100%    foo     b
+>                  |
+>                  --- a
+> 100%    foo     c
+>                  |
+>                  --- b
+>                      |
+>                      --- c
+>
 
-Is there some debug/trace information that you would like me to provide?
+That is correct. The first column no longer adds up to 100%.
+  		
+> And the percentages on callchain branches will have the same kind
+> of weird things.
 
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Limit GP initialization to CPUs that have been online
-> 
-> The current grace-period initialization initializes all leaf rcu_node
-> structures, even those corresponding to CPUs that have never been online.
-> This is harmless in many configurations, but results in 200-microsecond
-> latency spikes for kernels built with NR_CPUS=4096.
-> 
-> This commit therefore keeps track of the largest-numbered CPU that has
-> ever been online, and limits grace-period initialization to rcu_node
-> structures corresponding to that CPU and to smaller-numbered CPUs.
-> 
-> Reported-by: Dimitri Sivanich <sivanich@sgi.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index c3b05ef..5688443 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -91,6 +91,8 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
->  
->  static struct rcu_state *rcu_state;
->  
-> +int rcu_max_cpu __read_mostly;	/* Largest # CPU that has ever been online. */
-> +
->  /*
->   * The rcu_scheduler_active variable transitions from zero to one just
->   * before the first task is spawned.  So when this variable is zero, RCU
-> @@ -1129,8 +1131,9 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
->  	__releases(rcu_get_root(rsp)->lock)
->  {
->  	unsigned long gp_duration;
-> -	struct rcu_node *rnp = rcu_get_root(rsp);
->  	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
-> +	struct rcu_node *rnp;
-> +	struct rcu_node *rnp_root = rcu_get_root(rsp);
->  
->  	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
->  
-> @@ -1159,26 +1162,28 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
->  	 * completed.
->  	 */
->  	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
-> -		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
->  
->  		/*
->  		 * Propagate new ->completed value to rcu_node structures
->  		 * so that other CPUs don't have to wait until the start
->  		 * of the next grace period to process their callbacks.
-> +		 * We must hold the root rcu_node structure's ->lock
-> +		 * across rcu_for_each_node_breadth_first() in order to
-> +		 * synchronize with CPUs coming online for the first time.
->  		 */
->  		rcu_for_each_node_breadth_first(rsp, rnp) {
-> +			raw_spin_unlock(&rnp_root->lock); /* remain disabled. */
->  			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
->  			rnp->completed = rsp->gpnum;
->  			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-> +			raw_spin_lock(&rnp_root->lock); /* already disabled. */
->  		}
-> -		rnp = rcu_get_root(rsp);
-> -		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
->  	}
->  
->  	rsp->completed = rsp->gpnum;  /* Declare the grace period complete. */
->  	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
->  	rsp->fqs_state = RCU_GP_IDLE;
-> -	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
-> +	rcu_start_gp(rsp, flags);  /* releases root node's ->lock. */
->  }
->  
->  /*
-> @@ -2440,6 +2445,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
->  	unsigned long mask;
->  	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
->  	struct rcu_node *rnp = rcu_get_root(rsp);
-> +	struct rcu_node *rnp_init;
->  
->  	/* Set up local state, ensuring consistent view of global state. */
->  	raw_spin_lock_irqsave(&rnp->lock, flags);
-> @@ -2462,6 +2468,16 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
->  	/* Exclude any attempts to start a new GP on large systems. */
->  	raw_spin_lock(&rsp->onofflock);		/* irqs already disabled. */
->  
-> +	/* Initialize any rcu_node structures that will see their first use. */
-> +	raw_spin_lock(&rnp->lock);		/* irqs already disabled. */
-> +	for (rnp_init = per_cpu_ptr(rsp->rda, rcu_max_cpu)->mynode + 1;
-> +	     rnp_init <= rdp->mynode;
-> +	     rnp_init++) {
-> +		rnp_init->gpnum = rsp->gpnum;
-> +		rnp_init->completed = rsp->completed;
-> +	}
-> +	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
-> +
->  	/* Add CPU to rcu_node bitmasks. */
->  	rnp = rdp->mynode;
->  	mask = rdp->grpmask;
-> @@ -2495,6 +2511,8 @@ static void __cpuinit rcu_prepare_cpu(int cpu)
->  	rcu_init_percpu_data(cpu, &rcu_sched_state, 0);
->  	rcu_init_percpu_data(cpu, &rcu_bh_state, 0);
->  	rcu_preempt_init_percpu_data(cpu);
-> +	if (cpu > rcu_max_cpu)
-> +		rcu_max_cpu = cpu;
->  }
->  
->  /*
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index 1e49c56..afdf410 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -192,11 +192,13 @@ struct rcu_node {
->  
->  /*
->   * Do a full breadth-first scan of the rcu_node structures for the
-> - * specified rcu_state structure.
-> + * specified rcu_state structure.  The caller must hold either the
-> + * ->onofflock or the root rcu_node structure's ->lock.
->   */
-> +extern int rcu_max_cpu;
->  #define rcu_for_each_node_breadth_first(rsp, rnp) \
->  	for ((rnp) = &(rsp)->node[0]; \
-> -	     (rnp) < &(rsp)->node[NUM_RCU_NODES]; (rnp)++)
-> +	     (rnp) <= per_cpu_ptr((rsp)->rda, rcu_max_cpu)->mynode; (rnp)++)
->  
->  /*
->   * Do a breadth-first scan of the non-leaf rcu_node structures for the
+I expect --sort inclusive to be used with -g graph,0.5,caller. I can
+polish this in the next rev where a single top level flag will set this up.
+
+The percentages on the branches should still be accurate (as a 
+percentage of total_period). Please let me know if this is not the case.
+
+>
+> So I'm not sure this is a good direction. I'd rather advocate to create
+> true hists for each callers, all having the same real period as the leaf.
+>
+
+Please see the v5 I just posted. The callers have a true histogram entry 
+in every sense, except that period_self == 0.
+
+If we don't do this, total_period will be inflated.
+
+> Also this feature reminds me a lot the -b option in perf report.
+> Branch sorting and callchain inclusive sorting are a bit different in
+> the way they handle the things but the core idea is the same. Callchains
+> are branches as well.
+>
+
+Yes - I kept asking why the branch stack stuff doesn't use the existing 
+callchain logic.
+
+> Branch sorting (-b) adds a hist for every branch taken, and the period
+> is always 1. I wonder if this makes more sense than using the original
+> period of the event for all branches of the event. Not sure.
+>
+> Anyway I wonder if both features can be better integrated. After all
+> they are about the same thing. The difference is that the source of
+> the branches is not the same and that callchains can be depicted into
+> trees.
+>
+> So perhaps we can have -b specifying the desired source, in case both
+> are present: -b callchain and -b branch. Both at the same time wouldn't
+> make much sense I think.
+>
+> And the source could default to either if we don't have callchain and
+> branch at the same time in the events.
+>
+> Just an idea...
+
+I haven't played much with the branch stack logic. Will do so and get back.
+
+In the meanwhile, my impression is that there are two high level use cases:
+
+* Compiler optimizers, tracing JITs etc
+
+Which try to focus on a single branch and try to understand what 
+happened with that branch
+
+* Programmers who're trying to understand the behavior of the code they 
+wrote in production
+
+I think the branch-stack stuff primarily caters to the former and 
+inclusive callchain stuff to the latter. I was thinking that getting the 
+branch-stack data into callchains will make the data more useful to more 
+people.
+
+  -Arun
