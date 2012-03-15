@@ -1,101 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030191Ab2COLln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 07:41:43 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58987 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760758Ab2COLlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 07:41:39 -0400
-Message-ID: <4F61D517.7000307@parallels.com>
-Date: Thu, 15 Mar 2012 15:40:07 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Suleiman Souhlal <suleiman@google.com>
-CC: Suleiman Souhlal <ssouhlal@freebsd.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <cl@linux.com>, <yinghan@google.com>,
-        <hughd@google.com>, <gthelen@google.com>, <peterz@infradead.org>,
-        <dan.magenheimer@oracle.com>, <hannes@cmpxchg.org>, <mgorman@suse.de>,
-        <James.Bottomley@hansenpartnership.com>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 07/13] memcg: Slab accounting.
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-8-git-send-email-ssouhlal@FreeBSD.org> <4F5C7D82.7030904@parallels.com> <CABCjUKDsYyg4ONGTEeh1oen-L=OuBrP53qRdpHAT8AYYQ-JqWA@mail.gmail.com> <4F60775F.20709@parallels.com> <CABCjUKCWaXTzsVaFHG57ELWV4Yk15vt=Ei8tvbsxpQKnxTmksg@mail.gmail.com>
-In-Reply-To: <CABCjUKCWaXTzsVaFHG57ELWV4Yk15vt=Ei8tvbsxpQKnxTmksg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.70]
+	id S1030234Ab2COLob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 07:44:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39740 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760656Ab2COLoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 07:44:24 -0400
+Message-Id: <20120314170918.467626549@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Thu, 15 Mar 2012 11:44:23 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: [patch 2/5] seqlock: Use seqcount for seqlock
+References: <20120314170736.617746873@linutronix.de>
+Content-Disposition: inline; filename=seqlock-use-seqcount.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 02:04 AM, Suleiman Souhlal wrote:
-> On Wed, Mar 14, 2012 at 3:47 AM, Glauber Costa<glommer@parallels.com>  wrote:
->> On 03/14/2012 02:50 AM, Suleiman Souhlal wrote:
->>>
->>> On Sun, Mar 11, 2012 at 3:25 AM, Glauber Costa<glommer@parallels.com>
->>>   wrote:
->>>>
->>>> On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
->>>>>
->>>>> +static inline void
->>>>> +mem_cgroup_kmem_cache_prepare_sleep(struct kmem_cache *cachep)
->>>>> +{
->>>>> +       /*
->>>>> +        * Make sure the cache doesn't get freed while we have
->>>>> interrupts
->>>>> +        * enabled.
->>>>> +        */
->>>>> +       kmem_cache_get_ref(cachep);
->>>>> +       rcu_read_unlock();
->>>>> +}
->>>>
->>>>
->>>>
->>>> Is this really needed ? After this function call in slab.c, the slab code
->>>> itself accesses cachep a thousand times. If it could be freed, it would
->>>> already explode today for other reasons?
->>>> Am I missing something here?
->>>
->>>
->>> We need this because once we drop the rcu_read_lock and go to sleep,
->>> the memcg could get deleted, which could lead to the cachep from
->>> getting deleted as well.
->>>
->>> So, we need to grab a reference to the cache, to make sure that the
->>> cache doesn't disappear from under us.
->>
->>
->> Don't we grab a memcg reference when we fire the cache creation?
->> (I did that for slub, can't really recall from the top of my head if
->> you are doing it as well)
->>
->> That would prevent the memcg to go away, while relieving us from the
->> need to take a temporary reference for every page while sleeping.
->
-> The problem isn't the memcg going away, but the cache going away.
->
-I see the problem.
+No point in having different implementations for the same thing.
 
-I still think there are ways to avoid getting a reference at every page,
-but it might not be worth the complication...
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/seqlock.h |  176 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 93 insertions(+), 83 deletions(-)
 
-> Keep in mind that this function is only called in workqueue context.
-> (In the earlier revision of the patchset this function was called in
-> the process context, but kmem_cache_create() would ignore memory
-> limits, because of __GFP_NOACCOUNT.)
+Index: tip/include/linux/seqlock.h
+===================================================================
+--- tip.orig/include/linux/seqlock.h
++++ tip/include/linux/seqlock.h
+@@ -30,81 +30,12 @@
+ #include <linux/preempt.h>
+ #include <asm/processor.h>
+ 
+-typedef struct {
+-	unsigned sequence;
+-	spinlock_t lock;
+-} seqlock_t;
+-
+-/*
+- * These macros triggered gcc-3.x compile-time problems.  We think these are
+- * OK now.  Be cautious.
+- */
+-#define __SEQLOCK_UNLOCKED(lockname) \
+-		 { 0, __SPIN_LOCK_UNLOCKED(lockname) }
+-
+-#define seqlock_init(x)					\
+-	do {						\
+-		(x)->sequence = 0;			\
+-		spin_lock_init(&(x)->lock);		\
+-	} while (0)
+-
+-#define DEFINE_SEQLOCK(x) \
+-		seqlock_t x = __SEQLOCK_UNLOCKED(x)
+-
+-/* Lock out other writers and update the count.
+- * Acts like a normal spin_lock/unlock.
+- * Don't need preempt_disable() because that is in the spin_lock already.
+- */
+-static inline void write_seqlock(seqlock_t *sl)
+-{
+-	spin_lock(&sl->lock);
+-	++sl->sequence;
+-	smp_wmb();
+-}
+-
+-static inline void write_sequnlock(seqlock_t *sl)
+-{
+-	smp_wmb();
+-	sl->sequence++;
+-	spin_unlock(&sl->lock);
+-}
+-
+-/* Start of read calculation -- fetch last complete writer token */
+-static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+-{
+-	unsigned ret;
+-
+-repeat:
+-	ret = ACCESS_ONCE(sl->sequence);
+-	if (unlikely(ret & 1)) {
+-		cpu_relax();
+-		goto repeat;
+-	}
+-	smp_rmb();
+-
+-	return ret;
+-}
+-
+-/*
+- * Test if reader processed invalid data.
+- *
+- * If sequence value changed then writer changed data while in section.
+- */
+-static __always_inline int read_seqretry(const seqlock_t *sl, unsigned start)
+-{
+-	smp_rmb();
+-
+-	return unlikely(sl->sequence != start);
+-}
+-
+-
+ /*
+  * Version using sequence counter only.
+  * This can be used when code has its own mutex protecting the
+  * updating starting before the write_seqcountbeqin() and ending
+  * after the write_seqcount_end().
+  */
+-
+ typedef struct seqcount {
+ 	unsigned sequence;
+ } seqcount_t;
+@@ -186,7 +117,6 @@ static inline int __read_seqcount_retry(
+ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
+ {
+ 	smp_rmb();
+-
+ 	return __read_seqcount_retry(s, start);
+ }
+ 
+@@ -220,21 +150,101 @@ static inline void write_seqcount_barrie
+ 	s->sequence+=2;
+ }
+ 
++typedef struct {
++	struct seqcount seqcount;
++	spinlock_t lock;
++} seqlock_t;
++
+ /*
+- * Possible sw/hw IRQ protected versions of the interfaces.
++ * These macros triggered gcc-3.x compile-time problems.  We think these are
++ * OK now.  Be cautious.
+  */
++#define __SEQLOCK_UNLOCKED(lockname)			\
++	{						\
++		.seqcount = SEQCNT_ZERO,		\
++		.lock =	__SPIN_LOCK_UNLOCKED(lockname)	\
++	}
++
++#define seqlock_init(x)					\
++	do {						\
++		seqcount_init(&(x)->seqcount);		\
++		spin_lock_init(&(x)->lock);		\
++	} while (0)
++
++#define DEFINE_SEQLOCK(x) \
++		seqlock_t x = __SEQLOCK_UNLOCKED(x)
++
++/*
++ * Read side functions for starting and finalizing a read side section.
++ */
++static inline unsigned read_seqbegin(const seqlock_t *sl)
++{
++	return read_seqcount_begin(&sl->seqcount);
++}
++
++static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
++{
++	return read_seqcount_retry(&sl->seqcount, start);
++}
++
++/*
++ * Lock out other writers and update the count.
++ * Acts like a normal spin_lock/unlock.
++ * Don't need preempt_disable() because that is in the spin_lock already.
++ */
++static inline void write_seqlock(seqlock_t *sl)
++{
++	spin_lock(&sl->lock);
++	write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_sequnlock(seqlock_t *sl)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock(&sl->lock);
++}
++
++static inline void write_seqlock_bh(seqlock_t *sl)
++{
++	spin_lock_bh(&sl->lock);
++	write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_sequnlock_bh(seqlock_t *sl)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock_bh(&sl->lock);
++}
++
++static inline void write_seqlock_irq(seqlock_t *sl)
++{
++	spin_lock_irq(&sl->lock);
++	write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_sequnlock_irq(seqlock_t *sl)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock_irq(&sl->lock);
++}
++
++static inline unsigned long __write_seqlock_irqsave(seqlock_t *sl)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&sl->lock, flags);
++	write_seqcount_begin(&sl->seqcount);
++	return flags;
++}
++
+ #define write_seqlock_irqsave(lock, flags)				\
+-	do { local_irq_save(flags); write_seqlock(lock); } while (0)
+-#define write_seqlock_irq(lock)						\
+-	do { local_irq_disable();   write_seqlock(lock); } while (0)
+-#define write_seqlock_bh(lock)						\
+-        do { local_bh_disable();    write_seqlock(lock); } while (0)
+-
+-#define write_sequnlock_irqrestore(lock, flags)				\
+-	do { write_sequnlock(lock); local_irq_restore(flags); } while(0)
+-#define write_sequnlock_irq(lock)					\
+-	do { write_sequnlock(lock); local_irq_enable(); } while(0)
+-#define write_sequnlock_bh(lock)					\
+-	do { write_sequnlock(lock); local_bh_enable(); } while(0)
++	do { flags = __write_seqlock_irqsave(lock); } while (0)
++
++static inline void
++write_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock_irqrestore(&sl->lock, flags);
++}
+ 
+ #endif /* __LINUX_SEQLOCK_H */
 
-ok, fair.
 
->
-> When mem_cgroup_get_kmem_cache() returns a memcg cache, that cache has
-> already been created.
- >
-> The memcg pointer is not stable between alloc and free: It can become
-> NULL when the cgroup gets deleted, at which point the accounting has
-> been "moved to root" (uncharged from the cgroup it was charged in).
-> When that has happened, we don't want to uncharge it again.
-> I think the current code already handles this situation.
->
-
-Okay, convinced.
