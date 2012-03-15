@@ -1,53 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032026Ab2CORfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:35:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58814 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965336Ab2CORfI convert rfc822-to-8bit (ORCPT
+	id S1032037Ab2CORfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:35:33 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:10138 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab2CORf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:35:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXcsxVtDcqejEx_n79TosE_WUt77RMomh6jhQzuoLuv-Q@mail.gmail.com>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
- <1331362837-10740-23-git-send-email-yinghai@kernel.org> <CAErSpo4=pL_y0q=1-4GMGenOmKmLFgtAbpYi3GNrErGVZqCcBg@mail.gmail.com>
- <CAE9FiQXcsxVtDcqejEx_n79TosE_WUt77RMomh6jhQzuoLuv-Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 15 Mar 2012 11:34:46 -0600
-Message-ID: <CAErSpo5AwEwvo6MyyKVkBM13FM-nKJ8FAcUxiG+tVFtVkwmvFg@mail.gmail.com>
-Subject: Re: [PATCH v2 22/37] PCI, acpiphp: remove hot-add support of pci host bridge
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 15 Mar 2012 13:35:27 -0400
+From: Liz Clark <liz.clark@hp.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Liz Clark <liz.clark@hp.com>
+Subject: [PATCH] TTY: Wrong unicode value copied in con_set_unimap()
+Date: Thu, 15 Mar 2012 10:33:29 -0700
+Message-Id: <1331832809-4484-1-git-send-email-liz.clark@hp.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 11:58 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Mar 12, 2012 at 8:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> It causes confusing.
->>
->> "causes confusion."
->>
->>> We may only need acpi hp for pci host bridge.
->>>
->>> Split host bridge hot-add support to another file, and keep acpiphp simple.
->>
->> I think it's a good thing to remove host bridge hotplug from acpiphp;
->> thanks for doing that.
->>
->> However, I think you removed it here, but didn't add it elsewhere
->> until a different patch.  That means we can't bisect across this.  It
->> would be better to do the entire move in a single patch.
->
-> do you mean merge patch 22 and 23 together?
+Bugzilla 40012: PIO_UNIMAP bug: error updating Unicode-to-font map
 
-Yes, I think so.  You should have a single "move," not separate
-patches that "remove" then "add."
+The unicode font map for the virtual console is a 32x32x64 table which
+allocates rows dynamically as entries are added.  The unicode value
+increases sequentially and should count all entries even in empty
+rows.  The defect is when copying the unicode font map in con_set_unimap(),
+the unicode value is not incremented properly.  The wrong unicode value
+is entered in the new font map.
+
+Signed-off-by: Liz Clark <liz.clark@hp.com>
+---
+ drivers/tty/vt/consolemap.c |   51 ++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 43 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+index a0f3d6c..8308fc7 100644
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -516,6 +516,7 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 	int err = 0, err1, i;
+ 	struct uni_pagedir *p, *q;
+ 
++	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+ 	if (p->readonly) return -EIO;
+ 	
+@@ -528,26 +529,57 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 		err1 = con_clear_unimap(vc, NULL);
+ 		if (err1) return err1;
+ 		
++		/*
++		 * Since refcount was > 1, con_clear_unimap() allocated a
++		 * a new uni_pagedir for this vc.  Re: p != q
++		 */
+ 		q = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+-		for (i = 0, l = 0; i < 32; i++)
++
++		/*
++		 * uni_pgdir is a 32*32*64 table with rows allocated
++		 * when its first entry is added.  The unicode value must
++		 * still be incremented for empty rows.  We are copying
++		 * entries from "p" (old) to "q" (new).
++		 */
++		l = 0;		/* unicode value */
++		for (i = 0; i < 32; i++)
+ 		if ((p1 = p->uni_pgdir[i]))
+ 			for (j = 0; j < 32; j++)
+-			if ((p2 = p1[j]))
++			if ((p2 = p1[j])) {
+ 				for (k = 0; k < 64; k++, l++)
+ 				if (p2[k] != 0xffff) {
++					/*
++					 * Found one, copy entry for unicode
++					 * l with fontpos value p2[k].
++					 */
+ 					err1 = con_insert_unipair(q, l, p2[k]);
+ 					if (err1) {
+ 						p->refcount++;
+ 						*vc->vc_uni_pagedir_loc = (unsigned long)p;
+ 						con_release_unimap(q);
+ 						kfree(q);
+-						return err1; 
++						return err1;
+ 					}
+-              			}
+-              	p = q;
+-	} else if (p == dflt)
++				}
++			} else {
++				/* Account for row of 64 empty entries */
++				l += 64;
++			}
++		else
++			/* Account for empty table */
++			l += 32 * 64;
++
++		/*
++		 * Finished copying font table, set vc_uni_pagedir to new table
++		 */
++		p = q;
++	} else if (p == dflt) {
+ 		dflt = NULL;
+-	
++	}
++
++	/*
++	 * Insert user specified unicode pairs into new table.
++	 */
+ 	while (ct--) {
+ 		unsigned short unicode, fontpos;
+ 		__get_user(unicode, &list->unicode);
+@@ -557,11 +589,14 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 		list++;
+ 	}
+ 	
++	/*
++	 * Merge with fontmaps of any other virtual consoles.
++	 */
+ 	if (con_unify_unimap(vc, p))
+ 		return err;
+ 
+ 	for (i = 0; i <= 3; i++)
+-		set_inverse_transl(vc, p, i); /* Update all inverse translations */
++		set_inverse_transl(vc, p, i); /* Update inverse translations */
+ 	set_inverse_trans_unicode(vc, p);
+   
+ 	return err;
+-- 
+1.7.5.4
+
