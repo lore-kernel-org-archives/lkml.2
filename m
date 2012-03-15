@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761795Ab2COQyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:54:37 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:64573 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab2COQyf (ORCPT
+	id S1161081Ab2COQ5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:57:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43137 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161050Ab2COQ5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:54:35 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1
-Date: Thu, 15 Mar 2012 17:54:33 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 2/3] i2c-s3c2410: Rework device type handling
-In-reply-to: <20120315125630.GK3138@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: ben-linux@fluff.org, thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <4F621EC9.6020106@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1331657679-31302-1-git-send-email-k.lewandowsk@samsung.com>
- <1331657679-31302-3-git-send-email-k.lewandowsk@samsung.com>
- <20120314172915.GB13393@sirena.org.uk> <4F61BEC8.4030008@samsung.com>
- <20120315125630.GK3138@opensource.wolfsonmicro.com>
+	Thu, 15 Mar 2012 12:57:02 -0400
+Date: Thu, 15 Mar 2012 09:56:55 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Lennart Poettering <mzxreary@0pointer.de>
+Subject: [PATCH] cgroup: deprecate remount option changes mount option
+Message-ID: <20120315165655.GD32137@google.com>
+References: <20120314215228.GI7349@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314215228.GI7349@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.03.2012 13:56, Mark Brown wrote:
+This patch marks the following features for deprecation.
 
-> On Thu, Mar 15, 2012 at 11:04:56AM +0100, Karol Lewandowski wrote:
-> 
->> Introducing separate type (TYPE_S3C2440_HDMIPHY) has been our original
->> attempt to solve this issue.  However, this required adding explicit
->> checks to driver code all over the place (if (type == S3C2400 ||
->> type == S3c2440_HDMIPHY).
-> 
-> Another option is to change the type to be a pointer to a struct with
-> quirk flags in it.
+* Rebinding subsys by remount: Never reached useful state - only works
+  on empty hierarchies.
 
+* release_agent update by remount: release_agent itself will be
+  replaced with conventional fsnotify notification.
 
-Sure, that's possible.   However, I don't find it any simpler than
-using  bitmasks.  Quite to contrary - I consider it redundant to
-bring new structure into existence when simple uint does the trick
-just fine (IMHO, of course).
+v2: Lennart pointed out that "name=" is necessary for mounts w/o any
+    controller attached.  Drop "name=" deprecation.
 
-If you consider code to be inherently less readable because of this
-approach I'll rework it.  If it's not a such big deal for you I would
-prefer to keep it as is.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Lennart Poettering <mzxreary@0pointer.de>
+---
+ Documentation/feature-removal-schedule.txt |   10 ++++++++++
+ kernel/cgroup.c                            |    5 +++++
+ 2 files changed, 15 insertions(+)
 
-Thanks!
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+Index: work/Documentation/feature-removal-schedule.txt
+===================================================================
+--- work.orig/Documentation/feature-removal-schedule.txt
++++ work/Documentation/feature-removal-schedule.txt
+@@ -510,3 +510,13 @@ Why:	The pci_scan_bus_parented() interfa
+ 	convert to using pci_scan_root_bus() so they can supply a list of
+ 	bus resources when the bus is created.
+ Who:	Bjorn Helgaas <bhelgaas@google.com>
++
++----------------------------
++
++What:	cgroup option updates via remount
++When:	March 2013
++Why:	Remount currently allows changing bound subsystems and
++	release_agent.  Rebinding is hardly useful as it only works
++	when the hierarchy is empty and release_agent itself should be
++	replaced with conventional fsnotify.
++Who:	Tejun Heo <tj@kernel.org>
+Index: work/kernel/cgroup.c
+===================================================================
+--- work.orig/kernel/cgroup.c
++++ work/kernel/cgroup.c
+@@ -1294,6 +1294,11 @@ static int cgroup_remount(struct super_b
+ 	if (ret)
+ 		goto out_unlock;
+ 
++	/* See feature-removal-schedule.txt */
++	if (opts.subsys_bits != root->actual_subsys_bits || opts.release_agent)
++		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
++			   task_tgid_nr(current), current->comm);
++
+ 	/* Don't allow flags or name to change at remount */
+ 	if (opts.flags != root->flags ||
+ 	    (opts.name && strcmp(opts.name, root->name))) {
