@@ -1,110 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161232Ab2COSmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:42:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55722 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161044Ab2COSmb (ORCPT
+	id S1762025Ab2COStc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:49:32 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54571 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761283Ab2COSt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:42:31 -0400
-Message-ID: <1331836868.2215.43.camel@aks>
-Subject: Re: [RFC 1/2] kvm: host-side changes for tmem on KVM
-From: Akshay Karle <akshay.a.karle@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        kvm@vger.kernel.org, ashu tripathi <er.ashutripathi@gmail.com>,
-        nishant gulhane <nishant.s.gulhane@gmail.com>,
-        Shreyas Mahure <shreyas.mahure@gmail.com>,
-        amarmore2006 <amarmore2006@gmail.com>,
-        mahesh mohan <mahesh6490@gmail.com>
-Date: Fri, 16 Mar 2012 00:11:08 +0530
-In-Reply-To: <20120315165400.GL30250@phenom.dumpdata.com>
-References: <1331225648.2585.27.camel@aks>
-	 <20120315165400.GL30250@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Thu, 15 Mar 2012 14:49:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6650"; a="172833194"
+Message-ID: <4F6239B0.6040507@codeaurora.org>
+Date: Fri, 16 Mar 2012 00:19:20 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        gregkh@linuxfoundation.org, Daniel Walker <dwalker@fifo99.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/2] dmaengine: Add support for per xfer specific privatedata
+References: <1331548336-27802-1-git-send-email-kumarrav@codeaurora.org> <1331569796.1727.9.camel@vkoul-udesk3> <4F606270.1020709@codeaurora.org>
+In-Reply-To: <4F606270.1020709@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Working at host:
->> Once the guest exits to the kvm host, the host determines that the guest exited
->> to perform some tmem operation(done at kvm_emulate_hypercall)and then
->> we use zcache to implement this required operations(performed by kvm_pv_tmem_op).
->
-> Do you need any modifications to the Kconfig file to reflect the KVM dependency?
+On 3/14/2012 2:48 PM, Ravi Kumar V wrote:
+> On 3/12/2012 9:59 PM, Vinod Koul wrote:
+>> On Mon, 2012-03-12 at 16:02 +0530, Ravi Kumar V wrote:
+>>> Add new argument to DMA SG and Interleave mode for passing
+>>> per transfer specific private data, using this it enables the
+>>> dma devices which needs to pass the parameters which changes per
+>>> each transfer.
+>>>
+>>> Signed-off-by: Ravi Kumar V<kumarrav@codeaurora.org>
+>>> ---
+>>> include/linux/dmaengine.h | 4 ++--
+>>> 1 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+>>> index 679b349..b8f0495 100644
+>>> --- a/include/linux/dmaengine.h
+>>> +++ b/include/linux/dmaengine.h
+>>> @@ -570,7 +570,7 @@ struct dma_device {
+>>> struct dma_chan *chan,
+>>> struct scatterlist *dst_sg, unsigned int dst_nents,
+>>> struct scatterlist *src_sg, unsigned int src_nents,
+>>> - unsigned long flags);
+>>> + unsigned long flags, void *context);
+>> Please follow the related discussion we had. Alexandre had already
+>> posted updated and this needs to follow.
+>> Also this way you break the existing drivers which use this API, not
+>> sure why you posted without fixing them?
+>>
+I have gone through the discussion in
+https://lkml.org/lkml/2012/2/6/300
+As per my understanding
+1.we need to add new transaction types DMA_SG_EXT & DMA_INTERLEAVE_EXT.
+2.Add context parameter to existing API's.
+3.Typecast the context parameter with architecture specific structure
+there by restricting client drivers to pass only arch specific parameter.
+4.Add inline functions as suggested by Russell
+and then
+5.Fix existing code and client drivers for using new API.
 
-Yeah, the Kconfig of zcache now needs to be modified to reflect the KVM and the KVM_INTEL or
-KVM_AMD dependency. The Kconfig can also be modified to support tmem for the guest kernels,
-as the zcache code is not at all used in the guest, only the kvm-tmem, cleancache and
-frontswap(if present) code is used in the guest. But, in the host its necessary to enable zcache.
-So the Kconfig can be modified to have the following new field:
-"Transcendent memory support for kvm guests".... Which would compile just the kvm-tmem code.
-And we can add Cleancache and Frontswap as dependencies(similar to zcache).
+Hi Vinod,
 
-But it should be made sure that the host kernel has zcache enabled..
+I am ready to follow above steps and also suggested by Russell and 
+submit new patch.
+Please can you confirm me so that i will start work.
 
->> diff -Napur vanilla/linux-3.1.5/arch/x86/kvm/x86.c linux-3.1.5//arch/x86/kvm/x86.c
->> --- vanilla/linux-3.1.5/arch/x86/kvm/x86.c	2011-12-09 22:27:05.000000000 +0530
->> +++ linux-3.1.5//arch/x86/kvm/x86.c	2012-03-05 14:09:41.652006083 +0530
->> @@ -5267,6 +5267,10 @@ int kvm_emulate_hypercall(struct kvm_vcp
->>  	case KVM_HC_MMU_OP:
->>  		r = kvm_pv_mmu_op(vcpu, a0, hc_gpa(vcpu, a1, a2), &ret);
->>  		break;
->> +	case KVM_HC_TMEM:
->> +		r = kvm_pv_tmem_op(vcpu, a0, &ret);
->> +		ret = ret - 1000;
->
-> That is rather odd. Why the subtraction of 1000?
+My suggestion is instead of adding context parameter in existing API's,
+how it would be if we can add a new API for each DMA transaction types
+available in dmaengine for passing transaction specific parameter?
+so that existing clients and dma drivers will not be disturbed.
 
-The reason for the subtraction is that the kvm hypercalls were able to return only negative
-values. Any return of non-negative value resulted in guest kernel panic. We couldn't figure
-out why? Suggestions to remove this would help improvise..
-We could've just returned -ret but when the tmem_op returned 0 it wouldn't work so the,
-ret - 1000.
-
->> @@ -669,7 +670,6 @@ static struct zv_hdr *zv_create(struct x
->>       int chunks = (alloc_size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
->>       int ret;
->>  
->> -     BUG_ON(!irqs_disabled());
->
-> Can you explain why?
-
-Zcache is by default used in the non-virtualized environment for page compression. Whenever
-a page is to be evicted from the page cache the spin_lock_irq is held on the page mapping.
-To ensure that this is done, the BUG_ON(!irqs_disabled()) was used.
-But now the situation is different, we are using zcache functions for kvm VM's.
-So if any page of the guest is to be evicted the irqs should be disabled in just that
-guest and not the host, so we removed the BUG_ON(!irqs_disabled()); line.
-
->> @@ -1934,10 +1993,19 @@ static int __init no_frontswap(char *s)
->>  
->>  __setup("nofrontswap", no_frontswap);
->>  
->> +static int kvm_tmem_enabled = 0;
->
-> No need to declare it zero. Don't we want to have it running by default?
-> So the function below would be 'disable_kvm' instead of enabling it?
-
-This can be enabled by default only if the Kconfig was modified as described above.
-As the user may not want tmem enabled by default we chose to keep it zero.
->> +
->> +static int __init enable_kvm_tmem(char *s)
->> +{
->> +	kvm_tmem_enabled = 1;
->> +	return 1;
->> +}
->> +
->> +__setup("kvmtmem", enable_kvm_tmem);
->> +
->>  static int __init zcache_init(void)
->>  {
->>  	int ret = 0;
->> -
->>  #ifdef CONFIG_SYSFS
->>  	ret = sysfs_create_group(mm_kobj, &zcache_attr_group);
->>  	if (ret) {
-
+Thanks
+Ravi Kumar
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
