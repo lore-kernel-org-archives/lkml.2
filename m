@@ -1,181 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750869Ab2COEIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 00:08:20 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56865 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab2COEIS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 00:08:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
-References: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
-Date: Wed, 14 Mar 2012 21:08:17 -0700
-Message-ID: <CAPhKKr-W+nh9Xzmwz83MUpzPuBfkj_TxjiZ+8NA5hndDUQB7bA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] LinSched for v3.3-rc7
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Paul Turner <pjt@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Benjamin Segall <bsegall@google.com>,
-        Ranjit Manomohan <ranjitm@google.com>, Nikhil Rao <ncrao@google.com>,
-        jmc@cs.unc.edu, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Abhishek Srivastava <a.srivastava.800@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751008Ab2COEQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 00:16:29 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:46026 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717Ab2COEQ1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 00:16:27 -0400
+From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+To: Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "Moore, Eric" <Eric.Moore@lsi.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: DL-MPT Fusion Linux <DL-MPTFusionLinux@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Support <support@lsi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 15 Mar 2012 09:45:14 +0530
+Subject: RE: [PATCH v3] fusion: use pci_dev->revision
+Thread-Topic: [PATCH v3] fusion: use pci_dev->revision
+Thread-Index: Ac0CDx+UQQ2lcVmZSwGlf96M54BLfQAUuX/Q
+Message-ID: <A6888A6805518E4EA4AF7072A28264A6067E731EE1@inbmail02.lsi.com>
+References: <201203142219.31119.sshtylyov@ru.mvista.com>
+In-Reply-To: <201203142219.31119.sshtylyov@ru.mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding abhishek to the cc]
+Patch seems fine. Please consider this patch as Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
 
-On Wed, Mar 14, 2012 at 8:58 PM, Paul Turner <pjt@google.com> wrote:
-> Hi All,
->
-> [ Take 2, gmail tried to a non text/plain component into the last email .. ]
->
-> Quick start version:
->
-> Available under linsched-alpha at:
->  git://git.kernel.org/pub/scm/linux/kernel/git/pjt/linsched.git  .linsched
->
-> NOTE: The branch history is still subject to some revision as I am
-> still re-partitioning some of the patches.  Once this is complete, I
-> will promote linsched-alpha into a linsched branch at which point it
-> will no longer be subject to history re-writes.
->
-> After checking out the code:
-> cd tools/linsched
-> make
-> cd tests
-> ./run_tests.sh basic_tests
-> << then try changing some scheduler parameters, e.g. sched_latency,
-> and repeating >>
->
-> (Note:  The basic_tests are unit-tests, these are calibrated to the
-> current scheduler tunables and should strictly be considered sanity
-> tests.  Please see the mcarlo-sim work for a more useful testing
-> environment.)
->
-> Extended version:
->
-> First of all, apologies in the delay to posting this -- I know there's
-> been a lot of interest.  We made the choice to first rebase to v3.3
-> since there were fairly extensive changes, especially within the
-> scheduler, that meant we had the opportunity to significantly clean up
-> some of the LinSched code.  (For example, previously we were
-> processing kernel/sched* using awk as a Makefile step so that we could
-> extract the necessary structure information without modifying
-> sched.c!)  While the code benefited greatly from this, there were
-> several other changes that required fairly extensive modification in
-> this process (and in the meanwhile the v3.1 version became less
-> representative due to the extent of the above changes); which pushed
-> things out much further than I would have liked.  I suppose the moral
-> of the story is always release early, and often.
->
-> That said, I'm relatively happy with the current state of integration,
-> there's certainly some specific areas that can still be greatly
-> improved (in particular, the main simulator loop has not had as much
-> attention paid as the LinSched<>Kernel interactions and there's a long
-> list of TODOs that could be improved there), but things are now mated
-> fairly cleanly through the use of a new LinSched architecture.  This
-> is a total re-write of almost all LinSched<>Kernel interactions versus
-> the previous (2.6.35) version, and has allowed us to now carry almost
-> zero modifications against the kernel source.  It's both possible to
-> develop/test in place, as well as being patch compatible.  The
-> remaining touch-points now total just 20 lines!  Half of these are
-> likely mergable, with the other 10 lines being more LinSched specific
-> at this point in time, I've broken these down below:
->
-> The total damage:
->  include/linux/init.h      |    6 ++++++   (linsched ugliness,
-> unfortunately necessary until we boot-strap proper initcall support)
->  include/linux/rcupdate.h  |    3 +++    (only necessary to allow -O0
-> compilation which is extremely handy for analyzing the scheduler using
-> gdb)
->  kernel/pid.c              |    4 ++++        (linsched ugliness,
-> these can go eventually)
->  kernel/sched/fair.c       |    2 +-          (this is just the
-> promotion of 1 structure and function from static state which weren't
-> published in the sched/ re-factoring that we need from within the
-> simulator)
->  kernel/sched/stats.c      |    2 +-
->  kernel/time/timekeeping.c |    3 ++-    (this fixes a time-dilation
-> error due to rounding when our clock-source has ns-resolution, e.g.
-> shift==1)
->  6 files changed, 17 insertions(+), 3 deletions(-)
->
-> Summarized changes vs 2.6.35 (previous version):
->
-> - The original LinSched (understandably) simplified many of the kernel
-> interactions in order to make simulation easier.  Unfortunately, this
-> has serious side-effects on the accuracy of simulation.  We've now
-> introduced a large portion of this state, including: irq and soft-irq
-> contexts (we now perform periodic load-balance out of SCHED_SOFTIRQ
-> for example), support for active load-balancing, correctly modeled
-> nohz interactions, ipi and stop-task support.
->
-> - Support for record and replay of application scheduling via perf.
-> This is not yet well integrated, but under tests exist the tools to
-> record an applications behavior using perf sched record, and then play
-> it back in the simulator.
->
-> - Load-balancer scoring.  This one is a very promising new avenue for
-> load-balancer testing.  We analyzed several workloads and found that
-> they could be well-modeled using a log-normal distribution.
-> Parameterizing these models then allows us to construct a large (500)
-> test-case set of randomly generated workloads that behave similarly.
-> By integrating the variance between the current load-balance and an
-> offline computed (currently greedy first-fit) balance we're able to
-> automatically identify and score an approximation of our distance from
-> an ideal load-balance.  Historically, such scores are very difficult
-> to interpret, however, that's where our ability to generate a large
-> set of test-cases above comes in.  This allows us to exploit a nice
-> property, it's much easier to design a scoring function that diverges
-> (in this case the variance) than a nice stable one that converges.  We
-> can then catch regressions in load-balancer quality by measuring the
-> divergence in this set of scoring functions across our set of
-> test-cases.  This particular feature needs a large set of
-> documentation in itself (todo), but to get started with playing with
-> it see Makefile.mcarlo-sims in tools/linsched/tests.  In particular to
-> evaluate the entire set across a variety of topologies the following
-> command can be issued:
->  make -j <num_cpus * 2 > -f Makefile.mcarlo-sims
-> (The included 'diff-mcarlo-500' tool can then be used to make
-> comparisons across result sets.)
->
-> - Validation versus real hardware.  Under tests/validation we've
-> included a tool for replaying and recording the above simulations on a
-> live-machine.  These can then be compared to simulated runs using the
-> tools above to ensure that LinSched is modelling your architecture
-> reasonably appropriately.  We did some reasonably extensive
-> comparisons versus several x86 topologies in the v3.1 code using this;
-> it's a fundamentally hard problem -- in particular there's much more
-> clock drift between events on real hardware, but the results showed
-> the included topologies to be a reasonable simulacrum under LinSched.
->
-> What's to come?
-> - More documentation, especially about the use of the new
-> load-balancer scoring tools.
-> - The history is very coarse right now as a result of going through a
-> rebase cement-mixer.  I'd like to incrementally refactor some of the
-> larger commits; once this is done I will promote linsched-alpha to a
-> stable linsched branch that won't be subject to history re-writes.
-> - KBuild integration.  We currently build everything out of the
-> tools/linsched makefiles.  One of the immediate TODOs involves
-> re-working the arch/linsched half of this to work with kbuild so that
-> its less hacky/fragile.
-> - Writing up some of the existing TODOs as starting points for anyone
-> who wants to get involved.
->
-> I'd also like to take a moment to specially recognize the effort of
-> the following contributors, all of whom were involved extensively in
-> the work above.  Things have come a long way since the 5000 lines of
-> "#ifdef LINSCHED", the current status would not be possible without
-> them.
->  Ben Segall, Dhaval Giani, Ranjit Manomohan, Nikhil Rao, and Abhishek
-> Srivastava
->
-> Thanks!
+Regards,
+Nagalakshmi
+
+
+-----Original Message-----
+From: Sergei Shtylyov [mailto:sshtylyov@ru.mvista.com] 
+Sent: Thursday, March 15, 2012 12:50 AM
+To: Moore, Eric; akpm@linux-foundation.org
+Cc: DL-MPT Fusion Linux; linux-scsi@vger.kernel.org; Support; linux-kernel@vger.kernel.org
+Subject: [PATCH v3] fusion: use pci_dev->revision
+
+This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
+converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
+drivers to use pci_device->revision).
+
+In one case, it even reads PCI revision ID without using it -- that code is now
+removed...
+
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+
+---
+This patch is refreshed against the recent Linus' tree.
+
+This patch hasn't been applied to 3.1, 3.2, or 3.3, hopefully it can be applied
+to 3.4 at last...
+
+Andrew M., maybe you can take it if the maintainers don't seem to be bothered?
+
+ drivers/message/fusion/mptbase.c |   12 ++++--------
+ drivers/message/fusion/mptctl.c  |    4 +---
+ 2 files changed, 5 insertions(+), 11 deletions(-)
+
+Index: linux-2.6/drivers/message/fusion/mptbase.c
+===================================================================
+--- linux-2.6.orig/drivers/message/fusion/mptbase.c
++++ linux-2.6/drivers/message/fusion/mptbase.c
+@@ -1652,7 +1652,6 @@ mpt_mapresources(MPT_ADAPTER *ioc)
+ 	unsigned long	 port;
+ 	u32		 msize;
+ 	u32		 psize;
+-	u8		 revision;
+ 	int		 r = -ENODEV;
+ 	struct pci_dev *pdev;
+ 
+@@ -1669,8 +1668,6 @@ mpt_mapresources(MPT_ADAPTER *ioc)
+ 		return r;
+ 	}
+ 
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+-
+ 	if (sizeof(dma_addr_t) > 4) {
+ 		const uint64_t required_mask = dma_get_required_mask
+ 		    (&pdev->dev);
+@@ -1778,7 +1775,6 @@ mpt_attach(struct pci_dev *pdev, const s
+ 	MPT_ADAPTER	*ioc;
+ 	u8		 cb_idx;
+ 	int		 r = -ENODEV;
+-	u8		 revision;
+ 	u8		 pcixcmd;
+ 	static int	 mpt_ids = 0;
+ #ifdef CONFIG_PROC_FS
+@@ -1886,8 +1882,8 @@ mpt_attach(struct pci_dev *pdev, const s
+ 	dinitprintk(ioc, printk(MYIOC_s_INFO_FMT "facts @ %p, pfacts[0] @ %p\n",
+ 	    ioc->name, &ioc->facts, &ioc->pfacts[0]));
+ 
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+-	mpt_get_product_name(pdev->vendor, pdev->device, revision, ioc->prod_name);
++	mpt_get_product_name(pdev->vendor, pdev->device, pdev->revision,
++			     ioc->prod_name);
+ 
+ 	switch (pdev->device)
+ 	{
+@@ -1902,7 +1898,7 @@ mpt_attach(struct pci_dev *pdev, const s
+ 		break;
+ 
+ 	case MPI_MANUFACTPAGE_DEVICEID_FC929X:
+-		if (revision < XL_929) {
++		if (pdev->revision < XL_929) {
+ 			/* 929X Chip Fix. Set Split transactions level
+ 		 	* for PCIX. Set MOST bits to zero.
+ 		 	*/
+@@ -1933,7 +1929,7 @@ mpt_attach(struct pci_dev *pdev, const s
+ 		/* 1030 Chip Fix. Disable Split transactions
+ 		 * for PCIX. Set MOST bits to zero if Rev < C0( = 8).
+ 		 */
+-		if (revision < C0_1030) {
++		if (pdev->revision < C0_1030) {
+ 			pci_read_config_byte(pdev, 0x6a, &pcixcmd);
+ 			pcixcmd &= 0x8F;
+ 			pci_write_config_byte(pdev, 0x6a, pcixcmd);
+Index: linux-2.6/drivers/message/fusion/mptctl.c
+===================================================================
+--- linux-2.6.orig/drivers/message/fusion/mptctl.c
++++ linux-2.6/drivers/message/fusion/mptctl.c
+@@ -1250,7 +1250,6 @@ mptctl_getiocinfo (unsigned long arg, un
+ 	int			iocnum;
+ 	unsigned int		port;
+ 	int			cim_rev;
+-	u8			revision;
+ 	struct scsi_device 	*sdev;
+ 	VirtDevice		*vdevice;
+ 
+@@ -1324,8 +1323,7 @@ mptctl_getiocinfo (unsigned long arg, un
+ 	pdev = (struct pci_dev *) ioc->pcidev;
+ 
+ 	karg->pciId = pdev->device;
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+-	karg->hwRev = revision;
++	karg->hwRev = pdev->revision;
+ 	karg->subSystemDevice = pdev->subsystem_device;
+ 	karg->subSystemVendor = pdev->subsystem_vendor;
+ 
