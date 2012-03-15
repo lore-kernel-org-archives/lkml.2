@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab2COEtS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 00:49:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41690 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2COEtR (ORCPT
+	id S1752436Ab2COEuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 00:50:10 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:33010 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2COEuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 00:49:17 -0400
-Message-ID: <1331786949.4709.1.camel@phoenix>
-Subject: [PATCH] regulator: Fix unbalanced lock/unlock in
- mc13892_regulator_probe error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yong Shen <yong.shen@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 15 Mar 2012 12:49:09 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 15 Mar 2012 00:50:04 -0400
+Message-ID: <d2e03d5f063de84d1bae3c3e06296f81.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1331781125-15658-12-git-send-email-wad@chromium.org>
+References: <1331781125-15658-1-git-send-email-wad@chromium.org>
+    <1331781125-15658-12-git-send-email-wad@chromium.org>
+Date: Thu, 15 Mar 2012 05:49:47 +0100
+Subject: Re: [PATCH v15 11/13] ptrace,seccomp: Add PTRACE_SECCOMP support
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, "Will Drewry" <wad@chromium.org>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: -0.1
+X-Scan-Signature: 4052b6d1c9976086d5ab5ce040fcf5b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do not hold a lock while registering regulator, thus should not call unlock
-if regulator_register fails.
+Hi Will,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/mc13892-regulator.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+On Thu, March 15, 2012 04:12, Will Drewry wrote:
+> @@ -73,6 +74,7 @@
+>  #define PTRACE_EVENT_VFORK_DONE	5
+>  #define PTRACE_EVENT_EXIT	6
+>  #define PTRACE_EVENT_STOP	7
+> +#define PTRACE_EVENT_SECCOMP	8
+>
+>  #include <asm/ptrace.h>
+>
+> @@ -101,8 +103,9 @@
+>  #define PT_TRACE_EXEC		PT_EVENT_FLAG(PTRACE_EVENT_EXEC)
+>  #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
+>  #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
+> +#define PT_TRACE_SECCOMP	PT_EVENT_FLAG(PTRACE_EVENT_SECCOMP)
+>
+> -#define PT_TRACE_MASK	0x000003f4
+> +#define PT_TRACE_MASK	0x00000ff4
 
-diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
-index e8cfc99..845aa22 100644
---- a/drivers/regulator/mc13892-regulator.c
-+++ b/drivers/regulator/mc13892-regulator.c
-@@ -552,7 +552,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
- 	mc13xxx_lock(mc13892);
- 	ret = mc13xxx_reg_read(mc13892, MC13892_REVISION, &val);
- 	if (ret)
--		goto err_free;
-+		goto err_unlock;
- 
- 	/* enable switch auto mode */
- 	if ((val & 0x0000FFFF) == 0x45d0) {
-@@ -562,7 +562,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
- 			MC13892_SWITCHERS4_SW1MODE_AUTO |
- 			MC13892_SWITCHERS4_SW2MODE_AUTO);
- 		if (ret)
--			goto err_free;
-+			goto err_unlock;
- 
- 		ret = mc13xxx_reg_rmw(mc13892, MC13892_SWITCHERS5,
- 			MC13892_SWITCHERS5_SW3MODE_M |
-@@ -570,7 +570,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
- 			MC13892_SWITCHERS5_SW3MODE_AUTO |
- 			MC13892_SWITCHERS5_SW4MODE_AUTO);
- 		if (ret)
--			goto err_free;
-+			goto err_unlock;
- 	}
- 	mc13xxx_unlock(mc13892);
- 
-@@ -612,10 +612,10 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
- err:
- 	while (--i >= 0)
- 		regulator_unregister(priv->regulators[i]);
-+	return ret;
- 
--err_free:
-+err_unlock:
- 	mc13xxx_unlock(mc13892);
--
- 	return ret;
- }
- 
--- 
-1.7.5.4
+Did you miss this bit?
 
+Greetings,
+
+Indan
 
 
