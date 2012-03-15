@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031479Ab2COBnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 21:43:41 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:39674 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031223Ab2COBnk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 21:43:40 -0400
+	id S1031507Ab2COBo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 21:44:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031223Ab2COBoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 21:44:25 -0400
+Message-ID: <4F61496D.8030000@redhat.com>
+Date: Wed, 14 Mar 2012 22:44:13 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <4F613AF9.2030504@linaro.org>
-References: <1331769536-4602-1-git-send-email-john.stultz@linaro.org>
- <1331769536-4602-2-git-send-email-john.stultz@linaro.org> <alpine.LFD.2.02.1203150131390.2466@ionos>
- <4F613AF9.2030504@linaro.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 Mar 2012 18:43:19 -0700
-Message-ID: <CALCETrWheuZGrMYzvWDRoRjNJt5mD-0FEd+PQRh3N=XjfL98gQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] time: x86: Fix race switching from vsyscall to
- non-vsyscall clock
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+To: Borislav Petkov <bp@amd64.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com> <20120313233217.GB31106@kroah.com> <4F60F2E4.7060707@redhat.com> <20120314204355.GA10187@kroah.com> <20120314223102.GA27602@aftab>
+In-Reply-To: <20120314223102.GA27602@aftab>
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 5:42 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 03/14/2012 05:34 PM, Thomas Gleixner wrote:
+Em 14-03-2012 19:31, Borislav Petkov escreveu:
+> On Wed, Mar 14, 2012 at 01:43:55PM -0700, Greg KH wrote:
+>>> He thinks that a multi-layer struct should be created inside that directory
+>>> (it could have 2 or 3 levels of directories, depending on how the memory is
+>>> organized at the memory controller), instead of having a large number of files
+>>> there.
 >>
->> On Wed, 14 Mar 2012, John Stultz wrote:
->>>
->>>  notrace static noinline int do_realtime(struct timespec *ts)
->>>  {
->>>        unsigned long seq, ns;
->>> +       int mode;
->>
->> Please keep a newline between declarations and code.
->
->
-> Fixed below. Thanks!
-> (Let me know if you see whitespace damage, I switched mail clients today and
-> am learning the quirks here.)
-> -john
->
->
->
-> When switching from a vsyscall capable to a non-vsyscall capable
-> clocksource, there was a small race, where the last vsyscall
-> gettimeofday before the switch might return a invalid time value
-> using the new non-vsyscall enabled clocksource values after the
-> switch is complete.
->
-> This is due to the vsyscall code checking the vclock_mode once
-> outside of the seqcount protected section. After it reads the
-> vclock mode, it doesn't re-check that the sampled clock data
-> that is obtained in the seqcount critical section still matches.
->
-> The fix is to sample vclock_mode inside the protected section,
-> and as long as it isn't VCLOCK_NONE, return the calculated
-> value. If it has changed and is now VCLOCK_NONE, fall back
-> to the syscall gettime calculation.
->
-> v2:
->  * Cleanup checks as suggested by tglx
->  * Also fix same issue present in gettimeofday path
->
-> CC: Andy Lutomirski<luto@amacapital.net>
-> CC: Thomas Gleixner<tglx@linutronix.de>
-> Signed-off-by: John Stultz<john.stultz@linaro.org>
-> ---
->  arch/x86/vdso/vclock_gettime.c |   68
-> +++++++++++++++++++++++++--------------
->  1 files changed, 43 insertions(+), 25 deletions(-)
->
+>> Why create subdirs?  If those subdirectories are not real devices,
+>> showing a real hierarchy, then do not create them as userspace will get
+>> very confused very quickly.
+> 
+> Why, IMO, we agreed on the following layout
+> 
+> rank0/
+> |-- dimm_dev_type
+> |-- dimm_edac_mode
+> |-- dimm_label
+> |-- dimm_location
+> |-- dimm_mem_type
+> |-- CE
+> |-- UE
+> `-- dimm_size
+> 
+> with CE being the correctable errors counter and UE be optional and only
+> present when it makes sense for the hardware.
 
-Looks reasonable to me.  I like this approach better than the earlier
-way -- it's likely to cause less slowdown in the VCLOCK_TSC case.
+As I said, that is easy to implement. The hard part would be what to do with
+the per-csrow/per-branch error counters that exist currently at EDAC.
 
-That being said, I think you might have a bug:
+>From my side, I'm OK to remove them, but, as I said before, existing user tools
+use them, especially because UE errors aren't per-rank/per-dimm on the
+typical case (128 bits cacheline).
 
-notrace static inline long vgetns(void)
-{
-        long v;
-        cycles_t cycles;
-        if (gtod->clock.vclock_mode == VCLOCK_TSC)
-                cycles = vread_tsc();
-        else
-                cycles = vread_hpet();
-        v = (cycles - gtod->clock.cycle_last) & gtod->clock.mask;
-        return (v * gtod->clock.mult) >> gtod->clock.shift;
-}
+Of course, the EDAC logic could increment multiple UE error counters in such
+case, (meaning that an error happened on either one of the affected DIMMs/Ranks)
+but this is a different behavior than the current API.
 
-In the VCLOCK_NONE, you'll access the hpet mapping.  But in
-hpet_enable, hpet_set_mapping isn't called and this will crash, I
-think.
-
---Andy
+Regards,
+Mauro
