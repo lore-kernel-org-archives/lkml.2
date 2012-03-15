@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761874Ab2CORRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:17:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56698 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769Ab2CORRG (ORCPT
+	id S1761901Ab2CORSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:18:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60318 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755769Ab2CORSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:17:06 -0400
-Date: Thu, 15 Mar 2012 21:17:00 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: =?utf-8?B?7ZWo66qF7KO8?= <myungjoo.ham@samsung.com>
-Cc: Jesper Juhl <jj@chaosbits.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>,
-        Axel Lin <axel.lin@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] power, max8998: Include linux/module.h just once in
- drivers/power/max8998_charger.c
-Message-ID: <20120315171700.GE11441@oksana.dev.rtsoft.ru>
-References: <32079635.330331328493473417.JavaMail.weblogic@epml22>
+	Thu, 15 Mar 2012 13:18:13 -0400
+Date: Thu, 15 Mar 2012 10:18:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH block/for-3.4/core] cfq: fix cfqg ref handling when
+ BLK_CGROUP && !CFQ_GROUP_IOSCHED
+Message-ID: <20120315171808.GF32137@google.com>
+References: <20120315094945.GA3205@localhost>
+ <20120315163546.GA32137@google.com>
+ <20120315164621.GD3253@redhat.com>
+ <20120315165057.GB32137@google.com>
+ <20120315170100.GF3253@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <32079635.330331328493473417.JavaMail.weblogic@epml22>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120315170100.GF3253@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 01:57:54AM +0000, 함명주 wrote:
-> > Remove the duplicate.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+On Thu, Mar 15, 2012 at 01:01:00PM -0400, Vivek Goyal wrote:
+> On Thu, Mar 15, 2012 at 09:50:57AM -0700, Tejun Heo wrote:
 > 
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-Applied, thanks!
-
-> 
-> > ---
-> >  drivers/power/max8998_charger.c |    1 -
-> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > > [..]
+> > > > @@ -3533,7 +3551,7 @@ static int cfq_init_queue(struct request
+> > > >  
+> > > >  	spin_lock_irq(q->queue_lock);
+> > > >  	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, cfqd->root_group);
+> > > > -	blkg_put(cfqg_to_blkg(cfqd->root_group));
+> > > > +	cfqg_put(cfqd->root_group);
+> > > 
+> > > This seems to be a spurious cfqg_put()? Which reference we are putting
+> > > down here?
 > > 
-> > diff --git a/drivers/power/max8998_charger.c b/drivers/power/max8998_charger.c
-> > index 9b3f2bf..5c5f281 100644
-> > --- a/drivers/power/max8998_charger.c
-> > +++ b/drivers/power/max8998_charger.c
-> > @@ -21,7 +21,6 @@
-> >  
-> >  #include <linux/module.h>
-> >  #include <linux/err.h>
-> > -#include <linux/module.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/power_supply.h>
-> > -- 
-> > 1.7.9
+> > The extra ref from cfq_link_cfqq_cfqg() for oom_cfqq; otherwise, we
+> > need an extra cfq_put() in cfq_exit_queue().  I thought I wrote
+> > comment about that somewhere.  Hmmm.... apparently not.  The thing is
+> > that oom_cfqq doesn't go through proper cfqq destruction and thus
+> > never puts the extra ref to root cfqg.
+> 
+> Ok. Is cfq_exit_queue() a better place to put down this reference
+> explicitly with a comment. Even if you keep it here, atleast a comment
+> is required. It is not obvious at all (atleast to me).
+
+Ah... the comment actually already is there.
+
+	/*
+	 * Our fallback cfqq if cfq_find_alloc_queue() runs into OOM issues.
+	 * Grab a permanent reference to it, so that the normal code flow
+	 * will not attempt to free it.  oom_cfqq is linked to root_group
+	 * but shouldn't hold a reference as it'll never be unlinked.  Lose
+	 * the reference from linking right away.
+	 */
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+tejun
