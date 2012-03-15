@@ -1,174 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032269Ab2COUJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:09:21 -0400
-Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:56930 "EHLO
-	intmgw001.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1032223Ab2COUJS (ORCPT
+	id S1161365Ab2COUJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:09:50 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57848 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032198Ab2COUJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:09:18 -0400
-From: Arun Sharma <asharma@fb.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, Stephane Eranian <eranian@google.com>,
-        peterz@infradead.org, acme@redhat.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com, dsahern@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf: Add branch stack support to perf script
-Date: Thu, 15 Mar 2012 13:08:47 -0700
-Message-Id: <1331842127-27468-1-git-send-email-asharma@fb.com>
-X-Mailer: git-send-email 1.7.8.4
+	Thu, 15 Mar 2012 16:09:48 -0400
+Message-ID: <4F624C88.6050503@suse.cz>
+Date: Thu, 15 Mar 2012 21:09:44 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+MIME-Version: 1.0
+To: linux-mm@kvack.org
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Too much free memory (not used for FS cache)
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it easier to write tools that consume the
-branch stack data.
+Hi,
 
-Sample usage:
+since today's -next (20120315), the MM/VFS system is very sluggish.
+Especially when committing, diffing and similar with git. I still have
+2G of 6G of memory free. But with each commit I have to wait for git to
+fetch all data from disk.
 
-perf record -jany_call,u -o perf.data.anycallu -- ./foo
-perf script -i perf.data.anycallu -fip,sym
+I'm using ext4 on a raid for the partition with git kernel repository if
+that matters.
 
-The samples seem to have the sense of call/return
-inverted. If the original callgraph was a -> b -> c
-I get samples like:
+Any idea what that could be?
 
-from	to
-c	b
-b	a
+nr_free_pages 555469
+nr_inactive_anon 16787
+nr_active_anon 414439
+nr_inactive_file 315585
+nr_active_file 137446
+nr_unevictable 0
+nr_mlock 0
+nr_anon_pages 277729
+nr_mapped 95971
+nr_file_pages 524644
+nr_dirty 11
+nr_writeback 0
+nr_slab_reclaimable 35548
+nr_slab_unreclaimable 7450
+nr_page_table_pages 11493
+nr_kernel_stack 464
+nr_unstable 0
+nr_bounce 0
+nr_vmscan_write 0
+nr_vmscan_immediate_reclaim 0
+nr_writeback_temp 0
+nr_isolated_anon 0
+nr_isolated_file 0
+nr_shmem 71614
+nr_dirtied 1165398
+nr_written 1147058
+nr_anon_transparent_hugepages 160
+nr_dirty_threshold 97608
+nr_dirty_background_threshold 48804
+pgpgin 2446144
+pgpgout 4844237
+pswpin 0
+pswpout 0
+pgalloc_dma 0
+pgalloc_dma32 21764611
+pgalloc_normal 38307626
+pgalloc_movable 0
+pgfree 60640227
+pgactivate 913299
+pgdeactivate 109336
+pgfault 51012433
+pgmajfault 8476
+pgrefill_dma 0
+pgrefill_dma32 79208
+pgrefill_normal 41244
+pgrefill_movable 0
+pgsteal_dma 0
+pgsteal_dma32 162966
+pgsteal_normal 185373
+pgsteal_movable 0
+pgscan_kswapd_dma 0
+pgscan_kswapd_dma32 162559
+pgscan_kswapd_normal 215360
+pgscan_kswapd_movable 0
+pgscan_direct_dma 0
+pgscan_direct_dma32 1624
+pgscan_direct_normal 3927
+pgscan_direct_movable 0
+pginodesteal 4
+slabs_scanned 102400
+kswapd_steal 342881
+kswapd_inodesteal 756
+kswapd_low_wmark_hit_quickly 0
+kswapd_high_wmark_hit_quickly 119
+kswapd_skip_congestion_wait 0
+pageoutrun 3493
+allocstall 5
+pgrotated 240
+compact_blocks_moved 432
+compact_pages_moved 10699
+compact_pagemigrate_failed 0
+compact_stall 14
+compact_fail 5
+compact_success 9
+htlb_buddy_alloc_success 0
+htlb_buddy_alloc_fail 0
+unevictable_pgs_culled 327
+unevictable_pgs_scanned 0
+unevictable_pgs_rescued 2618
+unevictable_pgs_mlocked 2618
+unevictable_pgs_munlocked 2618
+unevictable_pgs_cleared 0
+unevictable_pgs_stranded 0
+unevictable_pgs_mlockfreed 0
+thp_fault_alloc 13147
+thp_fault_fallback 0
+thp_collapse_alloc 3543
+thp_collapse_alloc_failed 0
+thp_split 183
 
-To restore the normal sense, I'm printing them as:
-
-to => from
-
-Signed-off-by: Arun Sharma <asharma@fb.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: acme@redhat.com
-Cc: ravitillo@lbl.gov
-Cc: vweaver1@eecs.utk.edu
-Cc: khandual@linux.vnet.ibm.com
-Cc: dsahern@gmail.com
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/builtin-script.c |   56 ++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 50 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index d4ce733..99ad1d5 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -318,6 +318,11 @@ static bool is_bts_event(struct perf_event_attr *attr)
- 		(attr->sample_period == 1));
- }
- 
-+static bool is_branch_stack_event(struct perf_event_attr *attr)
-+{
-+	return (attr->sample_type & PERF_SAMPLE_BRANCH_STACK);
-+}
-+
- static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
- {
- 	if ((attr->type == PERF_TYPE_SOFTWARE) &&
-@@ -326,31 +331,32 @@ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
- 	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
- 		return true;
- 
--	if (is_bts_event(attr))
-+	if (is_bts_event(attr) || is_branch_stack_event(attr))
- 		return true;
- 
- 	return false;
- }
- 
--static void print_sample_addr(union perf_event *event,
-+static void __print_sample_addr(union perf_event *event,
- 			  struct perf_sample *sample,
- 			  struct machine *machine,
- 			  struct thread *thread,
--			  struct perf_event_attr *attr)
-+			  struct perf_event_attr *attr,
-+			  u64 addr)
- {
- 	struct addr_location al;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	printf("%16" PRIx64, sample->addr);
-+	printf("%16" PRIx64, addr);
- 
- 	if (!sample_addr_correlates_sym(attr))
- 		return;
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      sample->addr, &al);
-+			      addr, &al);
- 	if (!al.map)
- 		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
--				      sample->addr, &al);
-+				      addr, &al);
- 
- 	al.cpu = sample->cpu;
- 	al.sym = NULL;
-@@ -373,6 +379,17 @@ static void print_sample_addr(union perf_event *event,
- 	}
- }
- 
-+static void print_sample_addr(union perf_event *event,
-+			  struct perf_sample *sample,
-+			  struct machine *machine,
-+			  struct thread *thread,
-+			  struct perf_event_attr *attr)
-+			  
-+{
-+	return __print_sample_addr(event, sample, machine, thread, attr,
-+				   sample->addr);
-+}
-+
- static void print_sample_bts(union perf_event *event,
- 			     struct perf_sample *sample,
- 			     struct perf_evsel *evsel,
-@@ -401,6 +418,28 @@ static void print_sample_bts(union perf_event *event,
- 	printf("\n");
- }
- 
-+static void print_sample_branch_stack(union perf_event *event,
-+			     struct perf_sample *sample,
-+			     struct perf_evsel *evsel,
-+			     struct machine *machine,
-+			     struct thread *thread)
-+{
-+	uint64_t i;
-+	struct perf_event_attr *attr = &evsel->attr;
-+
-+	printf("... branch stack: nr:%" PRIu64 "\n", sample->branch_stack->nr);
-+
-+	for (i = 0; i < sample->branch_stack->nr; i++) {
-+		printf("\t..... %2"PRIu64": ", i); 
-+		__print_sample_addr(event, sample, machine, thread, attr,
-+			            sample->branch_stack->entries[i].to);
-+		printf(" => ");
-+		__print_sample_addr(event, sample, machine, thread, attr,
-+			            sample->branch_stack->entries[i].from);
-+		printf("\n");
-+	}
-+}
-+
- static void process_event(union perf_event *event __unused,
- 			  struct perf_sample *sample,
- 			  struct perf_evsel *evsel,
-@@ -417,6 +456,11 @@ static void process_event(union perf_event *event __unused,
- 	if (is_bts_event(attr)) {
- 		print_sample_bts(event, sample, evsel, machine, thread);
- 		return;
-+	} 
-+
-+	if (is_branch_stack_event(attr)) {
-+		print_sample_branch_stack(event, sample, evsel, machine, thread);
-+		return;
- 	}
- 
- 	if (PRINT_FIELD(TRACE))
+thanks,
 -- 
-1.7.8.4
-
+js
+suse labs
