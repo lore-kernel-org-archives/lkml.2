@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031651Ab2COQS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:18:56 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:47586 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031251Ab2COQSw (ORCPT
+	id S1031687Ab2COQZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:25:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50764 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031664Ab2COQZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:18:52 -0400
-Subject: Re: [PATCH 5/7] module: take rcu_read_lock_sched() for /proc read
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Dennis1.Chen@amd.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, Joe Perches <joe@perches.com>,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <1331822941-19938-5-git-send-email-xiyou.wangcong@gmail.com>
-References: <1331822941-19938-1-git-send-email-xiyou.wangcong@gmail.com>
-	 <1331822941-19938-5-git-send-email-xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Mar 2012 09:18:49 -0700
-Message-ID: <1331828329.4874.7.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 15 Mar 2012 12:25:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v3] ipc: provide generic compat versions of IPC syscalls
+Date: Thu, 15 Mar 2012 16:25:32 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "J. Bruce Fields" <bfields@redhat.com>, NeilBrown <neilb@suse.de>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        sparclinux@vger.kernel.org
+References: <201112091536.pB9Fa5f7002738@farm-0002.internal.tilera.com> <201112122148.pBCLmPH0023959@farm-0002.internal.tilera.com> <4F6144B8.5010601@tilera.com>
+In-Reply-To: <4F6144B8.5010601@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203151625.32199.arnd@arndb.de>
+X-Provags-ID: V02:K0:P922dHs4wgmggE20Dch8pBF3qhCaJX1GxSiX7E9IPrx
+ qxDSkpPXcAq2EXTxEFd4VS8+lQXRvQe06szjqLZYCxPQrSdSSb
+ l9QB9361pLH6sbIInR7ci1YdIR0GFrkf2PUZdmdRjzaUgS77Nc
+ ZaAVNKopiv8vF4f9dnx2tq46V9gq066lzoPTcWSUx9b+gwNqdA
+ de2VQRmPfA1z+FE7Ta4Qdl8cky3gzfiTZBfsEafrVJXz+Cfq+/
+ dJMEI/ZAKIBN6gp9qySJhIVnoYtKmisNitvEF8Kph1ldmZKLkY
+ GIBgwG2rcENWEk1Gg11WEJjfkVe7/rrHRvJbeeipdKo2GOeEwf
+ trtVmexyROrYsqycmwL0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 22:48 +0800, Cong Wang wrote:
-> In the seq file operations, it still hold module_mutex for just reading
-> the module list, switch to rcu_read_lock_sched() too.
+On Thursday 15 March 2012, Chris Metcalf wrote:
 > 
+> Somewhat belatedly, I'm looking to push this through the "tile" tree. 
+> Andrew Morton has been keeping it in his tree but I figure I should push it
+> since it directly affects "tile" and currently no one else.
 
-Why is it needed ?
+Sounds good.
 
-1) insmod/rmmod/lsmod is hardly in fast path.
+> However, it would be nice if anyone could provide a Reviewed-by or Acked-by
+> on the patch.  Thanks!
 
-2) after a mutex_lock(), a task is still preemptible
-   after rcu_read_lock_sched(), preemption is disabled
+As the main author of ipc/compat.c in its current form,
 
-   with NR_CPUS=4096, getting module refcounts is _very_ slow
-
-RCU doesnt fit every workload.
-
-
-
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
