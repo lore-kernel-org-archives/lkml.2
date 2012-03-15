@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369Ab2COAr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 20:47:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35103 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965202Ab2COAr4 (ORCPT
+	id S1031418Ab2COAuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 20:50:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36800 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965372Ab2COAuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 20:47:56 -0400
-Message-ID: <1331772468.2981.1.camel@phoenix>
-Subject: [PATCH] regulator: max8952: Simplify the logic to get vid[0|1]
- status
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Thu, 15 Mar 2012 08:47:48 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Wed, 14 Mar 2012 20:50:18 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F613C5B.8030304@jp.fujitsu.com>
+Date: Thu, 15 Mar 2012 09:48:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: Suleiman Souhlal <ssouhlal@FreeBSD.org>, cgroups@vger.kernel.org,
+        suleiman@google.com, penberg@kernel.org, cl@linux.com,
+        yinghan@google.com, hughd@google.com, gthelen@google.com,
+        peterz@infradead.org, dan.magenheimer@oracle.com, hannes@cmpxchg.org,
+        mgorman@suse.de, James.Bottomley@HansenPartnership.com,
+        linux-mm@kvack.org, devel@openvz.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org> <4F5C5E54.2020408@parallels.com> <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com> <4F5F236A.1070609@parallels.com> <20120314091526.3c079693.kamezawa.hiroyu@jp.fujitsu.com> <4F608F25.3010700@parallels.com>
+In-Reply-To: <4F608F25.3010700@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The syntax "(((vid >> 1) % 2) == 1)" is inefficient and also hard to read.
-Use bitwidse AND operator instead.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8952.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
-index 75d8940..e9c0a0e 100644
---- a/drivers/regulator/max8952.c
-+++ b/drivers/regulator/max8952.c
-@@ -152,8 +152,8 @@ static int max8952_set_voltage(struct regulator_dev *rdev,
- 	}
- 
- 	if (vid >= 0 && vid < MAX8952_NUM_DVS_MODE) {
--		max8952->vid0 = (vid % 2 == 1);
--		max8952->vid1 = (((vid >> 1) % 2) == 1);
-+		max8952->vid0 = vid & 0x1;
-+		max8952->vid1 = (vid >> 1) & 0x1;
- 		*selector = vid;
- 		gpio_set_value(max8952->pdata->gpio_vid0, max8952->vid0);
- 		gpio_set_value(max8952->pdata->gpio_vid1, max8952->vid1);
-@@ -217,8 +217,8 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
- 	}
- 
- 	max8952->en = !!(pdata->reg_data.constraints.boot_on);
--	max8952->vid0 = (pdata->default_mode % 2) == 1;
--	max8952->vid1 = ((pdata->default_mode >> 1) % 2) == 1;
-+	max8952->vid0 = pdata->default_mode & 0x1;
-+	max8952->vid1 = (pdata->default_mode >> 1) & 0x1;
- 
- 	if (gpio_is_valid(pdata->gpio_en)) {
- 		if (!gpio_request(pdata->gpio_en, "MAX8952 EN"))
-@@ -241,13 +241,13 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
- 			gpio_is_valid(pdata->gpio_vid1)) {
- 		if (!gpio_request(pdata->gpio_vid0, "MAX8952 VID0"))
- 			gpio_direction_output(pdata->gpio_vid0,
--					(pdata->default_mode) % 2);
-+					(pdata->default_mode) & 0x1);
- 		else
- 			err = 1;
- 
- 		if (!gpio_request(pdata->gpio_vid1, "MAX8952 VID1"))
- 			gpio_direction_output(pdata->gpio_vid1,
--				(pdata->default_mode >> 1) % 2);
-+				(pdata->default_mode >> 1) & 0x1);
- 		else {
- 			if (!err)
- 				gpio_free(pdata->gpio_vid0);
--- 
-1.7.5.4
+(2012/03/14 21:29), Glauber Costa wrote:
 
 
+>>   - What happens when a new cgroup created ?
+> 
+> mem_cgroup_create() is called =)
+> Heh, jokes apart, I don't really follow here. What exactly do you mean? 
+> There shouldn't be anything extremely out of the ordinary.
+> 
+
+
+Sorry, too short words.
+
+Assume a cgroup with
+	cgroup.memory.limit_in_bytes=1G
+	cgroup.memory.kmem.limit_in_bytes=400M
+
+When a child cgroup is created, what should be the default values.
+'unlimited' as current implementation ?
+Hmm..maybe yes.
+
+Thanks,
+-Kame
 
