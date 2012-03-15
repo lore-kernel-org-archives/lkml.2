@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab2COKjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:39:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52089 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab2COKjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:39:33 -0400
-Date: Thu, 15 Mar 2012 12:39:23 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Eric Northup <digitaleric@google.com>
-Cc: Avi Kivity <avi@redhat.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120315103923.GL2304@redhat.com>
-References: <4F60726E.3090807@cn.fujitsu.com>
- <4F607325.6050607@redhat.com>
- <20120314104608.GU2304@redhat.com>
- <4F607789.4010109@redhat.com>
- <4F607CE4.2060809@cn.fujitsu.com>
- <4F609822.7050502@redhat.com>
- <20120314131415.GB2304@redhat.com>
- <4F609A15.5020902@redhat.com>
- <20120314132552.GC2304@redhat.com>
- <CAG7+5M0gEpoJ_jnC8_4Ae-xe2rr7+CJLZh3JjAhh=p=-2bEAcA@mail.gmail.com>
+	id S1759629Ab2COKma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:42:30 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47384 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2COKm0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 06:42:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG7+5M0gEpoJ_jnC8_4Ae-xe2rr7+CJLZh3JjAhh=p=-2bEAcA@mail.gmail.com>
+In-Reply-To: <20120311161320.GC1048@thunk.org>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+	<BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+	<20120310044804.GB5652@thunk.org>
+	<9709DE62-CE25-41C4-A33C-63336B51DC5E@whamcloud.com>
+	<20120311161320.GC1048@thunk.org>
+Date: Thu, 15 Mar 2012 11:42:24 +0100
+Message-ID: <CADDYkjRSd-Dv2jECwKt=3Q95hceVhiA+StZj1fvwywZHWaEgfw@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 11:46:08AM -0700, Eric Northup wrote:
-> On Wed, Mar 14, 2012 at 6:25 AM, Gleb Natapov <gleb@redhat.com> wrote:
-> 
-> > On Wed, Mar 14, 2012 at 03:16:05PM +0200, Avi Kivity wrote:
-> > > On 03/14/2012 03:14 PM, Gleb Natapov wrote:
-> > > > On Wed, Mar 14, 2012 at 03:07:46PM +0200, Avi Kivity wrote:
-> > > > > On 03/14/2012 01:11 PM, Wen Congyang wrote:
-> > > > > > >
-> > > > > > > I don't think we want to use the driver.  Instead, have a small
-> > piece of
-> > > > > > > code that resets the device and pushes out a string (the panic
-> > message?)
-> > > > > > > without any interrupts etc.
-> > > > > > >
-> > > > > > > It's still going to be less reliable than a hypercall, I agree.
-> > > > > >
-> > > > > > Do you still want to use complicated and less reliable way?
-> > > > >
-> > > > > Are you willing to try it out and see how complicated it really is?
-> > > > >
-> > > > > While it's more complicated, it's also more flexible.  You can
-> > > > > communicate the panic message, whether the guest is attempting a
-> > kdump
-> > > > > and its own recovery or whether it wants the host to do it, etc., you
-> > > > > can communicate less severe failures like oopses.
-> > > > >
-> > > > hypercall can take arguments to achieve the same.
-> > >
-> > > It has to be designed in advance; and every time we notice something's
-> > > missing we have to update the host kernel.
-> > >
-> >
-> > We and in the designed stage now. Not to late to design something flexible
-> > :) Panic hypercall can take GPA of a buffer where host puts panic info
-> > as a parameter.  This buffer can be read by QEMU and passed to management.
-> >
-> 
-> If a host kernel change is in the works, I think it might be cleanest to
-> have the host kernel export a new kind of VCPU exit for unhandled-by-KVM
-> hypercalls.  Then usermode can respond to the hypercall as appropriate.
->  This would permit adding or changing future hypercalls without host kernel
-> changes.
-> 
-There was such vm exit (KVM_EXIT_HYPERCALL), but it was deemed to be a
-bad idea.
+2012/3/11 Ted Ts'o <tytso@mit.edu>:
 
-> "Guest panic" is almost the definition of not-a-fast-path, and so what's
-> the reason to handle it in the host kernel.
-The only "handling" that kernel does is maps hypercall to panic exit.
+>
+> Well, my goal in proposing this optimization is that helps for the
+> "medium size" directories in the cold cache case.  The ext4 user who
+> first kicked off this thread was using his file system for an SVN
+> server, as I recall.  I could easily believe that he has thousands of
+> files; maybe even tens of thousands of files in a directory.  But that
+> probably still fits in 256k, or at best 512k worth of directory blocks.
+>
 
-> 
-> Punting to user-space wouldn't be a magic bullet for getting good
-> interfaces designed, but in my opinion it is a better place to be doing
-> them.
+That was not a SVN server. It was a build host having checkouts of SVN
+projects.
 
---
-			Gleb.
+The many files/dirs case is common for VCS and the SVN is not the only
+that would be affected here. AFAIR git.kernel.org was also suffering
+from the getdents(). Same applies to commercial products that are
+heavily stuffed with many files/dirs, e.g. ClearCase or Synergy. In
+the second one case we are running on XFS for a longer while and I
+must say that this was a huge improvement mostly on backup times
+(where a dump of Informix and the whole filesystem is ordinary
+compressed in tarball).
+
+A medium size you are referring would most probably fit into 256k and
+this could be enough for 90% of cases. Large production system running
+on ext4 need backups thus those would benefit the most here.
+
+-Jacek
