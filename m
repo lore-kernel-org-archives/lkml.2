@@ -1,99 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab2CODOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 23:14:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35377 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758482Ab2CODNV (ORCPT
+	id S1757503Ab2CODb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 23:31:27 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:20716
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755199Ab2CODbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 23:13:21 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v15 02/13] net/compat.c,linux/filter.h: share compat_sock_fprog
-Date: Wed, 14 Mar 2012 22:11:54 -0500
-Message-Id: <1331781125-15658-3-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1331781125-15658-1-git-send-email-wad@chromium.org>
-References: <1331781125-15658-1-git-send-email-wad@chromium.org>
+	Wed, 14 Mar 2012 23:31:25 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zzbb2dI9371I179dN1432N98dK853kzz1202hzzz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 15 Mar 2012 11:32:58 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>
+Subject: Re: [PATCH] dt: pinctrl: Document device tree binding
+Message-ID: <20120315033257.GD13022@shlinux2.ap.freescale.net>
+References: <1331316873-20052-1-git-send-email-swarren@wwwdotorg.org>
+ <20120312143407.GA4513@shlinux2.ap.freescale.net>
+ <4F5E2F63.6070303@wwwdotorg.org>
+ <20120313032010.GB4513@shlinux2.ap.freescale.net>
+ <4F5F9F9E.7030706@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F5F9F9E.7030706@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any other users of bpf_*_filter that take a struct sock_fprog from
-userspace will need to be able to also accept a compat_sock_fprog
-if the arch supports compat calls.  This change let's the existing
-compat_sock_fprog be shared.
+On Wed, Mar 14, 2012 at 03:27:26AM +0800, Stephen Warren wrote:
+> On 03/12/2012 09:20 PM, Dong Aisheng wrote:
+> > On Tue, Mar 13, 2012 at 01:16:19AM +0800, Stephen Warren wrote:
+> >> On 03/12/2012 08:34 AM, Dong Aisheng wrote:
+> >>> On Sat, Mar 10, 2012 at 02:14:33AM +0800, Stephen Warren wrote:
+> >>>> The core pin controller bindings define:
+> >>>> * The fact that pin controllers expose pin configurations as nodes in
+> >>>>   device tree.
+> >>>> * That the bindings for those pin configuration nodes is defined by the
+> >>>>   individual pin controller drivers.
+> >>>> * A standardized set of properties for client devices to define numbered
+> >>>>   or named pin configuration states, each referring to some number of the
+> >>>>   afore-mentioned pin configuration nodes.
+> >>>> * That the bindings for the client devices determines the set of numbered
+> >>>>   or named states that must exist.
+> ...
+> >>>> +Required properties:
+> >>>> +pinctrl-0:	List of phandles, each pointing at a pin configuration
+> >>>> +		node. These referenced pin configuration nodes must be child
+> >>>> +		nodes of the pin controller that they configure. Multiple
+> >>>> +		entries may exist in this list so that multiple pin
+> >>>> +		controllers may be configured, or so that a state may be built
+> >>>> +		from multiple nodes for a single pin controller, each
+> >>>> +		contributing part of the overall configuration. See the next
+> >>>> +		section of this document for details of the format of these
+> >>>> +		pin configuration nodes.
+> >>>> +
+> >>>> +		In some cases, it may be useful to define a state, but for it
+> >>>> +		to be empty. This may be required when a common IP block is
+> >>>> +		used in an SoC either without a pin controller, or where the
+> >>>> +		pin controller does not affect the HW module in question. If
+> >>>> +		the binding for that IP block requires certain pin states to
+> >>>> +		exist, they must still be defined, but may be left empty.
+> >>>> +
+> >>>
+> >>> It looks this functions similar as the PIN_MAP_DUMMY_STATE you introduced
+> >>> before to address the issues that the shared IP block may need or not need
+> >>> pinctrl configuration on different platforms(correct me if wrong).
+> >>
+> >> Yes, it's to generate the dummy states.
+> >>
+> >>> Then, there may be cases like below which may look a bit confusing
+> >>> to people.
+> >>> device {
+> >>> 	pinctrl-names = "active", "idle";
+> >>> 	pinctrl-0;
+> >>> 	pinctrl-1;
+> >>> };
+> >>
+> >> I'd personally expect the syntax to look like:
+> >>
+> >> device {
+> >> 	pinctrl-names = "active", "idle";
+> >> 	pinctrl-0 = <>;
+> >> 	pinctrl-1 = <>;
+> >> };
+> >>
+> >> which has an explicitly empty value. Admittedly, these would both
+> >> compile down to the exact same thing in the DTB, but I think the
+> >> interpretation of the above is pretty readable.
+> >>
+> >>> I'm wondering if we can let each individual driver to handle this special case?
+> >>> Like checking device id then make decision whether call pinctrl_* APIs.
+> >>> Then we can just do not define those properties for devices who
+> >>> do not need pin configurations.
+> >>
+> >> The individual client drivers certainly could work that way.
+> >>
+> >> However, the disadvantage is that the client driver then needs explicit
+> >> code to deal with this case, and this needs to be triggered by using a
+> >
+> > Since this is purely specific to IP block(e.g. the driver knows this ip used
+> > in which platform does not need pin configuration), so i guess it's natural
+> > that the driver can also handle it instead of device tree, just like
+> > a lot of existing drivers in kernel do similar things for tricks
+> > on different SoCs.
+> 
+> Well, the entire point is that the driver for the IP block shouldn't
+> know anything about which SoC it's included in, or whether pinmux is
+> needed, or what pinmux is needed, beyond what's expressed in platform
+> data or device tree. The whole point of the pinctrl is to completely
+> remove this knowledge from the driver, and centralize it in the mapping
+> table.
+> 
+Good point to me.
+The driver does not need to know which SoC it's included in,
+but it has to support that SoC first.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Will Drewry <wad@chromium.org>
+> >> different compatible flag (or perhaps some other explicit property).
+> >> You'd have to write this code over and over for each individual driver.
+> >
+> > I still do not understand why need a more special compatible flag?
+> > My understanding is that in device driver side, they can do:
+> > if (is_soc_a || is_soc_b) {
+> > 	pinctrl_get(dev, "default");
+> > 	....
+> > } else if (is_soc_c) {
+> > 	/* do nothing */
+> > }
+> 
+> Drivers aren't supposed to contain "is_soc_foo" or "is_machine_foo"
+> calls. Indeed, in the case of "is_soc_foo", I don't think such an API
+> even exists. Instead, platform data or device tree should represent the
+> information that drivers need.
+> 
+Hmm, whatever platform data or device tree or device id, we can use a way
+to tell driver which SoC it is running on.
+The driver private is_soc_a macro or function can be implemented based
+that information.
 
-v14: rebase/nochanges
-v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
-v12: rebase on to linux-next
-v11: introduction
----
- include/linux/filter.h |   11 +++++++++++
- net/compat.c           |    8 --------
- 2 files changed, 11 insertions(+), 8 deletions(-)
+> > I can't see why we still need a special compatible flag to tell driver.
+> > Just do not define pinctrl-* properties for that devices in device tree.
+> > Did i understand wrong?
+> 
+> The compatible property would be the only way to implement anything like
+> is_soc_foo. However, it's a bad idea to overload the compatible property
+> in this way.
+> 
+I guess i might not describe my idea clearly.
+My idea is that the compatible string does that work.
+For example:
+static const struct of_device_id mxs_mmc_dt_ids[] = {
+        { .compatible = "fsl,imx23-mmc", .data = NULL, },
+        { .compatible = "fsl,imx28-mmc", .data = NULL, },
+        { /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, mxs_mmc_dt_ids);
+Replace NULL to some special data like SOC_MX23 or SOC_MX28 can let driver
+driver know which SoC it's running on.
+Then driver can use private macro like is_soc_foo.
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index aaa2e80..f2e5315 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -10,6 +10,7 @@
- 
- #ifdef __KERNEL__
- #include <linux/atomic.h>
-+#include <linux/compat.h>
- #endif
- 
- /*
-@@ -132,6 +133,16 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
- 
- #ifdef __KERNEL__
- 
-+#ifdef CONFIG_COMPAT
-+/*
-+ * A struct sock_filter is architecture independent.
-+ */
-+struct compat_sock_fprog {
-+	u16		len;
-+	compat_uptr_t	filter;		/* struct sock_filter * */
-+};
-+#endif
-+
- struct sk_buff;
- struct sock;
- 
-diff --git a/net/compat.c b/net/compat.c
-index 6def90e..c5c61c8 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -326,14 +326,6 @@ void scm_detach_fds_compat(struct msghdr *kmsg, struct scm_cookie *scm)
- 	__scm_destroy(scm);
- }
- 
--/*
-- * A struct sock_filter is architecture independent.
-- */
--struct compat_sock_fprog {
--	u16		len;
--	compat_uptr_t	filter;		/* struct sock_filter * */
--};
--
- static int do_set_attach_filter(struct socket *sock, int level, int optname,
- 				char __user *optval, unsigned int optlen)
- {
--- 
-1.7.5.4
+> >> That also means that if you were the first user of an IP block in a
+> >> system which didn't need pin muxing for it, you'd have to modify the
+> >> kernel to support pinctrl being optional before you could use that device.
+> >
+> > Why need modify the kernel?
+> > Assuming above example.
+> > I'm a bit confused.
+> 
+> If the driver contains code like:
+> 
+> if (is_soc_a) {
+>     ...
+> } else if (is_soc_b) {
+>    ...
+> }
+> ...
+> 
+> Then in order to support a new SoC, even if the driver doesn't need to
+> do anything different, you'd need to go and edit the code to add an "if
+> (is_soc_c)" condition into that list.
+> 
+No.
+No changes needed if the driver does not need to do anything different.
+Compatible string does that work
+For example, in a new soc which is fully compatible with current driver.
+It can just add device like:
+mmc@80010000 {
+	compatible = "fsl, xxx-mmc", "fsl,imx28-mmc";
+	reg = <..>;
+	...
+}
+
+> >> If the pinctrl subsystem itself hides this from the client driver, then
+> >> you'd never need to add any code to any driver to support this case, and
+> >> all you'd need to do is write a few lines of device tree to use the
+> >> driver; no code changes.
+> >>
+> > Yes, that is the benefit.
+> >
+> > My only concern is that if this may make people confuse when see
+> > such code in device tree since we,i guess, still do not have such examples
+> > in device tree. And i'm afraid this is a bit not HW oriented.
+> > device {
+> > 	pinctrl-names = "active", "idle";
+> > 	pinctrl-0 = <>;
+> > 	pinctrl-1 = <>;
+> > };
+> > So i'm asking if we do it in driver.
+> > Maybe device tree people can give some comments.
+> 
+> I personally don't think it's that confusing. A zero-length list is
+> after all still a list. That said, let me see if I can add such an
+> example to the binding document; the documentation does talk about this
+> case, but we can certainly add another example to highlight it.
+> 
+If dt does allow this, i'm also ok with it.
+
+Regards
+Dong Aisheng
 
