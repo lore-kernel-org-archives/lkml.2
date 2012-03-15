@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031543Ab2COBqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 21:46:52 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59361 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760411Ab2COBqu convert rfc822-to-8bit (ORCPT
+	id S1031556Ab2COBsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 21:48:30 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:33479 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760411Ab2COBs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 21:46:50 -0400
+	Wed, 14 Mar 2012 21:48:28 -0400
+Date: Wed, 14 Mar 2012 18:47:54 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7 v2] mm: rework __isolate_lru_page() file/anon
+ filter
+In-Reply-To: <4F5B22DE.4020402@openvz.org>
+Message-ID: <alpine.LSU.2.00.1203141842490.2232@eggly.anvils>
+References: <20120229091547.29236.28230.stgit@zurg> <20120303091327.17599.80336.stgit@zurg> <alpine.LSU.2.00.1203061904570.18675@eggly.anvils> <20120308143034.f3521b1e.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1203081758490.18195@eggly.anvils>
+ <4F59AE3C.5040200@openvz.org> <alpine.LSU.2.00.1203091559260.23317@eggly.anvils> <4F5AFAF0.6060608@openvz.org> <4F5B22DE.4020402@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWheuZGrMYzvWDRoRjNJt5mD-0FEd+PQRh3N=XjfL98gQ@mail.gmail.com>
-References: <1331769536-4602-1-git-send-email-john.stultz@linaro.org>
- <1331769536-4602-2-git-send-email-john.stultz@linaro.org> <alpine.LFD.2.02.1203150131390.2466@ionos>
- <4F613AF9.2030504@linaro.org> <CALCETrWheuZGrMYzvWDRoRjNJt5mD-0FEd+PQRh3N=XjfL98gQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 Mar 2012 18:46:29 -0700
-Message-ID: <CALCETrVXfXroNtO7qQTobvSFHiPJ+Z2tQwsgF0yPtuv7BXbXqg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] time: x86: Fix race switching from vsyscall to
- non-vsyscall clock
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 6:43 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Mar 14, 2012 at 5:42 PM, John Stultz <john.stultz@linaro.org> wrote:
->> On 03/14/2012 05:34 PM, Thomas Gleixner wrote:
->>>
->>> On Wed, 14 Mar 2012, John Stultz wrote:
->>>>
->>>>  notrace static noinline int do_realtime(struct timespec *ts)
->>>>  {
->>>>        unsigned long seq, ns;
->>>> +       int mode;
->>>
->>> Please keep a newline between declarations and code.
->>
->>
->> Fixed below. Thanks!
->> (Let me know if you see whitespace damage, I switched mail clients today and
->> am learning the quirks here.)
->> -john
->>
->>
->>
->> When switching from a vsyscall capable to a non-vsyscall capable
->> clocksource, there was a small race, where the last vsyscall
->> gettimeofday before the switch might return a invalid time value
->> using the new non-vsyscall enabled clocksource values after the
->> switch is complete.
->>
->> This is due to the vsyscall code checking the vclock_mode once
->> outside of the seqcount protected section. After it reads the
->> vclock mode, it doesn't re-check that the sampled clock data
->> that is obtained in the seqcount critical section still matches.
->>
->> The fix is to sample vclock_mode inside the protected section,
->> and as long as it isn't VCLOCK_NONE, return the calculated
->> value. If it has changed and is now VCLOCK_NONE, fall back
->> to the syscall gettime calculation.
->>
->> v2:
->>  * Cleanup checks as suggested by tglx
->>  * Also fix same issue present in gettimeofday path
->>
->> CC: Andy Lutomirski<luto@amacapital.net>
->> CC: Thomas Gleixner<tglx@linutronix.de>
->> Signed-off-by: John Stultz<john.stultz@linaro.org>
->> ---
->>  arch/x86/vdso/vclock_gettime.c |   68
->> +++++++++++++++++++++++++--------------
->>  1 files changed, 43 insertions(+), 25 deletions(-)
->>
->
-> Looks reasonable to me.  I like this approach better than the earlier
-> way -- it's likely to cause less slowdown in the VCLOCK_TSC case.
->
-> That being said, I think you might have a bug:
->
-> notrace static inline long vgetns(void)
-> {
->        long v;
->        cycles_t cycles;
->        if (gtod->clock.vclock_mode == VCLOCK_TSC)
->                cycles = vread_tsc();
->        else
->                cycles = vread_hpet();
->        v = (cycles - gtod->clock.cycle_last) & gtod->clock.mask;
->        return (v * gtod->clock.mult) >> gtod->clock.shift;
-> }
->
-> In the VCLOCK_NONE, you'll access the hpet mapping.  But in
-> hpet_enable, hpet_set_mapping isn't called and this will crash, I
-> think.
->
+On Sat, 10 Mar 2012, Konstantin Khlebnikov wrote:
+> Konstantin Khlebnikov wrote:
+> > 
+> > No, for non-lumpy isolation we don't need this check at all,
+> > because all pages already picked from right lru list.
+> > 
+> > I'll send separate patch for this (on top v5 patchset), after meditation =)
+> 
+> Heh, looks like we don't need these checks at all:
+> without RECLAIM_MODE_LUMPYRECLAIM we isolate only pages from right lru,
+> with RECLAIM_MODE_LUMPYRECLAIM we isolate pages from all evictable lru.
+> Thus we should check only PageUnevictable() on lumpy reclaim.
 
-One way to fix it would be to unconditionally map the page.  Then
-there's no performance loss for the tsc case.
+Yes, those were great simplfying insights: I'm puzzling over why you
+didn't follow through on them in your otherwise nice 4.5/7, which
+still involves lru bits in the isolate mode?
 
---Andy
+Hugh
