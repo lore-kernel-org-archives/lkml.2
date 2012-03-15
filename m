@@ -1,124 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030848Ab2COPXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:23:52 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:52458 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab2COPXu (ORCPT
+	id S1030866Ab2COPZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:25:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57221 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030466Ab2COPZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:23:50 -0400
-Message-ID: <1331824997.14217.127.camel@aeonflux>
-Subject: Re: [PATCH 2/2] bluetooth: hci_core: fix NULL-pointer dereference
- at unregister
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, David Herrmann <dh.herrmann@googlemail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, stable <stable@vger.kernel.org>
-Date: Thu, 15 Mar 2012 08:23:17 -0700
-In-Reply-To: <1331819321-13018-2-git-send-email-jhovold@gmail.com>
-References: <20120315134735.GA19821@localhost>
-	 <1331819321-13018-1-git-send-email-jhovold@gmail.com>
-	 <1331819321-13018-2-git-send-email-jhovold@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 15 Mar 2012 11:25:27 -0400
+MIME-Version: 1.0
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 15 Mar 2012 17:25:06 +0200
+Message-ID: <CA+1xoqfKE2u7mm=o507TvoFw8oqtKq8RRaJ5jU4c=J-GAH0APw@mail.gmail.com>
+Subject: sound: BUG: unable to handle kernel irq event stamp: 2013419
+To: perex@perex.cz, tiwai@suse.de, lucas.demarchi@profusion.mobi
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johan,
+Hi all,
 
-> Make sure hci_dev_open returns immediately if hci_dev_unregister has
-> been called.
-> 
-> This fixes a race between hci_dev_open and hci_dev_unregister which can
-> lead to a NULL-pointer dereference.
-> 
-> Bug is 100% reproducible using hciattach and a disconnected serial port:
-> 
-> 0. # hciattach -n /dev/ttyO1 any noflow
-> 
-> 1. hci_dev_open called from hci_power_on grabs req lock
-> 2. hci_init_req executes but device fails to initialise (times out
->    eventually)
-> 3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-> 4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
->    hci_dev_do_close
-> 5. hci_dev_open (1) releases req lock
-> 6. hci_dev_do_close grabs req lock and returns as device is not up
-> 7. hci_dev_unregister sleeps in destroy_workqueue
-> 8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
-> 9. hci_dev_unregister finishes, while hci_dev_open is still running...
-> 
-> [   79.627136] INFO: trying to register non-static key.
-> [   79.632354] the code is fine but needs lockdep annotation.
-> [   79.638122] turning off the locking correctness validator.
-> [   79.643920] [<c00188bc>] (unwind_backtrace+0x0/0xf8) from [<c00729c4>] (__lock_acquire+0x1590/0x1ab0)
-> [   79.653594] [<c00729c4>] (__lock_acquire+0x1590/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-> [   79.663085] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0040a88>] (run_timer_softirq+0x150/0x3ac)
-> [   79.672668] [<c0040a88>] (run_timer_softirq+0x150/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-> [   79.682281] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-> [   79.690856] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-> [   79.699157] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-> [   79.708648] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-> [   79.718048] Exception stack(0xcf281fb0 to 0xcf281ff8)
-> [   79.723358] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-> [   79.731933] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-> [   79.740509] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-> [   79.747497] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> [   79.756011] pgd = cf3b4000
-> [   79.758850] [00000000] *pgd=8f0c7831, *pte=00000000, *ppte=00000000
-> [   79.765502] Internal error: Oops: 80000007 [#1]
-> [   79.770294] Modules linked in:
-> [   79.773529] CPU: 0    Tainted: G        W     (3.3.0-rc6-00002-gb5d5c87 #421)
-> [   79.781066] PC is at 0x0
-> [   79.783721] LR is at run_timer_softirq+0x16c/0x3ac
-> [   79.788787] pc : [<00000000>]    lr : [<c0040aa4>]    psr: 60000113
-> [   79.788787] sp : cf281ee0  ip : 00000000  fp : cf280000
-> [   79.800903] r10: 00000004  r9 : 00000100  r8 : b6f234d0
-> [   79.806427] r7 : c0519c28  r6 : cf093488  r5 : c0561a00  r4 : 00000000
-> [   79.813323] r3 : 00000000  r2 : c054eee0  r1 : 00000001  r0 : 00000000
-> [   79.820190] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [   79.827728] Control: 10c5387d  Table: 8f3b4019  DAC: 00000015
-> [   79.833801] Process gpsd (pid: 1265, stack limit = 0xcf2802e8)
-> [   79.839965] Stack: (0xcf281ee0 to 0xcf282000)
-> [   79.844573] 1ee0: 00000002 00000000 c0040a24 00000000 00000002 cf281f08 00200200 00000000
-> [   79.853210] 1f00: 00000000 cf281f18 cf281f08 00000000 00000000 00000000 cf281f18 cf281f18
-> [   79.861816] 1f20: 00000000 00000001 c056184c 00000000 00000001 b6f234d0 c0561848 00000004
-> [   79.870452] 1f40: cf280000 c003a3b8 c051e79c 00000001 00000000 00000100 3fa9e7b8 0000000a
-> [   79.879089] 1f60: 00000025 cf280000 00000025 00000000 00000000 b6f234d0 00000000 00000004
-> [   79.887756] 1f80: 00000000 c003a924 c053ad38 c0013a50 fa200000 cf281fb0 ffffffff c0008530
-> [   79.896362] 1fa0: 0001e6a0 0000aab8 80000010 c037499c 0001e6a0 be8dab00 0001e698 00036698
-> [   79.904998] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-> [   79.913665] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff 00fbf700 04ffff00
-> [   79.922302] [<c0040aa4>] (run_timer_softirq+0x16c/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-> [   79.931945] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-> [   79.940582] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-> [   79.948913] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-> [   79.958404] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-> [   79.967773] Exception stack(0xcf281fb0 to 0xcf281ff8)
-> [   79.973083] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-> [   79.981658] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-> [   79.990234] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-> [   79.997161] Code: bad PC value
-> [   80.000396] ---[ end trace 6f6739840475f9ee ]---
-> [   80.005279] Kernel panic - not syncing: Fatal exception in interrupt
-> 
-> Cc: stable <stable@vger.kernel.org>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
->  include/net/bluetooth/hci.h |    1 +
->  net/bluetooth/hci_core.c    |    7 +++++++
->  2 files changed, 8 insertions(+), 0 deletions(-)
+I got the following kernel panic when running the trinity fuzzer in a
+KVM tool guest, using today's linux-next.
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Please note that the guest doesn't have anything which even remotely
+reminds a multimedia device of any sort, although most of the drivers
+are compiled into the kernel.
 
-Regards
+[  145.747790] BUG: unable to handle kernel irq event stamp: 2013419
+[  145.744076] hardirqs last  enabled at (2013419):
+[<ffffffff811582d8>] __call_rcu+0x128/0x2c0
+[  145.744076] hardirqs last disabled at (2013418):
+[<ffffffff81158247>] __call_rcu+0x97/0x2c0
+[  145.744076] softirqs last  enabled at (2013156):
+[<ffffffff810b9a93>] __do_softirq+0x133/0x180
+[  145.744076] softirqs last disabled at (2013139):
+[<ffffffff8270c96c>] call_softirq+0x1c/0x30
+[  145.748761] paging request at ffffc9000279e000
+[  145.748761] IP: [<ffffffff821474cb>] midi_poll+0x6b/0x180
+[  145.748761] PGD 3c9bc067 PUD 3c9bd067 PMD 36b5c067 PTE 0
+[  145.748761] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  145.748761] CPU 0
+[  145.748761] Pid: 3129, comm: trinity Tainted: G        W
+3.3.0-rc7-next-20120315-sasha-00002-g91cfd71 #51
+[  145.748761] RIP: 0010:[<ffffffff821474cb>]  [<ffffffff821474cb>]
+midi_poll+0x6b/0x180
+[  145.784811] RSP: 0018:ffff88003d603dc0  EFLAGS: 00010086
+[  145.784811] RAX: 0000000000000000 RBX: 0000000000000282 RCX: ffffc9000279e000
+[  145.792008] RDX: ffff880034ad0000 RSI: 0000000000000000 RDI: 0000000000000001
+[  145.792008] RBP: ffff88003d603df0 R08: 0000000000000001 R09: 0000000000000000
+[  145.792008] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
+[  145.792008] R13: 0000000010624dd3 R14: 0000000000000001 R15: 0000000000000000
+[  145.792008] FS:  00007f2af88d0700(0000) GS:ffff88003d600000(0000)
+knlGS:0000000000000000
+[  145.792008] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  145.792008] CR2: ffffc9000279e000 CR3: 0000000035195000 CR4: 00000000000406f0
+[  145.792008] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  145.792008] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  145.792008] Process trinity (pid: 3129, threadinfo
+ffff880034aca000, task ffff880034ad0000)
+[  145.792008] Stack:
+[  145.792008]  ffff880034ad0000 ffff880034acbfd8 ffff88003d603e10
+0000000000000102
+[  145.792008]  ffffffff82147460 0000000000000000 ffff88003d603e70
+ffffffff810c0c2a
+[  145.792008]  ffffffff810c0ba0 ffff88003d603ea0 ffffffff8300abec
+ffffffff83d2e370
+[  145.792008] Call Trace:
+[  145.792008]  <IRQ>
+[  145.792008]  [<ffffffff82147460>] ? midi_input_intr+0xb0/0xb0
+[  145.792008]  [<ffffffff810c0c2a>] call_timer_fn.clone.11+0x8a/0x110
+[  145.792008]  [<ffffffff810c0ba0>] ? process_timeout+0x10/0x10
+[  145.792008]  [<ffffffff82147460>] ? midi_input_intr+0xb0/0xb0
+[  145.792008]  [<ffffffff810c0efa>] run_timer_softirq+0x13a/0x220
+[  145.792008]  [<ffffffff810b9a28>] __do_softirq+0xc8/0x180
+[  145.792008]  [<ffffffff811fce9d>] ? dput+0x13d/0x1d0
+[  145.792008]  [<ffffffff8270c96c>] call_softirq+0x1c/0x30
+[  145.792008]  [<ffffffff8104fc05>] do_softirq+0xc5/0x100
+[  145.792008]  [<ffffffff810b9e9e>] irq_exit+0xae/0xe0
+[  145.792008]  [<ffffffff810719e8>] smp_apic_timer_interrupt+0x68/0xa0
+[  145.792008]  [<ffffffff8270bf6f>] apic_timer_interrupt+0x6f/0x80
+[  145.792008]  <EOI>
+[  145.792008]  [<ffffffff8270a9f4>] ? retint_restore_args+0x13/0x13
+[  145.792008]  [<ffffffff81119528>] ? lock_release+0x98/0xc0
+[  145.792008]  [<ffffffff82709b6e>] _raw_spin_unlock+0x1e/0x60
+[  145.792008]  [<ffffffff811fce9d>] dput+0x13d/0x1d0
+[  145.792008]  [<ffffffff811f35e1>] do_last+0x461/0x790
+[  145.792008]  [<ffffffff811f39e7>] path_openat+0xd7/0x500
+[  145.792008]  [<ffffffff810ec458>] ? sched_clock_cpu+0xc8/0x140
+[  145.792008]  [<ffffffff811f3e54>] do_filp_open+0x44/0xa0
+[  145.792008]  [<ffffffff82709b80>] ? _raw_spin_unlock+0x30/0x60
+[  145.792008]  [<ffffffff81203a36>] ? alloc_fd+0x176/0x240
+[  145.792008]  [<ffffffff811e2c8d>] do_sys_open+0xfd/0x1d0
+[  145.792008]  [<ffffffff811e2d7c>] sys_open+0x1c/0x20
+[  145.792008]  [<ffffffff8270b2bd>] system_call_fastpath+0x1a/0x1f
+[  145.792008] Code: bd d3 4d 62 10 0f 1f 00 4d 63 f4 4a 83 3c f5 e0
+32 90 84 00 0f 84 ad 00 00 00 4a 8b 0c f5 a0 5b 90 84 48 85 c9 0f 84
+9c 00 00 00 <8b> 01 85 c0 0f 84 e3 00 00 00 8b 51 04 eb 3d 66 0f 1f 44
+00 00
+[  145.792008] RIP  [<ffffffff821474cb>] midi_poll+0x6b/0x180
+[  145.792008]  RSP <ffff88003d603dc0>
+[  145.792008] CR2: ffffc9000279e000
+[  145.792008] ---[ end trace 31f7a567e17c1567 ]---
+[  145.792008] Kernel panic - not syncing: Fatal exception in interrupt
+[  145.792008] Rebooting in 1 seconds..\
 
-Marcel
-
-
+Thanks!
