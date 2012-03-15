@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030535Ab2COO60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:58:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40729 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030266Ab2COO6X (ORCPT
+	id S965293Ab2COO7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:59:06 -0400
+Received: from HSI-KBW-109-192-167-159.hsi6.kabel-badenwuerttemberg.de ([109.192.167.159]:38397
+	"EHLO rack0slot8.osadl.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932104Ab2COO7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:58:23 -0400
-Date: Thu, 15 Mar 2012 15:58:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sasha Levin <levinsasha928@gmail.com>
-cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: ntp: BUG: spinlock lockup on CPU#1
-In-Reply-To: <alpine.LFD.2.02.1203151440590.2466@ionos>
-Message-ID: <alpine.LFD.2.02.1203151556090.2466@ionos>
-References: <CA+1xoqcGcfYzjrvRU-z=mUSq+wgqfBqdM51shV5gk4ohfe5Wng@mail.gmail.com> <alpine.LFD.2.02.1203151440590.2466@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 15 Mar 2012 10:59:01 -0400
+Message-Id: <20120315145623.486070468@osadl.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 15 Mar 2012 15:56:23 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Keith Packard <keithp@keithp.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [V5 PATCH 0/4] Provide workarounds to use DRM/KMS with broken graphics hardware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, Thomas Gleixner wrote:
-> CPU 0                                                    CPU 1
-> do_adjtimex()
->   spin_lock_irq(&ntp_lock);
->     process_adjtimex_modes();				 timer_interrupt()
->       process_adj_status();                                do_timer()
->         ntp_start_leap_timer();                             write_lock(&xtime_lock);
->           hrtimer_start();                                  update_wall_time();
->              hrtimer_reprogram();                            ntp_tick_length()
->                tick_program_event()                            spin_lock(&ntp_lock);
->                  clockevents_program_event()
-> 		   ktime_get()
->                      seq = req_seqbegin(xtime_lock);
-> 
-> So CPU0 waits for xtime seqence to become valid and CPU1 cant make
-> progress because it's stuck on ntp_lock.
+Changes from V4 to V5:
 
-The same problem exists with ntp_clear() being called under the
-xtime/timekeeper lock write locked. Nasty ...
+1. Split the previous patch 2/2 into three patches to separately i) add the
+module parameter, ii) add the quirk infrastructure, and iii) actually quirk
+the related machine.
+
+2. Rename the module parameter variable to i915_panel_invert_brightness.
+
+3. Make the module parameter variable tristate to either ignore the
+quirk, consider the quirk, if any, or force inversion.
+
+4. Print an instruction along the description of the module parameter to
+encourage people sending machine data, should another machine be found
+that needs to be quirked.
+
+5. Introduce the function intel_panel_compute_brightness where the
+brightness calculation is handled.
+
+Thanks, Chris, for these very valuable suggestions.
+
+	-Carsten.
+
