@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760964Ab2COJdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 05:33:01 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58997 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760636Ab2COJc6 (ORCPT
+	id S1759555Ab2COJhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 05:37:01 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58572 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760700Ab2COJg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 05:32:58 -0400
-Message-ID: <4F61B741.1040102@linux.vnet.ibm.com>
-Date: Thu, 15 Mar 2012 15:02:49 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Thu, 15 Mar 2012 05:36:57 -0400
+Message-ID: <4F61B141.9000106@linux.vnet.ibm.com>
+Date: Thu, 15 Mar 2012 14:37:13 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
 To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Len Brown <lenb@kernel.org>, srivatsa.bhat@linux.vnet.ibm.com,
-        venki@google.com, trenn@suse.de, bhelgaas@google.com,
-        kernel-janitors@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+CC: Len Brown <lenb@kernel.org>, deepthi@linux.vnet.ibm.com, venki@google.com,
+        trenn@suse.de, bhelgaas@google.com, kernel-janitors@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] drivers/acpi/processor_driver.c: add missing kfree
 References: <1331800325-14251-1-git-send-email-Julia.Lawall@lip6.fr>
 In-Reply-To: <1331800325-14251-1-git-send-email-Julia.Lawall@lip6.fr>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12031423-6102-0000-0000-0000010B6442
+x-cbid: 12031509-8256-0000-0000-000001A55226
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
 
 On 03/15/2012 02:02 PM, Julia Lawall wrote:
 
@@ -46,10 +44,12 @@ On 03/15/2012 02:02 PM, Julia Lawall wrote:
 >
 
 
-Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+See a minor nitpick below.. Other than that, everything looks great!
 
- 
-> ---
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+ > ---
+
 >  drivers/acpi/processor_driver.c |   13 +++++++++----
 >  1 file changed, 9 insertions(+), 4 deletions(-)
 > 
@@ -84,6 +84,15 @@ Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 > +err_clear_processor:
 > +	/* processor_device_array is not cleared to allow checks for buggy
 > +	   BIOSes */
+
+
+Multi-line comments in the kernel are generally written like:
+
+/*
+ * blah blah blah
+ * blah blah ....
+ */
+
 > +	per_cpu(processors, pr->id) = NULL;
 >  err_free_cpumask:
 >  	free_cpumask_var(pr->throttling.shared_cpu_map);
@@ -93,10 +102,9 @@ Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 >  	return result;
 >  }
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+
+
+
+
 
 
