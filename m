@@ -1,131 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab2COVq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 17:46:56 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:55240 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932421Ab2COVqz (ORCPT
+	id S1762107Ab2COVxB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:53:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60190 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab2COVw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 17:46:55 -0400
-Message-ID: <4F626321.3060001@fb.com>
-Date: Thu, 15 Mar 2012 14:46:09 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 15 Mar 2012 17:52:57 -0400
+Date: Thu, 15 Mar 2012 14:52:44 -0700
+From: tip-bot for Sasha Levin <levinsasha928@gmail.com>
+Message-ID: <tip-f910381a55cdaa097030291f272f6e6e4380c39a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, levinsasha928@gmail.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1331829374-31543-1-git-send-email-levinsasha928@gmail.com>
+References: <1331829374-31543-1-git-send-email-levinsasha928@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] math: Introduce div64_long
+Git-Commit-ID: f910381a55cdaa097030291f272f6e6e4380c39a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung.kim@lge.com>
-CC: Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <dsahern@gmail.com>, <ravitillo@lbl.gov>,
-        <khandual@linux.vnet.ibm.com>, <robert.richter@amd.com>,
-        <ming.m.lin@intel.com>, <vweaver1@eecs.utk.edu>, <andi@firstfloor.org>
-Subject: Re: [RFC] perf report: Implement symbol filtering on TUI
-References: <20120306062546.GA622@elte.hu> <1331085470-32594-1-git-send-email-namhyung.kim@lge.com> <20120314231154.GA15986@dev3310.snc6.facebook.com> <4F613B68.2040004@lge.com>
-In-Reply-To: <4F613B68.2040004@lge.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-15_04:2012-03-15,2012-03-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 15 Mar 2012 14:52:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/14/12 5:44 PM, Namhyung Kim wrote:
+Commit-ID:  f910381a55cdaa097030291f272f6e6e4380c39a
+Gitweb:     http://git.kernel.org/tip/f910381a55cdaa097030291f272f6e6e4380c39a
+Author:     Sasha Levin <levinsasha928@gmail.com>
+AuthorDate: Thu, 15 Mar 2012 12:36:13 -0400
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 15 Mar 2012 21:41:34 +0100
 
-> Thanks for reviewing and sending the patch.
->
-> However this was already fixed on my new patch set. Please see below:
->
-> https://lkml.org/lkml/2012/3/13/73
->
+math: Introduce div64_long
 
-I still get different behaviors with and without my two line patch.
+Add a div64_long macro which is used to devide a 64bit number by a long (which
+can be 4 bytes on 32bit systems and 8 bytes on 64bit systems).
 
-Try:
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: johnstul@us.ibm.com
+Link: http://lkml.kernel.org/r/1331829374-31543-1-git-send-email-levinsasha928@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/math64.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-perf record -g
-perf report c -G -g graph,0.5,caller -s inclusive --stdio
-
-I don't see where hists__filter_by_symbol() gets called when using --stdio.
-
-But let's examine what I think is a more important general issue (not 
-specific to your patch):
-
-Here's the behavior my coworkers are requesting. With the test program I 
-mailed earlier with this callgraph:
-
-./perf report -G -g graph,0.5,caller -s pid --stdio
-
-   100.00%            foo:30804
-             |
-             --- __libc_start_main
-                |
-                 --99.87%-- main
-                           |
-                           |--50.01%-- a
-                           |          |
-                           |           --42.71%-- c
-                           |                     |
-                           |                     |--14.36%-- e
-                           |                     |          |
-                           |                     |           --7.09%-- f
-                           |                     |
-                           |                      --14.33%-- d
-                           |                                |
-                           |                                 --6.81%-- f
-                           |
-                            --49.86%-- b
-                                      |
-                                       --42.72%-- c
-                                                 |
-                                                 |--14.43%-- d
-                                                 |          |
-                                                 |           --7.30%-- f
-                                                 |
-                                                  --14.13%-- e
-                                                            |
-                                                             --7.05%-- f
-
-If the user filters by "d", we should:
-
-a) Construct a callgraph that has only callchains containing "d"
-b) Express percentages as a fraction of the unfiltered total_period
-c) Allow users to expand callchains and see both the callers and callees 
-of d.
-
-Right now, I can do this in two steps:
-
-# Get the callgraph leading to "d"
-perf report -S d -G -g graph,0.5,callee
-
-  100.00%      foo  foo
-                 |
-                 --- __libc_start_main
-                     main
-                    |
-                    |--51.37%-- a
-                    |          c
-                    |          d
-                    |
-                     --48.63%-- b
-                               c
-                               d
-
-# Get the callgraph below "d" (i.e. where d is the caller)
-
-perf report d -G -g graph,0.5,caller -s inclusive
-
-    95.56%  [.] d
-             |
-             --- d
-                |
-                 --46.88%-- f
-
-and the percentages are not expressed as a percentages of the total_period.
-
-I'll send out a RFC patch next.
-
-  -Arun
+diff --git a/include/linux/math64.h b/include/linux/math64.h
+index 23fcdfc..b8ba855 100644
+--- a/include/linux/math64.h
++++ b/include/linux/math64.h
+@@ -6,6 +6,8 @@
+ 
+ #if BITS_PER_LONG == 64
+ 
++#define div64_long(x,y) div64_s64((x),(y))
++
+ /**
+  * div_u64_rem - unsigned 64bit divide with 32bit divisor with remainder
+  *
+@@ -45,6 +47,8 @@ static inline s64 div64_s64(s64 dividend, s64 divisor)
+ 
+ #elif BITS_PER_LONG == 32
+ 
++#define div64_long(x,y) div_s64((x),(y))
++
+ #ifndef div_u64_rem
+ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
+ {
