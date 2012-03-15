@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759629Ab2COKma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:42:30 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47384 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab2COKm0 convert rfc822-to-8bit (ORCPT
+	id S964848Ab2COKos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:44:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52984 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753026Ab2COKoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:42:26 -0400
+	Thu, 15 Mar 2012 06:44:46 -0400
+Date: Thu, 15 Mar 2012 10:44:44 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marc Reilly <marc@cpdesign.com.au>
+Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
+        u.kleine-koenig@pengutronix.de, oskar@scara.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/6] regmap: add support for 7_25 format
+Message-ID: <20120315104443.GC3138@opensource.wolfsonmicro.com>
+References: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
+ <1331757790-10583-2-git-send-email-marc@cpdesign.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20120311161320.GC1048@thunk.org>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
-	<BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
-	<20120310044804.GB5652@thunk.org>
-	<9709DE62-CE25-41C4-A33C-63336B51DC5E@whamcloud.com>
-	<20120311161320.GC1048@thunk.org>
-Date: Thu, 15 Mar 2012 11:42:24 +0100
-Message-ID: <CADDYkjRSd-Dv2jECwKt=3Q95hceVhiA+StZj1fvwywZHWaEgfw@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OBd5C1Lgu00Gd/Tn"
+Content-Disposition: inline
+In-Reply-To: <1331757790-10583-2-git-send-email-marc@cpdesign.com.au>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/11 Ted Ts'o <tytso@mit.edu>:
 
->
-> Well, my goal in proposing this optimization is that helps for the
-> "medium size" directories in the cold cache case.  The ext4 user who
-> first kicked off this thread was using his file system for an SVN
-> server, as I recall.  I could easily believe that he has thousands of
-> files; maybe even tens of thousands of files in a directory.  But that
-> probably still fits in 256k, or at best 512k worth of directory blocks.
->
+--OBd5C1Lgu00Gd/Tn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That was not a SVN server. It was a build host having checkouts of SVN
-projects.
+On Thu, Mar 15, 2012 at 07:43:05AM +1100, Marc Reilly wrote:
+> This adds support for devices with 7 address bits and 25 data bits.
+> The initial intended user for this are the mc13xxx mfds in spi mode.
+> (The 25th data bit is actually a dummy bit)
+>=20
+> Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
 
-The many files/dirs case is common for VCS and the SVN is not the only
-that would be affected here. AFAIR git.kernel.org was also suffering
-from the getdents(). Same applies to commercial products that are
-heavily stuffed with many files/dirs, e.g. ClearCase or Synergy. In
-the second one case we are running on XFS for a longer while and I
-must say that this was a huge improvement mostly on backup times
-(where a dump of Informix and the whole filesystem is ordinary
-compressed in tarball).
+It looks like this should be using the pad_bits parameter, though
+currently we only actually support pad bytes and integer sized register
+values.  Ugh.  We also have some entertainment because this device
+contains a touchscreen so I imagine you want readback but devices using
+odd register sizes don't do readback right now.
 
-A medium size you are referring would most probably fit into 256k and
-this could be enough for 90% of cases. Large production system running
-on ext4 need backups thus those would benefit the most here.
+What I think we want to do here is use pad_bits then internally to the
+API notice that reg_bits + pad_bits is a byte and therefore set up for 8
+bit registers and set a new value reg_shift in the map which shifts the
+register address left, either teaching the register format functions
+about it or just making a new one.  This should work better from a
+framework point of view.
 
--Jacek
+--OBd5C1Lgu00Gd/Tn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYcgVAAoJEBus8iNuMP3d61MQAJcW8hnq0haqi8lpAziuNKJs
+52BB5ZPJtE6XnCXVUezGjq+HstFsvSm9SqGXdJIFVr2KmX9eFUCdsMBCQhcs/KEu
+G/V5wzLTUN6MWKIt5zhuye/PVRnEIsOnt9DZslkk1lOtt83Hbx8nJF7pvPSN9TXx
+zyY05y18Rr3wAMV8/Kwvnw1mv0NUo7be5X7zbXPaRXhGgw7m9X2iyrnvuX6LMaek
+53mc10yBOza+pcbFO3+kFDpTYYFJpxBEVGNYftIPNwPxVrTQDbxVVDtQncQF81Vx
+6xS/LWDVucR4KDMM1hUsuSGwV7ZfeB71mLGJKRr6EwgaSwb/Fv3l9shRfbyRdnRk
+z5enxb+u535h0Y15aZRQZUjtwEkNQKpToy+bMwVdB3Y5Gc0Ww1Zx0jbyPKbUQsCY
+rwcAyJLV+4sNsadRkprfHasDRWvyJJab8dAVky/HJMrXRK3caSXFN36WC375Cvog
+Kf9aRf5+7AAZSOrtNroeEeiraOYyCnVQcRIqDNPyINxdJjWgXn9vCNtLZWV2hlLk
+Pe2IofYlnOS+hLRsBBHZltmLCXg40E1ReOdC5awocnQcTDhXmRo6EO4vpliR7B4I
+5vqjsbTTlIiWTXtaiz5Ab5uC/+4i8DvBKD0A7RSiSDzP+Mnh6obUpR+rzcGTlUX5
+Ud+1x3w+4hAWHLT1U8lj
+=9oRQ
+-----END PGP SIGNATURE-----
+
+--OBd5C1Lgu00Gd/Tn--
