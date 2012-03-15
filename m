@@ -1,118 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032063Ab2COSjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:39:44 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44304 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031532Ab2COSjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:39:42 -0400
-Date: Thu, 15 Mar 2012 18:39:40 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linus Torvalds <torvalds@osdl.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [patch 0/5] seqlock consolidation
-Message-ID: <20120315183940.GE8943@ZenIV.linux.org.uk>
-References: <20120314170736.617746873@linutronix.de>
- <20120315122112.GB8943@ZenIV.linux.org.uk>
- <alpine.LFD.2.02.1203151322020.2466@ionos>
- <20120315174305.GD8943@ZenIV.linux.org.uk>
- <alpine.LFD.2.02.1203151854110.2466@ionos>
+	id S1032140Ab2COSkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:40:11 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42638 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1032067Ab2COSkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 14:40:08 -0400
+Date: Thu, 15 Mar 2012 11:31:43 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC] rcu: Make rcu_barrier() less disruptive
+Message-ID: <20120315183143.GA4472@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120315164839.GA1657@linux.vnet.ibm.com>
+ <20120315174527.GA775@Krystal>
+ <20120315182159.GJ2381@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1203151854110.2466@ionos>
+In-Reply-To: <20120315182159.GJ2381@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031518-5806-0000-0000-00001378ABA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 06:55:18PM +0100, Thomas Gleixner wrote:
-> > If that's it, I suggest to look for a solution that would express just that...
-> > Or do you want something on the reader side as well?
+On Thu, Mar 15, 2012 at 11:21:59AM -0700, Paul E. McKenney wrote:
+> On Thu, Mar 15, 2012 at 01:45:27PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > The rcu_barrier() primitive interrupts each and every CPU, registering
+> > > a callback on every CPU.  Once all of these callbacks have been invoked,
+> > > rcu_barrier() knows that every callback that was registered before
+> > > the call to rcu_barrier() has also been invoked.
+> > > 
+> > > However, there is no point in registering a callback on a CPU that
+> > > currently has no callbacks, most especially if that CPU is in a
+> > > deep idle state.  This commit therefore makes rcu_barrier() avoid
+> > > interrupting CPUs that have no callbacks.  Doing this requires reworking
+> > > the handling of orphaned callbacks, otherwise callbacks could slip through
+> > > rcu_barrier()'s net by being orphaned from a CPU that rcu_barrier() had
+> > > not yet interrupted to a CPU that rcu_barrier() had already interrupted.
+> > > This reworking was needed anyway to take a first step towards weaning
+> > > RCU from the CPU_DYING notifier's use of stop_cpu().
+> > 
+> > Quoting Documentation/RCU/rcubarrier.txt:
+> > 
+> > "We instead need the rcu_barrier() primitive. This primitive is similar
+> > to synchronize_rcu(), but instead of waiting solely for a grace
+> > period to elapse, it also waits for all outstanding RCU callbacks to
+> > complete. Pseudo-code using rcu_barrier() is as follows:"
+> > 
+> > The patch you propose seems like a good approach to make rcu_barrier
+> > less disruptive, but everyone need to be aware that rcu_barrier() would
+> > quit having the side-effect of doing the equivalent of
+> > "synchronize_rcu()" from now on: within this new approach, in the case
+> > where there are no pending callbacks, rcu_barrier() could, AFAIU, return
+> > without waiting for the current grace period to complete.
+> > 
+> > Any use of rcu_barrier() that would assume that a synchronize_rcu() is
+> > implicit with the rcu_barrier() execution would be a bug anyway, but
+> > those might only show up after this patch is applied. I would therefore
+> > recommend to audit all rcu_barrier() users to ensure none is expecting
+> > rcu_barrier to act as a synchronize_rcu before pushing this change.
 > 
-> The problem is the reader side. If the reader preempts the writer then
-> the only way to make progress is to take the lock, but therefor I need
-> to know which lock I should take.
+> Good catch!
+> 
+> I am going to chicken out and explicitly wait for a grace period if there
+> were no callbacks.  Having rcu_barrier() very rarely be a quick no-op does
+> sound like a standing invitation for subtle non-reproducible bugs.  ;-)
 
-So just make writers non-preemptable in those sections.  Really, the
-worst non-deterministic behaviour you get for d_seq ones is memcpy()
-of up to ->d_name.len bytes.  And on the fs_struct side it's trivial
-to reduce the work done in those sections to several comparisons and
-assignments.  Not even path_get_longterm() needs to be there - see
-below for how it can be done:
+I take it back...
 
-diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-index 78b519c..f5818c4 100644
---- a/fs/fs_struct.c
-+++ b/fs/fs_struct.c
-@@ -26,11 +26,11 @@ void set_fs_root(struct fs_struct *fs, struct path *path)
- {
- 	struct path old_root;
- 
-+	path_get_longterm(path);
- 	spin_lock(&fs->lock);
- 	write_seqcount_begin(&fs->seq);
- 	old_root = fs->root;
- 	fs->root = *path;
--	path_get_longterm(path);
- 	write_seqcount_end(&fs->seq);
- 	spin_unlock(&fs->lock);
- 	if (old_root.dentry)
-@@ -45,11 +45,11 @@ void set_fs_pwd(struct fs_struct *fs, struct path *path)
- {
- 	struct path old_pwd;
- 
-+	path_get_longterm(path);
- 	spin_lock(&fs->lock);
- 	write_seqcount_begin(&fs->seq);
- 	old_pwd = fs->pwd;
- 	fs->pwd = *path;
--	path_get_longterm(path);
- 	write_seqcount_end(&fs->seq);
- 	spin_unlock(&fs->lock);
- 
-@@ -57,6 +57,14 @@ void set_fs_pwd(struct fs_struct *fs, struct path *path)
- 		path_put_longterm(&old_pwd);
- }
- 
-+static inline int replace_path(struct path *p, const struct path *old, const struct path *new)
-+{
-+	if (likely(p->dentry != old->dentry || p->mnt != old->mnt))
-+		return 0;
-+	*p = *new;
-+	return 1;
-+}
-+
- void chroot_fs_refs(struct path *old_root, struct path *new_root)
- {
- 	struct task_struct *g, *p;
-@@ -68,21 +76,16 @@ void chroot_fs_refs(struct path *old_root, struct path *new_root)
- 		task_lock(p);
- 		fs = p->fs;
- 		if (fs) {
-+			int hits = 0;
- 			spin_lock(&fs->lock);
- 			write_seqcount_begin(&fs->seq);
--			if (fs->root.dentry == old_root->dentry
--			    && fs->root.mnt == old_root->mnt) {
--				path_get_longterm(new_root);
--				fs->root = *new_root;
-+			hits += replace_path(&fs->root, old_root, new_root);
-+			hits += replace_path(&fs->pwd, old_root, new_root);
-+			write_seqcount_end(&fs->seq);
-+			while (hits--) {
- 				count++;
--			}
--			if (fs->pwd.dentry == old_root->dentry
--			    && fs->pwd.mnt == old_root->mnt) {
- 				path_get_longterm(new_root);
--				fs->pwd = *new_root;
--				count++;
- 			}
--			write_seqcount_end(&fs->seq);
- 			spin_unlock(&fs->lock);
- 		}
- 		task_unlock(p);
+After adopting callbacks (rcu_adopt_orphan_cbs()), _rcu_barrier()
+unconditionally posts a callback on the current CPU and waits for it.
+So _rcu_barrier() actually does always wait for a grace period.
+
+Yes, I could be more dainty and make rcu_adopt_orphan_cbs() return an
+indication of whether there were any callbacks, and then post the callback
+only if either there were some callbacks adopted or if there were no calls
+to smp_call_function_single().  But that adds complexity for almost no
+benefit -- and no one can accuse _rcu_barrier() of being a fastpath!  ;-)
+
+Or am I missing something here?
+
+							Thanx, Paul
+
