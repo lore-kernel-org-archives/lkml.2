@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161712Ab2COU71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:59:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29933 "EHLO mx1.redhat.com"
+	id S1161723Ab2COU7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:59:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161635Ab2COU6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:58:52 -0400
+	id S1161663Ab2COU61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 16:58:27 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 22/38] Disintegrate asm/system.h for S390 [ver #3]
+Subject: [PATCH 19/38] Disintegrate asm/system.h for MN10300 [ver #3]
 To: paul.gortmaker@windriver.com
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>, linux-s390@vger.kernel.org
-Date: Thu, 15 Mar 2012 20:58:42 +0000
-Message-ID: <20120315205842.28759.65584.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>, linux-am33-list@redhat.com
+Date: Thu, 15 Mar 2012 20:58:13 +0000
+Message-ID: <20120315205813.28759.30080.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
 References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -27,1121 +27,778 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for S390.
+Disintegrate asm/system.h for MN10300.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: linux-s390@vger.kernel.org
+cc: linux-am33-list@redhat.com
 ---
 
- arch/s390/crypto/crypt_s390.h       |    1 
- arch/s390/include/asm/atomic.h      |    2 
- arch/s390/include/asm/barrier.h     |   35 ++++
- arch/s390/include/asm/ctl_reg.h     |   76 +++++++++
- arch/s390/include/asm/elf.h         |    1 
- arch/s390/include/asm/exec.h        |   12 +
- arch/s390/include/asm/facility.h    |   29 ++++
- arch/s390/include/asm/mmu.h         |   14 ++
- arch/s390/include/asm/mmu_context.h |    1 
- arch/s390/include/asm/processor.h   |   16 ++
- arch/s390/include/asm/setup.h       |   14 ++
- arch/s390/include/asm/sigp.h        |    9 +
- arch/s390/include/asm/smp.h         |    1 
- arch/s390/include/asm/switch_to.h   |  100 ++++++++++++
- arch/s390/include/asm/system.h      |  286 +----------------------------------
- arch/s390/include/asm/uaccess.h     |    6 +
- arch/s390/kernel/compat_signal.c    |    1 
- arch/s390/kernel/cpcmd.c            |    1 
- arch/s390/kernel/dis.c              |    1 
- arch/s390/kernel/early.c            |    1 
- arch/s390/kernel/machine_kexec.c    |    1 
- arch/s390/kernel/process.c          |    2 
- arch/s390/kernel/ptrace.c           |    2 
- arch/s390/kernel/setup.c            |    2 
- arch/s390/kernel/signal.c           |    1 
- arch/s390/kernel/smp.c              |    1 
- arch/s390/kernel/suspend.c          |    2 
- arch/s390/kernel/traps.c            |    1 
- arch/s390/kernel/vdso.c             |    2 
- arch/s390/kvm/kvm-s390.c            |    2 
- arch/s390/mm/fault.c                |    2 
- arch/s390/mm/init.c                 |    2 
- arch/s390/mm/maccess.c              |    2 
- arch/s390/mm/pgtable.c              |    1 
- arch/s390/oprofile/hwsampler.c      |    1 
- drivers/s390/char/sclp_cmd.c        |    1 
- drivers/s390/cio/crw.c              |    1 
- drivers/s390/crypto/ap_bus.c        |    1 
- 38 files changed, 336 insertions(+), 298 deletions(-)
- create mode 100644 arch/s390/include/asm/barrier.h
- create mode 100644 arch/s390/include/asm/ctl_reg.h
- create mode 100644 arch/s390/include/asm/exec.h
- create mode 100644 arch/s390/include/asm/facility.h
- create mode 100644 arch/s390/include/asm/switch_to.h
+ arch/mn10300/include/asm/atomic.h       |  109 +----------------------------
+ arch/mn10300/include/asm/barrier.h      |   37 ++++++++++
+ arch/mn10300/include/asm/cmpxchg.h      |  115 +++++++++++++++++++++++++++++++
+ arch/mn10300/include/asm/dma.h          |    1 
+ arch/mn10300/include/asm/exec.h         |   16 ++++
+ arch/mn10300/include/asm/switch_to.h    |   49 +++++++++++++
+ arch/mn10300/include/asm/system.h       |  107 +----------------------------
+ arch/mn10300/kernel/entry.S             |    1 
+ arch/mn10300/kernel/fpu.c               |    1 
+ arch/mn10300/kernel/gdb-io-serial.c     |    1 
+ arch/mn10300/kernel/gdb-io-ttysm.c      |    1 
+ arch/mn10300/kernel/gdb-stub.c          |    1 
+ arch/mn10300/kernel/mn10300-serial.c    |    1 
+ arch/mn10300/kernel/mn10300-watchdog.c  |    1 
+ arch/mn10300/kernel/process.c           |    1 
+ arch/mn10300/kernel/ptrace.c            |    1 
+ arch/mn10300/kernel/setup.c             |    1 
+ arch/mn10300/kernel/smp-low.S           |    2 -
+ arch/mn10300/kernel/smp.c               |    1 
+ arch/mn10300/kernel/traps.c             |    1 
+ arch/mn10300/lib/bitops.c               |    1 
+ arch/mn10300/mm/fault.c                 |    1 
+ arch/mn10300/mm/init.c                  |    1 
+ arch/mn10300/mm/misalignment.c          |    1 
+ arch/mn10300/mm/pgtable.c               |    1 
+ arch/mn10300/mm/tlb-smp.c               |    1 
+ arch/mn10300/proc-mn2ws0050/proc-init.c |    1 
+ 27 files changed, 226 insertions(+), 229 deletions(-)
+ create mode 100644 arch/mn10300/include/asm/barrier.h
+ create mode 100644 arch/mn10300/include/asm/cmpxchg.h
+ create mode 100644 arch/mn10300/include/asm/exec.h
+ create mode 100644 arch/mn10300/include/asm/switch_to.h
 
-diff --git a/arch/s390/crypto/crypt_s390.h b/arch/s390/crypto/crypt_s390.h
-index ffd1ac2..9178db6 100644
---- a/arch/s390/crypto/crypt_s390.h
-+++ b/arch/s390/crypto/crypt_s390.h
-@@ -17,6 +17,7 @@
- #define _CRYPTO_ARCH_S390_CRYPT_S390_H
+diff --git a/arch/mn10300/include/asm/atomic.h b/arch/mn10300/include/asm/atomic.h
+index b9a8f84..975e184 100644
+--- a/arch/mn10300/include/asm/atomic.h
++++ b/arch/mn10300/include/asm/atomic.h
+@@ -12,112 +12,7 @@
+ #define _ASM_ATOMIC_H
  
- #include <asm/errno.h>
-+#include <asm/facility.h>
- 
- #define CRYPT_S390_OP_MASK 0xFF00
- #define CRYPT_S390_FUNC_MASK 0x00FF
-diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-index 8517d2a..748347b 100644
---- a/arch/s390/include/asm/atomic.h
-+++ b/arch/s390/include/asm/atomic.h
-@@ -15,7 +15,7 @@
- 
- #include <linux/compiler.h>
- #include <linux/types.h>
--#include <asm/system.h>
+ #include <asm/irqflags.h>
+-
+-#ifndef __ASSEMBLY__
+-
+-#ifdef CONFIG_SMP
+-#ifdef CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT
+-static inline
+-unsigned long __xchg(volatile unsigned long *m, unsigned long val)
+-{
+-	unsigned long status;
+-	unsigned long oldval;
+-
+-	asm volatile(
+-		"1:	mov	%4,(_AAR,%3)	\n"
+-		"	mov	(_ADR,%3),%1	\n"
+-		"	mov	%5,(_ADR,%3)	\n"
+-		"	mov	(_ADR,%3),%0	\n"	/* flush */
+-		"	mov	(_ASR,%3),%0	\n"
+-		"	or	%0,%0		\n"
+-		"	bne	1b		\n"
+-		: "=&r"(status), "=&r"(oldval), "=m"(*m)
+-		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(m), "r"(val)
+-		: "memory", "cc");
+-
+-	return oldval;
+-}
+-
+-static inline unsigned long __cmpxchg(volatile unsigned long *m,
+-				      unsigned long old, unsigned long new)
+-{
+-	unsigned long status;
+-	unsigned long oldval;
+-
+-	asm volatile(
+-		"1:	mov	%4,(_AAR,%3)	\n"
+-		"	mov	(_ADR,%3),%1	\n"
+-		"	cmp	%5,%1		\n"
+-		"	bne	2f		\n"
+-		"	mov	%6,(_ADR,%3)	\n"
+-		"2:	mov	(_ADR,%3),%0	\n"	/* flush */
+-		"	mov	(_ASR,%3),%0	\n"
+-		"	or	%0,%0		\n"
+-		"	bne	1b		\n"
+-		: "=&r"(status), "=&r"(oldval), "=m"(*m)
+-		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(m),
+-		  "r"(old), "r"(new)
+-		: "memory", "cc");
+-
+-	return oldval;
+-}
+-#else  /* CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT */
+-#error "No SMP atomic operation support!"
+-#endif /* CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT */
+-
+-#else  /* CONFIG_SMP */
+-
+-/*
+- * Emulate xchg for non-SMP MN10300
+- */
+-struct __xchg_dummy { unsigned long a[100]; };
+-#define __xg(x) ((struct __xchg_dummy *)(x))
+-
+-static inline
+-unsigned long __xchg(volatile unsigned long *m, unsigned long val)
+-{
+-	unsigned long oldval;
+-	unsigned long flags;
+-
+-	flags = arch_local_cli_save();
+-	oldval = *m;
+-	*m = val;
+-	arch_local_irq_restore(flags);
+-	return oldval;
+-}
+-
+-/*
+- * Emulate cmpxchg for non-SMP MN10300
+- */
+-static inline unsigned long __cmpxchg(volatile unsigned long *m,
+-				      unsigned long old, unsigned long new)
+-{
+-	unsigned long oldval;
+-	unsigned long flags;
+-
+-	flags = arch_local_cli_save();
+-	oldval = *m;
+-	if (oldval == old)
+-		*m = new;
+-	arch_local_irq_restore(flags);
+-	return oldval;
+-}
+-
+-#endif /* CONFIG_SMP */
+-
+-#define xchg(ptr, v)						\
+-	((__typeof__(*(ptr))) __xchg((unsigned long *)(ptr),	\
+-				     (unsigned long)(v)))
+-
+-#define cmpxchg(ptr, o, n)					\
+-	((__typeof__(*(ptr))) __cmpxchg((unsigned long *)(ptr), \
+-					(unsigned long)(o),	\
+-					(unsigned long)(n)))
+-
+-#define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
+-#define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
+-
+-#endif /* !__ASSEMBLY__ */
 +#include <asm/cmpxchg.h>
  
- #define ATOMIC_INIT(i)  { (i) }
+ #ifndef CONFIG_SMP
+ #include <asm-generic/atomic.h>
+@@ -269,6 +164,8 @@ static inline void atomic_dec(atomic_t *v)
+ 	c;							\
+ })
  
-diff --git a/arch/s390/include/asm/barrier.h b/arch/s390/include/asm/barrier.h
++#define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
++#define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
+ 
+ /**
+  * atomic_clear_mask - Atomically clear bits in memory
+diff --git a/arch/mn10300/include/asm/barrier.h b/arch/mn10300/include/asm/barrier.h
 new file mode 100644
-index 0000000..451273a
+index 0000000..2bd97a5
 --- /dev/null
-+++ b/arch/s390/include/asm/barrier.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
++++ b/arch/mn10300/include/asm/barrier.h
+@@ -0,0 +1,37 @@
++/* MN10300 memory barrier definitions
 + *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-+ */
-+
-+#ifndef __ASM_BARRIER_H
-+#define __ASM_BARRIER_H
-+
-+/*
-+ * Force strict CPU ordering.
-+ * And yes, this is required on UP too when we're talking
-+ * to devices.
++ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
 + *
-+ * This is very similar to the ppc eieio/sync instruction in that is
-+ * does a checkpoint syncronisation & makes sure that 
-+ * all memory ops have completed wrt other CPU's ( see 7-15 POP  DJB ).
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
++#ifndef _ASM_BARRIER_H
++#define _ASM_BARRIER_H
 +
-+#define eieio()	asm volatile("bcr 15,0" : : : "memory")
-+#define SYNC_OTHER_CORES(x)   eieio()
-+#define mb()    eieio()
-+#define rmb()   eieio()
-+#define wmb()   eieio()
-+#define read_barrier_depends() do { } while(0)
-+#define smp_mb()       mb()
-+#define smp_rmb()      rmb()
-+#define smp_wmb()      wmb()
-+#define smp_read_barrier_depends()    read_barrier_depends()
-+#define smp_mb__before_clear_bit()     smp_mb()
-+#define smp_mb__after_clear_bit()      smp_mb()
++#define nop()	asm volatile ("nop")
 +
-+#define set_mb(var, value)      do { var = value; mb(); } while (0)
-+
-+#endif /* __ASM_BARRIER_H */
-diff --git a/arch/s390/include/asm/ctl_reg.h b/arch/s390/include/asm/ctl_reg.h
-new file mode 100644
-index 0000000..ecde941
---- /dev/null
-+++ b/arch/s390/include/asm/ctl_reg.h
-@@ -0,0 +1,76 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
-+ *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-+ */
-+
-+#ifndef __ASM_CTL_REG_H
-+#define __ASM_CTL_REG_H
-+
-+#ifdef __s390x__
-+
-+#define __ctl_load(array, low, high) ({				\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	lctlg	%1,%2,%0\n"			\
-+		: : "Q" (*(addrtype *)(&array)),		\
-+		    "i" (low), "i" (high));			\
-+	})
-+
-+#define __ctl_store(array, low, high) ({			\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	stctg	%1,%2,%0\n"			\
-+		: "=Q" (*(addrtype *)(&array))			\
-+		: "i" (low), "i" (high));			\
-+	})
-+
-+#else /* __s390x__ */
-+
-+#define __ctl_load(array, low, high) ({				\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	lctl	%1,%2,%0\n"			\
-+		: : "Q" (*(addrtype *)(&array)),		\
-+		    "i" (low), "i" (high));			\
-+})
-+
-+#define __ctl_store(array, low, high) ({			\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	stctl	%1,%2,%0\n"			\
-+		: "=Q" (*(addrtype *)(&array))			\
-+		: "i" (low), "i" (high));			\
-+	})
-+
-+#endif /* __s390x__ */
-+
-+#define __ctl_set_bit(cr, bit) ({	\
-+	unsigned long __dummy;		\
-+	__ctl_store(__dummy, cr, cr);	\
-+	__dummy |= 1UL << (bit);	\
-+	__ctl_load(__dummy, cr, cr);	\
-+})
-+
-+#define __ctl_clear_bit(cr, bit) ({	\
-+	unsigned long __dummy;		\
-+	__ctl_store(__dummy, cr, cr);	\
-+	__dummy &= ~(1UL << (bit));	\
-+	__ctl_load(__dummy, cr, cr);	\
-+})
++#define mb()	asm volatile ("": : :"memory")
++#define rmb()	mb()
++#define wmb()	asm volatile ("": : :"memory")
 +
 +#ifdef CONFIG_SMP
++#define smp_mb()	mb()
++#define smp_rmb()	rmb()
++#define smp_wmb()	wmb()
++#define set_mb(var, value)  do { xchg(&var, value); } while (0)
++#else  /* CONFIG_SMP */
++#define smp_mb()	barrier()
++#define smp_rmb()	barrier()
++#define smp_wmb()	barrier()
++#define set_mb(var, value)  do { var = value;  mb(); } while (0)
++#endif /* CONFIG_SMP */
 +
-+extern void smp_ctl_set_bit(int cr, int bit);
-+extern void smp_ctl_clear_bit(int cr, int bit);
-+#define ctl_set_bit(cr, bit) smp_ctl_set_bit(cr, bit)
-+#define ctl_clear_bit(cr, bit) smp_ctl_clear_bit(cr, bit)
++#define set_wmb(var, value) do { var = value; wmb(); } while (0)
 +
-+#else
++#define read_barrier_depends()		do {} while (0)
++#define smp_read_barrier_depends()	do {} while (0)
 +
-+#define ctl_set_bit(cr, bit) __ctl_set_bit(cr, bit)
-+#define ctl_clear_bit(cr, bit) __ctl_clear_bit(cr, bit)
++#endif /* _ASM_BARRIER_H */
+diff --git a/arch/mn10300/include/asm/cmpxchg.h b/arch/mn10300/include/asm/cmpxchg.h
+new file mode 100644
+index 0000000..97a4aaf
+--- /dev/null
++++ b/arch/mn10300/include/asm/cmpxchg.h
+@@ -0,0 +1,115 @@
++/* MN10300 Atomic xchg/cmpxchg operations
++ *
++ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#ifndef _ASM_CMPXCHG_H
++#define _ASM_CMPXCHG_H
++
++#include <asm/irqflags.h>
++
++#ifdef CONFIG_SMP
++#ifdef CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT
++static inline
++unsigned long __xchg(volatile unsigned long *m, unsigned long val)
++{
++	unsigned long status;
++	unsigned long oldval;
++
++	asm volatile(
++		"1:	mov	%4,(_AAR,%3)	\n"
++		"	mov	(_ADR,%3),%1	\n"
++		"	mov	%5,(_ADR,%3)	\n"
++		"	mov	(_ADR,%3),%0	\n"	/* flush */
++		"	mov	(_ASR,%3),%0	\n"
++		"	or	%0,%0		\n"
++		"	bne	1b		\n"
++		: "=&r"(status), "=&r"(oldval), "=m"(*m)
++		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(m), "r"(val)
++		: "memory", "cc");
++
++	return oldval;
++}
++
++static inline unsigned long __cmpxchg(volatile unsigned long *m,
++				      unsigned long old, unsigned long new)
++{
++	unsigned long status;
++	unsigned long oldval;
++
++	asm volatile(
++		"1:	mov	%4,(_AAR,%3)	\n"
++		"	mov	(_ADR,%3),%1	\n"
++		"	cmp	%5,%1		\n"
++		"	bne	2f		\n"
++		"	mov	%6,(_ADR,%3)	\n"
++		"2:	mov	(_ADR,%3),%0	\n"	/* flush */
++		"	mov	(_ASR,%3),%0	\n"
++		"	or	%0,%0		\n"
++		"	bne	1b		\n"
++		: "=&r"(status), "=&r"(oldval), "=m"(*m)
++		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(m),
++		  "r"(old), "r"(new)
++		: "memory", "cc");
++
++	return oldval;
++}
++#else  /* CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT */
++#error "No SMP atomic operation support!"
++#endif /* CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT */
++
++#else  /* CONFIG_SMP */
++
++/*
++ * Emulate xchg for non-SMP MN10300
++ */
++struct __xchg_dummy { unsigned long a[100]; };
++#define __xg(x) ((struct __xchg_dummy *)(x))
++
++static inline
++unsigned long __xchg(volatile unsigned long *m, unsigned long val)
++{
++	unsigned long oldval;
++	unsigned long flags;
++
++	flags = arch_local_cli_save();
++	oldval = *m;
++	*m = val;
++	arch_local_irq_restore(flags);
++	return oldval;
++}
++
++/*
++ * Emulate cmpxchg for non-SMP MN10300
++ */
++static inline unsigned long __cmpxchg(volatile unsigned long *m,
++				      unsigned long old, unsigned long new)
++{
++	unsigned long oldval;
++	unsigned long flags;
++
++	flags = arch_local_cli_save();
++	oldval = *m;
++	if (oldval == old)
++		*m = new;
++	arch_local_irq_restore(flags);
++	return oldval;
++}
 +
 +#endif /* CONFIG_SMP */
 +
-+#endif /* __ASM_CTL_REG_H */
-diff --git a/arch/s390/include/asm/elf.h b/arch/s390/include/asm/elf.h
-index 547f1a6..c4ee39f 100644
---- a/arch/s390/include/asm/elf.h
-+++ b/arch/s390/include/asm/elf.h
-@@ -129,7 +129,6 @@ typedef s390_fp_regs compat_elf_fpregset_t;
- typedef s390_compat_regs compat_elf_gregset_t;
- 
- #include <linux/sched.h>	/* for task_struct */
--#include <asm/system.h>		/* for save_access_regs */
- #include <asm/mmu_context.h>
- 
- #include <asm/vdso.h>
-diff --git a/arch/s390/include/asm/exec.h b/arch/s390/include/asm/exec.h
-new file mode 100644
-index 0000000..c4a93d6
---- /dev/null
-+++ b/arch/s390/include/asm/exec.h
-@@ -0,0 +1,12 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
-+ *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-+ */
++#define xchg(ptr, v)						\
++	((__typeof__(*(ptr))) __xchg((unsigned long *)(ptr),	\
++				     (unsigned long)(v)))
 +
-+#ifndef __ASM_EXEC_H
-+#define __ASM_EXEC_H
++#define cmpxchg(ptr, o, n)					\
++	((__typeof__(*(ptr))) __cmpxchg((unsigned long *)(ptr), \
++					(unsigned long)(o),	\
++					(unsigned long)(n)))
 +
-+extern unsigned long arch_align_stack(unsigned long sp);
-+
-+#endif /* __ASM_EXEC_H */
-diff --git a/arch/s390/include/asm/facility.h b/arch/s390/include/asm/facility.h
-new file mode 100644
-index 0000000..0890581
---- /dev/null
-+++ b/arch/s390/include/asm/facility.h
-@@ -0,0 +1,29 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
-+ *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-+ */
-+
-+#ifndef __ASM_FACILITY_H
-+#define __ASM_FACILITY_H
-+
-+#include <asm/lowcore.h>
-+
-+#define MAX_FACILITY_BIT (256*8)	/* stfle_fac_list has 256 bytes */
-+
-+/*
-+ * The test_facility function uses the bit odering where the MSB is bit 0.
-+ * That makes it easier to query facility bits with the bit number as
-+ * documented in the Principles of Operation.
-+ */
-+static inline int test_facility(unsigned long nr)
-+{
-+	unsigned char *ptr;
-+
-+	if (nr >= MAX_FACILITY_BIT)
-+		return 0;
-+	ptr = (unsigned char *) &S390_lowcore.stfle_fac_list + (nr >> 3);
-+	return (*ptr & (0x80 >> (nr & 7))) != 0;
-+}
-+
-+#endif /* __ASM_FACILITY_H */
-diff --git a/arch/s390/include/asm/mmu.h b/arch/s390/include/asm/mmu.h
-index 4506791..1c7d6ce 100644
---- a/arch/s390/include/asm/mmu.h
-+++ b/arch/s390/include/asm/mmu.h
-@@ -21,4 +21,18 @@ typedef struct {
- 	.context.pgtable_list = LIST_HEAD_INIT(name.context.pgtable_list),    \
- 	.context.gmap_list = LIST_HEAD_INIT(name.context.gmap_list),
- 
-+static inline int tprot(unsigned long addr)
-+{
-+	int rc = -EFAULT;
-+
-+	asm volatile(
-+		"	tprot	0(%1),0\n"
-+		"0:	ipm	%0\n"
-+		"	srl	%0,28\n"
-+		"1:\n"
-+		EX_TABLE(0b,1b)
-+		: "+d" (rc) : "a" (addr) : "cc");
-+	return rc;
-+}
-+
- #endif
-diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
-index 5682f16..5d09e40 100644
---- a/arch/s390/include/asm/mmu_context.h
-+++ b/arch/s390/include/asm/mmu_context.h
-@@ -12,6 +12,7 @@
- #include <asm/pgalloc.h>
- #include <asm/uaccess.h>
- #include <asm/tlbflush.h>
-+#include <asm/ctl_reg.h>
- #include <asm-generic/mm_hooks.h>
- 
- static inline int init_new_context(struct task_struct *tsk,
-diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
-index d25843a..320aa82 100644
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -14,6 +14,7 @@
- #define __ASM_S390_PROCESSOR_H
- 
- #include <linux/linkage.h>
-+#include <linux/irqflags.h>
- #include <asm/cpu.h>
- #include <asm/page.h>
- #include <asm/ptrace.h>
-@@ -304,6 +305,21 @@ static inline void __noreturn disabled_wait(unsigned long code)
- }
- 
- /*
-+ * Use to set psw mask except for the first byte which
-+ * won't be changed by this function.
-+ */
-+static inline void
-+__set_psw_mask(unsigned long mask)
-+{
-+	__load_psw_mask(mask | (arch_local_save_flags() & ~(-1UL >> 8)));
-+}
-+
-+#define local_mcck_enable() \
-+	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT | PSW_MASK_MCHECK)
-+#define local_mcck_disable() \
-+	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT)
-+
-+/*
-  * Basic Machine Check/Program Check Handler.
-  */
- 
-diff --git a/arch/s390/include/asm/setup.h b/arch/s390/include/asm/setup.h
-index 097183c..b21e46e 100644
---- a/arch/s390/include/asm/setup.h
-+++ b/arch/s390/include/asm/setup.h
-@@ -140,6 +140,20 @@ extern char vmpoff_cmd[];
- #define NSS_NAME_SIZE	8
- extern char kernel_nss_name[];
- 
-+#ifdef CONFIG_PFAULT
-+extern int pfault_init(void);
-+extern void pfault_fini(void);
-+#else /* CONFIG_PFAULT */
-+#define pfault_init()		({-1;})
-+#define pfault_fini()		do { } while (0)
-+#endif /* CONFIG_PFAULT */
-+
-+extern void cmma_init(void);
-+
-+extern void (*_machine_restart)(char *command);
-+extern void (*_machine_halt)(void);
-+extern void (*_machine_power_off)(void);
-+
- #else /* __ASSEMBLY__ */
- 
- #ifndef __s390x__
-diff --git a/arch/s390/include/asm/sigp.h b/arch/s390/include/asm/sigp.h
-index 7040b85..d7008d1 100644
---- a/arch/s390/include/asm/sigp.h
-+++ b/arch/s390/include/asm/sigp.h
-@@ -10,11 +10,18 @@
- #ifndef __ASM_SIGP_H
- #define __ASM_SIGP_H
++#endif /* _ASM_CMPXCHG_H */
+diff --git a/arch/mn10300/include/asm/dma.h b/arch/mn10300/include/asm/dma.h
+index 098df2e..10b77d4 100644
+--- a/arch/mn10300/include/asm/dma.h
++++ b/arch/mn10300/include/asm/dma.h
+@@ -11,7 +11,6 @@
+ #ifndef _ASM_DMA_H
+ #define _ASM_DMA_H
  
 -#include <asm/system.h>
- 
- /* Get real cpu address from logical cpu number. */
- extern unsigned short __cpu_logical_map[];
- 
-+static inline unsigned short stap(void)
-+{
-+	unsigned short cpu_address;
-+
-+	asm volatile("stap %0" : "=m" (cpu_address));
-+	return cpu_address;
-+}
-+
- static inline int cpu_logical_map(int cpu)
- {
- #ifdef CONFIG_SMP
-diff --git a/arch/s390/include/asm/smp.h b/arch/s390/include/asm/smp.h
-index c32e912..369c4ff 100644
---- a/arch/s390/include/asm/smp.h
-+++ b/arch/s390/include/asm/smp.h
-@@ -9,7 +9,6 @@
- 
- #ifdef CONFIG_SMP
- 
--#include <asm/system.h>
- #include <asm/sigp.h>
- 
- extern void machine_restart_smp(char *);
-diff --git a/arch/s390/include/asm/switch_to.h b/arch/s390/include/asm/switch_to.h
+ #include <linux/spinlock.h>
+ #include <asm/io.h>
+ #include <linux/delay.h>
+diff --git a/arch/mn10300/include/asm/exec.h b/arch/mn10300/include/asm/exec.h
 new file mode 100644
-index 0000000..f223068
+index 0000000..c74e367
 --- /dev/null
-+++ b/arch/s390/include/asm/switch_to.h
-@@ -0,0 +1,100 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
++++ b/arch/mn10300/include/asm/exec.h
+@@ -0,0 +1,16 @@
++/* MN10300 process execution definitions
 + *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
++ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
++#ifndef _ASM_EXEC_H
++#define _ASM_EXEC_H
 +
-+#ifndef __ASM_SWITCH_TO_H
-+#define __ASM_SWITCH_TO_H
++#define arch_align_stack(x) (x)
 +
-+#include <linux/thread_info.h>
++#endif /* _ASM_EXEC_H */
+diff --git a/arch/mn10300/include/asm/switch_to.h b/arch/mn10300/include/asm/switch_to.h
+new file mode 100644
+index 0000000..393d311
+--- /dev/null
++++ b/arch/mn10300/include/asm/switch_to.h
+@@ -0,0 +1,49 @@
++/* MN10300 task switching definitions
++ *
++ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#ifndef _ASM_SWITCH_TO_H
++#define _ASM_SWITCH_TO_H
 +
-+extern struct task_struct *__switch_to(void *, void *);
-+extern void update_per_regs(struct task_struct *task);
-+
-+static inline void save_fp_regs(s390_fp_regs *fpregs)
-+{
-+	asm volatile(
-+		"	std	0,%O0+8(%R0)\n"
-+		"	std	2,%O0+24(%R0)\n"
-+		"	std	4,%O0+40(%R0)\n"
-+		"	std	6,%O0+56(%R0)"
-+		: "=Q" (*fpregs) : "Q" (*fpregs));
-+	if (!MACHINE_HAS_IEEE)
-+		return;
-+	asm volatile(
-+		"	stfpc	%0\n"
-+		"	std	1,%O0+16(%R0)\n"
-+		"	std	3,%O0+32(%R0)\n"
-+		"	std	5,%O0+48(%R0)\n"
-+		"	std	7,%O0+64(%R0)\n"
-+		"	std	8,%O0+72(%R0)\n"
-+		"	std	9,%O0+80(%R0)\n"
-+		"	std	10,%O0+88(%R0)\n"
-+		"	std	11,%O0+96(%R0)\n"
-+		"	std	12,%O0+104(%R0)\n"
-+		"	std	13,%O0+112(%R0)\n"
-+		"	std	14,%O0+120(%R0)\n"
-+		"	std	15,%O0+128(%R0)\n"
-+		: "=Q" (*fpregs) : "Q" (*fpregs));
-+}
-+
-+static inline void restore_fp_regs(s390_fp_regs *fpregs)
-+{
-+	asm volatile(
-+		"	ld	0,%O0+8(%R0)\n"
-+		"	ld	2,%O0+24(%R0)\n"
-+		"	ld	4,%O0+40(%R0)\n"
-+		"	ld	6,%O0+56(%R0)"
-+		: : "Q" (*fpregs));
-+	if (!MACHINE_HAS_IEEE)
-+		return;
-+	asm volatile(
-+		"	lfpc	%0\n"
-+		"	ld	1,%O0+16(%R0)\n"
-+		"	ld	3,%O0+32(%R0)\n"
-+		"	ld	5,%O0+48(%R0)\n"
-+		"	ld	7,%O0+64(%R0)\n"
-+		"	ld	8,%O0+72(%R0)\n"
-+		"	ld	9,%O0+80(%R0)\n"
-+		"	ld	10,%O0+88(%R0)\n"
-+		"	ld	11,%O0+96(%R0)\n"
-+		"	ld	12,%O0+104(%R0)\n"
-+		"	ld	13,%O0+112(%R0)\n"
-+		"	ld	14,%O0+120(%R0)\n"
-+		"	ld	15,%O0+128(%R0)\n"
-+		: : "Q" (*fpregs));
-+}
-+
-+static inline void save_access_regs(unsigned int *acrs)
-+{
-+	asm volatile("stam 0,15,%0" : "=Q" (*acrs));
-+}
-+
-+static inline void restore_access_regs(unsigned int *acrs)
-+{
-+	asm volatile("lam 0,15,%0" : : "Q" (*acrs));
-+}
-+
-+#define switch_to(prev,next,last) do {					\
-+	if (prev->mm) {							\
-+		save_fp_regs(&prev->thread.fp_regs);			\
-+		save_access_regs(&prev->thread.acrs[0]);		\
-+	}								\
-+	if (next->mm) {							\
-+		restore_fp_regs(&next->thread.fp_regs);			\
-+		restore_access_regs(&next->thread.acrs[0]);		\
-+		update_per_regs(next);					\
-+	}								\
-+	prev = __switch_to(prev,next);					\
-+} while (0)
-+
-+extern void account_vtime(struct task_struct *, struct task_struct *);
-+extern void account_tick_vtime(struct task_struct *);
-+
-+#define finish_arch_switch(prev) do {					     \
-+	set_fs(current->thread.mm_segment);				     \
-+	account_vtime(prev, current);					     \
-+} while (0)
-+
-+#endif /* __ASM_SWITCH_TO_H */
-diff --git a/arch/s390/include/asm/system.h b/arch/s390/include/asm/system.h
-index d73cc6b..641c729 100644
---- a/arch/s390/include/asm/system.h
-+++ b/arch/s390/include/asm/system.h
-@@ -1,281 +1,7 @@
--/*
-- * Copyright IBM Corp. 1999, 2009
-- *
-- * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-- */
--
--#ifndef __ASM_SYSTEM_H
--#define __ASM_SYSTEM_H
--
--#include <linux/kernel.h>
--#include <linux/errno.h>
--#include <asm/types.h>
--#include <asm/ptrace.h>
--#include <asm/setup.h>
--#include <asm/processor.h>
--#include <asm/lowcore.h>
-+/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
 +#include <asm/barrier.h>
- #include <asm/cmpxchg.h>
++
++struct task_struct;
++struct thread_struct;
++
++#if !defined(CONFIG_LAZY_SAVE_FPU)
++struct fpu_state_struct;
++extern asmlinkage void fpu_save(struct fpu_state_struct *);
++#define switch_fpu(prev, next)						\
++	do {								\
++		if ((prev)->thread.fpu_flags & THREAD_HAS_FPU) {	\
++			(prev)->thread.fpu_flags &= ~THREAD_HAS_FPU;	\
++			(prev)->thread.uregs->epsw &= ~EPSW_FE;		\
++			fpu_save(&(prev)->thread.fpu_state);		\
++		}							\
++	} while (0)
++#else
++#define switch_fpu(prev, next) do {} while (0)
++#endif
++
++/* context switching is now performed out-of-line in switch_to.S */
++extern asmlinkage
++struct task_struct *__switch_to(struct thread_struct *prev,
++				struct thread_struct *next,
++				struct task_struct *prev_task);
++
++#define switch_to(prev, next, last)					\
++do {									\
++	switch_fpu(prev, next);						\
++	current->thread.wchan = (u_long) __builtin_return_address(0);	\
++	(last) = __switch_to(&(prev)->thread, &(next)->thread, (prev));	\
++	mb();								\
++	current->thread.wchan = 0;					\
++} while (0)
++
++#endif /* _ASM_SWITCH_TO_H */
+diff --git a/arch/mn10300/include/asm/system.h b/arch/mn10300/include/asm/system.h
+index 94b4c5e..a7f4057 100644
+--- a/arch/mn10300/include/asm/system.h
++++ b/arch/mn10300/include/asm/system.h
+@@ -1,102 +1,5 @@
+-/* MN10300 System definitions
+- *
+- * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
+- * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
+- */
+-#ifndef _ASM_SYSTEM_H
+-#define _ASM_SYSTEM_H
+-
+-#include <asm/cpu-regs.h>
+-#include <asm/intctl-regs.h>
 -
 -#ifdef __KERNEL__
+-#ifndef __ASSEMBLY__
+-
+-#include <linux/kernel.h>
+-#include <linux/irqflags.h>
+-#include <linux/atomic.h>
+-
+-#if !defined(CONFIG_LAZY_SAVE_FPU)
+-struct fpu_state_struct;
+-extern asmlinkage void fpu_save(struct fpu_state_struct *);
+-#define switch_fpu(prev, next)						\
+-	do {								\
+-		if ((prev)->thread.fpu_flags & THREAD_HAS_FPU) {	\
+-			(prev)->thread.fpu_flags &= ~THREAD_HAS_FPU;	\
+-			(prev)->thread.uregs->epsw &= ~EPSW_FE;		\
+-			fpu_save(&(prev)->thread.fpu_state);		\
+-		}							\
+-	} while (0)
+-#else
+-#define switch_fpu(prev, next) do {} while (0)
+-#endif
 -
 -struct task_struct;
+-struct thread_struct;
 -
--extern struct task_struct *__switch_to(void *, void *);
--extern void update_per_regs(struct task_struct *task);
+-extern asmlinkage
+-struct task_struct *__switch_to(struct thread_struct *prev,
+-				struct thread_struct *next,
+-				struct task_struct *prev_task);
 -
--static inline void save_fp_regs(s390_fp_regs *fpregs)
--{
--	asm volatile(
--		"	std	0,%O0+8(%R0)\n"
--		"	std	2,%O0+24(%R0)\n"
--		"	std	4,%O0+40(%R0)\n"
--		"	std	6,%O0+56(%R0)"
--		: "=Q" (*fpregs) : "Q" (*fpregs));
--	if (!MACHINE_HAS_IEEE)
--		return;
--	asm volatile(
--		"	stfpc	%0\n"
--		"	std	1,%O0+16(%R0)\n"
--		"	std	3,%O0+32(%R0)\n"
--		"	std	5,%O0+48(%R0)\n"
--		"	std	7,%O0+64(%R0)\n"
--		"	std	8,%O0+72(%R0)\n"
--		"	std	9,%O0+80(%R0)\n"
--		"	std	10,%O0+88(%R0)\n"
--		"	std	11,%O0+96(%R0)\n"
--		"	std	12,%O0+104(%R0)\n"
--		"	std	13,%O0+112(%R0)\n"
--		"	std	14,%O0+120(%R0)\n"
--		"	std	15,%O0+128(%R0)\n"
--		: "=Q" (*fpregs) : "Q" (*fpregs));
--}
--
--static inline void restore_fp_regs(s390_fp_regs *fpregs)
--{
--	asm volatile(
--		"	ld	0,%O0+8(%R0)\n"
--		"	ld	2,%O0+24(%R0)\n"
--		"	ld	4,%O0+40(%R0)\n"
--		"	ld	6,%O0+56(%R0)"
--		: : "Q" (*fpregs));
--	if (!MACHINE_HAS_IEEE)
--		return;
--	asm volatile(
--		"	lfpc	%0\n"
--		"	ld	1,%O0+16(%R0)\n"
--		"	ld	3,%O0+32(%R0)\n"
--		"	ld	5,%O0+48(%R0)\n"
--		"	ld	7,%O0+64(%R0)\n"
--		"	ld	8,%O0+72(%R0)\n"
--		"	ld	9,%O0+80(%R0)\n"
--		"	ld	10,%O0+88(%R0)\n"
--		"	ld	11,%O0+96(%R0)\n"
--		"	ld	12,%O0+104(%R0)\n"
--		"	ld	13,%O0+112(%R0)\n"
--		"	ld	14,%O0+120(%R0)\n"
--		"	ld	15,%O0+128(%R0)\n"
--		: : "Q" (*fpregs));
--}
--
--static inline void save_access_regs(unsigned int *acrs)
--{
--	asm volatile("stam 0,15,%0" : "=Q" (*acrs));
--}
--
--static inline void restore_access_regs(unsigned int *acrs)
--{
--	asm volatile("lam 0,15,%0" : : "Q" (*acrs));
--}
--
--#define switch_to(prev,next,last) do {					\
--	if (prev->mm) {							\
--		save_fp_regs(&prev->thread.fp_regs);			\
--		save_access_regs(&prev->thread.acrs[0]);		\
--	}								\
--	if (next->mm) {							\
--		restore_fp_regs(&next->thread.fp_regs);			\
--		restore_access_regs(&next->thread.acrs[0]);		\
--		update_per_regs(next);					\
--	}								\
--	prev = __switch_to(prev,next);					\
+-/* context switching is now performed out-of-line in switch_to.S */
+-#define switch_to(prev, next, last)					\
+-do {									\
+-	switch_fpu(prev, next);						\
+-	current->thread.wchan = (u_long) __builtin_return_address(0);	\
+-	(last) = __switch_to(&(prev)->thread, &(next)->thread, (prev));	\
+-	mb();								\
+-	current->thread.wchan = 0;					\
 -} while (0)
 -
--extern void account_vtime(struct task_struct *, struct task_struct *);
--extern void account_tick_vtime(struct task_struct *);
+-#define arch_align_stack(x) (x)
 -
--#ifdef CONFIG_PFAULT
--extern int pfault_init(void);
--extern void pfault_fini(void);
--#else /* CONFIG_PFAULT */
--#define pfault_init()		({-1;})
--#define pfault_fini()		do { } while (0)
--#endif /* CONFIG_PFAULT */
--
--extern void cmma_init(void);
--extern int memcpy_real(void *, void *, size_t);
--extern void copy_to_absolute_zero(void *dest, void *src, size_t count);
--extern int copy_to_user_real(void __user *dest, void *src, size_t count);
--extern int copy_from_user_real(void *dest, void __user *src, size_t count);
--
--#define finish_arch_switch(prev) do {					     \
--	set_fs(current->thread.mm_segment);				     \
--	account_vtime(prev, current);					     \
--} while (0)
--
--#define nop() asm volatile("nop")
+-#define nop() asm volatile ("nop")
 -
 -/*
 - * Force strict CPU ordering.
 - * And yes, this is required on UP too when we're talking
 - * to devices.
 - *
-- * This is very similar to the ppc eieio/sync instruction in that is
-- * does a checkpoint syncronisation & makes sure that 
-- * all memory ops have completed wrt other CPU's ( see 7-15 POP  DJB ).
+- * For now, "wmb()" doesn't actually do anything, as all
+- * Intel CPU's follow what Intel calls a *Processor Order*,
+- * in which all writes are seen in the program order even
+- * outside the CPU.
+- *
+- * I expect future Intel CPU's to have a weaker ordering,
+- * but I'd also expect them to finally get their act together
+- * and add some real memory barriers if so.
+- *
+- * Some non intel clones support out of order store. wmb() ceases to be a
+- * nop for these.
 - */
 -
--#define eieio()	asm volatile("bcr 15,0" : : : "memory")
--#define SYNC_OTHER_CORES(x)   eieio()
--#define mb()    eieio()
--#define rmb()   eieio()
--#define wmb()   eieio()
--#define read_barrier_depends() do { } while(0)
--#define smp_mb()       mb()
--#define smp_rmb()      rmb()
--#define smp_wmb()      wmb()
--#define smp_read_barrier_depends()    read_barrier_depends()
--#define smp_mb__before_clear_bit()     smp_mb()
--#define smp_mb__after_clear_bit()      smp_mb()
--
--
--#define set_mb(var, value)      do { var = value; mb(); } while (0)
--
--#ifdef __s390x__
--
--#define __ctl_load(array, low, high) ({				\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	lctlg	%1,%2,%0\n"			\
--		: : "Q" (*(addrtype *)(&array)),		\
--		    "i" (low), "i" (high));			\
--	})
--
--#define __ctl_store(array, low, high) ({			\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	stctg	%1,%2,%0\n"			\
--		: "=Q" (*(addrtype *)(&array))			\
--		: "i" (low), "i" (high));			\
--	})
--
--#else /* __s390x__ */
--
--#define __ctl_load(array, low, high) ({				\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	lctl	%1,%2,%0\n"			\
--		: : "Q" (*(addrtype *)(&array)),		\
--		    "i" (low), "i" (high));			\
--})
--
--#define __ctl_store(array, low, high) ({			\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	stctl	%1,%2,%0\n"			\
--		: "=Q" (*(addrtype *)(&array))			\
--		: "i" (low), "i" (high));			\
--	})
--
--#endif /* __s390x__ */
--
--#define __ctl_set_bit(cr, bit) ({	\
--	unsigned long __dummy;		\
--	__ctl_store(__dummy, cr, cr);	\
--	__dummy |= 1UL << (bit);	\
--	__ctl_load(__dummy, cr, cr);	\
--})
--
--#define __ctl_clear_bit(cr, bit) ({	\
--	unsigned long __dummy;		\
--	__ctl_store(__dummy, cr, cr);	\
--	__dummy &= ~(1UL << (bit));	\
--	__ctl_load(__dummy, cr, cr);	\
--})
--
--/*
-- * Use to set psw mask except for the first byte which
-- * won't be changed by this function.
-- */
--static inline void
--__set_psw_mask(unsigned long mask)
--{
--	__load_psw_mask(mask | (arch_local_save_flags() & ~(-1UL >> 8)));
--}
--
--#define local_mcck_enable() \
--	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT | PSW_MASK_MCHECK)
--#define local_mcck_disable() \
--	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT)
+-#define mb()	asm volatile ("": : :"memory")
+-#define rmb()	mb()
+-#define wmb()	asm volatile ("": : :"memory")
 -
 -#ifdef CONFIG_SMP
--
--extern void smp_ctl_set_bit(int cr, int bit);
--extern void smp_ctl_clear_bit(int cr, int bit);
--#define ctl_set_bit(cr, bit) smp_ctl_set_bit(cr, bit)
--#define ctl_clear_bit(cr, bit) smp_ctl_clear_bit(cr, bit)
--
--#else
--
--#define ctl_set_bit(cr, bit) __ctl_set_bit(cr, bit)
--#define ctl_clear_bit(cr, bit) __ctl_clear_bit(cr, bit)
--
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define set_mb(var, value)  do { xchg(&var, value); } while (0)
+-#else  /* CONFIG_SMP */
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define set_mb(var, value)  do { var = value;  mb(); } while (0)
 -#endif /* CONFIG_SMP */
 -
--#define MAX_FACILITY_BIT (256*8)	/* stfle_fac_list has 256 bytes */
+-#define set_wmb(var, value) do { var = value; wmb(); } while (0)
 -
--/*
-- * The test_facility function uses the bit odering where the MSB is bit 0.
-- * That makes it easier to query facility bits with the bit number as
-- * documented in the Principles of Operation.
-- */
--static inline int test_facility(unsigned long nr)
--{
--	unsigned char *ptr;
+-#define read_barrier_depends()		do {} while (0)
+-#define smp_read_barrier_depends()	do {} while (0)
 -
--	if (nr >= MAX_FACILITY_BIT)
--		return 0;
--	ptr = (unsigned char *) &S390_lowcore.stfle_fac_list + (nr >> 3);
--	return (*ptr & (0x80 >> (nr & 7))) != 0;
--}
--
--static inline unsigned short stap(void)
--{
--	unsigned short cpu_address;
--
--	asm volatile("stap %0" : "=m" (cpu_address));
--	return cpu_address;
--}
--
--extern void (*_machine_restart)(char *command);
--extern void (*_machine_halt)(void);
--extern void (*_machine_power_off)(void);
--
--extern unsigned long arch_align_stack(unsigned long sp);
--
--static inline int tprot(unsigned long addr)
--{
--	int rc = -EFAULT;
--
--	asm volatile(
--		"	tprot	0(%1),0\n"
--		"0:	ipm	%0\n"
--		"	srl	%0,28\n"
--		"1:\n"
--		EX_TABLE(0b,1b)
--		: "+d" (rc) : "a" (addr) : "cc");
--	return rc;
--}
--
+-#endif /* !__ASSEMBLY__ */
 -#endif /* __KERNEL__ */
--
--#endif
-+#include <asm/ctl_reg.h>
+-#endif /* _ASM_SYSTEM_H */
++/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
++#include <asm/barrier.h>
++#include <asm/cmpxchg.h>
 +#include <asm/exec.h>
-+#include <asm/facility.h>
 +#include <asm/switch_to.h>
-diff --git a/arch/s390/include/asm/uaccess.h b/arch/s390/include/asm/uaccess.h
-index 2b23885..8f2cada 100644
---- a/arch/s390/include/asm/uaccess.h
-+++ b/arch/s390/include/asm/uaccess.h
-@@ -16,6 +16,7 @@
-  */
- #include <linux/sched.h>
- #include <linux/errno.h>
-+#include <asm/ctl_reg.h>
- 
- #define VERIFY_READ     0
- #define VERIFY_WRITE    1
-@@ -375,4 +376,9 @@ clear_user(void __user *to, unsigned long n)
- 	return n;
- }
- 
-+extern int memcpy_real(void *, void *, size_t);
-+extern void copy_to_absolute_zero(void *dest, void *src, size_t count);
-+extern int copy_to_user_real(void __user *dest, void *src, size_t count);
-+extern int copy_from_user_real(void *dest, void __user *src, size_t count);
-+
- #endif /* __S390_UACCESS_H */
-diff --git a/arch/s390/kernel/compat_signal.c b/arch/s390/kernel/compat_signal.c
-index 6fe78c2..9ad08ad 100644
---- a/arch/s390/kernel/compat_signal.c
-+++ b/arch/s390/kernel/compat_signal.c
-@@ -27,6 +27,7 @@
- #include <asm/ucontext.h>
- #include <asm/uaccess.h>
- #include <asm/lowcore.h>
-+#include <asm/switch_to.h>
- #include "compat_linux.h"
- #include "compat_ptrace.h"
- #include "entry.h"
-diff --git a/arch/s390/kernel/cpcmd.c b/arch/s390/kernel/cpcmd.c
-index 3e8b881..e3dd886 100644
---- a/arch/s390/kernel/cpcmd.c
-+++ b/arch/s390/kernel/cpcmd.c
-@@ -18,7 +18,6 @@
- #include <linux/string.h>
- #include <asm/ebcdic.h>
- #include <asm/cpcmd.h>
--#include <asm/system.h>
- #include <asm/io.h>
- 
- static DEFINE_SPINLOCK(cpcmd_lock);
-diff --git a/arch/s390/kernel/dis.c b/arch/s390/kernel/dis.c
-index e2f8475..3221c6f 100644
---- a/arch/s390/kernel/dis.c
-+++ b/arch/s390/kernel/dis.c
-@@ -24,7 +24,6 @@
- #include <linux/kprobes.h>
- #include <linux/kdebug.h>
- 
--#include <asm/system.h>
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <linux/atomic.h>
-diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
-index 52098d6..7e859f2 100644
---- a/arch/s390/kernel/early.c
-+++ b/arch/s390/kernel/early.c
-@@ -29,6 +29,7 @@
- #include <asm/sysinfo.h>
- #include <asm/cpcmd.h>
- #include <asm/sclp.h>
-+#include <asm/facility.h>
- #include "entry.h"
- 
- /*
-diff --git a/arch/s390/kernel/machine_kexec.c b/arch/s390/kernel/machine_kexec.c
-index 47b168f..da57fbe 100644
---- a/arch/s390/kernel/machine_kexec.c
-+++ b/arch/s390/kernel/machine_kexec.c
-@@ -18,7 +18,6 @@
- #include <asm/setup.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
--#include <asm/system.h>
+diff --git a/arch/mn10300/kernel/entry.S b/arch/mn10300/kernel/entry.S
+index 3e3620d..8e11f9f 100644
+--- a/arch/mn10300/kernel/entry.S
++++ b/arch/mn10300/kernel/entry.S
+@@ -15,7 +15,6 @@
+ #include <linux/sys.h>
+ #include <linux/linkage.h>
  #include <asm/smp.h>
- #include <asm/reset.h>
- #include <asm/ipl.h>
-diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
-index e795933..ae8fdd3 100644
---- a/arch/s390/kernel/process.c
-+++ b/arch/s390/kernel/process.c
-@@ -23,13 +23,13 @@
- #include <linux/kprobes.h>
- #include <linux/random.h>
- #include <linux/module.h>
 -#include <asm/system.h>
- #include <asm/io.h>
- #include <asm/processor.h>
- #include <asm/irq.h>
- #include <asm/timer.h>
- #include <asm/nmi.h>
- #include <asm/smp.h>
-+#include <asm/switch_to.h>
- #include "entry.h"
- 
- asmlinkage void ret_from_fork(void) asm ("ret_from_fork");
-diff --git a/arch/s390/kernel/ptrace.c b/arch/s390/kernel/ptrace.c
-index 61f9548..02f300f 100644
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -26,9 +26,9 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
+ #include <asm/irqflags.h>
+ #include <asm/thread_info.h>
+ #include <asm/intctl-regs.h>
+diff --git a/arch/mn10300/kernel/fpu.c b/arch/mn10300/kernel/fpu.c
+index bb5fa7d..064fa19 100644
+--- a/arch/mn10300/kernel/fpu.c
++++ b/arch/mn10300/kernel/fpu.c
+@@ -12,7 +12,6 @@
+ #include <asm/fpu.h>
+ #include <asm/elf.h>
+ #include <asm/exceptions.h>
 -#include <asm/system.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-+#include <asm/switch_to.h>
- #include "entry.h"
  
- #ifdef CONFIG_COMPAT
-diff --git a/arch/s390/kernel/setup.c b/arch/s390/kernel/setup.c
-index 3b2efc8..1d7cbd3 100644
---- a/arch/s390/kernel/setup.c
-+++ b/arch/s390/kernel/setup.c
-@@ -50,7 +50,6 @@
- 
- #include <asm/ipl.h>
- #include <asm/uaccess.h>
--#include <asm/system.h>
- #include <asm/smp.h>
- #include <asm/mmu_context.h>
- #include <asm/cpcmd.h>
-@@ -62,6 +61,7 @@
- #include <asm/ebcdic.h>
- #include <asm/kvm_virtio.h>
- #include <asm/diag.h>
-+#include <asm/facility.h>
- 
- long psw_kernel_bits	= PSW_DEFAULT_KEY | PSW_MASK_BASE | PSW_ASC_PRIMARY |
- 			  PSW_MASK_EA | PSW_MASK_BA;
-diff --git a/arch/s390/kernel/signal.c b/arch/s390/kernel/signal.c
-index 2d421d9..f7abd73 100644
---- a/arch/s390/kernel/signal.c
-+++ b/arch/s390/kernel/signal.c
-@@ -30,6 +30,7 @@
- #include <asm/ucontext.h>
- #include <asm/uaccess.h>
- #include <asm/lowcore.h>
-+#include <asm/switch_to.h>
- #include "entry.h"
- 
- #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
-diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-index 2398ce6..baf1a98 100644
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -53,6 +53,7 @@
- #include <asm/cputime.h>
- #include <asm/vdso.h>
- #include <asm/cpu.h>
-+#include <asm/facility.h>
- #include "entry.h"
- 
- /* logical cpu to cpu address */
-diff --git a/arch/s390/kernel/suspend.c b/arch/s390/kernel/suspend.c
-index 47df775..aa1494d 100644
---- a/arch/s390/kernel/suspend.c
-+++ b/arch/s390/kernel/suspend.c
-@@ -9,7 +9,7 @@
- #include <linux/pfn.h>
- #include <linux/suspend.h>
- #include <linux/mm.h>
--#include <asm/system.h>
-+#include <asm/ctl_reg.h>
- 
- /*
-  * References to section boundaries
-diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
-index 5ce3750..e7ffe8d 100644
---- a/arch/s390/kernel/traps.c
-+++ b/arch/s390/kernel/traps.c
-@@ -33,7 +33,6 @@
- #include <linux/kprobes.h>
- #include <linux/bug.h>
- #include <linux/utsname.h>
--#include <asm/system.h>
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <linux/atomic.h>
-diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
-index d73630b..aed1e65 100644
---- a/arch/s390/kernel/vdso.c
-+++ b/arch/s390/kernel/vdso.c
-@@ -25,12 +25,12 @@
- #include <linux/compat.h>
- #include <asm/asm-offsets.h>
- #include <asm/pgtable.h>
--#include <asm/system.h>
- #include <asm/processor.h>
- #include <asm/mmu.h>
- #include <asm/mmu_context.h>
- #include <asm/sections.h>
- #include <asm/vdso.h>
-+#include <asm/facility.h>
- 
- #if defined(CONFIG_32BIT) || defined(CONFIG_COMPAT)
- extern char vdso32_start, vdso32_end;
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index d1c44573..d56de16 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -27,7 +27,7 @@
- #include <asm/lowcore.h>
- #include <asm/pgtable.h>
- #include <asm/nmi.h>
--#include <asm/system.h>
-+#include <asm/switch_to.h>
- #include "kvm-s390.h"
- #include "gaccess.h"
- 
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index e8fcd92..3915870 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -32,10 +32,10 @@
- #include <linux/uaccess.h>
- #include <linux/hugetlb.h>
- #include <asm/asm-offsets.h>
--#include <asm/system.h>
- #include <asm/pgtable.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-+#include <asm/facility.h>
- #include "../kernel/entry.h"
- 
- #ifndef CONFIG_64BIT
-diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
-index 5023661..2bea060 100644
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -29,7 +29,6 @@
- #include <linux/export.h>
- #include <linux/gfp.h>
- #include <asm/processor.h>
--#include <asm/system.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -38,6 +37,7 @@
- #include <asm/tlb.h>
- #include <asm/tlbflush.h>
- #include <asm/sections.h>
-+#include <asm/ctl_reg.h>
- 
- pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__((__aligned__(PAGE_SIZE)));
- 
-diff --git a/arch/s390/mm/maccess.c b/arch/s390/mm/maccess.c
-index 1cb8427..7bb15fc 100644
---- a/arch/s390/mm/maccess.c
-+++ b/arch/s390/mm/maccess.c
-@@ -12,7 +12,7 @@
- #include <linux/types.h>
- #include <linux/errno.h>
- #include <linux/gfp.h>
--#include <asm/system.h>
-+#include <asm/ctl_reg.h>
- 
- /*
-  * This function writes to kernel memory bypassing DAT and possible
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index 51b0738..373adf6 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
+ #ifdef CONFIG_LAZY_SAVE_FPU
+ struct task_struct *fpu_state_owner;
+diff --git a/arch/mn10300/kernel/gdb-io-serial.c b/arch/mn10300/kernel/gdb-io-serial.c
+index f28dc99..df51242 100644
+--- a/arch/mn10300/kernel/gdb-io-serial.c
++++ b/arch/mn10300/kernel/gdb-io-serial.c
 @@ -18,7 +18,6 @@
- #include <linux/rcupdate.h>
- #include <linux/slab.h>
+ #include <linux/nmi.h>
  
--#include <asm/system.h>
  #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/tlb.h>
-diff --git a/arch/s390/oprofile/hwsampler.c b/arch/s390/oprofile/hwsampler.c
-index 9daee91..f9a0e5d 100644
---- a/arch/s390/oprofile/hwsampler.c
-+++ b/arch/s390/oprofile/hwsampler.c
-@@ -18,6 +18,7 @@
- #include <linux/oom.h>
- #include <linux/oprofile.h>
- 
-+#include <asm/facility.h>
- #include <asm/lowcore.h>
- #include <asm/irq.h>
- 
-diff --git a/drivers/s390/char/sclp_cmd.c b/drivers/s390/char/sclp_cmd.c
-index 0b54a91..2e58f47 100644
---- a/drivers/s390/char/sclp_cmd.c
-+++ b/drivers/s390/char/sclp_cmd.c
-@@ -21,6 +21,7 @@
- #include <asm/chpid.h>
- #include <asm/sclp.h>
- #include <asm/setup.h>
-+#include <asm/ctl_reg.h>
- 
- #include "sclp.h"
- 
-diff --git a/drivers/s390/cio/crw.c b/drivers/s390/cio/crw.c
-index 425f741..d0a2dff 100644
---- a/drivers/s390/cio/crw.c
-+++ b/drivers/s390/cio/crw.c
-@@ -13,6 +13,7 @@
+-#include <asm/system.h>
+ #include <asm/gdb-stub.h>
+ #include <asm/exceptions.h>
+ #include <asm/serial-regs.h>
+diff --git a/arch/mn10300/kernel/gdb-io-ttysm.c b/arch/mn10300/kernel/gdb-io-ttysm.c
+index c859cac..caae8ca 100644
+--- a/arch/mn10300/kernel/gdb-io-ttysm.c
++++ b/arch/mn10300/kernel/gdb-io-ttysm.c
+@@ -17,7 +17,6 @@
  #include <linux/init.h>
- #include <linux/wait.h>
- #include <asm/crw.h>
-+#include <asm/ctl_reg.h>
+ #include <linux/tty.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/gdb-stub.h>
+ #include <asm/exceptions.h>
+ #include <unit/clock.h>
+diff --git a/arch/mn10300/kernel/gdb-stub.c b/arch/mn10300/kernel/gdb-stub.c
+index 522eb8a..a128c57 100644
+--- a/arch/mn10300/kernel/gdb-stub.c
++++ b/arch/mn10300/kernel/gdb-stub.c
+@@ -130,7 +130,6 @@
+ #include <linux/bug.h>
  
- static DEFINE_MUTEX(crw_handler_mutex);
- static crw_handler_t crw_handlers[NR_RSCS];
-diff --git a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
-index 96bbe9d..1f56b3b 100644
---- a/drivers/s390/crypto/ap_bus.c
-+++ b/drivers/s390/crypto/ap_bus.c
-@@ -46,6 +46,7 @@
- #include <asm/isc.h>
- #include <linux/hrtimer.h>
- #include <linux/ktime.h>
-+#include <asm/facility.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/gdb-stub.h>
+ #include <asm/exceptions.h>
+ #include <asm/debugger.h>
+diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
+index 94901c5..339cef4 100644
+--- a/arch/mn10300/kernel/mn10300-serial.c
++++ b/arch/mn10300/kernel/mn10300-serial.c
+@@ -36,7 +36,6 @@ static const char serial_revdate[] = "2007-11-06";
+ #include <linux/console.h>
+ #include <linux/sysrq.h>
  
- #include "ap_bus.h"
+-#include <asm/system.h>
+ #include <asm/io.h>
+ #include <asm/irq.h>
+ #include <asm/bitops.h>
+diff --git a/arch/mn10300/kernel/mn10300-watchdog.c b/arch/mn10300/kernel/mn10300-watchdog.c
+index a45f0c7..db64a71 100644
+--- a/arch/mn10300/kernel/mn10300-watchdog.c
++++ b/arch/mn10300/kernel/mn10300-watchdog.c
+@@ -18,7 +18,6 @@
+ #include <linux/kernel_stat.h>
+ #include <linux/nmi.h>
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ #include <linux/atomic.h>
+ #include <asm/intctl-regs.h>
+ #include <asm/rtc-regs.h>
+diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
+index 28eec31..906cd47 100644
+--- a/arch/mn10300/kernel/process.c
++++ b/arch/mn10300/kernel/process.c
+@@ -27,7 +27,6 @@
+ #include <linux/slab.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/io.h>
+ #include <asm/processor.h>
+ #include <asm/mmu_context.h>
+diff --git a/arch/mn10300/kernel/ptrace.c b/arch/mn10300/kernel/ptrace.c
+index 5c0b07e..5bd5851 100644
+--- a/arch/mn10300/kernel/ptrace.c
++++ b/arch/mn10300/kernel/ptrace.c
+@@ -21,7 +21,6 @@
+ #include <linux/tracehook.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/processor.h>
+ #include <asm/cacheflush.h>
+ #include <asm/fpu.h>
+diff --git a/arch/mn10300/kernel/setup.c b/arch/mn10300/kernel/setup.c
+index 9e7a320..33c3bd1 100644
+--- a/arch/mn10300/kernel/setup.c
++++ b/arch/mn10300/kernel/setup.c
+@@ -26,7 +26,6 @@
+ #include <asm/processor.h>
+ #include <linux/console.h>
+ #include <asm/uaccess.h>
+-#include <asm/system.h>
+ #include <asm/setup.h>
+ #include <asm/io.h>
+ #include <asm/smp.h>
+diff --git a/arch/mn10300/kernel/smp-low.S b/arch/mn10300/kernel/smp-low.S
+index 72938ce..71f1b2f 100644
+--- a/arch/mn10300/kernel/smp-low.S
++++ b/arch/mn10300/kernel/smp-low.S
+@@ -13,9 +13,9 @@
+ #include <linux/sys.h>
+ #include <linux/linkage.h>
+ #include <asm/smp.h>
+-#include <asm/system.h>
+ #include <asm/thread_info.h>
+ #include <asm/cpu-regs.h>
++#include <asm/intctl-regs.h>
+ #include <proc/smp-regs.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/frame.inc>
+diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
+index 9242e9f..910dddf 100644
+--- a/arch/mn10300/kernel/smp.c
++++ b/arch/mn10300/kernel/smp.c
+@@ -25,7 +25,6 @@
+ #include <linux/profile.h>
+ #include <linux/smp.h>
+ #include <asm/tlbflush.h>
+-#include <asm/system.h>
+ #include <asm/bitops.h>
+ #include <asm/processor.h>
+ #include <asm/bug.h>
+diff --git a/arch/mn10300/kernel/traps.c b/arch/mn10300/kernel/traps.c
+index 9220a75..94a9c6d 100644
+--- a/arch/mn10300/kernel/traps.c
++++ b/arch/mn10300/kernel/traps.c
+@@ -27,7 +27,6 @@
+ #include <linux/bug.h>
+ #include <linux/irq.h>
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ #include <linux/uaccess.h>
+ #include <asm/io.h>
+ #include <linux/atomic.h>
+diff --git a/arch/mn10300/lib/bitops.c b/arch/mn10300/lib/bitops.c
+index a66c6cd..37309cd 100644
+--- a/arch/mn10300/lib/bitops.c
++++ b/arch/mn10300/lib/bitops.c
+@@ -10,7 +10,6 @@
+  */
+ #include <linux/module.h>
+ #include <asm/bitops.h>
+-#include <asm/system.h>
  
+ /*
+  * try flipping a bit using BSET and BCLR
+diff --git a/arch/mn10300/mm/fault.c b/arch/mn10300/mm/fault.c
+index 0945409..90f346f 100644
+--- a/arch/mn10300/mm/fault.c
++++ b/arch/mn10300/mm/fault.c
+@@ -24,7 +24,6 @@
+ #include <linux/init.h>
+ #include <linux/vt_kern.h>		/* For unblank_screen() */
+ 
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgalloc.h>
+ #include <asm/hardirq.h>
+diff --git a/arch/mn10300/mm/init.c b/arch/mn10300/mm/init.c
+index 1380182..e57e5bc 100644
+--- a/arch/mn10300/mm/init.c
++++ b/arch/mn10300/mm/init.c
+@@ -29,7 +29,6 @@
+ #include <linux/gfp.h>
+ 
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+diff --git a/arch/mn10300/mm/misalignment.c b/arch/mn10300/mm/misalignment.c
+index f9bb8cb..b9920b1 100644
+--- a/arch/mn10300/mm/misalignment.c
++++ b/arch/mn10300/mm/misalignment.c
+@@ -23,7 +23,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/pci.h>
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <linux/atomic.h>
+diff --git a/arch/mn10300/mm/pgtable.c b/arch/mn10300/mm/pgtable.c
+index 450f7ba..4ebf117 100644
+--- a/arch/mn10300/mm/pgtable.c
++++ b/arch/mn10300/mm/pgtable.c
+@@ -21,7 +21,6 @@
+ #include <linux/spinlock.h>
+ #include <linux/quicklist.h>
+ 
+-#include <asm/system.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/tlb.h>
+diff --git a/arch/mn10300/mm/tlb-smp.c b/arch/mn10300/mm/tlb-smp.c
+index 9a77749..3e57faf 100644
+--- a/arch/mn10300/mm/tlb-smp.c
++++ b/arch/mn10300/mm/tlb-smp.c
+@@ -24,7 +24,6 @@
+ #include <linux/profile.h>
+ #include <linux/smp.h>
+ #include <asm/tlbflush.h>
+-#include <asm/system.h>
+ #include <asm/bitops.h>
+ #include <asm/processor.h>
+ #include <asm/bug.h>
+diff --git a/arch/mn10300/proc-mn2ws0050/proc-init.c b/arch/mn10300/proc-mn2ws0050/proc-init.c
+index fe6e249..ee6d03d 100644
+--- a/arch/mn10300/proc-mn2ws0050/proc-init.c
++++ b/arch/mn10300/proc-mn2ws0050/proc-init.c
+@@ -15,7 +15,6 @@
+ #include <linux/interrupt.h>
+ 
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <linux/atomic.h>
 
