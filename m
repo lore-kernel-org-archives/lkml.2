@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422885Ab2CPOxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:53:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45537 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422869Ab2CPOxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422871Ab2CPOxa (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 16 Mar 2012 10:53:30 -0400
-Message-Id: <20120316144241.413417456@chello.nl>
+Received: from merlin.infradead.org ([205.233.59.134]:45533 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422856Ab2CPOx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 10:53:28 -0400
+Message-Id: <20120316144240.368911012@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:48 +0100
+Date: Fri, 16 Mar 2012 15:40:32 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -24,162 +24,81 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 20/26] mm, mpol: Introduce vma_dup_policy()
+Subject: [RFC][PATCH 04/26] mm, mpol: add MPOL_MF_NOOP
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-vma_dup_policy.patch
+Content-Disposition: inline; filename=migrate-on-fault-07-mbind-noop-policy.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of other changes, pull some code duplication in a
-common function so that we can later extend its behaviour without
-having to touch all these sites.
+From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 
+This patch augments the MPOL_MF_LAZY feature by adding a "NOOP"
+policy to mbind().  When the NOOP policy is used with the 'MOVE
+and 'LAZY flags, mbind() [check_range()] will walk the specified
+range and unmap eligible pages so that they will be migrated on
+next touch.
+
+This allows an application to prepare for a new phase of operation
+where different regions of shared storage will be assigned to
+worker threads, w/o changing policy.  Note that we could just use
+"default" policy in this case.  However, this also allows an
+application to request that pages be migrated, only if necessary,
+to follow any arbitrary policy that might currently apply to a
+range of pages, without knowing the policy, or without specifying
+multiple mbind()s for ranges with different policies.
+
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h |    3 +++
- kernel/fork.c             |    9 +++------
- mm/mempolicy.c            |   11 +++++++++++
- mm/mmap.c                 |   17 +++++------------
- 4 files changed, 22 insertions(+), 18 deletions(-)
+ include/linux/mempolicy.h |    1 +
+ mm/mempolicy.c            |    8 ++++----
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
 --- a/include/linux/mempolicy.h
 +++ b/include/linux/mempolicy.h
-@@ -168,6 +168,8 @@ static inline struct mempolicy *mpol_dup
- #define vma_policy(vma) ((vma)->vm_policy)
- #define vma_set_policy(vma, pol) ((vma)->vm_policy = (pol))
+@@ -20,6 +20,7 @@ enum {
+ 	MPOL_PREFERRED,
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
++	MPOL_NOOP,		/* retain existing policy for range */
+ 	MPOL_MAX,	/* always last member of enum */
+ };
  
-+extern int vma_dup_policy(struct vm_area_struct *new, struct vm_area_struct *old);
-+
- static inline void mpol_get(struct mempolicy *pol)
- {
- 	if (pol)
-@@ -311,6 +313,7 @@ mpol_shared_policy_lookup(struct shared_
- 
- #define vma_policy(vma) NULL
- #define vma_set_policy(vma, pol) do {} while(0)
-+#define vma_dup_policy(new, old) (0)
- 
- static inline void numa_policy_init(void)
- {
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -315,7 +315,6 @@ static int dup_mmap(struct mm_struct *mm
- 	struct rb_node **rb_link, *rb_parent;
- 	int retval;
- 	unsigned long charge;
--	struct mempolicy *pol;
- 
- 	down_write(&oldmm->mmap_sem);
- 	flush_cache_dup_mm(oldmm);
-@@ -365,11 +364,9 @@ static int dup_mmap(struct mm_struct *mm
- 			goto fail_nomem;
- 		*tmp = *mpnt;
- 		INIT_LIST_HEAD(&tmp->anon_vma_chain);
--		pol = mpol_dup(vma_policy(mpnt));
--		retval = PTR_ERR(pol);
--		if (IS_ERR(pol))
-+		retval = vma_dup_policy(tmp, mpnt);
-+		if (retval)
- 			goto fail_nomem_policy;
--		vma_set_policy(tmp, pol);
- 		tmp->vm_mm = mm;
- 		if (anon_vma_fork(tmp, mpnt))
- 			goto fail_nomem_anon_vma_fork;
-@@ -431,7 +428,7 @@ static int dup_mmap(struct mm_struct *mm
- 	up_write(&oldmm->mmap_sem);
- 	return retval;
- fail_nomem_anon_vma_fork:
--	mpol_put(pol);
-+	mpol_put(vma_policy(tmp));
- fail_nomem_policy:
- 	kmem_cache_free(vm_area_cachep, tmp);
- fail_nomem:
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -1971,6 +1971,17 @@ struct mempolicy *__mpol_dup(struct memp
- 	return new;
- }
+@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsign
+ 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+ 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
  
-+int vma_dup_policy(struct vm_area_struct *new, struct vm_area_struct *old)
-+{
-+	struct mempolicy *mpol;
-+
-+	mpol = mpol_dup(vma_policy(old));
-+	if (IS_ERR(mpol))
-+		return PTR_ERR(mpol);
-+	vma_set_policy(new, mpol);
-+	return 0;
-+}
-+
- /*
-  * If *frompol needs [has] an extra ref, copy *frompol to *tompol ,
-  * eliminate the * MPOL_F_* flags that require conditional ref and
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1935,7 +1935,6 @@ detach_vmas_to_be_unmapped(struct mm_str
- static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
- 	      unsigned long addr, int new_below)
- {
--	struct mempolicy *pol;
- 	struct vm_area_struct *new;
- 	int err = -ENOMEM;
- 
-@@ -1959,12 +1958,9 @@ static int __split_vma(struct mm_struct
- 		new->vm_pgoff += ((addr - vma->vm_start) >> PAGE_SHIFT);
+-	if (mode == MPOL_DEFAULT) {
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+ 		if (nodes && !nodes_empty(*nodes))
+ 			return ERR_PTR(-EINVAL);
+-		return NULL;	/* simply delete any existing policy */
++		return NULL;
  	}
+ 	VM_BUG_ON(!nodes);
  
--	pol = mpol_dup(vma_policy(vma));
--	if (IS_ERR(pol)) {
--		err = PTR_ERR(pol);
-+	err = vma_dup_policy(new, vma);
-+	if (err)
- 		goto out_free_vma;
--	}
--	vma_set_policy(new, pol);
+@@ -1121,7 +1121,7 @@ static long do_mbind(unsigned long start
+ 	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
  
- 	if (anon_vma_clone(new, vma))
- 		goto out_free_mpol;
-@@ -1998,7 +1994,7 @@ static int __split_vma(struct mm_struct
- 	}
- 	unlink_anon_vmas(new);
-  out_free_mpol:
--	mpol_put(pol);
-+	mpol_put(new->vm_policy);
-  out_free_vma:
- 	kmem_cache_free(vm_area_cachep, new);
-  out_err:
-@@ -2331,7 +2327,6 @@ struct vm_area_struct *copy_vma(struct v
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct vm_area_struct *new_vma, *prev;
- 	struct rb_node **rb_link, *rb_parent;
--	struct mempolicy *pol;
- 	bool faulted_in_anon_vma = true;
+-	if (mode == MPOL_DEFAULT)
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+ 		flags &= ~MPOL_MF_STRICT;
  
- 	/*
-@@ -2372,13 +2367,11 @@ struct vm_area_struct *copy_vma(struct v
- 		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
- 		if (new_vma) {
- 			*new_vma = *vma;
--			pol = mpol_dup(vma_policy(vma));
--			if (IS_ERR(pol))
-+			if (vma_dup_policy(new_vma, vma))
- 				goto out_free_vma;
- 			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
- 			if (anon_vma_clone(new_vma, vma))
- 				goto out_free_mempol;
--			vma_set_policy(new_vma, pol);
- 			new_vma->vm_start = addr;
- 			new_vma->vm_end = addr + len;
- 			new_vma->vm_pgoff = pgoff;
-@@ -2399,7 +2392,7 @@ struct vm_area_struct *copy_vma(struct v
- 	return new_vma;
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -1173,7 +1173,7 @@ static long do_mbind(unsigned long start
+ 			  flags | MPOL_MF_INVERT, &pagelist);
  
-  out_free_mempol:
--	mpol_put(pol);
-+	mpol_put(new_vma->vm_policy);
-  out_free_vma:
- 	kmem_cache_free(vm_area_cachep, new_vma);
- 	return NULL;
+ 	err = PTR_ERR(vma);	/* maybe ... */
+-	if (!IS_ERR(vma))
++	if (!IS_ERR(vma) && mode != MPOL_NOOP)
+ 		err = mbind_range(mm, start, end, new);
+ 
+ 	if (!err) {
 
 
