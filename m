@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946107Ab2CPXiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41205 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946082Ab2CPXiF convert rfc822-to-8bit (ORCPT
+	id S1946125Ab2CPXiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:38:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946110Ab2CPXiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:38:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <201203162357.10770.rjw@sisk.pl>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203162319.53460.rjw@sisk.pl>
- <201203162325.56303.chunkeey@googlemail.com> <201203162357.10770.rjw@sisk.pl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 16 Mar 2012 16:37:43 -0700
-X-Google-Sender-Auth: bQc1AXR4byYP1gRZ4XvNF_0bgCA
-Message-ID: <CA+55aFwTZjLHvZLBuNG-aO-+ex_yTYfaqOGqQ+6Krx9Z7EUNQQ@mail.gmail.com>
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is
- not yet available
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Christian Lamparter <chunkeey@googlemail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Mar 2012 19:38:10 -0400
+Message-Id: <20120316233448.351304539@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 16 Mar 2012 16:34:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Thomas Renninger <trenn@suse.de>, Florian Heyer <heyho@flanto.de>,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [ 12/38] acer-wmi: support Lenovo ideapad S205 wifi switch
+In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 3:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> +       if (nowait) {
-> +               int limit = loading_timeout * MSEC_PER_SEC;
-> +               int timeout = 10;  /* in msec */
-> +
-> +               while (usermodehelper_is_disabled()) {
-> +                       read_unlock_usermodehelper();
-> +
-> +                       msleep(timeout);
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Ugh, this is disgusting.
+------------------
 
-The whole point of nowait was that it's not synchronous - so it should
-just be driven by timers, not some kind of random "while sleep" loop.
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 
-And that fw thing already does have a timeout associated with it, and
-quite frankly, the *sane* approach is to do all this not in
-_request_firmware(), but in request_firmware_work_func() - never even
-call _request_firmware() in the first place if the system isn't ready,
-just reset the timeout to retry it again later.
+commit 15b956a0b5651bbb1217ec374fdd67291dabb2af upstream.
 
-Seriously. The rule should be really simple: nothing should *ever*
-call "request_firmware()" (or the _request_firmware() helper function)
-while the system is not up. That WARN_ON() should remain totally and
-utterly unconditional, and it should *not* be conditional on "nowait"
-or any idiotic crappy hack like that.
+The AMW0 function in acer-wmi works on Lenovo ideapad S205 for control
+the wifi hardware state. We also found there have a 0x78 EC register
+exposes the state of wifi hardware switch on the machine.
 
-If there is an asynchronous thread - and there is, for the _nowait()
-case - that asynchronous thread should set up the timer and retry in
-ten seconds or whatever. It should *not* call 'request_firmware()" and
-expect that to do something special.
+So, add this patch to support Lenovo ideapad S205 wifi hardware switch
+in acer-wmi driver.
 
-                    Linus
+Reference: bko#37892
+	https://bugzilla.kernel.org/show_bug.cgi?id=37892
+
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Tested-by: Florian Heyer <heyho@flanto.de>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/platform/x86/acer-wmi.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -304,6 +304,10 @@ static struct quirk_entry quirk_fujitsu_
+ 	.wireless = 2,
+ };
+ 
++static struct quirk_entry quirk_lenovo_ideapad_s205 = {
++	.wireless = 3,
++};
++
+ /* The Aspire One has a dummy ACPI-WMI interface - disable it */
+ static struct dmi_system_id __devinitdata acer_blacklist[] = {
+ 	{
+@@ -450,6 +454,15 @@ static struct dmi_system_id acer_quirks[
+ 		},
+ 		.driver_data = &quirk_medion_md_98300,
+ 	},
++	{
++		.callback = dmi_matched,
++		.ident = "Lenovo Ideapad S205",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "10382LG"),
++		},
++		.driver_data = &quirk_lenovo_ideapad_s205,
++	},
+ 	{}
+ };
+ 
+@@ -542,6 +555,12 @@ struct wmi_interface *iface)
+ 				return AE_ERROR;
+ 			*value = result & 0x1;
+ 			return AE_OK;
++		case 3:
++			err = ec_read(0x78, &result);
++			if (err)
++				return AE_ERROR;
++			*value = result & 0x1;
++			return AE_OK;
+ 		default:
+ 			err = ec_read(0xA, &result);
+ 			if (err)
+@@ -1266,8 +1285,13 @@ static void acer_rfkill_update(struct wo
+ 	acpi_status status;
+ 
+ 	status = get_u32(&state, ACER_CAP_WIRELESS);
+-	if (ACPI_SUCCESS(status))
+-		rfkill_set_sw_state(wireless_rfkill, !state);
++	if (ACPI_SUCCESS(status)) {
++		if (quirks->wireless == 3) {
++			rfkill_set_hw_state(wireless_rfkill, !state);
++		} else {
++			rfkill_set_sw_state(wireless_rfkill, !state);
++		}
++	}
+ 
+ 	if (has_cap(ACER_CAP_BLUETOOTH)) {
+ 		status = get_u32(&state, ACER_CAP_BLUETOOTH);
+
+
