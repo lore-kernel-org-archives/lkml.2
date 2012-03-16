@@ -1,108 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423136Ab2CPQ3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 12:29:17 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53403 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1031359Ab2CPQ3M convert rfc822-to-8bit (ORCPT
+	id S1423150Ab2CPQcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 12:32:21 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:56460 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422762Ab2CPQcR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 12:29:12 -0400
-X-Authenticated: #5086196
-X-Provags-ID: V01U2FsdGVkX19jGuBDrX5jtjME+oVnBudL0D1DmENn/Yd8MAOPES
-	0SZn+mAG8oXTzq
-From: Fawzi Mohamed <fawzi@gmx.ch>
-Content-Type: text/plain; charset=iso-8859-1
+	Fri, 16 Mar 2012 12:32:17 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Subject: Re: [PATCH] [media] staging: Return -EINTR in s2250_probe() if fails to get lock.
+Date: Fri, 16 Mar 2012 17:32:17 +0100
+User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: mchehab@infradead.org, gregkh@linuxfoundation.org, khoroshilov@ispras.ru,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <1331915038-11231-1-git-send-email-santoshprasadnayak@gmail.com>
+In-Reply-To: <1331915038-11231-1-git-send-email-santoshprasadnayak@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] fix oops in updating thread cputime and task time
-Date: Fri, 16 Mar 2012 17:29:09 +0100
-Message-Id: <A4012A3B-7FF6-4ED8-8E00-51661D11CF4C@gmx.ch>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Dargel <td@chemie.hu-berlin.de>,
-        Hillf Danton <dhillf@gmail.com>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-X-Mailer: Apple Mail (2.1251.1)
-X-Y-GMX-Trusted: 0
+Message-Id: <201203161732.17246.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a machine with a (back ported) fix working without problems since a few days.
-We don´t consider it
-	tested-by: Thomas Dargel <td@no-spam.hu-berlin.de>
-because last time it did need 19 days of computation to happen, but it should be fixed.
+Am Freitag, 16. März 2012, 17:23:58 schrieb santosh nayak:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> 
+> In s2250_probe(), If locking attempt is interrupted by a signal then
+> it should return -EINTR after unregistering audio device and making free
+> the allocated memory.
+> 
+> At present, if locking is interrupted by signal it will display message
+> "initialized successfully" and return success.  This is wrong.
 
-Fawzi and Thomas.
+Indeed there's a lot wrong here. The idea of having an interruptible
+sleep in probe() is arcane. You need a very, very, very good reason for that.
+The sane fix is using an uninterruptable sleep here.
 
->From fa4dccbaabaa1e08f3ca1835cc1b40e34a87fcdb Mon Sep 17 00:00:00 2001
-From: Fawzi Mohamed <fawzi@gmx.ch>
-Date: Mon, 12 Mar 2012 23:10:57 +0100
-Subject: [PATCH] fix oops in updating thread cputime and task time
+Second, while you are at it, fix the error case for no initialization
+due to a failing kmalloc(). You need to return -ENOMEM.
 
-use div64_u64 instead of do_div to divide cputime_t with each other
-because if cputime_t was u64 it would crash when overflowing u32.
-
-    KERNEL: ./vmlinux-2.6.32.54-0.3-default.gz
- DEBUGINFO: .//vmlinux-2.6.32.54-0.3-default.debug
-  DUMPFILE: ./vmcore
-      CPUS: 24
-      DATE: Mon Mar  5 00:58:10 2012
-    UPTIME: 19 days, 11:01:56
-LOAD AVERAGE: 0.74, 0.42, 0.40
-     TASKS: 731
-  NODENAME: node65
-   RELEASE: 2.6.32.54-0.3-default
-   VERSION: #1 SMP 2012-01-27 17:38:56 +0100
-   MACHINE: x86_64  (3067 Mhz)
-    MEMORY: 96 GB
-     PANIC: ""
-       PID: 11234
-   COMMAND: "ricc2_smp"
-      TASK: ffff881813de2240  [THREAD_INFO: ffff8818153c2000]
-       CPU: 8
-     STATE: TASK_RUNNING (PANIC)
-
-crash> bt
-PID: 11234  TASK: ffff881813de2240  CPU: 8   COMMAND: "ricc2_smp"
-  RIP: 00007f5e4f418617  RSP: 00007f5e4dd3ebd0  RFLAGS: 00000202
-  RAX: 0000000000000062  RBX: ffffffff81002f7b  RCX: 0000000000000179
-  RDX: 00007f5e4dd3edb4  RSI: 00007f5e4dd3ec70  RDI: 0000000000000000
-  RBP: 00007f5e4dd3ecf0   R8: 0000000000000001   R9: 00007f5e4dd3edc4
-  R10: 0000000000000001  R11: 0000000000000246  R12: ffffffff8105eb81
-  R13: 00007f5e4dd3ed30  R14: 00007f5e4dd3f2f0  R15: 0000000000000000
-  ORIG_RAX: 0000000000000062  CS: 0033  SS: 002b
-
-Basically the same problem was found earlier in kernel vmlinux-2.6.32.12-0.7-default.gz.
-
-Signed-off-by: Fawzi Mohamed <fawzi@gmx.ch>
-Signed-off-by: Thomas Dargel <td@no-spam.hu-berlin.de>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b342f57..f2cc092 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2934,7 +2934,7 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 		u64 temp = (__force u64) rtime;
- 
- 		temp *= (__force u64) utime;
--		do_div(temp, (__force u32) total);
-+		temp = div64_u64(temp, total);
- 		utime = (__force cputime_t) temp;
- 	} else
- 		utime = rtime;
-@@ -2967,7 +2967,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 		u64 temp = (__force u64) rtime;
- 
- 		temp *= (__force u64) cputime.utime;
--		do_div(temp, (__force u32) total);
-+		temp = div64_u64(temp, total);
- 		utime = (__force cputime_t) temp;
- 	} else
- 		utime = rtime;
--- 
-1.7.0.4
-
+	Regards
+		Oliver
