@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032542Ab2CPAvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 20:51:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59193 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032509Ab2CPAvG convert rfc822-to-8bit (ORCPT
+	id S1032555Ab2CPAvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 20:51:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41245 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032545Ab2CPAvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 20:51:06 -0400
+	Thu, 15 Mar 2012 20:51:11 -0400
+Date: Thu, 15 Mar 2012 17:51:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mircea Gherzan <mgherzan@gmail.com>, alexandrasava18@gmail.com,
+        pavan_savoy@ti.com, daniel.baluta@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ti-st: Enhange logging for Shared Transport - TI driver
+Message-ID: <20120316005107.GC25310@kroah.com>
+References: <y>
+ <4f623469.634cb40a.5d79.ffff841d@mx.google.com>
+ <4F6289B3.2060204@gmail.com>
+ <20120316003523.GA25149@kroah.com>
+ <1331858472.5406.21.camel@joe2Laptop>
 MIME-Version: 1.0
-In-Reply-To: <1331833191-25779-1-git-send-email-joerg.roedel@amd.com>
-References: <1331833191-25779-1-git-send-email-joerg.roedel@amd.com>
-Date: Thu, 15 Mar 2012 17:51:04 -0700
-X-Google-Sender-Auth: wWSp-z8r32m00vLKlyb5mjYtBek
-Message-ID: <CAE9FiQWPicLVgqEQmw9_8CsVaD9N8P_h6g42z7pUSibZBXLq-Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/9] Introduce irq_remap_ops to x86
-From: Yinghai Lu <yinghai@kernel.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331858472.5406.21.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 10:39 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> Hi,
->
-> in order to implement interrupt remapping using the AMD IOMMU I did some
-> refactoring of the current Intel-specific interrupt remapping code. The
-> result is posted for comments in this patch-set.
->
-> The patch-set basically removes the Intel-specific calls from the X86
-> apic and io-apic code and replaces all of them with helper functions
-> that use the irq_remap_ops to hook into an implementation specific
-> implementation.
->
-> I have done basic testing on this patch-set on a VT-d machine with
-> interrupt remapping and found no regression so far. But as usual this
-> doesn't mean that there is none ;-)
->
-> Anyway, since I am on vacation soon I sent out these patches to receive
-> all kinds of comments so that I can start over to add the AMD part when
-> I am back.
->
-> Thanks,
->
->        Joerg
->
-> Diffstat:
->
->  arch/ia64/include/asm/intr_remapping.h |    4 +
->  arch/x86/include/asm/intr_remapping.h  |  101 +++
->  arch/x86/include/asm/irq_remapping.h   |   45 --
->  arch/x86/kernel/apic/apic.c            |   20 +-
->  arch/x86/kernel/apic/io_apic.c         |  276 ++-------
->  drivers/iommu/Makefile                 |    2 +-
->  drivers/iommu/amd_iommu_init.c         |  123 +++--
->  drivers/iommu/dmar.c                   |    1 +
->  drivers/iommu/intel-iommu.c            |    1 +
->  drivers/iommu/intel_intr_remapping.c   | 1065 ++++++++++++++++++++++++++++++++
->  drivers/iommu/intr_remapping.c         |  810 +++----------------------
->  drivers/iommu/intr_remapping.h         |   97 +++-
->  include/linux/amd-iommu.h              |    2 +-
->  include/linux/dmar.h                   |   85 ---
->  14 files changed, 1469 insertions(+), 1163 deletions(-)
+On Thu, Mar 15, 2012 at 05:41:12PM -0700, Joe Perches wrote:
+> On Thu, 2012-03-15 at 17:35 -0700, Greg KH wrote:
+> > On Fri, Mar 16, 2012 at 01:30:43AM +0100, Mircea Gherzan wrote:
+> > > This is what I get now (with no debug) when loading the btwilink module
+> > > that uses ti-st:
+> > > [  129.567382] (stk) :change remote baud rate command in firmware
+> > > [  129.573577] (stk) :skipping the wait event of change remote baud
+> > > This is:
+> > >  1. too "verbose" => these 2 prints should belong to debug
+> > >  2. poorly formated
+> > >  3. not telling me which driver generated this output
+> > >  4. not giving me the version of the firmware that was loaded.
+> > > To address 2 and 3, please remove the the "(stc)" / "(stk)" prefixes and
+> > > use instead the quite widespread prefix KBUILD_MODNAME ": "
+> > No, just use the proper dev_*() functions instead, it will tell you
+> > exactly what driver and device emitted the message, that is what it is
+> > there for.
+> 
+> I generally concur though there might be instances where
+> no struct device * is available and pr_<level> is a good
+> alternative for those cases.
 
-Yes, it is good clean up for ioapic.c at least.
-
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+I agree.
