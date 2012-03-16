@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161347Ab2CPOTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:19:34 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:33353 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031183Ab2CPOSn (ORCPT
+	id S1032803Ab2CPOVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:21:05 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46939 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031169Ab2CPOVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:18:43 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garret <mjg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: [PATCH 1/3] x86, efi: Only close open files in error path
-Date: Fri, 16 Mar 2012 14:18:35 +0000
-Message-Id: <1331907517-3985-2-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
-References: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
+	Fri, 16 Mar 2012 10:21:02 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 16 Mar 2012 15:20:37 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>,
+        <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+Subject: Re: sd_revalidate_disk oops (was Re: Couple of Oops with kernel
+ 3.3-rc6)
+Message-ID: <20120316152037.2cbb03b2@stein>
+In-Reply-To: <20120305142557.52e0a087@stein>
+References: <1330892889.2487.6.camel@firefly>
+	<20120305142557.52e0a087@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Mar 05 Stefan Richter wrote:
+> On Mar 04 Nathan A. Mourey II wrote at LKML:
+> > Hello all,
+> > 
+> > 	I just booted up 3.3.0-rc6 and received the following oopses.  Please
+> > email if you need more info.
+> 
+> According to http://www.spinics.net/lists/linux-scsi/msg57814.html, fixes
+> for this are meant to appear in the mainline kernel soon.
 
-The loop at the 'close_handles' label in handle_ramdisks() should be
-using 'i', which represents the number of initrd files that were
-successfully opened, not 'nr_initrds' which is the number of initrd=
-arguments passed on the command line.
-
-Currently, if we execute the loop to close all file handles and we
-failed to open any initrds we'll try to call the close function on a
-garbage pointer, causing the machine to hang.
-
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/boot/compressed/eboot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index fec216f..fb810ce 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -674,7 +674,7 @@ free_initrd_total:
- 	low_free(initrd_total, initrd_addr);
- 
- close_handles:
--	for (k = j; k < nr_initrds; k++)
-+	for (k = j; k < i; k++)
- 		efi_call_phys1(fh->close, initrds[k].handle);
- free_initrds:
- 	efi_call_phys1(sys_table->boottime->free_pool, initrds);
+Nathan, Linus merged respective fixes last Wednesday night.
 -- 
-1.7.4.4
-
+Stefan Richter
+-=====-===-- --== =----
+http://arcgraph.de/sr/
