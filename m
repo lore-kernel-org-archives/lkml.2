@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759735Ab2CPB1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 21:27:46 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49796 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab2CPB1o (ORCPT
+	id S1762005Ab2CPB2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 21:28:35 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:55569 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754499Ab2CPB2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 21:27:44 -0400
-Message-ID: <4F62970C.20501@us.ibm.com>
-Date: Thu, 15 Mar 2012 18:27:40 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 15 Mar 2012 21:28:33 -0400
+Message-ID: <4F629725.30306@fb.com>
+Date: Thu, 15 Mar 2012 18:28:05 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: "Gleixner, Thomas" <tglx@linutronix.de>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Time/RTC/clocksource changes for 3.4
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephane Eranian <eranian@google.com>
+CC: <linux-kernel@vger.kernel.org>, <peterz@infradead.org>, <acme@redhat.com>,
+        <ravitillo@lbl.gov>, <vweaver1@eecs.utk.edu>,
+        <khandual@linux.vnet.ibm.com>, <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Add branch stack support to perf script
+References: <1331842127-27468-1-git-send-email-asharma@fb.com>
+In-Reply-To: <1331842127-27468-1-git-send-email-asharma@fb.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031601-6148-0000-0000-0000044A27FC
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-03-15_04:2012-03-15,2012-03-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-     Here's my current outstanding time/clocksource/rtc queue for 3.4 
-(with the exception of the ntp livelock patch I sent out for RFC)
-Let me know if you have any objections.
+On 3/15/12 1:08 PM, Arun Sharma wrote:
 
-thanks
--john
+> The samples seem to have the sense of call/return
+> inverted. If the original callgraph was a ->  b ->  c
+> I get samples like:
+>
+> from	to
+> c	b
+> b	a
+>
+> To restore the normal sense, I'm printing them as:
+>
+> to =>  from
 
-The following changes since commit 
-a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33:
+I debugged this some more and something seems to be wrong with the the 
+way the kernel maps PERF_SAMPLE_BRANCH_ANY_CALL to MSR_LBR_SELECT.
 
-   ntp: Fix integer overflow when setting time (2012-03-15 21:41:34 +0100)
+perf record -aj any_call,u -F 1 --   sleep 300 &
 
-are available in the git repository at:
+msr[0x1c8] = 0x1d
 
-   git://git.linaro.org/people/jstultz/linux.git fortglx/3.4/time
+perf record -aj any_ret,u -F 1 --   sleep 300 &
 
-Alok Kataria (1):
+msr[0x1c8] = 0x1ad
 
-       x86, tsc: Skip refined tsc calibration on systems with reliable TSC
+Stephane: does this give a clue about what may be wrong? It doesn't 
+match the kernel code:
 
-John Stultz (3):
+static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+...
+[PERF_SAMPLE_BRANCH_ANY_CALL] =
+          LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
+};
 
-       time: x86: Fix race switching from vsyscall to non-vsyscall clock
+It'd be nice to have *_lbr_sel_map[] in the same order as
+enum perf_branch_sample_type. Right now, the call and return entries are 
+reversed. Which shouldn't matter in theory, since the initializer has an 
+explicit index.
 
-       time: Fix change_clocksource locking
+I also got a kernel hang running the two perf record lines above 
+simultaneously (without the -F 1).
 
-       rtc: Provide flag for rtc devices that don't support UIE
-
-Thomas Gleixner (4):
-
-       time: Remove bogus comments
-
-       x86: vdso: Remove bogus locking in update_vsyscall_tz()
-
-       x86: vdso: Use seqcount instead of seqlock
-
-       ia64: vsyscall: Use seqcount instead of seqlock
-
-  arch/ia64/kernel/asm-offsets.c        |    4 +-
-
-  arch/ia64/kernel/fsys.S               |    2 +-
-
-  arch/ia64/kernel/fsyscall_gtod_data.h |    2 +-
-
-  arch/ia64/kernel/time.c               |   10 +---
-
-  arch/x86/include/asm/vgtod.h          |    2 +-
-
-  arch/x86/kernel/tsc.c                 |   10 ++++
-
-  arch/x86/kernel/vsyscall_64.c         |   16 +-----
-
-  arch/x86/vdso/vclock_gettime.c        |   88 ++++++++++++++++++++-------------
-
-  drivers/rtc/interface.c               |    5 ++
-
-  drivers/rtc/rtc-mpc5121.c             |    2 +
-
-  include/linux/rtc.h                   |    3 +-
-
-  kernel/time.c                         |    6 --
-
-  kernel/time/timekeeping.c             |    7 +++
-
-  13 files changed, 91 insertions(+), 66 deletions(-)
-
-
+  -Arun
