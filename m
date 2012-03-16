@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032732Ab2CPKmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:42:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47421 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030833Ab2CPKmv convert rfc822-to-8bit (ORCPT
+	id S1422694Ab2CPKnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:43:37 -0400
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:56068 "EHLO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422660Ab2CPKng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:42:51 -0400
-Message-ID: <1331894554.18960.234.camel@twins>
-Subject: Re: cpu_active vs pcrypt & padata
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Miller <davem@davemloft.net>
-Cc: steffen.klassert@secunet.com, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Date: Fri, 16 Mar 2012 11:42:34 +0100
-In-Reply-To: <20120316.033204.2200537098677808280.davem@davemloft.net>
-References: <1331892788.18960.227.camel@twins>
-	 <20120316.031644.577275447313181686.davem@davemloft.net>
-	 <1331893215.18960.228.camel@twins>
-	 <20120316.033204.2200537098677808280.davem@davemloft.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 16 Mar 2012 06:43:36 -0400
+Message-ID: <4F631953.1090701@ge.com>
+Date: Fri, 16 Mar 2012 10:43:31 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: Gerard Snitselaar <dev@snitselaar.org>
+CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: vme: fix section mismatches in linux-next 20120314
+References: <1331801439-30038-1-git-send-email-dev@snitselaar.org>
+In-Reply-To: <1331801439-30038-1-git-send-email-dev@snitselaar.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Mar 2012 10:43:33.0463 (UTC) FILETIME=[A2619E70:01CD0361]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-16 at 03:32 -0700, David Miller wrote:
+On 15/03/12 08:50, Gerard Snitselaar wrote:
+> pio2_gpio_init() annotated with __init, but called by pio2_probe()
+> which is annotated __devinit. pio2_gpio_exit() is annotated __exit,
+> but is called by pio2_probe() and by pio2_remove() which is annotated
+> __devexit.
+> 
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
 
-> Beats me, but just because there's only one user doesn't mean it belongs
-> tucked away in that one user's subsystem.
+I was just about to ack that and realised that Greg's already applied it :-)
 
-Sure, but I was mostly wondering wth it was, the file doesn't really
-explain itself. 
+Good catch, thanks,
 
-Also, most times when introducing generic functionality people try to
-collect all interested parties and make something that works for
-everybody.
+Martyn
 
-I know for a fact that btrfs does the fan out and regroup thing for
-block checksumming etc.. Does Chris even know it exists? If he does why
-isn't brtfs using it? If its unsuitable, why wasn't it fixed.
+> ---
+>  drivers/staging/vme/devices/vme_pio2.h      |    4 ++--
+>  drivers/staging/vme/devices/vme_pio2_gpio.c |    4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/vme/devices/vme_pio2.h b/drivers/staging/vme/devices/vme_pio2.h
+> index 3c59313..72d9ce0 100644
+> --- a/drivers/staging/vme/devices/vme_pio2.h
+> +++ b/drivers/staging/vme/devices/vme_pio2.h
+> @@ -243,7 +243,7 @@ struct pio2_card {
+>  int pio2_cntr_reset(struct pio2_card *);
+>  
+>  int pio2_gpio_reset(struct pio2_card *);
+> -int __init pio2_gpio_init(struct pio2_card *);
+> -void __exit pio2_gpio_exit(struct pio2_card *);
+> +int __devinit pio2_gpio_init(struct pio2_card *);
+> +void pio2_gpio_exit(struct pio2_card *);
+>  
+>  #endif /* _VME_PIO2_H_ */
+> diff --git a/drivers/staging/vme/devices/vme_pio2_gpio.c b/drivers/staging/vme/devices/vme_pio2_gpio.c
+> index dc837de..8584849 100644
+> --- a/drivers/staging/vme/devices/vme_pio2_gpio.c
+> +++ b/drivers/staging/vme/devices/vme_pio2_gpio.c
+> @@ -187,7 +187,7 @@ int pio2_gpio_reset(struct pio2_card *card)
+>  	return 0;
+>  }
+>  
+> -int __init pio2_gpio_init(struct pio2_card *card)
+> +int __devinit pio2_gpio_init(struct pio2_card *card)
+>  {
+>  	int retval = 0;
+>  	char *label;
+> @@ -220,7 +220,7 @@ int __init pio2_gpio_init(struct pio2_card *card)
+>  	return retval;
+>  };
+>  
+> -void __exit pio2_gpio_exit(struct pio2_card *card)
+> +void pio2_gpio_exit(struct pio2_card *card)
+>  {
+>  	const char *label = card->gc.label;
+>  
 
-I'm not saying its crap or anything -- I haven't looked at it at all,
-beyond my grep for cpu_active -- I'm just wondering, and so far it looks
-like there's something weird.
+
+-- 
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
