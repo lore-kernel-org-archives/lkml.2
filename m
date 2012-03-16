@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422977Ab2CPO66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:58:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36586 "EHLO
+	id S1422954Ab2CPO64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:58:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36590 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422823Ab2CPOxX (ORCPT
+	with ESMTP id S1422827Ab2CPOxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:23 -0400
-Message-Id: <20120316144241.540630849@chello.nl>
+	Fri, 16 Mar 2012 10:53:24 -0400
+Message-Id: <20120316144241.074193109@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:50 +0100
+Date: Fri, 16 Mar 2012 15:40:43 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -25,226 +25,107 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 22/26] mm, mpol: Split and explose some mempolicy functions
+Subject: [RFC][PATCH 15/26] sched, numa: Implement hotplug hooks
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=mpol-mbind-split.patch
+Content-Disposition: inline; filename=numa-foo-6a.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow creating 'custom' mpols, expose some guts. In
-particular means to allocate fresh mpols and to bind them to memory
-ranges, skipping out on the intermediate -- policy -- part of
-sys_mbind().
+start/stop numa balance threads on-demand using cpu-hotlpug.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h |    8 +++
- mm/mempolicy.c            |  111 ++++++++++++++++++++++++++--------------------
- 2 files changed, 71 insertions(+), 48 deletions(-)
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -203,6 +203,12 @@ struct shared_policy {
- 	spinlock_t lock;
- };
- 
-+extern struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
-+				  nodemask_t *nodes);
-+extern long mpol_do_mbind(unsigned long start, unsigned long len,
-+				struct mempolicy *policy, unsigned long mode,
-+				nodemask_t *nmask, unsigned long flags);
-+
- void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol);
- int mpol_set_shared_policy(struct shared_policy *info,
- 				struct vm_area_struct *vma,
-@@ -216,6 +222,8 @@ struct mempolicy *get_vma_policy(struct 
- 
- extern void numa_default_policy(void);
- extern void numa_policy_init(void);
-+extern void mpol_rebind_policy(struct mempolicy *pol, const nodemask_t *new,
-+				enum mpol_rebind_step step);
- extern void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new,
- 				enum mpol_rebind_step step);
- extern void mpol_rebind_mm(struct mm_struct *mm, nodemask_t *new);
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -259,7 +259,7 @@ static int mpol_set_nodemask(struct memp
-  * This function just creates a new policy, does some check and simple
-  * initialization. You must invoke mpol_set_nodemask() to set nodes.
-  */
--static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
-+struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 				  nodemask_t *nodes)
- {
- 	struct mempolicy *policy;
-@@ -401,7 +401,7 @@ static void mpol_rebind_preferred(struct
-  * 	MPOL_REBIND_STEP1 - set all the newly nodes
-  * 	MPOL_REBIND_STEP2 - clean all the disallowed nodes
-  */
--static void mpol_rebind_policy(struct mempolicy *pol, const nodemask_t *newmask,
-+void mpol_rebind_policy(struct mempolicy *pol, const nodemask_t *newmask,
- 				enum mpol_rebind_step step)
- {
- 	if (!pol)
-@@ -1067,55 +1067,28 @@ static struct page *new_vma_page(struct 
+ kernel/sched/numa.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 55 insertions(+), 7 deletions(-)
+--- a/kernel/sched/numa.c
++++ b/kernel/sched/numa.c
+@@ -596,31 +596,79 @@ static int numad_thread(void *data)
+ 	return 0;
  }
- #endif
  
--static long do_mbind(unsigned long start, unsigned long len,
--		     unsigned short mode, unsigned short mode_flags,
--		     nodemask_t *nmask, unsigned long flags)
-+long mpol_do_mbind(unsigned long start, unsigned long len,
-+		struct mempolicy *new, unsigned long mode,
-+		nodemask_t *nmask, unsigned long flags)
- {
--	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
--	struct mempolicy *new = NULL;
--	unsigned long end;
-+	struct vm_area_struct *vma;
- 	int err, nr_failed = 0;
-+	unsigned long end;
- 	LIST_HEAD(pagelist);
- 
--  	if (flags & ~(unsigned long)MPOL_MF_VALID)
--		return -EINVAL;
--	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
--		return -EPERM;
--
--	if (start & ~PAGE_MASK)
--		return -EINVAL;
--
--	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
--		flags &= ~MPOL_MF_STRICT;
--
- 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
- 	end = start + len;
- 
--	if (end < start)
--		return -EINVAL;
--	if (end == start)
--		return 0;
--
--	if (mode != MPOL_NOOP) {
--		new = mpol_new(mode, mode_flags, nmask);
--		if (IS_ERR(new))
--			return PTR_ERR(new);
--
--		if (flags & MPOL_MF_LAZY)
--			new->flags |= MPOL_F_MOF;
--
-+	if (end < start) {
-+		err = -EINVAL;
-+		goto mpol_out;
- 	}
--	/*
--	 * If we are using the default policy then operation
--	 * on discontinuous address spaces is okay after all
--	 */
--	if (!new)
--		flags |= MPOL_MF_DISCONTIG_OK;
- 
--	pr_debug("mbind %lx-%lx mode:%d flags:%d nodes:%lx\n",
--		 start, start + len, mode, mode_flags,
--		 nmask ? nodes_addr(*nmask)[0] : -1);
-+	if (end == start) {
-+		err = 0;
-+		goto mpol_out;
++static int __cpuinit
++numa_hotplug(struct notifier_block *nb, unsigned long action, void *hcpu)
++{
++	int cpu = (long)hcpu;
++	int node = cpu_to_node(cpu);
++	struct node_queue *nq = nq_of(node);
++	struct task_struct *numad;
++	int err = 0;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++		if (nq->numad)
++			break;
++
++		numad = kthread_create_on_node(numad_thread,
++				nq, node, "numad/%d", node);
++		if (IS_ERR(numad)) {
++			err = PTR_ERR(numad);
++			break;
++		}
++
++		nq->numad = numad;
++		nq->next_schedule = jiffies + HZ; // XXX sync-up?
++		break;
++
++	case CPU_ONLINE:
++		wake_up_process(nq->numad);
++		break;
++
++	case CPU_DEAD:
++	case CPU_UP_CANCELED:
++		if (!nq->numad)
++			break;
++
++		if (cpumask_any_and(cpu_online_mask,
++				    cpumask_of_node(node)) >= nr_cpu_ids) {
++			kthread_stop(nq->numad);
++			nq->numad = NULL;
++		}
++		break;
 +	}
- 
- 	if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) {
- 		err = migrate_prep();
-@@ -1123,8 +1096,6 @@ static long do_mbind(unsigned long start
- 			goto mpol_out;
- 	}
- 
--	down_write(&mm->mmap_sem);
--
- 	if (mode != MPOL_NOOP) {
- 		NODEMASK_SCRATCH(scratch);
- 		err = -ENOMEM;
-@@ -1135,7 +1106,7 @@ static long do_mbind(unsigned long start
- 		}
- 		NODEMASK_SCRATCH_FREE(scratch);
- 		if (err)
--			goto mpol_out_unlock;
-+			goto mpol_out;
- 	}
- 
- 	vma = check_range(mm, start, end, nmask,
-@@ -1143,12 +1114,12 @@ static long do_mbind(unsigned long start
- 
- 	err = PTR_ERR(vma);	/* maybe ... */
- 	if (IS_ERR(vma))
--		goto mpol_out_unlock;
-+		goto mpol_out_putback;
- 
- 	if (mode != MPOL_NOOP) {
- 		err = mbind_range(mm, start, end, new);
- 		if (err)
--			goto mpol_out_unlock;
-+			goto mpol_out_putback;
- 	}
- 
- 	if (!list_empty(&pagelist)) {
-@@ -1164,12 +1135,56 @@ static long do_mbind(unsigned long start
- 	if (nr_failed && (flags & MPOL_MF_STRICT))
- 		err = -EIO;
- 
-+mpol_out_putback:
- 	putback_lru_pages(&pagelist);
- 
--mpol_out_unlock:
--	up_write(&mm->mmap_sem);
- mpol_out:
-+	return err;
++
++	return notifier_from_errno(err);
 +}
 +
-+static long do_mbind(unsigned long start, unsigned long len,
-+		     unsigned short mode, unsigned short mode_flags,
-+		     nodemask_t *nmask, unsigned long flags)
-+{
-+	struct mm_struct *mm = current->mm;
-+	struct mempolicy *new = NULL;
-+	int err;
-+
-+	if (flags & ~(unsigned long)MPOL_MF_VALID)
-+		return -EINVAL;
-+	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
-+		return -EPERM;
-+
-+	if (start & ~PAGE_MASK)
-+		return -EINVAL;
-+
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
-+		flags &= ~MPOL_MF_STRICT;
-+
-+	if (mode != MPOL_NOOP) {
-+		new = mpol_new(mode, mode_flags, nmask);
-+		if (IS_ERR(new))
-+			return PTR_ERR(new);
-+
-+		if (flags & MPOL_MF_LAZY)
-+			new->flags |= MPOL_F_MOF;
-+	}
-+	/*
-+	 * If we are using the default policy then operation
-+	 * on discontinuous address spaces is okay after all
-+	 */
-+	if (!new)
-+		flags |= MPOL_MF_DISCONTIG_OK;
-+
-+	pr_debug("mbind %lx-%lx mode:%d flags:%d nodes:%lx\n",
-+		 start, start + len, mode, mode_flags,
-+		 nmask ? nodes_addr(*nmask)[0] : -1);
-+
-+	down_write(&mm->mmap_sem);
-+	err = mpol_do_mbind(start, len, new, mode, nmask, flags);
-+	up_write(&mm->mmap_sem);
- 	mpol_put(new);
-+
- 	return err;
- }
+ static __init int numa_init(void)
+ {
+-	int node;
++	int node, cpu, err;
  
+ 	nqs = kzalloc(sizeof(struct node_queue*) * nr_node_ids, GFP_KERNEL);
+ 	BUG_ON(!nqs);
+ 
+-	for_each_node(node) { // XXX hotplug
++	for_each_node(node) {
+ 		struct node_queue *nq = kmalloc_node(sizeof(*nq),
+ 				GFP_KERNEL | __GFP_ZERO, node);
+ 		BUG_ON(!nq);
+ 
+-		nq->numad = kthread_create_on_node(numad_thread,
+-				nq, node, "numad/%d", node);
+-		BUG_ON(IS_ERR(nq->numad));
+-
+ 		spin_lock_init(&nq->lock);
+ 		INIT_LIST_HEAD(&nq->entity_list);
+ 
+ 		nq->next_schedule = jiffies + HZ;
+ 		nq->node = node;
+ 		nqs[node] = nq;
++	}
+ 
+-		wake_up_process(nq->numad);
++	get_online_cpus();
++	cpu_notifier(numa_hotplug, 0);
++	for_each_online_cpu(cpu) {
++		err = numa_hotplug(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
++		BUG_ON(notifier_to_errno(err));
++		numa_hotplug(NULL, CPU_ONLINE, (void *)(long)cpu);
+ 	}
++	put_online_cpus();
+ 
+ 	return 0;
+ }
 
 
