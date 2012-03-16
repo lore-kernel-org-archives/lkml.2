@@ -1,242 +1,608 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab2CPRwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:52:33 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39145 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab2CPRwa (ORCPT
+	id S1753625Ab2CPRzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:55:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61399 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab2CPRzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:52:30 -0400
-Date: Fri, 16 Mar 2012 10:51:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
- online
-Message-ID: <20120316175142.GG2408@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120314130801.GA11722@sgi.com>
- <20120314151717.GA2435@linux.vnet.ibm.com>
- <20120314165657.GA19117@linux.vnet.ibm.com>
- <1331779343.14263.6.camel@marge.simpson.net>
- <1331780831.14263.15.camel@marge.simpson.net>
- <20120315175933.GB8705@sgi.com>
- <1331882861.11010.13.camel@marge.simpson.net>
- <1331885384.11010.15.camel@marge.simpson.net>
- <1331887535.11010.18.camel@marge.simpson.net>
- <20120316172850.GC31290@sgi.com>
+	Fri, 16 Mar 2012 13:55:32 -0400
+Date: Fri, 16 Mar 2012 10:55:24 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-input@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
+Subject: Re: [PATCH v3 2/2] input: add driver support for MAX8997-haptic
+Message-ID: <20120316175524.GA19275@core.coreip.homeip.net>
+References: <4F5DB459.9090701@samsung.com>
+ <20120314084652.GC3964@core.coreip.homeip.net>
+ <4F60AF8E.7050900@samsung.com>
+ <20120314154828.GA24964@core.coreip.homeip.net>
+ <20120316174802.GI20524@sortiz-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120316172850.GC31290@sgi.com>
+In-Reply-To: <20120316174802.GI20524@sortiz-mobl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031617-4242-0000-0000-000001121F5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 12:28:50PM -0500, Dimitri Sivanich wrote:
-> On Fri, Mar 16, 2012 at 09:45:35AM +0100, Mike Galbraith wrote:
-> > On Fri, 2012-03-16 at 09:09 +0100, Mike Galbraith wrote: 
-> > > On Fri, 2012-03-16 at 08:27 +0100, Mike Galbraith wrote: 
-> > > > On Thu, 2012-03-15 at 12:59 -0500, Dimitri Sivanich wrote: 
-> > 
-> > > > > Could I try your 3.0 enterprise patch?
-> > > > 
-> > > > Sure, v3 below.
+On Fri, Mar 16, 2012 at 06:48:02PM +0100, Samuel Ortiz wrote:
+> Hi Dmitry,
+> 
+> On Wed, Mar 14, 2012 at 08:48:28AM -0700, Dmitry Torokhov wrote:
+> > On Wed, Mar 14, 2012 at 11:47:42PM +0900, Chanwoo Choi wrote:
+> > > Hi Dmitry,
 > > > 
-> > > Erm, a bit of that went missing.  I'll put it back.
+> > > > This is not proper locking between playing effect and suspend. Now that
+> > > > you are using workqueue you need to synchronize access with it, not with
+> > > > play_effect method.
+> > > > 
+> > > > Does the following patch work for you?
+> > > > 
+> > > 
+> > > Your patch is worked on TRATS board based on EXYNOS4210 but, you should
+> > > apply following patch because 'chip->enabled' is used on
+> > > max8997_haptic_configure() function to enable/disable haptic motor.
 > > 
-> > OK, box finally finished rebuild/boot.
-> > 
-> 
-> This patch also shows great improvement in the two
-> rcu_for_each_node_breadth_first() (nothing over 20 usec and most less than
-> 10 in initial testing).
-> 
-> However, there are spinlock holdoffs at the following tracebacks (my nmi
-> handler does work on the 3.0 kernel):
-> 
-> [  584.157019]  [<ffffffff8144c5a0>] nmi+0x20/0x30
-> [  584.157023]  [<ffffffff8144bc8a>] _raw_spin_lock_irqsave+0x1a/0x30
-> [  584.157026]  [<ffffffff810c5f18>] force_qs_rnp+0x58/0x170
+> > OK, excellent. I'll pick up this fix and apply the driver for 3.4 queue,
+> > thanks!
+> Your patch depends on the MFD changes Choi sent along the input driver. I
+> think it would make more sense for me to take it. What do you think ?
 
-This is a holdoff, not a deadlock hang, correct?
+I think that splitting required platform data definitions from the
+driver into separate patch is quite pointless. I often see a driver
+split in 3+ patches - headers, the driver itself and Kconfig/makefile
+changes and I wonder what made them do it...
 
-If so...
+Anyway, below is the consolidated patch I was going to apply to my tree,
+but if you want to go through yours - feel free to apply it.
 
-Presumably this is the last raw_spin_lock_irqsave() in force_qs_rnp(),
-the one right before the call to rcu_initiate_boost().  Could you please
-verify for me?
+Thanks. 
 
-If so, someone is holding the root rcu_node structure's lock for longer
-than is good.  Or that there is significant contention on that lock,
-which there might well be on large configurations.  Any info on who
-is holding or contending for this lock would be very helpful!
+-- 
+Dmitry
 
-Are you running TREE_RCU or TREE_PREEMPT_RCU?
 
-							Thanx, Paul
+Input: add driver support for MAX8997-haptic
 
-> [  584.157030]  [<ffffffff810c6192>] force_quiescent_state+0x162/0x1d0
-> [  584.157033]  [<ffffffff810c6c95>] __rcu_process_callbacks+0x165/0x200
-> [  584.157037]  [<ffffffff810c6d4d>] rcu_process_callbacks+0x1d/0x80
-> [  584.157041]  [<ffffffff81061eaf>] __do_softirq+0xef/0x220
-> [  584.157044]  [<ffffffff81454cbc>] call_softirq+0x1c/0x30
-> [  584.157048]  [<ffffffff810043a5>] do_softirq+0x65/0xa0
-> [  584.157051]  [<ffffffff81061c85>] irq_exit+0xb5/0xe0
-> [  584.157054]  [<ffffffff810212c8>] smp_apic_timer_interrupt+0x68/0xa0
-> [  584.157057]  [<ffffffff81454473>] apic_timer_interrupt+0x13/0x20
-> [  584.157061]  [<ffffffff8102b352>] native_safe_halt+0x2/0x10
-> [  584.157064]  [<ffffffff8100adf5>] default_idle+0x145/0x150
-> [  584.157067]  [<ffffffff810020c6>] cpu_idle+0x66/0xc0
-> 
-> > 
-> > rcu: Limit GP initialization to CPUs that have been online
-> > 
-> > The current grace-period initialization initializes all leaf rcu_node
-> > structures, even those corresponding to CPUs that have never been online.
-> > This is harmless in many configurations, but results in 200-microsecond
-> > latency spikes for kernels built with NR_CPUS=4096.
-> > 
-> > This commit therefore keeps track of the largest-numbered CPU that has
-> > ever been online, and limits grace-period initialization to rcu_node
-> > structures corresponding to that CPU and to smaller-numbered CPUs.
-> > 
-> > Reported-by: Dimitri Sivanich <sivanich@sgi.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Acked-by: Mike Galbraith <mgalbraith@suse.de>
-> > 
-> > ---
-> >  kernel/rcutree.c |   36 ++++++++++++++++++++++++++++++++----
-> >  kernel/rcutree.h |   16 ++++++++++++++--
-> >  2 files changed, 46 insertions(+), 6 deletions(-)
-> > 
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -84,6 +84,8 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_d
-> >  
-> >  static struct rcu_state *rcu_state;
-> >  
-> > +int rcu_max_cpu __read_mostly;	/* Largest # CPU that has ever been online. */
-> > +
-> >  /*
-> >   * The rcu_scheduler_active variable transitions from zero to one just
-> >   * before the first task is spawned.  So when this variable is zero, RCU
-> > @@ -827,25 +829,31 @@ rcu_start_gp(struct rcu_state *rsp, unsi
-> >  	struct rcu_node *rnp = rcu_get_root(rsp);
-> >  
-> >  	if (!cpu_needs_another_gp(rsp, rdp) || rsp->fqs_active) {
-> > +		struct rcu_node *rnp_root = rnp;
-> > +
-> >  		if (cpu_needs_another_gp(rsp, rdp))
-> >  			rsp->fqs_need_gp = 1;
-> >  		if (rnp->completed == rsp->completed) {
-> > -			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +			raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
-> >  			return;
-> >  		}
-> > -		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
-> >  
-> >  		/*
-> >  		 * Propagate new ->completed value to rcu_node structures
-> >  		 * so that other CPUs don't have to wait until the start
-> >  		 * of the next grace period to process their callbacks.
-> > +		 * We must hold the root rcu_node structure's ->lock
-> > +		 * across rcu_for_each_node_breadth_first() in order to
-> > +		 * synchronize with CPUs coming online for the first time.
-> >  		 */
-> >  		rcu_for_each_node_breadth_first(rsp, rnp) {
-> > +			raw_spin_unlock(&rnp_root->lock); /* remain disabled. */
-> >  			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-> >  			rnp->completed = rsp->completed;
-> >  			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-> > +			raw_spin_lock(&rnp_root->lock); /* already disabled. */
-> >  		}
-> > -		local_irq_restore(flags);
-> > +		raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
-> >  		return;
-> >  	}
-> >  
-> > @@ -935,7 +943,7 @@ static void rcu_report_qs_rsp(struct rcu
-> >  		rsp->gp_max = gp_duration;
-> >  	rsp->completed = rsp->gpnum;
-> >  	rsp->signaled = RCU_GP_IDLE;
-> > -	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
-> > +	rcu_start_gp(rsp, flags);  /* releases root node's ->lock. */
-> >  }
-> >  
-> >  /*
-> > @@ -1862,6 +1870,7 @@ rcu_init_percpu_data(int cpu, struct rcu
-> >  	unsigned long mask;
-> >  	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
-> >  	struct rcu_node *rnp = rcu_get_root(rsp);
-> > +	struct rcu_node *rnp_init;
-> >  
-> >  	/* Set up local state, ensuring consistent view of global state. */
-> >  	raw_spin_lock_irqsave(&rnp->lock, flags);
-> > @@ -1882,6 +1891,20 @@ rcu_init_percpu_data(int cpu, struct rcu
-> >  	/* Exclude any attempts to start a new GP on large systems. */
-> >  	raw_spin_lock(&rsp->onofflock);		/* irqs already disabled. */
-> >  
-> > +	/*
-> > +	 * Initialize any rcu_node structures that will see their first use.
-> > +	 * Note that rcu_max_cpu cannot change out from under us because the
-> > +	 * hotplug locks are held.
-> > +	 */
-> > +	raw_spin_lock(&rnp->lock);		/* irqs already disabled. */
-> > +	for (rnp_init = per_cpu_ptr(rsp->rda, rcu_max_cpu)->mynode + 1;
-> > +	     rnp_init <= rdp->mynode;
-> > +	     rnp_init++) {
-> > +		rnp_init->gpnum = rsp->gpnum;
-> > +		rnp_init->completed = rsp->completed;
-> > +	}
-> > +	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
-> > +
-> >  	/* Add CPU to rcu_node bitmasks. */
-> >  	rnp = rdp->mynode;
-> >  	mask = rdp->grpmask;
-> > @@ -1907,6 +1930,11 @@ static void __cpuinit rcu_prepare_cpu(in
-> >  	rcu_init_percpu_data(cpu, &rcu_sched_state, 0);
-> >  	rcu_init_percpu_data(cpu, &rcu_bh_state, 0);
-> >  	rcu_preempt_init_percpu_data(cpu);
-> > +	if (cpu > rcu_max_cpu) {
-> > +		smp_mb(); /* Initialization before rcu_max_cpu assignment. */
-> > +		rcu_max_cpu = cpu;
-> > +		smp_mb(); /* rcu_max_cpu assignment before later uses. */
-> > +	}
-> >  }
-> >  
-> >  /*
-> > --- a/kernel/rcutree.h
-> > +++ b/kernel/rcutree.h
-> > @@ -191,11 +191,23 @@ struct rcu_node {
-> >  
-> >  /*
-> >   * Do a full breadth-first scan of the rcu_node structures for the
-> > - * specified rcu_state structure.
-> > + * specified rcu_state structure.  The caller must hold either the
-> > + * ->onofflock or the root rcu_node structure's ->lock.
-> >   */
-> > +extern int rcu_max_cpu;
-> > +static inline int rcu_get_max_cpu(void)
-> > +{
-> > +	int ret;
-> > +
-> > +	smp_mb();  /* Pairs with barriers in rcu_prepare_cpu(). */
-> > +	ret = rcu_max_cpu;
-> > +	smp_mb();  /* Pairs with barriers in rcu_prepare_cpu(). */
-> > +	return ret;
-> > +}
-> >  #define rcu_for_each_node_breadth_first(rsp, rnp) \
-> >  	for ((rnp) = &(rsp)->node[0]; \
-> > -	     (rnp) < &(rsp)->node[NUM_RCU_NODES]; (rnp)++)
-> > +	     (rnp) <= per_cpu_ptr((rsp)->rda, rcu_get_max_cpu())->mynode; \
-> > +	     (rnp)++)
-> >  
-> >  /*
-> >   * Do a breadth-first scan of the non-leaf rcu_node structures for the
-> > 
-> 
+From: Donggeun Kim <dg77.kim@samsung.com>
 
+The MAX8997-haptic function can be used to control motor. User can
+control the haptic driver by using force feedback framework.
+
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/input/misc/Kconfig          |   12 +
+ drivers/input/misc/Makefile         |    1 
+ drivers/input/misc/max8997_haptic.c |  407 +++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max8997.h         |   53 ++++-
+ 4 files changed, 472 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/misc/max8997_haptic.c
+
+
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 2337c3e..ee077a4 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -134,6 +134,18 @@ config INPUT_MAX8925_ONKEY
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called max8925_onkey.
+ 
++config INPUT_MAX8997_HAPTIC
++	tristate "MAXIM MAX8997 haptic controller support"
++	depends on HAVE_PWM && MFD_MAX8997
++	select INPUT_FF_MEMLESS
++	help
++	  This option enables device driver support for the haptic controller
++	  on MAXIM MAX8997 chip. This driver supports ff-memless interface
++	  from input framework.
++
++	  To compile this driver as module, choose M here: the
++	  module will be called max8997-haptic.
++
+ config INPUT_MC13783_PWRBUTTON
+ 	tristate "MC13783 ON buttons"
+ 	depends on MFD_MC13783
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index a6d8de0..f55cdf4 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
+ obj-$(CONFIG_INPUT_KXTJ9)		+= kxtj9.o
+ obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
+ obj-$(CONFIG_INPUT_MAX8925_ONKEY)	+= max8925_onkey.o
++obj-$(CONFIG_INPUT_MAX8997_HAPTIC)	+= max8997_haptic.o
+ obj-$(CONFIG_INPUT_MC13783_PWRBUTTON)	+= mc13783-pwrbutton.o
+ obj-$(CONFIG_INPUT_MMA8450)		+= mma8450.o
+ obj-$(CONFIG_INPUT_MPU3050)		+= mpu3050.o
+diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
+new file mode 100644
+index 0000000..05b7b8b
+--- /dev/null
++++ b/drivers/input/misc/max8997_haptic.c
+@@ -0,0 +1,407 @@
++/*
++ * MAX8997-haptic controller driver
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * Donggeun Kim <dg77.kim@samsung.com>
++ *
++ * This program is not provided / owned by Maxim Integrated Products.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/pwm.h>
++#include <linux/input.h>
++#include <linux/mfd/max8997-private.h>
++#include <linux/mfd/max8997.h>
++#include <linux/regulator/consumer.h>
++
++/* Haptic configuration 2 register */
++#define MAX8997_MOTOR_TYPE_SHIFT	7
++#define MAX8997_ENABLE_SHIFT		6
++#define MAX8997_MODE_SHIFT		5
++
++/* Haptic driver configuration register */
++#define MAX8997_CYCLE_SHIFT		6
++#define MAX8997_SIG_PERIOD_SHIFT	4
++#define MAX8997_SIG_DUTY_SHIFT		2
++#define MAX8997_PWM_DUTY_SHIFT		0
++
++struct max8997_haptic {
++	struct device *dev;
++	struct i2c_client *client;
++	struct input_dev *input_dev;
++	struct regulator *regulator;
++
++	struct work_struct work;
++	struct mutex mutex;
++
++	bool enabled;
++	unsigned int level;
++
++	struct pwm_device *pwm;
++	unsigned int pwm_period;
++	enum max8997_haptic_pwm_divisor pwm_divisor;
++
++	enum max8997_haptic_motor_type type;
++	enum max8997_haptic_pulse_mode mode;
++
++	unsigned int internal_mode_pattern;
++	unsigned int pattern_cycle;
++	unsigned int pattern_signal_period;
++};
++
++static int max8997_haptic_set_duty_cycle(struct max8997_haptic *chip)
++{
++	int ret = 0;
++
++	if (chip->mode == MAX8997_EXTERNAL_MODE) {
++		unsigned int duty = chip->pwm_period * chip->level / 100;
++		ret = pwm_config(chip->pwm, duty, chip->pwm_period);
++	} else {
++		int i;
++		u8 duty_index = 0;
++
++		for (i = 0; i <= 64; i++) {
++			if (chip->level <= i * 100 / 64) {
++				duty_index = i;
++				break;
++			}
++		}
++		switch (chip->internal_mode_pattern) {
++		case 0:
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGPWMDC1, duty_index);
++			break;
++		case 1:
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGPWMDC2, duty_index);
++			break;
++		case 2:
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGPWMDC3, duty_index);
++			break;
++		case 3:
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGPWMDC4, duty_index);
++			break;
++		default:
++			break;
++		}
++	}
++	return ret;
++}
++
++static void max8997_haptic_configure(struct max8997_haptic *chip)
++{
++	u8 value;
++
++	value = chip->type << MAX8997_MOTOR_TYPE_SHIFT |
++		chip->enabled << MAX8997_ENABLE_SHIFT |
++		chip->mode << MAX8997_MODE_SHIFT | chip->pwm_divisor;
++	max8997_write_reg(chip->client, MAX8997_HAPTIC_REG_CONF2, value);
++
++	if (chip->mode == MAX8997_INTERNAL_MODE && chip->enabled) {
++		value = chip->internal_mode_pattern << MAX8997_CYCLE_SHIFT |
++			chip->internal_mode_pattern << MAX8997_SIG_PERIOD_SHIFT |
++			chip->internal_mode_pattern << MAX8997_SIG_DUTY_SHIFT |
++			chip->internal_mode_pattern << MAX8997_PWM_DUTY_SHIFT;
++		max8997_write_reg(chip->client,
++			MAX8997_HAPTIC_REG_DRVCONF, value);
++
++		switch (chip->internal_mode_pattern) {
++		case 0:
++			value = chip->pattern_cycle << 4;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_CYCLECONF1, value);
++			value = chip->pattern_signal_period;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGCONF1, value);
++			break;
++
++		case 1:
++			value = chip->pattern_cycle;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_CYCLECONF1, value);
++			value = chip->pattern_signal_period;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGCONF2, value);
++			break;
++
++		case 2:
++			value = chip->pattern_cycle << 4;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_CYCLECONF2, value);
++			value = chip->pattern_signal_period;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGCONF3, value);
++			break;
++
++		case 3:
++			value = chip->pattern_cycle;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_CYCLECONF2, value);
++			value = chip->pattern_signal_period;
++			max8997_write_reg(chip->client,
++				MAX8997_HAPTIC_REG_SIGCONF4, value);
++			break;
++
++		default:
++			break;
++		}
++	}
++}
++
++static void max8997_haptic_enable(struct max8997_haptic *chip)
++{
++	int error;
++
++	mutex_lock(&chip->mutex);
++
++	error = max8997_haptic_set_duty_cycle(chip);
++	if (error) {
++		dev_err(chip->dev, "set_pwm_cycle failed, error: %d\n", error);
++		goto out;
++	}
++
++	if (!chip->enabled) {
++		chip->enabled = true;
++		regulator_enable(chip->regulator);
++		max8997_haptic_configure(chip);
++		if (chip->mode == MAX8997_EXTERNAL_MODE)
++			pwm_enable(chip->pwm);
++	}
++
++out:
++	mutex_unlock(&chip->mutex);
++}
++
++static void max8997_haptic_disable(struct max8997_haptic *chip)
++{
++	mutex_lock(&chip->mutex);
++
++	if (chip->enabled) {
++		chip->enabled = false;
++		max8997_haptic_configure(chip);
++		if (chip->mode == MAX8997_EXTERNAL_MODE)
++			pwm_disable(chip->pwm);
++		regulator_disable(chip->regulator);
++	}
++
++	mutex_unlock(&chip->mutex);
++}
++
++static void max8997_haptic_play_effect_work(struct work_struct *work)
++{
++	struct max8997_haptic *chip =
++			container_of(work, struct max8997_haptic, work);
++
++	if (chip->level)
++		max8997_haptic_enable(chip);
++	else
++		max8997_haptic_disable(chip);
++}
++
++static int max8997_haptic_play_effect(struct input_dev *dev, void *data,
++				  struct ff_effect *effect)
++{
++	struct max8997_haptic *chip = input_get_drvdata(dev);
++
++	chip->level = effect->u.rumble.strong_magnitude;
++	if (!chip->level)
++		chip->level = effect->u.rumble.weak_magnitude;
++
++	schedule_work(&chip->work);
++
++	return 0;
++}
++
++static void max8997_haptic_close(struct input_dev *dev)
++{
++	struct max8997_haptic *chip = input_get_drvdata(dev);
++
++	cancel_work_sync(&chip->work);
++	max8997_haptic_disable(chip);
++}
++
++static int __devinit max8997_haptic_probe(struct platform_device *pdev)
++{
++	struct max8997_dev *iodev = dev_get_drvdata(pdev->dev.parent);
++	const struct max8997_platform_data *pdata =
++					dev_get_platdata(iodev->dev);
++	const struct max8997_haptic_platform_data *haptic_pdata =
++					pdata->haptic_pdata;
++	struct max8997_haptic *chip;
++	struct input_dev *input_dev;
++	int error;
++
++	if (!haptic_pdata) {
++		dev_err(&pdev->dev, "no haptic platform data\n");
++		return -EINVAL;
++	}
++
++	chip = kzalloc(sizeof(struct max8997_haptic), GFP_KERNEL);
++	input_dev = input_allocate_device();
++	if (!chip || !input_dev) {
++		dev_err(&pdev->dev, "unable to allocate memory\n");
++		error = -ENOMEM;
++		goto err_free_mem;
++	}
++
++	INIT_WORK(&chip->work, max8997_haptic_play_effect_work);
++	mutex_init(&chip->mutex);
++
++	chip->client = iodev->haptic;
++	chip->dev = &pdev->dev;
++	chip->input_dev = input_dev;
++	chip->pwm_period = haptic_pdata->pwm_period;
++	chip->type = haptic_pdata->type;
++	chip->mode = haptic_pdata->mode;
++	chip->pwm_divisor = haptic_pdata->pwm_divisor;
++
++	switch (chip->mode) {
++	case MAX8997_INTERNAL_MODE:
++		chip->internal_mode_pattern =
++				haptic_pdata->internal_mode_pattern;
++		chip->pattern_cycle = haptic_pdata->pattern_cycle;
++		chip->pattern_signal_period =
++				haptic_pdata->pattern_signal_period;
++		break;
++
++	case MAX8997_EXTERNAL_MODE:
++		chip->pwm = pwm_request(haptic_pdata->pwm_channel_id,
++					"max8997-haptic");
++		if (IS_ERR(chip->pwm)) {
++			error = PTR_ERR(chip->pwm);
++			dev_err(&pdev->dev,
++				"unable to request PWM for haptic, error: %d\n",
++				error);
++			goto err_free_mem;
++		}
++		break;
++
++	default:
++		dev_err(&pdev->dev,
++			"Invalid chip mode specified (%d)\n", chip->mode);
++		error = -EINVAL;
++		goto err_free_mem;
++	}
++
++	chip->regulator = regulator_get(&pdev->dev, "inmotor");
++	if (IS_ERR(chip->regulator)) {
++		error = PTR_ERR(chip->regulator);
++		dev_err(&pdev->dev,
++			"unable to get regulator, error: %d\n",
++			error);
++		goto err_free_pwm;
++	}
++
++	input_dev->name = "max8997-haptic";
++	input_dev->id.version = 1;
++	input_dev->dev.parent = &pdev->dev;
++	input_dev->close = max8997_haptic_close;
++	input_set_drvdata(input_dev, chip);
++	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
++
++	error = input_ff_create_memless(input_dev, NULL,
++				max8997_haptic_play_effect);
++	if (error) {
++		dev_err(&pdev->dev,
++			"unable to create FF device, error: %d\n",
++			error);
++		goto err_put_regulator;
++	}
++
++	error = input_register_device(input_dev);
++	if (error) {
++		dev_err(&pdev->dev,
++			"unable to register input device, error: %d\n",
++			error);
++		goto err_destroy_ff;
++	}
++
++	platform_set_drvdata(pdev, chip);
++	return 0;
++
++err_destroy_ff:
++	input_ff_destroy(input_dev);
++err_put_regulator:
++	regulator_put(chip->regulator);
++err_free_pwm:
++	if (chip->mode == MAX8997_EXTERNAL_MODE)
++		pwm_free(chip->pwm);
++err_free_mem:
++	input_free_device(input_dev);
++	kfree(chip);
++
++	return error;
++}
++
++static int __devexit max8997_haptic_remove(struct platform_device *pdev)
++{
++	struct max8997_haptic *chip = platform_get_drvdata(pdev);
++
++	input_unregister_device(chip->input_dev);
++	regulator_put(chip->regulator);
++
++	if (chip->mode == MAX8997_EXTERNAL_MODE)
++		pwm_free(chip->pwm);
++
++	kfree(chip);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int max8997_haptic_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max8997_haptic *chip = platform_get_drvdata(pdev);
++
++	max8997_haptic_disable(chip);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(max8997_haptic_pm_ops, max8997_haptic_suspend, NULL);
++
++static const struct platform_device_id max8997_haptic_id[] = {
++	{ "max8997-haptic", 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, max8997_haptic_id);
++
++static struct platform_driver max8997_haptic_driver = {
++	.driver	= {
++		.name	= "max8997-haptic",
++		.owner	= THIS_MODULE,
++		.pm	= &max8997_haptic_pm_ops,
++	},
++	.probe		= max8997_haptic_probe,
++	.remove		= __devexit_p(max8997_haptic_remove),
++	.id_table	= max8997_haptic_id,
++};
++module_platform_driver(max8997_haptic_driver);
++
++MODULE_ALIAS("platform:max8997-haptic");
++MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
++MODULE_DESCRIPTION("max8997_haptic driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
+index fff5905..28726dd 100644
+--- a/include/linux/mfd/max8997.h
++++ b/include/linux/mfd/max8997.h
+@@ -131,6 +131,55 @@ struct max8997_muic_platform_data {
+ 	int num_init_data;
+ };
+ 
++enum max8997_haptic_motor_type {
++	MAX8997_HAPTIC_ERM,
++	MAX8997_HAPTIC_LRA,
++};
++
++enum max8997_haptic_pulse_mode {
++	MAX8997_EXTERNAL_MODE,
++	MAX8997_INTERNAL_MODE,
++};
++
++enum max8997_haptic_pwm_divisor {
++	MAX8997_PWM_DIVISOR_32,
++	MAX8997_PWM_DIVISOR_64,
++	MAX8997_PWM_DIVISOR_128,
++	MAX8997_PWM_DIVISOR_256,
++};
++
++/**
++ * max8997_haptic_platform_data
++ * @pwm_channel_id: channel number of PWM device
++ *		    valid for MAX8997_EXTERNAL_MODE
++ * @pwm_period: period in nano second for PWM device
++ *		valid for MAX8997_EXTERNAL_MODE
++ * @type: motor type
++ * @mode: pulse mode
++ *     MAX8997_EXTERNAL_MODE: external PWM device is used to control motor
++ *     MAX8997_INTERNAL_MODE: internal pulse generator is used to control motor
++ * @pwm_divisor: divisor for external PWM device
++ * @internal_mode_pattern: internal mode pattern for internal mode
++ *     [0 - 3]: valid pattern number
++ * @pattern_cycle: the number of cycles of the waveform
++ *		   for the internal mode pattern
++ *     [0 - 15]: available cycles
++ * @pattern_signal_period: period of the waveform for the internal mode pattern
++ *     [0 - 255]: available period
++ */
++struct max8997_haptic_platform_data {
++	unsigned int pwm_channel_id;
++	unsigned int pwm_period;
++
++	enum max8997_haptic_motor_type type;
++	enum max8997_haptic_pulse_mode mode;
++	enum max8997_haptic_pwm_divisor pwm_divisor;
++
++	unsigned int internal_mode_pattern;
++	unsigned int pattern_cycle;
++	unsigned int pattern_signal_period;
++};
++
+ enum max8997_led_mode {
+ 	MAX8997_NONE,
+ 	MAX8997_FLASH_MODE,
+@@ -192,7 +241,9 @@ struct max8997_platform_data {
+ 	/* ---- MUIC ---- */
+ 	struct max8997_muic_platform_data *muic_pdata;
+ 
+-	/* HAPTIC: Not implemented */
++	/* ---- HAPTIC ---- */
++	struct max8997_haptic_platform_data *haptic_pdata;
++
+ 	/* RTC: Not implemented */
+ 	/* ---- LED ---- */
+ 	struct max8997_led_platform_data *led_pdata;
