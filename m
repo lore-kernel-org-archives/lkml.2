@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030813Ab2CPVcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:32:21 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:59221 "EHLO
-	homiemail-a59.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751921Ab2CPVcT (ORCPT
+	id S1031410Ab2CPVcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:32:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64538 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757707Ab2CPVcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:32:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=Af4ffrb1xia5/NBMiGG+ajC6eKQ17IrB+10lxKadnx8ZhLQb8WY/3rdby8LuS
-	TOos7BEZicHWItIvwYyh16KqqZydVbH6k8TENBcMCX4GC5yPLSkZ/wtm5DtHw3KG
-	o0pEEGFx+cc6PK80tejupjJcHY5slGFtr+Y4lD25fg7UPI=
-Message-ID: <4F63B15F.2060001@shealevy.com>
-Date: Fri, 16 Mar 2012 17:32:15 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 16 Mar 2012 17:32:31 -0400
+Date: Fri, 16 Mar 2012 14:32:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
+Message-ID: <20120316213227.GB24556@kroah.com>
+References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: matt.fleming@intel.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Proposal: EFI boot stub configuration file
-References: <4F63AFD5.3010607@shealevy.com>
-In-Reply-To: <4F63AFD5.3010607@shealevy.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/16/12 5:25 PM, Shea Levy wrote:
-> the file would be expected to be in UCS-2 format
+On Fri, Mar 16, 2012 at 04:04:48PM -0500, Seth Jennings wrote:
+> This patch allows a zsmalloc user to define the page
+> allocation and free functions to be used when growing
+> or releasing parts of the memory pool.
+> 
+> The functions are passed in the struct zs_pool_ops parameter
+> of zs_create_pool() at pool creation time.  If this parameter
+> is NULL, zsmalloc uses alloc_page and __free_page() by default.
+> 
+> While there is no current user of this functionality, zcache
+> development plans to make use of it in the near future.
 
-Actually, on second thought I could just add a check to see if the 
-parent handle is NULL in an else if after the already-existing check to 
-see if the command line options are NULL. Then the file can be expected 
-to be ASCII.
+I'm starting to get tired of seeing new features be added to this chunk
+of code, and the other related bits, without any noticable movement
+toward getting it merged into the mainline tree.
+
+So, I'm going to take a stance here and say, no more new features until
+it gets merged into the "real" part of the kernel tree, as you all
+should not be spinning your wheels on new stuff, when there's no
+guarantee that the whole thing could just be rejected outright tomorrow.
+
+I'm sorry, I know this isn't fair for your specific patch, but we have
+to stop this sometime, and as this patch adds code isn't even used by
+anyone, its a good of a time as any.
+
+greg k-h
