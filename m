@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab2CPRfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:35:37 -0400
-Received: from host171.canaca.com ([67.55.55.225]:53165 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab2CPRff (ORCPT
+	id S1752748Ab2CPRgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:36:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46106 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752512Ab2CPRgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:35:35 -0400
-Message-ID: <683cca338c740abdd522a35dfe3b17a9.squirrel@mungewell.org>
-In-Reply-To: <20323.28731.474538.955921@quad.stoffel.home>
-References: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
-    <20323.25792.171143.809563@quad.stoffel.home>
-    <f04eb1355e17dbe4ce7bbdd47da0056e.squirrel@mungewell.org>
-    <20323.28731.474538.955921@quad.stoffel.home>
-Date: Fri, 16 Mar 2012 13:35:33 -0400
-Subject: Re: Building BarGraph with LED subsystem
-From: simon@mungewell.org
-To: "John Stoffel" <john@stoffel.org>
-Cc: simon@mungewell.org, "John Stoffel" <john@stoffel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
+	Fri, 16 Mar 2012 13:36:13 -0400
+X-Sasl-enc: b5r2hnFetqE3Bq0VX78uf8p0le3H+B0expcLMiFRN0EJ 1331919372
+Date: Fri, 16 Mar 2012 10:36:10 -0700
+From: Greg KH <greg@kroah.com>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Mandeep Baines <msb@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Theodore Tso <tytso@google.com>, Andrew Morton <akpm@google.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
+Message-ID: <20120316173610.GA26601@kroah.com>
+References: <1326405431-988-1-git-send-email-taysom@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326405431-988-1-git-send-email-taysom@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 12, 2012 at 01:57:11PM -0800, Paul Taysom wrote:
+> A USB stick with a ext file system on it, would occasionally crash
+> when the stick was pulled.
+> 
+> The problem was a timer was being set on the Backing Device Interface,
+> bdi, after the USB device had been removed and the bdi had been
+> unregistered. The bdi would then be later reinitialized by zeroing
+> the timer without removing from the timer from the timer queue.
+> This would eventually result in a kernel crash (NULL ptr dereference).
+> 
+> When the bdi is unregistered, the dev field is set to NULL. This
+> indication is used by bdi_unregister to only unregister the device
+> once.
+> 
+> Fix: When the backing device is invalidated, the mapping backing_dev_info
+> should be redirected to the default_backing_dev_info.
+> 
+> Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
+> file systems on it. Inserted and removed USB sticks many times in random
+> order. With out the bug fix, the kernel would soon crash. With the fix,
+> it did not. Ran on both stumpy and amd64-generic.
+> 
+> Signed-off-by: Paul Taysom <taysom@chromium.org>
+> Cc: Mandeep Baines <msb@chromium.org>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Theodore Tso <tytso@google.com>
+> Cc: Andrew Morton <akpm@google.com>
+> Cc: <linux-usb@vger.kernel.org>
+> Cc: <linux-kernel@vger.kernel.org>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: <linux-fsdevel@vger.kernel.org>
+> Cc: <stable@kernel.org>
+> ---
+>  fs/block_dev.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index afe74dd..322cd05 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -110,6 +110,7 @@ void invalidate_bdev(struct block_device *bdev)
+>  	 * But, for the strange corners, lets be cautious
+>  	 */
+>  	cleancache_flush_inode(mapping);
+> +	mapping->backing_dev_info = &default_backing_dev_info;
+>  }
+>  EXPORT_SYMBOL(invalidate_bdev);
 
->>> While making the kernel more complex... esp for a feature which is of
->>> such limited use.
->
-> simon> Is the concept of a bargraph of LEDs really a 'limited use'? I
-> simon> can think of several uses... I mean isn't flashing or a heart
-> simon> beat just as limited ;-)
->
-> Yes, it's a limited use.  Are 10% of linux users going to have this
-> hardware and use it?
+What ever happened to this patch?  Is it still needed?  Can you still
+reproduce the problem on Linus's tree and older kernels?
 
-OK I'm not making myself clear, apologies for that.
+thanks,
 
-I'd be proposing a 'ledtrig-thres' module which is totally independent of
-the G27, which would just provide the ability to light (or dark) a LED
-depending on a threshold and value.
-
-With a bit of extra code (in this module) multiple LEDs could be 'linked'
-to produce a bargraph, by automatically comparing the same value against
-their own thresholds.
-
-As to the hardware; it could be the G27, a single LED or a matrix of LEDs
-slung off one of the other LED subsystem devices.
-
-I'd want to show RPMs on my G27, but others could display CPU usage,
-emulate a VU meter/FFT display, have the 'low memory panic light' come on,
-etc...
-
-
-> simon> Once kernel framework is provided it should not need
-> simon> re-compilation on a case by case basis.
->
-> If the kernel only provides a way to set the brightness of individual
-> LEDs, why can't you do the rest in userspace?  What if the user wants
-> to have the LEDs run right to left, or visa versa?
-
-I'm just wondering whether writing this as a trigger module is of use to
-others. If well defined, lots of uses are possible.
-
-Simon
-
+greg k-h
