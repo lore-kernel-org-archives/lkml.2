@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422842Ab2CPOxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:53:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36577 "EHLO
+	id S1422880Ab2CPO5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:57:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36603 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422809Ab2CPOxU (ORCPT
+	with ESMTP id S1422832Ab2CPOxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:20 -0400
-Message-Id: <20120316144240.307470041@chello.nl>
+	Fri, 16 Mar 2012 10:53:25 -0400
+Message-Id: <20120316144240.432892200@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:31 +0100
+Date: Fri, 16 Mar 2012 15:40:33 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -26,279 +26,159 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 03/26] mm, mpol: add MPOL_MF_LAZY ...
+Subject: [RFC][PATCH 05/26] mm, mpol: Check for misplaced page
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=migrate-on-fault-06-mbind-lazy-migrate.patch
+Content-Disposition: inline; filename=migrate-on-fault-03-mpol_misplaced.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 
-This patch adds another mbind() flag to request "lazy migration".
-The flag, MPOL_MF_LAZY, modifies MPOL_MF_MOVE* such that the selected
-pages are simply unmapped from the calling task's page table ['_MOVE]
-or from all referencing page tables [_MOVE_ALL].  Anon pages will first
-be added to the swap [or migration?] cache, if necessary.  The pages
-will be migrated in the fault path on "first touch", if the policy
-dictates at that time.
+This patch provides a new function to test whether a page resides
+on a node that is appropriate for the mempolicy for the vma and
+address where the page is supposed to be mapped.  This involves
+looking up the node where the page belongs.  So, the function
+returns that node so that it may be used to allocated the page
+without consulting the policy again.  Because interleaved and
+non-interleaved allocations are accounted differently, the function
+also returns whether or not the new node came from an interleaved
+policy, if the page is misplaced.
 
-"Lazy Migration" will allow testing of migrate-on-fault via mbind().
-Also allows applications to specify that only subsequently touched
-pages be migrated to obey new policy, instead of all pages in range.
-This can be useful for multi-threaded applications working on a
-large shared data area that is initialized by an initial thread
-resulting in all pages on one [or a few, if overflowed] nodes.
-After unmap, the pages in regions assigned to the worker threads
-will be automatically migrated local to the threads on 1st touch.
+A subsequent patch will call this function from the fault path for
+stable pages with zero page_mapcount().  Because of this, I don't
+want to go ahead and allocate the page, e.g., via alloc_page_vma()
+only to have to free it if it has the correct policy.  So, I just
+mimic the alloc_page_vma() node computation logic--sort of.
+
+Note:  we could use this function to implement a MPOL_MF_STRICT
+behavior when migrating pages to match mbind() mempolicy--e.g.,
+to ensure that pages in an interleaved range are reinterleaved
+rather than left where they are when they reside on any page in
+the interleave nodemask.
 
 Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+[ Added MPOL_F_LAZY to trigger migrate-on-fault;
+  simplified code now that we don't have to bother
+  with special crap for interleaved ]
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h |   13 ++++--
- include/linux/migrate.h   |    2 
- include/linux/rmap.h      |    5 +-
- mm/mempolicy.c            |   20 +++++----
- mm/migrate.c              |   96 +++++++++++++++++++++++++++++++++++++++++++++-
- mm/rmap.c                 |    7 +--
- 6 files changed, 125 insertions(+), 18 deletions(-)
+ include/linux/mempolicy.h |    3 +
+ mm/mempolicy.c            |   79 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+)
 --- a/include/linux/mempolicy.h
 +++ b/include/linux/mempolicy.h
-@@ -47,9 +47,16 @@ enum mpol_rebind_step {
+@@ -67,6 +67,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_SHARED  (1 << 0)	/* identify shared policies */
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
++#define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
  
- /* Flags for mbind */
- #define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
--#define MPOL_MF_MOVE	(1<<1)	/* Move pages owned by this process to conform to mapping */
--#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to mapping */
--#define MPOL_MF_INTERNAL (1<<3)	/* Internal flags start here */
-+#define MPOL_MF_MOVE	 (1<<1)	/* Move pages owned by this process to conform
-+				   to policy */
-+#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to policy */
-+#define MPOL_MF_LAZY	 (1<<3)	/* Modifies '_MOVE:  lazy migrate on fault */
-+#define MPOL_MF_INTERNAL (1<<4)	/* Internal flags start here */
-+
-+#define MPOL_MF_VALID	(MPOL_MF_STRICT   | 	\
-+			 MPOL_MF_MOVE     | 	\
-+			 MPOL_MF_MOVE_ALL |	\
-+			 MPOL_MF_LAZY)
+ #ifdef __KERNEL__
  
- /*
-  * Internal flags that share the struct mempolicy flags word with
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -31,6 +31,8 @@ extern int migrate_vmas(struct mm_struct
- extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
-+
-+extern int migrate_pages_unmap_only(struct list_head *);
- #else
- #define PAGE_MIGRATION 0
- 
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -164,8 +164,9 @@ int page_referenced_one(struct page *, s
- 
- enum ttu_flags {
- 	TTU_UNMAP = 0,			/* unmap mode */
--	TTU_MIGRATION = 1,		/* migration mode */
--	TTU_MUNLOCK = 2,		/* munlock mode */
-+	TTU_MIGRATE_DIRECT = 1,		/* direct migration mode */
-+	TTU_MIGRATE_DEFERRED = 2,	/* deferred [lazy] migration mode */
-+	TTU_MUNLOCK = 4,		/* munlock mode */
- 	TTU_ACTION_MASK = 0xff,
- 
- 	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1094,8 +1094,7 @@ static long do_mbind(unsigned long start
- 	int err;
- 	LIST_HEAD(pagelist);
- 
--	if (flags & ~(unsigned long)(MPOL_MF_STRICT |
--				     MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
-+  	if (flags & ~(unsigned long)MPOL_MF_VALID)
- 		return -EINVAL;
- 	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
- 		return -EPERM;
-@@ -1154,21 +1153,26 @@ static long do_mbind(unsigned long start
- 	vma = check_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
- 
--	err = PTR_ERR(vma);
--	if (!IS_ERR(vma)) {
--		int nr_failed = 0;
--
-+	err = PTR_ERR(vma);	/* maybe ... */
-+	if (!IS_ERR(vma))
- 		err = mbind_range(mm, start, end, new);
- 
-+	if (!err) {
-+		int nr_failed = 0;
-+
- 		if (!list_empty(&pagelist)) {
--			nr_failed = migrate_pages(&pagelist, new_vma_page,
-+			if (flags & MPOL_MF_LAZY)
-+				nr_failed = migrate_pages_unmap_only(&pagelist);
-+			else {
-+				nr_failed = migrate_pages(&pagelist, new_vma_page,
- 						(unsigned long)vma,
- 						false, true);
-+			}
- 			if (nr_failed)
- 				putback_lru_pages(&pagelist);
- 		}
- 
--		if (!err && nr_failed && (flags & MPOL_MF_STRICT))
-+		if (nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
- 	} else
- 		putback_lru_pages(&pagelist);
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -802,7 +802,7 @@ static int __unmap_and_move(struct page 
- 	}
- 
- 	/* Establish migration ptes or remove ptes */
--	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-+	try_to_unmap(page, TTU_MIGRATE_DIRECT|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
- 
- skip_unmap:
- 	if (!page_mapped(page))
-@@ -920,7 +920,7 @@ static int unmap_and_move_huge_page(new_
- 	if (PageAnon(hpage))
- 		anon_vma = page_get_anon_vma(hpage);
- 
--	try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-+	try_to_unmap(hpage, TTU_MIGRATE_DIRECT|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
- 
- 	if (!page_mapped(hpage))
- 		rc = move_to_new_page(new_hpage, hpage, 1, mode);
-@@ -950,6 +950,98 @@ static int unmap_and_move_huge_page(new_
+@@ -261,6 +262,8 @@ static inline int vma_migratable(struct 
+ 	return 1;
  }
  
- /*
-+ * Lazy migration:  just unmap pages, moving anon pages to swap cache, if
-+ * necessary.  Migration will occur, if policy dictates, when a task faults
-+ * an unmapped page back into its page table--i.e., on "first touch" after
-+ * unmapping.  Note that migrate-on-fault only migrates pages whose mapping
-+ * [e.g., file system] supplies a migratepage op, so we skip pages that
-+ * wouldn't migrate on fault.
++extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
++
+ #else
+ 
+ struct mempolicy {};
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1117,6 +1117,9 @@ static long do_mbind(unsigned long start
+ 	if (IS_ERR(new))
+ 		return PTR_ERR(new);
+ 
++	if (flags & MPOL_MF_LAZY)
++		new->flags |= MPOL_F_MOF;
++
+ 	/*
+ 	 * If we are using the default policy then operation
+ 	 * on discontinuous address spaces is okay after all
+@@ -2072,6 +2075,82 @@ mpol_shared_policy_lookup(struct shared_
+ 	return pol;
+ }
+ 
++/**
++ * mpol_misplaced - check whether current page node is valid in policy
 + *
-+ * Pages are placed back on the lru whether or not they were successfully
-+ * unmapped.  Like migrate_pages().
++ * @page   - page to be checked
++ * @vma    - vm area where page mapped
++ * @addr   - virtual address where page mapped
 + *
-+ * Unline migrate_pages(), this function is only called in the context of
-+ * a task that is unmapping it's own pages while holding its map semaphore
-+ * for write.
++ * Lookup current policy node id for vma,addr and "compare to" page's
++ * node id.
++ *
++ * Returns:
++ * 	-1	- not misplaced, page is in the right node
++ * 	node	- node id where the page should be
++ *
++ * Policy determination "mimics" alloc_page_vma().
++ * Called from fault path where we know the vma and faulting address.
 + */
-+int migrate_pages_unmap_only(struct list_head *pagelist)
++int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
 +{
-+	struct page *page;
-+	struct page *page2;
-+	int nr_failed = 0;
-+	int nr_unmapped = 0;
++	struct mempolicy *pol;
++	struct zone *zone;
++	int curnid = page_to_nid(page);
++	unsigned long pgoff;
++	int polnid = -1;
++	int ret = -1;
 +
-+	list_for_each_entry_safe(page, page2, pagelist, lru) {
-+		int ret;
++	BUG_ON(!vma);
 +
-+		cond_resched();
++	pol = get_vma_policy(current, vma, addr);
++	if (!(pol->flags & MPOL_F_MOF))
++		goto out;
 +
-+		/*
-+		 * Give up easily.  We ARE being lazy.
-+		 */
-+		if (page_count(page) == 1)
-+			goto next;
++	switch (pol->mode) {
++	case MPOL_INTERLEAVE:
++		BUG_ON(addr >= vma->vm_end);
++		BUG_ON(addr < vma->vm_start);
 +
-+		if (unlikely(PageTransHuge(page)))
-+			if (unlikely(split_huge_page(page)))
-+				goto next;
++		pgoff = vma->vm_pgoff;
++		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
++		polnid = offset_il_node(pol, vma, pgoff);
++		break;
 +
-+		if (!trylock_page(page))
-+			goto next;
-+
-+		if (PageKsm(page) || PageWriteback(page))
-+			goto unlock;
-+
-+		/*
-+		 * see comments in unmap_and_move()
-+		 */
-+		if (!page->mapping)
-+			goto unlock;
-+
-+		if (PageAnon(page)) {
-+			if (!PageSwapCache(page) && !add_to_swap(page)) {
-+				nr_failed++;
-+				goto unlock;
-+			}
-+		} else {
-+			struct address_space *mapping = page_mapping(page);
-+			BUG_ON(!mapping);
-+			if (!mapping->a_ops->migratepage)
-+				goto unlock;
-+		}
-+
-+		ret = try_to_unmap(page,
-+	             TTU_MIGRATE_DEFERRED|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-+		if (ret != SWAP_SUCCESS || page_mapped(page))
-+			nr_failed++;
++	case MPOL_PREFERRED:
++		if (pol->flags & MPOL_F_LOCAL)
++			polnid = numa_node_id();
 +		else
-+			nr_unmapped++;
++			polnid = pol->v.preferred_node;
++		break;
 +
-+unlock:
-+		unlock_page(page);
-+next:
-+		list_del(&page->lru);
-+		dec_zone_page_state(page, NR_ISOLATED_ANON +
-+				page_is_file_cache(page));
-+		putback_lru_page(page);
++	case MPOL_BIND:
++		/*
++		 * allows binding to multiple nodes.
++		 * use current page if in policy nodemask,
++		 * else select nearest allowed node, if any.
++		 * If no allowed nodes, use current [!misplaced].
++		 */
++		if (node_isset(curnid, pol->v.nodes))
++			goto out;
++		(void)first_zones_zonelist(
++				node_zonelist(numa_node_id(), GFP_HIGHUSER),
++				gfp_zone(GFP_HIGHUSER),
++				&pol->v.nodes, &zone);
++		polnid = zone->node;
++		break;
 +
++	default:
++		BUG();
 +	}
++	if (curnid != polnid)
++		ret = polnid;
++out:
++	mpol_cond_put(pol);
 +
-+	/*
-+	 * Drain local per cpu pagevecs so fault path can find the the pages
-+	 * on the lru.  If we got migrated during the loop above, we may
-+	 * have left pages cached on other cpus.  But, we'll live with that
-+	 * here to avoid lru_add_drain_all().
-+	 * TODO:  mechanism to drain on only those cpus we've been
-+	 *        scheduled on between two points--e.g., during the loop.
-+	 */
-+	if (nr_unmapped)
-+		lru_add_drain();
-+
-+	return nr_failed;
++	return ret;
 +}
 +
-+/*
-  * migrate_pages
-  *
-  * The function takes one list of pages to migrate and a function
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1288,12 +1288,13 @@ int try_to_unmap_one(struct page *page, 
- 			 * pte. do_swap_page() will wait until the migration
- 			 * pte is removed and then restart fault handling.
- 			 */
--			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATION);
-+			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATE_DIRECT);
- 			entry = make_migration_entry(page, pte_write(pteval));
- 		}
- 		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
- 		BUG_ON(pte_file(*pte));
--	} else if (PAGE_MIGRATION && (TTU_ACTION(flags) == TTU_MIGRATION)) {
-+	} else if (PAGE_MIGRATION &&
-+		         (TTU_ACTION(flags) == TTU_MIGRATE_DIRECT)) {
- 		/* Establish migration entry for a file page */
- 		swp_entry_t entry;
- 		entry = make_migration_entry(page, pte_write(pteval));
-@@ -1499,7 +1500,7 @@ static int try_to_unmap_anon(struct page
- 		 * locking requirements of exec(), migration skips
- 		 * temporary VMAs until after exec() completes.
- 		 */
--		if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
-+		if (PAGE_MIGRATION && (flags & TTU_MIGRATE_DIRECT) &&
- 				is_vma_temporary_stack(vma))
- 			continue;
- 
+ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ {
+ 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
 
 
