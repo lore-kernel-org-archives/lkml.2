@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032968Ab2CQACT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 20:02:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40344 "EHLO
+	id S1032797Ab2CQACP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 20:02:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38397 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032073Ab2CPXgM (ORCPT
+	with ESMTP id S1032085Ab2CPXgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:36:12 -0400
+	Fri, 16 Mar 2012 19:36:14 -0400
 From: Tejun Heo <tj@kernel.org>
 To: glommer@parallels.com, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
         ctalbott@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/10] cgroup: move cgroup_clear_directory() call out of cgroup_populate_dir()
-Date: Fri, 16 Mar 2012 16:35:54 -0700
-Message-Id: <1331940963-15756-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/10] cgroup: build list of all cgroups under a given cgroupfs_root
+Date: Fri, 16 Mar 2012 16:35:55 -0700
+Message-Id: <1331940963-15756-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331940963-15756-1-git-send-email-tj@kernel.org>
 References: <1331940963-15756-1-git-send-email-tj@kernel.org>
@@ -22,42 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_populate_dir() currently clears all files and then repopulate
-the directory; however, the clearing part is only useful when it's
-called from cgroup_remount().  Relocate the invocation to
-cgroup_remount().
-
-This is to prepare for further cgroup file handling updates.
+Build a list of all cgroups anchored at cgroupfs_root->allcg_list and
+going through cgroup->allcg_node.  The list is protected by
+cgroup_mutex and will be used to improve cgroup file handling.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ include/linux/cgroup.h |    2 ++
+ kernel/cgroup.c        |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 501adb1..908f26f 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -191,6 +191,8 @@ struct cgroup {
+ 	 */
+ 	struct list_head css_sets;
+ 
++	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
++
+ 	/*
+ 	 * Linked list running through all cgroups that can
+ 	 * potentially be reaped by the release agent. Protected by
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index deeab87..2e2f93b 100644
+index 2e2f93b..fceee52 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1313,7 +1313,8 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
- 		goto out_unlock;
- 	}
+@@ -127,6 +127,9 @@ struct cgroupfs_root {
+ 	/* A list running through the active hierarchies */
+ 	struct list_head root_list;
  
--	/* (re)populate subsystem files */
-+	/* clear out any existing files and repopulate subsystem files */
-+	cgroup_clear_directory(cgrp->dentry);
- 	cgroup_populate_dir(cgrp);
++	/* All cgroups on this root, cgroup_mutex protected */
++	struct list_head allcg_list;
++
+ 	/* Hierarchy-specific flags */
+ 	unsigned long flags;
  
- 	if (opts.release_agent)
-@@ -3648,9 +3649,6 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
- 	int err;
- 	struct cgroup_subsys *ss;
+@@ -1350,11 +1353,14 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ static void init_cgroup_root(struct cgroupfs_root *root)
+ {
+ 	struct cgroup *cgrp = &root->top_cgroup;
++
+ 	INIT_LIST_HEAD(&root->subsys_list);
+ 	INIT_LIST_HEAD(&root->root_list);
++	INIT_LIST_HEAD(&root->allcg_list);
+ 	root->number_of_cgroups = 1;
+ 	cgrp->root = root;
+ 	cgrp->top_cgroup = cgrp;
++	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+ 	init_cgroup_housekeeping(cgrp);
+ }
  
--	/* First clear out any existing files */
--	cgroup_clear_directory(cgrp->dentry);
--
- 	err = cgroup_add_files(cgrp, NULL, files, ARRAY_SIZE(files));
- 	if (err < 0)
- 		return err;
+@@ -3794,6 +3800,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	/* The cgroup directory was pre-locked for us */
+ 	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
+ 
++	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
++
+ 	err = cgroup_populate_dir(cgrp);
+ 	/* If err < 0, we have a half-filled directory - oh well ;) */
+ 
+@@ -4002,6 +4010,8 @@ again:
+ 	list_del_init(&cgrp->sibling);
+ 	cgroup_unlock_hierarchy(cgrp->root);
+ 
++	list_del_init(&cgrp->allcg_node);
++
+ 	d = dget(cgrp->dentry);
+ 
+ 	cgroup_d_remove_dir(d);
 -- 
 1.7.7.3
 
