@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761024Ab2CPJns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 05:43:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43463 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760873Ab2CPJnr (ORCPT
+	id S1030892Ab2CPJsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 05:48:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44894 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030616Ab2CPJsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 05:43:47 -0400
-Message-ID: <4F630B4D.3040508@suse.cz>
-Date: Fri, 16 Mar 2012 10:43:41 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+	Fri, 16 Mar 2012 05:48:08 -0400
+Date: Fri, 16 Mar 2012 10:48:02 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: mingo@redhat.com, levinsasha928@gmail.com, linux-kernel@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/core] ntp: Fix integer overflow when setting time
+In-Reply-To: <4F62978A.7000009@zytor.com>
+Message-ID: <alpine.LFD.2.02.1203161047220.2466@ionos>
+References: <1331829374-31543-2-git-send-email-levinsasha928@gmail.com> <tip-a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33@git.kernel.org> <4F62978A.7000009@zytor.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Du, Alek" <alek.du@intel.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
-References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com> <20120315100812.6cda2ef9@pyramind.ukuu.org.uk> <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
-In-Reply-To: <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 11:14 AM, Du, Alek wrote:
-> Alan,
-> 
-> I agree with you for the case of multiple writers to the tty buffer.
-> 
-> But there is another case that cause kernel hang: driver is writing data to tty, while app shutdown the port or flush through IOCTL. The buf.tail is set to NULL, here is the log:
-> 
-> 
-> <1>[ 4713.451954] BUG: unable to handle kernel NULL pointer dereference at
-> 00000004
+On Thu, 15 Mar 2012, H. Peter Anvin wrote:
 
-The trace only suggests that you don't increment tty reference count in
-irq properly. If you did that, you would not have tty buffer gone by
-concurrent shutdown.
+> On 03/15/2012 02:53 PM, tip-bot for Sasha Levin wrote:
+> > Commit-ID:  a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33
+> > Gitweb:     http://git.kernel.org/tip/a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33
+> > Author:     Sasha Levin <levinsasha928@gmail.com>
+> > AuthorDate: Thu, 15 Mar 2012 12:36:14 -0400
+> > Committer:  Thomas Gleixner <tglx@linutronix.de>
+> > CommitDate: Thu, 15 Mar 2012 21:41:34 +0100
+> > 
+> > ntp: Fix integer overflow when setting time
+> > 
+> > 'long secs' is passed as divisor to div_s64, which accepts a 32bit
+> > divisor. On 64bit machines that value is trimmed back from 8 bytes
+> > back to 4, causing a divide by zero when the number is bigger than
+> > (1 << 32) - 1 and all 32 lower bits are 0.
+> > 
+> > Use div64_long() instead.
+> > 
+> 
+> Perhaps we should use the same kind of multiply-and-shift tricks we're
+> doing for jiffies conversion?  If nothing else it ought to perform better.
 
-For the latter case (flush via ioctl), your patch won't help for
-tty_prepare_string*, as we return pointer to the buffer which is freed
-by the flush, right?
-
-thanks,
--- 
-js
-suse labs
+It's not a hotpath where performance matters, but divide by zero does :)
