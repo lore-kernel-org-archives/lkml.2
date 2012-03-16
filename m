@@ -1,64 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946014Ab2CPXhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:37:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1162096Ab2CQAAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 20:00:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38397 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946003Ab2CPXhg (ORCPT
+	with ESMTP id S1162031Ab2CPXgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:37:36 -0400
-Message-Id: <20120316233447.389460188@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:34:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Denis GNUtoo Carikli <GNUtoo@no-log.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 01/38] ASoC: neo1973: fix neo1973 wm8753 initialization
-In-Reply-To: <20120316233422.GA5461@kroah.com>
+	Fri, 16 Mar 2012 19:36:22 -0400
+From: Tejun Heo <tj@kernel.org>
+To: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH 06/10] cgroup: convert memcg controller to the new cftype interface
+Date: Fri, 16 Mar 2012 16:35:59 -0700
+Message-Id: <1331940963-15756-7-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1331940963-15756-1-git-send-email-tj@kernel.org>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Convert memcg to use the new cftype based interface. memcg is rather
+special in that
 
-------------------
+* memsw_cgroup_files creation is dependent on do_swap_account.
 
-From: Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>
+* ->populate() is abused for mem_cgroup_sockets_init().
 
-commit b2ccf065f7b23147ed135a41b01d05a332ca6b7e upstream.
+memsw_cgroup_files is converted to use CGROUP_SUBSYS_CFTYPES_COND(),
+where the condition is really_do_swap_account.
 
-The neo1973 driver had wrong codec name which prevented the "sound card"
-from appearing.
+->populate() is preserved for register_kmem_files() invocation but I
+strongly urge moving the initialization to the tail of ->create().  If
+there's something which can't be done from ->create(), which isn't
+clear from the comment, please let me know.
 
-Signed-off-by: Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Greg Thelen <gthelen@google.com>
 ---
- sound/soc/samsung/neo1973_wm8753.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/memcontrol.c           |   31 ++++++-------------------------
+ net/ipv4/tcp_memcontrol.c |    8 ++++----
+ 2 files changed, 10 insertions(+), 29 deletions(-)
 
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -425,7 +425,7 @@ static struct snd_soc_dai_link neo1973_d
- 	.platform_name = "samsung-audio",
- 	.cpu_dai_name = "s3c24xx-iis",
- 	.codec_dai_name = "wm8753-hifi",
--	.codec_name = "wm8753-codec.0-001a",
-+	.codec_name = "wm8753.0-001a",
- 	.init = neo1973_wm8753_init,
- 	.ops = &neo1973_hifi_ops,
- },
-@@ -434,7 +434,7 @@ static struct snd_soc_dai_link neo1973_d
- 	.stream_name = "Voice",
- 	.cpu_dai_name = "dfbmcs320-pcm",
- 	.codec_dai_name = "wm8753-voice",
--	.codec_name = "wm8753-codec.0-001a",
-+	.codec_name = "wm8753.0-001a",
- 	.ops = &neo1973_voice_ops,
- },
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ae2f0a8..f2221ce 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4665,7 +4665,9 @@ static struct cftype mem_cgroup_files[] = {
+ 		.mode = S_IRUGO,
+ 	},
+ #endif
++	{ },	/* terminate */
  };
-
++CGROUP_SUBSYS_CFTYPES(mem_cgroup_subsys, mem_cgroup_files);
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ static struct cftype memsw_cgroup_files[] = {
+@@ -4694,20 +4696,10 @@ static struct cftype memsw_cgroup_files[] = {
+ 		.trigger = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read,
+ 	},
++	{ }	/* terminate */
+ };
+-
+-static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
+-{
+-	if (!do_swap_account)
+-		return 0;
+-	return cgroup_add_files(cont, ss, memsw_cgroup_files,
+-				ARRAY_SIZE(memsw_cgroup_files));
+-};
+-#else
+-static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
+-{
+-	return 0;
+-}
++CGROUP_SUBSYS_CFTYPES_COND(mem_cgroup_subsys, memsw_cgroup_files,
++			   really_do_swap_account);
+ #endif
+ 
+ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+@@ -4963,18 +4955,7 @@ static void mem_cgroup_destroy(struct cgroup *cont)
+ static int mem_cgroup_populate(struct cgroup_subsys *ss,
+ 				struct cgroup *cont)
+ {
+-	int ret;
+-
+-	ret = cgroup_add_files(cont, ss, mem_cgroup_files,
+-				ARRAY_SIZE(mem_cgroup_files));
+-
+-	if (!ret)
+-		ret = register_memsw_files(cont, ss);
+-
+-	if (!ret)
+-		ret = register_kmem_files(cont, ss);
+-
+-	return ret;
++	return register_kmem_files(cont, ss);
+ }
+ 
+ #ifdef CONFIG_MMU
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index e714c68..21f48f3 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -35,7 +35,9 @@ static struct cftype tcp_files[] = {
+ 		.trigger = tcp_cgroup_reset,
+ 		.read_u64 = tcp_cgroup_read,
+ 	},
++	{ }	/* terminate */
+ };
++CGROUP_SUBSYS_CFTYPES(mem_cgroup_subsys, tcp_files);
+ 
+ static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
+ {
+@@ -65,7 +67,7 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 
+ 	cg_proto = tcp_prot.proto_cgroup(memcg);
+ 	if (!cg_proto)
+-		goto create_files;
++		return 0;
+ 
+ 	tcp = tcp_from_cgproto(cg_proto);
+ 
+@@ -88,9 +90,7 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	cg_proto->sockets_allocated = &tcp->tcp_sockets_allocated;
+ 	cg_proto->memcg = memcg;
+ 
+-create_files:
+-	return cgroup_add_files(cgrp, ss, tcp_files,
+-				ARRAY_SIZE(tcp_files));
++	return 0;
+ }
+ EXPORT_SYMBOL(tcp_init_cgroup);
+ 
+-- 
+1.7.7.3
 
