@@ -1,60 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab2CPRkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:40:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58107 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab2CPRkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:40:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="121736334"
-Date: Fri, 16 Mar 2012 18:48:02 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-input@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
-Subject: Re: [PATCH v3 2/2] input: add driver support for MAX8997-haptic
-Message-ID: <20120316174802.GI20524@sortiz-mobl>
-References: <4F5DB459.9090701@samsung.com>
- <20120314084652.GC3964@core.coreip.homeip.net>
- <4F60AF8E.7050900@samsung.com>
- <20120314154828.GA24964@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314154828.GA24964@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753369Ab2CPRkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:40:07 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52783 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2CPRj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 13:39:56 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V4 04/10] memcg: Add HugeTLB extension
+Date: Fri, 16 Mar 2012 23:09:24 +0530
+Message-Id: <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12031617-5816-0000-0000-000001C71785
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-On Wed, Mar 14, 2012 at 08:48:28AM -0700, Dmitry Torokhov wrote:
-> On Wed, Mar 14, 2012 at 11:47:42PM +0900, Chanwoo Choi wrote:
-> > Hi Dmitry,
-> > 
-> > > This is not proper locking between playing effect and suspend. Now that
-> > > you are using workqueue you need to synchronize access with it, not with
-> > > play_effect method.
-> > > 
-> > > Does the following patch work for you?
-> > > 
-> > 
-> > Your patch is worked on TRATS board based on EXYNOS4210 but, you should
-> > apply following patch because 'chip->enabled' is used on
-> > max8997_haptic_configure() function to enable/disable haptic motor.
-> 
-> OK, excellent. I'll pick up this fix and apply the driver for 3.4 queue,
-> thanks!
-Your patch depends on the MFD changes Choi sent along the input driver. I
-think it would make more sense for me to take it. What do you think ?
+This patch implements a memcg extension that allows us to control
+HugeTLB allocations via memory controller.
 
-Cheers,
-Samuel.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/linux/hugetlb.h    |    1 +
+ include/linux/memcontrol.h |   42 +++++++++++++
+ init/Kconfig               |    8 +++
+ mm/hugetlb.c               |    2 +-
+ mm/memcontrol.c            |  138 ++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 190 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index a2675b0..1f70068 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -243,6 +243,7 @@ struct hstate *size_to_hstate(unsigned long size);
+ #define HUGE_MAX_HSTATE 1
+ #endif
+ 
++extern int hugetlb_max_hstate;
+ extern struct hstate hstates[HUGE_MAX_HSTATE];
+ extern unsigned int default_hstate_idx;
+ 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 4d34356..320dbad 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -429,5 +429,47 @@ static inline void sock_release_memcg(struct sock *sk)
+ {
+ }
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
++#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
++extern int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
++					  struct mem_cgroup **ptr);
++extern void mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
++					     struct mem_cgroup *memcg,
++					     struct page *page);
++extern void mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
++					     struct page *page);
++extern void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
++					      struct mem_cgroup *memcg);
++
++#else
++static inline int
++mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
++						 struct mem_cgroup **ptr)
++{
++	return 0;
++}
++
++static inline void
++mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
++				 struct mem_cgroup *memcg,
++				 struct page *page)
++{
++	return;
++}
++
++static inline void
++mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
++				 struct page *page)
++{
++	return;
++}
++
++static inline void
++mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
++				  struct mem_cgroup *memcg)
++{
++	return;
++}
++#endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+ #endif /* _LINUX_MEMCONTROL_H */
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..f0eb8aa 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -725,6 +725,14 @@ config CGROUP_PERF
+ 
+ 	  Say N if unsure.
+ 
++config MEM_RES_CTLR_HUGETLB
++	bool "Memory Resource Controller HugeTLB Extension (EXPERIMENTAL)"
++	depends on CGROUP_MEM_RES_CTLR && HUGETLB_PAGE && EXPERIMENTAL
++	default n
++	help
++	  Add HugeTLB management to memory resource controller. When you
++	  enable this, you can put a per cgroup limit on HugeTLB usage.
++
+ menuconfig CGROUP_SCHED
+ 	bool "Group CPU scheduler"
+ 	default n
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index ebe245c..c672187 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+ static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+-static int hugetlb_max_hstate;
++int hugetlb_max_hstate;
+ unsigned int default_hstate_idx;
+ struct hstate hstates[HUGE_MAX_HSTATE];
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6728a7a..4b36c5e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -235,6 +235,10 @@ struct mem_cgroup {
+ 	 */
+ 	struct res_counter memsw;
+ 	/*
++	 * the counter to account for hugepages from hugetlb.
++	 */
++	struct res_counter hugepage[HUGE_MAX_HSTATE];
++	/*
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+ 	 */
+@@ -3156,6 +3160,128 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
+ }
+ #endif
+ 
++#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
++static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
++{
++	int idx;
++	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
++		if (memcg->hugepage[idx].usage > 0)
++			return 1;
++	}
++	return 0;
++}
++
++int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
++				   struct mem_cgroup **ptr)
++{
++	int ret = 0;
++	struct mem_cgroup *memcg;
++	struct res_counter *fail_res;
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (mem_cgroup_disabled())
++		return 0;
++again:
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
++	if (!memcg)
++		memcg = root_mem_cgroup;
++	if (mem_cgroup_is_root(memcg)) {
++		rcu_read_unlock();
++		goto done;
++	}
++	if (!css_tryget(&memcg->css)) {
++		rcu_read_unlock();
++		goto again;
++	}
++	rcu_read_unlock();
++
++	ret = res_counter_charge(&memcg->hugepage[idx], csize, &fail_res);
++	css_put(&memcg->css);
++done:
++	*ptr = memcg;
++	return ret;
++}
++
++void mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
++				      struct mem_cgroup *memcg,
++				      struct page *page)
++{
++	struct page_cgroup *pc;
++
++	if (mem_cgroup_disabled())
++		return;
++
++	pc = lookup_page_cgroup(page);
++	lock_page_cgroup(pc);
++	if (unlikely(PageCgroupUsed(pc))) {
++		unlock_page_cgroup(pc);
++		mem_cgroup_hugetlb_uncharge_memcg(idx, nr_pages, memcg);
++		return;
++	}
++	pc->mem_cgroup = memcg;
++	/*
++	 * We access a page_cgroup asynchronously without lock_page_cgroup().
++	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
++	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
++	 * before USED bit, we need memory barrier here.
++	 * See mem_cgroup_add_lru_list(), etc.
++	 */
++	smp_wmb();
++	SetPageCgroupUsed(pc);
++
++	unlock_page_cgroup(pc);
++	return;
++}
++
++void mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
++				      struct page *page)
++{
++	struct page_cgroup *pc;
++	struct mem_cgroup *memcg;
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (mem_cgroup_disabled())
++		return;
++
++	pc = lookup_page_cgroup(page);
++	if (unlikely(!PageCgroupUsed(pc)))
++		return;
++
++	lock_page_cgroup(pc);
++	if (!PageCgroupUsed(pc)) {
++		unlock_page_cgroup(pc);
++		return;
++	}
++	memcg = pc->mem_cgroup;
++	pc->mem_cgroup = root_mem_cgroup;
++	ClearPageCgroupUsed(pc);
++	unlock_page_cgroup(pc);
++
++	if (!mem_cgroup_is_root(memcg))
++		res_counter_uncharge(&memcg->hugepage[idx], csize);
++	return;
++}
++
++void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
++				       struct mem_cgroup *memcg)
++{
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (mem_cgroup_disabled())
++		return;
++
++	if (!mem_cgroup_is_root(memcg))
++		res_counter_uncharge(&memcg->hugepage[idx], csize);
++	return;
++}
++#else
++static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
++{
++	return 0;
++}
++#endif /* CONFIG_MEM_RES_CTLR_HUGETLB */
++
+ /*
+  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
+  * page belongs to.
+@@ -4887,6 +5013,7 @@ err_cleanup:
+ static struct cgroup_subsys_state * __ref
+ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ {
++	int idx;
+ 	struct mem_cgroup *memcg, *parent;
+ 	long error = -ENOMEM;
+ 	int node;
+@@ -4929,9 +5056,14 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 		 * mem_cgroup(see mem_cgroup_put).
+ 		 */
+ 		mem_cgroup_get(parent);
++		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
++			res_counter_init(&memcg->hugepage[idx],
++					 &parent->hugepage[idx]);
+ 	} else {
+ 		res_counter_init(&memcg->res, NULL);
+ 		res_counter_init(&memcg->memsw, NULL);
++		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
++			res_counter_init(&memcg->hugepage[idx], NULL);
+ 	}
+ 	memcg->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&memcg->oom_notify);
+@@ -4951,6 +5083,12 @@ static int mem_cgroup_pre_destroy(struct cgroup_subsys *ss,
+ 					struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	/*
++	 * Don't allow memcg removal if we have HugeTLB resource
++	 * usage.
++	 */
++	if (mem_cgroup_have_hugetlb_usage(memcg))
++		return -EBUSY;
+ 
+ 	return mem_cgroup_force_empty(memcg, false);
+ }
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9
+
