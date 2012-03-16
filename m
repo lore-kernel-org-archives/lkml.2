@@ -1,235 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032389Ab2CPHOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 03:14:32 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51014 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030370Ab2CPHO3 (ORCPT
+	id S1032433Ab2CPHQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 03:16:52 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35186 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab2CPHQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 03:14:29 -0400
-Message-ID: <4F62E841.70405@linux.vnet.ibm.com>
-Date: Fri, 16 Mar 2012 12:44:09 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Fri, 16 Mar 2012 03:16:50 -0400
+Date: Fri, 16 Mar 2012 10:18:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 1/3] Drivers: hv: Support the newly introduced KVP
+ messages in the driver
+Message-ID: <20120316071858.GH3220@mwanda>
+References: <1331858893-775-1-git-send-email-kys@microsoft.com>
+ <1331858925-827-1-git-send-email-kys@microsoft.com>
+ <20120316054556.GH3163@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481B7666A2@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Kay Sievers <kay@vrfy.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        skannan@codeaurora.org, Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper
- is not yet available
-References: <201203032122.36745.chunkeey@googlemail.com> <201203140110.40671.rjw@sisk.pl> <4F60B44D.1020600@linux.vnet.ibm.com> <201203142354.04256.rjw@sisk.pl>
-In-Reply-To: <201203142354.04256.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12031607-5564-0000-0000-000001D2ADFA
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkEkAx9hr54EJ73W"
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B7666A2@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F62E8D8.005A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 04:24 AM, Rafael J. Wysocki wrote:
 
-> On Wednesday, March 14, 2012, Srivatsa S. Bhat wrote:
->> On 03/14/2012 05:40 AM, Rafael J. Wysocki wrote:
->>
->>> On Wednesday, March 14, 2012, Kay Sievers wrote:
->>>> On Tue, Mar 13, 2012 at 20:42, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>>>> On Sunday, March 11, 2012, Kay Sievers wrote:
->>>>>> On Sat, Mar 10, 2012 at 00:36, Greg KH <gregkh@linuxfoundation.org> wrote:
->>>>
->>>>>>> What does uevent have to do with things here?
->>>>>>
->>>>>> I don't think that the firmware loader should care about the
->>>>>> usermodehelper at all, and that stuff fiddling should just be removed
->>>>>> from the firmware class.
->>>>>
->>>>> It's there to warn people that their drivers do stupid things like
->>>>> loading frimware during system resume, which is guaranteed not to work.
->>>>>
->>>>> IOW, it's there very much on purpose.
->>>>
->>>> Using the /sbin/hotplug is no case that needs any warning. It' such a
->>>> broken model these days, that firmware loading is the least problem
->>>> that occurs with it.
->>>>
->>>>>> Forking /sbin/hotplug is disabled by default, it is a broken concept,
->>>>>> and it cannot work reliably on today's systems.
->>>>>>
->>>>>> Firmware is not loaded by /sbin/hotplug since many years, but by udev
->>>>>> or whatever service handles uevents, like ueventd on android.
->>>>>
->>>>> Which I'm not sure why is relevant here.
->>>>
->>>> It is relevant in the sense that the firmware loader should not even
->>>> know that a uevent *can* cause a usermodehelper exec() if it runs in
->>>> legacy mode. The firmware loader just has no business in fiddling with
->>>> the details of driver core legacy stuff. I don't think his warning
->>>> makes much sense.
->>>
->>> But that warning actually triggers for drivers that attempt to use
->>> request_firmware() during system resume, even though /sbin/hotplug isn't
->>> used any more.
->>>
->>
->>
->> I agree with Rafael about why the warning and the bail out is required,
->> including the part about the races with freezer which he explained in his
->> other mail. These problems have already been well documented too.
->> (See Documentation/power/freezing-of-tasks.txt).
->>
->>> usermodehelper_is_disabled() means "we are in the middle of system power
->>> transition" rather than anything else (I agree it should be called
->>> suspend_in_progress() or something similar these days).
->>>
->>
->>
->> How about this patch then?
->>
->> ---
->>
->> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> Subject: PM/firmware loader: Use better name for usermodehelper_is_disabled()
->>
->> Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>
->> | usermodehelper_is_disabled() means "we are in the middle of system power
->> | transition" rather than anything else (I agree it should be called
->> | suspend_in_progress() or something similar these days).
->>
->>
->> But simply renaming usermodehelper_is_disabled() to suspend_in_progress()
->> isn't the best thing to do since that would be misleading because suspend
->> transitions are begun much before usermodehelpers are disabled.
->>
->> Apart from that, we don't want people to suddenly start abusing this function
->> in future in a totally different context to check if suspend is in progress.
->>
->> So, add an alias specific to firmware loaders alone, that will internally
->> call usermodehelpers_is_disabled().
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  drivers/base/firmware_class.c |   12 +++++++++++-
->>  1 files changed, 11 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> index 6c9387d..9e401e1 100644
->> --- a/drivers/base/firmware_class.c
->> +++ b/drivers/base/firmware_class.c
->> @@ -510,6 +510,8 @@ static void fw_destroy_instance(struct firmware_priv *fw_priv)
->>  	device_unregister(f_dev);
->>  }
->>  
->> +#define suspend_in_progress()	usermodehelper_is_disabled()
-> 
-> This looks like an overstretch to me.  I think a comment would be sufficient.
+--vkEkAx9hr54EJ73W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Mar 16, 2012 at 06:33:35AM +0000, KY Srinivasan wrote:
+>=20
+>=20
+> > -----Original Message-----
+> > From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> > Sent: Friday, March 16, 2012 1:46 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@su=
+se.com;
+> > Alan Stern
+> > Subject: Re: [PATCH 1/3] Drivers: hv: Support the newly introduced KVP
+> > messages in the driver
+> >=20
+> > On Thu, Mar 15, 2012 at 05:48:43PM -0700, K. Y. Srinivasan wrote:
+> > >  	/*
+> > >  	 * The windows host expects the key/value pair to be encoded
+> > >  	 * in utf16.
+> > >  	 */
+> > >  	keylen =3D utf8s_to_utf16s(key_name, strlen(key_name),
+> > UTF16_HOST_ENDIAN,
+> > > -				(wchar_t *) kvp_data->data.key,
+> > > +				(wchar_t *) kvp_data->key,
+> > >  				HV_KVP_EXCHANGE_MAX_KEY_SIZE / 2);
+> > > -	kvp_data->data.key_size =3D 2*(keylen + 1); /* utf16 encoding */
+> > > +	kvp_data->key_size =3D 2*(keylen + 1); /* utf16 encoding */
+> > > +
+> >=20
+> > I feel like a jerk for asking this, but is the output length correct
+> > here?  It seems like we could go over again.  Also utf8s_to_utf16s()
+> > can return negative error codes, why do we ignore those?
+>=20
+> We are returning the strings back to the host here. There are checks else=
+where
+> in the code to ensure that all strings we return to the host can be accom=
+modated
+> in the available space. For the most part these are strings that the host=
+ gave us in the=20
+> first place that have already been validated.  Furthermore, there are che=
+cks on the=20
+> host side to ensure that the returned size parameters are consistent with=
+ the protocol=20
+> definitions for the key value pair. For instance let us say somehow we go=
+t into a=20
+> situation where the converted utf16 string occupied the entire MAX sized =
+array=20
+> without any room for the terminating character and we set the length para=
+meter=20
+> to 2 more than the MAX value as this code would do. The host would simply=
+ discard the=20
+> message as an illegal message. This would be more appropriate than sendin=
+g a=20
+> truncated key or value.
+>=20
+
+Uh...  Looking at it again, this code is clearly off by one.  If
+we're not going to hit the limit, then we're not going to truncate,
+so that's not a concern.  Let's just use the correct limit here.
+
+The problem is that off-by-ones tend to reproduce by copy and paste.
+It's best to never introduce any, even harmless ones.
+
+Either that or add a comment.  /* Don't care about wrong limitter
+because we trust the input. */.
+
+> With regards to the negative values, negative values indicate a failure o=
+f some sort
+> in the conversion. Since the host is the recipient here, host will correc=
+tly deal with the
+> transaction by discarding the tuple. =20
+
+I'm not super familiar with this subsystem.  Where can I find code
+for rejecting bad transactions?  It seems like an easy thing to
+handle the error in both places.  It makes auditing the code a lot
+simpler.
+
+regards,
+dan carpenter
 
 
-On second thoughts... I agree, a comment is good enough.
+--vkEkAx9hr54EJ73W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 
->> +
->>  static int _request_firmware(const struct firmware **firmware_p,
->>  			     const char *name, struct device *device,
->>  			     bool uevent, bool nowait)
->> @@ -535,7 +537,15 @@ static int _request_firmware(const struct firmware **firmware_p,
->>  
->>  	read_lock_usermodehelper();
->>  
->> -	if (WARN_ON(usermodehelper_is_disabled())) {
->> +	/*
->> +	 * It is wrong to request firmware when the system is suspended,
->> +	 * because it simply won't work reliably.
-> 
-> In fact, it won't work at all.
-> 
->> +	 Also, it can cause races with
->> +	 * the freezer, leading to freezing failures.
-> 
-> It actually is worse than that too.  It may cause a user space process
-> to run when we think we have frozen user space and _that_ may lead to
-> all kinds of interesting breakage.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPYuliAAoJEOnZkXI/YHqRlNAP/3hF7fOPlNbbvqw/qXfufDb8
+PKApzjZqD7HVkNZ4u/GLUM9RPvFdNjT4amhx7auzcAimqRrpx0cYzJH1o431jb/D
+UHt5MPbJEZ/RdjpR8oSG4BLHsBtVkNMedxFbCftBVqZkCsNXV2e/Q5B18vwM8e2g
+R8ugkk+zwk434JYXWmMWFKOaFCnpjS/MjVY6qOmxYHcwIpRJPgI82i2kHNPjSBXl
+iukCZ5Sjmd6Z1/rKMwL4Uj3nT6lRrLOP3NaATqc20JUlBg/xyALpgQwAY2iecbb8
+L3w56Hh9iJhKzUhUWJw5UJDIFz20lss9BakHey1sKWnyhzd9x/MrPaGyb5uQ6yKm
+jm5xanWLS4ZPD4rCJ6pPFz3Il1EqyMZf1WD+Fg/e9IORG+OEyN3WSsgv1ukzFDbv
+xUVp+ETm6geYMUThGbaQKEi+un8KwjwY/nqtgwjWY7pY5aCbDXQyH1TKzTkCcREM
+5IyE77Bv+keCxH9fqMJrKfjRW09/WQpItciU2b7pkVH72qDqPtHGQQHqYBRBgOLD
+6Q0U8oPKcE0/Ta21cChdy4QE64r0qroWueyA/ZRGXLhvHn+l3JO5RnVmKBZXd7da
+6C/MMemyXRbmQLsQBUj79x880+G3+bnG3FRoj0CCgQXBQHYj1s5GgA3iFZZltRLr
+cqiRS6vjO6kbZTZtqV0f
+=Tyo7
+-----END PGP SIGNATURE-----
 
-Oh, yes! That would be really dreadful!
-
->> 	 * So check if the system is
->> +	 * in a state which is unsuitable for requesting firmware (because the
->> +	 * system is suspended or not yet fully resumed) and bail out early if
->> +	 * needed.
-> 
-> And here I'd explain why usermodehelper_is_disabled() is used for that.
->
-
-
-OK
- 
-
->> +	 */
->> +	if (WARN_ON(suspend_in_progress())) {
->>  		dev_err(device, "firmware: %s will not be loaded\n", name);
->>  		retval = -EBUSY;
->>  		goto out;
-> 
-
-
-So here is the updated patch:
-(I know its a bit verbose, but given that it is causing a considerable amount of
-confusion, may be a proper comment with good explanation is worthwhile).
-
----
-
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: PM/firmware loader: Explain why usermodehelper_is_disabled() check is used
-
-
-Rafael J. Wysocki <rjw@sisk.pl> wrote:
-
-| usermodehelper_is_disabled() means "we are in the middle of system power
-| transition" rather than anything else (I agree it should be called
-| suspend_in_progress() or something similar these days).
-
-But instead of renaming usermodehelper_is_disabled(), add a comment
-explaining its importance and also why the warning and bail out at
-_request_firmware() makes sense.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- drivers/base/firmware_class.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 6c9387d..9199e3e 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -535,6 +535,22 @@ static int _request_firmware(const struct firmware **firmware_p,
- 
- 	read_lock_usermodehelper();
- 
-+	/*
-+	 * It is wrong to request firmware when the system is suspended,
-+	 * because it simply won't work. Also, it can cause races with
-+	 * the freezer, leading to freezing failures. Worse than that,
-+	 * it may even cause a user space process to run when we think
-+	 * we have frozen the user space! - and that can lead to all kinds
-+	 * of interesting breakage..
-+	 *
-+	 * So check if the system is in a state which is unsuitable for
-+	 * requesting firmware (because it is suspended or not yet fully
-+	 * resumed) and bail out early if needed.
-+	 * Usermodehelpers are disabled at the beginning of suspend, before
-+	 * freezing tasks and re-enabled only towards the end of resume, after
-+	 * thawing tasks, when it is safe. So all we need to do here is ensure
-+	 * that we don't request firmware when usermodehelpers are disabled.
-+	 */
- 	if (WARN_ON(usermodehelper_is_disabled())) {
- 		dev_err(device, "firmware: %s will not be loaded\n", name);
- 		retval = -EBUSY;
-
-
+--vkEkAx9hr54EJ73W--
