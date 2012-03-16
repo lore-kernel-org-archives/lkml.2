@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161922Ab2CPU4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:56:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60687 "EHLO
+	id S1161243Ab2CPUy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:54:57 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54416 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161294Ab2CPUy7 (ORCPT
+	with ESMTP id S965082Ab2CPUyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:54:59 -0400
+	Fri, 16 Mar 2012 16:54:52 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -16,9 +16,9 @@ Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
         thomas.abraham@linaro.org, tony@atomide.com,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH 5/8] pinctrl: core device tree mapping table parsing support
-Date: Fri, 16 Mar 2012 14:54:26 -0600
-Message-Id: <1331931269-12262-5-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH 3/8] dt: pinctrl: Document device tree binding
+Date: Fri, 16 Mar 2012 14:54:24 -0600
+Message-Id: <1331931269-12262-3-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1331931269-12262-1-git-send-email-swarren@wwwdotorg.org>
 References: <1331931269-12262-1-git-send-email-swarren@wwwdotorg.org>
@@ -27,466 +27,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During pinctrl_get(), if the client device has a device tree node, look
-for the common pinctrl properties there. If found, parse the referenced
-device tree nodes, with the help of the pinctrl drivers, and generate
-mapping table entries from them.
-
-During pinctrl_put(), free any results of device tree parsing.
+The core pin controller bindings define:
+* The fact that pin controllers expose pin configurations as nodes in
+  device tree.
+* That the bindings for those pin configuration nodes is defined by the
+  individual pin controller drivers.
+* A standardized set of properties for client devices to define numbered
+  or named pin configuration states, each referring to some number of the
+  afore-mentioned pin configuration nodes.
+* That the bindings for the client devices determines the set of numbered
+  or named states that must exist.
 
 Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/pinctrl/core.c          |  313 ++++++++++++++++++++++++++++++++++++--
- drivers/pinctrl/core.h          |   16 ++
- include/linux/pinctrl/pinctrl.h |    7 +
- 3 files changed, 319 insertions(+), 17 deletions(-)
+v2: Fix a couple of grammar-os per Randy Dunlap. Add example of a client
+device that references no pin configuration nodes per Dong Aisheng.
+---
+ .../bindings/pinctrl/pinctrl-bindings.txt          |  128 ++++++++++++++++++++
+ 1 files changed, 128 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index df6296c..aaefe16 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -23,6 +23,7 @@
- #include <linux/sysfs.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-+#include <linux/of.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/machine.h>
- #include "core.h"
-@@ -59,6 +60,10 @@ static LIST_HEAD(pinctrl_maps);
- 			_i_ < _maps_node_->num_maps; \
- 			i++, _map_ = &_maps_node_->maps[_i_])
- 
-+static int register_mappings(struct pinctrl_map const *maps, unsigned num_maps,
-+			     bool dup, bool locked);
-+static void pinctrl_put_locked(struct pinctrl *p, bool inlist);
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+new file mode 100644
+index 0000000..c95ea82
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+@@ -0,0 +1,128 @@
++== Introduction ==
 +
- const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev)
- {
- 	/* We're not allowed to register devices without name */
-@@ -556,7 +561,255 @@ static struct pinctrl *find_pinctrl(struct device *dev)
- 	return NULL;
- }
- 
--static void pinctrl_put_locked(struct pinctrl *p, bool inlist);
-+#ifdef CONFIG_OF
-+static void unregister_mappings(struct pinctrl_map const *map)
-+{
-+	struct pinctrl_maps *maps_node;
++Hardware modules that control pin multiplexing or configuration parameters
++such as pull-up/down, tri-state, drive-strength etc are designated as pin
++controllers. Each pin controller must be represented as a node in device tree,
++just like any other hardware module.
 +
-+	list_for_each_entry(maps_node, &pinctrl_maps, node) {
-+		if (maps_node->maps == map) {
-+			list_del(&maps_node->node);
-+			return;
-+		}
-+	}
-+}
++Hardware modules whose signals are affected by pin configuration are
++designated client devices. Again, each client device must be represented as a
++node in device tree, just like any other hardware module.
 +
-+static void dt_free_map(struct pinctrl_dev *pctldev,
-+		     struct pinctrl_map *map, unsigned num_maps)
-+{
-+	if (pctldev) {
-+		struct pinctrl_ops *ops = pctldev->desc->pctlops;
-+		ops->dt_free_map(pctldev, map, num_maps);
-+	} else {
-+		kfree(map);
-+	}
-+}
++For a client device to operate correctly, certain pin controllers must
++set up certain specific pin configurations. Some client devices need a
++single static pin configuration, e.g. set up during initialization. Others
++need to reconfigure pins at run-time, for example to tri-state pins when the
++device is inactive. Hence, each client device can define a set of named
++states. The number and names of those states is defined by the client device's
++own binding.
 +
-+static void dt_free_maps(struct pinctrl *p)
-+{
-+	struct pinctrl_dt_map *dt_map, *n1;
++The common pinctrl bindings defined in this file provide an infrastructure
++for client device device tree nodes to map those state names to the pin
++configuration used by those states.
 +
-+	list_for_each_entry_safe(dt_map, n1, &p->dt_maps, node) {
-+		unregister_mappings(dt_map->map);
-+		list_del(&dt_map->node);
-+		dt_free_map(dt_map->pctldev, dt_map->map,
-+			    dt_map->num_maps);
-+		kfree(dt_map);
-+	}
++Note that pin controllers themselves may also be client devices of themselves.
++For example, a pin controller may set up its own "active" state when the
++driver loads. This would allow representing a board's static pin configuration
++in a single place, rather than splitting it across multiple client device
++nodes. The decision to do this or not somewhat rests with the author of
++individual board device tree files, and any requirements imposed by the
++bindings for the individual client devices in use by that board, i.e. whether
++they require certain specific named states for dynamic pin configuration.
 +
-+	of_node_put(p->dev->of_node);
-+}
++== Pinctrl client devices ==
 +
-+static int dt_remember_or_free_map(struct pinctrl *p, const char *statename,
-+				   struct pinctrl_dev *pctldev,
-+				   struct pinctrl_map *map, unsigned num_maps)
-+{
-+	int i;
-+	struct pinctrl_dt_map *dt_map;
++For each client device individually, every pin state is assigned an integer
++ID. These numbers start at 0, and are contiguous. For each state ID, a unique
++property exists to define the pin configuration. Each state may also be
++assigned a name. When names are used, another property exists to map from
++those names to the integer IDs.
 +
-+	/* Initialize common mapping table entry fields */
-+	for (i = 0; i < num_maps; i++) {
-+		map[i].dev_name = dev_name(p->dev);
-+		map[i].name = statename;
-+		if (pctldev)
-+			map[i].ctrl_dev_name = dev_name(pctldev->dev);
-+	}
++Each client device's own binding determines the set of states the must be
++defined in its device tree node, and whether to define the set of state
++IDs that must be provided, or whether to define the set of state names that
++must be provided.
 +
-+	/* Remember the converted mapping table entries */
-+	dt_map = kzalloc(sizeof(*dt_map), GFP_KERNEL);
-+	if (!dt_map) {
-+		dev_err(p->dev, "failed to alloc struct pinctrl_dt_map\n");
-+		dt_free_map(pctldev, map, num_maps);
-+		return -ENOMEM;
-+	}
++Required properties:
++pinctrl-0:	List of phandles, each pointing at a pin configuration
++		node. These referenced pin configuration nodes must be child
++		nodes of the pin controller that they configure. Multiple
++		entries may exist in this list so that multiple pin
++		controllers may be configured, or so that a state may be built
++		from multiple nodes for a single pin controller, each
++		contributing part of the overall configuration. See the next
++		section of this document for details of the format of these
++		pin configuration nodes.
 +
-+	dt_map->pctldev = pctldev;
-+	dt_map->map = map;
-+	dt_map->num_maps = num_maps;
-+	list_add_tail(&dt_map->node, &p->dt_maps);
++		In some cases, it may be useful to define a state, but for it
++		to be empty. This may be required when a common IP block is
++		used in an SoC either without a pin controller, or where the
++		pin controller does not affect the HW module in question. If
++		the binding for that IP block requires certain pin states to
++		exist, they must still be defined, but may be left empty.
 +
-+	return 0;
-+}
++Optional properties:
++pinctrl-1:	List of phandles, each pointing at a pin configuration
++		node within a pin controller.
++...
++pinctrl-n:	List of phandles, each pointing at a pin configuration
++		node within a pin controller.
++pinctrl-names:	The list of names to assign states. List entry 0 defines the
++		name for integer state ID 0, list entry 1 for state ID 1, and
++		so on.
 +
-+static struct pinctrl_dev *find_pctldev_by_of_node(struct device_node *np)
-+{
-+	struct pinctrl_dev *pctldev;
++For example:
 +
-+	list_for_each_entry(pctldev, &pinctrldev_list, node)
-+		if (pctldev->dev->of_node == np)
-+			return pctldev;
++	/* For a client device requiring named states */
++	device {
++		pinctrl-names = "active", "idle";
++		pinctrl-0 = <&state_0_node_a>;
++		pinctrl-1 = <&state_1_node_a &state_1_node_b>;
++	};
 +
-+	return NULL;
-+}
-+
-+static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
-+				struct device_node *np_config)
-+{
-+	struct device_node *np_pctldev;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_ops *ops;
-+	int ret;
-+	struct pinctrl_map *map;
-+	unsigned num_maps;
-+
-+	/* Find the pin controller containing np_config */
-+	np_pctldev = of_node_get(np_config);
-+	for (;;) {
-+		np_pctldev = of_get_next_parent(np_pctldev);
-+		if (!np_pctldev || of_node_is_root(np_pctldev)) {
-+			dev_err(p->dev, "could not find pctldev for node %s\n",
-+				np_config->full_name);
-+			of_node_put(np_pctldev);
-+			/* FIXME: This should trigger deferrered probe */
-+			return -ENODEV;
-+		}
-+		pctldev = find_pctldev_by_of_node(np_pctldev);
-+		if (pctldev)
-+			break;
-+	}
-+	of_node_put(np_pctldev);
++	/* For the same device if using state IDs */
++	device {
++		pinctrl-0 = <&state_0_node_a>;
++		pinctrl-1 = <&state_1_node_a &state_1_node_b>;
++	};
 +
 +	/*
-+	 * Call pinctrl driver to parse device tree node, and
-+	 * generate mapping table entries
++	 * For an IP block whose binding supports pin configuration,
++	 * but in use on an SoC that doesn't have any pin control hardware
 +	 */
-+	ops = pctldev->desc->pctlops;
-+	if (!ops->dt_node_to_map) {
-+		dev_err(p->dev, "pctldev %s doesn't support DT\n",
-+			dev_name(pctldev->dev));
-+		return -ENODEV;
-+	}
-+	ret = ops->dt_node_to_map(pctldev, np_config, &map, &num_maps);
-+	if (ret < 0)
-+		return ret;
++	device {
++		pinctrl-names = "active", "idle";
++		pinctrl-0 = <>;
++		pinctrl-1 = <>;
++	};
 +
-+	/* Stash the mapping table chunk away for later use */
-+	ret = dt_remember_or_free_map(p, statename, pctldev,
-+					map, num_maps);
-+	if (ret < 0)
-+		return -ENOMEM;
++== Pin controller devices ==
 +
-+	return 0;
-+}
++Pin controller devices should contain the pin configuration nodes that client
++devices reference.
 +
-+static int dt_remember_dummy_state(struct pinctrl *p, const char *statename)
-+{
-+	struct pinctrl_map *map;
-+	int ret;
++For example:
 +
-+	map = kzalloc(sizeof(*map), GFP_KERNEL);
-+	if (!map) {
-+		dev_err(p->dev, "failed to alloc struct pinctrl_map\n");
-+		return -ENOMEM;
++	pincontroller {
++		... /* Standard DT properties for the device itself elided */
++
++		state_0_node_a {
++			...
++		};
++		state_1_node_a {
++			...
++		};
++		state_1_node_b {
++			...
++		};
 +	}
 +
-+	map->type = PIN_MAP_TYPE_DUMMY_STATE;
++The contents of each of those pin configuration child nodes is defined
++entirely by the binding for the individual pin controller device. There
++exists no common standard for this content.
 +
-+	ret = dt_remember_or_free_map(p, statename, NULL, map, 1);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int dt_to_map(struct pinctrl *p)
-+{
-+	struct device_node *np = p->dev->of_node;
-+	int state, ret;
-+	char *propname;
-+	struct property *prop;
-+	const char *statename;
-+	const __be32 *list;
-+	int size, config;
-+	phandle phandle;
-+	struct device_node *np_config;
-+	struct pinctrl_dt_map *dt_map;
-+
-+	/* We may store pointers to property names within the node */
-+	of_node_get(np);
-+
-+	/* For each defined state ID */
-+	for (state = 0; ; state++) {
-+		/* Retrieve the pinctrl-* property */
-+		propname = kasprintf(GFP_KERNEL, "pinctrl-%d", state);
-+		prop = of_find_property(np, propname, &size);
-+		kfree(propname);
-+		if (!prop)
-+			break;
-+		list = prop->value;
-+		size /= sizeof(*list);
-+
-+		/* Determine whether pinctrl-names property names the state */
-+		ret = of_property_read_string_index(np, "pinctrl-names",
-+						    state, &statename);
-+		/*
-+		 * If not, statename is just the integer state ID. But rather
-+		 * than dynamically allocate it and have to free it later,
-+		 * just point part way into the property name for the string.
-+		 */
-+		if (ret < 0) {
-+			/* strlen("pinctrl-") == 8 */
-+			if (strlen(prop->name) < 8) {
-+				dev_err(p->dev, "prop %s inconsistent length\n",
-+					prop->name);
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+			statename = prop->name + 8;
-+		}
-+
-+		/* For every referenced pin configuration node in it */
-+		for (config = 0; config < size; config++) {
-+			phandle = be32_to_cpup(list++);
-+
-+			/* Look up the pin configuration node */
-+			np_config = of_find_node_by_phandle(phandle);
-+			if (!np_config) {
-+				dev_err(p->dev,
-+					"prop %s index %i invalid phandle\n",
-+					prop->name, config);
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+
-+			/* Parse the node */
-+			ret = dt_to_map_one_config(p, statename, np_config);
-+			of_node_put(np_config);
-+			if (ret < 0)
-+				goto err;
-+		}
-+
-+		/* No entries in DT? Generate a dummy state table entry */
-+		if (!size) {
-+			ret = dt_remember_dummy_state(p, statename);
-+			if (ret < 0)
-+				goto err;
-+		}
-+	}
-+
-+	list_for_each_entry(dt_map, &p->dt_maps, node) {
-+		ret = register_mappings(dt_map->map, dt_map->num_maps, false,
-+					true);
-+		if (ret < 0)
-+			goto err;
-+	}
-+
-+	return 0;
-+
-+err:
-+	dt_free_maps(p);
-+	return ret;
-+}
-+#else
-+static int dt_to_map(struct pinctrl *p)
-+{
-+	return 0;
-+}
-+
-+static void dt_free_maps(struct pinctrl *p)
-+{
-+}
-+#endif
- 
- static struct pinctrl *create_pinctrl(struct device *dev)
- {
-@@ -579,6 +832,13 @@ static struct pinctrl *create_pinctrl(struct device *dev)
- 	}
- 	p->dev = dev;
- 	INIT_LIST_HEAD(&p->states);
-+	INIT_LIST_HEAD(&p->dt_maps);
-+
-+	ret = dt_to_map(p);
-+	if (ret < 0) {
-+		kfree(p);
-+		return ERR_PTR(ret);
-+	}
- 
- 	devname = dev_name(dev);
- 
-@@ -662,6 +922,8 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
- 		kfree(state);
- 	}
- 
-+	dt_free_maps(p);
-+
- 	if (inlist)
- 		list_del(&p->node);
- 	kfree(p);
-@@ -787,15 +1049,8 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
- }
- EXPORT_SYMBOL_GPL(pinctrl_select_state);
- 
--/**
-- * pinctrl_register_mappings() - register a set of pin controller mappings
-- * @maps: the pincontrol mappings table to register. This should probably be
-- *	marked with __initdata so it can be discarded after boot. This
-- *	function will perform a shallow copy for the mapping entries.
-- * @num_maps: the number of maps in the mapping table
-- */
--int pinctrl_register_mappings(struct pinctrl_map const *maps,
--			      unsigned num_maps)
-+static int register_mappings(struct pinctrl_map const *maps, unsigned num_maps,
-+			     bool dup, bool locked)
- {
- 	int i, ret;
- 	struct pinctrl_maps *maps_node;
-@@ -851,20 +1106,41 @@ int pinctrl_register_mappings(struct pinctrl_map const *maps,
- 	}
- 
- 	maps_node->num_maps = num_maps;
--	maps_node->maps = kmemdup(maps, sizeof(*maps) * num_maps, GFP_KERNEL);
--	if (!maps_node->maps) {
--		pr_err("failed to duplicate mapping table\n");
--		kfree(maps_node);
--		return -ENOMEM;
-+	if (dup) {
-+		maps_node->maps = kmemdup(maps, sizeof(*maps) * num_maps,
-+					  GFP_KERNEL);
-+		if (!maps_node->maps) {
-+			pr_err("failed to duplicate mapping table\n");
-+			kfree(maps_node);
-+			return -ENOMEM;
-+		}
-+	} else {
-+		maps_node->maps = maps;
- 	}
- 
--	mutex_lock(&pinctrl_mutex);
-+	if (!locked)
-+		mutex_lock(&pinctrl_mutex);
- 	list_add_tail(&maps_node->node, &pinctrl_maps);
--	mutex_unlock(&pinctrl_mutex);
-+	if (!locked)
-+		mutex_unlock(&pinctrl_mutex);
- 
- 	return 0;
- }
- 
-+/**
-+ * pinctrl_register_mappings() - register a set of pin controller mappings
-+ * @maps: the pincontrol mappings table to register. This should probably be
-+ *	marked with __initdata so it can be discarded after boot. This
-+ *	function will perform a shallow copy for the mapping entries.
-+ * @num_maps: the number of maps in the mapping table
-+ */
-+int pinctrl_register_mappings(struct pinctrl_map const *maps,
-+			      unsigned num_maps)
-+{
-+	return register_mappings(maps, num_maps, true, false);
-+
-+}
-+
- #ifdef CONFIG_DEBUG_FS
- 
- static int pinctrl_pins_show(struct seq_file *s, void *what)
-@@ -1231,6 +1507,9 @@ static int pinctrl_check_ops(struct pinctrl_dev *pctldev)
- 	    !ops->get_group_pins)
- 		return -EINVAL;
- 
-+	if (ops->dt_node_to_map && !ops->dt_free_map)
-+		return -EINVAL;
-+
- 	return 0;
- }
- 
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 17ecf65..9d3a153 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -47,17 +47,33 @@ struct pinctrl_dev {
- };
- 
- /**
-+ * struct pinctrl_dt_map - mapping table chunk parsed from device tree
-+ * @node: list node for struct pinctrl's @dt_maps field
-+ * @pctldev: the pin controller that allocated this struct, and will free it
-+ * @maps: the mapping table entries
-+ */
-+struct pinctrl_dt_map {
-+	struct list_head node;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_map *map;
-+	unsigned num_maps;
-+};
-+
-+/**
-  * struct pinctrl - per-device pin control state holder
-  * @node: global list node
-  * @dev: the device using this pin control handle
-  * @states: a list of states for this device
-  * @state: the current state
-+ * @dt_maps: the mapping table chunks dynamically parsed from device tree for
-+ *	this device, if any
-  */
- struct pinctrl {
- 	struct list_head node;
- 	struct device *dev;
- 	struct list_head states;
- 	struct pinctrl_state *state;
-+	struct list_head dt_maps;
- };
- 
- /**
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 4e9f078..aa92cde 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -21,9 +21,11 @@
- 
- struct device;
- struct pinctrl_dev;
-+struct pinctrl_map;
- struct pinmux_ops;
- struct pinconf_ops;
- struct gpio_chip;
-+struct device_node;
- 
- /**
-  * struct pinctrl_pin_desc - boards/machines provide information on their
-@@ -83,6 +85,11 @@ struct pinctrl_ops {
- 			       unsigned *num_pins);
- 	void (*pin_dbg_show) (struct pinctrl_dev *pctldev, struct seq_file *s,
- 			  unsigned offset);
-+	int (*dt_node_to_map) (struct pinctrl_dev *pctldev,
-+			       struct device_node *np_config,
-+			       struct pinctrl_map **map, unsigned *num_maps);
-+	void (*dt_free_map) (struct pinctrl_dev *pctldev,
-+			     struct pinctrl_map *map, unsigned num_maps);
- };
- 
- /**
++The pin configuration nodes need not be direct children of the pin controller
++device; they may be grandchildren, for example. Whether this is legal, and
++whether there is any interaction between the child and intermediate parent
++nodes, is again defined entirely by the binding for the individual pin
++controller device.
 -- 
 1.7.0.4
 
