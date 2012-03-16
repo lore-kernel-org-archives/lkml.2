@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031785Ab2CPD5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:57:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53109 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758648Ab2CPD5O (ORCPT
+	id S1751112Ab2CPEHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 00:07:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36546 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751Ab2CPEHE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:57:14 -0400
-Date: Fri, 16 Mar 2012 14:56:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the trivial tree with the powerpc tree
-Message-Id: <20120316145658.3fb06c5213dbca29d6898c4b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Mar_2012_14_56_58_+1100_sAZwT9CG=3DUQa0t"
+	Fri, 16 Mar 2012 00:07:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120315105048.GF3138@opensource.wolfsonmicro.com>
+References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
+	<1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
+	<20120314144524.GT3133@opensource.wolfsonmicro.com>
+	<CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
+	<20120315105048.GF3138@opensource.wolfsonmicro.com>
+Date: Fri, 16 Mar 2012 13:07:03 +0900
+Message-ID: <CANKRQnhg21hjKjSOtDwbfK9shNsdcEu-aiSs1zVGNtAdaHdMHw@mail.gmail.com>
+Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213 Carrier Board
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Mar_2012_14_56_58_+1100_sAZwT9CG=3DUQa0t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 15, 2012 at 7:50 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Mar 15, 2012 at 01:50:48PM +0900, Tomoya MORINAGA wrote:
+>
+>> OK.
+>> codec is slave, i2s controller is master.
+>> So, I'll use SND_SOC_DAIFMT_CBS_CFM.
+>
+> That means "Codec bit clock master frame clock slave".  Are you sure
+> that's what you want?
 
-Hi Jiri,
+Let me clarify the above.
+Does the above "frame clock" mean "data line" of I2S?
+If yes, I should have used 'SND_SOC_DAIFMT_CBS_CFS'.
 
-Today's linux-next merge of the trivial tree got a conflict in
-drivers/char/viotape.c between commit ba7a4822b48f ("powerpc: Remove some
-of the legacy iSeries specific device drivers") from the powerpc tree and
-commit a7ccf3775219 ("char: Fix typo in viotape.c") from the trivial tree.
-
-The former commit removed the file, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__16_Mar_2012_14_56_58_+1100_sAZwT9CG=3DUQa0t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYroKAAoJEECxmPOUX5FEfWkP+QFOKeYx+wB+r0l46uJSglSL
-SjsDyYh/LiPOP7/fZ0TVHp+5hA76ZIZQv1nYKpjyJf3He7nH/Nm6ho9gd0y87KGm
-Y+x6rDS35JULF2tMlwSgmR5P0JEhXyDKGlC8fM9MZa9TQjsev2gCOd9CUhGr1PWS
-/rx0p3ig1+mD3rPJKvpk0pQP2KJx7zN8BWCIlKm9jukaR7PcLL1ImTfAP5UxjtDZ
-6Rl9WZEf3hHjsDJXbfGvnrLsav+gImC3e1zVJrmg0t83E1u0mWMuZnONGPflqMKF
-VxWqDULsGmzeaoEQ032sncjCzmNnDRaBBSmvKeziTMpTLBIfVYEKO6cNaNGPPdGr
-mJ5gVrXJnzpN2/jOHzLMfjd96gUeZraM7JEwotDFvxvg+9ZQaoQcvcbvqrK3h0fE
-oYC04b+Zrr5jWgXmQ/rAOPvcGM/Fm7tZSHxJUtmg3FPmELOcLGk63D6XTuioNFwG
-PfrFv7LWn2tvRdMTrRvoz+XOiFruYJGNmtGls5u9/inKsVXvxtO0Pg817Hf0e1Ug
-/iy7LfWUTfDagBHJsFOhIPOUZHbMIlmXJrBG5Zv4q7svZkygsdWU1qsRvsdVIPuF
-ZVw/LrHJPQhRhrcENDviMXnDpzS7tdUeylCzn3Lo3LwRk6cccQXGC3Ybu/WC2cbZ
-bxArC0m4hCZ/1LIhuKBJ
-=8cHa
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Mar_2012_14_56_58_+1100_sAZwT9CG=3DUQa0t--
+thanks.
+-- 
+ROHM Co., Ltd.
+tomoya
