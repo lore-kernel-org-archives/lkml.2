@@ -1,78 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2CPTHE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 15:07:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42366 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755703Ab2CPTHB (ORCPT
+	id S1756598Ab2CPTK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 15:10:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41584 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755639Ab2CPTKY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 15:07:01 -0400
-Date: Fri, 16 Mar 2012 19:06:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120316190654.GF3158@opensource.wolfsonmicro.com>
-References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
- <1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
- <20120314144524.GT3133@opensource.wolfsonmicro.com>
- <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
- <20120315105048.GF3138@opensource.wolfsonmicro.com>
- <CANKRQnhg21hjKjSOtDwbfK9shNsdcEu-aiSs1zVGNtAdaHdMHw@mail.gmail.com>
+	Fri, 16 Mar 2012 15:10:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9ADF8FXzFeE7X4jE"
-Content-Disposition: inline
-In-Reply-To: <CANKRQnhg21hjKjSOtDwbfK9shNsdcEu-aiSs1zVGNtAdaHdMHw@mail.gmail.com>
-X-Cookie: Just to have it is enough.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331920862.16101.41.camel@sbsiddha-desk.sc.intel.com>
+References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>
+	<1331834583-16070-1-git-send-email-sp@numascale.com>
+	<CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com>
+	<1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com>
+	<CAE9FiQXXy3UDFpm5uCmpnn7Q53FhQN6h-BSAizgk_Sqkg+d4bA@mail.gmail.com>
+	<CAE9FiQUtf9Pix3rmhgk_+oOf19dOvvgQYt+gbHQyag0xkH_bxA@mail.gmail.com>
+	<4F62E417.40905@numascale.com>
+	<CAE9FiQXfJthSt=-FiYbc00MzyRcfZ=RacxRQRGk83VpZH70dOQ@mail.gmail.com>
+	<1331920862.16101.41.camel@sbsiddha-desk.sc.intel.com>
+Date: Fri, 16 Mar 2012 12:10:23 -0700
+X-Google-Sender-Auth: AiNAcSvcUGQZTnM22_V4LRl79fI
+Message-ID: <CAE9FiQVxuVGe=m87fQKE+JjPk=Z83iOypQU+yQn5y-M-qVSArg@mail.gmail.com>
+Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid() function.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Steffen Persvold <sp@numascale.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 16, 2012 at 11:01 AM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> On Fri, 2012-03-16 at 09:57 -0700, Yinghai Lu wrote:
+>> On Thu, Mar 15, 2012 at 11:56 PM, Steffen Persvold <sp@numascale.com> wrote:
+>> > Which one of the two patches I sent, do you (Suresh/Yinghai/others) believe
+>> > is the best/cleanest and works in all cases. I, unfortunately, can't test
+>> > the Intel case as I don't have any available to test on :/
+>> >
+>> > Either patch works fine for NumaChip enabled systems.
+>> >
+>> > If desired I will re-post the patch with the approach you find best, but add
+>> > the apic->apic_id_valid() check in the SRAT code aswell.
+>>
+>> Ok, let use second way that Suresh proposed, please repost that
+>> without removing checking in srat.
+>>
+>> should like:
+>>
+>> From: Steffen Persvold <sp@numascale.com>
+>> Subject: [PATCH] Added separate apic_id_valid() functions for selected
+>> apic drivers
+>>
+>> This allows us to substitute the check in
+>> arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic and avoid feigning the
+>> x2apic cpu feature in the NumaChip apic code.
+>>
+>> The following apic drivers have separate apic_id_valid() functions
+>> which will accept x2apic type IDs :
+>>
+>> x2apic_phys
+>> x2apic_cluster
+>> x2apic_uv_x
+>> apic_numachip
+>>
+>> Signed-off-by: Steffen Persvold <sp@numascale.com>
+>
+> I have no complaints with this version ;)
+>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
---9ADF8FXzFeE7X4jE
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+good,
 
-On Fri, Mar 16, 2012 at 01:07:03PM +0900, Tomoya MORINAGA wrote:
-> On Thu, Mar 15, 2012 at 7:50 PM, Mark Brown
+also we could add more lines in changelog:
 
-> > That means "Codec bit clock master frame clock slave". =A0Are you sure
-> > that's what you want?
+for x2apic pre-enabled system, apic driver is set already early through
+  early_acpi_boot_init()/early_acpi_process_madt()/acpi_parse_madt()/default_acpi_madt_oem_check()
+so that apic_id_valid() checking will let entry go during MADT and SRAT prasing.
 
-> Let me clarify the above.
-> Does the above "frame clock" mean "data line" of I2S?
-> If yes, I should have used 'SND_SOC_DAIFMT_CBS_CFS'.
+for x2apic not pre-enabled system, all apic id should be less than 255.
 
-No, it means the clock which runs at sample rate (usually called the
-frame clock or LRCLK).
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
---9ADF8FXzFeE7X4jE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPY48dAAoJEBus8iNuMP3d9n8P/34cYlobXtbmis18gU/qEomo
-u6wcyrAERpY1dDAHRxN9Sr+aAyxD2UGiETLYIucSpWXYXj1AX3UPT0c5zNyxSgRn
-VGO6Dso4bfGe6K26OHTk9WisXD0q/lyprlxYAT8j8HyIfm3cuvt4pqdBHw5WP41b
-I7R9ZQqv0mgjolt75WT3b8vzWCBWOo5/SG66fUePPDYswInh7USNMotdFLx7Iouh
-TlthySeg1CtrqiDRXN0TVlAuZW7ERuThicOlmqh5V8/euALt3WX1LCuuHKuvWavM
-fWxfcM0Y+719BxwdgE0W1bTaV+dIrm50G0hXaC9KveBandKycjIqlFV0GJsSfgLm
-AGEy4TbzYTsh7b92ZfN8cXx99yvw2dLe309jfwBtOZRfpRGC5NL1Q7+huPm8XqPs
-9LyjBPHtDiCiPg0S0joX4/OUAbSLuBM4SuWdvBfBd0lZwH05KYc7hQ6Mk1o+yjpN
-2p9d63CgzQ2NAl9dZLK8GHSp9QqhihKX8bDfxgh3twUNo2d/3NpeOZA9c9bf4ole
-Jt5AZF6aGf0yL5qCbwH77gEzWasqWQGw/jF4oNHSDjtFp6c3sRy9Kj4t8OcokLoB
-PdcLOInvuXelo8BusNP/7ihTNhfkIijO5mNwOjCX1gwQLuER6KkyU2D74h0c6z5H
-PMzIL3W8d+SdT9b3CUCn
-=JnYb
------END PGP SIGNATURE-----
-
---9ADF8FXzFeE7X4jE--
+>
+>> ---
+>>  arch/x86/include/asm/apic.h           |    2 +-
+>>  arch/x86/include/asm/x2apic.h         |    5 +++++
+>>  arch/x86/kernel/acpi/boot.c           |    2 +-
+>>  arch/x86/kernel/apic/apic_numachip.c  |    3 +--
+>>  arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
+>>  arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
+>>  arch/x86/kernel/apic/x2apic_uv_x.c    |    7 ++++++-
+>>  arch/x86/mm/srat.c                    |    2 +-
+>>  8 files changed, 17 insertions(+), 8 deletions(-)
+>>
+>> Index: linux-2.6/arch/x86/include/asm/apic.h
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/include/asm/apic.h
+>> +++ linux-2.6/arch/x86/include/asm/apic.h
+>> @@ -535,7 +535,7 @@ static inline unsigned int read_apic_id(
+>>
+>>  static inline int default_apic_id_valid(int apicid)
+>>  {
+>> -     return x2apic_mode || (apicid < 255);
+>> +     return (apicid < 255);
+>>  }
+>>
+>>  extern void default_setup_apic_routing(void);
+>> Index: linux-2.6/arch/x86/include/asm/x2apic.h
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/include/asm/x2apic.h
+>> +++ linux-2.6/arch/x86/include/asm/x2apic.h
+>> @@ -18,6 +18,11 @@ static const struct cpumask *x2apic_targ
+>>       return cpu_online_mask;
+>>  }
+>>
+>> +static int x2apic_apic_id_valid(int apicid)
+>> +{
+>> +     return 1;
+>> +}
+>> +
+>>  static int x2apic_apic_id_registered(void)
+>>  {
+>>       return 1;
+>> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
+>> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
+>> @@ -227,7 +227,7 @@ acpi_parse_x2apic(struct acpi_subtable_h
+>>        * to not preallocating memory for all NR_CPUS
+>>        * when we use CPU hotplug.
+>>        */
+>> -     if (!cpu_has_x2apic && (apic_id >= 0xff) && enabled)
+>> +     if (!apic->apic_id_valid(apic_id) && enabled)
+>>               printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
+>>       else
+>>               acpi_register_lapic(apic_id, enabled);
+>> Index: linux-2.6/arch/x86/kernel/apic/apic_numachip.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/apic/apic_numachip.c
+>> +++ linux-2.6/arch/x86/kernel/apic/apic_numachip.c
+>> @@ -229,11 +229,10 @@ static int __init numachip_system_init(v
+>>  }
+>>  early_initcall(numachip_system_init);
+>>
+>> -static int __cpuinit numachip_acpi_madt_oem_check(char *oem_id, char
+>> *oem_table_id)
+>> +static int numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+>>  {
+>>       if (!strncmp(oem_id, "NUMASC", 6)) {
+>>               numachip_system = 1;
+>> -             setup_force_cpu_cap(X86_FEATURE_X2APIC);
+>>               return 1;
+>>       }
+>>
+>> Index: linux-2.6/arch/x86/kernel/apic/x2apic_cluster.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/apic/x2apic_cluster.c
+>> +++ linux-2.6/arch/x86/kernel/apic/x2apic_cluster.c
+>> @@ -218,7 +218,7 @@ static struct apic apic_x2apic_cluster =
+>>       .name                           = "cluster x2apic",
+>>       .probe                          = x2apic_cluster_probe,
+>>       .acpi_madt_oem_check            = x2apic_acpi_madt_oem_check,
+>> -     .apic_id_valid                  = default_apic_id_valid,
+>> +     .apic_id_valid                  = x2apic_apic_id_valid,
+>>       .apic_id_registered             = x2apic_apic_id_registered,
+>>
+>>       .irq_delivery_mode              = dest_LowestPrio,
+>> Index: linux-2.6/arch/x86/kernel/apic/x2apic_phys.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/apic/x2apic_phys.c
+>> +++ linux-2.6/arch/x86/kernel/apic/x2apic_phys.c
+>> @@ -119,7 +119,7 @@ static struct apic apic_x2apic_phys = {
+>>       .name                           = "physical x2apic",
+>>       .probe                          = x2apic_phys_probe,
+>>       .acpi_madt_oem_check            = x2apic_acpi_madt_oem_check,
+>> -     .apic_id_valid                  = default_apic_id_valid,
+>> +     .apic_id_valid                  = x2apic_apic_id_valid,
+>>       .apic_id_registered             = x2apic_apic_id_registered,
+>>
+>>       .irq_delivery_mode              = dest_Fixed,
+>> Index: linux-2.6/arch/x86/kernel/apic/x2apic_uv_x.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/apic/x2apic_uv_x.c
+>> +++ linux-2.6/arch/x86/kernel/apic/x2apic_uv_x.c
+>> @@ -266,6 +266,11 @@ static void uv_send_IPI_all(int vector)
+>>       uv_send_IPI_mask(cpu_online_mask, vector);
+>>  }
+>>
+>> +static int uv_apic_id_valid(int apicid)
+>> +{
+>> +     return 1;
+>> +}
+>> +
+>>  static int uv_apic_id_registered(void)
+>>  {
+>>       return 1;
+>> @@ -351,7 +356,7 @@ static struct apic __refdata apic_x2apic
+>>       .name                           = "UV large system",
+>>       .probe                          = uv_probe,
+>>       .acpi_madt_oem_check            = uv_acpi_madt_oem_check,
+>> -     .apic_id_valid                  = default_apic_id_valid,
+>> +     .apic_id_valid                  = uv_apic_id_valid,
+>>       .apic_id_registered             = uv_apic_id_registered,
+>>
+>>       .irq_delivery_mode              = dest_Fixed,
+>> Index: linux-2.6/arch/x86/mm/srat.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/mm/srat.c
+>> +++ linux-2.6/arch/x86/mm/srat.c
+>> @@ -70,7 +70,7 @@ acpi_numa_x2apic_affinity_init(struct ac
+>>               return;
+>>       pxm = pa->proximity_domain;
+>>       apic_id = pa->apic_id;
+>> -     if (!cpu_has_x2apic && (apic_id >= 0xff)) {
+>> +     if (!apic->apic_id_valid(apic_id)) {
+>>               printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+>>                        pxm, apic_id);
+>>               return;
+>
+>
