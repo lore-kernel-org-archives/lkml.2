@@ -1,269 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161218Ab2CPIRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 04:17:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36144 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965186Ab2CPIR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 04:17:29 -0400
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Lee <rob.lee@linaro.org>
-Subject: [PATCH v10] mfd: Add anatop mfd driver
-Date: Fri, 16 Mar 2012 16:16:56 +0800
-Message-Id: <1331885816-26902-1-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.9.1
+	id S1031833Ab2CPISY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 04:18:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:22667 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965438Ab2CPIRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 04:17:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="139818053"
+Message-ID: <4F62F73A.6020108@intel.com>
+Date: Fri, 16 Mar 2012 10:18:02 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Chen Gong (gong.chen@linux.intel.com)" <gong.chen@linux.intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [Patch]Fix reason_str of pstore so that it can work correctly
+References: <5C4C569E8A4B9B42A84A977CF070A35B2DACC35686@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2DACC35686@USINDEVS01.corp.hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On 07/03/12 23:17, Seiji Aguchi wrote:
+> Hi,
+> 
+> Recently, there has been some changes in kmsg_dump() below.
+>  (1) kmsg_dump(KMSG_DUMP_KEXEC) was removed.
+>      http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=a3dd3323058d281abd584b15ad4c5b65064d7a61
+> 
+>  (2) A order of "enum kmsg_dump_reason" was modified.
+>      http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=c22ab332902333f83766017478c1ef6607ace681
+> 
+>  These above patches modified kmsg_dump_reason in include/linux/kmsg_dump.h. 
+>  But reason_str in fs/pstore/platform.c was not modified.
+> 
+>  This patch just fixes reason_str in fs/pstore/platform.c so that pstore can work correctly.
+> 
+>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> 
+> ---
+>  fs/pstore/platform.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c index 9ec22d3..81f4748 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -69,7 +69,7 @@ void pstore_set_kmsg_bytes(int bytes)
+>  static int	oopscount;
+>  
+>  static char *reason_str[] = {
+> -	"Oops", "Panic", "Kexec", "Restart", "Halt", "Poweroff", "Emergency"
+> +	"Panic", "Oops", "Emergency", "Restart", "Halt", "Poweroff"
+>  };
 
-Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
-Anatop provides regulators and thermal.
-This driver handles the address space and the operation of the mfd device.
+It would be better to make it so it would not break e.g.
 
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Lee <rob.lee@linaro.org>
----
- drivers/mfd/Kconfig        |    8 +++
- drivers/mfd/Makefile       |    1 +
- drivers/mfd/anatop-mfd.c   |  137 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/anatop.h |   40 +++++++++++++
- 4 files changed, 186 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/anatop-mfd.c
- create mode 100644 include/linux/mfd/anatop.h
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 82da448..c3a9f31 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -846,6 +846,14 @@ config MFD_INTEL_MSIC
- 	  Passage) chip. This chip embeds audio, battery, GPIO, etc.
- 	  devices used in Intel Medfield platforms.
- 
-+config MFD_ANATOP
-+	bool "Support for Freescale i.MX on-chip ANATOP controller"
-+	depends on SOC_IMX6Q
-+	help
-+	  Select this option to enable Freescale i.MX on-chip ANATOP
-+	  MFD controller. This controller embeds regulator and
-+	  thermal devices for Freescale i.MX platforms.
-+
- endmenu
- endif
- 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 27430d3..42c8bf6 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -113,3 +113,4 @@ obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
- obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
- obj-$(CONFIG_MFD_S5M_CORE)	+= s5m-core.o s5m-irq.o
-+obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
-diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-new file mode 100644
-index 0000000..2af4248
---- /dev/null
-+++ b/drivers/mfd/anatop-mfd.c
-@@ -0,0 +1,137 @@
-+/*
-+ * Anatop MFD driver
-+ *
-+ * Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-+ * Copyright (C) 2012 Linaro
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/mfd/anatop.h>
-+
-+u32 anatop_get_bits(struct anatop *adata, u32 addr, int bit_shift,
-+		    int bit_width)
-+{
-+	u32 val, mask;
-+
-+	if (bit_width == 32)
-+		mask = ~0;
-+	else
-+		mask = (1 << bit_width) - 1;
-+
-+	val = readl(adata->ioreg + addr);
-+	val = (val >> bit_shift) & mask;
-+
-+	return val;
-+}
-+EXPORT_SYMBOL_GPL(anatop_get_bits);
-+
-+void anatop_set_bits(struct anatop *adata, u32 addr, int bit_shift,
-+		     int bit_width, u32 data)
-+{
-+	u32 val, mask;
-+
-+	if (bit_width == 32)
-+		mask = ~0;
-+	else
-+		mask = (1 << bit_width) - 1;
-+
-+	spin_lock(&adata->reglock);
-+	val = readl(adata->ioreg + addr) & ~(mask << bit_shift);
-+	writel((data << bit_shift) | val, adata->ioreg + addr);
-+	spin_unlock(&adata->reglock);
-+}
-+EXPORT_SYMBOL_GPL(anatop_set_bits);
-+
-+static const struct of_device_id of_anatop_match[] = {
-+	{ .compatible = "fsl,imx6q-anatop", },
-+	{ },
-+};
-+
-+static int __devinit of_anatop_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+	void *ioreg;
-+	struct anatop *drvdata;
-+
-+	ioreg = of_iomap(np, 0);
-+	if (!ioreg)
-+		return -EADDRNOTAVAIL;
-+	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+	drvdata->ioreg = ioreg;
-+	spin_lock_init(&drvdata->reglock);
-+	platform_set_drvdata(pdev, drvdata);
-+	of_platform_populate(np, of_anatop_match, NULL, dev);
-+
-+	return 0;
-+}
-+
-+static int __devexit of_anatop_remove(struct platform_device *pdev)
-+{
-+	struct anatop *drvdata;
-+	drvdata = platform_get_drvdata(pdev);
-+	iounmap(drvdata->ioreg);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver anatop_of_driver = {
-+	.driver = {
-+		.name = "anatop-mfd",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_anatop_match,
-+	},
-+	.probe		= of_anatop_probe,
-+	.remove		= of_anatop_remove,
-+};
-+
-+static int __init anatop_init(void)
-+{
-+	return platform_driver_register(&anatop_of_driver);
-+}
-+postcore_initcall(anatop_init);
-+
-+static void __exit anatop_exit(void)
-+{
-+	platform_driver_unregister(&anatop_of_driver);
-+}
-+module_exit(anatop_exit);
-+
-+MODULE_AUTHOR("Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
-+MODULE_DESCRIPTION("ANATOP MFD driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
-new file mode 100644
-index 0000000..22c1007
---- /dev/null
-+++ b/include/linux/mfd/anatop.h
-@@ -0,0 +1,40 @@
-+/*
-+ * anatop.h - Anatop MFD driver
-+ *
-+ *  Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-+ *  Copyright (C) 2012 Linaro
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __LINUX_MFD_ANATOP_H
-+#define __LINUX_MFD_ANATOP_H
-+
-+#include <linux/spinlock.h>
-+
-+/**
-+ * anatop - MFD data
-+ * @ioreg: ioremap register
-+ * @reglock: spinlock for register read/write
-+ */
-+struct anatop {
-+	void *ioreg;
-+	spinlock_t reglock;
-+};
-+
-+extern u32 anatop_get_bits(struct anatop *, u32, int, int);
-+extern void anatop_set_bits(struct anatop *, u32, int, int, u32);
-+
-+#endif /*  __LINUX_MFD_ANATOP_H */
--- 
-1.7.9.1
-
+static const char *get_reason_str(enum kmsg_dump_reason reason) {
+	switch (reason) {
+	KMSG_DUMP_PANIC:
+		return "Panic";
+	KMSG_DUMP_OOPS:
+		return "Oops";
+	KMSG_DUMP_EMERG:
+		return "Emergency";
+	KMSG_DUMP_RESTART:
+		return "Restart";
+	KMSG_DUMP_HALT:
+		return "Halt";
+	KMSG_DUMP_POWEROFF:
+		return "Poweroff";
+	default:
+		return "Unknown";
+	}
+}
