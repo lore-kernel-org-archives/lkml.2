@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2CPRjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:39:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25932 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab2CPRjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:39:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="78440119"
-Date: Fri, 16 Mar 2012 18:46:58 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
-Subject: Re: [PATCH v2 1/2] mfd: add platform data for MAX8997 haptic driver
-Message-ID: <20120316174658.GH20524@sortiz-mobl>
-References: <4F57162B.60004@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F57162B.60004@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752872Ab2CPRjz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:39:55 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33319 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2CPRjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 13:39:51 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: [PATCH -V4 00/10] memcg: Add memcg extension to control HugeTLB allocation
+Date: Fri, 16 Mar 2012 23:09:20 +0530
+Message-Id: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+x-cbid: 12031617-2000-0000-0000-000006CC307F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Wed, Mar 07, 2012 at 05:02:51PM +0900, Chanwoo Choi wrote:
-> MAX8997 device does not support haptic function of it.
-> This patch adds platform data for for MAX8997 haptic driver.
-Patch applied, thanks.
+This patchset implements a memory controller extension to control
+HugeTLB allocations. The extension allows to limit the HugeTLB
+usage per control group and enforces the controller limit during
+page fault. Since HugeTLB doesn't support page reclaim, enforcing
+the limit at page fault time implies that, the application will get
+SIGBUS signal if it tries to access HugeTLB pages beyond its limit.
+This requires the application to know beforehand how much HugeTLB
+pages it would require for its use.
 
-Cheers,
-Samuel.
+The goal is to control how many HugeTLB pages a group of task can
+allocate. It can be looked at as an extension of the existing quota
+interface which limits the number of HugeTLB pages per hugetlbfs
+superblock. HPC job scheduler requires jobs to specify their resource
+requirements in the job file. Once their requirements can be met,
+job schedulers like (SLURM) will schedule the job. We need to make sure
+that the jobs won't consume more resources than requested. If they do
+we should either error out or kill the application.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Changes from v3:
+ * Address review feedback.
+ * bug fix in cgroup removal related parent charging with use_hierarchy set
+
+Changes from V2:
+* Changed the implementation to limit the HugeTLB usage during page
+  fault time. This simplifies the extension and keep it closer to
+  memcg design. This also allows to support cgroup removal with less
+  complexity. Only caveat is the application should ensure its HugeTLB
+  usage doesn't cross the cgroup limit.
+
+Changes from V1:
+* Changed the implementation as a memcg extension. We still use
+  the same logic to track the cgroup and range.
+
+Changes from RFC post:
+* Added support for HugeTLB cgroup hierarchy
+* Added support for task migration
+* Added documentation patch
+* Other bug fixes
+
+-aneesh
+
+
