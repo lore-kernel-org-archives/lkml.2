@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946314Ab2CPXkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:40:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
+	id S1946298Ab2CPXka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:40:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946287Ab2CPXk1 (ORCPT
+	with ESMTP id S1946253Ab2CPXkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:27 -0400
-Message-Id: <20120316233812.134810131@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:14 -0400
+Message-Id: <20120316233811.768098240@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:27 -0700
+Date: Fri, 16 Mar 2012 16:38:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben McKeegan <ben@netservers.co.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/41] ppp: fix ppp_mp_reconstruct bad seq errors
+        alan@lxorguk.ukuu.org.uk, Ike Panhc <ike.pan@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>, Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 13/41] acer-wmi: No wifi rfkill on Lenovo machines
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,88 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Ike Panhc <ike.pan@canonical.com>
 
-From: Ben McKeegan <ben@netservers.co.uk>
+commit 461e74377cfcfc2c0d6bbdfa8fc5fbc21b052c2a upstream.
 
-[ Upstream commit 8a49ad6e89feb5015e77ce6efeb2678947117e20 ]
+We have several reports which says acer-wmi is loaded on ideapads
+and register rfkill for wifi which can not be unblocked.
 
-This patch fixes a (mostly cosmetic) bug introduced by the patch
-'ppp: Use SKB queue abstraction interfaces in fragment processing'
-found here: http://www.spinics.net/lists/netdev/msg153312.html
+Since ideapad-laptop also register rfkill for wifi and it works
+reliably, it will be fine acer-wmi is not going to register rfkill
+for wifi once VPC2004 is found.
 
-The above patch rewrote and moved the code responsible for cleaning
-up discarded fragments but the new code does not catch every case
-where this is necessary.  This results in some discarded fragments
-remaining in the queue, and triggering a 'bad seq' error on the
-subsequent call to ppp_mp_reconstruct.  Fragments are discarded
-whenever other fragments of the same frame have been lost.
-This can generate a lot of unwanted and misleading log messages.
+Also put IBM0068/LEN0068 in the list. Though thinkpad_acpi has no
+wifi rfkill capability, there are reports which says acer-wmi also
+block wireless on Thinkpad E520/E420.
 
-This patch also adds additional detail to the debug logging to
-make it clearer which fragments were lost and which other fragments
-were discarded as a result of losses. (Run pppd with 'kdebug 1'
-option to enable debug logging.)
-
-Signed-off-by: Ben McKeegan <ben@netservers.co.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ppp/ppp_generic.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
 
---- a/drivers/net/ppp/ppp_generic.c
-+++ b/drivers/net/ppp/ppp_generic.c
-@@ -2024,14 +2024,22 @@ ppp_mp_reconstruct(struct ppp *ppp)
- 			continue;
- 		}
- 		if (PPP_MP_CB(p)->sequence != seq) {
-+			u32 oldseq;
- 			/* Fragment `seq' is missing.  If it is after
- 			   minseq, it might arrive later, so stop here. */
- 			if (seq_after(seq, minseq))
- 				break;
- 			/* Fragment `seq' is lost, keep going. */
- 			lost = 1;
-+			oldseq = seq;
- 			seq = seq_before(minseq, PPP_MP_CB(p)->sequence)?
- 				minseq + 1: PPP_MP_CB(p)->sequence;
-+
-+			if (ppp->debug & 1)
-+				netdev_printk(KERN_DEBUG, ppp->dev,
-+					      "lost frag %u..%u\n",
-+					      oldseq, seq-1);
-+
- 			goto again;
- 		}
+---
+ drivers/platform/x86/acer-wmi.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -679,6 +679,32 @@ static acpi_status AMW0_find_mailled(voi
+ 	return AE_OK;
+ }
  
-@@ -2076,6 +2084,10 @@ ppp_mp_reconstruct(struct ppp *ppp)
- 			struct sk_buff *tmp2;
- 
- 			skb_queue_reverse_walk_from_safe(list, p, tmp2) {
-+				if (ppp->debug & 1)
-+					netdev_printk(KERN_DEBUG, ppp->dev,
-+						      "discarding frag %u\n",
-+						      PPP_MP_CB(p)->sequence);
- 				__skb_unlink(p, list);
- 				kfree_skb(p);
- 			}
-@@ -2091,6 +2103,17 @@ ppp_mp_reconstruct(struct ppp *ppp)
- 		/* If we have discarded any fragments,
- 		   signal a receive error. */
- 		if (PPP_MP_CB(head)->sequence != ppp->nextseq) {
-+			skb_queue_walk_safe(list, p, tmp) {
-+				if (p == head)
-+					break;
-+				if (ppp->debug & 1)
-+					netdev_printk(KERN_DEBUG, ppp->dev,
-+						      "discarding frag %u\n",
-+						      PPP_MP_CB(p)->sequence);
-+				__skb_unlink(p, list);
-+				kfree_skb(p);
-+			}
++static int AMW0_set_cap_acpi_check_device_found;
 +
- 			if (ppp->debug & 1)
- 				netdev_printk(KERN_DEBUG, ppp->dev,
- 					      "  missed pkts %u..%u\n",
++static acpi_status AMW0_set_cap_acpi_check_device_cb(acpi_handle handle,
++	u32 level, void *context, void **retval)
++{
++	AMW0_set_cap_acpi_check_device_found = 1;
++	return AE_OK;
++}
++
++static const struct acpi_device_id norfkill_ids[] = {
++	{ "VPC2004", 0},
++	{ "IBM0068", 0},
++	{ "LEN0068", 0},
++	{ "", 0},
++};
++
++static int AMW0_set_cap_acpi_check_device(void)
++{
++	const struct acpi_device_id *id;
++
++	for (id = norfkill_ids; id->id[0]; id++)
++		acpi_get_devices(id->id, AMW0_set_cap_acpi_check_device_cb,
++				NULL, NULL);
++	return AMW0_set_cap_acpi_check_device_found;
++}
++
+ static acpi_status AMW0_set_capabilities(void)
+ {
+ 	struct wmab_args args;
+@@ -692,7 +718,9 @@ static acpi_status AMW0_set_capabilities
+ 	 * work.
+ 	 */
+ 	if (wmi_has_guid(AMW0_GUID2)) {
+-		interface->capability |= ACER_CAP_WIRELESS;
++		if ((quirks != &quirk_unknown) ||
++		    !AMW0_set_cap_acpi_check_device())
++			interface->capability |= ACER_CAP_WIRELESS;
+ 		return AE_OK;
+ 	}
+ 
 
 
