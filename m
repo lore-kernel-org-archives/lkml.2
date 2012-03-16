@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031199Ab2CPV2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:28:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41469 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964969Ab2CPV2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:28:06 -0400
-Date: Fri, 16 Mar 2012 14:27:46 -0700
-From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
-Message-ID: <tip-c7b738351ba92f48b943ac59aff6b5b0f17f37c9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, matt.fleming@intel.com,
-        dan.carpenter@oracle.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, matt.fleming@intel.com, hpa@linux.intel.com,
-        dan.carpenter@oracle.com
-In-Reply-To: <20120305180614.GA26880@elgon.mountain>
-References: <20120305180614.GA26880@elgon.mountain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, efi:
-  Fix pointer math issue in handle_ramdisks()
-Git-Commit-ID: c7b738351ba92f48b943ac59aff6b5b0f17f37c9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1031440Ab2CPV3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:29:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41478 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031321Ab2CPV3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 17:29:04 -0400
+Message-ID: <4F63B093.9020104@zytor.com>
+Date: Fri, 16 Mar 2012 14:28:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Shea Levy <shea@shealevy.com>
+CC: linux-kernel@vger.kernel.org, matt.fleming@intel.com
+Subject: Re: Proposal: EFI boot stub configuration file
+References: <4F63AFD5.3010607@shealevy.com>
+In-Reply-To: <4F63AFD5.3010607@shealevy.com>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 16 Mar 2012 14:27:52 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c7b738351ba92f48b943ac59aff6b5b0f17f37c9
-Gitweb:     http://git.kernel.org/tip/c7b738351ba92f48b943ac59aff6b5b0f17f37c9
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Mon, 5 Mar 2012 21:06:14 +0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 16 Mar 2012 13:03:24 -0700
+On 03/16/2012 02:25 PM, Shea Levy wrote:
+> Hello,
+> 
+> In some EFI boot environments (e.g. booting from an external medium or
+> non-standard systems where tools like efibootmgr don't work), it is
+> currently impossible to pass the right arguments to the kernel unless an
+> EFI shell is launched. To ameliorate this, I propose that if
+> image->load_options_size is 0 (indicating no arguments were passed) AND
+> image->parent_handle is NULL (indicating that the image was loaded
+> automatically by the firmware), then the kernel looks for a file in some
+> fixed, possibly configurable place (e.g. \efi\linux\params), sets
+> image->load_options_size to its size, and sets image->load_options to
+> its contents. On any error whatsoever (finding the file, reading it,
+> getting its size, whatever), any allocated memory would be freed and
+> load_options_size would be set back to 0. Since the arguments are
+> already converted to ASCII and parsed during the boot process, the file
+> would be expected to be in UCS-2 format and no validation would be done
+> in the configuration loading code. I'll write something up over the next
+> week or so and submit it as an RFC patch series, but I thought I'd post
+> this here first in case anyone has immediate feedback based on this
+> description.
+> 
 
-x86, efi: Fix pointer math issue in handle_ramdisks()
+A file in UCS-2 seems messed up.
 
-"filename" is a efi_char16_t string so this check for reaching the end
-of the array doesn't work.  We need to cast the pointer to (u8 *) before
-doing the math.
+Otherwise, seems like a reasonable idea, with a major caveat... since
+the whole point of this is to do something when it isn't possible to set
+NVRAM variables, it would make most sense to me if the configuration
+file could be founin a specific location relative to the kernel image
+itself.
 
-This patch changes the "filename" to "filename_16" to avoid confusion in
-the future.
+	-hpa
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/20120305180614.GA26880@elgon.mountain
-Acked-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/compressed/eboot.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index fec216f..0cdfc0d 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -539,7 +539,7 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 		struct initrd *initrd;
- 		efi_file_handle_t *h;
- 		efi_file_info_t *info;
--		efi_char16_t filename[256];
-+		efi_char16_t filename_16[256];
- 		unsigned long info_sz;
- 		efi_guid_t info_guid = EFI_FILE_INFO_ID;
- 		efi_char16_t *p;
-@@ -552,14 +552,14 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 		str += 7;
- 
- 		initrd = &initrds[i];
--		p = filename;
-+		p = filename_16;
- 
- 		/* Skip any leading slashes */
- 		while (*str == '/' || *str == '\\')
- 			str++;
- 
- 		while (*str && *str != ' ' && *str != '\n') {
--			if (p >= filename + sizeof(filename))
-+			if ((u8 *)p >= (u8 *)filename_16 + sizeof(filename_16))
- 				break;
- 
- 			*p++ = *str++;
-@@ -583,7 +583,7 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 				goto free_initrds;
- 		}
- 
--		status = efi_call_phys5(fh->open, fh, &h, filename,
-+		status = efi_call_phys5(fh->open, fh, &h, filename_16,
- 					EFI_FILE_MODE_READ, (u64)0);
- 		if (status != EFI_SUCCESS)
- 			goto close_handles;
