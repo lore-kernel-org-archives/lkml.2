@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422907Ab2CPOxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:53:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45542 "EHLO
+	id S1032868Ab2CPOxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:53:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45544 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032850Ab2CPOxh (ORCPT
+	with ESMTP id S1422910Ab2CPOxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:37 -0400
-Message-Id: <20120316144240.889278872@chello.nl>
+	Fri, 16 Mar 2012 10:53:43 -0400
+Message-Id: <20120316144240.234456258@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:40 +0100
+Date: Fri, 16 Mar 2012 15:40:30 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -25,131 +25,164 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 12/26] sched, mm: sched_{fork,exec} node assignment
+Subject: [RFC][PATCH 02/26] mm, mpol: Remove NUMA_INTERLEAVE_HIT
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=numa-foo-4.patch
+Content-Disposition: inline; filename=peter_zijlstra-mm-remove_numa_interleave_hit.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rework the scheduler fork,exec hooks to allow home-node assignment.
+Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
+to be compared to either a total of interleave allocations or to a miss
+count, remove it.
 
-In particular:
-  - call sched_fork() after the mm is set up and the thread
-    group list is initialized (such that we can iterate the mm_owner
-    thread group).
-  - call sched_exec() after we've got our fresh mm.
+Fixing it would be possible, but since we've gone years without these
+statistics I figure we can continue that way.
+
+This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- fs/exec.c             |    4 ++--
- include/linux/sched.h |    4 ++--
- kernel/fork.c         |    9 +++++----
- kernel/sched/core.c   |    7 +++++--
- kernel/sched/sched.h  |    2 ++
- 5 files changed, 16 insertions(+), 10 deletions(-)
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1505,8 +1505,6 @@ static int do_execve_common(const char *
- 	if (IS_ERR(file))
- 		goto out_unmark;
- 
--	sched_exec();
--
- 	bprm->file = file;
- 	bprm->filename = filename;
- 	bprm->interp = filename;
-@@ -1515,6 +1513,8 @@ static int do_execve_common(const char *
- 	if (retval)
- 		goto out_file;
- 
-+	sched_exec(bprm->mm);
-+
- 	bprm->argc = count(argv, MAX_ARG_STRINGS);
- 	if ((retval = bprm->argc) < 0)
- 		goto out;
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1999,9 +1999,9 @@ task_sched_runtime(struct task_struct *t
- 
- /* sched_exec is called by processes performing an exec */
- #ifdef CONFIG_SMP
--extern void sched_exec(void);
-+extern void sched_exec(struct mm_struct *mm);
- #else
--#define sched_exec()   {}
-+#define sched_exec(mm)   {}
+ drivers/base/node.c    |    2 +-
+ include/linux/mmzone.h |    1 -
+ mm/mempolicy.c         |   66 +++++++++++++++--------------------------------
+ 3 files changed, 22 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 5693ece..942cdbc 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -172,7 +172,7 @@ static ssize_t node_read_numastat(struct sys_device * dev,
+ 		       node_page_state(dev->id, NUMA_HIT),
+ 		       node_page_state(dev->id, NUMA_MISS),
+ 		       node_page_state(dev->id, NUMA_FOREIGN),
+-		       node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
++		       0UL,
+ 		       node_page_state(dev->id, NUMA_LOCAL),
+ 		       node_page_state(dev->id, NUMA_OTHER));
+ }
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 3ac040f..3a3be81 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -111,7 +111,6 @@ enum zone_stat_item {
+ 	NUMA_HIT,		/* allocated in intended node */
+ 	NUMA_MISS,		/* allocated in non intended node */
+ 	NUMA_FOREIGN,		/* was intended here, hit elsewhere */
+-	NUMA_INTERLEAVE_HIT,	/* interleaver preferred this zone */
+ 	NUMA_LOCAL,		/* allocation from local node */
+ 	NUMA_OTHER,		/* allocation from other node */
  #endif
- 
- extern void sched_clock_idle_sleep_event(void);
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1229,9 +1229,6 @@ static struct task_struct *copy_process(
- 	p->memcg_batch.memcg = NULL;
- #endif
- 
--	/* Perform scheduler related setup. Assign this task to a CPU. */
--	sched_fork(p);
--
- 	retval = perf_event_init_task(p);
- 	if (retval)
- 		goto bad_fork_cleanup_policy;
-@@ -1284,6 +1281,11 @@ static struct task_struct *copy_process(
- 	 * Clear TID on mm_release()?
- 	 */
- 	p->clear_child_tid = (clone_flags & CLONE_CHILD_CLEARTID) ? child_tidptr : NULL;
-+
-+	INIT_LIST_HEAD(&p->thread_group);
-+	/* Perform scheduler related setup. Assign this task to a CPU. */
-+	sched_fork(p);
-+
- #ifdef CONFIG_BLOCK
- 	p->plug = NULL;
- #endif
-@@ -1326,7 +1328,6 @@ static struct task_struct *copy_process(
- 	 * We dont wake it up yet.
- 	 */
- 	p->group_leader = p;
--	INIT_LIST_HEAD(&p->thread_group);
- 
- 	/* Now that the task is set up, run cgroup callbacks if
- 	 * necessary. We need to run them before the task is visible
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1767,8 +1767,9 @@ void sched_fork(struct task_struct *p)
- #ifdef CONFIG_SMP
- 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
- #endif
--
- 	put_cpu();
-+
-+	select_task_node(p, p->mm, SD_BALANCE_FORK);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index c3fdbcb..2c48c45 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1530,11 +1530,29 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
+ 	return NULL;
  }
  
- /*
-@@ -2507,12 +2508,14 @@ static void update_cpu_load_active(struc
-  * sched_exec - execve() is a valuable balancing opportunity, because at
-  * this point the task has the smallest effective memory and cache footprint.
-  */
--void sched_exec(void)
-+void sched_exec(struct mm_struct *mm)
++/* Do dynamic interleaving for a process */
++static unsigned interleave_nodes(struct mempolicy *policy)
++{
++	unsigned nid, next;
++	struct task_struct *me = current;
++
++	nid = me->il_next;
++	next = next_node(nid, policy->v.nodes);
++	if (next >= MAX_NUMNODES)
++		next = first_node(policy->v.nodes);
++	if (next < MAX_NUMNODES)
++		me->il_next = next;
++	return nid;
++}
++
+ /* Return a zonelist indicated by gfp for node representing a mempolicy */
+ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
+ 	int nd)
  {
- 	struct task_struct *p = current;
- 	unsigned long flags;
- 	int dest_cpu;
+ 	switch (policy->mode) {
++	case MPOL_INTERLEAVE:
++		nd = interleave_nodes(policy);
++		break;
+ 	case MPOL_PREFERRED:
+ 		if (!(policy->flags & MPOL_F_LOCAL))
+ 			nd = policy->v.preferred_node;
+@@ -1556,21 +1574,6 @@ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
+ 	return node_zonelist(nd, gfp);
+ }
  
-+	select_task_node(p, mm, SD_BALANCE_EXEC);
-+
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
- 	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == smp_processor_id())
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1153,3 +1153,5 @@ enum rq_nohz_flag_bits {
+-/* Do dynamic interleaving for a process */
+-static unsigned interleave_nodes(struct mempolicy *policy)
+-{
+-	unsigned nid, next;
+-	struct task_struct *me = current;
+-
+-	nid = me->il_next;
+-	next = next_node(nid, policy->v.nodes);
+-	if (next >= MAX_NUMNODES)
+-		next = first_node(policy->v.nodes);
+-	if (next < MAX_NUMNODES)
+-		me->il_next = next;
+-	return nid;
+-}
+-
+ /*
+  * Depending on the memory policy provide a node from which to allocate the
+  * next slab entry.
+@@ -1801,21 +1804,6 @@ out:
+ 	return ret;
+ }
  
- #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
- #endif
-+
-+static inline void select_task_node(struct task_struct *p, struct mm_struct *mm, int sd_flags) { }
+-/* Allocate a page in interleaved policy.
+-   Own path because it needs to do special accounting. */
+-static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
+-					unsigned nid)
+-{
+-	struct zonelist *zl;
+-	struct page *page;
+-
+-	zl = node_zonelist(nid, gfp);
+-	page = __alloc_pages(gfp, order, zl);
+-	if (page && page_zone(page) == zonelist_zone(&zl->_zonerefs[0]))
+-		inc_zone_page_state(page, NUMA_INTERLEAVE_HIT);
+-	return page;
+-}
+-
+ /**
+  * 	alloc_pages_vma	- Allocate a page for a VMA.
+  *
+@@ -1848,15 +1836,6 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 	struct page *page;
+ 
+ 	get_mems_allowed();
+-	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+-		unsigned nid;
+-
+-		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+-		mpol_cond_put(pol);
+-		page = alloc_page_interleave(gfp, order, nid);
+-		put_mems_allowed();
+-		return page;
+-	}
+ 	zl = policy_zonelist(gfp, pol, node);
+ 	if (unlikely(mpol_needs_cond_ref(pol))) {
+ 		/*
+@@ -1909,12 +1888,9 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ 	 * No reference counting needed for current->mempolicy
+ 	 * nor system default_policy
+ 	 */
+-	if (pol->mode == MPOL_INTERLEAVE)
+-		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
+-	else
+-		page = __alloc_pages_nodemask(gfp, order,
+-				policy_zonelist(gfp, pol, numa_node_id()),
+-				policy_nodemask(gfp, pol));
++	page = __alloc_pages_nodemask(gfp, order,
++			policy_zonelist(gfp, pol, numa_node_id()),
++			policy_nodemask(gfp, pol));
+ 	put_mems_allowed();
+ 	return page;
+ }
+
 
 
