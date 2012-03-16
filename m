@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946447Ab2CPXp7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:45:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
+	id S1946463Ab2CPXqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:46:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946356Ab2CPXkt (ORCPT
+	with ESMTP id S1946072Ab2CPXkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:49 -0400
-Message-Id: <20120316233811.948247688@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:40 -0400
+Message-Id: <20120316233812.487480216@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:25 -0700
+Date: Fri, 16 Mar 2012 16:38:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michel Machado <michel@digirati.com.br>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [ 15/41] neighbour: Fixed race condition at tbl->nht
+        alan@lxorguk.ukuu.org.uk, Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 21/41] packetengines: fix config default
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Michel Machado <michel@digirati.com.br>
+From: stephen hemminger <shemminger@vyatta.com>
 
-[ Upstream commit 84338a6c9dbb6ff3de4749864020f8f25d86fc81 ]
+[ Upstream commit 3f2010b2ad3d66d5291497c9b274315e7b807ecd ]
 
-When the fixed race condition happens:
+As part of the big network driver reorg, each vendor directory defaults to
+yes, so that older config's can migrate correctly. Looks like this one
+got missed.
 
-1. While function neigh_periodic_work scans the neighbor hash table
-pointed by field tbl->nht, it unlocks and locks tbl->lock between
-buckets in order to call cond_resched.
-
-2. Assume that function neigh_periodic_work calls cond_resched, that is,
-the lock tbl->lock is available, and function neigh_hash_grow runs.
-
-3. Once function neigh_hash_grow finishes, and RCU calls
-neigh_hash_free_rcu, the original struct neigh_hash_table that function
-neigh_periodic_work was using doesn't exist anymore.
-
-4. Once back at neigh_periodic_work, whenever the old struct
-neigh_hash_table is accessed, things can go badly.
-
-Signed-off-by: Michel Machado <michel@digirati.com.br>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/neighbour.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/packetengines/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -802,6 +802,8 @@ next_elt:
- 		write_unlock_bh(&tbl->lock);
- 		cond_resched();
- 		write_lock_bh(&tbl->lock);
-+		nht = rcu_dereference_protected(tbl->nht,
-+						lockdep_is_held(&tbl->lock));
- 	}
- 	/* Cycle through all hash buckets every base_reachable_time/2 ticks.
- 	 * ARP entry timeouts range from 1/2 base_reachable_time to 3/2
+--- a/drivers/net/ethernet/packetengines/Kconfig
++++ b/drivers/net/ethernet/packetengines/Kconfig
+@@ -4,6 +4,7 @@
+ 
+ config NET_PACKET_ENGINE
+ 	bool "Packet Engine devices"
++	default y
+ 	depends on PCI
+ 	---help---
+ 	  If you have a network (Ethernet) card belonging to this class, say Y
 
 
