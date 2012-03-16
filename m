@@ -1,52 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030892Ab2CPJsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 05:48:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44894 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030616Ab2CPJsI (ORCPT
+	id S1030708Ab2CPJtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 05:49:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:27934 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932365Ab2CPJtd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 05:48:08 -0400
-Date: Fri, 16 Mar 2012 10:48:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: mingo@redhat.com, levinsasha928@gmail.com, linux-kernel@vger.kernel.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/core] ntp: Fix integer overflow when setting time
-In-Reply-To: <4F62978A.7000009@zytor.com>
-Message-ID: <alpine.LFD.2.02.1203161047220.2466@ionos>
-References: <1331829374-31543-2-git-send-email-levinsasha928@gmail.com> <tip-a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33@git.kernel.org> <4F62978A.7000009@zytor.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 16 Mar 2012 05:49:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119725337"
+From: "Du, Alek" <alek.du@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>, Jiri Slaby <jirislaby@gmail.com>
+Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ
+Date: Fri, 16 Mar 2012 09:49:30 +0000
+Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
+ <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
+ <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
+ <4F630B4D.3040508@suse.cz>
+In-Reply-To: <4F630B4D.3040508@suse.cz>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, H. Peter Anvin wrote:
+The tty structure is protect and not null, the tty->buf.tail is null. Many people think the tty reference count isn't protected and cause this bug, it is not true. :-)
 
-> On 03/15/2012 02:53 PM, tip-bot for Sasha Levin wrote:
-> > Commit-ID:  a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33
-> > Gitweb:     http://git.kernel.org/tip/a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33
-> > Author:     Sasha Levin <levinsasha928@gmail.com>
-> > AuthorDate: Thu, 15 Mar 2012 12:36:14 -0400
-> > Committer:  Thomas Gleixner <tglx@linutronix.de>
-> > CommitDate: Thu, 15 Mar 2012 21:41:34 +0100
-> > 
-> > ntp: Fix integer overflow when setting time
-> > 
-> > 'long secs' is passed as divisor to div_s64, which accepts a 32bit
-> > divisor. On 64bit machines that value is trimmed back from 8 bytes
-> > back to 4, causing a divide by zero when the number is bigger than
-> > (1 << 32) - 1 and all 32 lower bits are 0.
-> > 
-> > Use div64_long() instead.
-> > 
+For the flush case, it need acquire the spinlock to free the buffer and put buf.tail to NULL. So this patch will help:
+
+Here is the example place, you can see the __tty_buffer_flush is inside the spinlock.
+
+void tty_buffer_flush(struct tty_struct *tty)
+{
+        unsigned long flags;
+        spin_lock_irqsave(&tty->buf.lock, flags);
+
+        /* If the data is being pushed to the tty layer then we can't
+           process it here. Instead set a flag and the flush_to_ldisc
+           path will process the flush request before it exits */
+        if (test_bit(TTY_FLUSHING, &tty->flags)) {
+                set_bit(TTY_FLUSHPENDING, &tty->flags);
+                spin_unlock_irqrestore(&tty->buf.lock, flags);
+                wait_event(tty->read_wait,
+                                test_bit(TTY_FLUSHPENDING, &tty->flags) == 0);
+                return;
+        } else
+                __tty_buffer_flush(tty);
+        spin_unlock_irqrestore(&tty->buf.lock, flags);
+}
+
+
+
+Thanks,
+Alek
+
+-----Original Message-----
+From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
+Sent: Friday, March 16, 2012 5:44 PM
+To: Du, Alek
+Cc: Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao; Jiri Slaby
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
+
+On 03/15/2012 11:14 AM, Du, Alek wrote:
+> Alan,
 > 
-> Perhaps we should use the same kind of multiply-and-shift tricks we're
-> doing for jiffies conversion?  If nothing else it ought to perform better.
+> I agree with you for the case of multiple writers to the tty buffer.
+> 
+> But there is another case that cause kernel hang: driver is writing data to tty, while app shutdown the port or flush through IOCTL. The buf.tail is set to NULL, here is the log:
+> 
+> 
+> <1>[ 4713.451954] BUG: unable to handle kernel NULL pointer 
+> dereference at
+> 00000004
 
-It's not a hotpath where performance matters, but divide by zero does :)
+The trace only suggests that you don't increment tty reference count in irq properly. If you did that, you would not have tty buffer gone by concurrent shutdown.
+
+For the latter case (flush via ioctl), your patch won't help for tty_prepare_string*, as we return pointer to the buffer which is freed by the flush, right?
+
+thanks,
+--
+js
+suse labs
