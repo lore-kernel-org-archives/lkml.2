@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946044Ab2CPXht (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:37:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946061Ab2CPXhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:37:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946031Ab2CPXho (ORCPT
+	with ESMTP id S1946031Ab2CPXhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:37:44 -0400
-Message-Id: <20120316233447.657865319@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:37:50 -0400
+Message-Id: <20120316233447.832020745@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:34:51 -0700
+Date: Fri, 16 Mar 2012 16:34:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 04/38] x86: Derandom delay_tsc for 64 bit
+        alan@lxorguk.ukuu.org.uk, Carl Karsten <carl@personnelware.com>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 06/38] firewire: cdev: fix 32 bit userland on 64 bit kernel compat corner cases
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit a7f4255f906f60f72e00aad2fb000939449ff32e upstream.
+commit 9c1176b6a28850703ea6e3a0f0c703f6d6c61cd3 upstream.
 
-Commit f0fbf0abc093 ("x86: integrate delay functions") converted
-delay_tsc() into a random delay generator for 64 bit.  The reason is
-that it merged the mostly identical versions of delay_32.c and
-delay_64.c.  Though the subtle difference of the result was:
+Clemens points out that we need to use compat_ptr() in order to safely
+cast from u64 to addresses of a 32-bit usermode client.
 
- static void delay_tsc(unsigned long loops)
- {
--	unsigned bclock, now;
-+	unsigned long bclock, now;
+Before, our conversion went wrong
+  - in practice if the client cast from pointer to integer such that
+    sign-extension happened, (libraw1394 and libdc1394 at least were not
+    doing that, IOW were not affected)
+or
+  - in theory on s390 (which doesn't have FireWire though) and on the
+    tile architecture, regardless of what the client does.
+The bug would usually be observed as the initial get_info ioctl failing
+with "Bad address" (EFAULT).
 
-Now the function uses rdtscl() which returns the lower 32bit of the
-TSC. On 32bit that's not problematic as unsigned long is 32bit. On 64
-bit this fails when the lower 32bit are close to wrap around when
-bclock is read, because the following check
-
-       if ((now - bclock) >= loops)
-       	  	break;
-
-evaluated to true on 64bit for e.g. bclock = 0xffffffff and now = 0
-because the unsigned long (now - bclock) of these values results in
-0xffffffff00000001 which is definitely larger than the loops
-value. That explains Tvortkos observation:
-
-"Because I am seeing udelay(500) (_occasionally_) being short, and
- that by delaying for some duration between 0us (yep) and 491us."
-
-Make those variables explicitely u32 again, so this works for both 32
-and 64 bit.
-
-Reported-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Carl Karsten <carl@personnelware.com>
+Reported-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/lib/delay.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/firewire/core-cdev.c |   24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
 
---- a/arch/x86/lib/delay.c
-+++ b/arch/x86/lib/delay.c
-@@ -48,9 +48,9 @@ static void delay_loop(unsigned long loo
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -216,15 +216,33 @@ struct inbound_phy_packet_event {
+ 	struct fw_cdev_event_phy_packet phy_packet;
+ };
+ 
+-static inline void __user *u64_to_uptr(__u64 value)
++#ifdef CONFIG_COMPAT
++static void __user *u64_to_uptr(u64 value)
++{
++	if (is_compat_task())
++		return compat_ptr(value);
++	else
++		return (void __user *)(unsigned long)value;
++}
++
++static u64 uptr_to_u64(void __user *ptr)
++{
++	if (is_compat_task())
++		return ptr_to_compat(ptr);
++	else
++		return (u64)(unsigned long)ptr;
++}
++#else
++static inline void __user *u64_to_uptr(u64 value)
+ {
+ 	return (void __user *)(unsigned long)value;
  }
  
- /* TSC based delay: */
--static void delay_tsc(unsigned long loops)
-+static void delay_tsc(unsigned long __loops)
+-static inline __u64 uptr_to_u64(void __user *ptr)
++static inline u64 uptr_to_u64(void __user *ptr)
  {
--	unsigned long bclock, now;
-+	u32 bclock, now, loops = __loops;
- 	int cpu;
+-	return (__u64)(unsigned long)ptr;
++	return (u64)(unsigned long)ptr;
+ }
++#endif /* CONFIG_COMPAT */
  
- 	preempt_disable();
+ static int fw_device_op_open(struct inode *inode, struct file *file)
+ {
 
 
