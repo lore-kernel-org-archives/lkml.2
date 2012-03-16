@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032830Ab2CPX5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:57:38 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946091Ab2CPXiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:38:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946112Ab2CPXiN (ORCPT
+	with ESMTP id S1946057Ab2CPXhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:38:13 -0400
-Message-Id: <20120316233447.565838629@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:37:53 -0400
+Message-Id: <20120316233447.914553454@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:34:50 -0700
+Date: Fri, 16 Mar 2012 16:34:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Jeff Moyer <jmoyer@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>
-Subject: [ 03/38] aio: fix the "too late munmap()" race
+        alan@lxorguk.ukuu.org.uk, Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 07/38] firewire: core: handle ack_busy when fetching the Config ROM
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +24,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit c7b285550544c22bc005ec20978472c9ac7138c6 upstream.
+commit aaff12039ffd812d0c8bbff50b87b6f1f09bec3e upstream.
 
-Current code has put_ioctx() called asynchronously from aio_fput_routine();
-that's done *after* we have killed the request that used to pin ioctx,
-so there's nothing to stop io_destroy() waiting in wait_for_all_aios()
-from progressing.  As the result, we can end up with async call of
-put_ioctx() being the last one and possibly happening during exit_mmap()
-or elf_core_dump(), neither of which expects stray munmap() being done
-to them...
+Some older Panasonic made camcorders (Panasonic AG-EZ30 and NV-DX110,
+Grundig Scenos DLC 2000) reject requests with ack_busy_X if a request is
+sent immediately after they sent a response to a prior transaction.
+This causes firewire-core to fail probing of the camcorder with "giving
+up on config rom for node id ...".  Consequently, programs like kino or
+dvgrab are unaware of the presence of a camcorder.
 
-We do need to prevent _freeing_ ioctx until aio_fput_routine() is done
-with that, but that's all we care about - neither io_destroy() nor
-exit_aio() will progress past wait_for_all_aios() until aio_fput_routine()
-does really_put_req(), so the ioctx teardown won't be done until then
-and we don't care about the contents of ioctx past that point.
+Such transaction failures happen also with the ieee1394 driver stack
+(of the 2.4...2.6 kernel series until 2.6.36 inclusive) but with a lower
+likelihood, such that kino or dvgrab are generally able to use these
+camcorders via the older driver stack.  The cause for firewire-ohci's or
+firewire-core's worse behavior is not yet known.  Gap count optimization
+in firewire-core is not the cause.  Perhaps the slightly higher latency
+of transaction completion in the older stack plays a role.  (ieee1394:
+AR-resp DMA context tasklet -> packet completion ktread -> user process;
+firewire-core: tasklet -> user process.)
 
-Since actual freeing of these suckers is RCU-delayed, we don't need to
-bump ioctx refcount when request goes into list for async removal.
-All we need is rcu_read_lock held just over the ->ctx_lock-protected
-area in aio_fput_routine().
+This change introduces retries and delays after ack_busy_X into
+firewire-core's Config ROM reader, such that at least firewire-core's
+probing and /dev/fw* creation are successful.  This still leaves the
+problem that userland processes are facing transaction failures.
+gscanbus's built-in retry routines deal with them successfully, but
+neither kino's nor dvgrab's do ever succeed.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+But at least DV capture with "dvgrab -noavc -card 0" works now.  Live
+video preview in kino works too, but not actual capture.
+
+One way to prevent Configuration ROM reading failures in application
+programs is to modify libraw1394 to synthesize read responses by means
+of firewire-core's Configuration ROM cache.  This would only leave
+CMP and FCP transaction failures as a potential problem source for
+applications.
+
+Reported-and-tested-by: Thomas Seilund <tps@netmaster.dk>
+Reported-and-tested-by: René Fritz <rene@colorcube.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/firewire/core-device.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -228,12 +228,6 @@ static void __put_ioctx(struct kioctx *c
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
- }
- 
--static inline void get_ioctx(struct kioctx *kioctx)
--{
--	BUG_ON(atomic_read(&kioctx->users) <= 0);
--	atomic_inc(&kioctx->users);
--}
--
- static inline int try_get_ioctx(struct kioctx *kioctx)
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -455,15 +455,20 @@ static struct device_attribute fw_device
+ static int read_rom(struct fw_device *device,
+ 		    int generation, int index, u32 *data)
  {
- 	return atomic_inc_not_zero(&kioctx->users);
-@@ -527,11 +521,16 @@ static void aio_fput_routine(struct work
- 			fput(req->ki_filp);
+-	int rcode;
++	u64 offset = (CSR_REGISTER_BASE | CSR_CONFIG_ROM) + index * 4;
++	int i, rcode;
  
- 		/* Link the iocb into the context's free list */
-+		rcu_read_lock();
- 		spin_lock_irq(&ctx->ctx_lock);
- 		really_put_req(ctx, req);
-+		/*
-+		 * at that point ctx might've been killed, but actual
-+		 * freeing is RCU'd
-+		 */
- 		spin_unlock_irq(&ctx->ctx_lock);
-+		rcu_read_unlock();
+ 	/* device->node_id, accessed below, must not be older than generation */
+ 	smp_rmb();
  
--		put_ioctx(ctx);
- 		spin_lock_irq(&fput_lock);
- 	}
- 	spin_unlock_irq(&fput_lock);
-@@ -562,7 +561,6 @@ static int __aio_put_req(struct kioctx *
- 	 * this function will be executed w/out any aio kthread wakeup.
- 	 */
- 	if (unlikely(!fput_atomic(req->ki_filp))) {
--		get_ioctx(ctx);
- 		spin_lock(&fput_lock);
- 		list_add(&req->ki_list, &fput_head);
- 		spin_unlock(&fput_lock);
+-	rcode = fw_run_transaction(device->card, TCODE_READ_QUADLET_REQUEST,
+-			device->node_id, generation, device->max_speed,
+-			(CSR_REGISTER_BASE | CSR_CONFIG_ROM) + index * 4,
+-			data, 4);
++	for (i = 10; i < 100; i += 10) {
++		rcode = fw_run_transaction(device->card,
++				TCODE_READ_QUADLET_REQUEST, device->node_id,
++				generation, device->max_speed, offset, data, 4);
++		if (rcode != RCODE_BUSY)
++			break;
++		msleep(i);
++	}
+ 	be32_to_cpus(data);
+ 
+ 	return rcode;
 
 
