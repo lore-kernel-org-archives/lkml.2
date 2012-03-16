@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759942Ab2CPNaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 09:30:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58225 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab2CPNaO (ORCPT
+	id S1030556Ab2CPNef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 09:34:35 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:37691
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1756765Ab2CPNee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 09:30:14 -0400
-Date: Fri, 16 Mar 2012 08:30:10 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] apple_bl: Add register/unregister functions
-Message-ID: <20120316133010.GA25984@ubuntu-macmini>
-Mail-Followup-To: Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org,
-	Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
-References: <1331847128-16339-1-git-send-email-seth.forshee@canonical.com>
- <1331847128-16339-2-git-send-email-seth.forshee@canonical.com>
+	Fri, 16 Mar 2012 09:34:34 -0400
+Date: Fri, 16 Mar 2012 14:34:31 +0100 (CET)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] Remove notion of key schemes
+In-Reply-To: <1331902271.3730.76.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1203161405090.2249@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <1329152067.22240.214.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>  <alpine.DEB.2.00.1203151545410.26775@eristoteles.iwoars.net>
+ <1331902271.3730.76.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331847128-16339-2-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:32:07PM -0500, Seth Forshee wrote:
-> +atomic_t apple_bl_register_count = ATOMIC_INIT(0);
 
-Noticed that I forgot to make this static. I had also intended to rename
-it; it was originally a reference count but I decided that didn't make
-sense. I'll wait to see if there are any other comments. If this
-otherwise looks okay I'll send an update for this patch.
+On Fri, 16 Mar 2012, Artem Bityutskiy wrote:
 
-Seth
+> On Thu, 2012-03-15 at 15:48 +0100, Joel Reardon wrote:
+> > +       __u8 padding0[8]; /* Watch 'zero_dent_node_unused()' if changing! */
+>
+> Also please, be consistent with overall UBIFS coding style and comment
+> fields at the structure header comment, not near the field itself.
+>
 
+
+I actually just copied this comment from the comment following padding1
+and padding2; should they all just be omitted?
+
+
+As for the ubifs being mounted with the old, it may be best to increase
+the version format number. The old version won't be able to 'read' (i.e.,
+decrypt) the data, while the new version has a switch to enable both
+modes. If new data is written by the old version then the new version will
+also have trouble to read it (unless we set crypto_lookup==0 to mean no
+key). But its probably for the best to just let older version mount the
+security enhanced one as read-only using the version format as the data
+will be anyhow unreadable. Non-security-enhanced ubifs (but
+aware) partitions can set the version format to the older value as they
+will be compatible.
+
+cheers,
+Joel Reardon
