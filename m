@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030708Ab2CPJtf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 05:49:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27934 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932365Ab2CPJtd convert rfc822-to-8bit (ORCPT
+	id S1031353Ab2CPJtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 05:49:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60671 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030192Ab2CPJtf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 05:49:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="119725337"
-From: "Du, Alek" <alek.du@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>, Jiri Slaby <jirislaby@gmail.com>
-Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ
-Date: Fri, 16 Mar 2012 09:49:30 +0000
-Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
-References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
- <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
- <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
- <4F630B4D.3040508@suse.cz>
-In-Reply-To: <4F630B4D.3040508@suse.cz>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 16 Mar 2012 05:49:35 -0400
+Message-ID: <1331891364.18960.221.camel@twins>
+Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Date: Fri, 16 Mar 2012 10:49:24 +0100
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+	 <1331546307.18960.26.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
+	 <1331654251.18960.78.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+	 <1331718197.18960.106.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
+	 <1331808391.18960.160.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tty structure is protect and not null, the tty->buf.tail is null. Many people think the tty reference count isn't protected and cause this bug, it is not true. :-)
+On Fri, 2012-03-16 at 06:24 +0000, Liu, Chuansheng wrote:
 
-For the flush case, it need acquire the spinlock to free the buffer and put buf.tail to NULL. So this patch will help:
+> Based on your patch, I did a little modification, how do you think of that?
 
-Here is the example place, you can see the __tty_buffer_flush is inside the spinlock.
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -640,8 +640,10 @@ void set_cpu_present(unsigned int cpu, bool present)
+>  
+>  void set_cpu_online(unsigned int cpu, bool online)
+>  {
+> -       if (online)
+> +       if (online) {
+>                 cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+> +               cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
+> +       }
+>         else
+>                 cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
+>  }
 
-void tty_buffer_flush(struct tty_struct *tty)
-{
-        unsigned long flags;
-        spin_lock_irqsave(&tty->buf.lock, flags);
-
-        /* If the data is being pushed to the tty layer then we can't
-           process it here. Instead set a flag and the flush_to_ldisc
-           path will process the flush request before it exits */
-        if (test_bit(TTY_FLUSHING, &tty->flags)) {
-                set_bit(TTY_FLUSHPENDING, &tty->flags);
-                spin_unlock_irqrestore(&tty->buf.lock, flags);
-                wait_event(tty->read_wait,
-                                test_bit(TTY_FLUSHPENDING, &tty->flags) == 0);
-                return;
-        } else
-                __tty_buffer_flush(tty);
-        spin_unlock_irqrestore(&tty->buf.lock, flags);
-}
-
-
-
-Thanks,
-Alek
-
------Original Message-----
-From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
-Sent: Friday, March 16, 2012 5:44 PM
-To: Du, Alek
-Cc: Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao; Jiri Slaby
-Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
-
-On 03/15/2012 11:14 AM, Du, Alek wrote:
-> Alan,
-> 
-> I agree with you for the case of multiple writers to the tty buffer.
-> 
-> But there is another case that cause kernel hang: driver is writing data to tty, while app shutdown the port or flush through IOCTL. The buf.tail is set to NULL, here is the log:
-> 
-> 
-> <1>[ 4713.451954] BUG: unable to handle kernel NULL pointer 
-> dereference at
-> 00000004
-
-The trace only suggests that you don't increment tty reference count in irq properly. If you did that, you would not have tty buffer gone by concurrent shutdown.
-
-For the latter case (flush via ioctl), your patch won't help for tty_prepare_string*, as we return pointer to the buffer which is freed by the flush, right?
-
-thanks,
---
-js
-suse labs
+I'm thinking this lacks rationale. What was wrong, Why does this fix it.
+If you can't answer that stop tinkering and start thinking.
