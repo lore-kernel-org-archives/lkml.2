@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab2CPTEO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 15:04:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8480 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755606Ab2CPTBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 15:01:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="119895900"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, axboe@kernel.dk
-Subject: [PATCH 01/11] block: use lockdep_assert_held for queue locking
-Date: Fri, 16 Mar 2012 12:00:54 -0700
-Message-Id: <1331924464-18023-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
-References: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
+	id S1756054Ab2CPTHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 15:07:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42366 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755703Ab2CPTHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 15:07:01 -0400
+Date: Fri, 16 Mar 2012 19:06:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213
+ Carrier Board
+Message-ID: <20120316190654.GF3158@opensource.wolfsonmicro.com>
+References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
+ <1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
+ <20120314144524.GT3133@opensource.wolfsonmicro.com>
+ <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
+ <20120315105048.GF3138@opensource.wolfsonmicro.com>
+ <CANKRQnhg21hjKjSOtDwbfK9shNsdcEu-aiSs1zVGNtAdaHdMHw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9ADF8FXzFeE7X4jE"
+Content-Disposition: inline
+In-Reply-To: <CANKRQnhg21hjKjSOtDwbfK9shNsdcEu-aiSs1zVGNtAdaHdMHw@mail.gmail.com>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
 
-Instead of an ugly open coded variant.
+--9ADF8FXzFeE7X4jE
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: axboe@kernel.dk
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- block/blk-throttle.c   |    2 +-
- include/linux/blkdev.h |   18 +++++++-----------
- 2 files changed, 8 insertions(+), 12 deletions(-)
+On Fri, Mar 16, 2012 at 01:07:03PM +0900, Tomoya MORINAGA wrote:
+> On Thu, Mar 15, 2012 at 7:50 PM, Mark Brown
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 5eed6a7..f2ddb94 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -1218,7 +1218,7 @@ void blk_throtl_drain(struct request_queue *q)
- 	struct bio_list bl;
- 	struct bio *bio;
- 
--	WARN_ON_ONCE(!queue_is_locked(q));
-+	queue_lockdep_assert_held(q);
- 
- 	bio_list_init(&bl);
- 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 606cf33..2aa2466 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -426,14 +426,10 @@ struct request_queue {
- 				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
- 				 (1 << QUEUE_FLAG_ADD_RANDOM))
- 
--static inline int queue_is_locked(struct request_queue *q)
-+static inline void queue_lockdep_assert_held(struct request_queue *q)
- {
--#ifdef CONFIG_SMP
--	spinlock_t *lock = q->queue_lock;
--	return lock && spin_is_locked(lock);
--#else
--	return 1;
--#endif
-+	if (q->queue_lock)
-+		lockdep_assert_held(q->queue_lock);
- }
- 
- static inline void queue_flag_set_unlocked(unsigned int flag,
-@@ -445,7 +441,7 @@ static inline void queue_flag_set_unlocked(unsigned int flag,
- static inline int queue_flag_test_and_clear(unsigned int flag,
- 					    struct request_queue *q)
- {
--	WARN_ON_ONCE(!queue_is_locked(q));
-+	queue_lockdep_assert_held(q);
- 
- 	if (test_bit(flag, &q->queue_flags)) {
- 		__clear_bit(flag, &q->queue_flags);
-@@ -458,7 +454,7 @@ static inline int queue_flag_test_and_clear(unsigned int flag,
- static inline int queue_flag_test_and_set(unsigned int flag,
- 					  struct request_queue *q)
- {
--	WARN_ON_ONCE(!queue_is_locked(q));
-+	queue_lockdep_assert_held(q);
- 
- 	if (!test_bit(flag, &q->queue_flags)) {
- 		__set_bit(flag, &q->queue_flags);
-@@ -470,7 +466,7 @@ static inline int queue_flag_test_and_set(unsigned int flag,
- 
- static inline void queue_flag_set(unsigned int flag, struct request_queue *q)
- {
--	WARN_ON_ONCE(!queue_is_locked(q));
-+	queue_lockdep_assert_held(q);
- 	__set_bit(flag, &q->queue_flags);
- }
- 
-@@ -487,7 +483,7 @@ static inline int queue_in_flight(struct request_queue *q)
- 
- static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- {
--	WARN_ON_ONCE(!queue_is_locked(q));
-+	queue_lockdep_assert_held(q);
- 	__clear_bit(flag, &q->queue_flags);
- }
- 
--- 
-1.7.7.6
+> > That means "Codec bit clock master frame clock slave". =A0Are you sure
+> > that's what you want?
 
+> Let me clarify the above.
+> Does the above "frame clock" mean "data line" of I2S?
+> If yes, I should have used 'SND_SOC_DAIFMT_CBS_CFS'.
+
+No, it means the clock which runs at sample rate (usually called the
+frame clock or LRCLK).
+
+--9ADF8FXzFeE7X4jE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPY48dAAoJEBus8iNuMP3d9n8P/34cYlobXtbmis18gU/qEomo
+u6wcyrAERpY1dDAHRxN9Sr+aAyxD2UGiETLYIucSpWXYXj1AX3UPT0c5zNyxSgRn
+VGO6Dso4bfGe6K26OHTk9WisXD0q/lyprlxYAT8j8HyIfm3cuvt4pqdBHw5WP41b
+I7R9ZQqv0mgjolt75WT3b8vzWCBWOo5/SG66fUePPDYswInh7USNMotdFLx7Iouh
+TlthySeg1CtrqiDRXN0TVlAuZW7ERuThicOlmqh5V8/euALt3WX1LCuuHKuvWavM
+fWxfcM0Y+719BxwdgE0W1bTaV+dIrm50G0hXaC9KveBandKycjIqlFV0GJsSfgLm
+AGEy4TbzYTsh7b92ZfN8cXx99yvw2dLe309jfwBtOZRfpRGC5NL1Q7+huPm8XqPs
+9LyjBPHtDiCiPg0S0joX4/OUAbSLuBM4SuWdvBfBd0lZwH05KYc7hQ6Mk1o+yjpN
+2p9d63CgzQ2NAl9dZLK8GHSp9QqhihKX8bDfxgh3twUNo2d/3NpeOZA9c9bf4ole
+Jt5AZF6aGf0yL5qCbwH77gEzWasqWQGw/jF4oNHSDjtFp6c3sRy9Kj4t8OcokLoB
+PdcLOInvuXelo8BusNP/7ihTNhfkIijO5mNwOjCX1gwQLuER6KkyU2D74h0c6z5H
+PMzIL3W8d+SdT9b3CUCn
+=JnYb
+-----END PGP SIGNATURE-----
+
+--9ADF8FXzFeE7X4jE--
