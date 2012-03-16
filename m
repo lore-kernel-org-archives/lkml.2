@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab2CPS6h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 14:58:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53616 "EHLO mga09.intel.com"
+	id S1755896Ab2CPTBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 15:01:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20115 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab2CPS6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 14:58:36 -0400
+	id S1754955Ab2CPTBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 15:01:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="118438761"
-Date: Fri, 16 Mar 2012 20:06:31 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] mfd: rc5t583: Add support for RICOH PMIC RC5T583
-Message-ID: <20120316190631.GP20524@sortiz-mobl>
-References: <1330434317-3554-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330434317-3554-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="118439712"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, gregkh@linuxfoundation.org
+Subject: [PATCH 04/11] staging/zmem: Use lockdep_assert_held instead of spin_is_locked
+Date: Fri, 16 Mar 2012 12:00:57 -0700
+Message-Id: <1331924464-18023-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
+References: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+From: Andi Kleen <ak@linux.intel.com>
 
-On Tue, Feb 28, 2012 at 06:35:17PM +0530, Laxman Dewangan wrote:
-> Ricoh power management IC  RC5T583 contains is multi
-> functional device having multiple sub devices inside this.
-> This device has multiple dcdc/ldo regulators, gpios, interrupt
-> controllers, on-key, RTCs, ADCs.
-> This device have 4 DCDCs, 8 LDOs, 8 GPIOs, 6 ADCs, 3 RTCs etc.
-Patch applied, thanks.
+WARN_ON(!spin_is_locked()) will always trigger on UP.
+Use lockdep_assert_held instead.
 
-Cheers,
-Samuel.
+Cc: gregkh@linuxfoundation.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ drivers/staging/zcache/tmem.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/staging/zcache/tmem.h b/drivers/staging/zcache/tmem.h
+index ed147c4..0d4aa82 100644
+--- a/drivers/staging/zcache/tmem.h
++++ b/drivers/staging/zcache/tmem.h
+@@ -47,7 +47,7 @@
+ #define ASSERT_INVERTED_SENTINEL(_x, _y) do { } while (0)
+ #endif
+ 
+-#define ASSERT_SPINLOCK(_l)	WARN_ON(!spin_is_locked(_l))
++#define ASSERT_SPINLOCK(_l)	lockdep_assert_held(_l)
+ 
+ /*
+  * A pool is the highest-level data structure managed by tmem and
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.7.6
+
