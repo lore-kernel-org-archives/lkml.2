@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab2CPCWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 22:22:54 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49384 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab2CPCWx (ORCPT
+	id S1757969Ab2CPCxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 22:53:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58784 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab2CPCxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 22:22:53 -0400
-X-AuditID: b753bd60-a0885ba000000655-a9-4f62a3fa09cb
-X-AuditID: b753bd60-a0885ba000000655-a9-4f62a3fa09cb
-Message-ID: <4F62A3F5.2050400@hitachi.com>
-Date: Fri, 16 Mar 2012 11:22:45 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v5 2/5] perf: set correct value to perf_event_header.misc
- for BTS
-References: <20120130044242.2384.23076.stgit@linux3>   <20120130044303.2384.63515.stgit@linux3> <1327916138.2446.187.camel@twins>  <4F432E0B.5090608@hitachi.com> <1331055135.11248.325.camel@twins>
-In-Reply-To: <1331055135.11248.325.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 15 Mar 2012 22:53:13 -0400
+Date: Fri, 16 Mar 2012 13:53:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the drm tree
+Message-Id: <20120316135303.7ad016ef3e29eac06027658e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/07 2:32), Peter Zijlstra wrote:
-> On Tue, 2012-02-21 at 14:39 +0900, Akihiro Nagai wrote:
->> (2012/01/30 18:35), Peter Zijlstra wrote:
->>> On Mon, 2012-01-30 at 13:43 +0900, Akihiro Nagai wrote:
->>>> @@ -330,6 +342,14 @@ int intel_pmu_drain_bts_buffer(void)
->>>>                   return 1;
->>>>
->>>>           for (; at<   top; at++) {
->>>> +               /*
->>>> +                * To resolve user space symbols and DSOs correctly, set
->>>> +                * PERF_RECORD_MISC_USER if from_addr or to_addr is user space.
->>>> +                */
->>>> +               if (!kernel_ip(data.ip) || !kernel_ip(data.addr)) {
->>>> +                       header.misc&= ~PERF_RECORD_MISC_CPUMODE_MASK;
->>>> +                       header.misc |= PERF_RECORD_MISC_USER;
->>>> +               }
->>>>                   data.ip         = at->from;
->>>>                   data.addr       = at->to;
->>>
->>> Why not key off of the from? If its a jump from userspace its a user
->>> event, its a jump from kernel space its a kernel event?
->>
->> Of course, originally, perf does that.
->
-> I don't think it does.
->
->> And, in those cases,
->> BTS records the both addresses of kernel and user in one
->> perf_sample on branches from kernel to user.
->
-> Sorry, I don't get this.
->
->> Current perf sets PERF_RECORD_MISC_KERNEL to all BTS events,
->
-> It doesn't, it does something far more stupid.. it sets the state to
-> wherever we were when the BTS overflow interrupt happens. If that was in
-> kernel space, we mark all of them as in-kernel, if that was in
-> user-space we mark all of then in-user.
+--Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Normally, perf does. However, BTS (intel_pmu_drain_bts_buffer) uses
-local-defined and not-initialized pt_regs to decide PERF_RECORD_MISC_KERNEL or USER.
-Accordingly, almost all BTS events are set PERF_RECORD_MISC_KERNEL.
+Hi Dave,
 
-BTW, I think it's a bug that uses not-initialized pt_regs.
-So, it needs initialize:
--    struct pt_regs regs;
-+    struct pt_regs regs = {0};
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Or, intel_pmu_drain_bts_buffer() get pt_regs from a function argument.
-- int intel_pmu_drain_bts_buffer(void)
-+ int intel_pmu_drain_bts_buffer(struct pt_regs *regs)
+ERROR: "drm_usb_init" [drivers/gpu/drm/udl/udl.ko] undefined!
+ERROR: "drm_get_usb_dev" [drivers/gpu/drm/udl/udl.ko] undefined!
+ERROR: "drm_usb_exit" [drivers/gpu/drm/udl/udl.ko] undefined!
 
->
->>   and
->> perf-script doesn't resolve symbols and DSOs about the
->> user-space address, because it is a kernel event.
->
-> Well, that's a perf-script problem, not something you should change the
-> kernel for.
+Caused by commit 5320918b9a87 ("drm/udl: initial UDL driver (v4)").
 
-Exactly. I'm going to fix perf-script.
+I have used the drm tree from next-20120315 for today.
 
->
-> So how about something like this?
->
-> ---
->   arch/x86/kernel/cpu/perf_event_intel_ds.c |    7 +++++++
->   1 files changed, 7 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index d6bd49f..81e788c 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -333,6 +333,13 @@ int intel_pmu_drain_bts_buffer(void)
->   		data.ip		= at->from;
->   		data.addr	= at->to;
->
-> +		/* XXX doesn't do virt muck properly */
-> +		header.misc&= ~PERF_RECORD_MISC_CPUMODE_MASK;
-> +		if (kernel_ip(at->from))
-> +			header.misc |= PERF_RECORD_MISC_KERNEL;
-> +		else
-> +			header.misc |= PERF_RECORD_MISC_USER;
-> +
->   		perf_output_sample(&handle,&header,&data, event);
->   	}
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-It looks good. I think it's correct semantically to set
-PERF_RECORD_MISC_KERNEL or USER by the from-address.
-However, this patch needs perf-script fix too.
-I'm going to send next patches including this patch.
+P.S. on the bright side, I didn't get any conflicts in the merge ...
 
-Thank you,
+--Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPYqsPAAoJEECxmPOUX5FEoSYP/RIk7W0zvCIVa6557G62zZoT
+H8TF9f1PURB+qDIos9WUvcWR8IAKgBfcuchqkxJwNaZIhfLhzTXkfuOZOXhC1594
+Tq3VqcwUpuxfczT8f2vxjChrsZ6VhAW9KesvXXM3vSENr1C3UnVHf9OQp/QP2GPK
+8YZfJFHa+tavo0TvNJnwyXNx8xnUMXIgyfXyhMpvUriM0CcrroPbkMwcYAlVhyNB
+AvVDfhXmsMs263ZjCebi1EF0M49e8cHoeTK7zfkr9X2d2L8SuedQI07tzve3K4K3
+Wcm8Y6xxTe8TRXYGjrAxFat2DOBzmQO3pkURo9DvHp2KO4frydYRSvMk/pAZ+8/v
+aJUTqkR0XUXvggTq9wnTqxeM1d1Zm0pbt2LGDrjZEkqC0gKwVPM+AIxM980mNDbp
+m8VlmO+zxfJ/dKLYF3ykfBcApVFtjXgTHh4UhhgIv+/Dc9/OI+3iJu2FWyNIGAV2
+GIKFoz3tNU55tdSkQ3CNAdSWvkv6w5GSyY/i1JVn+dh4pqZfvhCmmrp7auATznKy
+Yw3JkcYuJlLQg1iE8pgx81bxgVPfQV4OKKoncsRxKrb4gclxFlN0ohSp3zhLJA9v
+DsrtXYWUlAop1gWI+s53BdOrM4Xn+4wdR42vhVvGOvyMcr0r7S5hyDTeoSpqOq9c
+qRgWFEUIbLsDUGIW7jFb
+=aJZU
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK--
