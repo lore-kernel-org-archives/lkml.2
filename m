@@ -1,135 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab2CPRkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:40:10 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33369 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2CPRkC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:40:02 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V4 08/10] hugetlbfs: Add a list for tracking in-use HugeTLB pages
-Date: Fri, 16 Mar 2012 23:09:28 +0530
-Message-Id: <1331919570-2264-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12031617-2000-0000-0000-000006CC309D
+	id S1753501Ab2CPRkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:40:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58107 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753397Ab2CPRkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 13:40:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="121736334"
+Date: Fri, 16 Mar 2012 18:48:02 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-input@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
+Subject: Re: [PATCH v3 2/2] input: add driver support for MAX8997-haptic
+Message-ID: <20120316174802.GI20524@sortiz-mobl>
+References: <4F5DB459.9090701@samsung.com>
+ <20120314084652.GC3964@core.coreip.homeip.net>
+ <4F60AF8E.7050900@samsung.com>
+ <20120314154828.GA24964@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314154828.GA24964@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Hi Dmitry,
 
-hugepage_activelist will be used to track currently used HugeTLB pages.
-We need to find the in-use HugeTLB pages to support memcg removal.
-On memcg removal we update the page's memory cgroup to point to
-parent cgroup.
+On Wed, Mar 14, 2012 at 08:48:28AM -0700, Dmitry Torokhov wrote:
+> On Wed, Mar 14, 2012 at 11:47:42PM +0900, Chanwoo Choi wrote:
+> > Hi Dmitry,
+> > 
+> > > This is not proper locking between playing effect and suspend. Now that
+> > > you are using workqueue you need to synchronize access with it, not with
+> > > play_effect method.
+> > > 
+> > > Does the following patch work for you?
+> > > 
+> > 
+> > Your patch is worked on TRATS board based on EXYNOS4210 but, you should
+> > apply following patch because 'chip->enabled' is used on
+> > max8997_haptic_configure() function to enable/disable haptic motor.
+> 
+> OK, excellent. I'll pick up this fix and apply the driver for 3.4 queue,
+> thanks!
+Your patch depends on the MFD changes Choi sent along the input driver. I
+think it would make more sense for me to take it. What do you think ?
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- include/linux/hugetlb.h |    1 +
- mm/hugetlb.c            |   23 ++++++++++++++++++-----
- 2 files changed, 19 insertions(+), 5 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index cbd8dc5..6919100 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -217,6 +217,7 @@ struct hstate {
- 	unsigned long resv_huge_pages;
- 	unsigned long surplus_huge_pages;
- 	unsigned long nr_overcommit_huge_pages;
-+	struct list_head hugepage_activelist;
- 	struct list_head hugepage_freelists[MAX_NUMNODES];
- 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
- 	unsigned int free_huge_pages_node[MAX_NUMNODES];
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 684849a..8fd465d 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -433,7 +433,7 @@ void copy_huge_page(struct page *dst, struct page *src)
- static void enqueue_huge_page(struct hstate *h, struct page *page)
- {
- 	int nid = page_to_nid(page);
--	list_add(&page->lru, &h->hugepage_freelists[nid]);
-+	list_move(&page->lru, &h->hugepage_freelists[nid]);
- 	h->free_huge_pages++;
- 	h->free_huge_pages_node[nid]++;
- }
-@@ -445,7 +445,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
- 	if (list_empty(&h->hugepage_freelists[nid]))
- 		return NULL;
- 	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
--	list_del(&page->lru);
-+	list_move(&page->lru, &h->hugepage_activelist);
- 	set_page_refcounted(page);
- 	h->free_huge_pages--;
- 	h->free_huge_pages_node[nid]--;
-@@ -542,13 +542,14 @@ static void free_huge_page(struct page *page)
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	BUG_ON(page_mapcount(page));
--	INIT_LIST_HEAD(&page->lru);
- 
- 	if (mapping)
- 		mem_cgroup_hugetlb_uncharge_page(hstate_index(h),
- 						 pages_per_huge_page(h), page);
- 	spin_lock(&hugetlb_lock);
- 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
-+		/* remove the page from active list */
-+		list_del(&page->lru);
- 		update_and_free_page(h, page);
- 		h->surplus_huge_pages--;
- 		h->surplus_huge_pages_node[nid]--;
-@@ -562,6 +563,7 @@ static void free_huge_page(struct page *page)
- 
- static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
- {
-+	INIT_LIST_HEAD(&page->lru);
- 	set_compound_page_dtor(page, free_huge_page);
- 	spin_lock(&hugetlb_lock);
- 	h->nr_huge_pages++;
-@@ -1861,6 +1863,7 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->free_huge_pages = 0;
- 	for (i = 0; i < MAX_NUMNODES; ++i)
- 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
-+	INIT_LIST_HEAD(&h->hugepage_activelist);
- 	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
-@@ -2319,14 +2322,24 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 		page = pte_page(pte);
- 		if (pte_dirty(pte))
- 			set_page_dirty(page);
--		list_add(&page->lru, &page_list);
-+
-+		spin_lock(&hugetlb_lock);
-+		list_move(&page->lru, &page_list);
-+		spin_unlock(&hugetlb_lock);
- 	}
- 	spin_unlock(&mm->page_table_lock);
- 	flush_tlb_range(vma, start, end);
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	list_for_each_entry_safe(page, tmp, &page_list, lru) {
- 		page_remove_rmap(page);
--		list_del(&page->lru);
-+		/*
-+		 * We need to move it back huge page active list. If we are
-+		 * holding the last reference, below put_page will move it
-+		 * back to free list.
-+		 */
-+		spin_lock(&hugetlb_lock);
-+		list_move(&page->lru, &h->hugepage_activelist);
-+		spin_unlock(&hugetlb_lock);
- 		put_page(page);
- 	}
- }
 -- 
-1.7.9
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
