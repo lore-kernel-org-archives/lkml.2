@@ -1,426 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030300Ab2CPUSq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:18:46 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S964971Ab2CPUTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:19:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49413 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757095Ab2CPUSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:18:43 -0400
-From: Richard Weinberger <richard@nod.at>
-To: x86@kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, josh@joshtriplett.org,
-        tj@kernel.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] x86: Merge x86_32 and x86_64 cpu_idle()
-Date: Fri, 16 Mar 2012 21:18:29 +0100
-Message-Id: <1331929109-22137-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
+	id S964867Ab2CPUTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 16:19:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
+Date: Fri, 16 Mar 2012 21:23:44 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Kay Sievers <kay@vrfy.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        skannan@codeaurora.org, Stephen Boyd <sboyd@codeaurora.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203142354.04256.rjw@sisk.pl> <4F62E841.70405@linux.vnet.ibm.com>
+In-Reply-To: <4F62E841.70405@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203162123.44927.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both functions are mostly identical, so we can merge them.
+On Friday, March 16, 2012, Srivatsa S. Bhat wrote:
+> On 03/15/2012 04:24 AM, Rafael J. Wysocki wrote:
+> 
+> > On Wednesday, March 14, 2012, Srivatsa S. Bhat wrote:
+> >> On 03/14/2012 05:40 AM, Rafael J. Wysocki wrote:
+> >>
+> >>> On Wednesday, March 14, 2012, Kay Sievers wrote:
+> >>>> On Tue, Mar 13, 2012 at 20:42, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>>>> On Sunday, March 11, 2012, Kay Sievers wrote:
+> >>>>>> On Sat, Mar 10, 2012 at 00:36, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >>>>
+> >>>>>>> What does uevent have to do with things here?
+> >>>>>>
+> >>>>>> I don't think that the firmware loader should care about the
+> >>>>>> usermodehelper at all, and that stuff fiddling should just be removed
+> >>>>>> from the firmware class.
+> >>>>>
+> >>>>> It's there to warn people that their drivers do stupid things like
+> >>>>> loading frimware during system resume, which is guaranteed not to work.
+> >>>>>
+> >>>>> IOW, it's there very much on purpose.
+> >>>>
+> >>>> Using the /sbin/hotplug is no case that needs any warning. It' such a
+> >>>> broken model these days, that firmware loading is the least problem
+> >>>> that occurs with it.
+> >>>>
+> >>>>>> Forking /sbin/hotplug is disabled by default, it is a broken concept,
+> >>>>>> and it cannot work reliably on today's systems.
+> >>>>>>
+> >>>>>> Firmware is not loaded by /sbin/hotplug since many years, but by udev
+> >>>>>> or whatever service handles uevents, like ueventd on android.
+> >>>>>
+> >>>>> Which I'm not sure why is relevant here.
+> >>>>
+> >>>> It is relevant in the sense that the firmware loader should not even
+> >>>> know that a uevent *can* cause a usermodehelper exec() if it runs in
+> >>>> legacy mode. The firmware loader just has no business in fiddling with
+> >>>> the details of driver core legacy stuff. I don't think his warning
+> >>>> makes much sense.
+> >>>
+> >>> But that warning actually triggers for drivers that attempt to use
+> >>> request_firmware() during system resume, even though /sbin/hotplug isn't
+> >>> used any more.
+> >>>
+> >>
+> >>
+> >> I agree with Rafael about why the warning and the bail out is required,
+> >> including the part about the races with freezer which he explained in his
+> >> other mail. These problems have already been well documented too.
+> >> (See Documentation/power/freezing-of-tasks.txt).
+> >>
+> >>> usermodehelper_is_disabled() means "we are in the middle of system power
+> >>> transition" rather than anything else (I agree it should be called
+> >>> suspend_in_progress() or something similar these days).
+> >>>
+> >>
+> >>
+> >> How about this patch then?
+> >>
+> >> ---
+> >>
+> >> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> Subject: PM/firmware loader: Use better name for usermodehelper_is_disabled()
+> >>
+> >> Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>
+> >> | usermodehelper_is_disabled() means "we are in the middle of system power
+> >> | transition" rather than anything else (I agree it should be called
+> >> | suspend_in_progress() or something similar these days).
+> >>
+> >>
+> >> But simply renaming usermodehelper_is_disabled() to suspend_in_progress()
+> >> isn't the best thing to do since that would be misleading because suspend
+> >> transitions are begun much before usermodehelpers are disabled.
+> >>
+> >> Apart from that, we don't want people to suddenly start abusing this function
+> >> in future in a totally different context to check if suspend is in progress.
+> >>
+> >> So, add an alias specific to firmware loaders alone, that will internally
+> >> call usermodehelpers_is_disabled().
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >>  drivers/base/firmware_class.c |   12 +++++++++++-
+> >>  1 files changed, 11 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> >> index 6c9387d..9e401e1 100644
+> >> --- a/drivers/base/firmware_class.c
+> >> +++ b/drivers/base/firmware_class.c
+> >> @@ -510,6 +510,8 @@ static void fw_destroy_instance(struct firmware_priv *fw_priv)
+> >>  	device_unregister(f_dev);
+> >>  }
+> >>  
+> >> +#define suspend_in_progress()	usermodehelper_is_disabled()
+> > 
+> > This looks like an overstretch to me.  I think a comment would be sufficient.
+> 
+> 
+> On second thoughts... I agree, a comment is good enough.
+> 
+> > 
+> >> +
+> >>  static int _request_firmware(const struct firmware **firmware_p,
+> >>  			     const char *name, struct device *device,
+> >>  			     bool uevent, bool nowait)
+> >> @@ -535,7 +537,15 @@ static int _request_firmware(const struct firmware **firmware_p,
+> >>  
+> >>  	read_lock_usermodehelper();
+> >>  
+> >> -	if (WARN_ON(usermodehelper_is_disabled())) {
+> >> +	/*
+> >> +	 * It is wrong to request firmware when the system is suspended,
+> >> +	 * because it simply won't work reliably.
+> > 
+> > In fact, it won't work at all.
+> > 
+> >> +	 Also, it can cause races with
+> >> +	 * the freezer, leading to freezing failures.
+> > 
+> > It actually is worse than that too.  It may cause a user space process
+> > to run when we think we have frozen user space and _that_ may lead to
+> > all kinds of interesting breakage.
+> > 
+> 
+> 
+> Oh, yes! That would be really dreadful!
+> 
+> >> 	 * So check if the system is
+> >> +	 * in a state which is unsuitable for requesting firmware (because the
+> >> +	 * system is suspended or not yet fully resumed) and bail out early if
+> >> +	 * needed.
+> > 
+> > And here I'd explain why usermodehelper_is_disabled() is used for that.
+> >
+> 
+> 
+> OK
+>  
+> 
+> >> +	 */
+> >> +	if (WARN_ON(suspend_in_progress())) {
+> >>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+> >>  		retval = -EBUSY;
+> >>  		goto out;
+> > 
+> 
+> 
+> So here is the updated patch:
+> (I know its a bit verbose, but given that it is causing a considerable amount of
+> confusion, may be a proper comment with good explanation is worthwhile).
+> 
+> ---
+> 
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: PM/firmware loader: Explain why usermodehelper_is_disabled() check is used
+> 
+> 
+> Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> 
+> | usermodehelper_is_disabled() means "we are in the middle of system power
+> | transition" rather than anything else (I agree it should be called
+> | suspend_in_progress() or something similar these days).
+> 
+> But instead of renaming usermodehelper_is_disabled(), add a comment
+> explaining its importance and also why the warning and bail out at
+> _request_firmware() makes sense.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/x86/include/asm/idle.h  |    1 +
- arch/x86/kernel/process.c    |  114 ++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/process_32.c |   60 ----------------------
- arch/x86/kernel/process_64.c |  109 ----------------------------------------
- 4 files changed, 115 insertions(+), 169 deletions(-)
+That's fine by me.
 
-diff --git a/arch/x86/include/asm/idle.h b/arch/x86/include/asm/idle.h
-index f49253d7..c5d1785 100644
---- a/arch/x86/include/asm/idle.h
-+++ b/arch/x86/include/asm/idle.h
-@@ -14,6 +14,7 @@ void exit_idle(void);
- #else /* !CONFIG_X86_64 */
- static inline void enter_idle(void) { }
- static inline void exit_idle(void) { }
-+static inline void __exit_idle(void) { }
- #endif /* CONFIG_X86_64 */
- 
- void amd_e400_remove_cpu(int cpu);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 15763af..6d32f9f 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -12,6 +12,9 @@
- #include <linux/user-return-notifier.h>
- #include <linux/dmi.h>
- #include <linux/utsname.h>
-+#include <linux/stackprotector.h>
-+#include <linux/tick.h>
-+#include <linux/cpuidle.h>
- #include <trace/events/power.h>
- #include <linux/hw_breakpoint.h>
- #include <asm/cpu.h>
-@@ -22,6 +25,24 @@
- #include <asm/uaccess.h>
- #include <asm/i387.h>
- #include <asm/debugreg.h>
-+#include <asm/nmi.h>
-+
-+#ifdef CONFIG_X86_64
-+static DEFINE_PER_CPU(unsigned char, is_idle);
-+static ATOMIC_NOTIFIER_HEAD(idle_notifier);
-+
-+void idle_notifier_register(struct notifier_block *n)
-+{
-+	atomic_notifier_chain_register(&idle_notifier, n);
-+}
-+EXPORT_SYMBOL_GPL(idle_notifier_register);
-+
-+void idle_notifier_unregister(struct notifier_block *n)
-+{
-+	atomic_notifier_chain_unregister(&idle_notifier, n);
-+}
-+EXPORT_SYMBOL_GPL(idle_notifier_unregister);
-+#endif
- 
- struct kmem_cache *task_xstate_cachep;
- EXPORT_SYMBOL_GPL(task_xstate_cachep);
-@@ -370,6 +391,99 @@ static inline int hlt_use_halt(void)
- }
- #endif
- 
-+#ifndef CONFIG_SMP
-+static inline void play_dead(void)
-+{
-+	BUG();
-+}
-+#endif
-+
-+#ifdef CONFIG_X86_64
-+void enter_idle(void)
-+{
-+	percpu_write(is_idle, 1);
-+	atomic_notifier_call_chain(&idle_notifier, IDLE_START, NULL);
-+}
-+
-+static void __exit_idle(void)
-+{
-+	if (x86_test_and_clear_bit_percpu(0, is_idle) == 0)
-+		return;
-+	atomic_notifier_call_chain(&idle_notifier, IDLE_END, NULL);
-+}
-+
-+/* Called from interrupts to signify idle end */
-+void exit_idle(void)
-+{
-+	/* idle loop has pid 0 */
-+	if (current->pid)
-+		return;
-+	__exit_idle();
-+}
-+#endif
-+
-+/*
-+ * The idle thread. There's no useful work to be
-+ * done, so just try to conserve power and have a
-+ * low exit latency (ie sit in a loop waiting for
-+ * somebody to say that they'd like to reschedule)
-+ */
-+void cpu_idle()
-+{
-+	/*
-+	 * If we're the non-boot CPU, nothing set the stack canary up
-+	 * for us.  CPU0 already has it initialized but no harm in
-+	 * doing it again.  This is a good place for updating it, as
-+	 * we wont ever return from this function (so the invalid
-+	 * canaries already on the stack wont ever trigger).
-+	 */
-+	boot_init_stack_canary();
-+	current_thread_info()->status |= TS_POLLING;
-+
-+	while (1) {
-+		tick_nohz_idle_enter();
-+
-+		while (!need_resched()) {
-+			rmb();
-+
-+			if (cpu_is_offline(smp_processor_id()))
-+				play_dead();
-+
-+			/*
-+			 * Idle routines should keep interrupts disabled
-+			 * from here on, until they go to idle.
-+			 * Otherwise, idle callbacks can misfire.
-+			 */
-+			local_touch_nmi();
-+			local_irq_disable();
-+
-+			enter_idle();
-+
-+			/* Don't trace irqs off for idle */
-+			stop_critical_timings();
-+
-+			/* enter_idle() needs rcu for notifiers */
-+			rcu_idle_enter();
-+
-+			if (cpuidle_idle_call())
-+				pm_idle();
-+
-+			rcu_idle_exit();
-+			start_critical_timings();
-+
-+			/* In many cases the interrupt that ended idle
-+			   has already called exit_idle. But some idle
-+			   loops can be woken up without interrupt. */
-+			__exit_idle();
-+		}
-+
-+		tick_nohz_idle_exit();
-+		preempt_enable_no_resched();
-+		schedule();
-+		preempt_disable();
-+	}
-+}
-+
- /*
-  * We use this if we don't have any better
-  * idle routine..
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index c08d1ff..9bf7c10 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -9,7 +9,6 @@
-  * This file handles the architecture-dependent parts of process handling..
-  */
- 
--#include <linux/stackprotector.h>
- #include <linux/cpu.h>
- #include <linux/errno.h>
- #include <linux/sched.h>
-@@ -31,14 +30,12 @@
- #include <linux/kallsyms.h>
- #include <linux/ptrace.h>
- #include <linux/personality.h>
--#include <linux/tick.h>
- #include <linux/percpu.h>
- #include <linux/prctl.h>
- #include <linux/ftrace.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
- #include <linux/kdebug.h>
--#include <linux/cpuidle.h>
- 
- #include <asm/pgtable.h>
- #include <asm/system.h>
-@@ -57,7 +54,6 @@
- #include <asm/idle.h>
- #include <asm/syscalls.h>
- #include <asm/debugreg.h>
--#include <asm/nmi.h>
- 
- asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
- 
-@@ -69,62 +65,6 @@ unsigned long thread_saved_pc(struct task_struct *tsk)
- 	return ((unsigned long *)tsk->thread.sp)[3];
- }
- 
--#ifndef CONFIG_SMP
--static inline void play_dead(void)
--{
--	BUG();
--}
--#endif
--
--/*
-- * The idle thread. There's no useful work to be
-- * done, so just try to conserve power and have a
-- * low exit latency (ie sit in a loop waiting for
-- * somebody to say that they'd like to reschedule)
-- */
--void cpu_idle(void)
--{
--	int cpu = smp_processor_id();
--
--	/*
--	 * If we're the non-boot CPU, nothing set the stack canary up
--	 * for us.  CPU0 already has it initialized but no harm in
--	 * doing it again.  This is a good place for updating it, as
--	 * we wont ever return from this function (so the invalid
--	 * canaries already on the stack wont ever trigger).
--	 */
--	boot_init_stack_canary();
--
--	current_thread_info()->status |= TS_POLLING;
--
--	/* endless idle loop with no priority at all */
--	while (1) {
--		tick_nohz_idle_enter();
--		rcu_idle_enter();
--		while (!need_resched()) {
--
--			check_pgt_cache();
--			rmb();
--
--			if (cpu_is_offline(cpu))
--				play_dead();
--
--			local_touch_nmi();
--			local_irq_disable();
--			/* Don't trace irqs off for idle */
--			stop_critical_timings();
--			if (cpuidle_idle_call())
--				pm_idle();
--			start_critical_timings();
--		}
--		rcu_idle_exit();
--		tick_nohz_idle_exit();
--		preempt_enable_no_resched();
--		schedule();
--		preempt_disable();
--	}
--}
--
- void __show_regs(struct pt_regs *regs, int all)
- {
- 	unsigned long cr0 = 0L, cr2 = 0L, cr3 = 0L, cr4 = 0L;
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index cfa5c90..4f862d7 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -14,7 +14,6 @@
-  * This file handles the architecture-dependent parts of process handling..
-  */
- 
--#include <linux/stackprotector.h>
- #include <linux/cpu.h>
- #include <linux/errno.h>
- #include <linux/sched.h>
-@@ -32,12 +31,10 @@
- #include <linux/notifier.h>
- #include <linux/kprobes.h>
- #include <linux/kdebug.h>
--#include <linux/tick.h>
- #include <linux/prctl.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
- #include <linux/ftrace.h>
--#include <linux/cpuidle.h>
- 
- #include <asm/pgtable.h>
- #include <asm/system.h>
-@@ -51,116 +48,10 @@
- #include <asm/idle.h>
- #include <asm/syscalls.h>
- #include <asm/debugreg.h>
--#include <asm/nmi.h>
- 
- asmlinkage extern void ret_from_fork(void);
- 
- DEFINE_PER_CPU(unsigned long, old_rsp);
--static DEFINE_PER_CPU(unsigned char, is_idle);
--
--static ATOMIC_NOTIFIER_HEAD(idle_notifier);
--
--void idle_notifier_register(struct notifier_block *n)
--{
--	atomic_notifier_chain_register(&idle_notifier, n);
--}
--EXPORT_SYMBOL_GPL(idle_notifier_register);
--
--void idle_notifier_unregister(struct notifier_block *n)
--{
--	atomic_notifier_chain_unregister(&idle_notifier, n);
--}
--EXPORT_SYMBOL_GPL(idle_notifier_unregister);
--
--void enter_idle(void)
--{
--	percpu_write(is_idle, 1);
--	atomic_notifier_call_chain(&idle_notifier, IDLE_START, NULL);
--}
--
--static void __exit_idle(void)
--{
--	if (x86_test_and_clear_bit_percpu(0, is_idle) == 0)
--		return;
--	atomic_notifier_call_chain(&idle_notifier, IDLE_END, NULL);
--}
--
--/* Called from interrupts to signify idle end */
--void exit_idle(void)
--{
--	/* idle loop has pid 0 */
--	if (current->pid)
--		return;
--	__exit_idle();
--}
--
--#ifndef CONFIG_SMP
--static inline void play_dead(void)
--{
--	BUG();
--}
--#endif
--
--/*
-- * The idle thread. There's no useful work to be
-- * done, so just try to conserve power and have a
-- * low exit latency (ie sit in a loop waiting for
-- * somebody to say that they'd like to reschedule)
-- */
--void cpu_idle(void)
--{
--	current_thread_info()->status |= TS_POLLING;
--
--	/*
--	 * If we're the non-boot CPU, nothing set the stack canary up
--	 * for us.  CPU0 already has it initialized but no harm in
--	 * doing it again.  This is a good place for updating it, as
--	 * we wont ever return from this function (so the invalid
--	 * canaries already on the stack wont ever trigger).
--	 */
--	boot_init_stack_canary();
--
--	/* endless idle loop with no priority at all */
--	while (1) {
--		tick_nohz_idle_enter();
--		while (!need_resched()) {
--
--			rmb();
--
--			if (cpu_is_offline(smp_processor_id()))
--				play_dead();
--			/*
--			 * Idle routines should keep interrupts disabled
--			 * from here on, until they go to idle.
--			 * Otherwise, idle callbacks can misfire.
--			 */
--			local_touch_nmi();
--			local_irq_disable();
--			enter_idle();
--			/* Don't trace irqs off for idle */
--			stop_critical_timings();
--
--			/* enter_idle() needs rcu for notifiers */
--			rcu_idle_enter();
--
--			if (cpuidle_idle_call())
--				pm_idle();
--
--			rcu_idle_exit();
--			start_critical_timings();
--
--			/* In many cases the interrupt that ended idle
--			   has already called exit_idle. But some idle
--			   loops can be woken up without interrupt. */
--			__exit_idle();
--		}
--
--		tick_nohz_idle_exit();
--		preempt_enable_no_resched();
--		schedule();
--		preempt_disable();
--	}
--}
- 
- /* Prints also some state that isn't saved in the pt_regs */
- void __show_regs(struct pt_regs *regs, int all)
--- 
-1.7.7.3
+If no one objects, I'll apply it.
+
+Thanks,
+Rafael
+
+
+> ---
+> 
+>  drivers/base/firmware_class.c |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 6c9387d..9199e3e 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -535,6 +535,22 @@ static int _request_firmware(const struct firmware **firmware_p,
+>  
+>  	read_lock_usermodehelper();
+>  
+> +	/*
+> +	 * It is wrong to request firmware when the system is suspended,
+> +	 * because it simply won't work. Also, it can cause races with
+> +	 * the freezer, leading to freezing failures. Worse than that,
+> +	 * it may even cause a user space process to run when we think
+> +	 * we have frozen the user space! - and that can lead to all kinds
+> +	 * of interesting breakage..
+> +	 *
+> +	 * So check if the system is in a state which is unsuitable for
+> +	 * requesting firmware (because it is suspended or not yet fully
+> +	 * resumed) and bail out early if needed.
+> +	 * Usermodehelpers are disabled at the beginning of suspend, before
+> +	 * freezing tasks and re-enabled only towards the end of resume, after
+> +	 * thawing tasks, when it is safe. So all we need to do here is ensure
+> +	 * that we don't request firmware when usermodehelpers are disabled.
+> +	 */
+>  	if (WARN_ON(usermodehelper_is_disabled())) {
+>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+>  		retval = -EBUSY;
+> 
+> 
+> 
+> 
 
