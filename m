@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032868Ab2CPOxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:53:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45544 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422910Ab2CPOxn (ORCPT
+	id S1032883Ab2CPOxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:53:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36661 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032871Ab2CPOxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:43 -0400
-Message-Id: <20120316144240.234456258@chello.nl>
+	Fri, 16 Mar 2012 10:53:50 -0400
+Message-Id: <20120316144240.161191161@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:30 +0100
+Date: Fri, 16 Mar 2012 15:40:29 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -25,164 +25,189 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 02/26] mm, mpol: Remove NUMA_INTERLEAVE_HIT
+Subject: [RFC][PATCH 01/26] mm, mpol: Re-implement check_*_range() using walk_page_range()
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-mm-remove_numa_interleave_hit.patch
+Content-Disposition: inline; filename=mempol-pagewalk.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
-to be compared to either a total of interleave allocations or to a miss
-count, remove it.
-
-Fixing it would be possible, but since we've gone years without these
-statistics I figure we can continue that way.
-
-This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
-
+Fixes-by: Dan Smith <danms@us.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- drivers/base/node.c    |    2 +-
- include/linux/mmzone.h |    1 -
- mm/mempolicy.c         |   66 +++++++++++++++--------------------------------
- 3 files changed, 22 insertions(+), 47 deletions(-)
-
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 5693ece..942cdbc 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -172,7 +172,7 @@ static ssize_t node_read_numastat(struct sys_device * dev,
- 		       node_page_state(dev->id, NUMA_HIT),
- 		       node_page_state(dev->id, NUMA_MISS),
- 		       node_page_state(dev->id, NUMA_FOREIGN),
--		       node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
-+		       0UL,
- 		       node_page_state(dev->id, NUMA_LOCAL),
- 		       node_page_state(dev->id, NUMA_OTHER));
- }
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 3ac040f..3a3be81 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -111,7 +111,6 @@ enum zone_stat_item {
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
- 	NUMA_FOREIGN,		/* was intended here, hit elsewhere */
--	NUMA_INTERLEAVE_HIT,	/* interleaver preferred this zone */
- 	NUMA_LOCAL,		/* allocation from local node */
- 	NUMA_OTHER,		/* allocation from other node */
- #endif
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index c3fdbcb..2c48c45 100644
+ mm/mempolicy.c |  141 ++++++++++++++++++---------------------------------------
+ 1 file changed, 45 insertions(+), 96 deletions(-)
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -1530,11 +1530,29 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
- 	return NULL;
- }
+@@ -460,105 +460,45 @@ static const struct mempolicy_operations
+ static void migrate_page_add(struct page *page, struct list_head *pagelist,
+ 				unsigned long flags);
  
-+/* Do dynamic interleaving for a process */
-+static unsigned interleave_nodes(struct mempolicy *policy)
-+{
-+	unsigned nid, next;
-+	struct task_struct *me = current;
-+
-+	nid = me->il_next;
-+	next = next_node(nid, policy->v.nodes);
-+	if (next >= MAX_NUMNODES)
-+		next = first_node(policy->v.nodes);
-+	if (next < MAX_NUMNODES)
-+		me->il_next = next;
-+	return nid;
-+}
-+
- /* Return a zonelist indicated by gfp for node representing a mempolicy */
- static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
- 	int nd)
+-/* Scan through pages checking if pages follow certain conditions. */
+-static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
+-{
+-	pte_t *orig_pte;
+-	pte_t *pte;
+-	spinlock_t *ptl;
+-
+-	orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	do {
+-		struct page *page;
+-		int nid;
+-
+-		if (!pte_present(*pte))
+-			continue;
+-		page = vm_normal_page(vma, addr, *pte);
+-		if (!page)
+-			continue;
+-		/*
+-		 * vm_normal_page() filters out zero pages, but there might
+-		 * still be PageReserved pages to skip, perhaps in a VDSO.
+-		 * And we cannot move PageKsm pages sensibly or safely yet.
+-		 */
+-		if (PageReserved(page) || PageKsm(page))
+-			continue;
+-		nid = page_to_nid(page);
+-		if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
+-			continue;
+-
+-		if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
+-			migrate_page_add(page, private, flags);
+-		else
+-			break;
+-	} while (pte++, addr += PAGE_SIZE, addr != end);
+-	pte_unmap_unlock(orig_pte, ptl);
+-	return addr != end;
+-}
++struct mempol_walk_data {
++	struct vm_area_struct *vma;
++	const nodemask_t *nodes;
++	unsigned long flags;
++	void *private;
++};
+ 
+-static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
++static int check_pte_entry(pte_t *pte, unsigned long addr,
++			   unsigned long end, struct mm_walk *walk)
  {
- 	switch (policy->mode) {
-+	case MPOL_INTERLEAVE:
-+		nd = interleave_nodes(policy);
-+		break;
- 	case MPOL_PREFERRED:
- 		if (!(policy->flags & MPOL_F_LOCAL))
- 			nd = policy->v.preferred_node;
-@@ -1556,21 +1574,6 @@ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
- 	return node_zonelist(nd, gfp);
+-	pmd_t *pmd;
+-	unsigned long next;
++	struct mempol_walk_data *data = walk->private;
++	struct page *page;
++	int nid;
+ 
+-	pmd = pmd_offset(pud, addr);
+-	do {
+-		next = pmd_addr_end(addr, end);
+-		split_huge_page_pmd(vma->vm_mm, pmd);
+-		if (pmd_none_or_clear_bad(pmd))
+-			continue;
+-		if (check_pte_range(vma, pmd, addr, next, nodes,
+-				    flags, private))
+-			return -EIO;
+-	} while (pmd++, addr = next, addr != end);
+-	return 0;
+-}
++	if (!pte_present(*pte))
++		return 0;
+ 
+-static inline int check_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
+-{
+-	pud_t *pud;
+-	unsigned long next;
++	page = vm_normal_page(data->vma, addr, *pte);
++	if (!page)
++		return 0;
+ 
+-	pud = pud_offset(pgd, addr);
+-	do {
+-		next = pud_addr_end(addr, end);
+-		if (pud_none_or_clear_bad(pud))
+-			continue;
+-		if (check_pmd_range(vma, pud, addr, next, nodes,
+-				    flags, private))
+-			return -EIO;
+-	} while (pud++, addr = next, addr != end);
+-	return 0;
+-}
++	/*
++	 * vm_normal_page() filters out zero pages, but there might
++	 * still be PageReserved pages to skip, perhaps in a VDSO.
++	 * And we cannot move PageKsm pages sensibly or safely yet.
++	 */
++	if (PageReserved(page) || PageKsm(page))
++		return 0;
+ 
+-static inline int check_pgd_range(struct vm_area_struct *vma,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
+-{
+-	pgd_t *pgd;
+-	unsigned long next;
++	nid = page_to_nid(page);
++	if (node_isset(nid, *data->nodes) == !!(data->flags & MPOL_MF_INVERT))
++		return 0;
+ 
+-	pgd = pgd_offset(vma->vm_mm, addr);
+-	do {
+-		next = pgd_addr_end(addr, end);
+-		if (pgd_none_or_clear_bad(pgd))
+-			continue;
+-		if (check_pud_range(vma, pgd, addr, next, nodes,
+-				    flags, private))
+-			return -EIO;
+-	} while (pgd++, addr = next, addr != end);
+-	return 0;
++	if (data->flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) {
++		migrate_page_add(page, data->private, data->flags);
++		return 0;
++	}
++
++	return -EIO;
  }
  
--/* Do dynamic interleaving for a process */
--static unsigned interleave_nodes(struct mempolicy *policy)
--{
--	unsigned nid, next;
--	struct task_struct *me = current;
--
--	nid = me->il_next;
--	next = next_node(nid, policy->v.nodes);
--	if (next >= MAX_NUMNODES)
--		next = first_node(policy->v.nodes);
--	if (next < MAX_NUMNODES)
--		me->il_next = next;
--	return nid;
--}
--
  /*
-  * Depending on the memory policy provide a node from which to allocate the
-  * next slab entry.
-@@ -1801,21 +1804,6 @@ out:
- 	return ret;
- }
+@@ -570,9 +510,18 @@ static struct vm_area_struct *
+ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 		const nodemask_t *nodes, unsigned long flags, void *private)
+ {
+-	int err;
+ 	struct vm_area_struct *first, *vma, *prev;
+-
++	struct mempol_walk_data data = {
++		.nodes = nodes,
++		.flags = flags,
++		.private = private,
++	};
++	struct mm_walk walk = {
++		.pte_entry = check_pte_entry,
++		.mm = mm,
++		.private = &data,
++	};
++	int err;
  
--/* Allocate a page in interleaved policy.
--   Own path because it needs to do special accounting. */
--static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
--					unsigned nid)
--{
--	struct zonelist *zl;
--	struct page *page;
--
--	zl = node_zonelist(nid, gfp);
--	page = __alloc_pages(gfp, order, zl);
--	if (page && page_zone(page) == zonelist_zone(&zl->_zonerefs[0]))
--		inc_zone_page_state(page, NUMA_INTERLEAVE_HIT);
--	return page;
--}
--
- /**
-  * 	alloc_pages_vma	- Allocate a page for a VMA.
-  *
-@@ -1848,15 +1836,6 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 	struct page *page;
- 
- 	get_mems_allowed();
--	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
--		unsigned nid;
--
--		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
--		mpol_cond_put(pol);
--		page = alloc_page_interleave(gfp, order, nid);
--		put_mems_allowed();
--		return page;
--	}
- 	zl = policy_zonelist(gfp, pol, node);
- 	if (unlikely(mpol_needs_cond_ref(pol))) {
- 		/*
-@@ -1909,12 +1888,9 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- 	 * No reference counting needed for current->mempolicy
- 	 * nor system default_policy
- 	 */
--	if (pol->mode == MPOL_INTERLEAVE)
--		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
--	else
--		page = __alloc_pages_nodemask(gfp, order,
--				policy_zonelist(gfp, pol, numa_node_id()),
--				policy_nodemask(gfp, pol));
-+	page = __alloc_pages_nodemask(gfp, order,
-+			policy_zonelist(gfp, pol, numa_node_id()),
-+			policy_nodemask(gfp, pol));
- 	put_mems_allowed();
- 	return page;
- }
-
+ 	first = find_vma(mm, start);
+ 	if (!first)
+@@ -595,8 +544,8 @@ check_range(struct mm_struct *mm, unsign
+ 				endvma = end;
+ 			if (vma->vm_start > start)
+ 				start = vma->vm_start;
+-			err = check_pgd_range(vma, start, endvma, nodes,
+-						flags, private);
++			data.vma = vma;
++			err = walk_page_range(start, endvma, &walk);
+ 			if (err) {
+ 				first = ERR_PTR(err);
+ 				break;
 
 
