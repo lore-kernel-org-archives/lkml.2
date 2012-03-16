@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422821Ab2CPOxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:53:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36574 "EHLO
+	id S1422977Ab2CPO66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:58:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36586 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422810Ab2CPOxU (ORCPT
+	with ESMTP id S1422823Ab2CPOxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:20 -0400
-Message-Id: <20120316144240.492318994@chello.nl>
+	Fri, 16 Mar 2012 10:53:23 -0400
+Message-Id: <20120316144241.540630849@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:34 +0100
+Date: Fri, 16 Mar 2012 15:40:50 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -24,302 +24,227 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 06/26] mm: Migrate misplaced page
+Subject: [RFC][PATCH 22/26] mm, mpol: Split and explose some mempolicy functions
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=migrate-on-fault-04-migrate_misplaced_page.patch
+Content-Disposition: inline; filename=mpol-mbind-split.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+In order to allow creating 'custom' mpols, expose some guts. In
+particular means to allocate fresh mpols and to bind them to memory
+ranges, skipping out on the intermediate -- policy -- part of
+sys_mbind().
 
-This patch adds a new function migrate_misplaced_page() to mm/migrate.c
-[where most of the other page migration functions live] to migrate a
-misplaced page to a specified destination node.  This function will be
-called from the fault path.  Because we already know the destination
-node for the migration, we allocate pages directly rather than rerunning
-the policy node computation in alloc_page_vma().
-
-Since the fault path holds an extra reference from other migration
-paths, introduce a new migration_mode (MIGRATE_FAULT) to communicate
-this.
-
-The patch adds the function check_migrate_misplaced_page() to migrate.c
-to check whether a page is "misplaced" -- i.e. on a node different
-from what the policy for (vma, address) dictates.  This check
-involves accessing the vma policy, so we only do this if:
-   * page has zero mapcount [no pte references]
-   * page is not in writeback
-   * page is up to date
-   * page's mapping has a migratepage a_op [no fallback!]
-If these checks are satisfied, the page will be migrated to the
-"correct" node, if possible.  If migration fails for any reason,
-we just use the original page.
-
-Subsequent patches will hook the fault handlers [anon, and possibly
-file and/or shmem] to check_migrate_misplaced_page().
-
-XXX: hnaz, dansmith saw some bad_page() reports when using memcg, I
-could not reproduce -- is there something funny with the mem_cgroup
-calls in the below patch?
-
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-[ removed the weird ignore page count on migrate stuff with the
-  new migrate_mode and strict accounting ]
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h    |   18 ------
- include/linux/migrate.h      |    9 +++
- include/linux/migrate_mode.h |    3 +
- mm/mempolicy.c               |   19 ++++++
- mm/migrate.c                 |  128 ++++++++++++++++++++++++++++++++++++++++++-
- 5 files changed, 160 insertions(+), 17 deletions(-)
+ include/linux/mempolicy.h |    8 +++
+ mm/mempolicy.c            |  111 ++++++++++++++++++++++++++--------------------
+ 2 files changed, 71 insertions(+), 48 deletions(-)
 --- a/include/linux/mempolicy.h
 +++ b/include/linux/mempolicy.h
-@@ -77,6 +77,7 @@ enum mpol_rebind_step {
- #include <linux/spinlock.h>
- #include <linux/nodemask.h>
- #include <linux/pagemap.h>
-+#include <linux/migrate.h>
- 
- struct mm_struct;
- 
-@@ -245,22 +246,7 @@ extern int mpol_parse_str(char *str, str
- extern int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol,
- 			int no_context);
- 
--/* Check if a vma is migratable */
--static inline int vma_migratable(struct vm_area_struct *vma)
--{
--	if (vma->vm_flags & (VM_IO|VM_HUGETLB|VM_PFNMAP|VM_RESERVED))
--		return 0;
--	/*
--	 * Migration allocates pages in the highest zone. If we cannot
--	 * do so then migration (at least from node to node) is not
--	 * possible.
--	 */
--	if (vma->vm_file &&
--		gfp_zone(mapping_gfp_mask(vma->vm_file->f_mapping))
--								< policy_zone)
--			return 0;
--	return 1;
--}
-+extern int vma_migratable(struct vm_area_struct *);
- 
- extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
- 
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -33,6 +33,10 @@ extern int migrate_huge_page_move_mappin
- 				  struct page *newpage, struct page *page);
- 
- extern int migrate_pages_unmap_only(struct list_head *);
-+extern struct page *check_migrate_misplaced_page(struct page *,
-+			struct vm_area_struct *, unsigned long);
-+extern struct page *migrate_misplaced_page(struct page *,
-+			struct mm_struct *, int);
- #else
- #define PAGE_MIGRATION 0
- 
-@@ -67,5 +71,10 @@ static inline int migrate_huge_page_move
- #define migrate_page NULL
- #define fail_migrate_page NULL
- 
-+static inline struct page *check_migrate_misplaced_page(struct page *page,
-+			struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return page;
-+}
- #endif /* CONFIG_MIGRATION */
- #endif /* _LINUX_MIGRATE_H */
---- a/include/linux/migrate_mode.h
-+++ b/include/linux/migrate_mode.h
-@@ -6,11 +6,14 @@
-  *	on most operations but not ->writepage as the potential stall time
-  *	is too significant
-  * MIGRATE_SYNC will block when migrating pages
-+ * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
-+ * 	this path has an extra reference count
-  */
- enum migrate_mode {
- 	MIGRATE_ASYNC,
- 	MIGRATE_SYNC_LIGHT,
- 	MIGRATE_SYNC,
-+	MIGRATE_FAULT,
+@@ -203,6 +203,12 @@ struct shared_policy {
+ 	spinlock_t lock;
  };
  
- #endif		/* MIGRATE_MODE_H_INCLUDED */
++extern struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
++				  nodemask_t *nodes);
++extern long mpol_do_mbind(unsigned long start, unsigned long len,
++				struct mempolicy *policy, unsigned long mode,
++				nodemask_t *nmask, unsigned long flags);
++
+ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol);
+ int mpol_set_shared_policy(struct shared_policy *info,
+ 				struct vm_area_struct *vma,
+@@ -216,6 +222,8 @@ struct mempolicy *get_vma_policy(struct 
+ 
+ extern void numa_default_policy(void);
+ extern void numa_policy_init(void);
++extern void mpol_rebind_policy(struct mempolicy *pol, const nodemask_t *new,
++				enum mpol_rebind_step step);
+ extern void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new,
+ 				enum mpol_rebind_step step);
+ extern void mpol_rebind_mm(struct mm_struct *mm, nodemask_t *new);
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -460,6 +460,25 @@ static const struct mempolicy_operations
- static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 				unsigned long flags);
- 
-+/*
-+ * Check whether a vma is migratable
-+ */
-+int vma_migratable(struct vm_area_struct *vma)
-+{
-+	if (vma->vm_flags & (VM_IO|VM_HUGETLB|VM_PFNMAP|VM_RESERVED))
-+		return 0;
-+	/*
-+	 * Migration allocates pages in the highest zone. If we cannot
-+	 * do so then migration (at least from node to node) is not
-+	 * possible.
-+	 */
-+	if (vma->vm_file &&
-+		gfp_zone(mapping_gfp_mask(vma->vm_file->f_mapping))
-+								< policy_zone)
-+			return 0;
-+	return 1;
-+}
-+
- struct mempol_walk_data {
- 	struct vm_area_struct *vma;
- 	const nodemask_t *nodes;
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -294,6 +294,10 @@ static int migrate_page_move_mapping(str
-  					page_index(page));
- 
- 	expected_count = 2 + page_has_private(page);
-+	if (mode == MIGRATE_FAULT) {
-+		expected_count++;
-+		mode = MIGRATE_ASYNC; /* don't bother blocking for MoF */
-+	}
- 	if (page_count(page) != expected_count ||
- 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
- 		spin_unlock_irq(&mapping->tree_lock);
-@@ -1517,4 +1521,126 @@ int migrate_vmas(struct mm_struct *mm, c
-  	}
-  	return err;
+@@ -259,7 +259,7 @@ static int mpol_set_nodemask(struct memp
+  * This function just creates a new policy, does some check and simple
+  * initialization. You must invoke mpol_set_nodemask() to set nodes.
+  */
+-static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
++struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 				  nodemask_t *nodes)
+ {
+ 	struct mempolicy *policy;
+@@ -401,7 +401,7 @@ static void mpol_rebind_preferred(struct
+  * 	MPOL_REBIND_STEP1 - set all the newly nodes
+  * 	MPOL_REBIND_STEP2 - clean all the disallowed nodes
+  */
+-static void mpol_rebind_policy(struct mempolicy *pol, const nodemask_t *newmask,
++void mpol_rebind_policy(struct mempolicy *pol, const nodemask_t *newmask,
+ 				enum mpol_rebind_step step)
+ {
+ 	if (!pol)
+@@ -1067,55 +1067,28 @@ static struct page *new_vma_page(struct 
  }
--#endif
-+
-+/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node.  Page is already unmapped, up to date and locked by caller.
-+ * Anon pages are in the swap cache.  Page's mapping has a migratepage aop.
-+ *
-+ * page refs on entry/exit:  cache + fault path [+ bufs]
-+ */
-+struct page *
-+migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-+{
-+	struct page *oldpage = page, *newpage;
-+	struct address_space *mapping = page_mapping(page);
-+	struct mem_cgroup *mcg;
-+	unsigned int gfp;
-+	int rc = 0;
-+	int charge = -ENOMEM;
-+
-+	VM_BUG_ON(!PageLocked(page));
-+	VM_BUG_ON(page_mapcount(page));
-+	VM_BUG_ON(PageAnon(page) && !PageSwapCache(page));
-+	VM_BUG_ON(!mapping || !mapping->a_ops->migratepage);
-+
-+	/*
-+	 * remove old page from LRU so it can't be found while migrating
-+	 * except thru' the cache by other faulting tasks who will
-+	 * block behind my lock.
-+	 */
-+	if (isolate_lru_page(page))	/* incrs page count on success */
-+		goto out_nolru;	/* we lost */
-+
-+	/*
-+	 * Never wait for allocations just to migrate on fault,
-+	 * but don't dip into reserves.
-+	 * And, only accept pages from specified node.
-+	 * No sense migrating to a different "misplaced" page!
-+	 */
-+	gfp = (unsigned int)mapping_gfp_mask(mapping) & ~__GFP_WAIT;
-+	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE ;
-+
-+	newpage = alloc_pages_node(node, gfp, 0);
-+	if (!newpage)
-+		goto out;	/* give up */
-+
-+	/*
-+	 * can't just lock_page() -- "might sleep" in atomic context
-+	 */
-+	if (!trylock_page(newpage))
-+		BUG();		/* new page should be unlocked!!! */
-+
-+	// XXX hnaz, is this right?
-+	charge = mem_cgroup_prepare_migration(page, newpage, &mcg, gfp);
-+	if (charge == -ENOMEM) {
-+		rc = charge;
-+		goto out;
+ #endif
+ 
+-static long do_mbind(unsigned long start, unsigned long len,
+-		     unsigned short mode, unsigned short mode_flags,
+-		     nodemask_t *nmask, unsigned long flags)
++long mpol_do_mbind(unsigned long start, unsigned long len,
++		struct mempolicy *new, unsigned long mode,
++		nodemask_t *nmask, unsigned long flags)
+ {
+-	struct vm_area_struct *vma;
+ 	struct mm_struct *mm = current->mm;
+-	struct mempolicy *new = NULL;
+-	unsigned long end;
++	struct vm_area_struct *vma;
+ 	int err, nr_failed = 0;
++	unsigned long end;
+ 	LIST_HEAD(pagelist);
+ 
+-  	if (flags & ~(unsigned long)MPOL_MF_VALID)
+-		return -EINVAL;
+-	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
+-		return -EPERM;
+-
+-	if (start & ~PAGE_MASK)
+-		return -EINVAL;
+-
+-	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+-		flags &= ~MPOL_MF_STRICT;
+-
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+ 	end = start + len;
+ 
+-	if (end < start)
+-		return -EINVAL;
+-	if (end == start)
+-		return 0;
+-
+-	if (mode != MPOL_NOOP) {
+-		new = mpol_new(mode, mode_flags, nmask);
+-		if (IS_ERR(new))
+-			return PTR_ERR(new);
+-
+-		if (flags & MPOL_MF_LAZY)
+-			new->flags |= MPOL_F_MOF;
+-
++	if (end < start) {
++		err = -EINVAL;
++		goto mpol_out;
+ 	}
+-	/*
+-	 * If we are using the default policy then operation
+-	 * on discontinuous address spaces is okay after all
+-	 */
+-	if (!new)
+-		flags |= MPOL_MF_DISCONTIG_OK;
+ 
+-	pr_debug("mbind %lx-%lx mode:%d flags:%d nodes:%lx\n",
+-		 start, start + len, mode, mode_flags,
+-		 nmask ? nodes_addr(*nmask)[0] : -1);
++	if (end == start) {
++		err = 0;
++		goto mpol_out;
 +	}
-+
-+	newpage->index = page->index;
-+	newpage->mapping = page->mapping;
-+	if (PageSwapBacked(page))		/* like move_to_new_page() */
-+		SetPageSwapBacked(newpage);
-+
-+	/*
-+	 * migrate a_op transfers cache [+ buf] refs
-+	 */
-+	rc = mapping->a_ops->migratepage(mapping, newpage, page, MIGRATE_FAULT);
-+	if (!rc) {
-+		get_page(newpage);	/* add isolate_lru_page ref */
-+		put_page(page);		/* drop       "          "  */
-+
-+		unlock_page(page);
-+		put_page(page);		/* drop fault path ref & free */
-+
-+		page = newpage;
-+	}
-+
-+out:
-+	if (!charge)
-+		mem_cgroup_end_migration(mcg, oldpage, newpage, !rc);
-+
-+	if (rc) {
-+		unlock_page(newpage);
-+		__free_page(newpage);
-+	}
-+
-+	putback_lru_page(page);		/* ultimately, drops a page ref */
-+
-+out_nolru:
-+	return page;			/* locked, to complete fault */
+ 
+ 	if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) {
+ 		err = migrate_prep();
+@@ -1123,8 +1096,6 @@ static long do_mbind(unsigned long start
+ 			goto mpol_out;
+ 	}
+ 
+-	down_write(&mm->mmap_sem);
+-
+ 	if (mode != MPOL_NOOP) {
+ 		NODEMASK_SCRATCH(scratch);
+ 		err = -ENOMEM;
+@@ -1135,7 +1106,7 @@ static long do_mbind(unsigned long start
+ 		}
+ 		NODEMASK_SCRATCH_FREE(scratch);
+ 		if (err)
+-			goto mpol_out_unlock;
++			goto mpol_out;
+ 	}
+ 
+ 	vma = check_range(mm, start, end, nmask,
+@@ -1143,12 +1114,12 @@ static long do_mbind(unsigned long start
+ 
+ 	err = PTR_ERR(vma);	/* maybe ... */
+ 	if (IS_ERR(vma))
+-		goto mpol_out_unlock;
++		goto mpol_out_putback;
+ 
+ 	if (mode != MPOL_NOOP) {
+ 		err = mbind_range(mm, start, end, new);
+ 		if (err)
+-			goto mpol_out_unlock;
++			goto mpol_out_putback;
+ 	}
+ 
+ 	if (!list_empty(&pagelist)) {
+@@ -1164,12 +1135,56 @@ static long do_mbind(unsigned long start
+ 	if (nr_failed && (flags & MPOL_MF_STRICT))
+ 		err = -EIO;
+ 
++mpol_out_putback:
+ 	putback_lru_pages(&pagelist);
+ 
+-mpol_out_unlock:
+-	up_write(&mm->mmap_sem);
+ mpol_out:
++	return err;
 +}
 +
-+/*
-+ * Called in fault path, if migrate_on_fault_enabled(current) for a page
-+ * found in the cache, page is locked, and page_mapping(page) != NULL;
-+ * We check for page uptodate here because we want to be able to do any
-+ * needed migration before grabbing the page table lock.  In the anon fault
-+ * path, PageUptodate() isn't checked until after locking the page table.
-+ *
-+ * For migrate on fault, we only migrate pages whose mapping has a
-+ * migratepage op.  The fallback path requires writing out the page and
-+ * reading it back in.  That sort of defeats the purpose of
-+ * migrate-on-fault [performance].  So, we don't even bother to check
-+ * for misplacment unless the op is present.  Of course, this is an extra
-+ * check in the fault path for pages we care about :-(
-+ */
-+struct page *check_migrate_misplaced_page(struct page *page,
-+		struct vm_area_struct *vma, unsigned long address)
++static long do_mbind(unsigned long start, unsigned long len,
++		     unsigned short mode, unsigned short mode_flags,
++		     nodemask_t *nmask, unsigned long flags)
 +{
-+	int node;
++	struct mm_struct *mm = current->mm;
++	struct mempolicy *new = NULL;
++	int err;
 +
-+	if (page_mapcount(page) || PageWriteback(page) ||
-+			unlikely(!PageUptodate(page))  ||
-+			!page_mapping(page)->a_ops->migratepage)
-+		return page;
++	if (flags & ~(unsigned long)MPOL_MF_VALID)
++		return -EINVAL;
++	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
++		return -EPERM;
 +
-+	node = mpol_misplaced(page, vma, address);
-+	if (node == -1)
-+		return page;
++	if (start & ~PAGE_MASK)
++		return -EINVAL;
 +
-+	return migrate_misplaced_page(page, vma->vm_mm, node);
-+}
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
++		flags &= ~MPOL_MF_STRICT;
 +
-+#endif /* CONFIG_NUMA */
++	if (mode != MPOL_NOOP) {
++		new = mpol_new(mode, mode_flags, nmask);
++		if (IS_ERR(new))
++			return PTR_ERR(new);
++
++		if (flags & MPOL_MF_LAZY)
++			new->flags |= MPOL_F_MOF;
++	}
++	/*
++	 * If we are using the default policy then operation
++	 * on discontinuous address spaces is okay after all
++	 */
++	if (!new)
++		flags |= MPOL_MF_DISCONTIG_OK;
++
++	pr_debug("mbind %lx-%lx mode:%d flags:%d nodes:%lx\n",
++		 start, start + len, mode, mode_flags,
++		 nmask ? nodes_addr(*nmask)[0] : -1);
++
++	down_write(&mm->mmap_sem);
++	err = mpol_do_mbind(start, len, new, mode, nmask, flags);
++	up_write(&mm->mmap_sem);
+ 	mpol_put(new);
++
+ 	return err;
+ }
+ 
 
 
