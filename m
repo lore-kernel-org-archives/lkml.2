@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946168Ab2CPX6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:58:54 -0400
-Received: from forward7.mail.yandex.net ([77.88.61.37]:60607 "EHLO
-	forward7.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945934Ab2CPX6s (ORCPT
+	id S1946185Ab2CPX7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:59:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946067Ab2CPXiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:58:48 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <944171329661049@web81.yandex.ru>
-References: <1322774765.8386.2.camel@hp> <20120213172316.GA24145@home.goodmis.org> <944171329661049@web81.yandex.ru>
-Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
-MIME-Version: 1.0
-Message-Id: <654301331942324@web109.yandex.ru>
-Date: Sat, 17 Mar 2012 03:58:44 +0400
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Fri, 16 Mar 2012 19:38:00 -0400
+Message-Id: <20120316233448.086843930@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 16 Mar 2012 16:34:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 09/38] rt2x00: fix random stalls
+In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven, what is about the patch from my previous message? Is everything ok?
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Regards,
-Kirill
+------------------
 
-19.02.2012, 18:17, "Kirill Tkhai" <tkhai@yandex.ru>:
-> 13.02.2012, 21:23, "Steven Rostedt" <rostedt@goodmis.org>:
->
->> šI wasn't on the Cc of the original message, but it was bounced to me
->> šawhile ago. I'm cleaning out my email and came across it.
->>
->> šCan you send me the latest version of this patch, either against latest
->> šLinus, or against tip/master.
->>
->> šThanks,
->>
->> š-- Steve
->>
->> šP.S. I'll be at ELC this week so it may not get processed right away.
->
-> Migration status depends on a difference of weight from 0 and 1.
-> If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
-> pushable (or not pushable). We are not insterested in its exact
-> values, is it 3 or 4, for example.
->
-> Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
-> task will be dequeued and enqueued sequentially without important
-> difference in comparison with initial state. The only difference is in
-> internal representation of plist queue of pushable tasks and the fact
-> that the task may won't be the first in a sequence of the same priority
-> tasks. But it seems to me it gives nothing.
->
-> Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+
+commit 3780d038fdf4b5ef26ead10b0604ab1f46dd9510 upstream.
+
+Is possible that we stop queue and then do not wake up it again,
+especially when packets are transmitted fast. That can be easily
+reproduced with modified tx queue entry_num to some small value e.g. 16.
+
+If mac80211 already hold local->queue_stop_reason_lock, then we can wait
+on that lock in both rt2x00queue_pause_queue() and
+rt2x00queue_unpause_queue(). After drooping ->queue_stop_reason_lock
+is possible that __ieee80211_wake_queue() will be performed before
+__ieee80211_stop_queue(), hence we stop queue and newer wake up it
+again.
+
+Another race condition is possible when between rt2x00queue_threshold()
+check and rt2x00queue_pause_queue() we will process all pending tx
+buffers on different cpu. This might happen if for example interrupt
+will be triggered on cpu performing rt2x00mac_tx().
+
+To prevent race conditions serialize pause/unpause by queue->tx_lock.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/rt2x00/rt2x00dev.c   |    6 +++++-
+ drivers/net/wireless/rt2x00/rt2x00mac.c   |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt2x00queue.c |    3 +++
+ 3 files changed, 17 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -410,10 +410,14 @@ void rt2x00lib_txdone(struct queue_entry
+ 	/*
+ 	 * If the data queue was below the threshold before the txdone
+ 	 * handler we must make sure the packet queue in the mac80211 stack
+-	 * is reenabled when the txdone handler has finished.
++	 * is reenabled when the txdone handler has finished. This has to be
++	 * serialized with rt2x00mac_tx(), otherwise we can wake up queue
++	 * before it was stopped.
+ 	 */
++	spin_lock_bh(&entry->queue->tx_lock);
+ 	if (!rt2x00queue_threshold(entry->queue))
+ 		rt2x00queue_unpause_queue(entry->queue);
++	spin_unlock_bh(&entry->queue->tx_lock);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00lib_txdone);
+ 
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -152,13 +152,22 @@ void rt2x00mac_tx(struct ieee80211_hw *h
+ 	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
+ 		goto exit_fail;
+ 
++	/*
++	 * Pausing queue has to be serialized with rt2x00lib_txdone(). Note
++	 * we should not use spin_lock_bh variant as bottom halve was already
++	 * disabled before ieee80211_xmit() call.
++	 */
++	spin_lock(&queue->tx_lock);
+ 	if (rt2x00queue_threshold(queue))
+ 		rt2x00queue_pause_queue(queue);
++	spin_unlock(&queue->tx_lock);
+ 
+ 	return;
+ 
+  exit_fail:
++	spin_lock(&queue->tx_lock);
+ 	rt2x00queue_pause_queue(queue);
++	spin_unlock(&queue->tx_lock);
+  exit_free_skb:
+ 	dev_kfree_skb_any(skb);
+ }
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -562,6 +562,9 @@ int rt2x00queue_write_tx_frame(struct da
+ 	u8 rate_idx, rate_flags;
+ 	int ret = 0;
+ 
++	/*
++	 * That function must be called with bh disabled.
++	 */
+ 	spin_lock(&queue->tx_lock);
+ 
+ 	entry = rt2x00queue_get_entry(queue, Q_INDEX);
+
+
