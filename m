@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965456Ab2CPIDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 04:03:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23677 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S964997Ab2CPIDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 04:03:14 -0400
-X-IronPort-AV: E=Sophos;i="4.73,597,1325433600"; 
-   d="scan'208";a="4551150"
-Message-ID: <4F62F430.7030103@cn.fujitsu.com>
-Date: Fri, 16 Mar 2012 16:05:04 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Eric Northup <digitaleric@google.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+	id S1032617Ab2CPIG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 04:06:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27748 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964997Ab2CPIGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 04:06:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="78275929"
+Subject: Re: [PATCH] usb/core: skip unnecessary line IRQ request for USB3
+From: Alex Shi <alex.shi@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: gregkh <gregkh@linuxfoundation.org>, sarah.a.sharp@linux.intel.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F60726E.3090807@cn.fujitsu.com> <4F607325.6050607@redhat.com> <20120314104608.GU2304@redhat.com> <4F607789.4010109@redhat.com> <4F607CE4.2060809@cn.fujitsu.com> <4F609822.7050502@redhat.com> <20120314131415.GB2304@redhat.com> <4F609A15.5020902@redhat.com> <20120314132552.GC2304@redhat.com> <CAG7+5M0gEpoJ_jnC8_4Ae-xe2rr7+CJLZh3JjAhh=p=-2bEAcA@mail.gmail.com> <20120315103923.GL2304@redhat.com> <4F61D1AF.4040603@siemens.com> <4F61D688.5040406@redhat.com>
-In-Reply-To: <4F61D688.5040406@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-16 16:01:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-16 16:01:09,
-	Serialize complete at 2012-03-16 16:01:09
+        linux-usb <linux-usb@vger.kernel.org>
+In-Reply-To: <4F61FF28.8000505@intel.com>
+References: <Pine.LNX.4.44L0.1203151025300.1366-100000@iolanthe.rowland.org>
+	 <4F61FF28.8000505@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Mar 2012 16:05:54 +0800
+Message-ID: <1331885154.2979.181.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/15/2012 07:46 PM, Avi Kivity Wrote:
-> On 03/15/2012 01:25 PM, Jan Kiszka wrote:
->>>>
->>> There was such vm exit (KVM_EXIT_HYPERCALL), but it was deemed to be a
->>> bad idea.
->>
->> BTW, this would help a lot in emulating hypercalls of other hypervisors
->> (or of KVM's VAPIC in the absence of in-kernel irqchip - I had to jump
->> through hoops therefore) in user space. Not all those hypercall handlers
->> actually have to reside in the KVM module.
->>
+On Thu, 2012-03-15 at 22:39 +0800, Alex Shi wrote:
+> > 
+> > This is not a good idea.  What happens if some USB-3 controller 
+> > (perhaps a non-xHCI USB-3 controller) doesn't use MSI?
+> > 
 > 
-> That is true.  On the other hand the hypercall ABI might go to pieces if
-> there was no central implementation.
+> 
+> current usb3 driver just xhci. but sure it need to modify if non-xhci
+> usb pops up.
+> 
+> > The right way to avoid registering a legacy interrupt handler is to 
+> > call usb_add_hcd() with irqnum equal to 0.
+> 
+> 
+> a good trick! will try it tomorrow.
+
+Do you mean the following patch? It tested. :) 
+------------
+>From 5ae9a6fe88752495af6da6182cad26620f1ab190 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 15 Mar 2012 08:12:47 +0800
+Subject: [PATCH] usb/core: skip unnecessary line IRQ request for USB3
+
+USB3(only xhci driver) requests line IRQ here but will disable it
+in later driver->start function and try MSI first:
+
+xhci_hcd 0000:02:00.0: irq 18, io mem 0xfe500000
+xhci_hcd 0000:02:00.0: irq 45 for MSI/MSI-X
+xhci_hcd 0000:02:00.0: irq 46 for MSI/MSI-X
+
+So it is better to remove the redundant request here.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ drivers/usb/core/hcd-pci.c |    5 ++++-
+ drivers/usb/host/xhci.c    |    3 ---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+index 81e2c0d..7b73c74 100644
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -245,7 +245,10 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 
+ 	pci_set_master(dev);
+ 
+-	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
++	if ((driver->flags & HCD_MASK) != HCD_USB3)
++		retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
++	else
++		retval = usb_add_hcd(hcd, 0, IRQF_SHARED);
+ 	if (retval != 0)
+ 		goto unmap_registers;
+ 	set_hs_companion(dev, hcd);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index c939f5f..64979c2 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -338,9 +338,6 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
+ 	if (xhci->quirks & XHCI_BROKEN_MSI)
+ 		return 0;
+ 
+-	/* unregister the legacy interrupt */
+-	if (hcd->irq)
+-		free_irq(hcd->irq, hcd);
+ 	hcd->irq = -1;
+ 
+ 	ret = xhci_setup_msix(xhci);
+-- 
+1.6.3.3
+
+
+
+> 
+> > 
+> > Alan Stern
+> > 
+> 
+> 
+> 
 > 
 
-I prefer this:
-host <-> guest kernel: use hypercall
 
-host <-> guest userspace: use virtio-serial(or other way that not modify kernel)
-
-Thanks
-Wen Congyang
