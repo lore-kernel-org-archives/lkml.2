@@ -1,71 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab2CPCxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 22:53:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58784 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab2CPCxN (ORCPT
+	id S1757170Ab2CPDAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:00:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56602 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755050Ab2CPDAa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 22:53:13 -0400
-Date: Fri, 16 Mar 2012 13:53:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the drm tree
-Message-Id: <20120316135303.7ad016ef3e29eac06027658e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK"
+	Thu, 15 Mar 2012 23:00:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="78205936"
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Du, Alek" <alek.du@intel.com>, "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: [PATCH v2] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Topic: [PATCH v2] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: Ac0DIO/snHniEJX7Rb2Ggo2n/ounqg==
+Date: Fri, 16 Mar 2012 03:00:26 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FCC5EC3@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Xiaobing Tu <xiaobing.tu@intel.com>
 
-Hi Dave,
+tty_buffer_request_room is well protected, but while after it returns,
+ it releases the port->lock. tty->buf.tail might be modified
+by either irq handler or other threads. The patch adds more protection
+by holding the lock across tty buffer finding and buffer filling.
+Signed-off-by: Alek Du <alek.du@intel.com>
+Signed-off-by: Xiaobing Tu <xiaobing.tu@intel.com>
+---
+ drivers/tty/tty_buffer.c |   85 +++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 65 insertions(+), 20 deletions(-)
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 6c9b7cd..91e326f 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -185,25 +185,19 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
+ 	/* Should possibly check if this fails for the largest buffer we
+ 	   have queued and recycle that ? */
+ }
+-
+ /**
+- *	tty_buffer_request_room		-	grow tty buffer if needed
++ *	__tty_buffer_request_room		-	grow tty buffer if needed
+  *	@tty: tty structure
+  *	@size: size desired
+  *
+  *	Make at least size bytes of linear space available for the tty
+  *	buffer. If we fail return the size we managed to find.
+- *
+- *	Locking: Takes tty->buf.lock
++ *      Locking: Caller must hold tty->buf.lock
+  */
+-int tty_buffer_request_room(struct tty_struct *tty, size_t size)
++static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
+ {
+ 	struct tty_buffer *b, *n;
+ 	int left;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&tty->buf.lock, flags);
+-
+ 	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+ 	   remove this conditional if its worth it. This would be invisible
+ 	   to the callers */
+@@ -225,9 +219,30 @@ int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+ 			size = left;
+ 	}
+ 
+-	spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 	return size;
+ }
++
++
++/**
++ *	tty_buffer_request_room		-	grow tty buffer if needed
++ *	@tty: tty structure
++ *	@size: size desired
++ *
++ *	Make at least size bytes of linear space available for the tty
++ *	buffer. If we fail return the size we managed to find.
++ *
++ *	Locking: Takes tty->buf.lock
++ */
++int tty_buffer_request_room(struct tty_struct *tty, size_t size)
++{
++	unsigned long flags;
++	int length;
++
++	spin_lock_irqsave(&tty->buf.lock, flags);
++	length = __tty_buffer_request_room(tty, size);
++	spin_unlock_irqrestore(&tty->buf.lock, flags);
++	return length;
++}
+ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+ 
+ /**
+@@ -249,14 +264,22 @@ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+-		int space = tty_buffer_request_room(tty, goal);
+-		struct tty_buffer *tb = tty->buf.tail;
++		int space;
++		unsigned long flags;
++		struct tty_buffer *tb;
++
++		spin_lock_irqsave(&tty->buf.lock, flags);
++		space = __tty_buffer_request_room(tty, goal);
++		tb = tty->buf.tail;
+ 		/* If there is no space then tb may be NULL */
+-		if (unlikely(space == 0))
++		if (unlikely(space == 0)) {
++			spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 			break;
++		}
+ 		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+ 		memset(tb->flag_buf_ptr + tb->used, flag, space);
+ 		tb->used += space;
++		spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 		copied += space;
+ 		chars += space;
+ 		/* There is a small chance that we need to split the data over
+@@ -286,14 +309,22 @@ int tty_insert_flip_string_flags(struct tty_struct *tty,
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+-		int space = tty_buffer_request_room(tty, goal);
+-		struct tty_buffer *tb = tty->buf.tail;
++		int space;
++		unsigned long __flags;
++		struct tty_buffer *tb;
++
++		spin_lock_irqsave(&tty->buf.lock, __flags);
++		space = __tty_buffer_request_room(tty, goal);
++		tb = tty->buf.tail;
+ 		/* If there is no space then tb may be NULL */
+-		if (unlikely(space == 0))
++		if (unlikely(space == 0)) {
++			spin_unlock_irqrestore(&tty->buf.lock, __flags);
+ 			break;
++		}
+ 		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+ 		memcpy(tb->flag_buf_ptr + tb->used, flags, space);
+ 		tb->used += space;
++		spin_unlock_irqrestore(&tty->buf.lock, __flags);
+ 		copied += space;
+ 		chars += space;
+ 		flags += space;
+@@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);
+ int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+ 								size_t size)
+ {
+-	int space = tty_buffer_request_room(tty, size);
++	int space;
++	unsigned long flags;
++	struct tty_buffer *tb;
++
++	spin_lock_irqsave(&tty->buf.lock, flags);
++	space = __tty_buffer_request_room(tty, size);
++
++	tb = tty->buf.tail;
+ 	if (likely(space)) {
+-		struct tty_buffer *tb = tty->buf.tail;
+ 		*chars = tb->char_buf_ptr + tb->used;
+ 		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
+ 		tb->used += space;
+ 	}
++	spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 	return space;
+ }
+ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+@@ -374,13 +412,20 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+ int tty_prepare_flip_string_flags(struct tty_struct *tty,
+ 			unsigned char **chars, char **flags, size_t size)
+ {
+-	int space = tty_buffer_request_room(tty, size);
++	int space;
++	unsigned long __flags;
++	struct tty_buffer *tb;
++
++	spin_lock_irqsave(&tty->buf.lock, __flags);
++	space = __tty_buffer_request_room(tty, size);
++
++	tb = tty->buf.tail;
+ 	if (likely(space)) {
+-		struct tty_buffer *tb = tty->buf.tail;
+ 		*chars = tb->char_buf_ptr + tb->used;
+ 		*flags = tb->flag_buf_ptr + tb->used;
+ 		tb->used += space;
+ 	}
++	spin_unlock_irqrestore(&tty->buf.lock, __flags);
+ 	return space;
+ }
+ EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
+-- 
+1.7.4.1
 
-ERROR: "drm_usb_init" [drivers/gpu/drm/udl/udl.ko] undefined!
-ERROR: "drm_get_usb_dev" [drivers/gpu/drm/udl/udl.ko] undefined!
-ERROR: "drm_usb_exit" [drivers/gpu/drm/udl/udl.ko] undefined!
-
-Caused by commit 5320918b9a87 ("drm/udl: initial UDL driver (v4)").
-
-I have used the drm tree from next-20120315 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
-P.S. on the bright side, I didn't get any conflicts in the merge ...
-
---Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYqsPAAoJEECxmPOUX5FEoSYP/RIk7W0zvCIVa6557G62zZoT
-H8TF9f1PURB+qDIos9WUvcWR8IAKgBfcuchqkxJwNaZIhfLhzTXkfuOZOXhC1594
-Tq3VqcwUpuxfczT8f2vxjChrsZ6VhAW9KesvXXM3vSENr1C3UnVHf9OQp/QP2GPK
-8YZfJFHa+tavo0TvNJnwyXNx8xnUMXIgyfXyhMpvUriM0CcrroPbkMwcYAlVhyNB
-AvVDfhXmsMs263ZjCebi1EF0M49e8cHoeTK7zfkr9X2d2L8SuedQI07tzve3K4K3
-Wcm8Y6xxTe8TRXYGjrAxFat2DOBzmQO3pkURo9DvHp2KO4frydYRSvMk/pAZ+8/v
-aJUTqkR0XUXvggTq9wnTqxeM1d1Zm0pbt2LGDrjZEkqC0gKwVPM+AIxM980mNDbp
-m8VlmO+zxfJ/dKLYF3ykfBcApVFtjXgTHh4UhhgIv+/Dc9/OI+3iJu2FWyNIGAV2
-GIKFoz3tNU55tdSkQ3CNAdSWvkv6w5GSyY/i1JVn+dh4pqZfvhCmmrp7auATznKy
-Yw3JkcYuJlLQg1iE8pgx81bxgVPfQV4OKKoncsRxKrb4gclxFlN0ohSp3zhLJA9v
-DsrtXYWUlAop1gWI+s53BdOrM4Xn+4wdR42vhVvGOvyMcr0r7S5hyDTeoSpqOq9c
-qRgWFEUIbLsDUGIW7jFb
-=aJZU
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Mar_2012_13_53_03_+1100_5/b7JtvlGiIQ9tjK--
