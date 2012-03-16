@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032758Ab2CPLZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 07:25:46 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44800 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab2CPLZo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 07:25:44 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Subject: [PATCH] usb: gadget: f_mass_storage: remove deprecated fsg_add()
-References: <1ad5f25435fc5d2cd094ae1c68d7831b8b2737ca.1331896818.git.mina86@mina86.com>
-Date: Fri, 16 Mar 2012 12:25:42 +0100
-To: "Felipe Balbi" <balbi@ti.com>
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1761465Ab2CPL0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 07:26:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38387 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761293Ab2CPL0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 07:26:33 -0400
+Date: Fri, 16 Mar 2012 12:26:31 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+In-Reply-To: <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1203161225110.18356@pobox.suse.cz>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.wa9go4093l0zgt@mpn-glaptop>
-In-Reply-To: <1ad5f25435fc5d2cd094ae1c68d7831b8b2737ca.1331896818.git.mina86@mina86.com>
-User-Agent: Opera Mail/11.61 (Linux)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On Tue, 6 Mar 2012, benjamin.tissoires wrote:
 
-There are no in-tree fsg_add() users and it has been deprecated
-since 2.6.35 [1dc90985d1: fsg_add() renamed to fsg_bind_config()] so
-out-of-tree users had more then enough time to convert.  Removing.
----
-  drivers/usb/gadget/f_mass_storage.c |    7 -------
-  1 file changed, 7 deletions(-)
+> From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> 
+> The code is inspired from the one present in the bttv module.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> ---
+> 
+> As I mentioned in the mail 0/5, I'd really like to have your opinion on this
+> one. I copied the code from bttv, but it forces us to change hid_device which
+> is not very good for ABI changes reasons.
 
-  Sorry, still had Greg's old email address in my alias list.  Fixing.
+It's indeed probably the best and most "lightweight" solution before we 
+come up with more robust attitude (with userspace involvement).
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index a371e96..47383f4 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -3110,13 +3110,6 @@ static int fsg_bind_config(struct usb_composite_dev *cdev,
-  	return rc;
-  }
+Could you please resend the patch with proper changelog entry, and perhaps 
+add some more commentary into the code to better explain the reasons for 
+this gymnastics?
 
--static inline int __deprecated __maybe_unused
--fsg_add(struct usb_composite_dev *cdev, struct usb_configuration *c,
--	struct fsg_common *common)
--{
--	return fsg_bind_config(cdev, c, common);
--}
--
-
-  /************************* Module parameters *************************/
-
+Thanks,
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Jiri Kosina
+SUSE Labs
