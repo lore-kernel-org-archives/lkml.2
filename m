@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946360Ab2CPXkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:40:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
+	id S1946447Ab2CPXp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:45:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946344Ab2CPXkn (ORCPT
+	with ESMTP id S1946356Ab2CPXkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:43 -0400
-Message-Id: <20120316233812.585875871@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:49 -0400
+Message-Id: <20120316233811.948247688@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:32 -0700
+Date: Fri, 16 Mar 2012 16:38:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Francois Romieu <romieu@fr.zoreil.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Hayes Wang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/41] r8169: corrupted IP fragments fix for large mtu.
+        alan@lxorguk.ukuu.org.uk, Michel Machado <michel@digirati.com.br>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [ 15/41] neighbour: Fixed race condition at tbl->nht
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: françois romieu <romieu@fr.zoreil.com>
+From: Michel Machado <michel@digirati.com.br>
 
-[ Upstream commit 9c5028e9da1255dd2b99762d8627b88b29f68cce ]
+[ Upstream commit 84338a6c9dbb6ff3de4749864020f8f25d86fc81 ]
 
-Noticed with the 8168d (-vb-gr, aka RTL_GIGA_MAC_VER_26).
+When the fixed race condition happens:
 
-ConfigX registers should only be written while the Config9346 lock
-is held.
+1. While function neigh_periodic_work scans the neighbor hash table
+pointed by field tbl->nht, it unlocks and locks tbl->lock between
+buckets in order to call cond_resched.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Reported-by: Nick Bowler <nbowler@elliptictech.com>
-Cc: Hayes Wang <hayeswang@realtek.com>
+2. Assume that function neigh_periodic_work calls cond_resched, that is,
+the lock tbl->lock is available, and function neigh_hash_grow runs.
+
+3. Once function neigh_hash_grow finishes, and RCU calls
+neigh_hash_free_rcu, the original struct neigh_hash_table that function
+neigh_periodic_work was using doesn't exist anymore.
+
+4. Once back at neigh_periodic_work, whenever the old struct
+neigh_hash_table is accessed, things can go badly.
+
+Signed-off-by: Michel Machado <michel@digirati.com.br>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/core/neighbour.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3781,12 +3781,20 @@ static void rtl8169_init_ring_indexes(st
- 
- static void rtl_hw_jumbo_enable(struct rtl8169_private *tp)
- {
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	RTL_W8(Cfg9346, Cfg9346_Unlock);
- 	rtl_generic_op(tp, tp->jumbo_ops.enable);
-+	RTL_W8(Cfg9346, Cfg9346_Lock);
- }
- 
- static void rtl_hw_jumbo_disable(struct rtl8169_private *tp)
- {
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	RTL_W8(Cfg9346, Cfg9346_Unlock);
- 	rtl_generic_op(tp, tp->jumbo_ops.disable);
-+	RTL_W8(Cfg9346, Cfg9346_Lock);
- }
- 
- static void r8168c_hw_jumbo_enable(struct rtl8169_private *tp)
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -802,6 +802,8 @@ next_elt:
+ 		write_unlock_bh(&tbl->lock);
+ 		cond_resched();
+ 		write_lock_bh(&tbl->lock);
++		nht = rcu_dereference_protected(tbl->nht,
++						lockdep_is_held(&tbl->lock));
+ 	}
+ 	/* Cycle through all hash buckets every base_reachable_time/2 ticks.
+ 	 * ARP entry timeouts range from 1/2 base_reachable_time to 3/2
 
 
