@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab2CPVEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:04:52 -0400
-Received: from science.horizon.com ([71.41.210.146]:24073 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757840Ab2CPVEs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:04:48 -0400
-Date: 16 Mar 2012 17:04:46 -0400
-Message-ID: <20120316210446.2198.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: jkosina@suse.cz, linux@horizon.com
-Subject: Re: Oops in ext3_block_to_path.isra.40+0x26/0x11b
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-In-Reply-To: <alpine.LNX.2.00.1203161623130.18356@pobox.suse.cz>
+	id S1757662Ab2CPVFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:05:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5375 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab2CPVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 17:05:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140144992"
+Date: Fri, 16 Mar 2012 14:05:42 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Gerard Snitselaar <dev@snitselaar.org>
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: xhci: fix section mismatch in linux-next
+Message-ID: <20120316210542.GG6077@xanatos>
+References: <1331922851-28513-1-git-send-email-dev@snitselaar.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331922851-28513-1-git-send-email-dev@snitselaar.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So it might be the culprit. As the reason of the corruption is not yet 
-> understood, it might be that suspend/resume cycle is not necessary 
-> pre-requisite for this to trigger, it might just make it more likely.
+This looks fine.  Does it need to be applied to stable as well, or is this
+just a "nice to have" that should be queued for 3.4?
 
-It might just be virtual console switching.  Normally I live in X,
-but I might have switched to a text console for some reason (I don't
-specifically remember doing this, but it's very plausible for me).
+Sarah Sharp
 
-> And the corruption is observed to be indeed several writes of 0x00000000, 
-> so it could easily lead to null pointer dereferences all over the place.
+On Fri, Mar 16, 2012 at 11:34:11AM -0700, Gerard Snitselaar wrote:
+> xhci_unregister_pci() is called in xhci_hcd_init().
 > 
-> Are you able to reproduce the problem if you turn kernel modesetting off?
-
-Unfortunately, this is the only time it's happened to me with kernel
-modesetting *on*.  Would repeated checksums of a kernel tree be a good
-way to detect random memory stomping?
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+> ---
+>  drivers/usb/host/xhci-pci.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> index ef98b38..0d7b851 100644
+> --- a/drivers/usb/host/xhci-pci.c
+> +++ b/drivers/usb/host/xhci-pci.c
+> @@ -326,7 +326,7 @@ int __init xhci_register_pci(void)
+>  	return pci_register_driver(&xhci_pci_driver);
+>  }
+>  
+> -void __exit xhci_unregister_pci(void)
+> +void xhci_unregister_pci(void)
+>  {
+>  	pci_unregister_driver(&xhci_pci_driver);
+>  }
+> -- 
+> 1.7.7.6
+> 
