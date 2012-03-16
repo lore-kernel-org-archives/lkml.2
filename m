@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945969Ab2CPWvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 18:51:23 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47821 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032103Ab2CPWvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 18:51:18 -0400
+	id S1032435Ab2CPWvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 18:51:35 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:38481 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031562Ab2CPWvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 18:51:22 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -19,75 +18,90 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
         Andrea Righi <andrea@betterlinux.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE flags
-Date: Fri, 16 Mar 2012 15:51:07 -0700
-Message-Id: <1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 0/2] [RFC] Volatile ranges (v4)
+Date: Fri, 16 Mar 2012 15:51:05 -0700
+Message-Id: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
-References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031622-7408-0000-0000-000003820FA9
+x-cbid: 12031622-9360-0000-0000-0000049DD83A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides new fadvise flags that can be used to mark
-file pages as volatile, which will allow it to be discarded if the
-kernel wants to reclaim memory.
+Ok. So here's another iteration of the fadvise volatile range code.
 
-This is useful for userspace to allocate things like caches, and lets
-the kernel destructively (but safely) reclaim them when there's memory
-pressure.
+I realize this is still a way off from being ready, but I wanted to post
+what I have to share with folks working on the various range/interval
+management ideas as well as update folks who've provided feedback on the
+volatile range code.
 
-It's different from FADV_DONTNEED since the pages are not immediately
-discarded; they are only discarded under pressure.
+So just on the premise: Ideally, I want delayed reclaim based hole
+punching.
 
-This is very much influenced by the Android Ashmem interface by
-Robert Love so credits to him and the Android developers.
-In many cases the code & logic come directly from the ashmem patch.
-The intent of this patch is to allow for ashmem-like behavior, but
-embeds the idea a little deeper into the VM code, instead of isolating
-it into a specific driver.
+Application has a possibly shared mmapped cache file, which it can mark
+chunks of which volatile or nonvolatile as it uses it.  If the kernel
+needs memory, it can zap any ranges that are currently marked volatile. 
 
-I'm very much a newbie at the VM code, so At this point, I just want
-to try to get some input on the patch, so if you have another idea
-for using something other then fadvise, or other thoughts on how the
-volatile ranges are stored, I'd be really interested in hearing them.
-So let me know if you have any comments for feedback!
+Some examples would be rendering of images or web pages that are not
+on-screen. This allows the application to volunteer memory for
+reclaiming, and the kernel to grab it only when it needs. This differs
+from some of the memory notification schemes, in that it allows the
+kernel to immediately reclaim what it needs, rather then having to
+request applications to give up memory (which may add further memory
+load) until enough is free. However, unlike the notification scheme,
+it does require applications to mark and unmark pages as volatile as
+they use them.
 
-Also many thanks to Dave Hansen who helped design and develop the
-initial version of this patch, and has provided continued review and
-mentoring for me in the VM code.
+Current use cases (ie: users of Android's ashmem) only use shmfs/tmpfs.
+However, I don't see right off why it should be limited to shm. As long
+as punching a hole in a file can be done w/ minimal memory overhead
+this could be useful and have somewhat sane behavior. 
 
-v2:
-* After the valid critique that just dropping pages would poke holes
-in volatile ranges, and instead we should zap an entire range if we
-drop any of it, I changed the code to more closely mimic the ashmem
-implementation, which zaps entire ranges via a shrinker using an lru
-list that tracks which range has been marked volatile the longest.
+We could also only zap the page cache, not writing any dirty data out.
+However, w/ non-shm files, discarding dirty data without hole punching
+would obviously leave persistent files in a non-coherent state. This
+may further re-inforce that the design should be shm only if we don't
+do hole punching.
 
-v3:
-* Reworked to use range tree implementation.
+On the topic of hole punching, the kernel doesn't seem completely
+unified in this as well. As I understand, there are two methods to do
+hole punching: FALLOCATE_FL_PUNCH_HOLE vs MADV_REMOVE, and they don't
+necessarily overlap in support. For the most part, it seems persistent
+filesystems require FALLOCATE_FL_PUNCH, where as shmfs/tmpfs uses
+MADV_REMOVE. But I may be misunderstanding the subtle difference here,
+so if anyone wants to clarify this, it would be great.
 
-v4:
-* Renamed functions to avoid confusion.
-* More consistant PAGE_CACHE_SHIFT usage, suggested by Dmitry
-  Adamushko
-* Fixes exit without unlocking issue found by Dmitry Adamushko
-* Migrate to rbtree based rangetree implementation
-* Simplified locking to use global lock (we were grabbing global
-  lru lock every time anyway).
-* Avoid ENOMEM isses by allocating before we get into complicated
-  code.
-* Add some documentation to the volatile.c file from Neil Brown
+One concern was that if the design is shm only, fadvise might not be
+the right interface, as it should be generic. The
+madvise(MADV_REMOVE,...) interface gives some precedence to shmfs/tmpfs
+only calls, but I'd like to get some further feedback as to what folks
+think of this. If we are shm/tmpfs only, I could rework this design to
+use madvise instead of fadvise if folks would prefer.
 
-Known issues:
-* Lockdep doesn't like calling vmtruncate_range() from a shrinker.
-  Any help here on how to address this would be appreciated.
-  I've tried switching to invalidate_inode_pages2_range, but
-  that always returns EBUSY in my testing, and I don't really
-  want to launder dirty pages, instead I want to zap them.
-* Concern over bloating the address_space struct
+Also, there's still the issue that lockdep doesn't like me calling
+vmtruncate_range from the shrinker due to any allocations being done
+while the i_mutex is taken could cause the shrinker to run and need the
+i_mutex again.  I did try using invalidate_inode_pages2_range() but it
+always returns EBUSY in this context, so I suspect I want something
+else. I'm currently reading shmem_truncate_range() and zap_page_range()
+to get a better idea of how to this might be best accomplished.
+
+Regarding feedback suggesting dropping the LRU ranges, and instead
+keeping the volatile/purged data in radix tags and to manage things at
+writeout time. My concern there is having the LRU behavior on the
+entire range from when it was marked volatile instead of the actual
+last page access (you might have ranges that have frequent use areas
+and non-frequent use).  Also sorting out how to evict the entire range
+when one page is dropped might be funky.  However, I'll likely revisit
+this soon, but for this iteration I didn't get to it.
+
+I still also realize I have the issue of bloating the address_space
+structure to handle, and I suspect if I continue w/ this approach
+I'll use a separate hash table to store the range-tree roots in my
+next revision.
+
+Anyway, thanks for the continued advice and feedback!
+-john
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -101,475 +115,27 @@ CC: Dave Chinner <david@fromorbit.com>
 CC: Neil Brown <neilb@suse.de>
 CC: Andrea Righi <andrea@betterlinux.com>
 CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- fs/inode.c               |    4 +
- include/linux/fadvise.h  |    5 +
- include/linux/fs.h       |    2 +
- include/linux/volatile.h |   14 ++
- mm/Makefile              |    2 +-
- mm/fadvise.c             |   16 +++-
- mm/volatile.c            |  313 ++++++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 354 insertions(+), 2 deletions(-)
+
+John Stultz (2):
+  [RFC] Range tree implementation
+  [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE flags
+
+ fs/inode.c                |    4 +
+ include/linux/fadvise.h   |    5 +
+ include/linux/fs.h        |    2 +
+ include/linux/rangetree.h |   53 ++++++++
+ include/linux/volatile.h  |   14 ++
+ lib/Makefile              |    2 +-
+ lib/rangetree.c           |  105 +++++++++++++++
+ mm/Makefile               |    2 +-
+ mm/fadvise.c              |   16 ++-
+ mm/volatile.c             |  313 +++++++++++++++++++++++++++++++++++++++++++++
+ 10 files changed, 513 insertions(+), 3 deletions(-)
+ create mode 100644 include/linux/rangetree.h
  create mode 100644 include/linux/volatile.h
+ create mode 100644 lib/rangetree.c
  create mode 100644 mm/volatile.c
 
-diff --git a/fs/inode.c b/fs/inode.c
-index d3ebdbe..f602dc2 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -27,6 +27,7 @@
- #include <linux/cred.h>
- #include <linux/buffer_head.h> /* for inode_has_buffers */
- #include <linux/ratelimit.h>
-+#include <linux/volatile.h>
- #include "internal.h"
- 
- /*
-@@ -254,6 +255,7 @@ void __destroy_inode(struct inode *inode)
- 	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
- 		posix_acl_release(inode->i_default_acl);
- #endif
-+	mapping_clear_volatile_ranges(&inode->i_data);
- 	this_cpu_dec(nr_inodes);
- }
- EXPORT_SYMBOL(__destroy_inode);
-@@ -360,6 +362,8 @@ void address_space_init_once(struct address_space *mapping)
- 	spin_lock_init(&mapping->private_lock);
- 	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
- 	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
-+	range_tree_init(&mapping->volatile_root);
-+
- }
- EXPORT_SYMBOL(address_space_init_once);
- 
-diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
-index e8e7471..443951c 100644
---- a/include/linux/fadvise.h
-+++ b/include/linux/fadvise.h
-@@ -18,4 +18,9 @@
- #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
- #endif
- 
-+#define POSIX_FADV_VOLATILE	8  /* _can_ toss, but don't toss now */
-+#define POSIX_FADV_NONVOLATILE	9  /* Remove VOLATILE flag */
-+
-+
-+
- #endif	/* FADVISE_H_INCLUDED */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 69cd5bb..2e20be1 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -10,6 +10,7 @@
- #include <linux/ioctl.h>
- #include <linux/blk_types.h>
- #include <linux/types.h>
-+#include <linux/rangetree.h>
- 
- /*
-  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
-@@ -655,6 +656,7 @@ struct address_space {
- 	spinlock_t		private_lock;	/* for use by the address_space */
- 	struct list_head	private_list;	/* ditto */
- 	struct address_space	*assoc_mapping;	/* ditto */
-+	struct range_tree_root	volatile_root;	/* volatile range list */
- } __attribute__((aligned(sizeof(long))));
- 	/*
- 	 * On most architectures that alignment is already the case; but
-diff --git a/include/linux/volatile.h b/include/linux/volatile.h
-new file mode 100644
-index 0000000..5460d7b
---- /dev/null
-+++ b/include/linux/volatile.h
-@@ -0,0 +1,14 @@
-+#ifndef _LINUX_VOLATILE_H
-+#define _LINUX_VOLATILE_H
-+
-+#include <linux/fs.h>
-+
-+extern long mapping_range_volatile(struct address_space *mapping,
-+				pgoff_t start_index, pgoff_t end_index);
-+extern long mapping_range_nonvolatile(struct address_space *mapping,
-+				pgoff_t start_index, pgoff_t end_index);
-+extern long mapping_range_isvolatile(struct address_space *mapping,
-+				pgoff_t start_index, pgoff_t end_index);
-+extern void mapping_clear_volatile_ranges(struct address_space *mapping);
-+
-+#endif /* _LINUX_VOLATILE_H */
-diff --git a/mm/Makefile b/mm/Makefile
-index 50ec00e..7b6c7a8 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -13,7 +13,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
- 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
- 			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
- 			   page_isolation.o mm_init.o mmu_context.o percpu.o \
--			   $(mmu-y)
-+			   volatile.o $(mmu-y)
- obj-y += init-mm.o
- 
- ifdef CONFIG_NO_BOOTMEM
-diff --git a/mm/fadvise.c b/mm/fadvise.c
-index 469491e0..3e33845 100644
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -17,6 +17,7 @@
- #include <linux/fadvise.h>
- #include <linux/writeback.h>
- #include <linux/syscalls.h>
-+#include <linux/volatile.h>
- 
- #include <asm/unistd.h>
- 
-@@ -106,7 +107,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 		nrpages = end_index - start_index + 1;
- 		if (!nrpages)
- 			nrpages = ~0UL;
--		
-+
- 		ret = force_page_cache_readahead(mapping, file,
- 				start_index,
- 				nrpages);
-@@ -128,6 +129,19 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 			invalidate_mapping_pages(mapping, start_index,
- 						end_index);
- 		break;
-+	case POSIX_FADV_VOLATILE:
-+		/* First and last PARTIAL page! */
-+		start_index = offset >> PAGE_CACHE_SHIFT;
-+		end_index = endbyte >> PAGE_CACHE_SHIFT;
-+		ret = mapping_range_volatile(mapping, start_index, end_index);
-+		break;
-+	case POSIX_FADV_NONVOLATILE:
-+		/* First and last PARTIAL page! */
-+		start_index = offset >> PAGE_CACHE_SHIFT;
-+		end_index = endbyte >> PAGE_CACHE_SHIFT;
-+		ret = mapping_range_nonvolatile(mapping, start_index,
-+								end_index);
-+		break;
- 	default:
- 		ret = -EINVAL;
- 	}
-diff --git a/mm/volatile.c b/mm/volatile.c
-new file mode 100644
-index 0000000..e412a8b
---- /dev/null
-+++ b/mm/volatile.c
-@@ -0,0 +1,313 @@
-+/* mm/volatile.c
-+ *
-+ * Volatile page range managment.
-+ *      Copyright 2011 Linaro
-+ *
-+ * Based on mm/ashmem.c
-+ *      by Robert Love <rlove@google.com>
-+ *      Copyright (C) 2008 Google, Inc.
-+ *
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ *
-+ * The goal behind volatile ranges is to allow applications to interact
-+ * with the kernel's cache management infrastructure.  In particular an
-+ * application can say "this memory contains data that might be useful in
-+ * the future, but can be reconstructed if necessary, so if the kernel
-+ * needs, it can zap and reclaim this memory without having to swap it out.
-+ *
-+ * The proposed mechanism - at a high level - is for user-space to be able
-+ * to say "This memory is volatile" and then later "this memory is no longer
-+ * volatile".  If the content of the memory is still available the second
-+ * request succeeds.  If not, the memory is marked non-volatile and an
-+ * error is returned to denote that the contents have been lost.
-+ *
-+ * Credits to Neil Brown for the above description.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/fs.h>
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/pagemap.h>
-+#include <linux/volatile.h>
-+
-+static DEFINE_MUTEX(volatile_mutex);
-+
-+struct volatile_range {
-+	struct list_head lru;
-+	struct range_tree_node range_node;
-+
-+	unsigned int purged;
-+	struct address_space *mapping;
-+};
-+
-+/* LRU list of volatile page ranges */
-+static LIST_HEAD(volatile_lru_list);
-+
-+/* Count of pages on our LRU list */
-+static u64 lru_count;
-+
-+
-+static inline u64 range_size(struct volatile_range *range)
-+{
-+	return range->range_node.end - range->range_node.start + 1;
-+}
-+
-+static inline void lru_add(struct volatile_range *range)
-+{
-+	list_add_tail(&range->lru, &volatile_lru_list);
-+	lru_count += range_size(range);
-+}
-+
-+static inline void lru_del(struct volatile_range *range)
-+{
-+	list_del(&range->lru);
-+	lru_count -= range_size(range);
-+}
-+
-+#define range_on_lru(range) (!(range)->purged)
-+
-+
-+static inline void volatile_range_resize(struct volatile_range *range,
-+				pgoff_t start_index, pgoff_t end_index)
-+{
-+	size_t pre = range_size(range);
-+
-+	range->range_node.start = start_index;
-+	range->range_node.end = end_index;
-+
-+	if (range_on_lru(range))
-+		lru_count -= pre - range_size(range);
-+}
-+
-+static struct volatile_range *vrange_alloc(void)
-+{
-+	struct volatile_range *new;
-+
-+	new = kzalloc(sizeof(struct volatile_range), GFP_KERNEL);
-+	if (!new)
-+		return 0;
-+	range_tree_node_init(&new->range_node);
-+	return new;
-+}
-+
-+static void vrange_del(struct volatile_range *vrange)
-+{
-+	struct address_space *mapping;
-+	mapping = vrange->mapping;
-+
-+	if (range_on_lru(vrange))
-+		lru_del(vrange);
-+	range_tree_remove(&mapping->volatile_root, &vrange->range_node);
-+	kfree(vrange);
-+}
-+
-+
-+
-+/*
-+ * Mark a region as volatile, allowing dirty pages to be purged
-+ * under memory pressure
-+ */
-+long mapping_range_volatile(struct address_space *mapping,
-+				pgoff_t start_index, pgoff_t end_index)
-+{
-+	struct volatile_range *new;
-+	struct range_tree_node *node;
-+
-+	u64 start, end;
-+	int purged = 0;
-+	start = (u64)start_index;
-+	end = (u64)end_index;
-+
-+	new = vrange_alloc();
-+	if (!new)
-+		return -ENOMEM;
-+
-+	mutex_lock(&volatile_mutex);
-+
-+	node = range_tree_in_range_adjacent(&mapping->volatile_root,
-+						start, end);
-+	while (node) {
-+		struct volatile_range *vrange;
-+
-+		/* Already entirely marked volatile, so we're done */
-+		if (node->start < start && node->end > end) {
-+			/* don't need the allocated value */
-+			kfree(new);
-+			goto out;
-+		}
-+
-+		/* Grab containing volatile range */
-+		vrange = container_of(node, struct volatile_range, range_node);
-+
-+		/* resize range */
-+		start = min_t(u64, start, node->start);
-+		end = max_t(u64, end, node->end);
-+		purged |= vrange->purged;
-+
-+
-+		vrange_del(vrange);
-+
-+		/* get the next possible overlap */
-+		node = range_tree_in_range(&mapping->volatile_root, start, end);
-+	}
-+
-+	new->mapping = mapping;
-+	new->range_node.start = start;
-+	new->range_node.end = end;
-+	new->purged = purged;
-+
-+	range_tree_add(&mapping->volatile_root, &new->range_node);
-+	if (range_on_lru(new))
-+		lru_add(new);
-+
-+out:
-+	mutex_unlock(&volatile_mutex);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Mark a region as nonvolatile, returns 1 if any pages in the region
-+ * were purged.
-+ */
-+long mapping_range_nonvolatile(struct address_space *mapping,
-+				pgoff_t start_index, pgoff_t end_index)
-+{
-+	struct volatile_range *new;
-+	struct range_tree_node *node;
-+	int ret  = 0;
-+	u64 start, end;
-+	int used_new = 0;
-+
-+
-+	start = (u64)start_index;
-+	end = (u64)end_index;
-+
-+	/* create new node */
-+	new = vrange_alloc();
-+	if (!new)
-+		return -ENOMEM;
-+
-+	mutex_lock(&volatile_mutex);
-+	node = range_tree_in_range(&mapping->volatile_root, start, end);
-+	while (node) {
-+		struct volatile_range *vrange;
-+		vrange = container_of(node, struct volatile_range, range_node);
-+
-+
-+		ret |= vrange->purged;
-+
-+		if (start <= node->start && end >= node->end) {
-+			vrange_del(vrange);
-+		} else if (node->start >= start) {
-+			volatile_range_resize(vrange, end+1, node->end);
-+		} else if (node->end <= end) {
-+			volatile_range_resize(vrange, node->start, start-1);
-+		} else {
-+			/* we only do this once */
-+			used_new = 1;
-+			new->mapping = mapping;
-+			new->range_node.start = end + 1;
-+			new->range_node.end = node->end;
-+			volatile_range_resize(vrange, node->start, start-1);
-+			range_tree_add(&mapping->volatile_root,
-+						&new->range_node);
-+			if (range_on_lru(new))
-+				lru_add(new);
-+
-+			break;
-+		}
-+		node = range_tree_in_range(&mapping->volatile_root, start, end);
-+	}
-+	mutex_unlock(&volatile_mutex);
-+
-+	if (!used_new)
-+		kfree(new);
-+
-+	return ret;
-+}
-+
-+
-+/*
-+ * Cleans up any volatile ranges.
-+ */
-+void mapping_clear_volatile_ranges(struct address_space *mapping)
-+{
-+	struct volatile_range *tozap;
-+
-+	mutex_lock(&volatile_mutex);
-+	while (!range_tree_empty(&mapping->volatile_root)) {
-+		struct range_tree_node *tmp;
-+		tmp = range_tree_root_node(&mapping->volatile_root);
-+		tozap = container_of(tmp, struct volatile_range, range_node);
-+		vrange_del(tozap);
-+
-+	}
-+	mutex_unlock(&volatile_mutex);
-+}
-+
-+/*
-+ * Purges volatile ranges when under memory pressure
-+ */
-+static int volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
-+{
-+	struct volatile_range *range, *next;
-+	unsigned long nr_to_scan = sc->nr_to_scan;
-+	const gfp_t gfp_mask = sc->gfp_mask;
-+
-+	if (nr_to_scan && !(gfp_mask & __GFP_FS))
-+		return -1;
-+	if (!nr_to_scan)
-+		return lru_count;
-+
-+	mutex_lock(&volatile_mutex);
-+	list_for_each_entry_safe(range, next, &volatile_lru_list, lru) {
-+		struct inode *inode;
-+		loff_t start, end;
-+
-+		inode = range->mapping->host;
-+
-+		start = range->range_node.start << PAGE_CACHE_SHIFT;
-+		end = ((range->range_node.end + 1) << PAGE_CACHE_SHIFT) - 1;
-+
-+		/*
-+		 * XXX - calling vmtruncate_range from a shrinker causes
-+		 * lockdep warnings. Revisit this!
-+		 */
-+		if (!vmtruncate_range(inode, start, end)) {
-+			lru_del(range);
-+			range->purged = 1;
-+			nr_to_scan -= range_size(range);
-+		}
-+
-+		if (nr_to_scan <= 0)
-+			break;
-+	}
-+	mutex_unlock(&volatile_mutex);
-+
-+	return lru_count;
-+}
-+
-+static struct shrinker volatile_shrinker = {
-+	.shrink = volatile_shrink,
-+	.seeks = DEFAULT_SEEKS,
-+};
-+
-+static int __init volatile_init(void)
-+{
-+	register_shrinker(&volatile_shrinker);
-+	return 0;
-+}
-+
-+arch_initcall(volatile_init);
 -- 
 1.7.3.2.146.gca209
 
