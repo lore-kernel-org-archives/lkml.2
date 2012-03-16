@@ -1,181 +1,575 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945961Ab2CPWu2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 18:50:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44067 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032124Ab2CPWtX (ORCPT
+	id S1945969Ab2CPWvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 18:51:23 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47821 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032103Ab2CPWvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 18:49:23 -0400
-From: Andrew Miller <amiller@amilx.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        amiller@amilx.com
-Subject: [PATCH 3/5] Staging: rtl8187se: r8185b_init.c: Fix some spacing issues
-Date: Fri, 16 Mar 2012 18:47:38 -0400
-Message-Id: <1331938060-10207-4-git-send-email-amiller@amilx.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1331938060-10207-1-git-send-email-amiller@amilx.com>
-References: <1331938060-10207-1-git-send-email-amiller@amilx.com>
+	Fri, 16 Mar 2012 18:51:18 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE flags
+Date: Fri, 16 Mar 2012 15:51:07 -0700
+Message-Id: <1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
+References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031622-7408-0000-0000-000003820FA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some more spacing issues I missed before
+This patch provides new fadvise flags that can be used to mark
+file pages as volatile, which will allow it to be discarded if the
+kernel wants to reclaim memory.
 
-Signed-off-by: Andrew Miller <amiller@amilx.com>
+This is useful for userspace to allocate things like caches, and lets
+the kernel destructively (but safely) reclaim them when there's memory
+pressure.
+
+It's different from FADV_DONTNEED since the pages are not immediately
+discarded; they are only discarded under pressure.
+
+This is very much influenced by the Android Ashmem interface by
+Robert Love so credits to him and the Android developers.
+In many cases the code & logic come directly from the ashmem patch.
+The intent of this patch is to allow for ashmem-like behavior, but
+embeds the idea a little deeper into the VM code, instead of isolating
+it into a specific driver.
+
+I'm very much a newbie at the VM code, so At this point, I just want
+to try to get some input on the patch, so if you have another idea
+for using something other then fadvise, or other thoughts on how the
+volatile ranges are stored, I'd be really interested in hearing them.
+So let me know if you have any comments for feedback!
+
+Also many thanks to Dave Hansen who helped design and develop the
+initial version of this patch, and has provided continued review and
+mentoring for me in the VM code.
+
+v2:
+* After the valid critique that just dropping pages would poke holes
+in volatile ranges, and instead we should zap an entire range if we
+drop any of it, I changed the code to more closely mimic the ashmem
+implementation, which zaps entire ranges via a shrinker using an lru
+list that tracks which range has been marked volatile the longest.
+
+v3:
+* Reworked to use range tree implementation.
+
+v4:
+* Renamed functions to avoid confusion.
+* More consistant PAGE_CACHE_SHIFT usage, suggested by Dmitry
+  Adamushko
+* Fixes exit without unlocking issue found by Dmitry Adamushko
+* Migrate to rbtree based rangetree implementation
+* Simplified locking to use global lock (we were grabbing global
+  lru lock every time anyway).
+* Avoid ENOMEM isses by allocating before we get into complicated
+  code.
+* Add some documentation to the volatile.c file from Neil Brown
+
+Known issues:
+* Lockdep doesn't like calling vmtruncate_range() from a shrinker.
+  Any help here on how to address this would be appreciated.
+  I've tried switching to invalidate_inode_pages2_range, but
+  that always returns EBUSY in my testing, and I don't really
+  want to launder dirty pages, instead I want to zap them.
+* Concern over bloating the address_space struct
+
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Android Kernel Team <kernel-team@android.com>
+CC: Robert Love <rlove@google.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Hugh Dickins <hughd@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Rik van Riel <riel@redhat.com>
+CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Neil Brown <neilb@suse.de>
+CC: Andrea Righi <andrea@betterlinux.com>
+CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/rtl8187se/r8185b_init.c |   44 ++++++++++++++----------------
- 1 files changed, 21 insertions(+), 23 deletions(-)
+ fs/inode.c               |    4 +
+ include/linux/fadvise.h  |    5 +
+ include/linux/fs.h       |    2 +
+ include/linux/volatile.h |   14 ++
+ mm/Makefile              |    2 +-
+ mm/fadvise.c             |   16 +++-
+ mm/volatile.c            |  313 ++++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 354 insertions(+), 2 deletions(-)
+ create mode 100644 include/linux/volatile.h
+ create mode 100644 mm/volatile.c
 
-diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index 5650ef1..3f9be9b 100644
---- a/drivers/staging/rtl8187se/r8185b_init.c
-+++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -71,10 +71,10 @@ static u8 MAC_REG_TABLE[][2] =	{
+diff --git a/fs/inode.c b/fs/inode.c
+index d3ebdbe..f602dc2 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -27,6 +27,7 @@
+ #include <linux/cred.h>
+ #include <linux/buffer_head.h> /* for inode_has_buffers */
+ #include <linux/ratelimit.h>
++#include <linux/volatile.h>
+ #include "internal.h"
  
- 	/* PAGA 0: */
- 	{0x5e, 0x00}, {0x9f, 0x03}
--			};
-+	};
- 
- 
--static u8  ZEBRA_AGC[]	=	{
-+static u8  ZEBRA_AGC[] = {
- 	0,
- 	0x7E, 0x7E, 0x7E, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78, 0x77, 0x76, 0x75, 0x74, 0x73, 0x72,
- 	0x71, 0x70, 0x6F, 0x6E, 0x6D, 0x6C, 0x6B, 0x6A, 0x69, 0x68, 0x67, 0x66, 0x65, 0x64, 0x63, 0x62,
-@@ -94,7 +94,7 @@ static u32 ZEBRA_RF_RX_GAIN_TABLE[] = {
- 	0x0183, 0x0163, 0x0143, 0x0123, 0x0103
- 	};
- 
--static u8 OFDM_CONFIG[]	=	{
-+static u8 OFDM_CONFIG[]	= {
- 	/* OFDM reg0x06[7:0]=0xFF: Enable power saving mode in RX */
- 	/* OFDM reg0x3C[4]=1'b1: Enable RX power saving mode */
- 	/* ofdm 0x3a = 0x7b ,(original : 0xfb) For ECS shielding room TP test */
-@@ -121,22 +121,20 @@ void PlatformIOWrite1Byte(struct net_device *dev, u32 offset, u8 data)
- {
- 	write_nic_byte(dev, offset, data);
- 	read_nic_byte(dev, offset); /* To make sure write operation is completed, 2005.11.09, by rcnjko. */
--
+ /*
+@@ -254,6 +255,7 @@ void __destroy_inode(struct inode *inode)
+ 	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
+ 		posix_acl_release(inode->i_default_acl);
+ #endif
++	mapping_clear_volatile_ranges(&inode->i_data);
+ 	this_cpu_dec(nr_inodes);
  }
- 
- void PlatformIOWrite2Byte(struct net_device *dev, u32 offset, u16 data)
- {
- 	write_nic_word(dev, offset, data);
- 	read_nic_word(dev, offset); /* To make sure write operation is completed, 2005.11.09, by rcnjko. */
--
--
- }
+ EXPORT_SYMBOL(__destroy_inode);
+@@ -360,6 +362,8 @@ void address_space_init_once(struct address_space *mapping)
+ 	spin_lock_init(&mapping->private_lock);
+ 	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
+ 	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
++	range_tree_init(&mapping->volatile_root);
 +
- u8 PlatformIORead1Byte(struct net_device *dev, u32 offset);
- 
- void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
- {
- /* {by amy 080312 */
--	if (offset == PhyAddr)	{
-+	if (offset == PhyAddr) {
- 	/* For Base Band configuration. */
- 		unsigned char	cmdByte;
- 		unsigned long	dataBytes;
-@@ -156,7 +154,7 @@ void PlatformIOWrite4Byte(struct net_device *dev, u32 offset, u32 data)
- 		*/
- 		/* NdisAcquireSpinLock( &(pDevice->IoSpinLock) ); */
- 
--		for (idx = 0; idx < 30; idx++)	{ 
-+		for (idx = 0; idx < 30; idx++) {
- 		/* Make sure command bit is clear before access it. */
- 			u1bTmp = PlatformIORead1Byte(dev, PhyAddr);
- 			if ((u1bTmp & BIT7) == 0)
-@@ -224,9 +222,9 @@ static int HwHSSIThreeWire(struct net_device *dev,
- 	u8	TryCnt;
- 	u8	u1bTmp;
- 
--	do	{
-+	do {
- 		/* Check if WE and RE are cleared. */
--		for (TryCnt = 0; TryCnt < TC_3W_POLL_MAX_TRY_CNT; TryCnt++)	{
-+		for (TryCnt = 0; TryCnt < TC_3W_POLL_MAX_TRY_CNT; TryCnt++) {
- 			u1bTmp = read_nic_byte(dev, SW_3W_CMD1);
- 			if ((u1bTmp & (SW_3W_CMD1_RE|SW_3W_CMD1_WE)) == 0)
- 				break;
-@@ -252,7 +250,7 @@ static int HwHSSIThreeWire(struct net_device *dev,
- 
- 		write_nic_byte(dev, RF_SW_CONFIG, u1bTmp);
- 
--		if (bSI)	{
-+		if (bSI) {
- 			/* jong: HW SI read must set reg84[3]=0. */
- 			u1bTmp = read_nic_byte(dev, RFPinsSelect);
- 			u1bTmp &= ~BIT3;
-@@ -260,14 +258,14 @@ static int HwHSSIThreeWire(struct net_device *dev,
- 		}
- 		/*  Fill up data buffer for write operation. */
- 
--		if (bWrite)	{
--			if (nDataBufBitCnt == 16)	{
-+		if (bWrite) {
-+			if (nDataBufBitCnt == 16) {
- 				write_nic_word(dev, SW_3W_DB0, *((u16 *)pDataBuf));
--			}	else if (nDataBufBitCnt == 64)	{
-+			} else if (nDataBufBitCnt == 64) {
- 			/* RTL8187S shouldn't enter this case */
- 				write_nic_dword(dev, SW_3W_DB0, *((u32 *)pDataBuf));
- 				write_nic_dword(dev, SW_3W_DB1, *((u32 *)(pDataBuf + 4)));
--			}	else	{
-+			} else {
- 				int idx;
- 				int ByteCnt = nDataBufBitCnt / 8;
- 								/* printk("%d\n",nDataBufBitCnt); */
-@@ -293,11 +291,11 @@ static int HwHSSIThreeWire(struct net_device *dev,
- 					write_nic_byte(dev, (SW_3W_DB0+idx), *(pDataBuf+idx));
- 
- 			}
--		}	else	{	/* read */
--			if (bSI)	{
-+		} else {	/* read */
-+			if (bSI) {
- 				/* SI - reg274[3:0] : RF register's Address */
- 				write_nic_word(dev, SW_3W_DB0, *((u16 *)pDataBuf));
--			}	else	{
-+			} else {
- 				/*  PI - reg274[15:12] : RF register's Address */
- 				write_nic_word(dev, SW_3W_DB0, (*((u16 *)pDataBuf)) << 12);
- 			}
-@@ -323,11 +321,11 @@ static int HwHSSIThreeWire(struct net_device *dev,
- 		write_nic_byte(dev, SW_3W_CMD1, 0);
- 
- 		/* Read back data for read operation. */
--		if (bWrite == 0)	{
--			if (bSI)		{
-+		if (bWrite == 0) {
-+			if (bSI) {
- 				/* Serial Interface : reg363_362[11:0] */
- 				*((u16 *)pDataBuf) = read_nic_word(dev, SI_DATA_READ) ;
--			}	else	{
-+			} else {
- 				/* Parallel Interface : reg361_360[11:0] */
- 				*((u16 *)pDataBuf) = read_nic_word(dev, PI_DATA_READ);
- 			}
-@@ -335,7 +333,7 @@ static int HwHSSIThreeWire(struct net_device *dev,
- 			*((u16 *)pDataBuf) &= 0x0FFF;
- 		}
- 
--	}	while (0);
-+	} while (0);
- 
- 	return bResult;
  }
-@@ -1296,7 +1294,7 @@ bool MgntActSet_RF_State(struct net_device *dev, RT_RF_POWER_STATE StateToSet, u
- 		Prevent the race condition of RF state change. By Bruce, 2007-11-28.
- 		Only one thread can change the RF state at one time, and others should wait to be executed.
- 	*/
--	while (true)	{
-+	while (true) {
- 		spin_lock_irqsave(&priv->rf_ps_lock, flag);
- 		if (priv->RFChangeInProgress) {
- 			spin_unlock_irqrestore(&priv->rf_ps_lock, flag);
+ EXPORT_SYMBOL(address_space_init_once);
+ 
+diff --git a/include/linux/fadvise.h b/include/linux/fadvise.h
+index e8e7471..443951c 100644
+--- a/include/linux/fadvise.h
++++ b/include/linux/fadvise.h
+@@ -18,4 +18,9 @@
+ #define POSIX_FADV_NOREUSE	5 /* Data will be accessed once.  */
+ #endif
+ 
++#define POSIX_FADV_VOLATILE	8  /* _can_ toss, but don't toss now */
++#define POSIX_FADV_NONVOLATILE	9  /* Remove VOLATILE flag */
++
++
++
+ #endif	/* FADVISE_H_INCLUDED */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 69cd5bb..2e20be1 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -10,6 +10,7 @@
+ #include <linux/ioctl.h>
+ #include <linux/blk_types.h>
+ #include <linux/types.h>
++#include <linux/rangetree.h>
+ 
+ /*
+  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
+@@ -655,6 +656,7 @@ struct address_space {
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	struct address_space	*assoc_mapping;	/* ditto */
++	struct range_tree_root	volatile_root;	/* volatile range list */
+ } __attribute__((aligned(sizeof(long))));
+ 	/*
+ 	 * On most architectures that alignment is already the case; but
+diff --git a/include/linux/volatile.h b/include/linux/volatile.h
+new file mode 100644
+index 0000000..5460d7b
+--- /dev/null
++++ b/include/linux/volatile.h
+@@ -0,0 +1,14 @@
++#ifndef _LINUX_VOLATILE_H
++#define _LINUX_VOLATILE_H
++
++#include <linux/fs.h>
++
++extern long mapping_range_volatile(struct address_space *mapping,
++				pgoff_t start_index, pgoff_t end_index);
++extern long mapping_range_nonvolatile(struct address_space *mapping,
++				pgoff_t start_index, pgoff_t end_index);
++extern long mapping_range_isvolatile(struct address_space *mapping,
++				pgoff_t start_index, pgoff_t end_index);
++extern void mapping_clear_volatile_ranges(struct address_space *mapping);
++
++#endif /* _LINUX_VOLATILE_H */
+diff --git a/mm/Makefile b/mm/Makefile
+index 50ec00e..7b6c7a8 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -13,7 +13,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+ 			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
+ 			   page_isolation.o mm_init.o mmu_context.o percpu.o \
+-			   $(mmu-y)
++			   volatile.o $(mmu-y)
+ obj-y += init-mm.o
+ 
+ ifdef CONFIG_NO_BOOTMEM
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 469491e0..3e33845 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -17,6 +17,7 @@
+ #include <linux/fadvise.h>
+ #include <linux/writeback.h>
+ #include <linux/syscalls.h>
++#include <linux/volatile.h>
+ 
+ #include <asm/unistd.h>
+ 
+@@ -106,7 +107,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 		nrpages = end_index - start_index + 1;
+ 		if (!nrpages)
+ 			nrpages = ~0UL;
+-		
++
+ 		ret = force_page_cache_readahead(mapping, file,
+ 				start_index,
+ 				nrpages);
+@@ -128,6 +129,19 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 			invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
+ 		break;
++	case POSIX_FADV_VOLATILE:
++		/* First and last PARTIAL page! */
++		start_index = offset >> PAGE_CACHE_SHIFT;
++		end_index = endbyte >> PAGE_CACHE_SHIFT;
++		ret = mapping_range_volatile(mapping, start_index, end_index);
++		break;
++	case POSIX_FADV_NONVOLATILE:
++		/* First and last PARTIAL page! */
++		start_index = offset >> PAGE_CACHE_SHIFT;
++		end_index = endbyte >> PAGE_CACHE_SHIFT;
++		ret = mapping_range_nonvolatile(mapping, start_index,
++								end_index);
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+diff --git a/mm/volatile.c b/mm/volatile.c
+new file mode 100644
+index 0000000..e412a8b
+--- /dev/null
++++ b/mm/volatile.c
+@@ -0,0 +1,313 @@
++/* mm/volatile.c
++ *
++ * Volatile page range managment.
++ *      Copyright 2011 Linaro
++ *
++ * Based on mm/ashmem.c
++ *      by Robert Love <rlove@google.com>
++ *      Copyright (C) 2008 Google, Inc.
++ *
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ *
++ * The goal behind volatile ranges is to allow applications to interact
++ * with the kernel's cache management infrastructure.  In particular an
++ * application can say "this memory contains data that might be useful in
++ * the future, but can be reconstructed if necessary, so if the kernel
++ * needs, it can zap and reclaim this memory without having to swap it out.
++ *
++ * The proposed mechanism - at a high level - is for user-space to be able
++ * to say "This memory is volatile" and then later "this memory is no longer
++ * volatile".  If the content of the memory is still available the second
++ * request succeeds.  If not, the memory is marked non-volatile and an
++ * error is returned to denote that the contents have been lost.
++ *
++ * Credits to Neil Brown for the above description.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/slab.h>
++#include <linux/pagemap.h>
++#include <linux/volatile.h>
++
++static DEFINE_MUTEX(volatile_mutex);
++
++struct volatile_range {
++	struct list_head lru;
++	struct range_tree_node range_node;
++
++	unsigned int purged;
++	struct address_space *mapping;
++};
++
++/* LRU list of volatile page ranges */
++static LIST_HEAD(volatile_lru_list);
++
++/* Count of pages on our LRU list */
++static u64 lru_count;
++
++
++static inline u64 range_size(struct volatile_range *range)
++{
++	return range->range_node.end - range->range_node.start + 1;
++}
++
++static inline void lru_add(struct volatile_range *range)
++{
++	list_add_tail(&range->lru, &volatile_lru_list);
++	lru_count += range_size(range);
++}
++
++static inline void lru_del(struct volatile_range *range)
++{
++	list_del(&range->lru);
++	lru_count -= range_size(range);
++}
++
++#define range_on_lru(range) (!(range)->purged)
++
++
++static inline void volatile_range_resize(struct volatile_range *range,
++				pgoff_t start_index, pgoff_t end_index)
++{
++	size_t pre = range_size(range);
++
++	range->range_node.start = start_index;
++	range->range_node.end = end_index;
++
++	if (range_on_lru(range))
++		lru_count -= pre - range_size(range);
++}
++
++static struct volatile_range *vrange_alloc(void)
++{
++	struct volatile_range *new;
++
++	new = kzalloc(sizeof(struct volatile_range), GFP_KERNEL);
++	if (!new)
++		return 0;
++	range_tree_node_init(&new->range_node);
++	return new;
++}
++
++static void vrange_del(struct volatile_range *vrange)
++{
++	struct address_space *mapping;
++	mapping = vrange->mapping;
++
++	if (range_on_lru(vrange))
++		lru_del(vrange);
++	range_tree_remove(&mapping->volatile_root, &vrange->range_node);
++	kfree(vrange);
++}
++
++
++
++/*
++ * Mark a region as volatile, allowing dirty pages to be purged
++ * under memory pressure
++ */
++long mapping_range_volatile(struct address_space *mapping,
++				pgoff_t start_index, pgoff_t end_index)
++{
++	struct volatile_range *new;
++	struct range_tree_node *node;
++
++	u64 start, end;
++	int purged = 0;
++	start = (u64)start_index;
++	end = (u64)end_index;
++
++	new = vrange_alloc();
++	if (!new)
++		return -ENOMEM;
++
++	mutex_lock(&volatile_mutex);
++
++	node = range_tree_in_range_adjacent(&mapping->volatile_root,
++						start, end);
++	while (node) {
++		struct volatile_range *vrange;
++
++		/* Already entirely marked volatile, so we're done */
++		if (node->start < start && node->end > end) {
++			/* don't need the allocated value */
++			kfree(new);
++			goto out;
++		}
++
++		/* Grab containing volatile range */
++		vrange = container_of(node, struct volatile_range, range_node);
++
++		/* resize range */
++		start = min_t(u64, start, node->start);
++		end = max_t(u64, end, node->end);
++		purged |= vrange->purged;
++
++
++		vrange_del(vrange);
++
++		/* get the next possible overlap */
++		node = range_tree_in_range(&mapping->volatile_root, start, end);
++	}
++
++	new->mapping = mapping;
++	new->range_node.start = start;
++	new->range_node.end = end;
++	new->purged = purged;
++
++	range_tree_add(&mapping->volatile_root, &new->range_node);
++	if (range_on_lru(new))
++		lru_add(new);
++
++out:
++	mutex_unlock(&volatile_mutex);
++
++	return 0;
++}
++
++/*
++ * Mark a region as nonvolatile, returns 1 if any pages in the region
++ * were purged.
++ */
++long mapping_range_nonvolatile(struct address_space *mapping,
++				pgoff_t start_index, pgoff_t end_index)
++{
++	struct volatile_range *new;
++	struct range_tree_node *node;
++	int ret  = 0;
++	u64 start, end;
++	int used_new = 0;
++
++
++	start = (u64)start_index;
++	end = (u64)end_index;
++
++	/* create new node */
++	new = vrange_alloc();
++	if (!new)
++		return -ENOMEM;
++
++	mutex_lock(&volatile_mutex);
++	node = range_tree_in_range(&mapping->volatile_root, start, end);
++	while (node) {
++		struct volatile_range *vrange;
++		vrange = container_of(node, struct volatile_range, range_node);
++
++
++		ret |= vrange->purged;
++
++		if (start <= node->start && end >= node->end) {
++			vrange_del(vrange);
++		} else if (node->start >= start) {
++			volatile_range_resize(vrange, end+1, node->end);
++		} else if (node->end <= end) {
++			volatile_range_resize(vrange, node->start, start-1);
++		} else {
++			/* we only do this once */
++			used_new = 1;
++			new->mapping = mapping;
++			new->range_node.start = end + 1;
++			new->range_node.end = node->end;
++			volatile_range_resize(vrange, node->start, start-1);
++			range_tree_add(&mapping->volatile_root,
++						&new->range_node);
++			if (range_on_lru(new))
++				lru_add(new);
++
++			break;
++		}
++		node = range_tree_in_range(&mapping->volatile_root, start, end);
++	}
++	mutex_unlock(&volatile_mutex);
++
++	if (!used_new)
++		kfree(new);
++
++	return ret;
++}
++
++
++/*
++ * Cleans up any volatile ranges.
++ */
++void mapping_clear_volatile_ranges(struct address_space *mapping)
++{
++	struct volatile_range *tozap;
++
++	mutex_lock(&volatile_mutex);
++	while (!range_tree_empty(&mapping->volatile_root)) {
++		struct range_tree_node *tmp;
++		tmp = range_tree_root_node(&mapping->volatile_root);
++		tozap = container_of(tmp, struct volatile_range, range_node);
++		vrange_del(tozap);
++
++	}
++	mutex_unlock(&volatile_mutex);
++}
++
++/*
++ * Purges volatile ranges when under memory pressure
++ */
++static int volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
++{
++	struct volatile_range *range, *next;
++	unsigned long nr_to_scan = sc->nr_to_scan;
++	const gfp_t gfp_mask = sc->gfp_mask;
++
++	if (nr_to_scan && !(gfp_mask & __GFP_FS))
++		return -1;
++	if (!nr_to_scan)
++		return lru_count;
++
++	mutex_lock(&volatile_mutex);
++	list_for_each_entry_safe(range, next, &volatile_lru_list, lru) {
++		struct inode *inode;
++		loff_t start, end;
++
++		inode = range->mapping->host;
++
++		start = range->range_node.start << PAGE_CACHE_SHIFT;
++		end = ((range->range_node.end + 1) << PAGE_CACHE_SHIFT) - 1;
++
++		/*
++		 * XXX - calling vmtruncate_range from a shrinker causes
++		 * lockdep warnings. Revisit this!
++		 */
++		if (!vmtruncate_range(inode, start, end)) {
++			lru_del(range);
++			range->purged = 1;
++			nr_to_scan -= range_size(range);
++		}
++
++		if (nr_to_scan <= 0)
++			break;
++	}
++	mutex_unlock(&volatile_mutex);
++
++	return lru_count;
++}
++
++static struct shrinker volatile_shrinker = {
++	.shrink = volatile_shrink,
++	.seeks = DEFAULT_SEEKS,
++};
++
++static int __init volatile_init(void)
++{
++	register_shrinker(&volatile_shrinker);
++	return 0;
++}
++
++arch_initcall(volatile_init);
 -- 
-1.7.7.6
+1.7.3.2.146.gca209
 
