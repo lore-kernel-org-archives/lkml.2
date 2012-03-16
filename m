@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422849Ab2CPPA4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:00:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45525 "EHLO
+	id S1422860Ab2CPPBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:01:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45519 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965406Ab2CPOxP (ORCPT
+	with ESMTP id S1761727Ab2CPOxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:15 -0400
-Message-Id: <20120316144240.690180983@chello.nl>
+	Fri, 16 Mar 2012 10:53:14 -0400
+Message-Id: <20120316144028.036474157@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:37 +0100
+Date: Fri, 16 Mar 2012 15:40:28 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,124 +23,141 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 09/26] sched, mm: Introduce tsk_home_node()
-References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=numa-foo-1.patch
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [RFC][PATCH 00/26] sched/numa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the home-node concept for tasks. In order to keep memory
-locality we need to have a something to stay local to, we define the
-home-node of a task as the node we prefer to allocate memory from and
-prefer to execute on.
 
-These are no hard guarantees, merely preferences. This allows for
-optimal resource usage, we can run a task away from the home-node, the
-remote memory hit -- while expensive -- is less expensive than not
-running at all, or very little, due to severe cpu overload.
+Hi All,
 
-Similarly, we can allocate memory from another node if our home-node
-is depleted, again, some memory is better than no memory.
+While the current scheduler has knowledge of the machine topology, including
+NUMA (although there's room for improvement there as well [1]), it is
+completely insensitive to which nodes a task's memory actually is on.
 
-This patch merely introduces the basic infrastructure, all policy
-comes later.
+Current upstream task memory allocation prefers to use the node the task is
+currently running on (unless explicitly told otherwise, see
+mbind()/set_mempolicy()), and with the scheduler free to move the task about at
+will, the task's memory can end up being spread all over the machine's nodes.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- include/linux/init_task.h |    8 ++++++++
- include/linux/sched.h     |    6 ++++++
- kernel/sched/core.c       |   32 ++++++++++++++++++++++++++++++++
- 3 files changed, 46 insertions(+)
+While the scheduler does a reasonable job of keeping short running tasks on a
+single node (by means of simply not doing the cross-node migration very often),
+it completely blows for long-running processes with a large memory footprint.
 
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -127,6 +127,13 @@ extern struct cred init_cred;
- 
- #define INIT_TASK_COMM "swapper"
- 
-+#ifdef CONFIG_NUMA
-+# define INIT_TASK_NUMA(tsk)						\
-+	.node = -1,
-+#else
-+# define INIT_TASK_NUMA(tsk)
-+#endif
-+
- /*
-  *  INIT_TASK is used to set up the first task table, touch at
-  * your own risk!. Base=0, limit=0x1fffff (=2MB)
-@@ -192,6 +199,7 @@ extern struct cred init_cred;
- 	INIT_FTRACE_GRAPH						\
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
-+	INIT_TASK_NUMA(tsk)						\
- }
- 
- 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1541,6 +1541,7 @@ struct task_struct {
- 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
- 	short il_next;
- 	short pref_node_fork;
-+	int node;
- #endif
- 	struct rcu_head rcu;
- 
-@@ -1615,6 +1616,11 @@ struct task_struct {
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
- 
-+static inline int tsk_home_node(struct task_struct *p)
-+{
-+	return p->node;
-+}
-+
- /*
-  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5874,6 +5874,38 @@ __setup("isolcpus=", isolated_cpu_setup)
- 
- #ifdef CONFIG_NUMA
- 
-+/*
-+ * Requeues a task ensuring its on the right load-balance list so
-+ * that it might get migrated to its new home.
-+ *
-+ * Note that we cannot actively migrate ourselves since our callers
-+ * can be from atomic context. We rely on the regular load-balance
-+ * mechanisms to move us around -- its all preference anyway.
-+ */
-+void sched_setnode(struct task_struct *p, int node)
-+{
-+	unsigned long flags;
-+	int on_rq, running;
-+	struct rq *rq;
-+
-+	rq = task_rq_lock(p, &flags);
-+	on_rq = p->on_rq;
-+	running = task_current(rq, p);
-+
-+	if (on_rq)
-+		dequeue_task(rq, p, 0);
-+	if (running)
-+		p->sched_class->put_prev_task(rq, p);
-+
-+	p->node = node;
-+
-+	if (running)
-+		p->sched_class->set_curr_task(rq);
-+	if (on_rq)
-+		enqueue_task(rq, p, 0);
-+	task_rq_unlock(rq, p, &flags);
-+}
-+
- /**
-  * find_next_best_node - find the next node to include in a sched_domain
-  * @node: node whose sched_domain we're building
+This patch-set aims at improving this situation. It does so by assigning a
+preferred, or home, node to every process/thread_group. Memory allocation is
+then directed by this preference instead of the node the task might actually be
+running on momentarily. The load-balancer is also modified to prefer running
+the task on its home-node, although not at the cost of letting CPUs go idle or
+at the cost of execution fairness.
 
+On top of this a new NUMA balancer is introduced, which can change a process'
+home-node the hard way. This heavy process migration is driven by two factors:
+either tasks are running away from their home-node, or memory is being
+allocated away from the home-node. In either case, it tries to move processes
+around to make the 'problem' go away.
+
+The home-node migration handles both cpu and memory (anonymous only for now) in
+an integrated fashion. The memory migration uses migrate-on-fault to avoid
+doing a lot of work from the actual numa balancer kernl thread and only
+migrates the active memory.
+
+For processes that have more tasks than would fit on a node and which want to
+split their activity in a useful fashion, the patch-set introduces two new
+syscalls: sys_numa_tbind()/sys_numa_mbind(). These syscalls can be used to
+create {thread}x{vma} groups which are then scheduled as a unit instead of the
+entire process.
+
+That said, its still early days and there's lots of improvements to make.
+
+On to the actual patches...
+
+The first two are generic cleanups:
+
+  [01/26] mm, mpol: Re-implement check_*_range() using walk_page_range()
+  [02/26] mm, mpol: Remove NUMA_INTERLEAVE_HIT
+
+The second set is a rework of Lee Schermerhorn's Migrate-on-Fault patches [2]:
+
+  [03/26] mm, mpol: add MPOL_MF_LAZY ...
+  [04/26] mm, mpol: add MPOL_MF_NOOP
+  [05/26] mm, mpol: Check for misplaced page
+  [06/26] mm: Migrate misplaced page
+  [07/26] mm: Handle misplaced anon pages
+  [08/26] mm, mpol: Simplify do_mbind()
+
+The third set implements the basic numa balancing:
+
+  [09/26] sched, mm: Introduce tsk_home_node()
+  [10/26] mm, mpol: Make mempolicy home-node aware
+  [11/26] mm, mpol: Lazy migrate a process/vma
+  [12/26] sched, mm: sched_{fork,exec} node assignment
+  [13/26] sched: Implement home-node awareness
+  [14/26] sched, numa: Numa balancer
+  [15/26] sched, numa: Implement hotplug hooks
+  [16/26] sched, numa: Abstract the numa_entity
+
+The next three patches are a band-aid, Lai Jiangshan (and Paul McKenney) are
+doing a proper implementation.. the reverts are me being lazy about fwd porting
+my call_srcu() implementation.
+
+  [17/26] srcu: revert1
+  [18/26] srcu: revert2
+  [19/26] srcu: Implement call_srcu()
+
+The last bits implement the new syscalls:
+
+  [20/26] mm, mpol: Introduce vma_dup_policy()
+  [21/26] mm, mpol: Introduce vma_put_policy()
+  [22/26] mm, mpol: Split and explose some mempolicy functions
+  [23/26] sched, numa: Introduce sys_numa_{t,m}bind()
+  [24/26] mm, mpol: Implement numa_group RSS accounting
+  [25/26] sched, numa: Only migrate long-running entities
+  [26/26] sched, numa: A few debug bits
+
+
+And a few numbers...
+
+On my WSM-EP (2 nodes, 6 cores/node, 2 thread/core), running 48 stream
+benchmarks [3] (modified to use ~230MB and run long).
+
+Without these patches it degrades into 50-50 local/remote memory accesses:
+
+ Performance counter stats for 'sleep 2':
+
+       259,668,750 r01b7@500b:u 		[100.00%]
+       262,170,142 r01b7@200b:u                                                
+
+       2.010446121 seconds time elapsed
+
+With the patches there's a significant improvement in locality:
+
+ Performance counter stats for 'sleep 2':
+
+       496,860,345 r01b7@500b:u 		[100.00%]
+        78,292,565 r01b7@200b:u                                                
+
+       2.010707488 seconds time elapsed
+
+(the perf events are a bit magical and not supported in an actual perf
+ release -- but the first one is L3 misses to local dram, the second is
+ L3 misses to remote dram)
+
+If you look at those numbers you can also see that the sum is greater in the
+second case, this means that we can service L3 misses at a higher rate, which
+translates into a performance gain.
+
+These numbers also show that while there's a marked improvement, there's still
+some gain to be had. The current numa balancer is still somewhat fickle.
+
+ ~ Peter
+
+
+[1] - http://marc.info/?l=linux-kernel&m=130218515520540
+      now that we have SD_OVERLAP it should be fairly easy to do.
+
+[2] - http://markmail.org/message/mdwbcitql5ka4uws
+
+[3] - https://asc.llnl.gov/computing_resources/purple/archive/benchmarks/memory/stream.tar 
 
