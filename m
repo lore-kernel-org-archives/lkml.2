@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945964Ab2CPXcD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:32:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42233 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1032143Ab2CPXbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:31:49 -0400
-Message-ID: <1331940707.12813.10.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch.pl: Check for functions without a real
- prototype
-From: Joe Perches <joe@perches.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org, hpa@zytor.com
-Date: Fri, 16 Mar 2012 16:31:47 -0700
-In-Reply-To: <1331939074-26865-1-git-send-email-richard@nod.at>
-References: <4F63AF10.9030101@zytor.com>
-	 <1331939074-26865-1-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1945979Ab2CPXch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:32:37 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:48671 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032145Ab2CPXcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 19:32:35 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        Qlogic Linux Team <linux-driver@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Roland Dreier <roland@purestorage.com>, Joern Engel <joern@logfs.org>,
+        Madhuranath Iyengar <mni@risingtidesystems.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/3] qla2xxx: Add target mode LLD and TCM fabric support
+Date: Fri, 16 Mar 2012 23:23:19 +0000
+Message-Id: <1331940202-22305-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-17 at 00:04 +0100, Richard Weinberger wrote:
-> Functions like this one are evil:
-> void foo()
-> {
-> 	...
-> }
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -2304,6 +2304,19 @@ sub process {
-[]
-> +		if ($line=~/$Type\s*$Ident\(\)/) {
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Perhaps this should be:
-		if ($line =~ /(\b$Type\s+$Ident)\s*\(\s*\)/) {
+Hello Qlogic Linux and SCSI/target folks,
 
-> +			ERROR("FUNCTION_NO_PROTOTYPE",
-> +"Function without a real prototype\n" . $herecurr .
+This updated patch series for an initial v3.4 mainline merge of qla2xxx
+target mode has been cut against jejb's scsi-misc/master branch to include
+for-3.4 changes to current qla2xxx LLD code.
 
-Sensible, but maybe:
-"Bad function definition - $1() should probably be $1(void)\n"
+It's available now in the latest target-pending/for-next-merge HEAD:
 
-> +"Thou shalt not, in the language of C, under any circumstances, on the
-> +pain of death, declare or define a function with an empty set of
-> +parentheses, for though in the language of C++ it meaneth the same as
-> +(void), in C it meaneth (...) which is of meaningless as there be no
-> +anchor argument by which the types of the varadic arguments can be
-> +expressed, and which misleadeth the compiler into allowing unsavory code
-> +and in some cases generate really ugly stuff for varadic handling.
-> +	-hpa\n");
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
 
-Humorous once, painful in twice, annoying after.
+Updating to v3.4-rc0 bound scsi-misc qla2xxx patches from RFC-v5 was mostly
+straight forward, and also included dropping a few minor bits that have been
+merged in upstream qla2xxx LLD code.
 
-cheers,  Joe
+As discussed during RFC-v5, patch #1 in this series now includes:
+
+commit 45348067c9a8b911ec6f09829b4c91bd310eb6ef
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Fri Mar 16 15:20:34 2012 -0700
+
+    qla_target: Convert to qlini_mode='enabled' by default
+
+to disable target mode operation so that existing qla2xxx.ko initiator mode
+is *always* enabled by default.  As we don't have a resolution yet for interaction
+between scsi-core <-> target-core subsystems for 'hot' transition between
+different mixed mode operation, the initial merge of this code will require:
+
+    modprobe qla2xxx qlini_mode="disabled"
+
+in order to access and register scsi_qla_host ports for target mode ops via
+normal tcm_qla2xxx WWPN group registration.
+
+So at this point, patch #2 is the most imporant to ensure the changes required
+for qla_target.c infrstructure in existing LLD code to not cause regressions
+for existing SCSI initiator mode operation.  Andrew & Co, it would be great if
+you could have a look and let us know if you have any immediate concerns here.
+
+This update also includes changes from this week's round of linux-next feedback.
+Thanks again to DanC, Joern, and all those who has been contributing to improve
+this code!
+
+--nab
+
+Nicholas Bellinger (3):
+  qla2xxx: Add LLD target-mode infrastructure for >= 24xx series
+  qla2xxx: Enable >= 24xx target-mode support in SCSI LLD
+  tcm_qla2xxx: Add >= 24xx series fabric module for target-core
+
+ drivers/scsi/qla2xxx/Kconfig       |    8 +
+ drivers/scsi/qla2xxx/Makefile      |    3 +-
+ drivers/scsi/qla2xxx/qla_attr.c    |    5 +-
+ drivers/scsi/qla2xxx/qla_dbg.c     |    5 +
+ drivers/scsi/qla2xxx/qla_dbg.h     |    5 +
+ drivers/scsi/qla2xxx/qla_def.h     |   69 +-
+ drivers/scsi/qla2xxx/qla_gbl.h     |    7 +
+ drivers/scsi/qla2xxx/qla_gs.c      |    4 +-
+ drivers/scsi/qla2xxx/qla_init.c    |   82 +-
+ drivers/scsi/qla2xxx/qla_iocb.c    |  102 +-
+ drivers/scsi/qla2xxx/qla_isr.c     |   83 +-
+ drivers/scsi/qla2xxx/qla_mbx.c     |  101 +
+ drivers/scsi/qla2xxx/qla_mid.c     |   17 +-
+ drivers/scsi/qla2xxx/qla_os.c      |  133 +-
+ drivers/scsi/qla2xxx/qla_target.c  | 4724 ++++++++++++++++++++++++++++++++++++
+ drivers/scsi/qla2xxx/qla_target.h  |  986 ++++++++
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c | 1981 +++++++++++++++
+ drivers/scsi/qla2xxx/tcm_qla2xxx.h |  149 ++
+ 18 files changed, 8429 insertions(+), 35 deletions(-)
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.c
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.h
+ create mode 100644 drivers/scsi/qla2xxx/tcm_qla2xxx.c
+ create mode 100644 drivers/scsi/qla2xxx/tcm_qla2xxx.h
+
+-- 
+1.7.2.5
 
