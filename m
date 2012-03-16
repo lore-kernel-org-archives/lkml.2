@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032743Ab2CPK2e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:28:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031019Ab2CPK2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:28:32 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/2] afs: Remote abort can cause BUG in rxrpc code
-To: torvalds@linux-foundation.org
-Cc: linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        David Howells <dhowells@redhat.com>, <stable@kernel.org>
-Date: Fri, 16 Mar 2012 10:28:19 +0000
-Message-ID: <20120316102819.21424.4837.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120316102807.21424.24579.stgit@warthog.procyon.org.uk>
-References: <20120316102807.21424.24579.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1761187Ab2CPK35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:29:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45125 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760375Ab2CPK3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 06:29:55 -0400
+Date: Fri, 16 Mar 2012 11:29:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+cc: Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Mike Turquette <mturquette@ti.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 1/3] Documentation: common clk API
+In-Reply-To: <CACRpkdbXq7zX_XrvAOJc7U6=T0Aaoq+U9_GmZS4fVmVd_arC7A@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1203161129010.2466@ionos>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <1331878280-2758-2-git-send-email-mturquette@linaro.org> <CACRpkdbXq7zX_XrvAOJc7U6=T0Aaoq+U9_GmZS4fVmVd_arC7A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1403493154-1331893790=:2466"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-When writing files to afs I sometimes hit a BUG:
+--8323328-1403493154-1331893790=:2466
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-kernel BUG at fs/afs/rxrpc.c:179!
+On Fri, 16 Mar 2012, Linus Walleij wrote:
 
-With a backtrace of:
+> On Fri, Mar 16, 2012 at 7:11 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> 
+> > Provide documentation for the common clk structures and APIs.  This code
+> > can be found in drivers/clk/ and include/linux/clk*.h.
+> 
+> Acked-by: Linus Wallej <linus.walleij@linaro.org>
+> For this three-piece v7 patchset.
+> 
+> It already does magnitudes more advanced stuff than what I need
+> so I'm pretty pleased, any remaining details can surely be ironed out
+> in-tree.
 
-	afs_free_call
-	afs_make_call
-	afs_fs_store_data
-	afs_vnode_store_data
-	afs_write_back_from_locked_page
-	afs_writepages_region
-	afs_writepages
+Ack. We really need to get that in now and sort out the details in
+tree otherwise we will never finish that thing.
 
-The cause is:
+Thanks,
 
-	ASSERT(skb_queue_empty(&call->rx_queue));
-
-Looking at a tcpdump of the session the abort happens because we
-are exceeding our disk quota:
-
-	rx abort fs reply store-data error diskquota exceeded (32)
-
-So the abort error is valid. We hit the BUG because we haven't
-freed all the resources for the call.
-
-By freeing any skbs in call->rx_queue before calling afs_free_call
-we avoid hitting leaking memory and avoid hitting the BUG.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: <stable@kernel.org>
----
-
- fs/afs/rxrpc.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/fs/afs/rxrpc.c b/fs/afs/rxrpc.c
-index e45a323..8ad8c2a 100644
---- a/fs/afs/rxrpc.c
-+++ b/fs/afs/rxrpc.c
-@@ -314,6 +314,7 @@ int afs_make_call(struct in_addr *addr, struct afs_call *call, gfp_t gfp,
- 	struct msghdr msg;
- 	struct kvec iov[1];
- 	int ret;
-+	struct sk_buff *skb;
- 
- 	_enter("%x,{%d},", addr->s_addr, ntohs(call->port));
- 
-@@ -380,6 +381,8 @@ int afs_make_call(struct in_addr *addr, struct afs_call *call, gfp_t gfp,
- 
- error_do_abort:
- 	rxrpc_kernel_abort_call(rxcall, RX_USER_ABORT);
-+	while ((skb = skb_dequeue(&call->rx_queue)))
-+		afs_free_skb(skb);
- 	rxrpc_kernel_end_call(rxcall);
- 	call->rxcall = NULL;
- error_kill_call:
-
+	tglx
+--8323328-1403493154-1331893790=:2466--
