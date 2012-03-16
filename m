@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946478Ab2CPXlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:41:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946453Ab2CPXl3 (ORCPT
+	id S1946496Ab2CPXm2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:42:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946480Ab2CPXli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:29 -0400
-Message-Id: <20120316233813.916893057@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:38 -0400
+Message-Id: <20120316233813.446360654@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:47 -0700
+Date: Fri, 16 Mar 2012 16:38:42 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>, Chul Kim <chul.kim@idt.com>
-Subject: [ 37/41] rapidio/tsi721: fix bug in register offset definitions
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 32/41] Block: use a freezable workqueue for disk-event polling
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,101 +26,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 9bbad7da76b3dd578fb55c862624366a8c9ccd22 upstream.
+commit 62d3c5439c534b0e6c653fc63e6d8c67be3a57b1 upstream.
 
-Fix indexed register offset definitions that use decimal (wrong) instead
-of hexadecimal (correct) notation for indexing multipliers.
+This patch (as1519) fixes a bug in the block layer's disk-events
+polling.  The polling is done by a work routine queued on the
+system_nrt_wq workqueue.  Since that workqueue isn't freezable, the
+polling continues even in the middle of a system sleep transition.
 
-Incorrect definitions do not affect Tsi721 driver in its current default
-configuration because it uses only IDB queue 0.  Loss of inbound
-doorbell functionality should be observed if queue other than 0 is used.
+Obviously, polling a suspended drive for media changes and such isn't
+a good thing to do; in the case of USB mass-storage devices it can
+lead to real problems requiring device resets and even re-enumeration.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Chul Kim <chul.kim@idt.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The patch fixes things by creating a new system-wide, non-reentrant,
+freezable workqueue and using it for disk-events polling.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.h |   30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ block/genhd.c             |   10 +++++-----
+ include/linux/workqueue.h |    4 ++++
+ kernel/workqueue.c        |    7 ++++++-
+ 3 files changed, 15 insertions(+), 6 deletions(-)
 
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -118,34 +118,34 @@
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1479,9 +1479,9 @@ static void __disk_unblock_events(struct
+ 	intv = disk_events_poll_jiffies(disk);
+ 	set_timer_slack(&ev->dwork.timer, intv / 4);
+ 	if (check_now)
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
+ 	else if (intv)
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
+ out_unlock:
+ 	spin_unlock_irqrestore(&ev->lock, flags);
+ }
+@@ -1525,7 +1525,7 @@ void disk_flush_events(struct gendisk *d
+ 	ev->clearing |= mask;
+ 	if (!ev->block) {
+ 		cancel_delayed_work(&ev->dwork);
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
+ 	}
+ 	spin_unlock_irq(&ev->lock);
+ }
+@@ -1562,7 +1562,7 @@ unsigned int disk_clear_events(struct ge
  
- #define TSI721_IDB_ENTRY_SIZE	64
+ 	/* uncondtionally schedule event check and wait for it to finish */
+ 	disk_block_events(disk);
+-	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
++	queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
+ 	flush_delayed_work(&ev->dwork);
+ 	__disk_unblock_events(disk, false);
  
--#define TSI721_IDQ_CTL(x)	(0x20000 + (x) * 1000)
-+#define TSI721_IDQ_CTL(x)	(0x20000 + (x) * 0x1000)
- #define TSI721_IDQ_SUSPEND	0x00000002
- #define TSI721_IDQ_INIT		0x00000001
+@@ -1599,7 +1599,7 @@ static void disk_events_workfn(struct wo
  
--#define TSI721_IDQ_STS(x)	(0x20004 + (x) * 1000)
-+#define TSI721_IDQ_STS(x)	(0x20004 + (x) * 0x1000)
- #define TSI721_IDQ_RUN		0x00200000
+ 	intv = disk_events_poll_jiffies(disk);
+ 	if (!ev->block && intv)
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
  
--#define TSI721_IDQ_MASK(x)	(0x20008 + (x) * 1000)
-+#define TSI721_IDQ_MASK(x)	(0x20008 + (x) * 0x1000)
- #define TSI721_IDQ_MASK_MASK	0xffff0000
- #define TSI721_IDQ_MASK_PATT	0x0000ffff
+ 	spin_unlock_irq(&ev->lock);
  
--#define TSI721_IDQ_RP(x)	(0x2000c + (x) * 1000)
-+#define TSI721_IDQ_RP(x)	(0x2000c + (x) * 0x1000)
- #define TSI721_IDQ_RP_PTR	0x0007ffff
- 
--#define TSI721_IDQ_WP(x)	(0x20010 + (x) * 1000)
-+#define TSI721_IDQ_WP(x)	(0x20010 + (x) * 0x1000)
- #define TSI721_IDQ_WP_PTR	0x0007ffff
- 
--#define TSI721_IDQ_BASEL(x)	(0x20014 + (x) * 1000)
-+#define TSI721_IDQ_BASEL(x)	(0x20014 + (x) * 0x1000)
- #define TSI721_IDQ_BASEL_ADDR	0xffffffc0
--#define TSI721_IDQ_BASEU(x)	(0x20018 + (x) * 1000)
--#define TSI721_IDQ_SIZE(x)	(0x2001c + (x) * 1000)
-+#define TSI721_IDQ_BASEU(x)	(0x20018 + (x) * 0x1000)
-+#define TSI721_IDQ_SIZE(x)	(0x2001c + (x) * 0x1000)
- #define TSI721_IDQ_SIZE_VAL(size)	(__fls(size) - 4)
- #define TSI721_IDQ_SIZE_MIN	512
- #define TSI721_IDQ_SIZE_MAX	(512 * 1024)
- 
--#define TSI721_SR_CHINT(x)	(0x20040 + (x) * 1000)
--#define TSI721_SR_CHINTE(x)	(0x20044 + (x) * 1000)
--#define TSI721_SR_CHINTSET(x)	(0x20048 + (x) * 1000)
-+#define TSI721_SR_CHINT(x)	(0x20040 + (x) * 0x1000)
-+#define TSI721_SR_CHINTE(x)	(0x20044 + (x) * 0x1000)
-+#define TSI721_SR_CHINTSET(x)	(0x20048 + (x) * 0x1000)
- #define TSI721_SR_CHINT_ODBOK	0x00000020
- #define TSI721_SR_CHINT_IDBQRCV	0x00000010
- #define TSI721_SR_CHINT_SUSP	0x00000008
-@@ -156,7 +156,7 @@
- 
- #define TSI721_IBWIN_NUM	8
- 
--#define TSI721_IBWINLB(x)	(0x29000 + (x) * 20)
-+#define TSI721_IBWINLB(x)	(0x29000 + (x) * 0x20)
- #define TSI721_IBWINLB_BA	0xfffff000
- #define TSI721_IBWINLB_WEN	0x00000001
- 
-@@ -187,13 +187,13 @@
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -289,12 +289,16 @@ enum {
+  *
+  * system_freezable_wq is equivalent to system_wq except that it's
+  * freezable.
++ *
++ * system_nrt_freezable_wq is equivalent to system_nrt_wq except that
++ * it's freezable.
   */
- #define TSI721_OBWIN_NUM	TSI721_PC2SR_WINS
+ extern struct workqueue_struct *system_wq;
+ extern struct workqueue_struct *system_long_wq;
+ extern struct workqueue_struct *system_nrt_wq;
+ extern struct workqueue_struct *system_unbound_wq;
+ extern struct workqueue_struct *system_freezable_wq;
++extern struct workqueue_struct *system_nrt_freezable_wq;
  
--#define TSI721_OBWINLB(x)	(0x40000 + (x) * 20)
-+#define TSI721_OBWINLB(x)	(0x40000 + (x) * 0x20)
- #define TSI721_OBWINLB_BA	0xffff8000
- #define TSI721_OBWINLB_WEN	0x00000001
+ extern struct workqueue_struct *
+ __alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -253,11 +253,13 @@ struct workqueue_struct *system_long_wq
+ struct workqueue_struct *system_nrt_wq __read_mostly;
+ struct workqueue_struct *system_unbound_wq __read_mostly;
+ struct workqueue_struct *system_freezable_wq __read_mostly;
++struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_wq);
+ EXPORT_SYMBOL_GPL(system_long_wq);
+ EXPORT_SYMBOL_GPL(system_nrt_wq);
+ EXPORT_SYMBOL_GPL(system_unbound_wq);
+ EXPORT_SYMBOL_GPL(system_freezable_wq);
++EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
  
--#define TSI721_OBWINUB(x)	(0x40004 + (x) * 20)
-+#define TSI721_OBWINUB(x)	(0x40004 + (x) * 0x20)
- 
--#define TSI721_OBWINSZ(x)	(0x40008 + (x) * 20)
-+#define TSI721_OBWINSZ(x)	(0x40008 + (x) * 0x20)
- #define TSI721_OBWINSZ_SIZE	0x00001f00
- #define TSI721_OBWIN_SIZE(size)	(__fls(size) - 15)
- 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/workqueue.h>
+@@ -3821,8 +3823,11 @@ static int __init init_workqueues(void)
+ 					    WQ_UNBOUND_MAX_ACTIVE);
+ 	system_freezable_wq = alloc_workqueue("events_freezable",
+ 					      WQ_FREEZABLE, 0);
++	system_nrt_freezable_wq = alloc_workqueue("events_nrt_freezable",
++			WQ_NON_REENTRANT | WQ_FREEZABLE, 0);
+ 	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
+-	       !system_unbound_wq || !system_freezable_wq);
++	       !system_unbound_wq || !system_freezable_wq ||
++		!system_nrt_freezable_wq);
+ 	return 0;
+ }
+ early_initcall(init_workqueues);
 
 
