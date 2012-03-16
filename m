@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031369Ab2CPDXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:23:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40068 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031289Ab2CPDXI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:23:08 -0400
+	id S1031316Ab2CPDmC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:42:02 -0400
+Received: from void.printf.net ([89.145.121.20]:50581 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965275Ab2CPDl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 23:41:59 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 1/3] mmc: sdhci-pci: Add MSI support
+References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com>
+Date: Thu, 15 Mar 2012 23:41:37 -0400
+In-Reply-To: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com>
+	(Alexander Stein's message of "Tue, 13 Mar 2012 18:16:40 +0100")
+Message-ID: <87ty1pb4b2.fsf@laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4nnY27oB3tShgL8DLStHk+ApYFUGWo_=cAEqRJnVK91A@mail.gmail.com>
-References: <1331623594-30543-1-git-send-email-yinghai@kernel.org>
-	<1331623594-30543-6-git-send-email-yinghai@kernel.org>
-	<CAErSpo4nnY27oB3tShgL8DLStHk+ApYFUGWo_=cAEqRJnVK91A@mail.gmail.com>
-Date: Thu, 15 Mar 2012 20:23:07 -0700
-X-Google-Sender-Auth: hmJZs7a-AOp4gstwKvXm8ASZYV8
-Message-ID: <CAE9FiQWr9VfJbjTNECoR-CfD=M9hFvVx1fcvhAEBDi1eV=kLwA@mail.gmail.com>
-Subject: Re: [PATCH 05/12] PCI: Add addon_resource support for pci_dev
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 2:30 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> There are some interesting ideas here.  Do they all have to be in the
-> same patch?
->
->  - for_each...() helpers
->  - pci_dev_resource_n() stuff
->  - addon resource stuff
->  - addon resource ops
+Hi Alexander,
 
-ok, will split them to several ones.
+On Tue, Mar 13 2012, Alexander Stein wrote:
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> ---
+>  drivers/mmc/host/sdhci-pci.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index 7165e6a..9382f27 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -1379,6 +1379,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
+>  
+>  	slots = chip->num_slots;	/* Quirk may have changed this */
+>  
+> +	pci_enable_msi(pdev);
+> +
+>  	for (i = 0; i < slots; i++) {
+>  		slot = sdhci_pci_probe_slot(pdev, chip, first_bar, i);
+>  		if (IS_ERR(slot)) {
+> @@ -1397,6 +1399,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
+>  	return 0;
+>  
+>  free:
+> +	pci_disable_msi(pdev);
+> +
+>  	pci_set_drvdata(pdev, NULL);
+>  	kfree(chip);
+>  
+> @@ -1419,6 +1423,8 @@ static void __devexit sdhci_pci_remove(struct pci_dev *pdev)
+>  		for (i = 0; i < chip->num_slots; i++)
+>  			sdhci_pci_remove_slot(chip->slots[i]);
+>  
+> +		pci_disable_msi(pdev);
+> +
+>  		pci_set_drvdata(pdev, NULL);
+>  		kfree(chip);
+>  	}
 
-Yinghai
+Thanks, I've merged all three patches to mmc-next for 3.4, using v2 of
+patches 2 and 3, and adding Adrian's ACK to patch 2.
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
