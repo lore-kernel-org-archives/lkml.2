@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946536Ab2CPXyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:54:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162109Ab2CPXjH (ORCPT
+	id S1946240Ab2CPXyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:54:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946164Ab2CPXiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:07 -0400
-Message-Id: <20120316233449.140916302@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:38:50 -0400
+Message-Id: <20120316233449.498699858@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:08 -0700
+Date: Fri, 16 Mar 2012 16:35:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
-        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Yuchung Cheng <ycheng@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
+        alan@lxorguk.ukuu.org.uk, Thomas Meyer <thomas@m3y3r.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/38] tcp: dont fragment SACKed skbs in tcp_mark_head_lost()
+Subject: [ 25/38] atl1c: dont use highprio tx queue
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,48 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit c0638c247f559e1a16ee79e54df14bca2cb679ea ]
+[ Upstream commit 11aad99af6ef629ff3b05d1c9f0936589b204316 ]
 
-In tcp_mark_head_lost() we should not attempt to fragment a SACKed skb
-to mark the first portion as lost. This is for two primary reasons:
+This driver attempts to use two TX rings but lacks proper support :
 
-(1) tcp_shifted_skb() coalesces adjacent regions of SACKed skbs. When
-doing this, it preserves the sum of their packet counts in order to
-reflect the real-world dynamics on the wire. But given that skbs can
-have remainders that do not align to MSS boundaries, this packet count
-preservation means that for SACKed skbs there is not necessarily a
-direct linear relationship between tcp_skb_pcount(skb) and
-skb->len. Thus tcp_mark_head_lost()'s previous attempts to fragment
-off and mark as lost a prefix of length (packets - oldcnt)*mss from
-SACKed skbs were leading to occasional failures of the WARN_ON(len >
-skb->len) in tcp_fragment() (which used to be a BUG_ON(); see the
-recent "crash in tcp_fragment" thread on netdev).
+1) IRQ handler only takes care of TX completion on first TX ring
+2) the stop/start logic uses the legacy functions (for non multiqueue
+drivers)
 
-(2) there is no real point in fragmenting off part of a SACKed skb and
-calling tcp_skb_mark_lost() on it, since tcp_skb_mark_lost() is a NOP
-for SACKed skbs.
+This means all packets witk skb mark set to 1 are sent through high
+queue but are never cleaned and queue eventualy fills and block the
+device, triggering the infamous "NETDEV WATCHDOG" message.
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Acked-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Acked-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Nandita Dukkipati <nanditad@google.com>
+Lets use a single TX ring to fix the problem, this driver is not a real
+multiqueue one yet.
+
+Minimal fix for stable kernels.
+
+Reported-by: Thomas Meyer <thomas@m3y3r.de>
+Tested-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jay Cliburn <jcliburn@gmail.com>
+Cc: Chris Snook <chris.snook@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/atl1c/atl1c_main.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -2549,6 +2549,7 @@ static void tcp_mark_head_lost(struct so
+--- a/drivers/net/atl1c/atl1c_main.c
++++ b/drivers/net/atl1c/atl1c_main.c
+@@ -2223,10 +2223,6 @@ static netdev_tx_t atl1c_xmit_frame(stru
+ 			dev_info(&adapter->pdev->dev, "tx locked\n");
+ 		return NETDEV_TX_LOCKED;
+ 	}
+-	if (skb->mark == 0x01)
+-		type = atl1c_trans_high;
+-	else
+-		type = atl1c_trans_normal;
  
- 		if (cnt > packets) {
- 			if ((tcp_is_sack(tp) && !tcp_is_fack(tp)) ||
-+			    (TCP_SKB_CB(skb)->sacked & TCPCB_SACKED_ACKED) ||
- 			    (oldcnt >= packets))
- 				break;
- 
+ 	if (atl1c_tpd_avail(adapter, type) < tpd_req) {
+ 		/* no enough descriptor, just stop queue */
 
 
