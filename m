@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2CPRj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:39:59 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:38743 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2CPRjz (ORCPT
+	id S1753937Ab2CPRmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:42:16 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52832 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab2CPRkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:39:55 -0400
+	Fri, 16 Mar 2012 13:40:00 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V4 01/10] hugetlb: rename max_hstate to hugetlb_max_hstate
-Date: Fri, 16 Mar 2012 23:09:21 +0530
-Message-Id: <1331919570-2264-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V4 06/10] memcg: track resource index in cftype private
+Date: Fri, 16 Mar 2012 23:09:26 +0530
+Message-Id: <1331919570-2264-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12031617-5564-0000-0000-000001D7FCC6
+x-cbid: 12031617-4790-0000-0000-000001D401F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-We will be using this from other subsystems like memcg
-in later patches.
+This helps in using same memcg callbacks for non reclaim resource
+control files.
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- mm/hugetlb.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ mm/memcontrol.c |   27 +++++++++++++++++++++------
+ 1 files changed, 21 insertions(+), 6 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 5f34bd8..d623e71 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
- static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
- unsigned long hugepages_treat_as_movable;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7a9ea94..d8b3513 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -358,9 +358,14 @@ enum charge_type {
+ #define _MEM			(0)
+ #define _MEMSWAP		(1)
+ #define _OOM_TYPE		(2)
+-#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+-#define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
+-#define MEMFILE_ATTR(val)	((val) & 0xffff)
++#define _MEMHUGETLB		(3)
++
++/*  0 ... val ...16.... x...24...idx...32*/
++#define __MEMFILE_PRIVATE(idx, x, val)	(((idx) << 24) | ((x) << 16) | (val))
++#define MEMFILE_PRIVATE(x, val)		__MEMFILE_PRIVATE(0, x, val)
++#define MEMFILE_TYPE(val)		(((val) >> 16) & 0xff)
++#define MEMFILE_IDX(val)		(((val) >> 24) & 0xff)
++#define MEMFILE_ATTR(val)		((val) & 0xffff)
+ /* Used for OOM nofiier */
+ #define OOM_CONTROL		(0)
  
--static int max_hstate;
-+static int hugetlb_max_hstate;
- unsigned int default_hstate_idx;
- struct hstate hstates[HUGE_MAX_HSTATE];
+@@ -3954,7 +3959,7 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 	u64 val;
+-	int type, name;
++	int type, name, idx;
  
-@@ -46,7 +46,7 @@ static unsigned long __initdata default_hstate_max_huge_pages;
- static unsigned long __initdata default_hstate_size;
- 
- #define for_each_hstate(h) \
--	for ((h) = hstates; (h) < &hstates[max_hstate]; (h)++)
-+	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
- 
- /*
-  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
-@@ -1808,9 +1808,9 @@ void __init hugetlb_add_hstate(unsigned order)
- 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
- 		return;
- 	}
--	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
-+	BUG_ON(hugetlb_max_hstate >= HUGE_MAX_HSTATE);
- 	BUG_ON(order == 0);
--	h = &hstates[max_hstate++];
-+	h = &hstates[hugetlb_max_hstate++];
- 	h->order = order;
- 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
- 	h->nr_huge_pages = 0;
-@@ -1831,10 +1831,10 @@ static int __init hugetlb_nrpages_setup(char *s)
- 	static unsigned long *last_mhp;
- 
- 	/*
--	 * !max_hstate means we haven't parsed a hugepagesz= parameter yet,
-+	 * !hugetlb_max_hstate means we haven't parsed a hugepagesz= parameter yet,
- 	 * so this hugepages= parameter goes to the "default hstate".
- 	 */
--	if (!max_hstate)
-+	if (!hugetlb_max_hstate)
- 		mhp = &default_hstate_max_huge_pages;
- 	else
- 		mhp = &parsed_hstate->max_huge_pages;
-@@ -1853,7 +1853,7 @@ static int __init hugetlb_nrpages_setup(char *s)
- 	 * But we need to allocate >= MAX_ORDER hstates here early to still
- 	 * use the bootmem allocator.
- 	 */
--	if (max_hstate && parsed_hstate->order >= MAX_ORDER)
-+	if (hugetlb_max_hstate && parsed_hstate->order >= MAX_ORDER)
- 		hugetlb_hstate_alloc_pages(parsed_hstate);
- 
- 	last_mhp = mhp;
+ 	type = MEMFILE_TYPE(cft->private);
+ 	name = MEMFILE_ATTR(cft->private);
+@@ -3971,6 +3976,10 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ 		else
+ 			val = res_counter_read_u64(&memcg->memsw, name);
+ 		break;
++	case _MEMHUGETLB:
++		idx = MEMFILE_IDX(cft->private);
++		val = res_counter_read_u64(&memcg->hugepage[idx], name);
++		break;
+ 	default:
+ 		BUG();
+ 		break;
+@@ -4003,7 +4012,10 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			break;
+ 		if (type == _MEM)
+ 			ret = mem_cgroup_resize_limit(memcg, val);
+-		else
++		else if (type == _MEMHUGETLB) {
++			int idx = MEMFILE_IDX(cft->private);
++			ret = res_counter_set_limit(&memcg->hugepage[idx], val);
++		} else
+ 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
+ 		break;
+ 	case RES_SOFT_LIMIT:
+@@ -4067,7 +4079,10 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
+ 	case RES_MAX_USAGE:
+ 		if (type == _MEM)
+ 			res_counter_reset_max(&memcg->res);
+-		else
++		else if (type == _MEMHUGETLB) {
++			int idx = MEMFILE_IDX(event);
++			res_counter_reset_max(&memcg->hugepage[idx]);
++		} else
+ 			res_counter_reset_max(&memcg->memsw);
+ 		break;
+ 	case RES_FAILCNT:
 -- 
 1.7.9
 
