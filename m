@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760756Ab2CPJii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 05:38:38 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:49092 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759576Ab2CPJig (ORCPT
+	id S1761024Ab2CPJns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 05:43:48 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43463 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760873Ab2CPJnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 05:38:36 -0400
-Date: Fri, 16 Mar 2012 18:44:59 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
-Message-Id: <20120316184459.3c64c8cf.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <4F62F9C8.6090803@linux.vnet.ibm.com>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
-	<4F62C9B4.7060804@linux.vnet.ibm.com>
-	<20120316155511.70455b4a.yoshikawa.takuya@oss.ntt.co.jp>
-	<4F62EC25.5060306@linux.vnet.ibm.com>
-	<20120316165547.4df2abe4.yoshikawa.takuya@oss.ntt.co.jp>
-	<4F62F9C8.6090803@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 16 Mar 2012 05:43:47 -0400
+Message-ID: <4F630B4D.3040508@suse.cz>
+Date: Fri, 16 Mar 2012 10:43:41 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+MIME-Version: 1.0
+To: "Du, Alek" <alek.du@intel.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com> <20120315100812.6cda2ef9@pyramind.ukuu.org.uk> <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Mar 2012 16:28:56 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
-
-> Thanks for your explanation, maybe you are right, i do not know migration
-> much.
+On 03/15/2012 11:14 AM, Du, Alek wrote:
+> Alan,
 > 
-> What i worried about is, you have changed the behaviour of GET_DIRTY_LOG,
-> in the current one, it can get all the dirty pages when it is called; after
-> your change, GET_DIRTY_LOG can get a empty dirty bitmap but dirty page exists.
+> I agree with you for the case of multiple writers to the tty buffer.
+> 
+> But there is another case that cause kernel hang: driver is writing data to tty, while app shutdown the port or flush through IOCTL. The buf.tail is set to NULL, here is the log:
+> 
+> 
+> <1>[ 4713.451954] BUG: unable to handle kernel NULL pointer dereference at
+> 00000004
 
-The current code also see the same situation because nothing prevents the
-guest from writing to pages before GET_DIRTY_LOG returns and the userspace
-checks the bitmap.  Everything is running.
+The trace only suggests that you don't increment tty reference count in
+irq properly. If you did that, you would not have tty buffer gone by
+concurrent shutdown.
 
-> Migration may work correctly depends on the final GET_DIRTY_LOG, in that time,
-> guest is stopped. But i am not sure whether other components using GET_DIRTY_LOG
-> are happy, e.g. frame-buffer.
+For the latter case (flush via ioctl), your patch won't help for
+tty_prepare_string*, as we return pointer to the buffer which is freed
+by the flush, right?
 
-Ah, you are probably worrying about what I discussed with Avi before.
-
-In the end we cannot get a complete snapshot without stopping the guest
-like migration does.  So that cannot be guaranteed.
-
-The only thing it can promise is to make it possible to get the log after
-mark_page_dirty().  Even when the bit is not marked at Nth GET_DIRTY_LOG
-time, we should be able to get it at (N+1)th call - maybe N+2.
-
-For VGA, the display continues to update endlessly and each page will be
-updated at some time: of course there may be a bit of time lag.
-
-BTW marking framebuffer pages is through MMU and mmu_lock protected.
-
-
-Thanks,
-	Takuya
+thanks,
+-- 
+js
+suse labs
