@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965488Ab2CPLQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 07:16:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61897 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761366Ab2CPLQS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 07:16:18 -0400
+	id S1422713Ab2CPLQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 07:16:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37421 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965483Ab2CPLQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 07:16:42 -0400
+Date: Fri, 16 Mar 2012 12:16:40 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: pinglinux@gmail.com, chris@cnpbagwell.com, killertofu@gmail.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linuxwacom-devel@lists.sourceforge.net
+Subject: Re: [PATCH 1/2] HID: wacom: Replace __set_bit with
+ input_set_capability
+In-Reply-To: <1331754904-8927-1-git-send-email-przemo@firszt.eu>
+Message-ID: <alpine.LNX.2.00.1203161216200.18356@pobox.suse.cz>
+References: <1331754904-8927-1-git-send-email-przemo@firszt.eu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120314110844.d1654724.kamezawa.hiroyu@jp.fujitsu.com>
-References: <CACVxJT_UWzpVo1Jfbf5Z2A-s16QjEv05MiNSY_EGihKTPuMyxg@mail.gmail.com>
-	<20120314093156.2bc3d3c5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120314110844.d1654724.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 16 Mar 2012 13:16:17 +0200
-Message-ID: <CACVxJT9mkX+7+hFrbt2rNCjUH9Y=t2AtGaXqcGfMh6x5WwMjmw@mail.gmail.com>
-Subject: Re: seq_put_decimal_ull() et al
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 5:08 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 14 Mar 2012 09:31:56 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->
->> On Tue, 13 Mar 2012 15:35:54 +0200
->> Alexey Dobriyan <adobriyan@gmail.com> wrote:
->>
->> > > Subject:    + procfs-add-num_to_str-to-speed-up-proc-stat-fix-2.patch added to -mm tree
->> >
->> > I think the fix is to create proper binary interface for exporting
->> > interrupt counts.
->> > Programs can parse raw data equally well if programming language is
->> > even minimally reasonable
->> > (POSIX shell may not qualify, though).
->>
->> Ok, please try with all tool-chain updates.
->> procps, top, sar, and more ?
->>
+On Wed, 14 Mar 2012, Przemo Firszt wrote:
 
-Well, why not?
-We can tune print code or we can create maximally fast interface and forget.
+> It's a trivial patch. It's doesn't change the functionality as the helper
+> input_set_capability does the same thing.
+> 
+> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
 
-> One concern is maintainance of 2 files of the same data.
+Both patches applied, thanks.
 
-The other is all those multiplying print functions.
+-- 
+Jiri Kosina
+SUSE Labs
