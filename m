@@ -1,77 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762141Ab2CPADi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 20:03:38 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:52838 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755998Ab2CPADd (ORCPT
+	id S1161655Ab2CPAEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 20:04:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46649 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755998Ab2CPAEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 20:03:33 -0400
-Date: Fri, 16 Mar 2012 09:03:29 +0900
-From: Simon Horman <horms@verge.net.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cao Minh Hiep <hiepcm@gmail.com>
-Subject: Re: [Replacement][PATCH 2/6] PM / Domains: Fix hibernation restore
- of devices, v2
-Message-ID: <20120316000328.GE18690@verge.net.au>
-References: <201203130123.16268.rjw@sisk.pl>
- <201203132232.42915.rjw@sisk.pl>
- <20120315093921.GA15294@verge.net.au>
- <201203152200.09546.rjw@sisk.pl>
+	Thu, 15 Mar 2012 20:04:20 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F62830F.4060303@jp.fujitsu.com>
+Date: Fri, 16 Mar 2012 09:02:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203152200.09546.rjw@sisk.pl>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, gthelen@google.com,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC REPOST] cgroup: removing css reference drain wait during
+ cgroup removal
+References: <20120312213155.GE23255@google.com> <20120312213343.GF23255@google.com> <20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com> <20120313163914.GD7349@google.com> <20120314092828.3321731c.kamezawa.hiroyu@jp.fujitsu.com> <4F6068F4.4090909@parallels.com> <4F6134E1.5090601@jp.fujitsu.com> <4F61D167.4000402@parallels.com>
+In-Reply-To: <4F61D167.4000402@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 10:00:09PM +0100, Rafael J. Wysocki wrote:
-> On Thursday, March 15, 2012, Simon Horman wrote:
-> > On Tue, Mar 13, 2012 at 10:32:42PM +0100, Rafael J. Wysocki wrote:
-> > > On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > > 
-> > > > During resume from hibernation pm_genpd_restore_noirq() has to
-> > > > deal with software state left by pm_genpd_suspend_noirq() and
-> > > > unknown hardware state (the boot kernel may leave all PM domains and
-> > > > devices in arbitrary states).  For this reason, make it attempt to
-> > > > power cycle each domain when before resuming its first device to
-> > > > possibly get rid of any unwanted hardware state that may interfere
-> > > > with genpd_start_dev() later on.
-> > > > 
-> > > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > I realized that this wasn't a good idea because of patch [3/6] (we
-> > > can't power cycle domains containing "always on" devices), so I
-> > > decided to only fix the really broken things in pm_genpd_restore_noirq().
-> > > 
-> > > Of course, patch [3/6] also needs to be updated on top of the below to
-> > > avoid starting "always on" devices in pm_genpd_restore_noirq() (it has
-> > > to assume that they will be "always on" in the boot kernel too, but that
-> > > seems to be a reasonable expectation).
-> > > 
-> > > Please note that those changes only affect resume from hibernation, so
-> > > they don't invalidate the testing that has already been carried out.
-> > 
-> > Hi Rafael,
-> > 
-> > sorry for such a naeive question, but if I was to test
-> > hibernate on the Mackerel how would I achieve resume?
-> > Is there a button I should press?
-> 
-> Hibernation is not supported on Mackerel at the moment, so you'd need to add
-> some platform hooks first.  Then, you'd need some persistent storage with
-> a swap patrition (or swap file at least) to save the image.  You'd need
-> to point your kernel to the image storage using the resume= and resume_offset=
-> command line switches.  Then, you should be able to create an image and the
-> kernel would look for it automatically on the next boot.
-> 
-> Still, I'm not sure if doing all that at this point is worth the effort.
+(2012/03/15 20:24), Glauber Costa wrote:
 
-Point taken.
+> On 03/15/2012 04:16 AM, KAMEZAWA Hiroyuki wrote:
+>> (2012/03/14 18:46), Glauber Costa wrote:
+>>
+>>> On 03/14/2012 04:28 AM, KAMEZAWA Hiroyuki wrote:
+>>>> IIUC, in general, even in the processes are in a tree, in major case
+>>>> of servers, their workloads are independent.
+>>>> I think FLAT mode is the dafault. 'heararchical' is a crazy thing which
+>>>> cannot be managed.
+>>>
+>>> Better pay attention to the current overall cgroups discussions being
+>>> held by Tejun then. ([RFD] cgroup: about multiple hierarchies)
+>>>
+>>> The topic of whether of adapting all cgroups to be hierarchical by
+>>> deafult is a recurring one.
+>>>
+>>> I personally think that it is not unachievable to make res_counters
+>>> cheaper, therefore making this less of a problem.
+>>>
+>>
+>>
+>> I thought of this a little yesterday. Current my idea is applying following
+>> rule for res_counter.
+>>
+>> 1. All res_counter is hierarchical. But behavior should be optimized.
+>>
+>> 2. If parent res_counter has UNLIMITED limit, 'usage' will not be propagated
+>>    to its parent at _charge_.
+> 
+> That doesn't seem to make much sense. If you are unlimited, but your 
+> parent is limited,
+> he has a lot more interest to know about the charge than you do. 
+
+
+Sorry, I should write "If all ancestors are umlimited'.
+If parent is limited, the children should be treated as limited.
+
+> So the 
+> logic should rather be the opposite: Don't go around getting locks and 
+> all that if you are unlimited. Your parent might, though.
+> 
+> I am trying to experiment a bit with billing to percpu counters for 
+> unlimited res_counters. But their inexact nature is giving me quite a 
+> headache.
+> 
+
+
+Personally, I think percpu counter is not the best one. Yes, it will work but...
+Because of its nature of error range, it has scalability problem. Considering
+to have a tree like
+
+	/A/B/Guest0/tasks
+             Guest1/tasks
+             Guest2/tasks
+             Guest4/tasks
+             Guest5/tasks
+             ......
+
+percpu res_counter may work scarable in GuestX level but will conflict in level B.
+And I don't want to think what happens in 256 cpu system. Error in B will be
+very big.
+
+Another idea is to borrow a resource from memcg to the tasks. i.e.having per-task
+caching of charges. But it has two problems that draining unused resource is difficult
+and precise usage is unknown.
+
+IMHO, hard-limited resource counter itself may be a problem ;)
+
+So, an idea, 'if all ancestors are unlimited, don't propagate charges.'
+comes to my mind. With this, people use resource in FLAT (but has hierarchical cgroup
+tree) will not see any performance problem.
+
+
+
+>> 3. If a res_counter has UNLIMITED limit, at reading usage, it must visit
+>>     all children and returns a sum of them.
+>>
+>> Then,
+>> 	/cgroup/
+>> 		memory/                       (unlimited)
+>> 			libivirt/             (unlimited)
+>> 				 qeumu/       (unlimited)
+>> 				        guest/(limited)
+>>
+>> All dir can show hierarchical usage and the guest will not have
+>> any lock contention at runtime.
+> 
+> If we are okay with summing it up at read time, we may as well
+> keep everything in percpu counters at all times.
+>
+
+
+If all ancestors are unlimited, we don't need to propagate usage upwards
+at charging. If one of ancestors are limited, we need to propagate and
+check usage at charging.
+
+
+
+>> By this
+>>   1. no runtime overhead if the parent has unlimited limit.
+>>   2. All res_counter can show aggregate resource usage of children.
+>>
+>> To do this
+>>   1. res_coutner should have children list by itself.
+>>
+>> Implementation problem
+>>   - What should happens when a user set new limit to a res_counter which have
+>>     childrens ? Shouldn't we allow it ? Or take all locks of children and
+>>     update in atomic ?
+> Well, increasing the limit should be always possible.
+> 
+
+
+> As for the kids, how about:
+> 
+> - ) Take their locks
+> - ) scan through them seeing if their usage is bellow the new allowance
+>      -) if it is, then ok
+>      -) if it is not, then try to reclaim (*). Fail if it is not possible.
+> 
+> (*) May be hard to implement, because we already have the res_counter 
+> lock taken, and the code may get nasty. So maybe it is better just fail 
+> if any of your kids usage is over the new allowance...
+> 
+
+
+Seems enough and seems worth to try.
+
+
+> 
+> 
+>>   - memory.use_hierarchy should be obsolete ?
+> If we're going fully hierarchical, yes.
+> 
+
+Another big problem is 'when' we should do this change..
+Maybe this 'hierarchical' problem will be good topic in MM summit.
+
+Thanks,
+-Kame
+
+
