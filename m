@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761465Ab2CPL0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 07:26:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38387 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761293Ab2CPL0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 07:26:33 -0400
-Date: Fri, 16 Mar 2012 12:26:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
-In-Reply-To: <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1203161225110.18356@pobox.suse.cz>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1761511Ab2CPLcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 07:32:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:42908 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761293Ab2CPLcQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 07:32:16 -0400
+X-AuditID: cbfee61a-b7b78ae000001ceb-e8-4f6324bf2b8f
+From: Srikanth TS <ts.srikanth@samsung.com>
+To: linux-kernel@vger.kernel.org
+Subject: Link for the latest patches of AHCI
+Date: Fri, 16 Mar 2012 20:32:14 +0900
+Message-id: <005401cd0368$6faea110$4f0be330$%srikanth@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac0DaG4XYMPU2rLDTkCudLSV1no9gg==
+Content-language: en-gb
+x-cr-hashedpuzzle: bPc= BIEg Bg7l BtIX BwFE COk1 DvJA EJbW Fe4k Ftw1 GWol H97o
+ Iq97 Ix2q JRze
+ LZe4;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{3F48CC99-77CE-481F-A641-5F531B2DD934};dABzAC4AcwByAGkAawBhAG4AdABoAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Fri,
+ 16 Mar 2012 11:32:12
+ GMT;TABpAG4AawAgAGYAbwByACAAdABoAGUAIABsAGEAdABlAHMAdAAgAHAAYQB0AGMAaABlAHMAIABvAGYAIABBAEgAQwBJAA==
+x-cr-puzzleid: {3F48CC99-77CE-481F-A641-5F531B2DD934}
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012, benjamin.tissoires wrote:
+Hi All,
 
-> From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> 
-> The code is inspired from the one present in the bttv module.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
-> 
-> As I mentioned in the mail 0/5, I'd really like to have your opinion on this
-> one. I copied the code from bttv, but it forces us to change hid_device which
-> is not very good for ABI changes reasons.
+I am using AHCI for testing my SATA device.
 
-It's indeed probably the best and most "lightweight" solution before we 
-come up with more robust attitude (with userspace involvement).
+I tried to clone from below link as mentioned in the MAINTAINERS file for drivers/ata/.
+http://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git
 
-Could you please resend the patch with proper changelog entry, and perhaps 
-add some more commentary into the code to better explain the reasons for 
-this gymnastics?
+But This link does not exist.
 
-Thanks,
+Can someone please tell me where can I find the latest merged patches, which are still not in official kernel version?
 
--- 
-Jiri Kosina
-SUSE Labs
+Regards,
+Srikanth.
+
