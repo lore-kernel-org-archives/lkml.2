@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965028Ab2CPUGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:06:22 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:62981 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab2CPUGS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:06:18 -0400
+	id S1031034Ab2CPUGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:06:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13396 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964874Ab2CPUGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 16:06:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140118460"
+Date: Fri, 16 Mar 2012 21:14:45 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Lee <rob.lee@linaro.org>
+Subject: Re: [PATCH v10] mfd: Add anatop mfd driver
+Message-ID: <20120316201445.GV20524@sortiz-mobl>
+References: <1331885816-26902-1-git-send-email-paul.liu@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20323.40245.165190.353107@quad.stoffel.home>
-Date: Fri, 16 Mar 2012 16:06:13 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: simon@mungewell.org
-Cc: "John Stoffel" <john@stoffel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Building BarGraph with LED subsystem
-In-Reply-To: <683cca338c740abdd522a35dfe3b17a9.squirrel@mungewell.org>
-References: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
-	<20323.25792.171143.809563@quad.stoffel.home>
-	<f04eb1355e17dbe4ce7bbdd47da0056e.squirrel@mungewell.org>
-	<20323.28731.474538.955921@quad.stoffel.home>
-	<683cca338c740abdd522a35dfe3b17a9.squirrel@mungewell.org>
-X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Disposition: inline
+In-Reply-To: <1331885816-26902-1-git-send-email-paul.liu@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "simon" == simon  <simon@mungewell.org> writes:
+Hi,
 
->>>> While making the kernel more complex... esp for a feature which is of
->>>> such limited use.
->> 
-simon> Is the concept of a bargraph of LEDs really a 'limited use'? I
-simon> can think of several uses... I mean isn't flashing or a heart
-simon> beat just as limited ;-)
->> 
->> Yes, it's a limited use.  Are 10% of linux users going to have this
->> hardware and use it?
+On Fri, Mar 16, 2012 at 04:16:56PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+> 
+> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
+> Anatop provides regulators and thermal.
+> This driver handles the address space and the operation of the mfd device.
+I applied this one, thanks.
 
-simon> OK I'm not making myself clear, apologies for that.
+Cheers,
+Samuel.
 
-Thanks for taking the time to make yourself clearer.  Now I understand
-what you're trying to do...
-
-simon> I'd be proposing a 'ledtrig-thres' module which is totally
-simon> independent of the G27, which would just provide the ability to
-simon> light (or dark) a LED depending on a threshold and value.
-
-And why does this need to be in the kernel?  That's what I'm asking.
-Make it a library where you do:
-
-     led_thresh(*led1,int value);
-     led_thresh(*led2,int value + 300);
-     led_thresh(*led3,int value + 600);
-     led_thresh(*led4,int value + 900);
-     led_thresh(*led5,int value + 1200);
-     leds = led_array(*led1, *led2, *led3, *led4, *led5);
-     led_on(*leds, 500);
-
-and it lights up the first two LEDs in the array?  You'd need to do
-something like this *anyway* in your code so that you can make this
-flexible enough to handle arrays with varying numbers of LEDs.  So why
-does it need to be in the kernel again?
-
-simon> With a bit of extra code (in this module) multiple LEDs could be 'linked'
-simon> to produce a bargraph, by automatically comparing the same value against
-simon> their own thresholds.
-
-So how much code is needed in my userspace program to setup and add
-these multiple LEDs (which don't have to be physically anywhere near
-each other, think house lighting...) to an array which manages them?  
-
-simon> As to the hardware; it could be the G27, a single LED or a
-simon> matrix of LEDs slung off one of the other LED subsystem
-simon> devices.
-
-simon> I'd want to show RPMs on my G27, but others could display CPU
-simon> usage, emulate a VU meter/FFT display, have the 'low memory
-simon> panic light' come on, etc...
-
-
-simon> Once kernel framework is provided it should not need
-simon> re-compilation on a case by case basis.
-
->> If the kernel only provides a way to set the brightness of individual
->> LEDs, why can't you do the rest in userspace?  What if the user wants
->> to have the LEDs run right to left, or visa versa?
-
-simon> I'm just wondering whether writing this as a trigger module is of use to
-simon> others. If well defined, lots of uses are possible.
-
-Just write a library that does this and give it out to people.  Then
-you can add in dimming and all kinds of other LED tricks as well.  
-
-John
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
