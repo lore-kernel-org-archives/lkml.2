@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965021Ab2CPLtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 07:49:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48443 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965200Ab2CPLta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 07:49:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="129719145"
-Message-ID: <1331898704.3730.62.camel@sauron.fi.intel.com>
-Subject: Re: [RESEND PATCH] mtd: fix section mismatch for doc_probe_device
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Ryosuke Saito <raitosyo@gmail.com>
-Cc: dwmw2@infradead.org, robert.jarzmik@free.fr, mikedunn@newsguy.com,
-        ivan.djelic@parrot.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 Mar 2012 13:51:44 +0200
-In-Reply-To: <CADTWAOL7aBi64yimwPubAJ22=4AQ1BRjzQCahUXUsbSa1oJ59A@mail.gmail.com>
-References: <CADTWAOL7aBi64yimwPubAJ22=4AQ1BRjzQCahUXUsbSa1oJ59A@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-PIgDge2J9j8q/w/YxN42"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1422741Ab2CPMDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 08:03:39 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33378 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422726Ab2CPMDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 08:03:37 -0400
+Message-ID: <4F632C15.5070902@suse.cz>
+Date: Fri, 16 Mar 2012 13:03:33 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: "Du, Alek" <alek.du@intel.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com> <20120315100812.6cda2ef9@pyramind.ukuu.org.uk> <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com> <4F630B4D.3040508@suse.cz> <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com> <4F630E6D.4000307@suse.cz> <09F19C497AD02E4EA4E14917772649B70FCD3D59@SHSMSX102.ccr.corp.intel.com> <4F63101D.70507@suse.cz> <09F19C497AD02E4EA4E14917772649B70FCD3D6B@SHSMSX102.ccr.corp.intel.com> <4F631449.7090302@suse.cz> <09F19C497AD02E4EA4E14917772649B70FCD3DCC@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <09F19C497AD02E4EA4E14917772649B70FCD3DCC@SHSMSX102.ccr.corp.intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2012 12:33 PM, Du, Alek wrote:
+> Isn't this the nature of "flush" ? If the driver is trying to insert chars to tty buffer, while the app is going to flush the buffer, or shutdown the port, 
+> that's quite nature that those data gone. Why should I care ?
+> 
+> Sorry, you missed the point of this patch.
 
---=-PIgDge2J9j8q/w/YxN42
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+No, you do not follow what I am writing.
 
-On Thu, 2012-03-15 at 19:19 +0900, Ryosuke Saito wrote:
-> doc_probe_device() is only called from docg3_probe() which is in .init.te=
-xt,
-> so it must be in the same section to avoid a section mismatch warning.
->=20
-> Signed-off-by: Ryosuke Saito <raitosyo@gmail.com>
-> ---
->  drivers/mtd/devices/docg3.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
-> index 25f688c..db9a4b7 100644
-> --- a/drivers/mtd/devices/docg3.c
-> +++ b/drivers/mtd/devices/docg3.c
-> @@ -1846,8 +1846,8 @@ static void __init doc_set_driver_info(int
-> chip_id, struct mtd_info *mtd)
+1) Your driver is broken.
+2) Your patch does not solve the problem universally.
 
-The patch is line-wrapped and not applicable with git am :-(
+ad 1) Use tty refcounting and you won't need to care about buf.tail
+being NULL due to shutdown. As an added value, you will fix the other
+races too.
 
---=20
-Best Regards,
-Artem Bityutskiy
+ad 2) With your patch, drivers which use tty_prepare_flip_string are
+given a tty buffer (chars parameter) which may be *freed* (not flushed,
+_freed_) at any time by ioctl flush after the function returns. I.e. the
+relocking is hopeless in that case. It only helps drivers which use
+tty_insert_flip_string*.
 
---=-PIgDge2J9j8q/w/YxN42
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+I don't know right now what could be a real cure for point 2). Maybe
+RCU. Maybe leaving the lock locked in tty_prepare_flip_string and
+introducing tty_finish_flip_string containing an unlock. To be called
+right after memcpy_fromio or alike in the drivers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Or maybe even removing that interface completely...
 
-iQIcBAABAgAGBQJPYylQAAoJECmIfjd9wqK0z7MQAK0vOwKH5171J7L3DZxFUUnH
-eFF0qFcU/8vNh+B74L0M9x/SDZpaAN/cF7vKOLn+0uXwkb2fmLg9FQNc9U69D1y1
-6DCKWuehF7khJt0lfdY6JCQL242K1tHra+qfIG1a8U9ouNBkIimbdbLR3mGcK0X1
-F782snlKCoEF6cFlbuJ5dfRMzr7SLeNAKwq0F3OBitHv7CkN7ZTOPkvFJpwNlYv+
-EO+Pd/d+aqpbZO41PGcpt4D4xrLyxM4cBSfzedTr1CQ3jTE41L0TXpQ3WtyNvhCa
-GCCsu1g6PmjKdV2kIQK05X+RRg88OMoEY8ZFDQc4gufVDHN5MYXK2cZ+TN4UNXKd
-tzbOZ146p16eY45vwEM/rn3gHY7LJ7TFmmlcg9Y/gPtfhX6NUs1uo9PyDScyUSDn
-1xvZ9Amtr5FKK/IdG6zTsFgknVABQ9EzF3I0ns/YGoFFKkDM83mufz4I/OlAO93c
-Ca55nLymxUEj3WYZ3XkPgI7jmfMeF1p56OYfzeiUKU0IxAEInEFFfrIBlWKxpqZM
-yUttLvLpkOWCV/kzQOOKuRtkmYRhZF/b/gfHJzTO5T5q2K7oGBD2oTTT/G4Y9aeJ
-eJ5xjXOt9hvHBEMMGwca0f3wPnpodmLQd7OU+hxB/Y3iIaHmSbz56fyfo8nfa/0a
-qCT2kOZG/FpyyNAs7B2e
-=tZSE
------END PGP SIGNATURE-----
-
---=-PIgDge2J9j8q/w/YxN42--
-
+thanks,
+-- 
+js
+suse labs
