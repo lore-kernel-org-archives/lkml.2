@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946505Ab2CPXls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:41:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1422771Ab2CPXmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:42:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946492Ab2CPXll (ORCPT
+	with ESMTP id S1946495Ab2CPXlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:41 -0400
-Message-Id: <20120316233814.308629950@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:44 -0400
+Message-Id: <20120316233814.199396648@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:51 -0700
+Date: Fri, 16 Mar 2012 16:38:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Vivek Gani <vgani@intersil.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 41/41] hwmon: (zl6100) Enable interval between chip accesses for all chips
+        alan@lxorguk.ukuu.org.uk, Martin Svec <martin.svec@zoner.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 40/41] target: Fix compatible reservation handling (CRH=1) with legacy RESERVE/RELEASE
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +26,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit fecfb64422d91a9621a3f96ab75c3a5f13e80b58 upstream.
+commit 087a03b3ea1c8d6e2d5743a8d1c6d571058caa04 upstream.
 
-Intersil reports that all chips supported by the zl6100 driver require
-an interval between chip accesses, even ZL2004 and ZL6105 which were thought
-to be safe.
+This patch addresses a bug with target_check_scsi2_reservation_conflict()
+return checking in target_scsi2_reservation_[reserve,release]() that was
+preventing CRH=1 operation from silently succeeding in the two special
+cases defined by SPC-3, and not failing with reservation conflict status
+when dealing with legacy RESERVE/RELEASE + active SPC-3 PR logic.
 
-Reported-by: Vivek Gani <vgani@intersil.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Also explictly set cmd->scsi_status = SAM_STAT_RESERVATION_CONFLICT during
+the early non reservation holder failure from pr_ops->t10_seq_non_holder()
+check in transport_generic_cmd_sequencer() for fabrics that already expect
+it to be set.
+
+This bug was originally introduced in mainline commit:
+
+commit eacac00ce5bfde8086cd0615fb53c986f7f970fe
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Thu Nov 3 17:50:40 2011 -0400
+
+    target: split core_scsi2_emulate_crh
+
+Reported-by: Martin Svec <martin.svec@zoner.cz>
+Cc: Martin Svec <martin.svec@zoner.cz>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/hwmon/zl6100   |   14 ++++++--------
- drivers/hwmon/pmbus/zl6100.c |   11 +++--------
- 2 files changed, 9 insertions(+), 16 deletions(-)
+ drivers/target/target_core_pr.c        |   34 +++++++++++++++++++++------------
+ drivers/target/target_core_transport.c |    1 
+ 2 files changed, 23 insertions(+), 12 deletions(-)
 
---- a/Documentation/hwmon/zl6100
-+++ b/Documentation/hwmon/zl6100
-@@ -73,14 +73,12 @@ Module parameters
- delay
- -----
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -120,7 +120,7 @@ static struct t10_pr_registration *core_
+ 					struct se_node_acl *, struct se_session *);
+ static void core_scsi3_put_pr_reg(struct t10_pr_registration *);
  
--Some Intersil/Zilker Labs DC-DC controllers require a minimum interval between
--I2C bus accesses. According to Intersil, the minimum interval is 2 ms, though
--1 ms appears to be sufficient and has not caused any problems in testing.
--The problem is known to affect ZL6100, ZL2105, and ZL2008. It is known not to
--affect ZL2004 and ZL6105. The driver automatically sets the interval to 1 ms
--except for ZL2004 and ZL6105. To enable manual override, the driver provides a
--writeable module parameter, 'delay', which can be used to set the interval to
--a value between 0 and 65,535 microseconds.
-+Intersil/Zilker Labs DC-DC controllers require a minimum interval between I2C
-+bus accesses. According to Intersil, the minimum interval is 2 ms, though 1 ms
-+appears to be sufficient and has not caused any problems in testing. The problem
-+is known to affect all currently supported chips. For manual override, the
-+driver provides a writeable module parameter, 'delay', which can be used to set
-+the interval to a value between 0 and 65,535 microseconds.
+-static int target_check_scsi2_reservation_conflict(struct se_cmd *cmd, int *ret)
++static int target_check_scsi2_reservation_conflict(struct se_cmd *cmd)
+ {
+ 	struct se_session *se_sess = cmd->se_sess;
+ 	struct se_subsystem_dev *su_dev = cmd->se_dev->se_sub_dev;
+@@ -130,7 +130,7 @@ static int target_check_scsi2_reservatio
+ 	int conflict = 0;
  
+ 	if (!crh)
+-		return false;
++		return -EINVAL;
  
- Sysfs entries
---- a/drivers/hwmon/pmbus/zl6100.c
-+++ b/drivers/hwmon/pmbus/zl6100.c
-@@ -178,16 +178,11 @@ static int zl6100_probe(struct i2c_clien
- 	data->id = mid->driver_data;
+ 	pr_reg = core_scsi3_locate_pr_reg(cmd->se_dev, se_sess->se_node_acl,
+ 			se_sess);
+@@ -158,16 +158,14 @@ static int target_check_scsi2_reservatio
+ 		 */
+ 		if (pr_reg->pr_res_holder) {
+ 			core_scsi3_put_pr_reg(pr_reg);
+-			*ret = 0;
+-			return false;
++			return 1;
+ 		}
+ 		if ((pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY) ||
+ 		    (pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY) ||
+ 		    (pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_ALLREG) ||
+ 		    (pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_ALLREG)) {
+ 			core_scsi3_put_pr_reg(pr_reg);
+-			*ret = 0;
+-			return true;
++			return 1;
+ 		}
+ 		core_scsi3_put_pr_reg(pr_reg);
+ 		conflict = 1;
+@@ -192,10 +190,10 @@ static int target_check_scsi2_reservatio
+ 			" while active SPC-3 registrations exist,"
+ 			" returning RESERVATION_CONFLICT\n");
+ 		cmd->scsi_sense_reason = TCM_RESERVATION_CONFLICT;
+-		return true;
++		return -EBUSY;
+ 	}
  
- 	/*
--	 * ZL2008, ZL2105, and ZL6100 are known to require a wait time
--	 * between I2C accesses. ZL2004 and ZL6105 are known to be safe.
--	 *
--	 * Only clear the wait time for chips known to be safe. The wait time
--	 * can be cleared later for additional chips if tests show that it
--	 * is not needed (in other words, better be safe than sorry).
-+	 * According to information from the chip vendor, all currently
-+	 * supported chips are known to require a wait time between I2C
-+	 * accesses.
+-	return false;
++	return 0;
+ }
+ 
+ int target_scsi2_reservation_release(struct se_task *task)
+@@ -204,12 +202,18 @@ int target_scsi2_reservation_release(str
+ 	struct se_device *dev = cmd->se_dev;
+ 	struct se_session *sess = cmd->se_sess;
+ 	struct se_portal_group *tpg = sess->se_tpg;
+-	int ret = 0;
++	int ret = 0, rc;
+ 
+ 	if (!sess || !tpg)
+ 		goto out;
+-	if (target_check_scsi2_reservation_conflict(cmd, &ret))
++	rc = target_check_scsi2_reservation_conflict(cmd);
++	if (rc == 1)
+ 		goto out;
++	else if (rc < 0) {
++		cmd->scsi_sense_reason = TCM_RESERVATION_CONFLICT;
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	ret = 0;
+ 	spin_lock(&dev->dev_reservation_lock);
+@@ -246,7 +250,7 @@ int target_scsi2_reservation_reserve(str
+ 	struct se_device *dev = cmd->se_dev;
+ 	struct se_session *sess = cmd->se_sess;
+ 	struct se_portal_group *tpg = sess->se_tpg;
+-	int ret = 0;
++	int ret = 0, rc;
+ 
+ 	if ((cmd->t_task_cdb[1] & 0x01) &&
+ 	    (cmd->t_task_cdb[1] & 0x02)) {
+@@ -262,8 +266,14 @@ int target_scsi2_reservation_reserve(str
  	 */
- 	data->delay = delay;
--	if (data->id == zl2004 || data->id == zl6105)
--		data->delay = 0;
+ 	if (!sess || !tpg)
+ 		goto out;
+-	if (target_check_scsi2_reservation_conflict(cmd, &ret))
++	rc = target_check_scsi2_reservation_conflict(cmd);
++	if (rc == 1)
+ 		goto out;
++	else if (rc < 0) {
++		cmd->scsi_sense_reason = TCM_RESERVATION_CONFLICT;
++		ret = -EINVAL;
++		goto out;
++	}
  
- 	/*
- 	 * Since there was a direct I2C device access above, wait before
+ 	ret = 0;
+ 	spin_lock(&dev->dev_reservation_lock);
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2507,6 +2507,7 @@ static int transport_generic_cmd_sequenc
+ 					cmd, cdb, pr_reg_type) != 0) {
+ 			cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
+ 			cmd->se_cmd_flags |= SCF_SCSI_RESERVATION_CONFLICT;
++			cmd->scsi_status = SAM_STAT_RESERVATION_CONFLICT;
+ 			cmd->scsi_sense_reason = TCM_RESERVATION_CONFLICT;
+ 			return -EBUSY;
+ 		}
 
 
