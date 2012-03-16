@@ -1,138 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759830Ab2CPIsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 04:48:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab2CPIsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 04:48:07 -0400
-Message-ID: <4F62FE38.6060704@redhat.com>
-Date: Fri, 16 Mar 2012 05:47:52 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1760145Ab2CPItc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 04:49:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38928 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758460Ab2CPItZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 04:49:25 -0400
+Date: Fri, 16 Mar 2012 16:49:54 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Dong Aisheng <aisheng.dong@freescale.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120316084952.GG7758@S2101-09.ap.freescale.net>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-2-git-send-email-b29396@freescale.com>
+ <20120313172351.97C5E3E053B@localhost>
+ <20120314124512.GG1180@shlinux2.ap.freescale.net>
+ <20120314141643.GP3852@pengutronix.de>
+ <20120315030206.GB13022@shlinux2.ap.freescale.net>
+ <20321.37353.63115.664975@ipc1.ka-ro>
+ <20120315105927.GE13022@shlinux2.ap.freescale.net>
+ <20321.53468.310199.875966@ipc1.ka-ro>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Add a per-dimm structure
-References: <1331120438-27523-1-git-send-email-mchehab@redhat.com> <20120313233217.GB31106@kroah.com> <4F60F2E4.7060707@redhat.com> <20120314204355.GA10187@kroah.com> <20120314223102.GA27602@aftab> <4F61496D.8030000@redhat.com> <20120315113115.GA32149@aftab> <4F61E35B.9000906@redhat.com> <20120315213844.GA3781@aftab>
-In-Reply-To: <20120315213844.GA3781@aftab>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20321.53468.310199.875966@ipc1.ka-ro>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 15-03-2012 18:38, Borislav Petkov escreveu:
-> On Thu, Mar 15, 2012 at 09:40:59AM -0300, Mauro Carvalho Chehab wrote:
->>> What are you talking about? Those per-rank counters should be the same
->>> as the per-csrow ch0 and ch1 counters...
->>
->> Yes, but with your proposal, the per-csrow counters will not be added
->> (the equivalent of):
->> 	/sys/devices/system/edac/mc/mc0/csrow0/ue_count
->> 	/sys/devices/system/edac/mc/mc0/csrow0/ce_count
+On Thu, Mar 15, 2012 at 12:22:04PM +0100, Lothar Waßmann wrote:
+...
+> An intermediate solution could be using OF_DEV_AUXDATA to pass a
+> platform_data struct that may contain a MAC address set up by the
+> platform code.
 > 
-> What the hell? Those are already there:
-> 
-> /sys/devices/system/edac/mc/mc0/csrow0/
-> |-- ce_count
-> |-- ch0_ce_count
-> |-- ch0_dimm_label
-> |-- ch1_ce_count
-> |-- ch1_dimm_label
-> |-- dev_type
-> |-- edac_mode
-> |-- mem_type
-> |-- size_mb
-> `-- ue_count
-> 
-> and since userspace uses them, they cannot be removed.
++1
 
-Two reasons:
-
-1) a per-csrow counter only works properly for amd64 and the Intel drivers for
-   hardware shipped 5+ years ago;
-
-2) per Greg's request, we should not use struct sysdev, using instead,
-   struct device. That means that everything under
-	/sys/devices/system/edac/mc/
-   will move to another place, likely:
-	/sys/devices/ras/
-
-and everything at /sys/devices/system/edac/mc/ will need to be provided by a
-legacy compat API code, to be dropped on some future.
-
->>> It depends - if the 128 bit word comes from a single DIMM (unganged
->>> mode) then you have a per-rank UE.
->>
->> True, and there are other types of ECC logic that would allow to identify
->> what DIMM/rank produced the error.
->>
->> Yet, the typical case is to use two DIMMs for a 128-bits cacheline
->> on separate channels, due to performance improvements, and ECC chipkill
->> using the 128+16 bits, as it improves the probability of error correction.
-> 
-> ... and in this typical case, on smart hardware you can get the rank
-> too. 
-
-I've analyzed all edac drivers. Almost all points to a single
-DIMM or rank on UE errors. They can only blame two dimms/ranks. The
-very few ones that will point to a single DIMM seem to be due to a
-the way they cheat with the EDAC API in order to implement support
-for FB-DIMM (or RAMBUS), telling the EDAC core that there's just one
-channel.
-
-> If one cannot discern between the two DIMMs, then there should be
-> one counter and the other one should be a symlink to that counter, or
-> something to that effect.
-
-Doesn't sound easy to implement it, nor for userspace to convert back
-from a series of symlinks into a set of locations.
-
->>>> Of course, the EDAC logic could increment multiple UE error counters
->>>> in such case, (meaning that an error happened on either one of the
->>>> affected DIMMs/Ranks) but this is a different behavior than the
->>>> current API.
->>>
->>> Well, the API should be changed to accomodate such configurations.
->>
->> True, but changing the propagation logic to propagate the error down
->> to the several DIMMs from where the error might have occurred is:
->>
->> 	- the opposite of the current propagation logic;
->>
->> 	- the opposite on how ITU-T TMN architecture and all EMS/NMS
->> 	  implementations I'm aware with work.
->>
->> So, using such propagation logic doesn't sound right to me. What I'm
->> saying is that, if all the driver can be sure is that the error happened
->> at the csrow level, it should not propagate the errors to the channel
->> level. 
->>
->> So, I think that csrow-level counter is needed (and the equivalent
->> "group" counters for non-rank-based memory controllers).
-> 
-> See above, we already have 'ce_count' and 'ue_count' and those are
-> csrow-level counters.
-
-They're not branch-level counters (a requirement for FB-DIMM drivers).
-
-The role target of this patchset is to fix the core of the reporting system.
-The old sysfs nodes don't work properly with Intel's systems
-manufactured after 2005 (and with a few others manufactured before).
-
-All Xeon 3xxx/5xxx/7xxx/E3 chipsets[1] use advanced memory controllers that 
-abstract csrows, either because they're for FB-DIMMs (where the memory ranks and 
-chip select rows aren't visible by the memory controller), or, more recently,
-because their registers are per DIMM slots, instead of per ranks, and users
-can't replace a damaged rank on a dual-ranked DIMM in field.
-
-[1] The Intel's CPU/chipset series of Servers since 2005. Desktop processors
-aren't relevant for EDAC, as they're either not supported, or they're 
-supported by the same driver that provides support for servers.
-
+-- 
 Regards,
-Mauro
+Shawn
