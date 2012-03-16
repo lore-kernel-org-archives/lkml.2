@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946076Ab2CPXiB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945988Ab2CPXh5 (ORCPT
+	id S1946168Ab2CPX6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:58:54 -0400
+Received: from forward7.mail.yandex.net ([77.88.61.37]:60607 "EHLO
+	forward7.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945934Ab2CPX6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:37:57 -0400
-Message-Id: <20120316233447.994935619@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:34:55 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kostyantyn Shlyakhovoy <x0155534@ti.com>
-Subject: [ 08/38] PM / Driver core: leave runtime PM enabled during system shutdown
-In-Reply-To: <20120316233422.GA5461@kroah.com>
+	Fri, 16 Mar 2012 19:58:48 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <944171329661049@web81.yandex.ru>
+References: <1322774765.8386.2.camel@hp> <20120213172316.GA24145@home.goodmis.org> <944171329661049@web81.yandex.ru>
+Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
+MIME-Version: 1.0
+Message-Id: <654301331942324@web109.yandex.ru>
+Date: Sat, 17 Mar 2012 03:58:44 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Steven, what is about the patch from my previous message? Is everything ok?
 
-------------------
+Regards,
+Kirill
 
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit fe6b91f47080eb17d21cbf2a39311877d57f6938 upstream.
-
-Disabling all runtime PM during system shutdown turns out not to be a
-good idea, because some devices may need to be woken up from a
-low-power state at that time.
-
-The whole point of disabling runtime PM for system shutdown was to
-prevent untimely runtime-suspend method calls.  This patch (as1504)
-accomplishes the same result by incrementing the usage count for each
-device and waiting for ongoing runtime-PM callbacks to finish.  This
-is what we already do during system suspend and hibernation, which
-makes sense since the shutdown method is pretty much a legacy analog
-of the pm->poweroff method.
-
-This fixes a recent regression on some OMAP systems introduced by
-commit af8db1508f2c9f3b6e633e2d2d906c6557c617f9 (PM / driver core:
-disable device's runtime PM during shutdown).
-
-Reported-and-tested-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Kostyantyn Shlyakhovoy <x0155534@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1743,8 +1743,10 @@ void device_shutdown(void)
- 		 */
- 		list_del_init(&dev->kobj.entry);
- 		spin_unlock(&devices_kset->list_lock);
--		/* Disable all device's runtime power management */
--		pm_runtime_disable(dev);
-+
-+		/* Don't allow any more runtime suspends */
-+		pm_runtime_get_noresume(dev);
-+		pm_runtime_barrier(dev);
- 
- 		if (dev->bus && dev->bus->shutdown) {
- 			dev_dbg(dev, "shutdown\n");
-
-
+19.02.2012, 18:17, "Kirill Tkhai" <tkhai@yandex.ru>:
+> 13.02.2012, 21:23, "Steven Rostedt" <rostedt@goodmis.org>:
+>
+>> šI wasn't on the Cc of the original message, but it was bounced to me
+>> šawhile ago. I'm cleaning out my email and came across it.
+>>
+>> šCan you send me the latest version of this patch, either against latest
+>> šLinus, or against tip/master.
+>>
+>> šThanks,
+>>
+>> š-- Steve
+>>
+>> šP.S. I'll be at ELC this week so it may not get processed right away.
+>
+> Migration status depends on a difference of weight from 0 and 1.
+> If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
+> pushable (or not pushable). We are not insterested in its exact
+> values, is it 3 or 4, for example.
+>
+> Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
+> task will be dequeued and enqueued sequentially without important
+> difference in comparison with initial state. The only difference is in
+> internal representation of plist queue of pushable tasks and the fact
+> that the task may won't be the first in a sequence of the same priority
+> tasks. But it seems to me it gives nothing.
+>
+> Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
