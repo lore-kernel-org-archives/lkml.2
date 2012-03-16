@@ -1,55 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422944Ab2CPPTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:19:35 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46756 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032894Ab2CPPTc (ORCPT
+	id S1422998Ab2CPPTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:19:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44983 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422813Ab2CPPTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:19:32 -0400
+	Fri, 16 Mar 2012 11:19:34 -0400
 MIME-Version: 1.0
-X-Originating-IP: [87.66.129.58]
-In-Reply-To: <20120315171359.GA7276@atomide.com>
-References: <1331829845-9526-1-git-send-email-j-pihet@ti.com>
-	<1331829845-9526-3-git-send-email-j-pihet@ti.com>
-	<20120315171359.GA7276@atomide.com>
-Date: Fri, 16 Mar 2012 16:19:31 +0100
-Message-ID: <CAORVsuUp9VBX1XbkQkcq91XsbRSut1RC6KCNPFHrX+RfWv7hQA@mail.gmail.com>
-Subject: Re: [PATCH 02/10] ARM: OMAP2+: SmartReflex: move the platform
- specific macros in plat-omap
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>, Jean Pihet <j-pihet@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120312214914.GA8628@redhat.com>
+References: <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de>
+	<jj684d$6ng$1@ID-44327.news.uni-berlin.de>
+	<CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+	<4F574113.8030906@01019freenet.de>
+	<alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
+	<CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com>
+	<alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz>
+	<CAFLxGvyXwFwLRYw7=eHGLZsiAB9Adcu16z=UPhLtL_Ze3bF-9g@mail.gmail.com>
+	<alpine.LNX.2.00.1203121402460.18356@pobox.suse.cz>
+	<4F5DF8F0.5010801@01019freenet.de>
+	<20120312214914.GA8628@redhat.com>
+Date: Fri, 16 Mar 2012 16:19:33 +0100
+Message-ID: <CAFLxGvwFgX3rwjf_v2MutovzFrFCuo8xwfejcY0jNDxFY-dBjQ@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Andreas Hartmann <andihartmann@01019freenet.de>,
+        Jiri Kosina <jkosina@suse.cz>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        keithp@keithp.com
+Content-Type: multipart/mixed; boundary=e89a8f83a1dd5cc57304bb5dbc43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+--e89a8f83a1dd5cc57304bb5dbc43
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Thu, Mar 15, 2012 at 6:14 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * jean.pihet@newoldbits.com <jean.pihet@newoldbits.com> [120315 09:47]:
->> From: Jean Pihet <j-pihet@ti.com>
->>
->> Move the platform specific macros from the smartreflex header file
->> (arch/arm/mach-omap2/smartreflex.h) in a new header file in plat-omap
->> (arch/arm/plat-omap/include/plat/smartreflex.h).
->>
->> This change makes the SmartReflex implementation ready for the move
->> to drivers/.
->
-> Glad to see this happening!
->
-> This would be better located in linux/power/smartreflex.h rather than
-> plat/smartreflex.h.
-Ok. Is the file name still Ok in that case? Should it mention OMAP?
+On Mon, Mar 12, 2012 at 10:49 PM, Dave Jones <davej@redhat.com> wrote:
+> if you compare the hexdump of the good/bad files, you find that the corruption
+> happens in 8x 4 byte writes of either 0x00000000 or 0x00aaaaaa.
 
+Yeah, it looks like the described pattern.
+The attached diff shows four 8x4 byte writes of 0x00000000.
+
+-- 
 Thanks,
-Jean
+//richard
 
->
-> Regards,
->
-> Tony
+--e89a8f83a1dd5cc57304bb5dbc43
+Content-Type: text/x-patch; charset=US-ASCII; name="hexdump.diff"
+Content-Disposition: attachment; filename="hexdump.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gzvdlwdv0
+
+LS0tIGdvb2QudHh0CTIwMTItMDMtMTYgMTU6NTE6MTEuMDAwMDAwMDAwICswMTAwCisrKyBiYWQu
+dHh0CTIwMTItMDMtMTYgMTU6NTE6MjcuMDAwMDAwMDAwICswMTAwCkBAIC0xMTEwMjAsOCArMTEx
+MDIwLDggQEAKIDAwMWIzZmQwICA4NSA3MyAwMSAwMCAwMCA4OSAzYyAyNCAgZTggZDMgMDEgMDIg
+MDAgOGIgOGMgMjQgIHwucy4uLi48JC4uLi4uLi4kfAogMDAxYjNmZTAgIGUwIDAwIDAwIDAwIDhi
+IDk0IDI0IGU0ICAwMCAwMCAwMCA4YiBiNCAyNCBlMCAwMCAgfC4uLi4uLiQuLi4uLi4kLi58CiAw
+MDFiM2ZmMCAgMDAgMDAgOGIgNDEgMjQgOGIgNTIgMDggIDgzIGM2IDI0IDhiIDQ4IDBjIDg5IDU0
+ICB8Li4uQSQuUi4uLiQuSC4uVHwKLTAwMWI0MDAwICAyNCAyNCA4NSBjOSAwZiA4NSAwNiAwMSAg
+MDAgMDAgMzEgYzAgOGIgOGMgMjQgZTQgIHwkJC4uLi4uLi4uMS4uLiQufAotMDAxYjQwMTAgIDAw
+IDAwIDAwIDg5IDA0IDI0IDg5IDRjICAyNCAwNCBlOCA0MSBlOSBmZiBmZiA4NSAgfC4uLi4uJC5M
+JC4uQS4uLi58CiswMDFiNDAwMCAgMDAgMDAgMDAgMDAgMDAgMDAgMDAgMDAgIDAwIDAwIDAwIDAw
+IDAwIDAwIDAwIDAwICB8Li4uLi4uLi4uLi4uLi4uLnwKKyoKIDAwMWI0MDIwICBlZCA3NCA0NSA4
+YiA1NCAyNCAyNCA4YiAgNDIgNGMgOGIgNTAgM2MgODUgZDIgMGYgIHwudEUuVCQkLkJMLlA8Li4u
+fAogMDAxYjQwMzAgIDg1IDQzIDAxIDAwIDAwIGM3IDQ0IDI0ICAwNCAwMCAwMCAwMCAwMCA4OSAy
+YyAyNCAgfC5DLi4uLkQkLi4uLi4uLCR8CiAwMDFiNDA0MCAgZTggYWIgYTQgZWYgZmYgOGIgOTQg
+MjQgIGU0IDAwIDAwIDAwIGM3IDQ0IDI0IDBjICB8Li4uLi4uLiQuLi4uLkQkLnwKQEAgLTExMTI3
+Niw4ICsxMTEyNzYsOCBAQAogMDAxYjRmZDAgIGMzIDI1IDMwIDBjIDAwIDhiIDUwIDQ0ICBmNiBj
+MiAxMCAwZiA4NCBlNyAwMCAwMCAgfC4lMC4uLlBELi4uLi4uLi58CiAwMDFiNGZlMCAgMDAgOGQg
+ODMgNmMgY2QgZmEgZmYgOGQgIDdjIDI0IDNjIDg5IDQ0IDI0IDE0IDhkICB8Li4ubC4uLi58JDwu
+RCQuLnwKIDAwMWI0ZmYwICA4MyA1NCA0MyBmOSBmZiA4OSA0NCAyNCAgMGMgYzcgNDQgMjQgMTAg
+NWUgMDEgMDAgIHwuVEMuLi5EJC4uRCQuXi4ufAotMDAxYjUwMDAgIDAwIGM3IDQ0IDI0IDA4IDVm
+IDFiIDAwICAwMCBjNyA0NCAyNCAwNCAwMSAwMCAwMCAgfC4uRCQuXy4uLi5EJC4uLi58Ci0wMDFi
+NTAxMCAgMDAgODkgM2MgMjQgZTggNGIgNzIgZWMgIGZmIDgzIGVjIDA0IDhkIDU0IDI0IDM4ICB8
+Li48JC5Lci4uLi4uLlQkOHwKKzAwMWI1MDAwICAwMCAwMCAwMCAwMCAwMCAwMCAwMCAwMCAgMDAg
+MDAgMDAgMDAgMDAgMDAgMDAgMDAgIHwuLi4uLi4uLi4uLi4uLi4ufAorKgogMDAxYjUwMjAgIDg5
+IDE0IDI0IDg5IDU0IDI0IDJjIDg5ICA3NCAyNCAwOCA4OSA3YyAyNCAwNCBlOCAgfC4uJC5UJCwu
+dCQuLnwkLi58CiAwMDFiNTAzMCAgMTAgMmIgZWMgZmYgOGQgODMgOGMgMjMgIGY5IGZmIDgzIGVj
+IDA0IDhkIDZjIDI0ICB8LisuLi4uLiMuLi4uLi5sJHwKIDAwMWI1MDQwICAzNCA4OSA0NCAyNCAw
+NCBjNyA0NCAyNCAgMDggZmYgZmYgZmYgZmYgODkgMmMgMjQgIHw0LkQkLi5EJC4uLi4uLiwkfApA
+QCAtMTEyMDQ0LDggKzExMjA0NCw4IEBACiAwMDFiN2ZkMCAgOGIgNTAgMDggOGQgNDQgOTAgMTQg
+ODkgIDA0IDI0IGViIDgzIDhkIDc0IDI2IDAwICB8LlAuLkQuLi4uJC4uLnQmLnwKIDAwMWI3ZmUw
+ICA4MyBlYyA1YyA4OSA3NCAyNCA1MCA4YiAgNzQgMjQgNjAgODkgNWMgMjQgNGMgODkgIHwuLlwu
+dCRQLnQkYC5cJEwufAogMDAxYjdmZjAgIDdjIDI0IDU0IDg5IDZjIDI0IDU4IDhiICA0NiAxNCBl
+OCBlOCA4MCBlYyBmZiA4MSAgfHwkVC5sJFguRi4uLi4uLi58Ci0wMDFiODAwMCAgYzMgZjUgZmYg
+MGIgMDAgOGIgNTAgMDggIDM5IDUwIDBjIDBmIDg0IGFiIDAwIDAwICB8Li4uLi4uUC45UC4uLi4u
+LnwKLTAwMWI4MDEwICAwMCA4ZCA2YyAyNCAyMCA4OSA3NCAyNCAgMDQgODkgMmMgMjQgZTggOWYg
+ZmQgZmYgIHwuLmwkIC50JC4uLCQuLi4ufAorMDAxYjgwMDAgIDAwIDAwIDAwIDAwIDAwIDAwIDAw
+IDAwICAwMCAwMCAwMCAwMCAwMCAwMCAwMCAwMCAgfC4uLi4uLi4uLi4uLi4uLi58CisqCiAwMDFi
+ODAyMCAgZmYgODMgZWMgMDQgOGIgN2MgMjQgMjAgIDg1IGZmIDBmIDg4IGEwIDAwIDAwIDAwICB8
+Li4uLi58JCAuLi4uLi4uLnwKIDAwMWI4MDMwICA4YiA0YyAyNCAyNCA4NSBjOSAwZiA4OCAgOTQg
+MDAgMDAgMDAgOGIgNTQgMjQgMmMgIHwuTCQkLi4uLi4uLi4uVCQsfAogMDAxYjgwNDAgIDg1IGQy
+IDBmIDg0IDg4IDAwIDAwIDAwICA4ZCA3YyAyNCAzYyA4OSA2YyAyNCAwNCAgfC4uLi4uLi4uLnwk
+PC5sJC58CkBAIC0xMTIzMDAsOCArMTEyMzAwLDggQEAKIDAwMWI4ZmQwICAwYiAwMCA4OSA2YyAy
+NCA1OCA4OSA3NCAgMjQgNTAgOGIgNzQgMjQgNjAgODkgN2MgIHwuLi5sJFgudCRQLnQkYC58fAog
+MDAxYjhmZTAgIDI0IDU0IGM3IDQ0IDI0IDNjIDAwIDAwICAwMCAwMCA4YiBhYiA0MCAyNyAwMCAw
+MCAgfCRULkQkPC4uLi4uLkAnLi58CiAwMDFiOGZmMCAgODUgZWQgMGYgODQgMzAgMDEgMDAgMDAg
+IDhiIGJiIDQwIDI3IDAwIDAwIDgzIGM3ICB8Li4uLjAuLi4uLkAnLi4uLnwKLTAwMWI5MDAwICAw
+NCA3NCAwOCBmNyBjNyAwMSAwMCAwMCAgMDAgNzQgMzUgODkgZjAgZTggZmUgZjQgIHwudC4uLi4u
+Li50NS4uLi4ufAotMDAxYjkwMTAgIGZmIGZmIDg1IGMwIDg5IDQ0IDI0IDNjICA3NCA0NSA4NSBm
+ZiA3NCAwYyBmNyBjNyAgfC4uLi4uRCQ8dEUuLnQuLi58CiswMDFiOTAwMCAgMDAgMDAgMDAgMDAg
+MDAgMDAgMDAgMDAgIDAwIDAwIDAwIDAwIDAwIDAwIDAwIDAwICB8Li4uLi4uLi4uLi4uLi4uLnwK
+KyoKIDAwMWI5MDIwICAwMSAwMCAwMCAwMCAwZiA4NSBlNiAwMCAgMDAgMDAgOGIgNWMgMjQgNGMg
+OGIgNzQgIHwuLi4uLi4uLi4uLlwkTC50fAogMDAxYjkwMzAgIDI0IDUwIDhiIDdjIDI0IDU0IDhi
+IDZjICAyNCA1OCA4MyBjNCA1YyBjMyA2NiA5MCAgfCRQLnwkVC5sJFguLlwuZi58CiAwMDFiOTA0
+MCAgODkgZjggODMgY2YgMDEgODMgZTAgZmUgIDg5IDA0IDI0IGU4IDU0IDU5IGVjIGZmICB8Li4u
+Li4uLi4uLiQuVFkuLnwK
+--e89a8f83a1dd5cc57304bb5dbc43--
