@@ -1,230 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab2CPVDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:03:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49475 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754742Ab2CPVDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:03:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Turquette, Mike" <mturquette@ti.com>
-Subject: Re: [PATCH v3] PM / devfreq: add relation of recommended frequency.
-Date: Fri, 16 Mar 2012 22:07:22 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kevin Hilman <khilman@ti.com>, myungjoo.ham@gmail.com
-References: <201203150125.14896.rjw@sisk.pl> <1331877770-12150-1-git-send-email-myungjoo.ham@samsung.com> <CAJOA=zMZE51Bcb67pf-jU99BYswDnhtvPiA+Y+EQcMpToN7xPg@mail.gmail.com>
-In-Reply-To: <CAJOA=zMZE51Bcb67pf-jU99BYswDnhtvPiA+Y+EQcMpToN7xPg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203162207.22818.rjw@sisk.pl>
+	id S1031358Ab2CPVD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:03:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40793 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757643Ab2CPVDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 17:03:48 -0400
+Message-Id: <20120316210343.993662395@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Sat, 17 Mar 2012 00:55:58 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Andrew Vagin <avagin@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Pedro Alves <palves@redhat.com>
+Subject: [patch 2/2] c/r: prctl: Add ability to get clear_tid_address
+References: <20120316205556.595309230@openvz.org>
+Content-Disposition: inline; filename=c-r-prctl-add-PR_GET_TID_ADDRESS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 16, 2012, Turquette, Mike wrote:
-> On Thu, Mar 15, 2012 at 11:02 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> > The semantics of "target frequency" given to devfreq driver from
-> > devfreq framework has always been interpretted as "at least" or GLB
-> > (greatest lower bound). However, the framework might want the
-> > device driver to limit its max frequency (LUB: least upper bound),
-> > especially if it is given by thermal framework (it's too hot).
-> >
-> > Thus, the target fuction should have another parameter to express
-> > whether the framework wants GLB or LUB. And, the additional parameter,
-> > "u32 flags", does it.
-> >
-> > With the update, devfreq_recommended_opp() is also updated.
-> >
-> > Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> 
-> I know Rafael already said he'd take it but I might as well add:
-> 
-> Reviewed-by: Mike Turquette <mturquette@ti.com>
-> 
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Zero is written at clear_tid_address, when
+the process exits. This functionality is used
+by pthread_join().
 
-Applied to linux-pm/linux-next.
+We already have sys_set_tid_address() to change this
+address for current task but there is no way to obtain
+it from a user space.
 
-Thanks,
-Rafael
+Without ability to find this address and dump it we can't
+restore pthread'ed apps which do call pthread_join() once
+they have been restored.
 
+This patch introduces PR_GET_TID_ADDRESS prctl option
+which allow current process to obtain own clear_tid_address.
 
-> > ---
-> > Changes from v2
-> > - Updated comments
-> > - Rebased.
-> >
-> > Changes from v1
-> > - Style update.
-> >
-> >  drivers/devfreq/devfreq.c     |   42 +++++++++++++++++++++++++++++++++++++---
-> >  drivers/devfreq/exynos4_bus.c |   14 +++++++++---
-> >  include/linux/devfreq.h       |   16 ++++++++++++--
-> >  3 files changed, 61 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> > index a129a7b..70c31d4 100644
-> > --- a/drivers/devfreq/devfreq.c
-> > +++ b/drivers/devfreq/devfreq.c
-> > @@ -83,6 +83,7 @@ int update_devfreq(struct devfreq *devfreq)
-> >  {
-> >        unsigned long freq;
-> >        int err = 0;
-> > +       u32 flags = 0;
-> >
-> >        if (!mutex_is_locked(&devfreq->lock)) {
-> >                WARN(true, "devfreq->lock must be locked by the caller.\n");
-> > @@ -94,7 +95,24 @@ int update_devfreq(struct devfreq *devfreq)
-> >        if (err)
-> >                return err;
-> >
-> > -       err = devfreq->profile->target(devfreq->dev.parent, &freq);
-> > +       /*
-> > +        * Adjust the freuqency with user freq and QoS.
-> > +        *
-> > +        * List from the highest proiority
-> > +        * max_freq (probably called by thermal when it's too hot)
-> > +        * min_freq
-> > +        */
-> > +
-> > +       if (devfreq->min_freq && freq < devfreq->min_freq) {
-> > +               freq = devfreq->min_freq;
-> > +               flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
-> > +       }
-> > +       if (devfreq->max_freq && freq > devfreq->max_freq) {
-> > +               freq = devfreq->max_freq;
-> > +               flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
-> > +       }
-> > +
-> > +       err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
-> >        if (err)
-> >                return err;
-> >
-> > @@ -625,14 +643,30 @@ module_exit(devfreq_exit);
-> >  *                          freq value given to target callback.
-> >  * @dev                The devfreq user device. (parent of devfreq)
-> >  * @freq       The frequency given to target function
-> > + * @flags      Flags handed from devfreq framework.
-> >  *
-> >  */
-> > -struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
-> > +struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
-> > +                                   u32 flags)
-> >  {
-> > -       struct opp *opp = opp_find_freq_ceil(dev, freq);
-> > +       struct opp *opp;
-> >
-> > -       if (opp == ERR_PTR(-ENODEV))
-> > +       if (flags & DEVFREQ_FLAG_LEAST_UPPER_BOUND) {
-> > +               /* The freq is an upper bound. opp should be lower */
-> >                opp = opp_find_freq_floor(dev, freq);
-> > +
-> > +               /* If not available, use the closest opp */
-> > +               if (opp == ERR_PTR(-ENODEV))
-> > +                       opp = opp_find_freq_ceil(dev, freq);
-> > +       } else {
-> > +               /* The freq is an lower bound. opp should be higher */
-> > +               opp = opp_find_freq_ceil(dev, freq);
-> > +
-> > +               /* If not available, use the closest opp */
-> > +               if (opp == ERR_PTR(-ENODEV))
-> > +                       opp = opp_find_freq_floor(dev, freq);
-> > +       }
-> > +
-> >        return opp;
-> >  }
-> >
-> > diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> > index 590d686..1a361e9 100644
-> > --- a/drivers/devfreq/exynos4_bus.c
-> > +++ b/drivers/devfreq/exynos4_bus.c
-> > @@ -619,13 +619,19 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
-> >        return err;
-> >  }
-> >
-> > -static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
-> > +static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
-> > +                             u32 flags)
-> >  {
-> >        int err = 0;
-> > -       struct busfreq_data *data = dev_get_drvdata(dev);
-> > -       struct opp *opp = devfreq_recommended_opp(dev, _freq);
-> > -       unsigned long old_freq = opp_get_freq(data->curr_opp);
-> > +       struct platform_device *pdev = container_of(dev, struct platform_device,
-> > +                                                   dev);
-> > +       struct busfreq_data *data = platform_get_drvdata(pdev);
-> > +       struct opp *opp = devfreq_recommended_opp(dev, _freq, flags);
-> >        unsigned long freq = opp_get_freq(opp);
-> > +       unsigned long old_freq = opp_get_freq(data->curr_opp);
-> > +
-> > +       if (IS_ERR(opp))
-> > +               return PTR_ERR(opp);
-> >
-> >        if (old_freq == freq)
-> >                return 0;
-> > diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> > index 5862475..281c72a 100644
-> > --- a/include/linux/devfreq.h
-> > +++ b/include/linux/devfreq.h
-> > @@ -44,6 +44,14 @@ struct devfreq_dev_status {
-> >        void *private_data;
-> >  };
-> >
-> > +/*
-> > + * The resulting frequency should be at most this. (this bound is the
-> > + * least upper bound; thus, the resulting freq should be lower or same)
-> > + * If the flag is not set, the resulting frequency should be at most the
-> > + * bound (greatest lower bound)
-> > + */
-> > +#define DEVFREQ_FLAG_LEAST_UPPER_BOUND         0x1
-> > +
-> >  /**
-> >  * struct devfreq_dev_profile - Devfreq's user device profile
-> >  * @initial_freq       The operating frequency when devfreq_add_device() is
-> > @@ -54,6 +62,8 @@ struct devfreq_dev_status {
-> >  *                     higher than any operable frequency, set maximum.
-> >  *                     Before returning, target function should set
-> >  *                     freq at the current frequency.
-> > + *                     The "flags" parameter's possible values are
-> > + *                     explained above with "DEVFREQ_FLAG_*" macros.
-> >  * @get_dev_status     The device should provide the current performance
-> >  *                     status to devfreq, which is used by governors.
-> >  * @exit               An optional callback that is called when devfreq
-> > @@ -66,7 +76,7 @@ struct devfreq_dev_profile {
-> >        unsigned long initial_freq;
-> >        unsigned int polling_ms;
-> >
-> > -       int (*target)(struct device *dev, unsigned long *freq);
-> > +       int (*target)(struct device *dev, unsigned long *freq, u32 flags);
-> >        int (*get_dev_status)(struct device *dev,
-> >                              struct devfreq_dev_status *stat);
-> >        void (*exit)(struct device *dev);
-> > @@ -165,7 +175,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
-> >
-> >  /* Helper functions for devfreq user device driver with OPP. */
-> >  extern struct opp *devfreq_recommended_opp(struct device *dev,
-> > -                                          unsigned long *freq);
-> > +                                          unsigned long *freq, u32 flags);
-> >  extern int devfreq_register_opp_notifier(struct device *dev,
-> >                                         struct devfreq *devfreq);
-> >  extern int devfreq_unregister_opp_notifier(struct device *dev,
-> > @@ -216,7 +226,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
-> >  }
-> >
-> >  static struct opp *devfreq_recommended_opp(struct device *dev,
-> > -                                          unsigned long *freq)
-> > +                                          unsigned long *freq, u32 flags)
-> >  {
-> >        return -EINVAL;
-> >  }
-> > --
-> > 1.7.4.1
-> >
-> 
-> 
+This feature is available iif CONFIG_CHECKPOINT_RESTORE is set.
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pedro Alves <palves@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
+---
+ include/linux/prctl.h |    2 ++
+ kernel/sys.c          |   13 +++++++++++++
+ 2 files changed, 15 insertions(+)
+
+Index: linux-2.6.git/include/linux/prctl.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/prctl.h
++++ linux-2.6.git/include/linux/prctl.h
+@@ -120,4 +120,6 @@
+ # define PR_SET_MM_AUXV			12
+ # define PR_SET_MM_EXE_FILE		13
+ 
++#define PR_GET_TID_ADDRESS		36
++
+ #endif /* _LINUX_PRCTL_H */
+Index: linux-2.6.git/kernel/sys.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -1901,12 +1901,22 @@ out:
+ 	up_read(&mm->mmap_sem);
+ 	return error;
+ }
++
++static int prctl_get_tid_address(struct task_struct *me, int __user **tid_addr)
++{
++	return put_user(me->clear_child_tid, tid_addr);
++}
++
+ #else /* CONFIG_CHECKPOINT_RESTORE */
+ static int prctl_set_mm(int opt, unsigned long addr,
+ 			unsigned long arg4, unsigned long arg5)
+ {
+ 	return -EINVAL;
+ }
++static int prctl_get_tid_address(struct task_struct *me, int __user **tid_addr)
++{
++	return -EINVAL;
++}
+ #endif
+ 
+ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+@@ -2061,6 +2071,9 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
+ 		case PR_SET_MM:
+ 			error = prctl_set_mm(arg2, arg3, arg4, arg5);
+ 			break;
++		case PR_GET_TID_ADDRESS:
++			error = prctl_get_tid_address(me, (int __user **)arg2);
++			break;
+ 		default:
+ 			error = -EINVAL;
+ 			break;
 
