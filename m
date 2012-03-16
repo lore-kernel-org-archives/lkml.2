@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946157Ab2CPXiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032736Ab2CPXil (ORCPT
+	id S1946174Ab2CPXix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:38:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51243 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946161Ab2CPXir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:38:41 -0400
-Message-Id: <20120316233449.226999265@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:38:47 -0400
+Message-Id: <20120316233449.397576407@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:09 -0700
+Date: Fri, 16 Mar 2012 16:35:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ulrich Weber <ulrich.weber@sophos.com>,
+        alan@lxorguk.ukuu.org.uk, Li Wei <lw@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/38] bridge: check return value of ipv6_dev_get_saddr()
+Subject: [ 24/38] IPv6: Fix not join all-router mcast group when forwarding set.
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ulrich Weber <ulrich.weber@sophos.com>
+From: Li Wei <lw@cn.fujitsu.com>
 
-[ Upstream commit d1d81d4c3dd886d5fa25a2c4fa1e39cb89613712 ]
+[ Upstream commit d6ddef9e641d1229d4ec841dc75ae703171c3e92 ]
 
-otherwise source IPv6 address of ICMPV6_MGM_QUERY packet
-might be random junk if IPv6 is disabled on interface or
-link-local address is not yet ready (DAD).
+When forwarding was set and a new net device is register,
+we need add this device to the all-router mcast group.
 
-Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
+Signed-off-by: Li Wei <lw@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_multicast.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/ipv6/addrconf.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -446,8 +446,11 @@ static struct sk_buff *br_ip6_multicast_
- 	ip6h->nexthdr = IPPROTO_HOPOPTS;
- 	ip6h->hop_limit = 1;
- 	ipv6_addr_set(&ip6h->daddr, htonl(0xff020000), 0, 0, htonl(1));
--	ipv6_dev_get_saddr(dev_net(br->dev), br->dev, &ip6h->daddr, 0,
--			   &ip6h->saddr);
-+	if (ipv6_dev_get_saddr(dev_net(br->dev), br->dev, &ip6h->daddr, 0,
-+			       &ip6h->saddr)) {
-+		kfree_skb(skb);
-+		return NULL;
-+	}
- 	ipv6_eth_mc_map(&ip6h->daddr, eth->h_dest);
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -433,6 +433,10 @@ static struct inet6_dev * ipv6_add_dev(s
+ 	/* Join all-node multicast group */
+ 	ipv6_dev_mc_inc(dev, &in6addr_linklocal_allnodes);
  
- 	hopopt = (u8 *)(ip6h + 1);
++	/* Join all-router multicast group if forwarding is set */
++	if (ndev->cnf.forwarding && dev && (dev->flags & IFF_MULTICAST))
++		ipv6_dev_mc_inc(dev, &in6addr_linklocal_allrouters);
++
+ 	return ndev;
+ }
+ 
 
 
