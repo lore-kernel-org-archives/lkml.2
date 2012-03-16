@@ -1,127 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2CPGWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 02:22:31 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:51175 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755717Ab2CPGW1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 02:22:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120315094357.GX3852@pengutronix.de>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-3-git-send-email-mturquette@linaro.org> <20120311113414.GM3852@pengutronix.de>
- <CAJOA=zMdkLB-DCPOk=kz5mn6BK6A_swocyCHJHeGE6H7FxBbmQ@mail.gmail.com>
- <20120312115117.GN3852@pengutronix.de> <CAJOA=zPx0ARsoO4ueSTMe_z2Gs4xG4P2qn1=-vHFf7_k=+K6hQ@mail.gmail.com>
- <20120313120507.GS3852@pengutronix.de> <CAJOA=zMT4vK7WPF7iEH9kN6GHHAv-LChHoadzieqV-Wd3Qj=WQ@mail.gmail.com>
- <20120315094357.GX3852@pengutronix.de>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 15 Mar 2012 23:22:00 -0700
-Message-ID: <CAJOA=zOLaFJ3xoaL2EtX=rkA1XM2gEzyns6meiiGLrbX8HFujQ@mail.gmail.com>
-Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030213Ab2CPGYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 02:24:14 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59928 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755382Ab2CPGYI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 02:24:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="78254193"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
+Thread-Index: AQHNApjzi0/xEwnEYkaFcv+3MH+BBZZscbWQ
+Date: Fri, 16 Mar 2012 06:24:05 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+	 <1331546307.18960.26.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
+	 <1331654251.18960.78.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+	 <1331718197.18960.106.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
+ <1331808391.18960.160.camel@twins>
+In-Reply-To: <1331808391.18960.160.camel@twins>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 2:43 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Wed, Mar 14, 2012 at 05:51:48PM -0700, Turquette, Mike wrote:
->> @@ -84,9 +78,9 @@ static int clk_divider_bestdiv(struct clk_hw *hw,
->> unsigned long rate,
->>
->>       for (i = 1; i <= maxdiv; i++) {
->>               parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
->> -                             MULT_ROUND_UP(rate, i));
->> +                             (rate * i));
->
-> I think MULT_ROUND_UP is the right thing to use here (not sure if this
-> is a good name though)
-> Consider we want to have an output rate of 33Hz. Now acceptable input
-> rates for a divider value of 3 would be 99, 100 and 101Hz, so we have
-> to call round_rate for the parent with 101Hz which includes 100 and
-> 99Hz.
 
-We're back to the point Rob brought up about .round_rate rounding up
-or down.  We really need a least-upper-bounds or greatest-lower-bounds
-flag, similar to how CPUfreq selects target frequencies today.  I'm
-freezing features for this patchset now, so I'll keep your
-MULT_ROUND_UP approach and some day I'll fix .round_rate for good.
 
-> If you have problems with your PLL than most likely because it does
-> something different on clk_round_rate than it does in clk_set_rate,
-> for example clk_round_rate(10000) returns 10000, but clk_set_rate then
-> sets the rate 9999 due to some rounding error. Being consistent between
-> round_rate and set_rate is very important for this mechanism to work
-> properly. It did cost me some nerves to get it right for the divider
-> (and even more nerves to figure out why it is correct the way it works)
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Thursday, March 15, 2012 6:47 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
+> Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+> 
+> On Thu, 2012-03-15 at 00:11 +0000, Liu, Chuansheng wrote:
+> >
+> > > -----Original Message-----
+> > > From: Peter Zijlstra [mailto:peterz@infradead.org]
+> > > Sent: Wednesday, March 14, 2012 5:43 PM
+> > > To: Liu, Chuansheng
+> > > Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
+> > > Subject: RE: [PATCH] Fix the race between smp_call_function and CPU
+> > > booting
+> > >
+> > > On Wed, 2012-03-14 at 06:27 +0000, Liu, Chuansheng wrote:
+> > > > On the unplug case, after set the CPU to !active, we do not need
+> > > > IPI handling for the corresponding CPU before it is set to
+> > > > offline. I did not find any impact that limiting the
+> > > > smp_call_function just after CPU is active.
+> > >
+> > > Have a look at Alpha, it's flush_tlb_mm() can use
+> > > smp_call_function(), in the !active,online case you very much still need to
+> tlb flush that cpu.
+> > >
+> > > The fact that it works on a limited use case on x86 doesn't say
+> > > anything much at all.
+> 
+> > Thanks your pointing out, do you have any other perfect solution for this
+> issue?
+> > As for the stress test result, advancing the setting active before
+> > setting online broken something either.
+> 
+> I'm not sure I understand.. are you saying that commit
+> 5fbd036b552f633abb394a319f7c62a5c86a9cd7 in tip/master broke
+> something?
+Yes. I did the stress test, the commit 5fbd036b552f633abb394a319f7c62a5c86a9cd7
+broken something as below traces:
+[  721.989553] WARNING: at /root/r3_ics/hardware/intel/linux-2.6/arch/x86/kernel/smp.c:118 native_smp_send_reschedule+0x50/0x60()
+[  722.000923] Hardware name: Medfield
+[  722.004401] Modules linked in: atomisp lm3554 mt9m114 mt9e013 videobuf_vmalloc videobuf_core mac80211 cfg80211 compat btwilink st_drv
+[  722.016408] Pid: 18865, comm: workqueue_trust Not tainted 3.0.8-137166-g2639a16-dirty #1
+[  722.024486] Call Trace:
+[  722.026939]  [<c1252287>] warn_slowpath_common+0x77/0x130
+[  722.032321]  [<c121df70>] ? native_smp_send_reschedule+0x50/0x60
+[  722.038314]  [<c121df70>] ? native_smp_send_reschedule+0x50/0x60
+[  722.044316]  [<c1252362>] warn_slowpath_null+0x22/0x30
+[  722.049445]  [<c121df70>] native_smp_send_reschedule+0x50/0x60
+[  722.055268]  [<c124bacf>] try_to_wake_up+0x17f/0x390
+[  722.060225]  [<c124bd34>] wake_up_process+0x14/0x20
+[  722.065091]  [<c1277107>] kthread_stop+0x37/0x100
+[  722.069789]  [<c126f5e0>] destroy_worker+0x50/0x90
+[  722.074573]  [<c18c1b4d>] trustee_thread+0x3e3/0x4bf
+[  722.079524]  [<c1277410>] ? wake_up_bit+0x90/0x90
+[  722.084224]  [<c18c176a>] ? wait_trustee_state+0x91/0x91
+[  722.089520]  [<c1276fc4>] kthread+0x74/0x80
+[  722.093694]  [<c1276f50>] ? __init_kthread_worker+0x30/0x30
+[  722.099264]  [<c18c7cfa>] kernel_thread_helper+0x6/0x10
+[  722.104474] ---[ end trace fa5bcc15ece677c6 ]---
 
-What I'd like to do is request the *exact* frequency I want when
-passing in a rate to my PLLs .round_rate.  Due to the way that my MN
-dividers are calculated, and due to some jitter avoidance code, it is
-bad for me to request 600000001 Hz when I really want 600MHz exactly.
-Anyways I fixed this up on my end enough to work with MULT_ROUND_UP,
-so that can stay for the immediate future.
 
->
->>               now = parent_rate / i;
->> -             if (now <= rate && now >= best) {
->> +             if (now <= rate && now > best) {
->
-> This change is an optimization, but should be unrelated to your PLL
-> problem, right?
+Based on your patch, I did a little modification, how do you think of that?
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index cdeb727..d616ed5 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -295,13 +295,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
+         */
+        percpu_timer_setup();
+ 
+-       while (!cpu_active(cpu))
+-               cpu_relax();
+-
+-       /*
+-        * cpu_active bit is set, so it's safe to enalbe interrupts
+-        * now.
+-        */
+        local_irq_enable();
+        local_fiq_enable();
+ 
+diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+index c871a2c..0123c63 100644
+--- a/arch/hexagon/kernel/smp.c
++++ b/arch/hexagon/kernel/smp.c
+@@ -179,8 +179,6 @@ void __cpuinit start_secondary(void)
+        printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
+ 
+        set_cpu_online(cpu, true);
+-       while (!cpumask_test_cpu(cpu, cpu_active_mask))
+-               cpu_relax();
+        local_irq_enable();
+ 
+        cpu_idle();
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index 2398ce6..b0e28c4 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -550,12 +550,6 @@ int __cpuinit start_secondary(void *cpuvoid)
+        S390_lowcore.restart_psw.addr =
+                PSW_ADDR_AMODE | (unsigned long) psw_restart_int_handler;
+        __ctl_set_bit(0, 28); /* Enable lowcore protection */
+-       /*
+-        * Wait until the cpu which brought this one up marked it
+-        * active before enabling interrupts.
+-        */
+-       while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
+-               cpu_relax();
+        local_irq_enable();
+        /* cpu_idle will call schedule for us */
+        cpu_idle();
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 66d250c..58f7816 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -291,19 +291,6 @@ notrace static void __cpuinit start_secondary(void *unused)
+        per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+        x86_platform.nmi_init();
+ 
+-       /*
+-        * Wait until the cpu which brought this one up marked it
+-        * online before enabling interrupts. If we don't do that then
+-        * we can end up waking up the softirq thread before this cpu
+-        * reached the active state, which makes the scheduler unhappy
+-        * and schedule the softirq thread on the wrong cpu. This is
+-        * only observable with forced threaded interrupts, but in
+-        * theory it could also happen w/o them. It's just way harder
+-        * to achieve.
+-        */
+-       while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
+-               cpu_relax();
+-
+        /* enable local interrupts */
+        local_irq_enable();
+ 
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 2060c6e..6bf1fd3 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -640,8 +640,10 @@ void set_cpu_present(unsigned int cpu, bool present)
+ 
+ void set_cpu_online(unsigned int cpu, bool online)
+ {
+-       if (online)
++       if (online) {
+                cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
++               cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
++       }
+        else
+                cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
+ }
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b342f57..ef97881 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5381,7 +5381,6 @@ static int __cpuinit sched_cpu_active(struct notifier_block *nfb,
+                                      unsigned long action, void *hcpu)
+ {
+        switch (action & ~CPU_TASKS_FROZEN) {
+-       case CPU_ONLINE:
+        case CPU_DOWN_FAILED:
+                set_cpu_active((long)hcpu, true);
+                return NOTIFY_OK;
 
-MULT_ROUND_UP yields multiples of 'rate' plus an incrementing value (m
-- 1).  Without that incrementing value added to the rate passed into
-__clk_round_rate the for loop above will always max out the divider.
-To illustrate:
-
-The rate we want is 300MHz.  Without MULT_ROUND_UP the for loop will
-start yielding these combinations:
-
-__clk_round_rate(parent, 300MHz), divide-by-1
-__clk_round_rate(parent, 600MHz), divide-by-2
-__clk_round_rate(parent, 900MHz), divide-by-3
-__clk_round_rate(parent, 1200MHz), divide-by-4
-...etc...
-
-These all yield the desired 300MHz for our divider so it just keeps
-going until you max out the divider and requests some crazy rate for
-the parent.  On most hardware that I am aware of it is desirable to
-keep the divider as low as possible so the change to the conditional
-prevents us from overwriting best every single time while keeping the
-divider low.  So yes, it is an optimization, but it is also quite
-necessary without MULT_ROUND_UP.
-
-Anyways I've kept MULT_ROUND_UP exactly as-is with the exception that
-I've added that small optimization to keep dividers low.  I hope there
-are no objections to that.
-
-Regards,
-Mike
-
->
-> Sascha
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
