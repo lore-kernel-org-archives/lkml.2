@@ -1,194 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759095Ab2CPDvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:51:32 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:8889 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756577Ab2CPDvP (ORCPT
+	id S1031542Ab2CPDyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:54:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56559 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031128Ab2CPDyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:51:15 -0400
-X-AuditID: cbfee60d-b7cbaae00000452e-64-4f62b8b2ef35
-Date: Fri, 16 Mar 2012 03:51:14 +0000 (GMT)
-From: Yong-Sul Oh <yongsul96.oh@samsung.com>
-Subject: Fwd: Re: [PATCH] USB: Gadget: Composite: Added error handling codes to
- prevent a memory leak case when the configuration's bind function failed
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Yong-Sul Oh <yongsul96.oh@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: yongsul96.oh@samsung.com
-MIME-version: 1.0
-X-MTR: 20120316034841659@yongsul96.oh
-Msgkey: 20120316034841659@yongsul96.oh
-X-EPLocale: ko_KR.utf-8
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120316013931122@yongsul96.oh
-X-ParentMTR: 20120316013931122@yongsul96.oh
-Content-type: text/plain; charset=utf-8
-MIME-version: 1.0
-Message-id: <15586286.198201331869871111.JavaMail.weblogic@epml26>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 15 Mar 2012 23:54:03 -0400
+Message-ID: <1331870033.13760.2.camel@phoenix>
+Subject: [PATCH RFT] watchdog: Convert txx9wdt driver to watchdog framework
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Atsushi Nemoto <anemo@mba.ocn.ne.jp>, Ralf Baechle <ralf@linux-mips.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Date: Fri, 16 Mar 2012 11:53:53 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2G3po9r008516
 
-Dear Michal Nazarewicz
+This patch converts txx9wdt driver to watchdog framework.
+Also use devm_* APIs to save a few error handling code.
 
-I'm very thank you for your comments about this patch.
-And I think you might mis-understand my mention about this patch.
-(Becasue i'm not native english speaker)
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/watchdog/txx9wdt.c |  155 +++++++++++---------------------------------
+ 1 files changed, 37 insertions(+), 118 deletions(-)
 
-My point is that,
- if the next function(second or third) binding is failed,
-  all already added functions that successfully added by making instance are useless functions
-  and these "useless function instances" are make "memory leak situation" because the following codes
- (by following codes, composite-FW or gadget-FW cannot handle it anymore)
-
-    694) list_del(&config->list);
-    695) config->cdev = NULL;
-   (original codes of composite.c)
-
->Also, should this be handled in usb_gadget_probe_driver() instead?  Ie. on error
->recovery path, should usb_gadget_probe_driver() call usb_gadget_remove_driver()?
+diff --git a/drivers/watchdog/txx9wdt.c b/drivers/watchdog/txx9wdt.c
+index d02804c..53f1b17 100644
+--- a/drivers/watchdog/txx9wdt.c
++++ b/drivers/watchdog/txx9wdt.c
+@@ -15,9 +15,7 @@
+ #include <linux/types.h>
+ #include <linux/miscdevice.h>
+ #include <linux/watchdog.h>
+-#include <linux/fs.h>
+ #include <linux/init.h>
+-#include <linux/uaccess.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/err.h>
+@@ -43,20 +41,19 @@ MODULE_PARM_DESC(nowayout,
+ #define WD_TIMER_CLK	(clk_get_rate(txx9_imclk) / (2 << WD_TIMER_CCD))
+ #define WD_MAX_TIMEOUT	((0xffffffff >> (32 - TXX9_TIMER_BITS)) / WD_TIMER_CLK)
  
- => the usb_gadget_remove_driver() cannot handle it because the configuration (that has next function binding failure)
-    was already separated from "cdev" by the 694 & 695 line of composite.c
-
->In particular, if I'm not mistaken, for (some?) gadgets with two configurations
->(like g_multi), if the second configuration fails, the first one will not get
->removed, so the memory will still leak, no?
-
- => you're right , but this your mention case is different with the "memory leak situation" as already mentioned for my patch
- Because your mention case can be freed later(because first one doesn't separated from "cdev") but my case cannot free it
-
-
-Best regards,  
-Yongsul Oh
-------- Original Message -------
-Sender : Michal Nazarewicz<mina86@mina86.com>
-Date : 2012-03-15 17:19 (GMT+09:00)
-Title : Re: [PATCH] USB: Gadget: Composite: Added error handling codes to prevent a memory leak case when the configuration's bind function failed
-
-On Thu, 15 Mar 2012 02:23:55 +0100, wrote:
->  In some usb gadget driver, for example usb gadget serial driver(serial.c),
-> multifunction composite driver(multi,c), nokia composite gadget driver(nokia.c),
-> HID composite driver(hid.c), CDC composite driver(cdc2.c).., the configuration's
-> bind function by called the 'usb_add_config()' has multiple bind config functions
-> for each functionality, for example cdc2 configuration bind function -'cdc_do_config()'
-> has two functionality bind config functions -'ecm_bind_config()' & 'acm_bind_config()'
-> in CDC composite driver.
->  In each functionality bind config function, new instance for each functionality is
-> allocated & initialized by 'kzalloc()' ,and finally the new instance is added by
-> 'usb_add_function()'. After 'usb_add_function' state, already created the instance
-> is only handled by its configuration & freed from functionality unbind function.
->  So, If an error occurred during the second functionality bind config state, for example
-> an error occurred at 'acm_bind_config()' after succeeding 'ecm_bind_function()',
-> The created instance by 'acm_bind_config()' cannot be freed.
-> And it makes memory leak situation.
-
-It may be my poor English skills, but this is very hard to read.
-
-Also, should this be handled in usb_gadget_probe_driver() instead?  Ie. on error
-recovery path, should usb_gadget_probe_driver() call usb_gadget_remove_driver()?
-
-In particular, if I'm not mistaken, for (some?) gadgets with two configurations
-(like g_multi), if the second configuration fails, the first one will not get
-removed, so the memory will still leak, no?
-
-> Signed-off-by: yongsul96.oh@samsung.com 
-> ---
->  drivers/usb/gadget/composite.c |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-> index baaebf2..4cb1801 100644
-> --- a/drivers/usb/gadget/composite.c
-> +++ b/drivers/usb/gadget/composite.c
-> @@ -737,6 +737,19 @@ int usb_add_config(struct usb_composite_dev *cdev,
-> status = bind(config);
->   if (status < 0) {
-> + while (!list_empty(&config->functions)) {
-> + struct usb_function *f;
-> +
-> + f = list_first_entry(&config->functions,
-> + struct usb_function, list);
-> + list_del(&f->list);
-> + if (f->unbind) {
-> + DBG(cdev, "unbind function '%s'/%p\n",
-> + f->name, f);
-> + f->unbind(config, f);
-> + /* may free memory for "f" */
-> + }
-> + }
->   list_del(&config->list);
->   config->cdev = NULL;
->   } else {
-
-
+-static unsigned long txx9wdt_alive;
+-static int expect_close;
+ static struct txx9_tmr_reg __iomem *txx9wdt_reg;
+ static struct clk *txx9_imclk;
+ static DEFINE_SPINLOCK(txx9_lock);
+ 
+-static void txx9wdt_ping(void)
++static int txx9wdt_ping(struct watchdog_device *wdt_dev)
+ {
+ 	spin_lock(&txx9_lock);
+ 	__raw_writel(TXx9_TMWTMR_TWIE | TXx9_TMWTMR_TWC, &txx9wdt_reg->wtmr);
+ 	spin_unlock(&txx9_lock);
++	return 0;
+ }
+ 
+-static void txx9wdt_start(void)
++static int txx9wdt_start(struct watchdog_device *wdt_dev)
+ {
+ 	spin_lock(&txx9_lock);
+ 	__raw_writel(WD_TIMER_CLK * timeout, &txx9wdt_reg->cpra);
+@@ -66,120 +63,44 @@ static void txx9wdt_start(void)
+ 		     &txx9wdt_reg->tcr);
+ 	__raw_writel(TXx9_TMWTMR_TWIE | TXx9_TMWTMR_TWC, &txx9wdt_reg->wtmr);
+ 	spin_unlock(&txx9_lock);
++	return 0;
+ }
+ 
+-static void txx9wdt_stop(void)
++static int txx9wdt_stop(struct watchdog_device *wdt_dev)
+ {
+ 	spin_lock(&txx9_lock);
+ 	__raw_writel(TXx9_TMWTMR_WDIS, &txx9wdt_reg->wtmr);
+ 	__raw_writel(__raw_readl(&txx9wdt_reg->tcr) & ~TXx9_TMTCR_TCE,
+ 		     &txx9wdt_reg->tcr);
+ 	spin_unlock(&txx9_lock);
+-}
+-
+-static int txx9wdt_open(struct inode *inode, struct file *file)
+-{
+-	if (test_and_set_bit(0, &txx9wdt_alive))
+-		return -EBUSY;
+-
+-	if (__raw_readl(&txx9wdt_reg->tcr) & TXx9_TMTCR_TCE) {
+-		clear_bit(0, &txx9wdt_alive);
+-		return -EBUSY;
+-	}
+-
+-	if (nowayout)
+-		__module_get(THIS_MODULE);
+-
+-	txx9wdt_start();
+-	return nonseekable_open(inode, file);
+-}
+-
+-static int txx9wdt_release(struct inode *inode, struct file *file)
+-{
+-	if (expect_close)
+-		txx9wdt_stop();
+-	else {
+-		pr_crit("Unexpected close, not stopping watchdog!\n");
+-		txx9wdt_ping();
+-	}
+-	clear_bit(0, &txx9wdt_alive);
+-	expect_close = 0;
+ 	return 0;
+ }
+ 
+-static ssize_t txx9wdt_write(struct file *file, const char __user *data,
+-			     size_t len, loff_t *ppos)
++static int txx9wdt_set_timeout(struct watchdog_device *wdt_dev,
++			       unsigned int new_timeout)
+ {
+-	if (len) {
+-		if (!nowayout) {
+-			size_t i;
+-
+-			expect_close = 0;
+-			for (i = 0; i != len; i++) {
+-				char c;
+-				if (get_user(c, data + i))
+-					return -EFAULT;
+-				if (c == 'V')
+-					expect_close = 1;
+-			}
+-		}
+-		txx9wdt_ping();
+-	}
+-	return len;
++	timeout = new_timeout;
++	txx9wdt_stop(wdt_dev);
++	txx9wdt_start(wdt_dev);
++	return 0;
+ }
+ 
+-static long txx9wdt_ioctl(struct file *file, unsigned int cmd,
+-							unsigned long arg)
+-{
+-	void __user *argp = (void __user *)arg;
+-	int __user *p = argp;
+-	int new_timeout;
+-	static const struct watchdog_info ident = {
+-		.options =		WDIOF_SETTIMEOUT |
+-					WDIOF_KEEPALIVEPING |
+-					WDIOF_MAGICCLOSE,
+-		.firmware_version =	0,
+-		.identity =		"Hardware Watchdog for TXx9",
+-	};
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		return copy_to_user(argp, &ident, sizeof(ident)) ? -EFAULT : 0;
+-	case WDIOC_GETSTATUS:
+-	case WDIOC_GETBOOTSTATUS:
+-		return put_user(0, p);
+-	case WDIOC_KEEPALIVE:
+-		txx9wdt_ping();
+-		return 0;
+-	case WDIOC_SETTIMEOUT:
+-		if (get_user(new_timeout, p))
+-			return -EFAULT;
+-		if (new_timeout < 1 || new_timeout > WD_MAX_TIMEOUT)
+-			return -EINVAL;
+-		timeout = new_timeout;
+-		txx9wdt_stop();
+-		txx9wdt_start();
+-		/* Fall */
+-	case WDIOC_GETTIMEOUT:
+-		return put_user(timeout, p);
+-	default:
+-		return -ENOTTY;
+-	}
+-}
++static const struct watchdog_info txx9wdt_info = {
++	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
++	.identity = "Hardware Watchdog for TXx9",
++};
+ 
+-static const struct file_operations txx9wdt_fops = {
+-	.owner		=	THIS_MODULE,
+-	.llseek		=	no_llseek,
+-	.write		=	txx9wdt_write,
+-	.unlocked_ioctl =	txx9wdt_ioctl,
+-	.open		=	txx9wdt_open,
+-	.release	=	txx9wdt_release,
++static const struct watchdog_ops txx9wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = txx9wdt_start,
++	.stop = txx9wdt_stop,
++	.ping = txx9wdt_ping,
++	.set_timeout = txx9wdt_set_timeout,
+ };
+ 
+-static struct miscdevice txx9wdt_miscdev = {
+-	.minor	=	WATCHDOG_MINOR,
+-	.name	=	"watchdog",
+-	.fops	=	&txx9wdt_fops,
++static struct watchdog_device txx9wdt = {
++	.info = &txx9wdt_info,
++	.ops = &txx9wdt_ops,
+ };
+ 
+ static int __init txx9wdt_probe(struct platform_device *dev)
+@@ -201,26 +122,24 @@ static int __init txx9wdt_probe(struct platform_device *dev)
+ 	}
+ 
+ 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		goto exit_busy;
+-	if (!devm_request_mem_region(&dev->dev, res->start, resource_size(res),
+-				     "txx9wdt"))
+-		goto exit_busy;
+-	txx9wdt_reg = devm_ioremap(&dev->dev, res->start, resource_size(res));
+-	if (!txx9wdt_reg)
+-		goto exit_busy;
+-
+-	ret = misc_register(&txx9wdt_miscdev);
+-	if (ret) {
++	txx9wdt_reg = devm_request_and_ioremap(&dev->dev, res);
++	if (!txx9wdt_reg) {
++		ret = -EBUSY;
+ 		goto exit;
+ 	}
+ 
++	txx9wdt.min_timeout = 1;
++	txx9wdt.max_timeout = WD_MAX_TIMEOUT;
++	watchdog_set_nowayout(&txx9wdt, nowayout);
++
++	ret = watchdog_register_device(&txx9wdt);
++	if (ret)
++		goto exit;
++
+ 	pr_info("Hardware Watchdog Timer: timeout=%d sec (max %ld) (nowayout= %d)\n",
+ 		timeout, WD_MAX_TIMEOUT, nowayout);
+ 
+ 	return 0;
+-exit_busy:
+-	ret = -EBUSY;
+ exit:
+ 	if (txx9_imclk) {
+ 		clk_disable(txx9_imclk);
+@@ -231,7 +150,7 @@ exit:
+ 
+ static int __exit txx9wdt_remove(struct platform_device *dev)
+ {
+-	misc_deregister(&txx9wdt_miscdev);
++	watchdog_unregister_device(&txx9wdt);
+ 	clk_disable(txx9_imclk);
+ 	clk_put(txx9_imclk);
+ 	return 0;
+@@ -239,7 +158,7 @@ static int __exit txx9wdt_remove(struct platform_device *dev)
+ 
+ static void txx9wdt_shutdown(struct platform_device *dev)
+ {
+-	txx9wdt_stop();
++	txx9wdt_stop(&txx9wdt);
+ }
+ 
+ static struct platform_driver txx9wdt_driver = {
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Micha≈Ç ‚Äúmina86‚Äù Nazarewicz    (o o)
-ooo +------------------ooO--(_)--Ooo--
+1.7.5.4
 
 
 
-
-
-
- Oh, Yong-Sul
-Engineer
-
-Mobile S/W Platform Lab.
-Telecommunication R&D Center
-Telecommunication Network Business
-
-SAMSUNG ELECTRONICS CO.,LTD
-
-Tel : +82-31-279-0284
-Mobile : +82-10-9530-0284
-Fax : +82-31-279-5521
-E-mail : yongsul96.oh@samsung.com
-
-
-
-
-Copyright‚ìí 2005 Samsung Electronics Co., Ltd. All rights reserved | Confidential
-
-The information contained in this message is confidential and may be legally privileged. The message is intended solely for the addressee(s). If you are not the intended recipient, you are hereby notified that any use, dissemination, or reproduction is strictly prohibited and may be unlawful. If you are not the intended recipient, please contact the sender by return e-mail and destroy all copies of the original message.  
-
-
-
-
-
-
- Oh, Yong-Sul
-Engineer
-
-Mobile S/W Platform Lab.
-Telecommunication R&D Center
-Telecommunication Network Business
-
-SAMSUNG ELECTRONICS CO.,LTD
-
-Tel : +82-31-279-0284
-Mobile : +82-10-9530-0284
-Fax : +82-31-279-5521
-E-mail : yongsul96.oh@samsung.com
-
-
-
-
-Copyright‚ìí 2005 Samsung Electronics Co., Ltd. All rights reserved | Confidential
-
-The information contained in this message is confidential and may be legally privileged. The message is intended solely for the addressee(s). If you are not the intended recipient, you are hereby notified that any use, dissemination, or reproduction is strictly prohibited and may be unlawful. If you are not the intended recipient, please contact the sender by return e-mail and destroy all copies of the original message. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
