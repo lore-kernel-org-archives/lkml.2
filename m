@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946304Ab2CPXsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:48:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946267Ab2CPXkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:40:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946268Ab2CPXkV (ORCPT
+	with ESMTP id S1946121Ab2CPXkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:21 -0400
-Message-Id: <20120316233811.223052904@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:11 -0400
+Message-Id: <20120316233811.672810668@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:17 -0700
+Date: Fri, 16 Mar 2012 16:38:22 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gary Thomas <gary@mlbassoc.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 07/41] [media] omap3isp: ccdc: Fix crash in HS/VS interrupt handler
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 12/41] vfs: fix double put after complete_walk()
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit bd0f2e6da7ea9e225cb2dbd3229e25584b0e9538 upstream.
+commit 097b180ca09b581ef0dc24fbcfc1b227de3875df upstream.
 
-The HS/VS interrupt handler needs to access the pipeline object. It
-erronously tries to get it from the CCDC output video node, which isn't
-necessarily included in the pipeline. This leads to a NULL pointer
-dereference.
+complete_walk() already puts nd->path, no need to do it again at cleanup time.
 
-Fix the bug by getting the pipeline object from the CCDC subdev entity.
+This would result in Oopses if triggered, apparently the codepath is not too
+well exercised.
 
-Reported-by: Gary Thomas <gary@mlbassoc.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/omap3isp/ispccdc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/namei.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/video/omap3isp/ispccdc.c
-+++ b/drivers/media/video/omap3isp/ispccdc.c
-@@ -1406,8 +1406,7 @@ static int __ccdc_handle_stopping(struct
- 
- static void ccdc_hs_vs_isr(struct isp_ccdc_device *ccdc)
- {
--	struct isp_pipeline *pipe =
--		to_isp_pipeline(&ccdc->video_out.video.entity);
-+	struct isp_pipeline *pipe = to_isp_pipeline(&ccdc->subdev.entity);
- 	struct video_device *vdev = ccdc->subdev.devnode;
- 	struct v4l2_event event;
- 
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2238,7 +2238,7 @@ static struct file *do_last(struct namei
+ 	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
+ 	error = complete_walk(nd);
+ 	if (error)
+-		goto exit;
++		return ERR_PTR(error);
+ 	error = -EISDIR;
+ 	if (S_ISDIR(nd->inode->i_mode))
+ 		goto exit;
 
 
