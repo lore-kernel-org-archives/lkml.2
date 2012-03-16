@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161672Ab2CPPWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:22:53 -0400
-Received: from smtp12.mail.ru ([94.100.176.89]:57556 "EHLO smtp12.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161465Ab2CPPWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:22:51 -0400
-From: "Igor Sobinov" <sluge@mail.ru>
-Subject: Question about disk I/O erros statistic
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain;
-	charset="UTF-8"
+	id S1422892Ab2CPPYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:24:50 -0400
+Received: from host171.canaca.com ([67.55.55.225]:60104 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032852Ab2CPPYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 11:24:48 -0400
+Message-ID: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
+Date: Fri, 16 Mar 2012 11:24:47 -0400
+Subject: Building BarGraph with LED subsystem
+From: simon@mungewell.org
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Fri, 16 Mar 2012 19:22:49 +0400
-X-Mailer: Koma-Mail
-Message-Id: <E1S8YzS-0008Rr-2J.sluge-mail-ru@smtp12.mail.ru>
-X-Spam: Not detected
-X-Mras: Ok
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-I have a question about checking disk I/O errors on linux:
+Hi all,
+I have a couple of questions about the (user-land) use of the LED subsystem.
 
-So, I used a solaris OS from oracle for a last period of time and found that it has a interesting option of iostat: -e and -E keys that
-shows HW and SW errors of disk usage, like this:
+I recently offered a patch for controlling the LEDs of the G27 gaming
+wheel, on which the LEDs are arranged in a bar-graph of 5 to show
+simulation RPM. The suggestion was to use the LED subsystem, which this
+patch implements.
 
-from solaris man:
+http://www.spinics.net/lists/linux-input/msg19747.html
 
--e Display device error summary statistics. The
-total errors, hard errors, soft errors, and
-transport errors are displayed.
+Thinking further about how to about how to control this I was wondering
+whether a 'threshold' trigger would be useful. This would allow the use of
+value (uint?) to be compare against a threshold and the LED turned on/off
+automatically.
 
--E Display all device error statistics.
+The main benefit of doing this as a 'trigger' is that we could 'link' (or
+'sync') multiple LEDs to use the same value input, thus making the
+user-land stuff trivial.
 
+Concept - ledtrig-thres would provide the controls:
+   threshold - value to compare against.
+   value - incoming value, if >= threshold LED is lit, if < threshold LED
+is dark.
+   link - 'none' (standalone comparison), or the path to the value of
+another LED's value to use (ie '/sys/leds/my_device::2/value')
 
-
-# iostat -e
----- errors ---
-device s/w h/w trn tot
-dad1 0 0 0 0
-dad2 0 0 0 0
-sd1 0 0 1 1
-nfs1 0 0 0 0
-nfs6 0 0 0 0
-
-# iostat -E
-
-dad1 Soft Errors: 0 Hard Errors: 0 Transport Errors: 0
-Model: XXXXXXXX Revision: 8.01 Serial No: XXXXXXXX
-Size: XXX.00GB <XXX bytes>
-Media Error: 0 Device Not Ready: 0 No Device: 0 Recoverable: 0
-Illegal Request: 0
-
-sd1 Soft Errors: 0 Hard Errors: 0 Transport Errors: 1
-Vendor: XXXXX Product: CDW/DVD XXXX Revision: XXXX Serial No:XXXX
-Size: 0.00GB <0 bytes>
-Media Error: 0 Device Not Ready: 0 No Device: 0 Recoverable: 0
-Illegal Request: 1 Predictive Failure Analysis: 0
+Comments? Is this all too complex?
 
 
-So, this is the great info that is very useful for many purposes, but it is not available on linux(((( Does anybody knows why?
-Is any existing solution on linux that supports this features?
+Also I have a question about the default permissions on the LED controls;
+Is it possible to register LEDs so that users have write permission? At
+present the controls are only accessible as root.
 
+Many thanks,
+Simon.
 
-Regards, Igor
 
