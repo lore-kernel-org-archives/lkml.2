@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab2CPVEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:04:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44877 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab2CPVEl convert rfc822-to-8bit (ORCPT
+	id S1757943Ab2CPVEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:04:52 -0400
+Received: from science.horizon.com ([71.41.210.146]:24073 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757840Ab2CPVEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:04:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWPCZ-2Xjk2fHZfuQC1fm3WpR9BRbgb9RJCDe_KKEKvZQ@mail.gmail.com>
-References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
- <1330570837-26638-29-git-send-email-yinghai@kernel.org> <CAErSpo7JS6N3XzVm=_A-oFF_VpmuQaAG_KagxAOEzpEPnhRP_g@mail.gmail.com>
- <CAE9FiQWPCZ-2Xjk2fHZfuQC1fm3WpR9BRbgb9RJCDe_KKEKvZQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 16 Mar 2012 15:04:19 -0600
-Message-ID: <CAErSpo4GxBP1TRJijsq99jcBbF+JMM-_SfC-9NXCD0B_8yjV7Q@mail.gmail.com>
-Subject: Re: [PATCH 28/36] PCI: Add pci_bus_extend/shrink_top()
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 16 Mar 2012 17:04:48 -0400
+Date: 16 Mar 2012 17:04:46 -0400
+Message-ID: <20120316210446.2198.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: jkosina@suse.cz, linux@horizon.com
+Subject: Re: Oops in ext3_block_to_path.isra.40+0x26/0x11b
+Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+In-Reply-To: <alpine.LNX.2.00.1203161623130.18356@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 2:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Mar 16, 2012 at 12:36 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> I've objected to this before on the grounds that it's not safe to
->> update res->end because res is already linked into the resource tree,
->> but I just noticed another problem.
->>
->> Tree updates are protected by resource_lock, but we don't hold that
->> here.  I'm sure you "know" that this update can't race with any other
->> conflicting resource operations, but its safety certainly is not
->> obvious from the patch.
->>
->> I think a better implementation would be to add something like
->> "resource_extend()" that could live in kernel/resource.c so it could
->> do the appropriate locking and checking.  Such an interface could also
->> be independent of the resource type, which may be useful when doing
->> mem/io resource reassignment.
->
-> Thanks for point it out.
->
-> Let me thinking about it.
->
->>
->> This patch is already in Jesse's linux-next branch (commit
->> c901d4c0407), so I'm leaving it up to you and Jesse to figure out
->> what, if anything, to do about this.
->
-> No, this patch is one in busn_alloc patchset. Jesse did NOT pick that
-> patchset yet.
+> So it might be the culprit. As the reason of the corruption is not yet 
+> understood, it might be that suspend/resume cycle is not necessary 
+> pre-requisite for this to trigger, it might just make it more likely.
 
-Ah, right you are.  I guess I still had your for-pci-root-bus-hotplug
-branch checked out when this occurred to me.  Sorry for the confusion.
+It might just be virtual console switching.  Normally I live in X,
+but I might have switched to a text console for some reason (I don't
+specifically remember doing this, but it's very plausible for me).
 
-Bjorn
+> And the corruption is observed to be indeed several writes of 0x00000000, 
+> so it could easily lead to null pointer dereferences all over the place.
+> 
+> Are you able to reproduce the problem if you turn kernel modesetting off?
+
+Unfortunately, this is the only time it's happened to me with kernel
+modesetting *on*.  Would repeated checksums of a kernel tree be a good
+way to detect random memory stomping?
