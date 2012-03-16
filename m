@@ -1,176 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032498Ab2CPAW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 20:22:29 -0400
-Received: from outmail019.snc4.facebook.com ([66.220.144.153]:34412 "EHLO
-	intmgw004.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1032236Ab2CPAW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 20:22:27 -0400
-From: Arun Sharma <asharma@fb.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        linux-perf-users@vger.kernel.org
-Subject: [PATCH] [RFC] perf: new semantics for callgraph sym filtering
-Date: Thu, 15 Mar 2012 17:22:13 -0700
-Message-Id: <1331857333-5234-1-git-send-email-asharma@fb.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1032503Ab2CPAXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 20:23:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1493 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1032422Ab2CPAXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 20:23:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="139653197"
+Subject: Re: [linux-pm] [PATCH v4] cpuidle: Add a sysfs entry to disable
+ specific C state for debug purpose.
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: shuox.liu@intel.com, Andrew Morton <akpm@linux-foundation.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4F600F78.2060902@intel.com>
+References: <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
+	 <1330998885.1916.89.camel@ymzhang> <20120306052236.GA19416@kroah.com>
+	 <1331013078.1916.103.camel@ymzhang> <20120306143935.GA23346@kroah.com>
+	 <20120312181151.GE14020@sirena.org.uk> <20120312192936.GC24873@kroah.com>
+	 <1331602594.1916.155.camel@ymzhang> <20120313192949.GA8568@kroah.com>
+	 <1331686500.1916.172.camel@ymzhang> <20120314024619.GC22955@kroah.com>
+	 <4F600F78.2060902@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: UMG
+Date: Fri, 16 Mar 2012 08:23:10 +0800
+Message-ID: <1331857390.1916.197.camel@ymzhang>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code takes incoming callchains, computes
-histograms and filters histogram entries based on a
-user specified filter.
+On Wed, 2012-03-14 at 11:24 +0800, ShuoX Liu wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
+> 
+> Some C states of new CPU might be not good. One reason is BIOS might configure
+> them incorrectly. To help developers root cause it quickly, the patch adds a
+> new sysfs entry, so developers could disable specific C state manually.
+> 
+> In addition, C state might have much impact on performance tuning, as it takes
+> much time to enter/exit C states, which might delay interrupt processing. With
+> the new debug option, developers could check if a deep C state could  impact
+> performance and how much impact it could cause.
+> 
+> Also add this option in Documentation/cpuidle/sysfs.txt.
+Andrew,
 
-In the presence of callchains, this may filter by
-leaf function or the parent function, dependening on
-the callgraph ordering params.
+Would you like to merge the new patch into your testing tree? Shuo revised the old
+patches based on all comments from community.
 
-Sometimes users desire the ability to filter
-chains that contain a symbol and then compute
-the inverted callchain.
+Deepthi confirms the patch is useful.
 
-This is more of an attempt to show what is desired.
-It contains an ugly hack involving a global variable
-since I can't access the filter when processing input
-sample events.
+Thanks,
+Yanmin
 
-Sample usage:
+> 
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> Reviewed-by: Yanmin Zhang <yanmin_zhang@intel.com>
+> Reviewed-and-Tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> ---
+> Thanks for all comments in previous mails. Here is the new patch.
+> 
+> ---
+>  Documentation/cpuidle/sysfs.txt  |    5 +++++
+>  drivers/cpuidle/cpuidle.c        |    1 +
+>  drivers/cpuidle/governors/menu.c |    5 ++++-
+>  drivers/cpuidle/sysfs.c          |   37 +++++++++++++++++++++++++++++++++++++
+>  include/linux/cpuidle.h          |    1 +
+>  5 files changed, 48 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/cpuidle/sysfs.txt b/Documentation/cpuidle/sysfs.txt
+> index 50d7b16..9d28a34 100644
+> --- a/Documentation/cpuidle/sysfs.txt
+> +++ b/Documentation/cpuidle/sysfs.txt
+> @@ -36,6 +36,7 @@ drwxr-xr-x 2 root root 0 Feb  8 10:42 state3
+>  /sys/devices/system/cpu/cpu0/cpuidle/state0:
+>  total 0
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
+> +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
+> @@ -45,6 +46,7 @@ total 0
+>  /sys/devices/system/cpu/cpu0/cpuidle/state1:
+>  total 0
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
+> +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
+> @@ -54,6 +56,7 @@ total 0
+>  /sys/devices/system/cpu/cpu0/cpuidle/state2:
+>  total 0
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
+> +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
+> @@ -63,6 +66,7 @@ total 0
+>  /sys/devices/system/cpu/cpu0/cpuidle/state3:
+>  total 0
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
+> +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
+> @@ -72,6 +76,7 @@ total 0
+>  
+> 
+>  * desc : Small description about the idle state (string)
+> +* disable : Option to disable this idle state (bool)
+>  * latency : Latency to exit out of this idle state (in microseconds)
+>  * name : Name of the idle state (string)
+>  * power : Power consumed while in this idle state (in milliwatts)
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 59f4261..7d66d3e 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -197,6 +197,7 @@ static void poll_idle_init(struct cpuidle_driver *drv)
+>  	state->power_usage = -1;
+>  	state->flags = 0;
+>  	state->enter = poll_idle;
+> +	state->disable = 0;
+>  }
+>  #else
+>  static void poll_idle_init(struct cpuidle_driver *drv) {}
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index ad09526..5c17ca1 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -280,7 +280,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  	 * We want to default to C1 (hlt), not to busy polling
+>  	 * unless the timer is happening really really soon.
+>  	 */
+> -	if (data->expected_us > 5)
+> +	if (data->expected_us > 5 &&
+> +		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
+>  		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
+>  
+>  	/*
+> @@ -290,6 +291,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+>  		struct cpuidle_state *s = &drv->states[i];
+>  
+> +		if (s->disable)
+> +			continue;
+>  		if (s->target_residency > data->predicted_us)
+>  			continue;
+>  		if (s->exit_latency > latency_req)
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index 3fe41fe..f0fe0f5 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/sysfs.h>
+>  #include <linux/slab.h>
+>  #include <linux/cpu.h>
+> +#include <linux/capability.h>
+>  
+>  #include "cpuidle.h"
+>  
+> @@ -222,6 +223,9 @@ struct cpuidle_state_attr {
+>  #define define_one_state_ro(_name, show) \
+>  static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444, show, NULL)
+>  
+> +#define define_one_state_rw(_name, show, store) \
+> +static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644, show, store)
+> +
+>  #define define_show_state_function(_name) \
+>  static ssize_t show_state_##_name(struct cpuidle_state *state, \
+>  			 struct cpuidle_state_usage *state_usage, char *buf) \
+> @@ -229,6 +233,21 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+>  	return sprintf(buf, "%u\n", state->_name);\
+>  }
+>  
+> +#define define_store_state_function(_name) \
+> +static ssize_t store_state_##_name(struct cpuidle_state *state, \
+> +		const char *buf, size_t size) \
+> +{ \
+> +	long value; \
+> +	if (!capable(CAP_SYS_ADMIN)) \
+> +		return -EPERM; \
+> +	kstrtol(buf, 0, &value); \
+> +	if (value) \
+> +		state->disable = 1; \
+> +	else \
+> +		state->disable = 0; \
+> +	return size; \
+> +}
+> +
+>  #define define_show_state_ull_function(_name) \
+>  static ssize_t show_state_##_name(struct cpuidle_state *state, \
+>  			struct cpuidle_state_usage *state_usage, char *buf) \
+> @@ -251,6 +270,8 @@ define_show_state_ull_function(usage)
+>  define_show_state_ull_function(time)
+>  define_show_state_str_function(name)
+>  define_show_state_str_function(desc)
+> +define_show_state_function(disable)
+> +define_store_state_function(disable)
+>  
+>  define_one_state_ro(name, show_state_name);
+>  define_one_state_ro(desc, show_state_desc);
+> @@ -258,6 +279,7 @@ define_one_state_ro(latency, show_state_exit_latency);
+>  define_one_state_ro(power, show_state_power_usage);
+>  define_one_state_ro(usage, show_state_usage);
+>  define_one_state_ro(time, show_state_time);
+> +define_one_state_rw(disable, show_state_disable, store_state_disable);
+>  
+>  static struct attribute *cpuidle_state_default_attrs[] = {
+>  	&attr_name.attr,
+> @@ -266,6 +288,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
+>  	&attr_power.attr,
+>  	&attr_usage.attr,
+>  	&attr_time.attr,
+> +	&attr_disable.attr,
+>  	NULL
+>  };
+>  
+> @@ -287,8 +310,22 @@ static ssize_t cpuidle_state_show(struct kobject * kobj,
+>  	return ret;
+>  }
+>  
+> +static ssize_t cpuidle_state_store(struct kobject *kobj,
+> +	struct attribute *attr, const char *buf, size_t size)
+> +{
+> +	int ret = -EIO;
+> +	struct cpuidle_state *state = kobj_to_state(kobj);
+> +	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
+> +
+> +	if (cattr->store)
+> +		ret = cattr->store(state, buf, size);
+> +
+> +	return ret;
+> +}
+> +
+>  static const struct sysfs_ops cpuidle_state_sysfs_ops = {
+>  	.show = cpuidle_state_show,
+> +	.store = cpuidle_state_store,
+>  };
+>  
+>  static void cpuidle_state_sysfs_release(struct kobject *kobj)
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 712abcc..eb150a5 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -45,6 +45,7 @@ struct cpuidle_state {
+>  	unsigned int	exit_latency; /* in US */
+>  	unsigned int	power_usage; /* in mW */
+>  	unsigned int	target_residency; /* in US */
+> +	unsigned int    disable;
+>  
+>  	int (*enter)	(struct cpuidle_device *dev,
+>  			struct cpuidle_driver *drv,
 
-perf record -g
-perf report some-symbol -G -s pid
-
-TODO:
-
-* Remove the ugly hack
-* Keep the chain, but mark the entry as filtered,
-  so we can show filtered samples as a percentage of the
-  total.
-
-Signed-off-by: Arun Sharma <asharma@fb.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-perf-users@vger.kernel.org
----
- tools/perf/builtin-report.c |   11 ++++++++++-
- tools/perf/util/callchain.c |   21 +++++++++++++++++++++
- tools/perf/util/callchain.h |    1 +
- tools/perf/util/hist.c      |    3 +++
- 4 files changed, 35 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 35a86b5..faf3431 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -130,6 +130,9 @@ out:
- 	return err;
- }
- 
-+/* Hack to make the filter string available */
-+const char *symbol_filter_str;
-+
- static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 				      struct addr_location *al,
- 				      struct perf_sample *sample,
-@@ -148,6 +151,12 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	}
- 
- 	cursor = &evsel->hists.callchain_cursor;
-+
-+	if (symbol_conf.use_callchain && symbol_filter_str) {
-+		/* Do the filtering now, rather than later */
-+		if (!callchain_has_symbol(cursor, symbol_filter_str))
-+			return 0;
-+	}
- 	he = __hists__add_entry(&evsel->hists, al, parent,
- 			        cursor, sample->period);
- 	if (he == NULL)
-@@ -311,7 +320,6 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		struct hists *hists = &pos->hists;
- 		const char *evname = event_name(pos);
- 
--		hists->symbol_filter_str = rep->symbol_filter_str;
- 		hists__filter_by_symbol(hists);
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
- 		hists__fprintf(hists, NULL, false, true, 0, 0, stdout);
-@@ -721,6 +729,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 
- 		report.symbol_filter_str = argv[0];
- 	}
-+	symbol_filter_str = report.symbol_filter_str;
- 
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
- 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 2b824a5..a641d6a 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -474,3 +474,24 @@ int callchain_get(struct callchain_cursor *cursor,
- 
- 	return 0;
- }
-+
-+bool callchain_has_symbol(struct callchain_cursor *cursor, const char *sym)
-+{
-+	struct callchain_cursor iter = *cursor;
-+	u64 i;
-+
-+	iter.pos = 0;
-+	iter.curr = iter.first;
-+	for (i = 0; i < cursor->nr; i++) {
-+		struct addr_location al_child;
-+		int err;
-+
-+		err = callchain_get(&iter, &al_child);
-+		if (err)
-+			return false;
-+		if (al_child.sym && (strstr(al_child.sym->name, sym) != NULL))
-+			return true;
-+		callchain_cursor_advance(&iter);
-+	}
-+	return false;
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index dcff6ec..f016847 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -109,6 +109,7 @@ bool ip_callchain__valid(struct ip_callchain *chain,
- 			 const union perf_event *event);
- 
- int callchain_get(struct callchain_cursor *cursor, struct addr_location *al);
-+bool callchain_has_symbol(struct callchain_cursor *cursor, const char *sym);
- 
- /*
-  * Initialize a cursor before adding entries inside, but keep
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 43c0c09..85fec09 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1331,6 +1331,9 @@ void hists__filter_by_thread(struct hists *hists)
- static bool hists__filter_entry_by_symbol(struct hists *hists,
- 					  struct hist_entry *he)
- {
-+	if (symbol_conf.use_callchain)
-+		return false;
-+
- 	if (hists->symbol_filter_str != NULL &&
- 	    (!he->ms.sym || strstr(he->ms.sym->name,
- 				   hists->symbol_filter_str) == NULL)) {
--- 
-1.7.8.4
 
