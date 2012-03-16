@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423100Ab2CPQOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 12:14:07 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36888 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422959Ab2CPQOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 12:14:04 -0400
-Subject: Re: [PATCH v3 1/4] powerpc: Add GE FPGA config option
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1331572380-1064-2-git-send-email-martyn.welch@ge.com>
-Date: Fri, 16 Mar 2012 11:13:38 -0500
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <1EB0BB40-016C-4082-9112-13A0EE0BAEB3@kernel.crashing.org>
-References: <1331572380-1064-1-git-send-email-martyn.welch@ge.com> <1331572380-1064-2-git-send-email-martyn.welch@ge.com>
-To: Martyn Welch <martyn.welch@ge.com>
-X-Mailer: Apple Mail (2.1257)
+	id S1423115Ab2CPQO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 12:14:58 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42681 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab2CPQO4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 12:14:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1203161435530.31619@digraph.polyomino.org.uk>
+References: <20120315192515.GA6585@intel.com>
+	<20120315195000.7E3BE2C0A3@topped-with-meat.com>
+	<CAMe9rOpXRcO6a4cFEU=s1Gjzzt87zvyzuLhAWupc2pOX6az6ig@mail.gmail.com>
+	<4F625570.7050003@cs.ucla.edu>
+	<CAMe9rOpvnhPmpmsLedmOjjYB9SghZiov-cOUi+wrYvKaP+c9pQ@mail.gmail.com>
+	<4F6267B1.3090805@cs.ucla.edu>
+	<CAMe9rOrRdj_ns=rkonB2BwgmZa3KHBHTQQCv0bkH8PQ2UMXtHw@mail.gmail.com>
+	<4F62F152.1040909@cs.ucla.edu>
+	<4F62F786.2070907@cs.ucla.edu>
+	<4F634EA4.9070709@zytor.com>
+	<Pine.LNX.4.64.1203161435530.31619@digraph.polyomino.org.uk>
+Date: Fri, 16 Mar 2012 09:14:55 -0700
+Message-ID: <CAMe9rOpMFbpcOWsXxcUJv3ns3TWS9w5kmryUv-ofePaTU+atHw@mail.gmail.com>
+Subject: Re: x32 and width of blksize_t, suseconds_t
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Paul Eggert <eggert@cs.ucla.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        GNU C Library <libc-alpha@sourceware.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 16, 2012 at 7:45 AM, Joseph S. Myers
+<joseph@codesourcery.com> wrote:
+> On Fri, 16 Mar 2012, H. Peter Anvin wrote:
+>
+>> On 03/16/2012 01:19 AM, Paul Eggert wrote:
+>> > Come to think of it, the proposed x32 patch may have issues
+>> > with blksize_t and suseconds_t as well.  POSIX says that an x32
+>> > implementation must support at least one programming environment
+>> > (presumably settable via a feature test macro) where blksize_t
+>> > and suseconds_t are no wider than 'long'; see
+>> > <http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_types.h.html>.
+>> > But if I understand things correctly, x32 glibc would
+>> > define these to be 'long long'.  This issue affects system
+>> > calls such as 'stat' and 'select'.
+>>
+>> That's just not going to happen, sorry.  Why on Earth is this a
+>> requirement?  It makes no sense whatsoever.
+>
+> It's probably to support code written for C90.  Note that it's the
+> POSIX-conforming system as a whole that is to support such an environment
+> - but it might be an environment that uses the traditional 32-bit or
+> 64-bit ABIs, it needn't be one using the x32 ABI.  "getconf
+> POSIX_V7_WIDTH_RESTRICTED_ENVS" must print the names of the environments
+> meeting this requirement; if one is "POSIX_V7_ILP32_OFF32", for example,
+> then "getconf POSIX_V7_ILP32_OFF32_CFLAGS" will print the flags (maybe
+> -m32) and likewise for _LDFLAGS and _LIBS.  In glibc this means defining
+> appropriate macros in bits/environment.h to give the right flags - and
+> also probably changing posix/confstr.c which has comments saying
+> "Currently this means all environment which the system allows." (the x32
+> patch series may need to adjust this in some way).
+>
 
-On Mar 12, 2012, at 12:12 PM, Martyn Welch wrote:
+I took a look at POSIX getconf.  It only supports one 32bit ABI and one 64bit
+ABI.  I can't find a way to support another 32bit ABI. I decided not to change
+it for x32.  If you use POSIX getconf to select a 32bit ABI, you will get IA32.
 
-> This patch adds the GE_FPGA configuration option. This is being carried
-> out as ground work to allow the PIC and GPIO drivers to be move from the
-> powerpc 86xx platform directory to more general locations to allow them to
-> be used on non-86xx boards and to reduce churn when further boards using
-> these drivers are added.
-> 
-> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
-> ---
-> 
-> v3: Broken out from patch moving PIC and GPIO drivers
-> 
-> arch/powerpc/platforms/86xx/Kconfig  |    7 +++++++
-> arch/powerpc/platforms/86xx/Makefile |    7 ++++---
-> drivers/watchdog/Kconfig             |    2 +-
-> 3 files changed, 12 insertions(+), 4 deletions(-)
-
-applied
-
-- k
+-- 
+H.J.
