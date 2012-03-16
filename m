@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031382Ab2CPQE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 12:04:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:61176 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031294Ab2CPQE0 (ORCPT
+	id S1760963Ab2CPQF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 12:05:28 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:60372 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab2CPQF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 12:04:26 -0400
-Message-ID: <4F63647A.2040306@windriver.com>
-Date: Fri, 16 Mar 2012 11:04:10 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 16 Mar 2012 12:05:26 -0400
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
-Subject: Re: [PATCH 2/4] kgdb: Make gdbstub_exit a nop unless gdb is attached
-References: <cover.1331900215.git.jan.kiszka@siemens.com> <c0c7d3cced4ab0b8b00d452cd9fd99c085fc513e.1331900215.git.jan.kiszka@siemens.com>
-In-Reply-To: <c0c7d3cced4ab0b8b00d452cd9fd99c085fc513e.1331900215.git.jan.kiszka@siemens.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <20323.25792.171143.809563@quad.stoffel.home>
+Date: Fri, 16 Mar 2012 12:05:20 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: simon@mungewell.org
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Building BarGraph with LED subsystem
+In-Reply-To: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
+References: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
+X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2012 07:17 AM, Jan Kiszka wrote:
-> This allows to call gdbstub_exit without worrying if
-> - CONFIG_KGDB is enabled
-> - if an kgdb I/O driver is loaded
-> - if a gdb frontend is currently attached
 
-If you took a look at the alternate patch I sent in the 4 of 4 response, I made a modification for kdb to continue to work properly, namely disconnect and do not emit characters if we are in kdb mode.
+simon> I have a couple of questions about the (user-land) use of the
+simon> LED subsystem.
 
->
-> diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
-> index c22d8c2..5d7ed0a 100644
-> --- a/kernel/debug/gdbstub.c
-> +++ b/kernel/debug/gdbstub.c
-> @@ -1111,6 +1111,9 @@ void gdbstub_exit(int status)
-> unsigned char checksum, ch, buffer[3];
-> int loop;
->
-> + if (!dbg_io_ops || !kgdb_connected)
-> + return;
-> +
-> buffer[0] = 'W';
-> buffer[1] = hex_asc_hi(status);
-> buffer[2] = hex_asc_lo(status);
+simon> I recently offered a patch for controlling the LEDs of the G27 gaming
+simon> wheel, on which the LEDs are arranged in a bar-graph of 5 to show
+simon> simulation RPM. The suggestion was to use the LED subsystem, which this
+simon> patch implements.
 
-I patched against what you originally had there.
+simon> http://www.spinics.net/lists/linux-input/msg19747.html
 
---- a/kernel/debug/gdbstub.c
-+++ b/kernel/debug/gdbstub.c
-@@ -1110,8 +1110,11 @@ void gdbstub_exit(int status)
- {
-        unsigned char checksum, ch, buffer[3];
-        int loop;
-+       if (!kgdb_connected)
-+               return;
-+       kgdb_connected = 0;
- 
--       if (!dbg_io_ops || !kgdb_connected)
-+       if (!dbg_io_ops || dbg_kdb_mode)
-                return;
- 
-        buffer[0] = 'W';
+simon> Thinking further about how to about how to control this I was wondering
+simon> whether a 'threshold' trigger would be useful. This would allow the use of
+simon> value (uint?) to be compare against a threshold and the LED turned on/off
+simon> automatically.
 
----
+simon> The main benefit of doing this as a 'trigger' is that we could 'link' (or
+simon> 'sync') multiple LEDs to use the same value input, thus making the
+simon> user-land stuff trivial.
 
-Depending on what we come to agreement on with patches 2-4 in your series I'll fold the changes into the reboot notifier.
+While making the kernel more complex... esp for a feature which is of
+such limited use.  Do it all in userland, it's easier, you can use
+floating point math, etc.  And to test changes, you don't have to
+recompile a module and unload/reload it, etc.
 
-It is possible to have both the reboot notifier and the low level modifications to the arch specific reboot hooks as a final catch, but I am interested to see what you think about just using the reboot notifier.
+Keeping as much of this in userland is better.
 
-Cheers,
-Jason.
+simon> Also I have a question about the default permissions on the LED
+simon> controls; Is it possible to register LEDs so that users have
+simon> write permission? At present the controls are only accessible
+simon> as root.
+
+udev is the answer here.  You probably want to make it so that the
+LEDs are open to the user logged into the system console or currently
+active Xsession.
+
+John
