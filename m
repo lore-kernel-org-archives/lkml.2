@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946481Ab2CPXnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:43:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946460Ab2CPXlc (ORCPT
+	id S1946440Ab2CPXlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:41:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946408Ab2CPXlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:32 -0400
-Message-Id: <20120316233814.005828186@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:08 -0400
+Message-Id: <20120316233813.264572363@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:48 -0700
+Date: Fri, 16 Mar 2012 16:38:40 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ville Syrjala <syrjala@sci.fi>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 38/41] i2c-algo-bit: Fix spurious SCL timeouts under heavy load
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Jeff Garzik <jgarzik@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 30/41] block, sx8: fix pointer math issue getting fw version
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ville Syrjala <syrjala@sci.fi>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8ee161ce5e0cfc689eb677f227a6248191165fac upstream.
+commit ea5f4db8ece896c2ab9eafa0924148a2596c52e4 upstream.
 
-When the system is under heavy load, there can be a significant delay
-between the getscl() and time_after() calls inside sclhi(). That delay
-may cause the time_after() check to trigger after SCL has gone high,
-causing sclhi() to return -ETIMEDOUT.
+"mem" is type u8.  We need parenthesis here or it screws up the pointer
+math probably leading to an oops.
 
-To fix the problem, double check that SCL is still low after the
-timeout has been reached, before deciding to return -ETIMEDOUT.
-
-Signed-off-by: Ville Syrjala <syrjala@sci.fi>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/algos/i2c-algo-bit.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/block/sx8.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/i2c/algos/i2c-algo-bit.c
-+++ b/drivers/i2c/algos/i2c-algo-bit.c
-@@ -103,8 +103,14 @@ static int sclhi(struct i2c_algo_bit_dat
- 		 * chips may hold it low ("clock stretching") while they
- 		 * are processing data internally.
- 		 */
--		if (time_after(jiffies, start + adap->timeout))
-+		if (time_after(jiffies, start + adap->timeout)) {
-+			/* Test one last time, as we may have been preempted
-+			 * between last check and timeout test.
-+			 */
-+			if (getscl(adap))
-+				break;
- 			return -ETIMEDOUT;
-+		}
- 		cond_resched();
- 	}
- #ifdef DEBUG
+--- a/drivers/block/sx8.c
++++ b/drivers/block/sx8.c
+@@ -1116,7 +1116,7 @@ static inline void carm_handle_resp(stru
+ 			break;
+ 		case MISC_GET_FW_VER: {
+ 			struct carm_fw_ver *ver = (struct carm_fw_ver *)
+-				mem + sizeof(struct carm_msg_get_fw_ver);
++				(mem + sizeof(struct carm_msg_get_fw_ver));
+ 			if (!error) {
+ 				host->fw_ver = le32_to_cpu(ver->version);
+ 				host->flags |= (ver->features & FL_FW_VER_MASK);
 
 
