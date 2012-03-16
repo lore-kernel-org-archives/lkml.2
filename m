@@ -1,237 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031878Ab2CPNjq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 09:39:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37246 "EHLO comal.ext.ti.com"
+	id S1032769Ab2CPNml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 09:42:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761162Ab2CPNiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 09:38:22 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <dmitry.torokhov@gmail.com>, <linux-input@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: <balbi@ti.com>
-Subject: [PATCH 2/2] Input: omap-keypad: dynamically handle register offsets
-Date: Fri, 16 Mar 2012 19:09:19 +0530
-Message-ID: <1331905159-11255-3-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1331905159-11255-1-git-send-email-sourav.poddar@ti.com>
-References: <1331905159-11255-1-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1031249Ab2CPNmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 09:42:38 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4F608A15.9030609@snapgear.com>
+References: <4F608A15.9030609@snapgear.com> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233816.13888.142.stgit@warthog.procyon.org.uk>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: dhowells@redhat.com, paul.gortmaker@windriver.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, arnd@arndb.de, linux-m68k@vger.kernel.org
+Subject: Re: [PATCH 13/35] Disintegrate asm/system.h for M68K [ver #2]
+Date: Fri, 16 Mar 2012 13:42:23 +0000
+Message-ID: <17434.1331905343@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: G, Manjunath Kondaiah <manjugk@ti.com>
 
-Keypad controller register offsets are different for omap4
-and omap5. Handle these offsets through static mapping and
-assign these mappings during run time.
+How about if I insert the attached patch prior?
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: G, Manjunath Kondaiah <manjugk@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+David
 ---
- drivers/input/keyboard/Kconfig        |    6 +-
- drivers/input/keyboard/omap4-keypad.c |  122 ++++++++++++++++++++++++++------
- 2 files changed, 102 insertions(+), 26 deletions(-)
+From: David Howells <dhowells@redhat.com>
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 1379daa..09d7d0b 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -510,10 +510,10 @@ config KEYBOARD_OMAP
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called omap-keypad.
+m68k: Fix xchg/cmpxchg to fail to link if given an inappropriate pointer
+
+Fix the m68k versions of xchg() and cmpxchg() to fail to link if given an
+inappropriately sized pointer rather than BUG()'ing at runtime.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/m68k/include/asm/system.h |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
+
+
+diff --git a/arch/m68k/include/asm/system.h b/arch/m68k/include/asm/system.h
+index 47b01f4..a10c4d1 100644
+--- a/arch/m68k/include/asm/system.h
++++ b/arch/m68k/include/asm/system.h
+@@ -68,6 +68,8 @@ asmlinkage void resume(void);
+ struct __xchg_dummy { unsigned long a[100]; };
+ #define __xg(x) ((volatile struct __xchg_dummy *)(x))
  
--config KEYBOARD_OMAP4
--	tristate "TI OMAP4 keypad support"
-+config KEYBOARD_OMAP4+
-+	tristate "TI OMAP4+ keypad support"
- 	help
--	  Say Y here if you want to use the OMAP4 keypad.
-+	  Say Y here if you want to use the OMAP4+ keypad.
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called omap4-keypad.
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index e809ac0..6872495 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -68,6 +68,11 @@
- 
- #define OMAP4_MASK_IRQSTATUSDISABLE	0xFFFF
- 
-+enum {
-+	KBD_REVISION_OMAP4 = 0,
-+	KBD_REVISION_OMAP5,
-+};
++extern unsigned long __invalid_xchg_size(unsigned long, volatile void *, int);
 +
- struct omap4_keypad {
- 	struct input_dev *input;
- 
-@@ -76,11 +81,79 @@ struct omap4_keypad {
- 
- 	unsigned int rows;
- 	unsigned int cols;
-+	unsigned int revision;
- 	unsigned int row_shift;
- 	unsigned char key_state[8];
- 	unsigned short keymap[];
- };
- 
-+static int kbd_read_irqstatus(struct omap4_keypad *keypad_data, u32 offset)
-+{
-+	if (keypad_data->revision == KBD_REVISION_OMAP4)
-+		return __raw_readl(keypad_data->base + offset);
-+	else if (keypad_data->revision == KBD_REVISION_OMAP5)
-+		return __raw_readl(keypad_data->base + offset + 0x0c);
-+
-+	return -ENODEV;
-+}
-+
-+static int kbd_write_irqstatus(struct omap4_keypad *keypad_data,
-+						u32 offset, u32 value)
-+{
-+	if (keypad_data->revision == KBD_REVISION_OMAP4)
-+		return __raw_writel(value, keypad_data->base + offset);
-+	else if (keypad_data->revision == KBD_REVISION_OMAP5)
-+		return __raw_writel(value, keypad_data->base + offset + 0x0c);
-+
-+	return -ENODEV;
-+}
-+
-+static int kbd_write_irqenable(struct omap4_keypad *keypad_data,
-+						u32 offset, u32 value)
-+{
-+	if (keypad_data->revision == KBD_REVISION_OMAP4)
-+		return __raw_writel(value, keypad_data->base + offset);
-+	else if (keypad_data->revision == KBD_REVISION_OMAP5)
-+		return __raw_writel(value, keypad_data->base + offset + 0x0c);
-+
-+	return -ENODEV;
-+}
-+
-+static int kbd_readl(struct omap4_keypad *keypad_data, u32 offset)
-+{
-+	if (keypad_data->revision == KBD_REVISION_OMAP4)
-+		return __raw_readl(keypad_data->base + offset);
-+	else if (keypad_data->revision == KBD_REVISION_OMAP5)
-+		return __raw_readl(keypad_data->base + offset + 0x10);
-+
-+	return -ENODEV;
-+}
-+
-+static void kbd_writel(struct omap4_keypad *keypad_data, u32 offset, u32 value)
-+{
-+	if (keypad_data->revision == KBD_REVISION_OMAP4)
-+		__raw_writel(value, keypad_data->base + offset);
-+	else if (keypad_data->revision == KBD_REVISION_OMAP5)
-+		__raw_writel(value, keypad_data->base + offset + 0x10);
-+}
-+
-+static int kbd_read_revision(struct omap4_keypad *keypad_data, u32 offset)
-+{
-+	int reg;
-+	reg = __raw_readl(keypad_data->base + offset);
-+	reg &= 0x03 << 30;
-+	reg >>= 30;
-+
-+	switch (reg) {
-+	case 1:
-+		return KBD_REVISION_OMAP5;
-+	case 0:
-+		return KBD_REVISION_OMAP4;
-+	default:
-+		return -ENODEV;
-+	}
-+}
-+
- /* Interrupt handler */
- static irqreturn_t omap4_keypad_interrupt(int irq, void *dev_id)
+ #ifndef CONFIG_RMW_INSNS
+ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int size)
  {
-@@ -91,12 +164,11 @@ static irqreturn_t omap4_keypad_interrupt(int irq, void *dev_id)
- 	u32 *new_state = (u32 *) key_state;
+@@ -92,7 +94,8 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
+ 		x = tmp;
+ 		break;
+ 	default:
+-		BUG();
++		tmp = __invalid_xchg_size(x, ptr, size);
++		break;
+ 	}
  
- 	/* Disable interrupts */
--	__raw_writel(OMAP4_VAL_IRQDISABLE,
--		     keypad_data->base + OMAP4_KBD_IRQENABLE);
-+	kbd_write_irqenable(keypad_data, OMAP4_KBD_IRQENABLE,
-+						OMAP4_VAL_IRQDISABLE);
- 
--	*new_state = __raw_readl(keypad_data->base + OMAP4_KBD_FULLCODE31_0);
--	*(new_state + 1) = __raw_readl(keypad_data->base
--						+ OMAP4_KBD_FULLCODE63_32);
-+	*new_state = kbd_readl(keypad_data, OMAP4_KBD_FULLCODE31_0);
-+	*(new_state + 1) = kbd_readl(keypad_data, OMAP4_KBD_FULLCODE63_32);
- 
- 	for (row = 0; row < keypad_data->rows; row++) {
- 		changed = key_state[row] ^ keypad_data->key_state[row];
-@@ -121,12 +193,13 @@ static irqreturn_t omap4_keypad_interrupt(int irq, void *dev_id)
- 		sizeof(keypad_data->key_state));
- 
- 	/* clear pending interrupts */
--	__raw_writel(__raw_readl(keypad_data->base + OMAP4_KBD_IRQSTATUS),
--			keypad_data->base + OMAP4_KBD_IRQSTATUS);
-+	kbd_write_irqstatus(keypad_data, OMAP4_KBD_IRQSTATUS,
-+			kbd_read_irqstatus(keypad_data, OMAP4_KBD_IRQSTATUS));
- 
- 	/* enable interrupts */
--	__raw_writel(OMAP4_DEF_IRQENABLE_EVENTEN | OMAP4_DEF_IRQENABLE_LONGKEY,
--			keypad_data->base + OMAP4_KBD_IRQENABLE);
-+	kbd_write_irqenable(keypad_data, OMAP4_KBD_IRQENABLE,
-+			OMAP4_DEF_IRQENABLE_EVENTEN |
-+				OMAP4_DEF_IRQENABLE_LONGKEY);
- 
- 	return IRQ_HANDLED;
+ 	local_irq_restore(flags);
+@@ -102,7 +105,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
+ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int size)
+ {
+ 	switch (size) {
+-	    case 1:
++	case 1:
+ 		__asm__ __volatile__
+ 			("moveb %2,%0\n\t"
+ 			 "1:\n\t"
+@@ -110,7 +113,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
+ 			 "jne 1b"
+ 			 : "=&d" (x) : "d" (x), "m" (*__xg(ptr)) : "memory");
+ 		break;
+-	    case 2:
++	case 2:
+ 		__asm__ __volatile__
+ 			("movew %2,%0\n\t"
+ 			 "1:\n\t"
+@@ -118,7 +121,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
+ 			 "jne 1b"
+ 			 : "=&d" (x) : "d" (x), "m" (*__xg(ptr)) : "memory");
+ 		break;
+-	    case 4:
++	case 4:
+ 		__asm__ __volatile__
+ 			("movel %2,%0\n\t"
+ 			 "1:\n\t"
+@@ -126,6 +129,9 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
+ 			 "jne 1b"
+ 			 : "=&d" (x) : "d" (x), "m" (*__xg(ptr)) : "memory");
+ 		break;
++	default:
++		x = __invalid_xchg_size(x, ptr, size);
++		break;
+ 	}
+ 	return x;
  }
-@@ -139,16 +212,19 @@ static int omap4_keypad_open(struct input_dev *input)
+@@ -135,6 +141,9 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
  
- 	disable_irq(keypad_data->irq);
+ #define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
  
--	__raw_writel(OMAP4_VAL_FUNCTIONALCFG,
--			keypad_data->base + OMAP4_KBD_CTRL);
--	__raw_writel(OMAP4_VAL_DEBOUNCINGTIME,
--			keypad_data->base + OMAP4_KBD_DEBOUNCINGTIME);
--	__raw_writel(OMAP4_VAL_IRQDISABLE,
--			keypad_data->base + OMAP4_KBD_IRQSTATUS);
--	__raw_writel(OMAP4_DEF_IRQENABLE_EVENTEN | OMAP4_DEF_IRQENABLE_LONGKEY,
--			keypad_data->base + OMAP4_KBD_IRQENABLE);
--	__raw_writel(OMAP4_DEF_WUP_EVENT_ENA | OMAP4_DEF_WUP_LONG_KEY_ENA,
--			keypad_data->base + OMAP4_KBD_WAKEUPENABLE);
-+	keypad_data->revision = kbd_read_revision(keypad_data,
-+			OMAP4_KBD_REVISION);
-+	kbd_writel(keypad_data, OMAP4_KBD_CTRL,
-+			OMAP4_VAL_FUNCTIONALCFG);
-+	kbd_writel(keypad_data, OMAP4_KBD_DEBOUNCINGTIME,
-+			OMAP4_VAL_DEBOUNCINGTIME);
-+	kbd_write_irqstatus(keypad_data, OMAP4_KBD_IRQSTATUS,
-+			OMAP4_VAL_IRQDISABLE);
-+	kbd_write_irqenable(keypad_data, OMAP4_KBD_IRQENABLE,
-+			OMAP4_DEF_IRQENABLE_EVENTEN |
-+				OMAP4_DEF_IRQENABLE_LONGKEY);
-+	kbd_writel(keypad_data, OMAP4_KBD_WAKEUPENABLE,
-+			OMAP4_DEF_WUP_EVENT_ENA | OMAP4_DEF_WUP_LONG_KEY_ENA);
- 
- 	enable_irq(keypad_data->irq);
- 
-@@ -162,12 +238,12 @@ static void omap4_keypad_close(struct input_dev *input)
- 	disable_irq(keypad_data->irq);
- 
- 	/* Disable interrupts */
--	__raw_writel(OMAP4_VAL_IRQDISABLE,
--		     keypad_data->base + OMAP4_KBD_IRQENABLE);
-+	kbd_write_irqenable(keypad_data, OMAP4_KBD_IRQENABLE,
-+			OMAP4_VAL_IRQDISABLE);
- 
- 	/* clear pending interrupts */
--	__raw_writel(__raw_readl(keypad_data->base + OMAP4_KBD_IRQSTATUS),
--			keypad_data->base + OMAP4_KBD_IRQSTATUS);
-+	kbd_write_irqstatus(keypad_data, OMAP4_KBD_IRQSTATUS,
-+			kbd_read_irqstatus(keypad_data, OMAP4_KBD_IRQSTATUS));
- 
- 	enable_irq(keypad_data->irq);
- 
--- 
-1.7.1
-
++extern unsigned long __invalid_cmpxchg_size(volatile void *,
++					    unsigned long, unsigned long, int);
++
+ /*
+  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+  * store NEW in MEM.  Return the initial value in MEM.  Success is
+@@ -162,6 +171,9 @@ static inline unsigned long __cmpxchg(volatile void *p, unsigned long old,
+ 				      : "=d" (old), "=m" (*(int *)p)
+ 				      : "d" (new), "0" (old), "m" (*(int *)p));
+ 		break;
++	default:
++		old = __invalid_cmpxchg_size(p, old, new, size);
++		break;
+ 	}
+ 	return old;
+ }
