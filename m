@@ -1,277 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032270Ab2CPWvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 18:51:21 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36948 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031562Ab2CPWvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 18:51:18 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] [RFC] Range tree implementation
-Date: Fri, 16 Mar 2012 15:51:06 -0700
-Message-Id: <1331938267-13583-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
-References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031622-5518-0000-0000-0000030393F2
+	id S1161990Ab2CPWxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 18:53:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49698 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161971Ab2CPWw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 18:52:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
+Date: Fri, 16 Mar 2012 23:57:10 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203162319.53460.rjw@sisk.pl> <201203162325.56303.chunkeey@googlemail.com>
+In-Reply-To: <201203162325.56303.chunkeey@googlemail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203162357.10770.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After Andrew suggested something like his mumbletree idea
-to better store a list of ranges, I worked on a few different
-approaches, and this is what I've finally managed to get working.
+On Friday, March 16, 2012, Christian Lamparter wrote:
+> On Friday 16 March 2012 23:19:53 Rafael J. Wysocki wrote:
+> > > On 03/04/2012 01:52 AM, Christian Lamparter wrote:
+> > > 
+> > > > During resume, the userhelper might not be available. However for
+> > > > drivers which use the request_firmware_nowait interface, this will
+> > > > only lead to a pointless WARNING and a device which no longer works
+> > > > after the resume [since it couldn't get the firmware, because the
+> > > > userhelper was not available to take the request].
+> > > > 
+> > > > In order to solve this "chicken or egg" dilemma, the code now
+> > > > retries _nowait requests at one second intervals until the
+> > > > "loading_timeout" time is up.
+> > > > 
+> > > > ---
+> > > > I'm aware about the previous "request_firmware* in probe" discussions.
+> > > > Unfortunately, the hardware needs firmware so there is no other way
+> > > > around it. So please, I just wanted to know what the general opinion
+> > > > about the idea behind this patch is.
+> > 
+> > BTW, I wonder what comments on this patch were posted?
+> Only Alan Cox was kind enough to drop me a few words.
+> 
+> Why? Do you think it is actually sane from a specific POV?
+> [Don't tell me you do :D !]
 
-I suspect range-tree isn't a totally accurate name, but I
-couldn't quite make out the difference between range trees
-and interval trees, so I just picked one to call it. Do
-let me know if you have a better name.
+I don't think it's really wrong.
 
-The idea of storing ranges in a tree is nice, but has a number
-of complications. When adding a range, its possible that a
-large range will consume and merge a number of smaller ranges.
-When removing a range, its possible you may end up splitting an
-existing range, causing one range to become two. This makes it
-very difficult to provide generic list_head like behavior, as
-the parent structures would need to be duplicated and removed,
-and that has lots of memory ownership issues.
+I agree that the WARN_ON() isn't really useful in the request_firmware_nowait()
+case, because the user of that doesn't really know when exactly the firmware is
+going to be requested, so it can't really do anything about the warning.
 
-So, this is a much simplified and more list_head like
-implementation. You can add a node to a tree, or remove a node
-to a tree, but the generic implementation doesn't do the
-merging or splitting for you. But it does provide helpers to
-find overlapping and adjacent ranges.
+Moreover, failures of request_firmware_nowait() just because it happens to
+race with system suspend (or something of that kind), just because of "bad"
+timing, aren't really useful either.
 
-Andrew also really wanted this range-tree implementation to be
-resuable so we don't duplicate the file locking logic. I'm not
-totally convinced that the requirements between the volatile
-ranges and file locking are really equivelent, but this reduced
-impelementation may make it possible.
+So, I think it makes sense for it to wait until the firmware can be loaded.
 
-Do let me know what you think or if you have other ideas for
-better ways to do the same.
+I'd do that a bit differently, though, for example like in the appended patch
+(untested).
 
-Changelog:
-v2:
-* Reworked code to use an rbtree instead of splaying
+Thanks,
+Rafael
 
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Android Kernel Team <kernel-team@android.com>
-CC: Robert Love <rlove@google.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Hugh Dickins <hughd@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Neil Brown <neilb@suse.de>
-CC: Andrea Righi <andrea@betterlinux.com>
-CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/rangetree.h |   53 +++++++++++++++++++++++
- lib/Makefile              |    2 +-
- lib/rangetree.c           |  105 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 159 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/rangetree.h
- create mode 100644 lib/rangetree.c
+ drivers/base/firmware_class.c |   31 +++++++++++++++++++++++++++----
+ 1 file changed, 27 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/rangetree.h b/include/linux/rangetree.h
-new file mode 100644
-index 0000000..ca03821
---- /dev/null
-+++ b/include/linux/rangetree.h
-@@ -0,0 +1,53 @@
-+#ifndef _LINUX_RANGETREE_H
-+#define _LINUX_RANGETREE_H
-+
-+#include <linux/types.h>
-+#include <linux/rbtree.h>
-+
-+struct range_tree_node {
-+	struct rb_node rb;
-+	u64 start;
-+	u64 end;
-+};
-+
-+struct range_tree_root {
-+	struct rb_root head;
-+};
-+
-+static inline void range_tree_init(struct range_tree_root *root)
-+{
-+	root->head = RB_ROOT;
-+}
-+
-+static inline void range_tree_node_init(struct range_tree_node *node)
-+{
-+	rb_init_node(&node->rb);
-+	node->start = 0;
-+	node->end = 0;
-+}
-+
-+static inline int range_tree_empty(struct range_tree_root *root)
-+{
-+	return RB_EMPTY_ROOT(&root->head);
-+}
-+
-+static inline
-+struct range_tree_node *range_tree_root_node(struct range_tree_root *root)
-+{
-+	struct range_tree_node *ret;
-+	ret = container_of(root->head.rb_node, struct range_tree_node, rb);
-+	return ret;
-+}
-+
-+extern struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
-+							 u64 start, u64 end);
-+extern struct range_tree_node *range_tree_in_range_adjacent(
-+						struct range_tree_root *root,
-+							 u64 start, u64 end);
-+extern void range_tree_add(struct range_tree_root *root,
-+						struct range_tree_node *node);
-+extern void range_tree_remove(struct range_tree_root *root,
-+						struct range_tree_node *node);
-+#endif
-+
-+
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..f43ef0d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o rangetree.o
+Index: linux/drivers/base/firmware_class.c
+===================================================================
+--- linux.orig/drivers/base/firmware_class.c
++++ linux/drivers/base/firmware_class.c
+@@ -20,6 +20,7 @@
+ #include <linux/highmem.h>
+ #include <linux/firmware.h>
+ #include <linux/slab.h>
++#include <linux/delay.h>
  
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/rangetree.c b/lib/rangetree.c
-new file mode 100644
-index 0000000..0f6208a
---- /dev/null
-+++ b/lib/rangetree.c
-@@ -0,0 +1,105 @@
-+#include <linux/rangetree.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
+ #define to_dev(obj) container_of(obj, struct device, kobj)
+ 
+@@ -535,10 +536,31 @@ static int _request_firmware(const struc
+ 
+ 	read_lock_usermodehelper();
+ 
+-	if (WARN_ON(usermodehelper_is_disabled())) {
++	if (nowait) {
++		int limit = loading_timeout * MSEC_PER_SEC;
++		int timeout = 10;  /* in msec */
 +
++		while (usermodehelper_is_disabled()) {
++			read_unlock_usermodehelper();
 +
-+/**
-+ * range_tree_in_range - Returns the first node that overlaps with the
-+ *                       given range
-+ * @root: range_tree root
-+ * @start: range start
-+ * @end: range end
-+ *
-+ */
-+struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
-+						u64 start, u64 end)
-+{
-+	struct rb_node **p = &root->head.rb_node;
-+	struct range_tree_node *candidate;
++			msleep(timeout);
++			if (loading_timeout > 0) {
++				limit -= timeout;
++				if (limit <= 0) {
++					retval = -EBUSY;
++					goto out;
++				}
++			}
++			timeout += timeout;
++			if (loading_timeout > 0 && timeout > limit)
++				timeout = limit;
 +
-+	while (*p) {
-+		candidate = rb_entry(*p, struct range_tree_node, rb);
-+		if (end < candidate->start)
-+			p = &(*p)->rb_left;
-+		else if (start > candidate->end)
-+			p = &(*p)->rb_right;
-+		else
-+			return candidate;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+/**
-+ * range_tree_in_range - Returns the first node that overlaps or is adjacent
-+ *                       with the given range
-+ * @root: range_tree root
-+ * @start: range start
-+ * @end: range end
-+ *
-+ */
-+struct range_tree_node *range_tree_in_range_adjacent(
-+					struct range_tree_root *root,
-+					u64 start, u64 end)
-+{
-+	struct rb_node **p = &root->head.rb_node;
-+	struct range_tree_node *candidate;
-+
-+	while (*p) {
-+		candidate = rb_entry(*p, struct range_tree_node, rb);
-+		if (end+1 < candidate->start)
-+			p = &(*p)->rb_left;
-+		else if (start > candidate->end + 1)
-+			p = &(*p)->rb_right;
-+		else
-+			return candidate;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * range_tree_add - Add a node to a range tree
-+ * @root: range tree to be added to
-+ * @node: range_tree_node to be added
-+ *
-+ * Adds a node to the range tree.
-+ */
-+void range_tree_add(struct range_tree_root *root,
-+					struct range_tree_node *node)
-+{
-+	struct rb_node **p = &root->head.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct range_tree_node *ptr;
-+
-+	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
-+
-+	while (*p) {
-+		parent = *p;
-+		ptr = rb_entry(parent, struct range_tree_node, rb);
-+		if (node->start < ptr->start)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&node->rb, parent, p);
-+	rb_insert_color(&node->rb, &root->head);
-+
-+}
-+
-+
-+/**
-+ * range_tree_remove: Removes a given node from the tree
-+ * @root: root of tree
-+ * @node: Node to be removed
-+ *
-+ * Removes a node and splays the tree
-+ */
-+void range_tree_remove(struct range_tree_root *root,
-+						struct range_tree_node *node)
-+{
-+	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
-+
-+	rb_erase(&node->rb, &root->head);
-+	RB_CLEAR_NODE(&node->rb);
-+}
--- 
-1.7.3.2.146.gca209
-
++			read_lock_usermodehelper();
++		}
++	} else if (WARN_ON(usermodehelper_is_disabled())) {
+ 		dev_err(device, "firmware: %s will not be loaded\n", name);
+ 		retval = -EBUSY;
+-		goto out;
++		goto unlock;
+ 	}
+ 
+ 	if (uevent)
+@@ -547,7 +569,7 @@ static int _request_firmware(const struc
+ 	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
+ 	if (IS_ERR(fw_priv)) {
+ 		retval = PTR_ERR(fw_priv);
+-		goto out;
++		goto unlock;
+ 	}
+ 
+ 	if (uevent) {
+@@ -572,9 +594,10 @@ static int _request_firmware(const struc
+ 
+ 	fw_destroy_instance(fw_priv);
+ 
+-out:
++unlock:
+ 	read_unlock_usermodehelper();
+ 
++out:
+ 	if (retval) {
+ 		release_firmware(firmware);
+ 		*firmware_p = NULL;
