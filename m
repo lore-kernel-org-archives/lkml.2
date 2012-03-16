@@ -1,61 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161031Ab2CPUmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:42:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52611 "EHLO
+	id S1031913Ab2CPUrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:47:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44785 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756765Ab2CPUmQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932273Ab2CPUrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:42:16 -0400
+	Fri, 16 Mar 2012 16:47:53 -0400
+Message-ID: <4F63A6F6.9050506@samsung.com>
+Date: Fri, 16 Mar 2012 13:47:50 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7JS6N3XzVm=_A-oFF_VpmuQaAG_KagxAOEzpEPnhRP_g@mail.gmail.com>
-References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-	<1330570837-26638-29-git-send-email-yinghai@kernel.org>
-	<CAErSpo7JS6N3XzVm=_A-oFF_VpmuQaAG_KagxAOEzpEPnhRP_g@mail.gmail.com>
-Date: Fri, 16 Mar 2012 13:42:16 -0700
-X-Google-Sender-Auth: mLePbymjGCD3YL33e6ikTxkGp_4
-Message-ID: <CAE9FiQWPCZ-2Xjk2fHZfuQC1fm3WpR9BRbgb9RJCDe_KKEKvZQ@mail.gmail.com>
-Subject: Re: [PATCH 28/36] PCI: Add pci_bus_extend/shrink_top()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Subash Patel <subash.ramaswamy@linaro.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
+Subject: Re: [PATCH v12 2/3] ARM: EXYNOS: Change System MMU platform device
+ definitions
+References: <000201cd0286$2e6fbb40$8b4f31c0$%cho@samsung.com> <20120315111227.GA2384@amd.com> <4F61FF1D.5000502@samsung.com> <4F630841.2070307@linaro.org>
+In-Reply-To: <4F630841.2070307@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 12:36 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> I've objected to this before on the grounds that it's not safe to
-> update res->end because res is already linked into the resource tree,
-> but I just noticed another problem.
+Subash Patel wrote:
+> Hi KyongHo, Kukjin,
 >
-> Tree updates are protected by resource_lock, but we don't hold that
-> here.  I'm sure you "know" that this update can't race with any other
-> conflicting resource operations, but its safety certainly is not
-> obvious from the patch.
->
-> I think a better implementation would be to add something like
-> "resource_extend()" that could live in kernel/resource.c so it could
-> do the appropriate locking and checking.  Such an interface could also
-> be independent of the resource type, which may be useful when doing
-> mem/io resource reassignment.
+> On 03/15/2012 08:09 PM, Kukjin Kim wrote:
+>> On 03/15/12 04:12, Joerg Roedel wrote:
+>>> On Thu, Mar 15, 2012 at 05:32:39PM +0900, Cho KyongHo wrote:
+>>
+>> KyongHo, I looked at 'Cho KyongHo <pullip.cho ...>' and 'KyongHo Cho
+>> <pullip.cho ...>' in this series, which one do you want to use?
+>>
+>>>> Handling System MMUs with an identifier is not flexible to manage
+>>>> System MMU platform devices because of the following reasons:
+>>>> 1. A device driver which needs to handle System MMU must know the ID.
+>>>> 2. A System MMU may not present in some implementations of Exynos
+>>>> family.
+>>>> 3. Handling System MMU with IOMMU API does not require an ID.
+>>>>
+>>>> This patch is the result of removing ID of System MMUs.
+>>>> Instead, a device driver that needs to handle its System MMU must
+>>>> use IOMMU API while its descriptor of platform device is given.
+>>>>
+>>>> This patch also includes the following enhancements:
+>>>> - A System MMU device becomes a child if its power domain device.
+>>>> - clkdev
+>>>>
+>>>> Cc: Kukjin Kim<kgene.kim@samsung.com>
+>>>> Signed-off-by: KyongHo Cho<pullip.cho@samsung.com>
+>>>> ---
+>>>> arch/arm/mach-exynos/Kconfig | 10 +-
+>>>> arch/arm/mach-exynos/Makefile | 2 +-
+>>>> arch/arm/mach-exynos/clock-exynos4.c | 79 ++--
+>>>> arch/arm/mach-exynos/clock-exynos4.h | 2 +
+>>>> arch/arm/mach-exynos/clock-exynos4210.c | 11 +
+>>>> arch/arm/mach-exynos/clock-exynos4212.c | 28 ++-
+>>>> arch/arm/mach-exynos/clock-exynos5.c | 90 +++++
+>>>> arch/arm/mach-exynos/dev-sysmmu.c | 457 ++++++++++++----------
+>>>> arch/arm/mach-exynos/include/mach/irqs.h | 25 +-
+>>>> arch/arm/mach-exynos/include/mach/map.h | 38 ++
+>>>> arch/arm/mach-exynos/include/mach/regs-clock.h | 5 +
+>>>> arch/arm/mach-exynos/include/mach/regs-sysmmu.h | 28 --
+>>>> arch/arm/mach-exynos/include/mach/sysmmu.h | 88 +++--
+>>>> arch/arm/mach-exynos/mach-armlex4210.c | 1 -
+>>>> arch/arm/mach-exynos/mach-smdkv310.c | 1 -
+>>>> 15 files changed, 529 insertions(+), 336 deletions(-)
+>>>> delete mode 100644 arch/arm/mach-exynos/include/mach/regs-sysmmu.h
+>>>
+>>> This patch doesn't apply cleanly against upstream Linux (v3.3-rcX).
+>>> Please rebase to upstream and resend. The other 2 patches apply fine.
+>>>
+>>
+>> Yes, as KyoungHo said, this has been created on top of Samsung tree
+>> for-next because this touches many exynos stuff which has been changed
+>> from Samsung tree for upcoming merge window. So if you're ok on this,
+>> 1st patch and this should be sent to upstream via samsung tree even
+>> though I can't find any topic branch for this yet. And if you want
+>> topic branch for your tree, let me know, I can provide it.
+>>
+>> Thanks.
+> Wouldn't it be good to send exynos4 SYSMMU patches now, and send only
+> the exynos5 delta when your for-next(exynos5) changes
 
-Thanks for point it out.
+Hmm, it can be a solution for this, but I'm not sure exynos4 and exynos5 
+can be splitted.
 
-Let me thinking about it.
+> get merged to mainline? Manually editing the patches is really pain-some
 
->
-> This patch is already in Jesse's linux-next branch (commit
-> c901d4c0407), so I'm leaving it up to you and Jesse to figure out
-> what, if anything, to do about this.
+YES, absolutely. Nobody like it.
 
-No, this patch is one in busn_alloc patchset. Jesse did NOT pick that
-patchset yet.
+> and sometimes error-some :( Can this patch in particular
+> be split?
 
-Yinghai
+Hmm...
+
+Now we don't have much time for upcoming merge window, and this should 
+be in linux-next before open merge window.
+
+Anyway Joerg, how do you want to handle this? Do you want to pick up 
+1/2/3 all of them in your tree? If so, 2nd patch should be on top of 
+some samsung topic stuff.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
