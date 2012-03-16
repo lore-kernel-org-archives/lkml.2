@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760069Ab2CPQQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 12:16:16 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36925 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733Ab2CPQQO convert rfc822-to-8bit (ORCPT
+	id S1945925Ab2CPQRM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 12:17:12 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:61368 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031340Ab2CPQRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 12:16:14 -0400
-Subject: Re: [PATCH v3 2/4] gpio: Move GE GPIO driver to reside within GPIO subsystem
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1331572380-1064-3-git-send-email-martyn.welch@ge.com>
-Date: Fri, 16 Mar 2012 11:13:47 -0500
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EE34B23A-E2D0-4F49-B59A-F52B786E9020@kernel.crashing.org>
-References: <1331572380-1064-1-git-send-email-martyn.welch@ge.com> <1331572380-1064-3-git-send-email-martyn.welch@ge.com>
-To: Martyn Welch <martyn.welch@ge.com>
-X-Mailer: Apple Mail (2.1257)
+	Fri, 16 Mar 2012 12:17:10 -0400
+Message-ID: <4F63677B.4040400@windriver.com>
+Date: Fri, 16 Mar 2012 11:16:59 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>
+Subject: Re: [PATCH 3/4] kgdb: Respect that flush op is optional
+References: <cover.1331900215.git.jan.kiszka@siemens.com> <08ddbfb8fbca5fef8adfce3449b5744b0db7b45f.1331900215.git.jan.kiszka@siemens.com> <4F63362E.1090701@windriver.com> <4F6337AE.9000009@siemens.com>
+In-Reply-To: <4F6337AE.9000009@siemens.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2012 07:53 AM, Jan Kiszka wrote:
+> On 2012-03-16 13:46, Jason Wessel wrote:
+>> On 03/16/2012 07:17 AM, Jan Kiszka wrote:
+>>> Not all kgdb I/O drivers implement a flush operation. Adjust
+>>> gdbstub_exit accordingly.
+>> The flush is certainly optional.  The reason we never saw this bug is because it was only used by some code not in the mainline, where it is in fact patched.  The out of tree patch hooked into the reboot notifier.
+>>
+>> It makes me wonder if using the reboot notifier is enough vs the call backs you placed in the critical power off points in your patch [4/4].   I'll respond separately to that thread because there are other folks in the CC line.
+> I looked at other (granted: not kgdb-) archs and found them hooking
+> their machine_xxx handlers. Also, do we trigger the notifier on all
+> reboot/shutdown types?
 
-On Mar 12, 2012, at 12:12 PM, Martyn Welch wrote:
+>From what I can tell, all the safe shutdown types go through notifier, however if you do something like:
 
-> The GE GPIO driver provides basic support (set direction, read/write state)
-> for the GPIO provided on some GE single board computers. This patch moves
-> the driver from the 86xx specific platform directrory to the GPIO subsystem
-> so that it can be used on non-86xx boards.
-> 
-> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
-> ---
-> 
-> v3: Split out from patch moving PIC and GPIO driver. Moving to gpio subsystem
->    instead of sysdev.
-> 
-> arch/powerpc/configs/86xx/gef_ppc9a_defconfig      |    1 +
-> arch/powerpc/configs/86xx/gef_sbc310_defconfig     |    1 +
-> arch/powerpc/configs/86xx/gef_sbc610_defconfig     |    2 ++
-> arch/powerpc/platforms/86xx/Makefile               |    3 +--
-> drivers/gpio/Kconfig                               |   11 +++++++++++
-> drivers/gpio/Makefile                              |    1 +
-> .../86xx/gef_gpio.c => drivers/gpio/gpio-ge.c      |    2 +-
-> 7 files changed, 18 insertions(+), 3 deletions(-)
-> rename arch/powerpc/platforms/86xx/gef_gpio.c => drivers/gpio/gpio-ge.c (98%)
+echo o > /proc/sysrq-trigger
 
-applied
+This will avoid the reboot notifier hook.  It is a question of how aggressively you want to catch all these cases or patch the kernel such that these holes provide notifications.
 
-- k
+>> If we decide to roll with this series, I will definitely merge this patch, else I will remove the code since it is not used except for out of tree patches.
+> Even with a reboot notifier, you still need the logic of gdbstub_exit.
+> So I doubt it makes sense to be removed, rather start to be used - finally.
+
+You are correct about that, and it is actually used in the reboot notifier version.
+
+Jason.
