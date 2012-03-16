@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946556Ab2CPXxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:53:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946192Ab2CPXjP (ORCPT
+	id S1946566Ab2CPXxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:53:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946184Ab2CPXjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:15 -0400
-Message-Id: <20120316233450.214169591@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:39:13 -0400
+Message-Id: <20120316233450.131197745@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:20 -0700
+Date: Fri, 16 Mar 2012 16:35:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 33/38] sfc: Fix assignment of ip_summed for pre-allocated skbs
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 32/38] Block: use a freezable workqueue for disk-event polling
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,51 +26,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit ff3bc1e7527504a93710535611b2f812f3bb89bf upstream.
+commit 62d3c5439c534b0e6c653fc63e6d8c67be3a57b1 upstream.
 
-When pre-allocating skbs for received packets, we set ip_summed =
-CHECKSUM_UNNCESSARY.  We used to change it back to CHECKSUM_NONE when
-the received packet had an incorrect checksum or unhandled protocol.
+This patch (as1519) fixes a bug in the block layer's disk-events
+polling.  The polling is done by a work routine queued on the
+system_nrt_wq workqueue.  Since that workqueue isn't freezable, the
+polling continues even in the middle of a system sleep transition.
 
-Commit bc8acf2c8c3e43fcc192762a9f964b3e9a17748b ('drivers/net: avoid
-some skb->ip_summed initializations') mistakenly replaced the latter
-assignment with a DEBUG-only assertion that ip_summed ==
-CHECKSUM_NONE.  This assertion is always false, but it seems no-one
-has exercised this code path in a DEBUG build.
+Obviously, polling a suspended drive for media changes and such isn't
+a good thing to do; in the case of USB mass-storage devices it can
+lead to real problems requiring device resets and even re-enumeration.
 
-Fix this by moving our assignment of CHECKSUM_UNNECESSARY into
-efx_rx_packet_gro().
+The patch fixes things by creating a new system-wide, non-reentrant,
+freezable workqueue and using it for disk-events polling.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/sfc/rx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/sfc/rx.c
-+++ b/drivers/net/sfc/rx.c
-@@ -155,11 +155,10 @@ static int efx_init_rx_buffers_skb(struc
- 		if (unlikely(!skb))
- 			return -ENOMEM;
- 
--		/* Adjust the SKB for padding and checksum */
-+		/* Adjust the SKB for padding */
- 		skb_reserve(skb, NET_IP_ALIGN);
- 		rx_buf->len = skb_len - NET_IP_ALIGN;
- 		rx_buf->is_page = false;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		rx_buf->dma_addr = pci_map_single(efx->pci_dev,
- 						  skb->data, rx_buf->len,
-@@ -498,6 +497,7 @@ static void efx_rx_packet_gro(struct efx
- 
- 		EFX_BUG_ON_PARANOID(!checksummed);
- 		rx_buf->u.skb = NULL;
-+		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		gro_result = napi_gro_receive(napi, skb);
+---
+ block/genhd.c             |   10 +++++-----
+ include/linux/workqueue.h |    4 ++++
+ kernel/workqueue.c        |    7 ++++++-
+ 3 files changed, 15 insertions(+), 6 deletions(-)
+
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1487,9 +1487,9 @@ static void __disk_unblock_events(struct
+ 	intv = disk_events_poll_jiffies(disk);
+ 	set_timer_slack(&ev->dwork.timer, intv / 4);
+ 	if (check_now)
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
+ 	else if (intv)
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
+ out_unlock:
+ 	spin_unlock_irqrestore(&ev->lock, flags);
+ }
+@@ -1530,7 +1530,7 @@ void disk_check_events(struct gendisk *d
+ 	spin_lock_irqsave(&ev->lock, flags);
+ 	if (!ev->block) {
+ 		cancel_delayed_work(&ev->dwork);
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
  	}
+ 	spin_unlock_irqrestore(&ev->lock, flags);
+ }
+@@ -1568,7 +1568,7 @@ unsigned int disk_clear_events(struct ge
+ 
+ 	/* uncondtionally schedule event check and wait for it to finish */
+ 	disk_block_events(disk);
+-	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
++	queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
+ 	flush_delayed_work(&ev->dwork);
+ 	__disk_unblock_events(disk, false);
+ 
+@@ -1605,7 +1605,7 @@ static void disk_events_workfn(struct wo
+ 
+ 	intv = disk_events_poll_jiffies(disk);
+ 	if (!ev->block && intv)
+-		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
++		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
+ 
+ 	spin_unlock_irq(&ev->lock);
+ 
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -289,12 +289,16 @@ enum {
+  *
+  * system_freezable_wq is equivalent to system_wq except that it's
+  * freezable.
++ *
++ * system_nrt_freezable_wq is equivalent to system_nrt_wq except that
++ * it's freezable.
+  */
+ extern struct workqueue_struct *system_wq;
+ extern struct workqueue_struct *system_long_wq;
+ extern struct workqueue_struct *system_nrt_wq;
+ extern struct workqueue_struct *system_unbound_wq;
+ extern struct workqueue_struct *system_freezable_wq;
++extern struct workqueue_struct *system_nrt_freezable_wq;
+ 
+ extern struct workqueue_struct *
+ __alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -252,11 +252,13 @@ struct workqueue_struct *system_long_wq
+ struct workqueue_struct *system_nrt_wq __read_mostly;
+ struct workqueue_struct *system_unbound_wq __read_mostly;
+ struct workqueue_struct *system_freezable_wq __read_mostly;
++struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_wq);
+ EXPORT_SYMBOL_GPL(system_long_wq);
+ EXPORT_SYMBOL_GPL(system_nrt_wq);
+ EXPORT_SYMBOL_GPL(system_unbound_wq);
+ EXPORT_SYMBOL_GPL(system_freezable_wq);
++EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/workqueue.h>
+@@ -3796,8 +3798,11 @@ static int __init init_workqueues(void)
+ 					    WQ_UNBOUND_MAX_ACTIVE);
+ 	system_freezable_wq = alloc_workqueue("events_freezable",
+ 					      WQ_FREEZABLE, 0);
++	system_nrt_freezable_wq = alloc_workqueue("events_nrt_freezable",
++			WQ_NON_REENTRANT | WQ_FREEZABLE, 0);
+ 	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
+-	       !system_unbound_wq || !system_freezable_wq);
++	       !system_unbound_wq || !system_freezable_wq ||
++		!system_nrt_freezable_wq);
+ 	return 0;
+ }
+ early_initcall(init_workqueues);
 
 
