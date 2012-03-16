@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032299Ab2CPKG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:06:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44998 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab2CPKGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:06:55 -0400
-Date: Fri, 16 Mar 2012 11:06:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ido Yariv <ido@wizery.com>
-cc: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Flush the irq thread on synchronization
-In-Reply-To: <20120315225952.GA18032@WorkStation>
-Message-ID: <alpine.LFD.2.02.1203161102190.2466@ionos>
-References: <1322843052-7166-1-git-send-email-ido@wizery.com> <tip-7140ea1980f2fae9c7aaeac5f6b35317e1389ee6@git.kernel.org> <20120315190755.GA6732@dhcp-26-207.brq.redhat.com> <20120315225952.GA18032@WorkStation>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1032658Ab2CPKHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:07:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932494Ab2CPKHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 06:07:31 -0400
+Date: Fri, 16 Mar 2012 11:07:28 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jan Kara <jack@suse.cz>, George Spelvin <linux@horizon.com>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Oops in ext3_block_to_path.isra.40+0x26/0x11b
+Message-ID: <20120316100728.GA28098@quack.suse.cz>
+References: <20120313133945.4642.qmail@science.horizon.com>
+ <20120316085231.GA24821@quack.suse.cz>
+ <alpine.LNX.2.00.1203161028420.18356@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1203161028420.18356@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Mar 2012, Ido Yariv wrote:
-> On Thu, Mar 15, 2012 at 08:07:56PM +0100, Alexander Gordeev wrote:
-> > Nevertheless, wake_threads_waitq() gets called and desc->threads_active gets
-> > decremented. As result, if desc->threads_active initially was decremented, we
-> > might wrongly wake up the queue while some threaded handler is still running.
+On Fri 16-03-12 10:29:56, Jiri Kosina wrote:
+> On Fri, 16 Mar 2012, Jan Kara wrote:
+> 
+> > > CPU is a Core i3 530, on a Gigabyte motherbord, 4 GB RAM.  No ECC,
+> > > unfortunately, so I can't rule out hardware bit rot.  Distribution is
+> > > a fairly stock Debian/unstable.
+> >   Hmm, is any mounting & unmounting happening during your backup? Because
+> > the oops happened because sb->s_fs_info was NULL. Dissassembly shows:
+> >   16:	48 8b 47 18          	mov    0x18(%rdi),%rax
+> > store sb->s_blocksize into RAX
+> >   1a:	48 8b 8f b0 02 00 00 	mov    0x2b0(%rdi),%rcx
+> > store sb->s_fs_info into RCX
+> >   21:	48 c1 e8 02          	shr    $0x2,%rax
+> > This is division from EXT3_ADDR_PER_BLOCK() - RAX carries 1024 after
+> > division so that looks correct.
 > > 
-> > By contrast, if we choose not to wake up here, we might stuck in
-> > synchronize_irq(). Which is probably better than a fooling synchronize_irq().
+> >   25:	48 85 db             	test   %rbx,%rbx
+> > Now check passed i_block argument.
+> > 
+> >   28:	41 89 c4             	mov    %eax,%r12d
+> >   2b:*	8b b1 94 00 00 00    	mov    0x94(%rcx),%esi     <-- trapping ins
+> > Try to get RCX->s_addr_per_block_bits...
+> > 
+> >  sb->s_fs_info is set when a superblock is mounted and cleared when
+> > superblock gets unmounted and otherwise it is never changed. So most likely
+> > it was some memory corruption clearing that pointer (I wouldn't really
+> > suspect HW here).
+> > 
+> > It somewhat looks like the issue described here:
+> > http://lkml.indiana.edu/hypermail/linux/kernel/1202.3/00132.html
+> > 
+> > Although there we had f_path.dentry (completely different structure) being
+> > NULL. But similarity here is that something stomped NULL over our existing
+> > structure.
+> > 
+> > Linus, Jiri, that bug didn't get resolved, did it?
 > 
-> AFAICT, IRQTF_RUNTHREAD and the desc->threads_active are always modified
-> together:
-> desc->threads_active is incremented if and only if IRQTF_RUNTHREAD is
-> set after being cleared (in irq_wake_thread()).
-> desc->threads_active is decremented in wake_threads_waitq(), which is
-> only called when IRQTF_RUNTHREAD is cleared.
-> 
-> It seems that if we get to this point, either IRQTF_RUNTHREAD is set and
-> desc->threads_active was not decremented, or it is not set.
-> 
-> Do you see any case where the two will be out of sync?
+> I am not aware of anything, but I have a question -- George, did the 
+> machine get suspended/resumed before this happened?
+  And by any chance, do you use i915 driver? Because that one seems to
+cause corruption - see: https://lkml.org/lkml/2012/3/9/217. I believe
+Jiri's corruption is likely caused by that...
 
-There is really no way, that the flag is set when we come out this
-regular exit path.
-
-__free_irq()
-	remove action
-	synchronize_irq()
-	kthread_stop()
-
-So after the action is removed and synchronize_irq() made sure that
-the thread has finished IRQTF_RUNTHREAD cannot be set. Neither can we
-have a stale threads_oneshot bit set from this action.
-
-That's a leftover of the old code and I really did not think it
-through fully and kept the stuff along with paranoid warnings.
-
-I'm going to remove all of it.
-
-Thanks,
-
-	tglx
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
