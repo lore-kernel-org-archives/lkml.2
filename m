@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032709Ab2CPXid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:33 -0400
+	id S1032866Ab2CPXik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:38:40 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946140Ab2CPXi0 (ORCPT
+	with ESMTP id S1032736Ab2CPXif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:38:26 -0400
-Message-Id: <20120316233448.795009692@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:38:35 -0400
+Message-Id: <20120316233449.058356003@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:04 -0700
+Date: Fri, 16 Mar 2012 16:35:07 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Niccol=F2=20Belli?= <darkbasic@linuxsystems.it>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Shreyas N Bhatewara <sbhatewara@vmware.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/38] ipsec: be careful of non existing mac headers
+Subject: [ 20/38] vmxnet3: Fix transport header size
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,130 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-[ Upstream commit 03606895cd98c0a628b17324fd7b5ff15db7e3cd ]
+[ Upstream commit efead8710aad9e384730ecf25eae0287878840d7 ]
 
-Niccolo Belli reported ipsec crashes in case we handle a frame without
-mac header (atm in his case)
+Fix transport header size
 
-Before copying mac header, better make sure it is present.
+Fix the transpoert header size for UDP packets.
 
-Bugzilla reference:  https://bugzilla.kernel.org/show_bug.cgi?id=42809
-
-Reported-by: Niccolò Belli <darkbasic@linuxsystems.it>
-Tested-by: Niccolò Belli <darkbasic@linuxsystems.it>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h       |   10 ++++++++++
- net/ipv4/xfrm4_mode_beet.c   |    5 +----
- net/ipv4/xfrm4_mode_tunnel.c |    6 ++----
- net/ipv6/xfrm6_mode_beet.c   |    6 +-----
- net/ipv6/xfrm6_mode_tunnel.c |    6 ++----
- 5 files changed, 16 insertions(+), 17 deletions(-)
+ drivers/net/vmxnet3/vmxnet3_drv.c |    7 +------
+ drivers/net/vmxnet3/vmxnet3_int.h |    4 ++--
+ 2 files changed, 3 insertions(+), 8 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1370,6 +1370,16 @@ static inline void skb_set_mac_header(st
- }
- #endif /* NET_SKBUFF_DATA_USES_OFFSET */
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -830,13 +830,8 @@ vmxnet3_parse_and_copy_hdr(struct sk_buf
+ 					ctx->l4_hdr_size = ((struct tcphdr *)
+ 					   skb_transport_header(skb))->doff * 4;
+ 				else if (iph->protocol == IPPROTO_UDP)
+-					/*
+-					 * Use tcp header size so that bytes to
+-					 * be copied are more than required by
+-					 * the device.
+-					 */
+ 					ctx->l4_hdr_size =
+-							sizeof(struct tcphdr);
++							sizeof(struct udphdr);
+ 				else
+ 					ctx->l4_hdr_size = 0;
+ 			} else {
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -69,10 +69,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.1.18.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.1.29.0-k"
  
-+static inline void skb_mac_header_rebuild(struct sk_buff *skb)
-+{
-+	if (skb_mac_header_was_set(skb)) {
-+		const unsigned char *old_mac = skb_mac_header(skb);
-+
-+		skb_set_mac_header(skb, -skb->mac_len);
-+		memmove(skb_mac_header(skb), old_mac, skb->mac_len);
-+	}
-+}
-+
- static inline int skb_checksum_start_offset(const struct sk_buff *skb)
- {
- 	return skb->csum_start - skb_headroom(skb);
---- a/net/ipv4/xfrm4_mode_beet.c
-+++ b/net/ipv4/xfrm4_mode_beet.c
-@@ -110,10 +110,7 @@ static int xfrm4_beet_input(struct xfrm_
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01011200
++#define VMXNET3_DRIVER_VERSION_NUM      0x01011D00
  
- 	skb_push(skb, sizeof(*iph));
- 	skb_reset_network_header(skb);
--
--	memmove(skb->data - skb->mac_len, skb_mac_header(skb),
--		skb->mac_len);
--	skb_set_mac_header(skb, -skb->mac_len);
-+	skb_mac_header_rebuild(skb);
- 
- 	xfrm4_beet_make_header(skb);
- 
---- a/net/ipv4/xfrm4_mode_tunnel.c
-+++ b/net/ipv4/xfrm4_mode_tunnel.c
-@@ -66,7 +66,6 @@ static int xfrm4_mode_tunnel_output(stru
- 
- static int xfrm4_mode_tunnel_input(struct xfrm_state *x, struct sk_buff *skb)
- {
--	const unsigned char *old_mac;
- 	int err = -EINVAL;
- 
- 	if (XFRM_MODE_SKB_CB(skb)->protocol != IPPROTO_IPIP)
-@@ -84,10 +83,9 @@ static int xfrm4_mode_tunnel_input(struc
- 	if (!(x->props.flags & XFRM_STATE_NOECN))
- 		ipip_ecn_decapsulate(skb);
- 
--	old_mac = skb_mac_header(skb);
--	skb_set_mac_header(skb, -skb->mac_len);
--	memmove(skb_mac_header(skb), old_mac, skb->mac_len);
- 	skb_reset_network_header(skb);
-+	skb_mac_header_rebuild(skb);
-+
- 	err = 0;
- 
- out:
---- a/net/ipv6/xfrm6_mode_beet.c
-+++ b/net/ipv6/xfrm6_mode_beet.c
-@@ -80,7 +80,6 @@ static int xfrm6_beet_output(struct xfrm
- static int xfrm6_beet_input(struct xfrm_state *x, struct sk_buff *skb)
- {
- 	struct ipv6hdr *ip6h;
--	const unsigned char *old_mac;
- 	int size = sizeof(struct ipv6hdr);
- 	int err;
- 
-@@ -90,10 +89,7 @@ static int xfrm6_beet_input(struct xfrm_
- 
- 	__skb_push(skb, size);
- 	skb_reset_network_header(skb);
--
--	old_mac = skb_mac_header(skb);
--	skb_set_mac_header(skb, -skb->mac_len);
--	memmove(skb_mac_header(skb), old_mac, skb->mac_len);
-+	skb_mac_header_rebuild(skb);
- 
- 	xfrm6_beet_make_header(skb);
- 
---- a/net/ipv6/xfrm6_mode_tunnel.c
-+++ b/net/ipv6/xfrm6_mode_tunnel.c
-@@ -63,7 +63,6 @@ static int xfrm6_mode_tunnel_output(stru
- static int xfrm6_mode_tunnel_input(struct xfrm_state *x, struct sk_buff *skb)
- {
- 	int err = -EINVAL;
--	const unsigned char *old_mac;
- 
- 	if (XFRM_MODE_SKB_CB(skb)->protocol != IPPROTO_IPV6)
- 		goto out;
-@@ -80,10 +79,9 @@ static int xfrm6_mode_tunnel_input(struc
- 	if (!(x->props.flags & XFRM_STATE_NOECN))
- 		ipip6_ecn_decapsulate(skb);
- 
--	old_mac = skb_mac_header(skb);
--	skb_set_mac_header(skb, -skb->mac_len);
--	memmove(skb_mac_header(skb), old_mac, skb->mac_len);
- 	skb_reset_network_header(skb);
-+	skb_mac_header_rebuild(skb);
-+
- 	err = 0;
- 
- out:
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
 
 
