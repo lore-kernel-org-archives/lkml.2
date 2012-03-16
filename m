@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946546Ab2CPXvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:51:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
+	id S1946225Ab2CPXvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:51:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946019Ab2CPXjq (ORCPT
+	with ESMTP id S965525Ab2CPXjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:46 -0400
-Message-Id: <20120316233810.959440427@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:39:40 -0400
+Message-Id: <20120316233810.781249292@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:14 -0700
+Date: Fri, 16 Mar 2012 16:38:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Jeff Moyer <jmoyer@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>
-Subject: [ 04/41] aio: fix the "too late munmap()" race
+        alan@lxorguk.ukuu.org.uk, Kailang Yang <kailang@realtek.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 02/41] ALSA: hda/realtek - Apply the coef-setup only to ALC269VB
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Kailang Yang <kailang@realtek.com>
 
-commit c7b285550544c22bc005ec20978472c9ac7138c6 upstream.
+commit 526af6eb4dc71302f59806e2ccac7793963a7fe0 upstream.
 
-Current code has put_ioctx() called asynchronously from aio_fput_routine();
-that's done *after* we have killed the request that used to pin ioctx,
-so there's nothing to stop io_destroy() waiting in wait_for_all_aios()
-from progressing.  As the result, we can end up with async call of
-put_ioctx() being the last one and possibly happening during exit_mmap()
-or elf_core_dump(), neither of which expects stray munmap() being done
-to them...
+The coef setup in alc269_fill_coef() was designed only for ALC269VB
+model, and this has some bad effects for other ALC269 variants, such
+as turning off the external mic input.  Apply it only to ALC269VB.
 
-We do need to prevent _freeing_ ioctx until aio_fput_routine() is done
-with that, but that's all we care about - neither io_destroy() nor
-exit_aio() will progress past wait_for_all_aios() until aio_fput_routine()
-does really_put_req(), so the ioctx teardown won't be done until then
-and we don't care about the contents of ioctx past that point.
-
-Since actual freeing of these suckers is RCU-delayed, we don't need to
-bump ioctx refcount when request goes into list for async removal.
-All we need is rcu_read_lock held just over the ->ctx_lock-protected
-area in aio_fput_routine().
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -228,12 +228,6 @@ static void __put_ioctx(struct kioctx *c
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2063,12 +2063,16 @@ static int alc_build_controls(struct hda
+  */
  
--static inline void get_ioctx(struct kioctx *kioctx)
--{
--	BUG_ON(atomic_read(&kioctx->users) <= 0);
--	atomic_inc(&kioctx->users);
--}
--
- static inline int try_get_ioctx(struct kioctx *kioctx)
+ static void alc_init_special_input_src(struct hda_codec *codec);
++static int alc269_fill_coef(struct hda_codec *codec);
+ 
+ static int alc_init(struct hda_codec *codec)
  {
- 	return atomic_inc_not_zero(&kioctx->users);
-@@ -609,11 +603,16 @@ static void aio_fput_routine(struct work
- 			fput(req->ki_filp);
+ 	struct alc_spec *spec = codec->spec;
+ 	unsigned int i;
  
- 		/* Link the iocb into the context's free list */
-+		rcu_read_lock();
- 		spin_lock_irq(&ctx->ctx_lock);
- 		really_put_req(ctx, req);
-+		/*
-+		 * at that point ctx might've been killed, but actual
-+		 * freeing is RCU'd
-+		 */
- 		spin_unlock_irq(&ctx->ctx_lock);
-+		rcu_read_unlock();
++	if (codec->vendor_id == 0x10ec0269)
++		alc269_fill_coef(codec);
++
+ 	alc_fix_pll(codec);
+ 	alc_auto_init_amp(codec, spec->init_amp);
  
--		put_ioctx(ctx);
- 		spin_lock_irq(&fput_lock);
- 	}
- 	spin_unlock_irq(&fput_lock);
-@@ -644,7 +643,6 @@ static int __aio_put_req(struct kioctx *
- 	 * this function will be executed w/out any aio kthread wakeup.
- 	 */
- 	if (unlikely(!fput_atomic(req->ki_filp))) {
--		get_ioctx(ctx);
- 		spin_lock(&fput_lock);
- 		list_add(&req->ki_list, &fput_head);
- 		spin_unlock(&fput_lock);
+@@ -5110,8 +5114,12 @@ static const struct alc_model_fixup alc2
+ 
+ static int alc269_fill_coef(struct hda_codec *codec)
+ {
++	struct alc_spec *spec = codec->spec;
+ 	int val;
+ 
++	if (spec->codec_variant != ALC269_TYPE_ALC269VB)
++		return 0;
++
+ 	if ((alc_get_coef0(codec) & 0x00ff) < 0x015) {
+ 		alc_write_coef_idx(codec, 0xf, 0x960b);
+ 		alc_write_coef_idx(codec, 0xe, 0x8817);
 
 
