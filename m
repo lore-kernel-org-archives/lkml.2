@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761852Ab2CPQ51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 12:57:27 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:60928 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423078Ab2CPQ5X (ORCPT
+	id S1423188Ab2CPRCM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:02:12 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:41712 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422649Ab2CPRCL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 12:57:23 -0400
+	Fri, 16 Mar 2012 13:02:11 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Chen Gong (gong.chen@linux.intel.com)" <gong.chen@linux.intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Fri, 16 Mar 2012 13:01:49 -0400
+Subject: [Patch]Introduce get_reason_str() to pstore
+Thread-Topic: [Patch]Introduce get_reason_str() to pstore
+Thread-Index: Ac0Dlj2HPuOwl29EToeTHpI635UcRg==
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E32064CDF@USINDEVS01.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20323.28910.434931.307759@quad.stoffel.home>
-Date: Fri, 16 Mar 2012 12:57:18 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: simon@mungewell.org
-Cc: "John Stoffel" <john@stoffel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Building BarGraph with LED subsystem
-In-Reply-To: <8107d8a0e50b64dd45dc749da87b2c7b.squirrel@mungewell.org>
-References: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
-	<20323.25792.171143.809563@quad.stoffel.home>
-	<8107d8a0e50b64dd45dc749da87b2c7b.squirrel@mungewell.org>
-X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1203160157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "simon" == simon  <simon@mungewell.org> writes:
+Hi,
 
-simon> Also I have a question about the default permissions on the LED
-simon> controls; Is it possible to register LEDs so that users have
-simon> write permission? At present the controls are only accessible
-simon> as root.
->> 
->> udev is the answer here.  You probably want to make it so that the
->> LEDs are open to the user logged into the system console or currently
->> active Xsession.
+Recently, there has been some changes in kmsg_dump() below and they have been applied to linus-tree. 
+ (1) kmsg_dump(KMSG_DUMP_KEXEC) was removed.
+     http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=a3dd3323058d281abd584b15ad4c5b65064d7a61
 
-simon> So what would be the best way to achieve this (once the code
-simon> gets into kernel)? I mean so that 'Jane Doe' get the LEDs
-simon> working when she plugs in her wheel...
+ (2) A order of "enum kmsg_dump_reason" was modified.
+     http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=c22ab332902333f83766017478c1ef6607ace681
 
-Well, if you have an application that wants to control the wheel LEDs,
-then it needs to plug in an discover whether the wheel exists, whether
-it's got LEDs, etc.  All part of the HID subsystem as understand it. 
+ This patch removes reason_str array and add get_reason_str() in accordance with Adrian's comment below.
+ https://lkml.org/lkml/2012/3/16/63
 
-simon> At present the patch uses the devices ID's to register the LED's. ie.
-simon> --
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+ Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-simon> Mar 14 14:57:35 ubuntu kernel: [ 6462.204185] Registered led device:
-simon> 0003:046D:C294.0009::RPM1
-simon> Mar 14 14:57:35 ubuntu kernel: [ 6462.204251] Registered led device:
-simon> 0003:046D:C294.0009::RPM2
-simon> Mar 14 14:57:35 ubuntu kernel: [ 6462.204301] Registered led device:
-simon> 0003:046D:C294.0009::RPM3
-simon> Mar 14 14:57:35 ubuntu kernel: [ 6462.204354] Registered led device:
-simon> 0003:046D:C294.0009::RPM4
-simon> Mar 14 14:57:35 ubuntu kernel: [ 6462.204402] Registered led device:
-simon> 0003:046D:C294.0009::RPM5
-simon> --
+---
+ fs/pstore/platform.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-This part is probably fine, but I'd call it 'LED1..5' instead, since
-they're LEDs, not true RPM indicators.  I guess what I'm trying to say
-is that putting as much of this into user space, makes for a much more
-flexible environment.
-
-You might want to look into the Linux HID sub-system for how it
-enumerates the abilities of devices like keyboards, game pads, etc.
-They already have alot of that infrastructure in place. 
-
-John
-
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c index 9ec22d3..82c585f 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -68,9 +68,25 @@ void pstore_set_kmsg_bytes(int bytes)
+ /* Tag each group of saved records with a sequence number */
+ static int	oopscount;
+ 
+-static char *reason_str[] = {
+-	"Oops", "Panic", "Kexec", "Restart", "Halt", "Poweroff", "Emergency"
+-};
++static const char *get_reason_str(enum kmsg_dump_reason reason) {
++	switch (reason) {
++	case KMSG_DUMP_PANIC:
++		return "Panic";
++	case KMSG_DUMP_OOPS:
++		return "Oops";
++	case KMSG_DUMP_EMERG:
++		return "Emergency";
++	case KMSG_DUMP_RESTART:
++		return "Restart";
++	case KMSG_DUMP_HALT:
++		return "Halt";
++	case KMSG_DUMP_POWEROFF:
++		return "Poweroff";
++	default:
++		return "Unknown";
++	}
++}
+ 
+ /*
+  * callback from kmsg_dump. (s2,l2) has the most recently @@ -85,17 +101,15 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	unsigned long	s1_start, s2_start;
+ 	unsigned long	l1_cpy, l2_cpy;
+ 	unsigned long	size, total = 0;
+-	char		*dst, *why;
++	char		*dst;
++	const char	*why;
+ 	u64		id;
+ 	int		hsize, ret;
+ 	unsigned int	part = 1;
+ 	unsigned long	flags = 0;
+ 	int		is_locked = 0;
+ 
+-	if (reason < ARRAY_SIZE(reason_str))
+-		why = reason_str[reason];
+-	else
+-		why = "Unknown";
++	why = get_reason_str(reason);
+ 
+ 	if (in_nmi()) {
+ 		is_locked = spin_trylock(&psinfo->buf_lock);
+--
+1.7.1
