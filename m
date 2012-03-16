@@ -1,46 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161622Ab2CPVni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:43:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36510 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964867Ab2CPVng (ORCPT
+	id S1031853Ab2CPVsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:48:01 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:14230 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964867Ab2CPVr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:43:36 -0400
-X-Sasl-enc: sAD8qTGjUDYYJ/8Uk0L02nDJPYz/eIW5kLolA8lZkKZO 1331934215
-Date: Fri, 16 Mar 2012 14:43:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Aneesh V <aneesh@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH v4] misc: ddr: add LPDDR2 data from JESD209-2
-Message-ID: <20120316214334.GA24925@kroah.com>
-References: <1331929177-11694-1-git-send-email-aneesh@ti.com>
- <1331931007-584-1-git-send-email-aneesh@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331931007-584-1-git-send-email-aneesh@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 16 Mar 2012 17:47:57 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Fri, 16 Mar 2012 17:47:56 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] Kbuild: centralize MKIMAGE and cmd_uimage definitions
+In-reply-to: <1331931835-12346-1-git-send-email-swarren@wwwdotorg.org>
+Message-id: <alpine.LFD.2.02.1203161746250.24151@xanadu.home>
+References: <1331931835-12346-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 17, 2012 at 02:20:07AM +0530, Aneesh V wrote:
-> add LPDDR2 data from the JEDEC spec JESD209-2. The data
-> includes:
-> 
-> 1. Addressing information for LPDDR2 memories of different
->    densities and types(S2/S4)
-> 2. AC timing data.
-> 
-> This data will useful for memory controller device drivers.
-> Right now this is used by the TI EMIF SDRAM controller
-> driver.
-> 
-> Cc: Greg KH <greg@kroah.com>
-> Signed-off-by: Aneesh V <aneesh@ti.com>
+On Fri, 16 Mar 2012, Stephen Warren wrote:
 
-What happened to the other patches that depended on this one?
+> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
+> to avoid duplication.
+> 
+> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
+> parameterized version in Makefile.lib to avoid duplication.
+> 
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 
-greg k-h
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+
+> ---
+> v2:
+> * Fix blackfin's UIMAGE_LOADADDR in the ROMKERNEL case.
+> * Fix missing ) on a variable reference in avr32 and sparc.
+> * Only set those UIMAGE_* variables that the arch-specific Makefile hasn't
+>   already set.
+> * The patch series is now just this single patch which removes duplication;
+>   I've dropped the Kconfig feature to allow use of -T kernel_noload for
+>   now, since it looks like U-Boot is gaining direct zImage support.
+> 
+>  arch/arm/boot/Makefile          |   23 +++++++++--------------
+>  arch/avr32/boot/images/Makefile |    9 +++------
+>  arch/blackfin/boot/Makefile     |   19 ++++++++-----------
+>  arch/microblaze/boot/Makefile   |   10 +++-------
+>  arch/sh/boot/Makefile           |    8 ++------
+>  arch/sparc/boot/Makefile        |    9 +++------
+>  arch/unicore32/boot/Makefile    |   12 ++----------
+>  scripts/Makefile.lib            |   24 ++++++++++++++++++++++++
+>  8 files changed, 54 insertions(+), 60 deletions(-)
+> 
+> diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
+> index fc871e7..c877087 100644
+> --- a/arch/arm/boot/Makefile
+> +++ b/arch/arm/boot/Makefile
+> @@ -11,8 +11,6 @@
+>  # Copyright (C) 1995-2002 Russell King
+>  #
+>  
+> -MKIMAGE         := $(srctree)/scripts/mkuboot.sh
+> -
+>  ifneq ($(MACHINE),)
+>  include $(srctree)/$(MACHINE)/Makefile.boot
+>  endif
+> @@ -69,22 +67,19 @@ $(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
+>  
+>  clean-files := *.dtb
+>  
+> -quiet_cmd_uimage = UIMAGE  $@
+> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A arm -O linux -T kernel \
+> -		   -C none -a $(LOADADDR) -e $(STARTADDR) \
+> -		   -n 'Linux-$(KERNELRELEASE)' -d $< $@
+> -
+> -ifeq ($(CONFIG_ZBOOT_ROM),y)
+> -$(obj)/uImage: LOADADDR=$(CONFIG_ZBOOT_ROM_TEXT)
+> +ifneq ($(LOADADDR),)
+> +  UIMAGE_LOADADDR=$(LOADADDR)
+>  else
+> -$(obj)/uImage: LOADADDR=$(ZRELADDR)
+> +  ifeq ($(CONFIG_ZBOOT_ROM),y)
+> +    UIMAGE_LOADADDR=$(CONFIG_ZBOOT_ROM_TEXT)
+> +  else
+> +    UIMAGE_LOADADDR=$(ZRELADDR)
+> +  endif
+>  endif
+>  
+> -$(obj)/uImage: STARTADDR=$(LOADADDR)
+> -
+>  check_for_multiple_loadaddr = \
+> -if [ $(words $(LOADADDR)) -gt 1 ]; then \
+> -	echo 'multiple load addresses: $(LOADADDR)'; \
+> +if [ $(words $(UIMAGE_LOADADDR)) -gt 1 ]; then \
+> +	echo 'multiple load addresses: $(UIMAGE_LOADADDR)'; \
+>  	echo 'This is incompatible with uImages'; \
+>  	echo 'Specify LOADADDR on the commandline to build an uImage'; \
+>  	false; \
+> diff --git a/arch/avr32/boot/images/Makefile b/arch/avr32/boot/images/Makefile
+> index 1848bf0..2a3b539 100644
+> --- a/arch/avr32/boot/images/Makefile
+> +++ b/arch/avr32/boot/images/Makefile
+> @@ -6,8 +6,6 @@
+>  # for more details.
+>  #
+>  
+> -MKIMAGE		:= $(srctree)/scripts/mkuboot.sh
+> -
+>  extra-y		:= vmlinux.bin vmlinux.gz
+>  
+>  OBJCOPYFLAGS_vmlinux.bin := -O binary -R .note.gnu.build-id
+> @@ -17,10 +15,9 @@ $(obj)/vmlinux.bin: vmlinux FORCE
+>  $(obj)/vmlinux.gz: $(obj)/vmlinux.bin FORCE
+>  	$(call if_changed,gzip)
+>  
+> -quiet_cmd_uimage = UIMAGE $@
+> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A avr32 -O linux -T kernel	\
+> -		-C gzip -a $(CONFIG_LOAD_ADDRESS) -e $(CONFIG_ENTRY_ADDRESS)	\
+> -		-n 'Linux-$(KERNELRELEASE)' -d $< $@
+> +UIMAGE_LOADADDR = $(CONFIG_LOAD_ADDRESS)
+> +UIMAGE_ENTRYADDR = $(CONFIG_ENTRY_ADDRESS)
+> +UIMAGE_COMPRESSION = gzip
+>  
+>  targets += uImage uImage.srec
+>  $(obj)/uImage: $(obj)/vmlinux.gz
+> diff --git a/arch/blackfin/boot/Makefile b/arch/blackfin/boot/Makefile
+> index 0a49279..f7d27d5 100644
+> --- a/arch/blackfin/boot/Makefile
+> +++ b/arch/blackfin/boot/Makefile
+> @@ -6,20 +6,17 @@
+>  # for more details.
+>  #
+>  
+> -MKIMAGE := $(srctree)/scripts/mkuboot.sh
+> -
+>  targets := vmImage vmImage.bin vmImage.bz2 vmImage.gz vmImage.lzma vmImage.lzo vmImage.xip
+>  extra-y += vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.lzo vmlinux.bin.xip
+>  
+> -UIMAGE_OPTS-y :=
+> -UIMAGE_OPTS-$(CONFIG_RAMKERNEL) += -a $(CONFIG_BOOT_LOAD)
+> -UIMAGE_OPTS-$(CONFIG_ROMKERNEL) += -a $(CONFIG_ROM_BASE) -x
+> -
+> -quiet_cmd_uimage = UIMAGE  $@
+> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A $(ARCH) -O linux -T kernel \
+> -                   -C $(2) -n '$(CPU_REV)-$(KERNELRELEASE)' \
+> -                   -e $(shell $(NM) vmlinux | awk '$$NF == "__start" {print $$1}') \
+> -                   $(UIMAGE_OPTS-y) -d $< $@
+> +ifeq ($(CONFIG_RAMKERNEL),y)
+> +UIMAGE_LOADADDR = $(CONFIG_BOOT_LOAD)
+> +else # CONFIG_ROMKERNEL must be set
+> +UIMAGE_LOADADDR = $(CONFIG_ROM_BASE)
+> +endif
+> +UIMAGE_ENTRYADDR = $(shell $(NM) vmlinux | awk '$$NF == "__start" {print $$1}')
+> +UIMAGE_NAME = '$(CPU_REV)-$(KERNELRELEASE)'
+> +UIMAGE_OPTS-$(CONFIG_ROMKERNEL) += -x
+>  
+>  $(obj)/vmlinux.bin: vmlinux FORCE
+>  	$(call if_changed,objcopy)
+> diff --git a/arch/microblaze/boot/Makefile b/arch/microblaze/boot/Makefile
+> index 0c796cf..ca76ecd 100644
+> --- a/arch/microblaze/boot/Makefile
+> +++ b/arch/microblaze/boot/Makefile
+> @@ -2,8 +2,6 @@
+>  # arch/microblaze/boot/Makefile
+>  #
+>  
+> -MKIMAGE := $(srctree)/scripts/mkuboot.sh
+> -
+>  obj-y += linked_dtb.o
+>  
+>  targets := linux.bin linux.bin.gz simpleImage.%
+> @@ -35,11 +33,9 @@ quiet_cmd_strip = STRIP   $@
+>  	cmd_strip = $(STRIP) -K microblaze_start -K _end -K __log_buf \
+>  				-K _fdt_start vmlinux -o $@
+>  
+> -quiet_cmd_uimage = UIMAGE  $@.ub
+> -	cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A microblaze -O linux -T kernel \
+> -		-C none -n 'Linux-$(KERNELRELEASE)' \
+> -		-a $(CONFIG_KERNEL_BASE_ADDR) -e $(CONFIG_KERNEL_BASE_ADDR) \
+> -		-d $@ $@.ub
+> +UIMAGE_IN = $@
+> +UIMAGE_OUT = $@.ub
+> +UIMAGE_LOADADDR = $(CONFIG_KERNEL_BASE_ADDR)
+>  
+>  $(obj)/simpleImage.%: vmlinux FORCE
+>  	$(call if_changed,cp,.unstrip)
+> diff --git a/arch/sh/boot/Makefile b/arch/sh/boot/Makefile
+> index e4ea31a..58592df 100644
+> --- a/arch/sh/boot/Makefile
+> +++ b/arch/sh/boot/Makefile
+> @@ -8,8 +8,6 @@
+>  # Copyright (C) 1999 Stuart Menefy
+>  #
+>  
+> -MKIMAGE := $(srctree)/scripts/mkuboot.sh
+> -
+>  #
+>  # Assign safe dummy values if these variables are not defined,
+>  # in order to suppress error message.
+> @@ -61,10 +59,8 @@ KERNEL_ENTRY	:= $(shell /bin/bash -c 'printf "0x%08x" \
+>  			$(KERNEL_MEMORY) + \
+>  			$(CONFIG_ZERO_PAGE_OFFSET) + $(CONFIG_ENTRY_OFFSET)]')
+>  
+> -quiet_cmd_uimage = UIMAGE  $@
+> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A sh -O linux -T kernel \
+> -		   -C $(2) -a $(KERNEL_LOAD) -e $(KERNEL_ENTRY) \
+> -		   -n 'Linux-$(KERNELRELEASE)' -d $< $@
+> +UIMAGE_LOADADDR = $(KERNEL_LOAD)
+> +UIMAGE_ENTRYADDR = $(KERNEL_ENTRY)
+>  
+>  $(obj)/vmlinux.bin: vmlinux FORCE
+>  	$(call if_changed,objcopy)
+> diff --git a/arch/sparc/boot/Makefile b/arch/sparc/boot/Makefile
+> index 9205416..d56d199 100644
+> --- a/arch/sparc/boot/Makefile
+> +++ b/arch/sparc/boot/Makefile
+> @@ -5,7 +5,6 @@
+>  
+>  ROOT_IMG	:= /usr/src/root.img
+>  ELFTOAOUT	:= elftoaout
+> -MKIMAGE 	:= $(srctree)/scripts/mkuboot.sh
+>  
+>  hostprogs-y	:= piggyback btfixupprep
+>  targets		:= tftpboot.img btfix.o btfix.S image zImage vmlinux.aout
+> @@ -92,11 +91,9 @@ $(obj)/image.bin: $(obj)/image FORCE
+>  $(obj)/image.gz: $(obj)/image.bin
+>  	$(call if_changed,gzip)
+>  
+> -quiet_cmd_uimage = UIMAGE  $@
+> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A sparc -O linux -T kernel \
+> -               -C gzip -a $(CONFIG_UBOOT_LOAD_ADDR) \
+> -	       -e $(CONFIG_UBOOT_ENTRY_ADDR) -n 'Linux-$(KERNELRELEASE)' \
+> -               -d $< $@
+> +UIMAGE_LOADADDR = $(CONFIG_UBOOT_LOAD_ADDR)
+> +UIMAGE_ENTRYADDR = $(CONFIG_UBOOT_ENTRY_ADDR)
+> +UIMAGE_COMPRESSION = gzip
+>  
+>  quiet_cmd_uimage.o = UIMAGE.O $@
+>        cmd_uimage.o = $(LD) -Tdata $(CONFIG_UBOOT_FLASH_ADDR) \
+> diff --git a/arch/unicore32/boot/Makefile b/arch/unicore32/boot/Makefile
+> index 79e5f88..ec7fb70 100644
+> --- a/arch/unicore32/boot/Makefile
+> +++ b/arch/unicore32/boot/Makefile
+> @@ -11,8 +11,6 @@
+>  # Copyright (C) 2001~2010 GUAN Xue-tao
+>  #
+>  
+> -MKIMAGE := $(srctree)/scripts/mkuboot.sh
+> -
+>  targets := Image zImage uImage
+>  
+>  $(obj)/Image: vmlinux FORCE
+> @@ -26,14 +24,8 @@ $(obj)/zImage: $(obj)/compressed/vmlinux FORCE
+>  	$(call if_changed,objcopy)
+>  	@echo '  Kernel: $@ is ready'
+>  
+> -quiet_cmd_uimage = UIMAGE  $@
+> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A unicore -O linux -T kernel \
+> -		   -C none -a $(LOADADDR) -e $(STARTADDR) \
+> -		   -n 'Linux-$(KERNELRELEASE)' -d $< $@
+> -
+> -$(obj)/uImage: LOADADDR=0x0
+> -
+> -$(obj)/uImage: STARTADDR=$(LOADADDR)
+> +UIMAGE_ARCH = unicore
+> +UIMAGE_LOADADDR = 0x0
+>  
+>  $(obj)/uImage: $(obj)/zImage FORCE
+>  	$(call if_changed,uimage)
+> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+> index 00c368c..0be6f11 100644
+> --- a/scripts/Makefile.lib
+> +++ b/scripts/Makefile.lib
+> @@ -304,6 +304,30 @@ cmd_lzo = (cat $(filter-out FORCE,$^) | \
+>  	lzop -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
+>  	(rm -f $@ ; false)
+>  
+> +# U-Boot mkimage
+> +# ---------------------------------------------------------------------------
+> +
+> +MKIMAGE := $(srctree)/scripts/mkuboot.sh
+> +
+> +# SRCARCH just happens to match slightly more than ARCH (on sparc), so reduces
+> +# the number of overrides in arch makefiles
+> +UIMAGE_ARCH ?= $(SRCARCH)
+> +UIMAGE_COMPRESSION ?= $(if $(2),$(2),none)
+> +UIMAGE_OPTS-y ?=
+> +UIMAGE_TYPE ?= kernel
+> +UIMAGE_LOADADDR ?= arch_must_set_this
+> +UIMAGE_ENTRYADDR ?= $(UIMAGE_LOADADDR)
+> +UIMAGE_NAME ?= 'Linux-$(KERNELRELEASE)'
+> +UIMAGE_IN ?= $<
+> +UIMAGE_OUT ?= $@
+> +
+> +quiet_cmd_uimage = UIMAGE  $(UIMAGE_OUT)
+> +      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A $(UIMAGE_ARCH) -O linux \
+> +			-C $(UIMAGE_COMPRESSION) $(UIMAGE_OPTS-y) \
+> +			-T $(UIMAGE_TYPE) \
+> +			-a $(UIMAGE_LOADADDR) -e $(UIMAGE_ENTRYADDR) \
+> +			-n $(UIMAGE_NAME) -d $(UIMAGE_IN) $(UIMAGE_OUT)
+> +
+>  # XZ
+>  # ---------------------------------------------------------------------------
+>  # Use xzkern to compress the kernel image and xzmisc to compress other things.
+> -- 
+> 1.7.0.4
+> 
