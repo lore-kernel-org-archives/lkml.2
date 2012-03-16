@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945998Ab2CPXgp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:36:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38397 "EHLO
+	id S1945974Ab2CPXgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:36:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45251 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162075Ab2CPXga (ORCPT
+	with ESMTP id S1162072Ab2CPXgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:36:30 -0400
+	Fri, 16 Mar 2012 19:36:24 -0400
 From: Tejun Heo <tj@kernel.org>
 To: glommer@parallels.com, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
         ctalbott@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/10] cgroup: implement cgroup_rm_cftypes()
-Date: Fri, 16 Mar 2012 16:36:03 -0700
-Message-Id: <1331940963-15756-11-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/10] cgroup: remove cgroup_add_file[s]()
+Date: Fri, 16 Mar 2012 16:36:00 -0700
+Message-Id: <1331940963-15756-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331940963-15756-1-git-send-email-tj@kernel.org>
 References: <1331940963-15756-1-git-send-email-tj@kernel.org>
@@ -22,141 +22,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement cgroup_rm_cftypes() which removes an array of cftypes from a
-subsystem.  It can be called whether the target subsys is attached or
-not.  cgroup core will remove the specified file from all existing
-cgroups.
-
-This will be used to improve sub-subsys modularity and will be helpful
-for unified hierarchy.
+No controller is using cgroup_add_files[s]().  Unexport them, and
+convert cgroup_add_files() to handle NULL entry terminated array
+instead of taking count explicitly and continue creation on failure
+for internal use.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h |    1 +
- kernel/cgroup.c        |   54 +++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 45 insertions(+), 10 deletions(-)
+ include/linux/cgroup.h |   16 ---------------
+ kernel/cgroup.c        |   51 ++++++++++++++++++-----------------------------
+ 2 files changed, 20 insertions(+), 47 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index caeaafc..4f3a68b 100644
+index a78a6a8..05ddf59 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -415,6 +415,7 @@ struct cgroup_scanner {
+@@ -413,22 +413,6 @@ struct cgroup_scanner {
+ 	void *data;
  };
  
+-/*
+- * Add a new file to the given cgroup directory. Should only be
+- * called by subsystems from within a populate() method
+- */
+-int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+-		       const struct cftype *cft);
+-
+-/*
+- * Add a set of new files to the given cgroup directory. Should
+- * only be called by subsystems from within a populate() method
+- */
+-int cgroup_add_files(struct cgroup *cgrp,
+-			struct cgroup_subsys *subsys,
+-			const struct cftype cft[],
+-			int count);
+-
  int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
-+int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
  
  int cgroup_is_removed(const struct cgroup *cgrp);
- 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index c0c61b9..cf7b298 100644
+index 20fdff9..33383cb 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2698,17 +2698,20 @@ out:
+@@ -2629,9 +2629,8 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
+ 	return mode;
+ }
+ 
+-int cgroup_add_file(struct cgroup *cgrp,
+-		       struct cgroup_subsys *subsys,
+-		       const struct cftype *cft)
++static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
++			   const struct cftype *cft)
+ {
+ 	struct dentry *dir = cgrp->dentry;
+ 	struct dentry *dentry;
+@@ -2663,22 +2662,23 @@ int cgroup_add_file(struct cgroup *cgrp,
+ 		error = PTR_ERR(dentry);
  	return error;
  }
+-EXPORT_SYMBOL_GPL(cgroup_add_file);
  
--static int cgroup_add_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
--			    const struct cftype cfts[])
-+static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
-+			      const struct cftype cfts[], bool is_add)
+-int cgroup_add_files(struct cgroup *cgrp,
+-			struct cgroup_subsys *subsys,
+-			const struct cftype cft[],
+-			int count)
++static int cgroup_add_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
++			    const struct cftype cfts[])
  {
- 	const struct cftype *cft;
- 	int err, ret = 0;
- 
- 	for (cft = cfts; cft->name[0] != '\0'; cft++) {
--		err = cgroup_add_file(cgrp, subsys, cft);
-+		if (is_add)
-+			err = cgroup_add_file(cgrp, subsys, cft);
-+		else
-+			err = cgroup_rm_file(cgrp, cft);
- 		if (err) {
--			pr_warning("cgroup_add_files: failed to create %s, err=%d\n",
--				   cft->name, err);
-+			pr_warning("cgroup_addrm_files: failed to %s %s, err=%d\n",
-+				   is_add ? "add" : "remove", cft->name, err);
- 			ret = err;
- 		}
+-	int i, err;
+-	for (i = 0; i < count; i++) {
+-		err = cgroup_add_file(cgrp, subsys, &cft[i]);
+-		if (err)
+-			return err;
++	const struct cftype *cft;
++	int err, ret = 0;
++
++	for (cft = cfts; cft->name[0] != '\0'; cft++) {
++		err = cgroup_add_file(cgrp, subsys, cft);
++		if (err) {
++			pr_warning("cgroup_add_files: failed to create %s, err=%d\n",
++				   cft->name, err);
++			ret = err;
++		}
  	}
-@@ -2732,7 +2735,7 @@ static void cgroup_cfts_prepare(void)
+-	return 0;
++	return ret;
  }
+-EXPORT_SYMBOL_GPL(cgroup_add_files);
  
- static void cgroup_cfts_commit(struct cgroup_subsys *ss,
--			       const struct cftype *cfts)
-+			       const struct cftype *cfts, bool is_add)
- 	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
+ static DEFINE_MUTEX(cgroup_cft_mutex);
+ 
+@@ -2702,10 +2702,6 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
  {
  	LIST_HEAD(pending);
-@@ -2758,7 +2761,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ 	struct cgroup *cgrp, *n;
+-	int count = 0;
+-
+-	while (cfts[count].name[0] != '\0')
+-		count++;
+ 
+ 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
+ 	if (cfts && ss->root != &rootnode) {
+@@ -2727,7 +2723,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
  		mutex_lock(&inode->i_mutex);
  		mutex_lock(&cgroup_mutex);
  		if (!cgroup_is_removed(cgrp))
--			cgroup_add_files(cgrp, ss, cfts);
-+			cgroup_addrm_files(cgrp, ss, cfts, is_add);
+-			cgroup_add_files(cgrp, ss, cfts, count);
++			cgroup_add_files(cgrp, ss, cfts);
  		mutex_unlock(&cgroup_mutex);
  		mutex_unlock(&inode->i_mutex);
  
-@@ -2796,13 +2799,44 @@ int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
+@@ -3755,6 +3751,7 @@ static struct cftype files[] = {
+ 		.write_string = cgroup_release_agent_write,
+ 		.max_write_len = PATH_MAX,
+ 	},
++	{ }	/* terminate */
+ };
  
- 	cgroup_cfts_prepare();
- 	list_add_tail(&set->node, &ss->cftsets);
--	cgroup_cfts_commit(ss, cfts);
-+	cgroup_cfts_commit(ss, cfts, true);
- 
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
- 
- /**
-+ * cgroup_rm_cftypes - remove an array of cftypes from a subsystem
-+ * @ss: target cgroup subsystem
-+ * @cfts: zero-length name terminated array of cftypes
-+ *
-+ * Unregister @cfts from @ss.  Files described by @cfts are removed from
-+ * all existing cgroups to which @ss is attached and all future cgroups
-+ * won't have them either.  This function can be called anytime after
-+ * subsys_initcall whether @ss is attached or not.
-+ *
-+ * Returns 0 on successful unregistration, -ENOENT if @cfts is not
-+ * registered with @ss.
-+ */
-+int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
-+{
-+	struct cftype_set *set;
-+
-+	cgroup_cfts_prepare();
-+
-+	list_for_each_entry(set, &ss->cftsets, node) {
-+		if (set->cfts == cfts) {
-+			list_del_init(&set->node);
-+			cgroup_cfts_commit(ss, cfts, false);
-+			return 0;
-+		}
-+	}
-+
-+	cgroup_cfts_commit(ss, NULL, false);
-+	return -ENOENT;
-+}
-+
-+/**
-  * cgroup_task_count - count the number of tasks in a cgroup.
-  * @cgrp: the cgroup in question
-  *
-@@ -3794,7 +3828,7 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
+ static int cgroup_populate_dir(struct cgroup *cgrp)
+@@ -3762,7 +3759,7 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
  	int err;
  	struct cgroup_subsys *ss;
  
--	err = cgroup_add_files(cgrp, NULL, files);
-+	err = cgroup_addrm_files(cgrp, NULL, files, true);
+-	err = cgroup_add_files(cgrp, NULL, files, ARRAY_SIZE(files));
++	err = cgroup_add_files(cgrp, NULL, files);
  	if (err < 0)
  		return err;
  
-@@ -3806,7 +3840,7 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
+@@ -3773,16 +3770,8 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
+ 		if (ss->populate && (err = ss->populate(ss, cgrp)) < 0)
  			return err;
  
- 		list_for_each_entry(set, &ss->cftsets, node)
--			cgroup_add_files(cgrp, ss, set->cfts);
-+			cgroup_addrm_files(cgrp, ss, set->cfts, true);
+-		list_for_each_entry(set, &ss->cftsets, node) {
+-			const struct cftype *cft;
+-
+-			for (cft = set->cfts; cft->name[0] != '\0'; cft++) {
+-				err = cgroup_add_file(cgrp, ss, cft);
+-				if (err)
+-					pr_warning("cgroup_populate_dir: failed to create %s, err=%d\n",
+-						   cft->name, err);
+-			}
+-		}
++		list_for_each_entry(set, &ss->cftsets, node)
++			cgroup_add_files(cgrp, ss, set->cfts);
  	}
  
  	/* This cgroup is ready now */
