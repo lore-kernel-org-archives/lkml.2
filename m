@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761511Ab2CPLcR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 07:32:17 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:42908 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761293Ab2CPLcQ convert rfc822-to-8bit (ORCPT
+	id S1422716Ab2CPLdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 07:33:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54548 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab2CPLdb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 07:32:16 -0400
-X-AuditID: cbfee61a-b7b78ae000001ceb-e8-4f6324bf2b8f
-From: Srikanth TS <ts.srikanth@samsung.com>
-To: linux-kernel@vger.kernel.org
-Subject: Link for the latest patches of AHCI
-Date: Fri, 16 Mar 2012 20:32:14 +0900
-Message-id: <005401cd0368$6faea110$4f0be330$%srikanth@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0DaG4XYMPU2rLDTkCudLSV1no9gg==
-Content-language: en-gb
-x-cr-hashedpuzzle: bPc= BIEg Bg7l BtIX BwFE COk1 DvJA EJbW Fe4k Ftw1 GWol H97o
- Iq97 Ix2q JRze
- LZe4;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{3F48CC99-77CE-481F-A641-5F531B2DD934};dABzAC4AcwByAGkAawBhAG4AdABoAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Fri,
- 16 Mar 2012 11:32:12
- GMT;TABpAG4AawAgAGYAbwByACAAdABoAGUAIABsAGEAdABlAHMAdAAgAHAAYQB0AGMAaABlAHMAIABvAGYAIABBAEgAQwBJAA==
-x-cr-puzzleid: {3F48CC99-77CE-481F-A641-5F531B2DD934}
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 16 Mar 2012 07:33:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119749257"
+From: "Du, Alek" <alek.du@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ//99bYD//3mIQIAAiHuA//95JNCAAIvVgP//ZyLg
+Date: Fri, 16 Mar 2012 11:33:28 +0000
+Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3DCC@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
+ <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
+ <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
+ <4F630B4D.3040508@suse.cz>
+ <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
+ <4F630E6D.4000307@suse.cz>
+ <09F19C497AD02E4EA4E14917772649B70FCD3D59@SHSMSX102.ccr.corp.intel.com>
+ <4F63101D.70507@suse.cz>
+ <09F19C497AD02E4EA4E14917772649B70FCD3D6B@SHSMSX102.ccr.corp.intel.com>
+ <4F631449.7090302@suse.cz>
+In-Reply-To: <4F631449.7090302@suse.cz>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Isn't this the nature of "flush" ? If the driver is trying to insert chars to tty buffer, while the app is going to flush the buffer, or shutdown the port, 
+that's quite nature that those data gone. Why should I care ?
 
-I am using AHCI for testing my SATA device.
+Sorry, you missed the point of this patch.
 
-I tried to clone from below link as mentioned in the MAINTAINERS file for drivers/ata/.
-http://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git
+Thanks,
+Alek
+-----Original Message-----
+From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
+Sent: Friday, March 16, 2012 6:22 PM
+To: Du, Alek
+Cc: Jiri Slaby; Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
 
-But This link does not exist.
+On 03/16/2012 11:08 AM, Du, Alek wrote:
+> If you really look at the original patch from Xiaobing, the 
+> tty_prepare_flip_string is also patched :-) Actually it fills up all 
+> the possible spin_lock gaps in tty_buffer.c
+> 
+> 
+> @@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);  int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+>  								size_t size)
+>  {
+> -	int space = tty_buffer_request_room(tty, size);
+> +	int space;
+> +	unsigned long flags;
+> +	struct tty_buffer *tb;
+> +	
+> +	spin_lock_irqsave(&tty->buf.lock, flags);
+> +	space = __tty_buffer_request_room(tty, size);
+> +
+> +	tb = tty->buf.tail;
+>  	if (likely(space)) {
+> -		struct tty_buffer *tb = tty->buf.tail;
+>  		*chars = tb->char_buf_ptr + tb->used;
+                ^^^^^^
+This is returned to the caller. And it writes to that. And it may be gone as soon as the lock is unlocked below.
 
-Can someone please tell me where can I find the latest merged patches, which are still not in official kernel version?
+>  		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
+>  		tb->used += space;
+>  	}
+> +	spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  	return space;
+>  }
 
-Regards,
-Srikanth.
-
+thanks,
+--
+js
+suse labs
