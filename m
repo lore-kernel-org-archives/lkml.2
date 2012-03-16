@@ -1,61 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2CPTWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 15:22:43 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57849 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751544Ab2CPTWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 15:22:42 -0400
-Message-ID: <1331925755.11368.14.camel@joe2Laptop>
-Subject: Re: [PATCH 11/11] checkpatch: Check for spin_is_locked
-From: Joe Perches <joe@perches.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Fri, 16 Mar 2012 12:22:35 -0700
-In-Reply-To: <1331924464-18023-12-git-send-email-andi@firstfloor.org>
-References: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
-	 <1331924464-18023-12-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756796Ab2CPTXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 15:23:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50198 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719Ab2CPTXU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 15:23:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331921799.19406.20.camel@edumazet-glaptop>
+References: <1331781125-15658-1-git-send-email-wad@chromium.org>
+	<1331781125-15658-3-git-send-email-wad@chromium.org>
+	<1331921799.19406.20.camel@edumazet-glaptop>
+Date: Fri, 16 Mar 2012 14:23:15 -0500
+Message-ID: <CABqD9haBppbqAvcEYP_nstB7aZc-PbVvHwj+P69AQ5+Z87FofA@mail.gmail.com>
+Subject: Re: [PATCH v15 02/13] net/compat.c,linux/filter.h: share compat_sock_fprog
+From: Will Drewry <wad@chromium.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-16 at 12:01 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> spin_is_locked is usually misused. In checkpatch.pl
-> - warn when it is used at all
-> - error out when it is asserted on free, because that's usually broken
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> +# spin_is_locked is usually misused. warn about it.
-> +		if ($line =~ /\bspin_is_locked\s*\(/) {
-> +			# BUG_ON/WARN_ON(!spin_is_locked() is generally a bug
-> +			if ($line =~ /(BUG_ON|WARN_ON|ASSERT)\s*\(!spin_is_locked/) {
-> +				ERROR("ASSERT_SPIN_IS_LOCKED",
-> +				     "Use lockdep_assert_held() instead of asserts on !spin_is_locked\n"
-> +				      . $herecurr);
-> +			} else {
-> +				WARN("SPIN_IS_LOCKED",
-> +				     "spin_is_locked is very rarely correctly used. Please reconsider\n"
-> +					. $herecurr)
-> +			}
-> +		}
-> +
+On Fri, Mar 16, 2012 at 1:16 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2012-03-14 at 22:11 -0500, Will Drewry wrote:
+>> Any other users of bpf_*_filter that take a struct sock_fprog from
+>> userspace will need to be able to also accept a compat_sock_fprog
+>> if the arch supports compat calls.  This change let's the existing
+>> compat_sock_fprog be shared.
+>>
+>> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>> Signed-off-by: Will Drewry <wad@chromium.org>
+>>
+>> v14: rebase/nochanges
+>> v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
+>> v12: rebase on to linux-next
+>> v11: introduction
+>> ---
+>>  include/linux/filter.h |   11 +++++++++++
+>>  net/compat.c           |    8 --------
+>>  2 files changed, 11 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/linux/filter.h b/include/linux/filter.h
+>> index aaa2e80..f2e5315 100644
+>> --- a/include/linux/filter.h
+>> +++ b/include/linux/filter.h
+>> @@ -10,6 +10,7 @@
+>>
+>>  #ifdef __KERNEL__
+>>  #include <linux/atomic.h>
+>> +#include <linux/compat.h>
+>>  #endif
+>>
+>>  /*
+>> @@ -132,6 +133,16 @@ struct sock_fprog {      /* Required for SO_ATTACH_FILTER. */
+>>
+>>  #ifdef __KERNEL__
+>>
+>> +#ifdef CONFIG_COMPAT
+>> +/*
+>> + * A struct sock_filter is architecture independent.
+>> + */
+>> +struct compat_sock_fprog {
+>> +     u16             len;
+>> +     compat_uptr_t   filter;         /* struct sock_filter * */
+>> +};
+>> +#endif
+>> +
+>>  struct sk_buff;
+>>  struct sock;
+>>
+>> diff --git a/net/compat.c b/net/compat.c
+>> index 6def90e..c5c61c8 100644
+>> --- a/net/compat.c
+>> +++ b/net/compat.c
+>> @@ -326,14 +326,6 @@ void scm_detach_fds_compat(struct msghdr *kmsg, struct scm_cookie *scm)
+>>       __scm_destroy(scm);
+>>  }
+>>
+>> -/*
+>> - * A struct sock_filter is architecture independent.
+>> - */
+>> -struct compat_sock_fprog {
+>> -     u16             len;
+>> -     compat_uptr_t   filter;         /* struct sock_filter * */
+>> -};
+>> -
+>>  static int do_set_attach_filter(struct socket *sock, int level, int optname,
+>>                               char __user *optval, unsigned int optlen)
+>>  {
+>
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-I suggest you use a single --ignore string of
-"SPIN_IS_LOCKED" instead of different ones.
+Added your Acked-by's to the tree at
 
-Grammar might be improved in the WARN.  Maybe:
-"Using spin_is_locked() is generally wrong. See [foo documentation]\n"
+  https://github.com/redpig/linux/tree/seccomp
 
-Also, like what was done for yield(), perhaps
-some kernel-doc content would be useful.
-
-See -next commit 8e3fabfde445a872c8aec2296846badf24d7c8b4
-
-
+Thanks!
+will
