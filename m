@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760957Ab2CPJau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 05:30:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42422 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760730Ab2CPJar (ORCPT
+	id S1760682Ab2CPJgz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 05:36:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61487 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759576Ab2CPJgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 05:30:47 -0400
-Message-ID: <4F630841.2070307@linaro.org>
-Date: Fri, 16 Mar 2012 15:00:41 +0530
-From: Subash Patel <subash.ramaswamy@linaro.org>
-Organization: Samsung
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Cho KyongHo <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+	Fri, 16 Mar 2012 05:36:53 -0400
+Date: Fri, 16 Mar 2012 10:36:40 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@intel.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-kernel@vger.kernel.org,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
-Subject: Re: [PATCH v12 2/3] ARM: EXYNOS: Change System MMU platform device
- definitions
-References: <000201cd0286$2e6fbb40$8b4f31c0$%cho@samsung.com> <20120315111227.GA2384@amd.com> <4F61FF1D.5000502@samsung.com>
-In-Reply-To: <4F61FF1D.5000502@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
+In-Reply-To: <1331520476.4657.79.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3> 
+ <Pine.LNX.4.64.1203070917380.19595@axis700.grange> 
+ <20120307093026.GM17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+  <20120307103112.GP17370@n2100.arm.linux.org.uk> 
+ <Pine.LNX.4.64.1203071149190.19595@axis700.grange> 
+ <20120307124620.GT17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+  <20120307142634.GA18787@n2100.arm.linux.org.uk> 
+ <Pine.LNX.4.64.1203071602330.19595@axis700.grange> 
+ <20120307162755.GB18787@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+  <1331188201.4657.51.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+  <1331204128.4657.54.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+  <1331206459.4657.59.camel@vkoul-udesk3>  <1331211513.4657.67.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203081412550.29847@axis700.grange>  <1331284918.4657.69.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203091022200.7852@axis700.grange>  <1331285959.4657.76.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203091049060.7852@axis700.grange> <1331520476.4657.79.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:adkqttu0rardil9c/yHw4Jl3kxazWzUbgPWmKn/0Pir
+ DdtLkrEvU4tr8Ybf+frGuSqV5axwinylxVVn+4f0rgEdva8P2A
+ CdnJlhiSUj1la5IKLnpxdBdcbbnmnb5VGAcFOUQvERAkwcRWUC
+ J8jgRMirq1Bu/iIbtz8xXnP87UqGdRnOUX1fjO9PIRLAnoqL6q
+ ab5RWOX4kv7BP7v1DjkD+KNZSCL0ufJG8vAsmJTiVGA16GjSgl
+ VRhSf9Ee+tOva0qV4aMitazVtCqwT6tkS4UmAFiWSQ9p8iX/ME
+ oaOTlCwO+psiKEMt/e+XR/v3A9nPWLNXsRzUmnNndsZZGJUhjN
+ S2VE5rxO0oV7wBalUX+1CMnqzaf4WxHEOztONBgp6Zf2DWy8cT
+ J2AZOFsw0yGjw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo, Kukjin,
+On Mon, 12 Mar 2012, Vinod Koul wrote:
 
-On 03/15/2012 08:09 PM, Kukjin Kim wrote:
-> On 03/15/12 04:12, Joerg Roedel wrote:
->> On Thu, Mar 15, 2012 at 05:32:39PM +0900, Cho KyongHo wrote:
->
-> KyongHo, I looked at 'Cho KyongHo <pullip.cho ...>' and 'KyongHo Cho 
-> <pullip.cho ...>' in this series, which one do you want to use?
->
->>> Handling System MMUs with an identifier is not flexible to manage
->>> System MMU platform devices because of the following reasons:
->>> 1. A device driver which needs to handle System MMU must know the ID.
->>> 2. A System MMU may not present in some implementations of Exynos 
->>> family.
->>> 3. Handling System MMU with IOMMU API does not require an ID.
->>>
->>> This patch is the result of removing ID of System MMUs.
->>> Instead, a device driver that needs to handle its System MMU must
->>> use IOMMU API while its descriptor of platform device is given.
->>>
->>> This patch also includes the following enhancements:
->>> - A System MMU device becomes a child if its power domain device.
->>> - clkdev
->>>
->>> Cc: Kukjin Kim<kgene.kim@samsung.com>
->>> Signed-off-by: KyongHo Cho<pullip.cho@samsung.com>
->>> ---
->>>   arch/arm/mach-exynos/Kconfig                    |   10 +-
->>>   arch/arm/mach-exynos/Makefile                   |    2 +-
->>>   arch/arm/mach-exynos/clock-exynos4.c            |   79 ++--
->>>   arch/arm/mach-exynos/clock-exynos4.h            |    2 +
->>>   arch/arm/mach-exynos/clock-exynos4210.c         |   11 +
->>>   arch/arm/mach-exynos/clock-exynos4212.c         |   28 ++-
->>>   arch/arm/mach-exynos/clock-exynos5.c            |   90 +++++
->>>   arch/arm/mach-exynos/dev-sysmmu.c               |  457 
->>> ++++++++++++----------
->>>   arch/arm/mach-exynos/include/mach/irqs.h        |   25 +-
->>>   arch/arm/mach-exynos/include/mach/map.h         |   38 ++
->>>   arch/arm/mach-exynos/include/mach/regs-clock.h  |    5 +
->>>   arch/arm/mach-exynos/include/mach/regs-sysmmu.h |   28 --
->>>   arch/arm/mach-exynos/include/mach/sysmmu.h      |   88 +++--
->>>   arch/arm/mach-exynos/mach-armlex4210.c          |    1 -
->>>   arch/arm/mach-exynos/mach-smdkv310.c            |    1 -
->>>   15 files changed, 529 insertions(+), 336 deletions(-)
->>>   delete mode 100644 arch/arm/mach-exynos/include/mach/regs-sysmmu.h
->>
->> This patch doesn't apply cleanly against upstream Linux (v3.3-rcX).
->> Please rebase to upstream and resend. The other 2 patches apply fine.
->>
->
-> Yes, as KyoungHo said, this has been created on top of Samsung tree 
-> for-next because this touches many exynos stuff which has been changed 
-> from Samsung tree for upcoming merge window. So if you're ok on this, 
-> 1st patch and this should be sent to upstream via samsung tree even 
-> though I can't find any topic branch for this yet. And if you want 
-> topic branch for your tree, let me know, I can provide it.
->
-> Thanks.
-Wouldn't it be good to send exynos4 SYSMMU patches now, and send only 
-the exynos5 delta when your for-next(exynos5) changes
-get merged to mainline? Manually editing the patches is really pain-some 
-and sometimes error-some :( Can this patch in particular
-be split?
->
-> Best regards,
-> Kgene.
-> -- 
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
-Regards,
-Subash
+> On Fri, 2012-03-09 at 13:20 +0100, Guennadi Liakhovetski wrote:
+> > It can be made to work as long as there's only one DMAC group with 
+> > configurable channels and all other DMACs are dedicated to specific 
+> > peripherals, yes. I don't know whether there are already now or are 
+> > approaching any platforms with multiple reconfigurable groups. 
+> And that is what I am talking about.
+> 
+> Having specific channel mapping given by platform for all channels which
+> are to be used dedicated. And a pool of channels which can be used by
+> anyone (if they can be) on a platform.
+> 
+> Does this proposal sound good for others as well. I think we can target
+> this for next merge cycle, we are too late for the current one.
+
+Ok, let me try to summarise, what this would mean for sh-mobile:
+
+1. this proposal introduces a new special case: with or without a mapping, 
+that will have to be handled in affected client and DMA controller 
+drivers. E.g., on sh-mobile some devices might on some systems use 
+channels from "general purpose" DMA controllers (no mapping), on other 
+systems it will be a dedicated controller (fixed mapping).
+
+2. this will break, if we get more than 1 "general purpose" type with 
+different supported client sets. So, we develop a new API with a 
+pre-programmed limitation.
+
+3. this will mean a substantial driver and platform code modification. 
+Nothing super-complex, but still some.
+
+4. we'll need a 3-stage channel allocation / configuration: request, 
+filter, config. Whereas with my configuration-parameter proposal it's just 
+one stage: allocate-and-configure.
+
+So, yes, this would be doable, but it doesn't look like a very good 
+solution to me.
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
