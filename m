@@ -1,201 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422962Ab2CPO5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:57:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36589 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422825Ab2CPOxY (ORCPT
+	id S1422971Ab2CPO5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:57:53 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52305 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422825Ab2CPO5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:24 -0400
-Message-Id: <20120316144241.215796412@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:45 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 17/26] srcu: revert1
-References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=srcu-revert-1.patch
+	Fri, 16 Mar 2012 10:57:48 -0400
+Message-ID: <4F6354E4.8030704@monstr.eu>
+Date: Fri, 16 Mar 2012 15:57:40 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Brian Swetland <swetland@google.com>,
+        Iliyan Malchev <malchev@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rusty Russell <rusty@rustcorp.com.au>, Mark Grosen <mgrosen@ti.com>,
+        John Williams <john.williams@petalogix.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Guzman Lugo Fernando <fernando.lugo@ti.com>,
+        Anna Suman <s-anna@ti.com>, Clark Rob <rob@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kieran Bingham <kieranbingham@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 1/7] remoteproc: resource table overhaul
+References: <1330589497-4139-1-git-send-email-ohad@wizery.com> <1330589497-4139-2-git-send-email-ohad@wizery.com>
+In-Reply-To: <1330589497-4139-2-git-send-email-ohad@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    rcu: Call out dangers of expedited RCU primitives
+Hi Ohad,
 
-    The expedited RCU primitives can be quite useful, but they have some
-    high costs as well.  This commit updates and creates docbook comments
-    calling out the costs, and updates the RCU documentation as well.
+Ohad Ben-Cohen wrote:
+> The resource table is an array of 'struct fw_resource' members, where
+> each resource entry is expressed as a single member of that array.
+> 
+> This approach got us this far, but it has a few drawbacks:
+> 
+> 1. Different resource entries end up overloading the same members of 'struct
+>    fw_resource' with different meanings. The resulting code is error prone
+>    and hard to read and maintain.
+> 
+> 2. It's impossible to extend 'struct fw_resource' without breaking the
+>    existing firmware images (and we already want to: we can't introduce the
+>    new virito device resource entry with the current scheme).
+> 
+> 3. It doesn't scale: 'struct fw_resource' must be as big as the largest
+>    resource entry type. As a result, smaller resource entries end up
+>    utilizing only small part of it.
+> 
+> This is fixed by defining a dedicated structure for every resource type,
+> and then converting the resource table to a list of type-value members.
+> Instead of a rigid array of homogeneous structs, the resource table
+> is turned into a collection of heterogeneous structures.
+> 
+> This way:
+> 1. Resource entries consume exactly the amount of bytes they need.
+> 2. It's easy to extend: just create a new resource entry structure, and assign
+>    it a new type.
+> 3. The code is easier to read and maintain: the structures' members names are
+>    meaningful.
+> 
+> While we're at it, this patch has several other resource table changes:
+> 1. The resource table gains a simple header which contains the
+>    number of entries in the table and their offsets within the table. This
+>    makes the parsing code simpler and easier to read.
+> 2. A version member is added to the resource table. Should we change the
+>    format again, we'll bump up this version to prevent breakage with
+>    existing firmware images.
+> 3. The VRING and VIRTIO_DEV resource entries are combined to a single
+>    VDEV entry. This paves the way to supporting multiple VDEV entries.
+> 4. Since we don't really support 64-bit rprocs yet, convert two stray u64
+>    members to u32.
 
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+I don't want to look for in this patch but there is one change which completely
+break my remoteproc for dual core ARM.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- Documentation/RCU/checklist.txt |   14 --------------
- include/linux/rcutree.h         |   16 ----------------
- kernel/rcutree.c                |   22 ++++++++--------------
- kernel/rcutree_plugin.h         |   20 ++++----------------
- kernel/srcu.c                   |   27 ++++++++++-----------------
- 5 files changed, 22 insertions(+), 77 deletions(-)
+I am using ohad-github/rpmsg_3.3_rc6_TLV branch and I have also changed resource
+table to get it work.
 
---- a/Documentation/RCU/checklist.txt
-+++ b/Documentation/RCU/checklist.txt
-@@ -180,20 +180,6 @@ over a rather long period of time, but i
- 	operations that would not normally be undertaken while a real-time
- 	workload is running.
- 
--	In particular, if you find yourself invoking one of the expedited
--	primitives repeatedly in a loop, please do everyone a favor:
--	Restructure your code so that it batches the updates, allowing
--	a single non-expedited primitive to cover the entire batch.
--	This will very likely be faster than the loop containing the
--	expedited primitive, and will be much much easier on the rest
--	of the system, especially to real-time workloads running on
--	the rest of the system.
--
--	In addition, it is illegal to call the expedited forms from
--	a CPU-hotplug notifier, or while holding a lock that is acquired
--	by a CPU-hotplug notifier.  Failing to observe this restriction
--	will result in deadlock.
--
- 7.	If the updater uses call_rcu() or synchronize_rcu(), then the
- 	corresponding readers must use rcu_read_lock() and
- 	rcu_read_unlock().  If the updater uses call_rcu_bh() or
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -63,22 +63,6 @@ extern void synchronize_rcu_expedited(vo
- 
- void kfree_call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- 
--/**
-- * synchronize_rcu_bh_expedited - Brute-force RCU-bh grace period
-- *
-- * Wait for an RCU-bh grace period to elapse, but use a "big hammer"
-- * approach to force the grace period to end quickly.  This consumes
-- * significant time on all CPUs and is unfriendly to real-time workloads,
-- * so is thus not recommended for any sort of common-case code.  In fact,
-- * if you are using synchronize_rcu_bh_expedited() in a loop, please
-- * restructure your code to batch your updates, and then use a single
-- * synchronize_rcu_bh() instead.
-- *
-- * Note that it is illegal to call this function while holding any lock
-- * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-- * to call this function from a CPU-hotplug notifier.  Failing to observe
-- * these restriction will result in deadlock.
-- */
- static inline void synchronize_rcu_bh_expedited(void)
- {
- 	synchronize_sched_expedited();
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1970,21 +1970,15 @@ static int synchronize_sched_expedited_c
- 	return 0;
- }
- 
--/**
-- * synchronize_sched_expedited - Brute-force RCU-sched grace period
-- *
-- * Wait for an RCU-sched grace period to elapse, but use a "big hammer"
-- * approach to force the grace period to end quickly.  This consumes
-- * significant time on all CPUs and is unfriendly to real-time workloads,
-- * so is thus not recommended for any sort of common-case code.  In fact,
-- * if you are using synchronize_sched_expedited() in a loop, please
-- * restructure your code to batch your updates, and then use a single
-- * synchronize_sched() instead.
-+/*
-+ * Wait for an rcu-sched grace period to elapse, but use "big hammer"
-+ * approach to force grace period to end quickly.  This consumes
-+ * significant time on all CPUs, and is thus not recommended for
-+ * any sort of common-case code.
-  *
-- * Note that it is illegal to call this function while holding any lock
-- * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-- * to call this function from a CPU-hotplug notifier.  Failing to observe
-- * these restriction will result in deadlock.
-+ * Note that it is illegal to call this function while holding any
-+ * lock that is acquired by a CPU-hotplug notifier.  Failing to
-+ * observe this restriction will result in deadlock.
-  *
-  * This implementation can be thought of as an application of ticket
-  * locking to RCU, with sync_sched_expedited_started and
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -835,22 +835,10 @@ sync_rcu_preempt_exp_init(struct rcu_sta
- 		rcu_report_exp_rnp(rsp, rnp, false); /* Don't wake self. */
- }
- 
--/**
-- * synchronize_rcu_expedited - Brute-force RCU grace period
-- *
-- * Wait for an RCU-preempt grace period, but expedite it.  The basic
-- * idea is to invoke synchronize_sched_expedited() to push all the tasks to
-- * the ->blkd_tasks lists and wait for this list to drain.  This consumes
-- * significant time on all CPUs and is unfriendly to real-time workloads,
-- * so is thus not recommended for any sort of common-case code.
-- * In fact, if you are using synchronize_rcu_expedited() in a loop,
-- * please restructure your code to batch your updates, and then Use a
-- * single synchronize_rcu() instead.
-- *
-- * Note that it is illegal to call this function while holding any lock
-- * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-- * to call this function from a CPU-hotplug notifier.  Failing to observe
-- * these restriction will result in deadlock.
-+/*
-+ * Wait for an rcu-preempt grace period, but expedite it.  The basic idea
-+ * is to invoke synchronize_sched_expedited() to push all the tasks to
-+ * the ->blkd_tasks lists and wait for this list to drain.
-  */
- void synchronize_rcu_expedited(void)
- {
---- a/kernel/srcu.c
-+++ b/kernel/srcu.c
-@@ -286,26 +286,19 @@ void synchronize_srcu(struct srcu_struct
- EXPORT_SYMBOL_GPL(synchronize_srcu);
- 
- /**
-- * synchronize_srcu_expedited - Brute-force SRCU grace period
-+ * synchronize_srcu_expedited - like synchronize_srcu, but less patient
-  * @sp: srcu_struct with which to synchronize.
-  *
-- * Wait for an SRCU grace period to elapse, but use a "big hammer"
-- * approach to force the grace period to end quickly.  This consumes
-- * significant time on all CPUs and is unfriendly to real-time workloads,
-- * so is thus not recommended for any sort of common-case code.  In fact,
-- * if you are using synchronize_srcu_expedited() in a loop, please
-- * restructure your code to batch your updates, and then use a single
-- * synchronize_srcu() instead.
-+ * Flip the completed counter, and wait for the old count to drain to zero.
-+ * As with classic RCU, the updater must use some separate means of
-+ * synchronizing concurrent updates.  Can block; must be called from
-+ * process context.
-  *
-- * Note that it is illegal to call this function while holding any lock
-- * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-- * to call this function from a CPU-hotplug notifier.  Failing to observe
-- * these restriction will result in deadlock.  It is also illegal to call
-- * synchronize_srcu_expedited() from the corresponding SRCU read-side
-- * critical section; doing so will result in deadlock.  However, it is
-- * perfectly legal to call synchronize_srcu_expedited() on one srcu_struct
-- * from some other srcu_struct's read-side critical section, as long as
-- * the resulting graph of srcu_structs is acyclic.
-+ * Note that it is illegal to call synchronize_srcu_expedited()
-+ * from the corresponding SRCU read-side critical section; doing so
-+ * will result in deadlock.  However, it is perfectly legal to call
-+ * synchronize_srcu_expedited() on one srcu_struct from some other
-+ * srcu_struct's read-side critical section.
-  */
- void synchronize_srcu_expedited(struct srcu_struct *sp)
- {
+Here is the part of log where you can see what happen.
+
+rproc_handle_virtio_rsc: rsc type 0
+rproc_handle_virtio_rsc: rsc type 3
+vdev rsc: id 7, dfeatures 1, cfg len 0, 2 vrings
+vdev rsc: vring0: da 100000, qsz 256, align 4096
+vring0: va e1000000 dma 0 size 3000 idr 0
+vdev rsc: vring1: da 104000, qsz 256, align 4096
+vring1: va e1004000 dma 4000 size 3000 idr 1
+zynq-rproc zynq-rproc.1: powering up cpu1_freertos
+zynq-rproc zynq-rproc.1: Booting fw image test, size 211118
+iommu not found
+rsc: type 0
+carveout rsc: da 0, pa 0, len 100000, flags 0
+carveout va e1100000, dma 100000, len 0x100000
+rsc: type 3
+rsc: type 2
+trace0 added: va e1140000, da 0x40000, len 0x8000
+phdr: type 1 da 0x0 memsz 0x1ae60 filesz 0x14014
+
+The problem which I have is that vdev entry and vrings are handled first
+and in __rproc_handle_vring calls dma_alloc_coherent first which caused
+that virtaddr points to memory start (remapped to virt addr 0xe1000000)
+which should be used by code.
+
+In previous version I had carverout first which means that code was copyied
+to physical address 0x0 and then vrigns were allocated. Current code allocate
+vring first and then RTOS is not able to run from zero address.
+
+Thanks,
+Michal
 
 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
