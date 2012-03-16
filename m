@@ -1,56 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946274Ab2CPXtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:49:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54721 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946257Ab2CPXtN (ORCPT
+	id S965518Ab2CPXtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:49:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946237Ab2CPXkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:49:13 -0400
-Date: Fri, 16 Mar 2012 16:49:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Julia Lawall <Julia.Lawall@lip6.fr>
-Subject: Re: [PATCHv2 3/3] simple_open: Automatically convert to
- simple_open()
-Message-Id: <20120316164911.dbc089de.akpm@linux-foundation.org>
-In-Reply-To: <1331631988-20527-4-git-send-email-sboyd@codeaurora.org>
-References: <1331631988-20527-1-git-send-email-sboyd@codeaurora.org>
-	<1331631988-20527-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Mar 2012 19:40:05 -0400
+Message-Id: <20120316233811.484341257@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 16 Mar 2012 16:38:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
+        Pavel Shilovsky <piastry@etersoft.ru>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 02:46:28 -0700
-Stephen Boyd <sboyd@codeaurora.org> wrote:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> Many users of debugfs copy the implementation of default_open()
-> when they want to support a custom read/write function op. This
-> leads to a proliferation of the default_open() implementation
-> across the entire tree. Now that the common implementation has
-> been consolidated into libfs we can replace all the users of this
-> function with simple_open().
-> 
->
-> ...
->
-> --- a/drivers/net/wireless/wl12xx/debugfs.c
-> +++ b/drivers/net/wireless/wl12xx/debugfs.c
->
+------------------
 
-This broke.
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-I'm hitting quite a lot of build errors from this patch.  I'm not
-confident that I will be able to compile-test every file that it
-touches so I shall drop the patch.
+commit d5751469f210d2149cc2159ffff66cbeef6da3f2 upstream.
 
-Please fix it all up, compile-test *every* file, then resend.
+Reorganize the code to make the memory already allocated before
+spinlock'ed loop.
 
-If possible, against linux-next, please.  Quite a few things in this
-area have been changed.
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/file.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 56 insertions(+), 13 deletions(-)
+
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -920,16 +920,26 @@ cifs_push_mandatory_locks(struct cifsFil
+ 	for (lockp = &inode->i_flock; *lockp != NULL; \
+ 	     lockp = &(*lockp)->fl_next)
+ 
++struct lock_to_push {
++	struct list_head llist;
++	__u64 offset;
++	__u64 length;
++	__u32 pid;
++	__u16 netfid;
++	__u8 type;
++};
++
+ static int
+ cifs_push_posix_locks(struct cifsFileInfo *cfile)
+ {
+ 	struct cifsInodeInfo *cinode = CIFS_I(cfile->dentry->d_inode);
+ 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
+ 	struct file_lock *flock, **before;
+-	struct cifsLockInfo *lck, *tmp;
++	unsigned int count = 0, i = 0;
+ 	int rc = 0, xid, type;
++	struct list_head locks_to_send, *el;
++	struct lock_to_push *lck, *tmp;
+ 	__u64 length;
+-	struct list_head locks_to_send;
+ 
+ 	xid = GetXid();
+ 
+@@ -940,29 +950,55 @@ cifs_push_posix_locks(struct cifsFileInf
+ 		return rc;
+ 	}
+ 
++	lock_flocks();
++	cifs_for_each_lock(cfile->dentry->d_inode, before) {
++		if ((*before)->fl_flags & FL_POSIX)
++			count++;
++	}
++	unlock_flocks();
++
+ 	INIT_LIST_HEAD(&locks_to_send);
+ 
++	/*
++	 * Allocating count locks is enough because no locks can be added to
++	 * the list while we are holding cinode->lock_mutex that protects
++	 * locking operations of this inode.
++	 */
++	for (; i < count; i++) {
++		lck = kmalloc(sizeof(struct lock_to_push), GFP_KERNEL);
++		if (!lck) {
++			rc = -ENOMEM;
++			goto err_out;
++		}
++		list_add_tail(&lck->llist, &locks_to_send);
++	}
++
++	i = 0;
++	el = locks_to_send.next;
+ 	lock_flocks();
+ 	cifs_for_each_lock(cfile->dentry->d_inode, before) {
++		if (el == &locks_to_send) {
++			/* something is really wrong */
++			cERROR(1, "Can't push all brlocks!");
++			break;
++		}
+ 		flock = *before;
++		if ((flock->fl_flags & FL_POSIX) == 0)
++			continue;
+ 		length = 1 + flock->fl_end - flock->fl_start;
+ 		if (flock->fl_type == F_RDLCK || flock->fl_type == F_SHLCK)
+ 			type = CIFS_RDLCK;
+ 		else
+ 			type = CIFS_WRLCK;
+-
+-		lck = cifs_lock_init(flock->fl_start, length, type,
+-				     cfile->netfid);
+-		if (!lck) {
+-			rc = -ENOMEM;
+-			goto send_locks;
+-		}
++		lck = list_entry(el, struct lock_to_push, llist);
+ 		lck->pid = flock->fl_pid;
+-
+-		list_add_tail(&lck->llist, &locks_to_send);
++		lck->netfid = cfile->netfid;
++		lck->length = length;
++		lck->type = type;
++		lck->offset = flock->fl_start;
++		i++;
++		el = el->next;
+ 	}
+-
+-send_locks:
+ 	unlock_flocks();
+ 
+ 	list_for_each_entry_safe(lck, tmp, &locks_to_send, llist) {
+@@ -979,11 +1015,18 @@ send_locks:
+ 		kfree(lck);
+ 	}
+ 
++out:
+ 	cinode->can_cache_brlcks = false;
+ 	mutex_unlock(&cinode->lock_mutex);
+ 
+ 	FreeXid(xid);
+ 	return rc;
++err_out:
++	list_for_each_entry_safe(lck, tmp, &locks_to_send, llist) {
++		list_del(&lck->llist);
++		kfree(lck);
++	}
++	goto out;
+ }
+ 
+ static int
+
+
