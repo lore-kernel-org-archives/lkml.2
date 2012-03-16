@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab2CPETh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 00:19:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54044 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab2CPETg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 00:19:36 -0400
+	id S1751913Ab2CPEV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 00:21:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40960 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751Ab2CPEV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 00:21:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="118211861"
+Date: Fri, 16 Mar 2012 12:20:36 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH block/for-3.4/core] cfq: fix cfqg ref handling when
+ BLK_CGROUP && !CFQ_GROUP_IOSCHED
+Message-ID: <20120316042036.GA32728@localhost>
+References: <20120315094945.GA3205@localhost>
+ <20120315163546.GA32137@google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXXy3UDFpm5uCmpnn7Q53FhQN6h-BSAizgk_Sqkg+d4bA@mail.gmail.com>
-References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>
-	<1331834583-16070-1-git-send-email-sp@numascale.com>
-	<CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com>
-	<1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com>
-	<CAE9FiQXXy3UDFpm5uCmpnn7Q53FhQN6h-BSAizgk_Sqkg+d4bA@mail.gmail.com>
-Date: Thu, 15 Mar 2012 21:19:35 -0700
-X-Google-Sender-Auth: gvx44yCzmMDzlsxDiuLFkVFpYAk
-Message-ID: <CAE9FiQUtf9Pix3rmhgk_+oOf19dOvvgQYt+gbHQyag0xkH_bxA@mail.gmail.com>
-Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid() function.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Steffen Persvold <sp@numascale.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120315163546.GA32137@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 7:08 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> So this change breaks the commit
->> c284b42abadbb22083bfde24d308899c08d44ffa.
->>
->> I think the right thing is to have two different apid_id_valid checks
->> one for xapic driver (apic_flat_64.c) and another for x2apic driver
->> (x2apic_phys/cluster.c) and that way, x2apic MADT entries will be parsed
->> only if bios has handed over the OS in x2apic mode or if we have
->> selected the numachip model.
->
-> that looks like more clear.
+On Thu, Mar 15, 2012 at 09:35:46AM -0700, Tejun Heo wrote:
+> When BLK_CGROUP is enabled but CFQ_GROUP_IOSCHED is, cfq ends up
+> calling blkg_get/put() on dummy cfqg leading to the following crash.
+> 
+>   BUG: unable to handle kernel NULL pointer dereference at 00000000000000b0
+>   IP: [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
 
-after more thinking, I think We should still use cpu_has_x2apic checking.
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-one maybe invalid case:
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
 
-System have some cpus apic id < 255, and some cpu apic id > 255.
-BSP apic id < 255.
-those cpus apic id < 255 will be put into xapic mode, cpus > 255 will
-be put into x2apic mode.
-and DMAR table intr-remapping will be working.
+Thanks for the quick fix!
 
-So if we check x2apic_mode early, will skip cpu with apic id > 255,
-even switch to x2apic later.
-
-Thanks
-
-Yinghai Lu
+> ---
+> Yeap, forgot to test that config combination.  Fengguang, can you
+> please test this patch?  Jens, once Fengguang confirms the fix, can
+> you please apply this on top of for-3.4/core along with the pending
+> stats updates?
