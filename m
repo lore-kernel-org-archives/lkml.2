@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422950Ab2CPO5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:57:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36598 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422828Ab2CPOxY (ORCPT
+	id S1422938Ab2CPO5l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:57:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45530 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422829Ab2CPOxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Mar 2012 10:53:24 -0400
-Message-Id: <20120316144241.749359061@chello.nl>
+Message-Id: <20120316144240.829453337@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:53 +0100
+Date: Fri, 16 Mar 2012 15:40:39 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -25,106 +25,82 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 25/26] sched, numa: Only migrate long-running entities
+Subject: [RFC][PATCH 11/26] mm, mpol: Lazy migrate a process/vma
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=numa-migrate-duration.patch
+Content-Disposition: inline; filename=numa-foo-3.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't make much sense to memory migrate short running things.
+Provide simple functions to lazy migrate a process (or part thereof).
+These will be used to implement memory migration for NUMA process
+migration.
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched/numa.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
---- a/kernel/sched/numa.c
-+++ b/kernel/sched/numa.c
-@@ -15,6 +15,8 @@ struct numa_ops {
- 	void		(*mem_migrate)(struct numa_entity *ne, int node);
- 	void		(*cpu_migrate)(struct numa_entity *ne, int node);
+ include/linux/mempolicy.h |    3 +++
+ mm/mempolicy.c            |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+)
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -250,6 +250,9 @@ extern int vma_migratable(struct vm_area
  
-+	u64		(*cpu_runtime)(struct numa_entity *ne);
+ extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
+ 
++extern void lazy_migrate_vma(struct vm_area_struct *vma, int node);
++extern void lazy_migrate_process(struct mm_struct *mm, int node);
 +
- 	bool		(*tryget)(struct numa_entity *ne);
- 	void		(*put)(struct numa_entity *ne);
- };
-@@ -196,6 +198,21 @@ static void process_mem_migrate(struct n
- 	lazy_migrate_process(ne_mm(ne), node);
+ #else
+ 
+ struct mempolicy {};
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1173,6 +1173,46 @@ static long do_mbind(unsigned long start
+ 	return err;
  }
  
-+static u64 process_cpu_runtime(struct numa_entity *ne)
++void lazy_migrate_vma(struct vm_area_struct *vma, int node)
 +{
-+	struct task_struct *p, *t;
-+	u64 runtime = 0;
++	nodemask_t nmask = nodemask_of_node(node);
++	LIST_HEAD(pagelist);
 +
-+	rcu_read_lock();
-+	t = p = ne_owner(ne);
-+	if (p) do {
-+		runtime += t->se.sum_exec_runtime; // @#$#@ 32bit
-+	} while ((t = next_thread(t)) != p);
-+	rcu_read_unlock();
++	struct mempol_walk_data data = {
++		.nodes = &nmask,
++		.flags = MPOL_MF_MOVE | MPOL_MF_INVERT, /* move all pages not in set */
++		.private = &pagelist,
++		.vma = vma,
++	};
 +
-+	return runtime;
++	struct mm_walk walk = {
++		.pte_entry = check_pte_entry,
++		.mm = vma->vm_mm,
++		.private = &data,
++	};
++
++	if (vma->vm_file)
++		return;
++
++	if (!vma_migratable(vma))
++		return;
++
++	if (!walk_page_range(vma->vm_start, vma->vm_end, &walk))
++		migrate_pages_unmap_only(&pagelist);
++
++	putback_lru_pages(&pagelist);
 +}
 +
- static bool process_tryget(struct numa_entity *ne)
- {
- 	/*
-@@ -219,6 +236,8 @@ static const struct numa_ops process_num
- 	.mem_migrate	= process_mem_migrate,
- 	.cpu_migrate	= process_cpu_migrate,
- 
-+	.cpu_runtime	= process_cpu_runtime,
-+
- 	.tryget		= process_tryget,
- 	.put		= process_put,
- };
-@@ -616,6 +635,14 @@ static bool can_move_ne(struct numa_enti
- 	 * XXX: consider mems_allowed, stinking cpusets has mems_allowed
- 	 * per task and it can actually differ over a whole process, la-la-la.
- 	 */
-+
-+	/*
-+	 * Don't bother migrating memory if there's less than 1 second
-+	 * of runtime on the tasks.
-+	 */
-+	if (ne->nops->cpu_runtime(ne) < NSEC_PER_SEC)
-+		return false;
-+
- 	return true;
- }
- 
-@@ -1000,6 +1027,20 @@ static void numa_group_cpu_migrate(struc
- 	rcu_read_unlock();
- }
- 
-+static u64 numa_group_cpu_runtime(struct numa_entity *ne)
++void lazy_migrate_process(struct mm_struct *mm, int node)
 +{
-+	struct numa_group *ng = ne_ng(ne);
-+	struct task_struct *p;
-+	u64 runtime = 0;
++	struct vm_area_struct *vma;
 +
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(p, &ng->tasks, ng_entry)
-+		runtime += p->se.sum_exec_runtime; // @#$# 32bit
-+	rcu_read_unlock();
-+
-+	return runtime;
++	down_read(&mm->mmap_sem);
++	for (vma = mm->mmap; vma; vma = vma->vm_next)
++		lazy_migrate_vma(vma, node);
++	up_read(&mm->mmap_sem);
 +}
 +
- static bool numa_group_tryget(struct numa_entity *ne)
- {
- 	/*
-@@ -1020,6 +1061,8 @@ static const struct numa_ops numa_group_
- 	.mem_migrate	= numa_group_mem_migrate,
- 	.cpu_migrate	= numa_group_cpu_migrate,
- 
-+	.cpu_runtime	= numa_group_cpu_runtime,
-+
- 	.tryget		= numa_group_tryget,
- 	.put		= numa_group_put,
- };
+ /*
+  * User space interface with variable sized bitmaps for nodelists.
+  */
 
 
