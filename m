@@ -1,215 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab2CPRl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:41:57 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37691 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2CPRkC (ORCPT
+	id S1752152Ab2CPRj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:39:59 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:38743 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab2CPRjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:40:02 -0400
+	Fri, 16 Mar 2012 13:39:55 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V4 07/10] hugetlbfs: Add memcg control files for hugetlbfs
-Date: Fri, 16 Mar 2012 23:09:27 +0530
-Message-Id: <1331919570-2264-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V4 01/10] hugetlb: rename max_hstate to hugetlb_max_hstate
+Date: Fri, 16 Mar 2012 23:09:21 +0530
+Message-Id: <1331919570-2264-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12031617-2674-0000-0000-000003B90503
+x-cbid: 12031617-5564-0000-0000-000001D7FCC6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This add control files for hugetlbfs in memcg
+We will be using this from other subsystems like memcg
+in later patches.
 
+Acked-by: Hillf Danton <dhillf@gmail.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h    |   17 +++++++++++++++
- include/linux/memcontrol.h |    7 ++++++
- mm/hugetlb.c               |   25 ++++++++++++++++++++++-
- mm/memcontrol.c            |   48 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 96 insertions(+), 1 deletions(-)
+ mm/hugetlb.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 1f70068..cbd8dc5 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -4,6 +4,7 @@
- #include <linux/mm_types.h>
- #include <linux/fs.h>
- #include <linux/hugetlb_inline.h>
-+#include <linux/cgroup.h>
- 
- struct ctl_table;
- struct user_struct;
-@@ -220,6 +221,12 @@ struct hstate {
- 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
- 	unsigned int free_huge_pages_node[MAX_NUMNODES];
- 	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
-+	/* mem cgroup control files */
-+#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-+	struct cftype cgroup_limit_file;
-+	struct cftype cgroup_usage_file;
-+	struct cftype cgroup_max_usage_file;
-+#endif
- 	char name[HSTATE_NAME_LEN];
- };
- 
-@@ -338,4 +345,14 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
- #define hstate_index(h) 0
- #endif
- 
-+#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-+extern int register_hugetlb_memcg_files(struct cgroup *cgroup,
-+					struct cgroup_subsys *ss);
-+#else
-+static inline int register_hugetlb_memcg_files(struct cgroup *cgroup,
-+					       struct cgroup_subsys *ss)
-+{
-+	return 0;
-+}
-+#endif
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 320dbad..73900b9 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -440,6 +440,7 @@ extern void mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
- 					     struct page *page);
- extern void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
- 					      struct mem_cgroup *memcg);
-+extern int mem_cgroup_hugetlb_file_init(int idx);
- 
- #else
- static inline int
-@@ -470,6 +471,12 @@ mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
- {
- 	return;
- }
-+
-+static inline int mem_cgroup_hugetlb_file_init(int idx)
-+{
-+	return 0;
-+}
-+
- #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
- #endif /* _LINUX_MEMCONTROL_H */
- 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 91361a0..684849a 100644
+index 5f34bd8..d623e71 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -1819,6 +1819,29 @@ static int __init hugetlb_init(void)
- }
- module_init(hugetlb_init);
+@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+ static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
  
-+#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-+int register_hugetlb_memcg_files(struct cgroup *cgroup,
-+				 struct cgroup_subsys *ss)
-+{
-+	int ret = 0;
-+	struct hstate *h;
-+
-+	for_each_hstate(h) {
-+		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
-+		if (ret)
-+			return ret;
-+		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
-+		if (ret)
-+			return ret;
-+		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
-+		if (ret)
-+			return ret;
-+
-+	}
-+	return ret;
-+}
-+#endif
-+
- /* Should be called on processing a hugepagesz=... option */
- void __init hugetlb_add_hstate(unsigned order)
- {
-@@ -1842,7 +1865,7 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
--
-+	mem_cgroup_hugetlb_file_init(hugetlb_max_hstate - 1);
- 	parsed_hstate = h;
- }
+-static int max_hstate;
++static int hugetlb_max_hstate;
+ unsigned int default_hstate_idx;
+ struct hstate hstates[HUGE_MAX_HSTATE];
  
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d8b3513..4900b72 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5123,6 +5123,51 @@ static void mem_cgroup_destroy(struct cgroup_subsys *ss,
- 	mem_cgroup_put(memcg);
- }
+@@ -46,7 +46,7 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
  
-+#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-+static char *mem_fmt(char *buf, unsigned long n)
-+{
-+	if (n >= (1UL << 30))
-+		sprintf(buf, "%luGB", n >> 30);
-+	else if (n >= (1UL << 20))
-+		sprintf(buf, "%luMB", n >> 20);
-+	else
-+		sprintf(buf, "%luKB", n >> 10);
-+	return buf;
-+}
-+
-+int mem_cgroup_hugetlb_file_init(int idx)
-+{
-+	char buf[32];
-+	struct cftype *cft;
-+	struct hstate *h = &hstates[idx];
-+
-+	/* format the size */
-+	mem_fmt(buf, huge_page_size(h));
-+
-+	/* Add the limit file */
-+	cft = &h->cgroup_limit_file;
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "hugetlb.%s.limit_in_bytes", buf);
-+	cft->private = __MEMFILE_PRIVATE(idx, _MEMHUGETLB, RES_LIMIT);
-+	cft->read_u64 = mem_cgroup_read;
-+	cft->write_string = mem_cgroup_write;
-+
-+	/* Add the usage file */
-+	cft = &h->cgroup_usage_file;
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "hugetlb.%s.usage_in_bytes", buf);
-+	cft->private  = __MEMFILE_PRIVATE(idx, _MEMHUGETLB, RES_USAGE);
-+	cft->read_u64 = mem_cgroup_read;
-+
-+	/* Add the MAX usage file */
-+	cft = &h->cgroup_max_usage_file;
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "hugetlb.%s.max_usage_in_bytes", buf);
-+	cft->private  = __MEMFILE_PRIVATE(idx, _MEMHUGETLB, RES_MAX_USAGE);
-+	cft->trigger  = mem_cgroup_reset;
-+	cft->read_u64 = mem_cgroup_read;
-+
-+	return 0;
-+}
-+#endif
-+
- static int mem_cgroup_populate(struct cgroup_subsys *ss,
- 				struct cgroup *cont)
- {
-@@ -5137,6 +5182,9 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
- 	if (!ret)
- 		ret = register_kmem_files(cont, ss);
+ #define for_each_hstate(h) \
+-	for ((h) = hstates; (h) < &hstates[max_hstate]; (h)++)
++	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
  
-+	if (!ret)
-+		ret = register_hugetlb_memcg_files(cont, ss);
-+
- 	return ret;
- }
+ /*
+  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
+@@ -1808,9 +1808,9 @@ void __init hugetlb_add_hstate(unsigned order)
+ 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
+ 		return;
+ 	}
+-	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
++	BUG_ON(hugetlb_max_hstate >= HUGE_MAX_HSTATE);
+ 	BUG_ON(order == 0);
+-	h = &hstates[max_hstate++];
++	h = &hstates[hugetlb_max_hstate++];
+ 	h->order = order;
+ 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
+ 	h->nr_huge_pages = 0;
+@@ -1831,10 +1831,10 @@ static int __init hugetlb_nrpages_setup(char *s)
+ 	static unsigned long *last_mhp;
  
+ 	/*
+-	 * !max_hstate means we haven't parsed a hugepagesz= parameter yet,
++	 * !hugetlb_max_hstate means we haven't parsed a hugepagesz= parameter yet,
+ 	 * so this hugepages= parameter goes to the "default hstate".
+ 	 */
+-	if (!max_hstate)
++	if (!hugetlb_max_hstate)
+ 		mhp = &default_hstate_max_huge_pages;
+ 	else
+ 		mhp = &parsed_hstate->max_huge_pages;
+@@ -1853,7 +1853,7 @@ static int __init hugetlb_nrpages_setup(char *s)
+ 	 * But we need to allocate >= MAX_ORDER hstates here early to still
+ 	 * use the bootmem allocator.
+ 	 */
+-	if (max_hstate && parsed_hstate->order >= MAX_ORDER)
++	if (hugetlb_max_hstate && parsed_hstate->order >= MAX_ORDER)
+ 		hugetlb_hstate_alloc_pages(parsed_hstate);
+ 
+ 	last_mhp = mhp;
 -- 
 1.7.9
 
