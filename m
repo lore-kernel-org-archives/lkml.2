@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423037Ab2CPPUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:20:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2934 "EHLO mx1.redhat.com"
+	id S1161672Ab2CPPWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:22:53 -0400
+Received: from smtp12.mail.ru ([94.100.176.89]:57556 "EHLO smtp12.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1032852Ab2CPPUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:20:39 -0400
-Subject: [PATCH] virtio-spec: split virtio-net device status filed into ro and
- rw byte
-To: qemu-devel@nongnu.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com
-From: Jason Wang <jasowang@redhat.com>
-Date: Fri, 16 Mar 2012 23:20:26 +0800
-Message-ID: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400>
-User-Agent: StGit/0.15
+	id S1161465Ab2CPPWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 11:22:51 -0400
+From: "Igor Sobinov" <sluge@mail.ru>
+Subject: Question about disk I/O erros statistic
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain;
+	charset="UTF-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Date: Fri, 16 Mar 2012 19:22:49 +0400
+X-Mailer: Koma-Mail
+Message-Id: <E1S8YzS-0008Rr-2J.sluge-mail-ru@smtp12.mail.ru>
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch splits the device status field of virtio-net into ro and rw
-byte. This would simplify the implementation of both host and guest
-and make the layout more clean. As VIRTIO_NET_S_ANNOUNCE is a rw bit,
-it was moved to bit 8 (0x100).
+Hello
+I have a question about checking disk I/O errors on linux:
 
-btw. looks like there's no implementation that depends on
-VIRTIO_NET_S_ANNOUNCE, so the move is safe.
+So, I used a solaris OS from oracle for a last period of time and found that it has a interesting option of iostat: -e and -E keys that
+shows HW and SW errors of disk usage, like this:
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- virtio-0.9.4.lyx |   20 +++++++++++++++++++-
- 1 files changed, 19 insertions(+), 1 deletions(-)
+from solaris man:
 
-diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
-index 6c7bab1..ef3951c 100644
---- a/virtio-0.9.4.lyx
-+++ b/virtio-0.9.4.lyx
-@@ -58,6 +58,7 @@
- \html_be_strict false
- \author -608949062 "Rusty Russell,,," 
- \author 1531152142 "pbonzini" 
-+\author 2090695081 "Jason" 
- \end_header
- 
- \begin_body
-@@ -4012,8 +4013,19 @@ configuration
- layout Two configuration fields are currently defined.
-  The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
-  is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
-+
-+\change_inserted 2090695081 1331907586
-+ The low byte of status field is read-only, guest write to this byte would
-+ be ignored.
-+ Currently only one bit is defined for this byte: VIRTIO_NET_S_LINK_UP.
-+ The high byte of status field is read-writable.
-+ Currently only one bit is defined for this byte: VIRTIO_NET_S_ANNOUNCE.
-+
-+\change_deleted 2090695081 1331907489
-  Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
-  and VIRTIO_NET_S_ANNOUNCE.
-+
-+\change_unchanged
-  
- \begin_inset listings
- inline false
-@@ -4026,7 +4038,13 @@ status open
- 
- \begin_layout Plain Layout
- 
--#define VIRTIO_NET_S_ANNOUNCE	2
-+#define VIRTIO_NET_S_ANNOUNCE	
-+\change_inserted 2090695081 1331907493
-+0x100
-+\change_deleted 2090695081 1331907491
-+2
-+\change_unchanged
-+
- \end_layout
- 
- \begin_layout Plain Layout
+-e Display device error summary statistics. The
+total errors, hard errors, soft errors, and
+transport errors are displayed.
+
+-E Display all device error statistics.
+
+
+
+# iostat -e
+---- errors ---
+device s/w h/w trn tot
+dad1 0 0 0 0
+dad2 0 0 0 0
+sd1 0 0 1 1
+nfs1 0 0 0 0
+nfs6 0 0 0 0
+
+# iostat -E
+
+dad1 Soft Errors: 0 Hard Errors: 0 Transport Errors: 0
+Model: XXXXXXXX Revision: 8.01 Serial No: XXXXXXXX
+Size: XXX.00GB <XXX bytes>
+Media Error: 0 Device Not Ready: 0 No Device: 0 Recoverable: 0
+Illegal Request: 0
+
+sd1 Soft Errors: 0 Hard Errors: 0 Transport Errors: 1
+Vendor: XXXXX Product: CDW/DVD XXXX Revision: XXXX Serial No:XXXX
+Size: 0.00GB <0 bytes>
+Media Error: 0 Device Not Ready: 0 No Device: 0 Recoverable: 0
+Illegal Request: 1 Predictive Failure Analysis: 0
+
+
+So, this is the great info that is very useful for many purposes, but it is not available on linux(((( Does anybody knows why?
+Is any existing solution on linux that supports this features?
+
+
+Regards, Igor
 
