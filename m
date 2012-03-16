@@ -1,953 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030345Ab2CPGL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 02:11:57 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:39766 "EHLO
-	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964906Ab2CPGL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 02:11:26 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Mike Turquette <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v7 3/3] clk: basic clock hardware types
-Date: Thu, 15 Mar 2012 23:11:20 -0700
-Message-Id: <1331878280-2758-4-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
+	id S1161313Ab2CPGPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 02:15:20 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:44372 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753950Ab2CPGPR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 02:15:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331877770-12150-1-git-send-email-myungjoo.ham@samsung.com>
+References: <201203150125.14896.rjw@sisk.pl> <1331877770-12150-1-git-send-email-myungjoo.ham@samsung.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 15 Mar 2012 23:14:53 -0700
+Message-ID: <CAJOA=zMZE51Bcb67pf-jU99BYswDnhtvPiA+Y+EQcMpToN7xPg@mail.gmail.com>
+Subject: Re: [PATCH v3] PM / devfreq: add relation of recommended frequency.
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kevin Hilman <khilman@ti.com>, myungjoo.ham@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many platforms support simple gateable clocks, fixed-rate clocks,
-adjustable divider clocks and multi-parent multiplexer clocks.
+On Thu, Mar 15, 2012 at 11:02 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> The semantics of "target frequency" given to devfreq driver from
+> devfreq framework has always been interpretted as "at least" or GLB
+> (greatest lower bound). However, the framework might want the
+> device driver to limit its max frequency (LUB: least upper bound),
+> especially if it is given by thermal framework (it's too hot).
+>
+> Thus, the target fuction should have another parameter to express
+> whether the framework wants GLB or LUB. And, the additional parameter,
+> "u32 flags", does it.
+>
+> With the update, devfreq_recommended_opp() is also updated.
+>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-This patch introduces basic clock types for the above-mentioned hardware
-which share some common characteristics.
+I know Rafael already said he'd take it but I might as well add:
 
-Based on original work by Jeremy Kerr and contribution by Jamie Iles.
-Dividers and multiplexor clocks originally contributed by Richard Zhao &
-Sascha Hauer.
+Reviewed-by: Mike Turquette <mturquette@ti.com>
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Mike Turquette <mturquette@ti.com>
-Reviewed-by: Andrew Lunn <andrew@lunn.ch>
-Tested-by: Andrew Lunn <andrew@lunn.ch>
-Reviewed-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergman <arnd.bergmann@linaro.org>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Jamie Iles <jamie@jamieiles.com>
-Cc: Richard Zhao <richard.zhao@linaro.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>
-Cc: Deepak Saxena <dsaxena@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
-Changes since v6:
- * fixed up clk_divider's .round_rate logic (thanks Sascha)
- * removed useless locking around basic clock types
-
-Changes since v5:
- * standardized the hw-specific locking in the basic clock types
- * export the individual ops for each basic clock type
- * improve registration for single-parent basic clocks (thanks Sascha)
- * fixed bugs in gate clock's static initializers (thanks Andrew)
-
- drivers/clk/Makefile         |    3 +-
- drivers/clk/clk-divider.c    |  200 ++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/clk-fixed-rate.c |   82 +++++++++++++++++
- drivers/clk/clk-gate.c       |  150 +++++++++++++++++++++++++++++++
- drivers/clk/clk-mux.c        |  116 ++++++++++++++++++++++++
- include/linux/clk-private.h  |  124 ++++++++++++++++++++++++++
- include/linux/clk-provider.h |  127 ++++++++++++++++++++++++++
- 7 files changed, 801 insertions(+), 1 deletions(-)
- create mode 100644 drivers/clk/clk-divider.c
- create mode 100644 drivers/clk/clk-fixed-rate.c
- create mode 100644 drivers/clk/clk-gate.c
- create mode 100644 drivers/clk/clk-mux.c
-
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index ff362c4..1f736bc 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -1,3 +1,4 @@
- 
- obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
--obj-$(CONFIG_COMMON_CLK)	+= clk.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-fixed-rate.o clk-gate.o \
-+				   clk-mux.o clk-divider.o
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-new file mode 100644
-index 0000000..d5ac6a7
---- /dev/null
-+++ b/drivers/clk/clk-divider.c
-@@ -0,0 +1,200 @@
-+/*
-+ * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
-+ * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
-+ * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Adjustable divider clock implementation
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/string.h>
-+
-+/*
-+ * DOC: basic adjustable divider clock that cannot gate
-+ *
-+ * Traits of this clock:
-+ * prepare - clk_prepare only ensures that parents are prepared
-+ * enable - clk_enable only ensures that parents are enabled
-+ * rate - rate is adjustable.  clk->rate = parent->rate / divisor
-+ * parent - fixed parent.  No clk_set_parent support
-+ */
-+
-+#define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
-+
-+#define div_mask(d)	((1 << (d->width)) - 1)
-+
-+static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
-+		unsigned long parent_rate)
-+{
-+	struct clk_divider *divider = to_clk_divider(hw);
-+	unsigned int div;
-+
-+	div = readl(divider->reg) >> divider->shift;
-+	div &= div_mask(divider);
-+
-+	if (!(divider->flags & CLK_DIVIDER_ONE_BASED))
-+		div++;
-+
-+	return parent_rate / div;
-+}
-+EXPORT_SYMBOL_GPL(clk_divider_recalc_rate);
-+
-+/*
-+ * The reverse of DIV_ROUND_UP: The maximum number which
-+ * divided by m is r
-+ */
-+#define MULT_ROUND_UP(r, m) ((r) * (m) + (m) - 1)
-+
-+static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
-+		unsigned long *best_parent_rate)
-+{
-+	struct clk_divider *divider = to_clk_divider(hw);
-+	int i, bestdiv = 0;
-+	unsigned long parent_rate, best = 0, now, maxdiv;
-+
-+	if (!rate)
-+		rate = 1;
-+
-+	maxdiv = (1 << divider->width);
-+
-+	if (divider->flags & CLK_DIVIDER_ONE_BASED)
-+		maxdiv--;
-+
-+	if (!best_parent_rate) {
-+		parent_rate = __clk_get_rate(__clk_get_parent(hw->clk));
-+		bestdiv = DIV_ROUND_UP(parent_rate, rate);
-+		bestdiv = bestdiv == 0 ? 1 : bestdiv;
-+		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
-+		return bestdiv;
-+	}
-+
-+	/*
-+	 * The maximum divider we can use without overflowing
-+	 * unsigned long in rate * i below
-+	 */
-+	maxdiv = min(ULONG_MAX / rate, maxdiv);
-+
-+	for (i = 1; i <= maxdiv; i++) {
-+		parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
-+				MULT_ROUND_UP(rate, i));
-+		now = parent_rate / i;
-+		if (now <= rate && now > best) {
-+			bestdiv = i;
-+			best = now;
-+			*best_parent_rate = parent_rate;
-+		}
-+	}
-+
-+	if (!bestdiv) {
-+		bestdiv = (1 << divider->width);
-+		if (divider->flags & CLK_DIVIDER_ONE_BASED)
-+			bestdiv--;
-+		*best_parent_rate = __clk_round_rate(__clk_get_parent(hw->clk), 1);
-+	}
-+
-+	return bestdiv;
-+}
-+
-+static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long *prate)
-+{
-+	int div;
-+	div = clk_divider_bestdiv(hw, rate, prate);
-+
-+	if (prate)
-+		return *prate / div;
-+	else {
-+		unsigned long r;
-+		r = __clk_get_rate(__clk_get_parent(hw->clk));
-+		return r / div;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(clk_divider_round_rate);
-+
-+static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate)
-+{
-+	struct clk_divider *divider = to_clk_divider(hw);
-+	unsigned int div;
-+	unsigned long flags = 0;
-+	u32 val;
-+
-+	div = __clk_get_rate(__clk_get_parent(hw->clk)) / rate;
-+
-+	if (!(divider->flags & CLK_DIVIDER_ONE_BASED))
-+		div--;
-+
-+	if (div > div_mask(divider))
-+		div = div_mask(divider);
-+
-+	if (divider->lock)
-+		spin_lock_irqsave(divider->lock, flags);
-+
-+	val = readl(divider->reg);
-+	val &= ~(div_mask(divider) << divider->shift);
-+	val |= div << divider->shift;
-+	writel(val, divider->reg);
-+
-+	if (divider->lock)
-+		spin_unlock_irqrestore(divider->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_divider_set_rate);
-+
-+struct clk_ops clk_divider_ops = {
-+	.recalc_rate = clk_divider_recalc_rate,
-+	.round_rate = clk_divider_round_rate,
-+	.set_rate = clk_divider_set_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_divider_ops);
-+
-+struct clk *clk_register_divider(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_divider_flags, spinlock_t *lock)
-+{
-+	struct clk_divider *div;
-+	struct clk *clk;
-+
-+	div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
-+
-+	if (!div) {
-+		pr_err("%s: could not allocate divider clk\n", __func__);
-+		return NULL;
-+	}
-+
-+	/* struct clk_divider assignments */
-+	div->reg = reg;
-+	div->shift = shift;
-+	div->width = width;
-+	div->flags = clk_divider_flags;
-+	div->lock = lock;
-+
-+	if (parent_name) {
-+		div->parent[0] = kstrdup(parent_name, GFP_KERNEL);
-+		if (!div->parent[0])
-+			goto out;
-+	}
-+
-+	clk = clk_register(dev, name,
-+			&clk_divider_ops, &div->hw,
-+			div->parent,
-+			(parent_name ? 1 : 0),
-+			flags);
-+	if (clk)
-+		return clk;
-+
-+out:
-+	kfree(div->parent[0]);
-+	kfree(div);
-+
-+	return NULL;
-+}
-diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-new file mode 100644
-index 0000000..90c79fb
---- /dev/null
-+++ b/drivers/clk/clk-fixed-rate.c
-@@ -0,0 +1,82 @@
-+/*
-+ * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-+ * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Fixed rate clock implementation
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+
-+/*
-+ * DOC: basic fixed-rate clock that cannot gate
-+ *
-+ * Traits of this clock:
-+ * prepare - clk_(un)prepare only ensures parents are prepared
-+ * enable - clk_enable only ensures parents are enabled
-+ * rate - rate is always a fixed value.  No clk_set_rate support
-+ * parent - fixed parent.  No clk_set_parent support
-+ */
-+
-+#define to_clk_fixed_rate(_hw) container_of(_hw, struct clk_fixed_rate, hw)
-+
-+static unsigned long clk_fixed_rate_recalc_rate(struct clk_hw *hw,
-+		unsigned long parent_rate)
-+{
-+	return to_clk_fixed_rate(hw)->fixed_rate;
-+}
-+EXPORT_SYMBOL_GPL(clk_fixed_rate_recalc_rate);
-+
-+struct clk_ops clk_fixed_rate_ops = {
-+	.recalc_rate = clk_fixed_rate_recalc_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_fixed_rate_ops);
-+
-+struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		unsigned long fixed_rate)
-+{
-+	struct clk_fixed_rate *fixed;
-+	char **parent_names = NULL;
-+	u8 len;
-+
-+	fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
-+
-+	if (!fixed) {
-+		pr_err("%s: could not allocate fixed clk\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	/* struct clk_fixed_rate assignments */
-+	fixed->fixed_rate = fixed_rate;
-+
-+	if (parent_name) {
-+		parent_names = kmalloc(sizeof(char *), GFP_KERNEL);
-+
-+		if (! parent_names)
-+			goto out;
-+
-+		len = sizeof(char) * strlen(parent_name);
-+
-+		parent_names[0] = kmalloc(len, GFP_KERNEL);
-+
-+		if (!parent_names[0])
-+			goto out;
-+
-+		strncpy(parent_names[0], parent_name, len);
-+	}
-+
-+out:
-+	return clk_register(dev, name,
-+			&clk_fixed_rate_ops, &fixed->hw,
-+			parent_names,
-+			(parent_name ? 1 : 0),
-+			flags);
-+}
-diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-new file mode 100644
-index 0000000..b5902e2
---- /dev/null
-+++ b/drivers/clk/clk-gate.c
-@@ -0,0 +1,150 @@
-+/*
-+ * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-+ * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Gated clock implementation
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/string.h>
-+
-+/**
-+ * DOC: basic gatable clock which can gate and ungate it's ouput
-+ *
-+ * Traits of this clock:
-+ * prepare - clk_(un)prepare only ensures parent is (un)prepared
-+ * enable - clk_enable and clk_disable are functional & control gating
-+ * rate - inherits rate from parent.  No clk_set_rate support
-+ * parent - fixed parent.  No clk_set_parent support
-+ */
-+
-+#define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
-+
-+static void clk_gate_set_bit(struct clk_gate *gate)
-+{
-+	u32 reg;
-+	unsigned long flags = 0;
-+
-+	if (gate->lock)
-+		spin_lock_irqsave(gate->lock, flags);
-+
-+	reg = readl(gate->reg);
-+	reg |= BIT(gate->bit_idx);
-+	writel(reg, gate->reg);
-+
-+	if (gate->lock)
-+		spin_unlock_irqrestore(gate->lock, flags);
-+}
-+
-+static void clk_gate_clear_bit(struct clk_gate *gate)
-+{
-+	u32 reg;
-+	unsigned long flags = 0;
-+
-+	if (gate->lock)
-+		spin_lock_irqsave(gate->lock, flags);
-+
-+	reg = readl(gate->reg);
-+	reg &= ~BIT(gate->bit_idx);
-+	writel(reg, gate->reg);
-+
-+	if (gate->lock)
-+		spin_unlock_irqrestore(gate->lock, flags);
-+}
-+
-+static int clk_gate_enable(struct clk_hw *hw)
-+{
-+	struct clk_gate *gate = to_clk_gate(hw);
-+
-+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
-+		clk_gate_clear_bit(gate);
-+	else
-+		clk_gate_set_bit(gate);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_gate_enable);
-+
-+static void clk_gate_disable(struct clk_hw *hw)
-+{
-+	struct clk_gate *gate = to_clk_gate(hw);
-+
-+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
-+		clk_gate_set_bit(gate);
-+	else
-+		clk_gate_clear_bit(gate);
-+}
-+EXPORT_SYMBOL_GPL(clk_gate_disable);
-+
-+static int clk_gate_is_enabled(struct clk_hw *hw)
-+{
-+	u32 reg;
-+	struct clk_gate *gate = to_clk_gate(hw);
-+
-+	reg = readl(gate->reg);
-+
-+	/* if a set bit disables this clk, flip it before masking */
-+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
-+		reg ^= BIT(gate->bit_idx);
-+
-+	reg &= BIT(gate->bit_idx);
-+
-+	return reg ? 1 : 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_gate_is_enabled);
-+
-+struct clk_ops clk_gate_ops = {
-+	.enable = clk_gate_enable,
-+	.disable = clk_gate_disable,
-+	.is_enabled = clk_gate_is_enabled,
-+};
-+EXPORT_SYMBOL_GPL(clk_gate_ops);
-+
-+struct clk *clk_register_gate(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 bit_idx,
-+		u8 clk_gate_flags, spinlock_t *lock)
-+{
-+	struct clk_gate *gate;
-+	struct clk *clk;
-+
-+	gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
-+
-+	if (!gate) {
-+		pr_err("%s: could not allocate gated clk\n", __func__);
-+		return NULL;
-+	}
-+
-+	/* struct clk_gate assignments */
-+	gate->reg = reg;
-+	gate->bit_idx = bit_idx;
-+	gate->flags = clk_gate_flags;
-+	gate->lock = lock;
-+
-+	if (parent_name) {
-+		gate->parent[0] = kstrdup(parent_name, GFP_KERNEL);
-+		if (!gate->parent[0])
-+			goto out;
-+	}
-+
-+	clk = clk_register(dev, name,
-+			&clk_gate_ops, &gate->hw,
-+			gate->parent,
-+			(parent_name ? 1 : 0),
-+			flags);
-+	if (clk)
-+		return clk;
-+out:
-+	kfree(gate->parent[0]);
-+	kfree(gate);
-+
-+	return NULL;
-+}
-diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
-new file mode 100644
-index 0000000..c71ad1f
---- /dev/null
-+++ b/drivers/clk/clk-mux.c
-@@ -0,0 +1,116 @@
-+/*
-+ * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
-+ * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
-+ * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Simple multiplexer clock implementation
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+
-+/*
-+ * DOC: basic adjustable multiplexer clock that cannot gate
-+ *
-+ * Traits of this clock:
-+ * prepare - clk_prepare only ensures that parents are prepared
-+ * enable - clk_enable only ensures that parents are enabled
-+ * rate - rate is only affected by parent switching.  No clk_set_rate support
-+ * parent - parent is adjustable through clk_set_parent
-+ */
-+
-+#define to_clk_mux(_hw) container_of(_hw, struct clk_mux, hw)
-+
-+static u8 clk_mux_get_parent(struct clk_hw *hw)
-+{
-+	struct clk_mux *mux = to_clk_mux(hw);
-+	u32 val;
-+
-+	/*
-+	 * FIXME need a mux-specific flag to determine if val is bitwise or numeric
-+	 * e.g. sys_clkin_ck's clksel field is 3 bits wide, but ranges from 0x1
-+	 * to 0x7 (index starts at one)
-+	 * OTOH, pmd_trace_clk_mux_ck uses a separate bit for each clock, so
-+	 * val = 0x4 really means "bit 2, index starts at bit 0"
-+	 */
-+	val = readl(mux->reg) >> mux->shift;
-+	val &= (1 << mux->width) - 1;
-+
-+	if (val && (mux->flags & CLK_MUX_INDEX_BIT))
-+		val = ffs(val) - 1;
-+
-+	if (val && (mux->flags & CLK_MUX_INDEX_ONE))
-+		val--;
-+
-+	if (val >= __clk_get_num_parents(hw->clk))
-+		return -EINVAL;
-+
-+	return val;
-+}
-+EXPORT_SYMBOL_GPL(clk_mux_get_parent);
-+
-+static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
-+{
-+	struct clk_mux *mux = to_clk_mux(hw);
-+	u32 val;
-+	unsigned long flags = 0;
-+
-+	if (mux->flags & CLK_MUX_INDEX_BIT)
-+		index = (1 << ffs(index));
-+
-+	if (mux->flags & CLK_MUX_INDEX_ONE)
-+		index++;
-+
-+	if (mux->lock)
-+		spin_lock_irqsave(mux->lock, flags);
-+
-+	val = readl(mux->reg);
-+	val &= ~(((1 << mux->width) - 1) << mux->shift);
-+	val |= index << mux->shift;
-+	writel(val, mux->reg);
-+
-+	if (mux->lock)
-+		spin_unlock_irqrestore(mux->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_mux_set_parent);
-+
-+struct clk_ops clk_mux_ops = {
-+	.get_parent = clk_mux_get_parent,
-+	.set_parent = clk_mux_set_parent,
-+};
-+EXPORT_SYMBOL_GPL(clk_mux_ops);
-+
-+struct clk *clk_register_mux(struct device *dev, const char *name,
-+		char **parent_names, u8 num_parents, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_mux_flags, spinlock_t *lock)
-+{
-+	struct clk_mux *mux;
-+
-+	mux = kmalloc(sizeof(struct clk_mux), GFP_KERNEL);
-+
-+	if (!mux) {
-+		pr_err("%s: could not allocate mux clk\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	/* struct clk_mux assignments */
-+	mux->reg = reg;
-+	mux->shift = shift;
-+	mux->width = width;
-+	mux->flags = clk_mux_flags;
-+	mux->lock = lock;
-+
-+	return clk_register(dev, name, &clk_mux_ops, &mux->hw,
-+			parent_names, num_parents, flags);
-+}
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index e2cce6f..5e4312b 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -46,6 +46,130 @@ struct clk {
- #endif
- };
- 
-+/*
-+ * DOC: Basic clock implementations common to many platforms
-+ *
-+ * Each basic clock hardware type is comprised of a structure describing the
-+ * clock hardware, implementations of the relevant callbacks in struct clk_ops,
-+ * unique flags for that hardware type, a registration function and an
-+ * alternative macro for static initialization
-+ */
-+
-+extern struct clk_ops clk_fixed_rate_ops;
-+
-+#define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,		\
-+				_fixed_rate_flags)		\
-+	static struct clk _name;				\
-+	static char *_name##_parent_names[] = {};		\
-+	static struct clk_fixed_rate _name##_hw = {		\
-+		.hw = {						\
-+			.clk = &_name,				\
-+		},						\
-+		.fixed_rate = _rate,				\
-+		.flags = _fixed_rate_flags,			\
-+	};							\
-+	static struct clk _name = {				\
-+		.name = #_name,					\
-+		.ops = &clk_fixed_rate_ops,			\
-+		.hw = &_name##_hw.hw,				\
-+		.parent_names = _name##_parent_names,		\
-+		.num_parents =					\
-+			ARRAY_SIZE(_name##_parent_names),	\
-+		.flags = _flags,				\
-+	};
-+
-+extern struct clk_ops clk_gate_ops;
-+
-+#define DEFINE_CLK_GATE(_name, _parent_name, _parent_ptr,	\
-+				_flags, _reg, _bit_idx,		\
-+				_gate_flags, _lock)		\
-+	static struct clk _name;				\
-+	static char *_name##_parent_names[] = {			\
-+		_parent_name,					\
-+	};							\
-+	static struct clk *_name##_parents[] = {		\
-+		_parent_ptr,					\
-+	};							\
-+	static struct clk_gate _name##_hw = {			\
-+		.hw = {						\
-+			.clk = &_name,				\
-+		},						\
-+		.reg = _reg,					\
-+		.bit_idx = _bit_idx,				\
-+		.flags = _gate_flags,				\
-+		.lock = _lock,					\
-+	};							\
-+	static struct clk _name = {				\
-+		.name = #_name,					\
-+		.ops = &clk_gate_ops,				\
-+		.hw = &_name##_hw.hw,				\
-+		.parent_names = _name##_parent_names,		\
-+		.num_parents =					\
-+			ARRAY_SIZE(_name##_parent_names),	\
-+		.parents = _name##_parents,			\
-+		.flags = _flags,				\
-+	};
-+
-+extern struct clk_ops clk_divider_ops;
-+
-+#define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
-+				_flags, _reg, _shift, _width,	\
-+				_divider_flags, _lock)		\
-+	static struct clk _name;				\
-+	static char *_name##_parent_names[] = {			\
-+		_parent_name,					\
-+	};							\
-+	static struct clk *_name##_parents[] = {		\
-+		_parent_ptr,					\
-+	};							\
-+	static struct clk_divider _name##_hw = {		\
-+		.hw = {						\
-+			.clk = &_name,				\
-+		},						\
-+		.reg = _reg,					\
-+		.shift = _shift,				\
-+		.width = _width,				\
-+		.flags = _divider_flags,			\
-+		.lock = _lock,					\
-+	};							\
-+	static struct clk _name = {				\
-+		.name = #_name,					\
-+		.ops = &clk_divider_ops,			\
-+		.hw = &_name##_hw.hw,				\
-+		.parent_names = _name##_parent_names,		\
-+		.num_parents =					\
-+			ARRAY_SIZE(_name##_parent_names),	\
-+		.parents = _name##_parents,			\
-+		.flags = _flags,				\
-+	};
-+
-+extern struct clk_ops clk_mux_ops;
-+
-+#define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags,	\
-+				_reg, _shift, _width,		\
-+				_mux_flags, _lock)		\
-+	static struct clk _name;				\
-+	static struct clk_mux _name##_hw = {			\
-+		.hw = {						\
-+			.clk = &_name,				\
-+		},						\
-+		.reg = _reg,					\
-+		.shift = _shift,				\
-+		.width = _width,				\
-+		.flags = _mux_flags,				\
-+		.lock = _lock,					\
-+	};							\
-+	static struct clk _name = {				\
-+		.name = #_name,					\
-+		.ops = &clk_mux_ops,				\
-+		.hw = &_name##_hw.hw,				\
-+		.parent_names = _parent_names,			\
-+		.num_parents =					\
-+			ARRAY_SIZE(_parent_names),		\
-+		.parents = _parents,				\
-+		.flags = _flags,				\
-+	};
-+
- /**
-  * __clk_init - initialize the data structures in a struct clk
-  * @dev:	device initializing this clk, placeholder for now
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index b18b0e7..5508897 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -129,6 +129,133 @@ struct clk_ops {
- 	void		(*init)(struct clk_hw *hw);
- };
- 
-+/*
-+ * DOC: Basic clock implementations common to many platforms
-+ *
-+ * Each basic clock hardware type is comprised of a structure describing the
-+ * clock hardware, implementations of the relevant callbacks in struct clk_ops,
-+ * unique flags for that hardware type, a registration function and an
-+ * alternative macro for static initialization
-+ */
-+
-+/**
-+ * struct clk_fixed_rate - fixed-rate clock
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @fixed_rate:	constant frequency of clock
-+ */
-+struct clk_fixed_rate {
-+	struct		clk_hw hw;
-+	unsigned long	fixed_rate;
-+	u8		flags;
-+};
-+
-+struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		unsigned long fixed_rate);
-+
-+/**
-+ * struct clk_gate - gating clock
-+ *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @reg:	register controlling gate
-+ * @bit_idx:	single bit controlling gate
-+ * @flags:	hardware-specific flags
-+ * @lock:	register lock
-+ *
-+ * Clock which can gate its output.  Implements .enable & .disable
-+ *
-+ * Flags:
-+ * CLK_GATE_SET_DISABLE - by default this clock sets the bit at bit_idx to
-+ * 	enable the clock.  Setting this flag does the opposite: setting the bit
-+ * 	disable the clock and clearing it enables the clock
-+ */
-+struct clk_gate {
-+	struct clk_hw hw;
-+	void __iomem	*reg;
-+	u8		bit_idx;
-+	u8		flags;
-+	spinlock_t	*lock;
-+	char		*parent[1];
-+};
-+
-+#define CLK_GATE_SET_TO_DISABLE		BIT(0)
-+
-+struct clk *clk_register_gate(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 bit_idx,
-+		u8 clk_gate_flags, spinlock_t *lock);
-+
-+/**
-+ * struct clk_divider - adjustable divider clock
-+ *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @reg:	register containing the divider
-+ * @shift:	shift to the divider bit field
-+ * @width:	width of the divider bit field
-+ * @lock:	register lock
-+ *
-+ * Clock with an adjustable divider affecting its output frequency.  Implements
-+ * .recalc_rate, .set_rate and .round_rate
-+ *
-+ * Flags:
-+ * CLK_DIVIDER_ONE_BASED - by default the divisor is the value read from the
-+ * 	register plus one.  If CLK_DIVIDER_ONE_BASED is set then the divider is
-+ * 	the raw value read from the register, with the value of zero considered
-+ * 	invalid
-+ * CLK_DIVIDER_POWER_OF_TWO - clock divisor is 2 raised to the value read from
-+ * 	the hardware register
-+ */
-+struct clk_divider {
-+	struct clk_hw	hw;
-+	void __iomem	*reg;
-+	u8		shift;
-+	u8		width;
-+	u8		flags;
-+	spinlock_t	*lock;
-+	char		*parent[1];
-+};
-+
-+#define CLK_DIVIDER_ONE_BASED		BIT(0)
-+#define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
-+
-+struct clk *clk_register_divider(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_divider_flags, spinlock_t *lock);
-+
-+/**
-+ * struct clk_mux - multiplexer clock
-+ *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @reg:	register controlling multiplexer
-+ * @shift:	shift to multiplexer bit field
-+ * @width:	width of mutliplexer bit field
-+ * @num_clks:	number of parent clocks
-+ * @lock:	register lock
-+ *
-+ * Clock with multiple selectable parents.  Implements .get_parent, .set_parent
-+ * and .recalc_rate
-+ *
-+ * Flags:
-+ * CLK_MUX_INDEX_ONE - register index starts at 1, not 0
-+ * CLK_MUX_INDEX_BITWISE - register index is a single bit (power of two)
-+ */
-+struct clk_mux {
-+	struct clk_hw	hw;
-+	void __iomem	*reg;
-+	u8		shift;
-+	u8		width;
-+	u8		flags;
-+	spinlock_t	*lock;
-+};
-+
-+#define CLK_MUX_INDEX_ONE		BIT(0)
-+#define CLK_MUX_INDEX_BIT		BIT(1)
-+
-+struct clk *clk_register_mux(struct device *dev, const char *name,
-+		char **parent_names, u8 num_parents, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_mux_flags, spinlock_t *lock);
- 
- /**
-  * clk_register - allocate a new clock, register it and return an opaque cookie
--- 
-1.7.5.4
-
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> Changes from v2
+> - Updated comments
+> - Rebased.
+>
+> Changes from v1
+> - Style update.
+>
+>  drivers/devfreq/devfreq.c     |   42 +++++++++++++++++++++++++++++++++++++---
+>  drivers/devfreq/exynos4_bus.c |   14 +++++++++---
+>  include/linux/devfreq.h       |   16 ++++++++++++--
+>  3 files changed, 61 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index a129a7b..70c31d4 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -83,6 +83,7 @@ int update_devfreq(struct devfreq *devfreq)
+>  {
+>        unsigned long freq;
+>        int err = 0;
+> +       u32 flags = 0;
+>
+>        if (!mutex_is_locked(&devfreq->lock)) {
+>                WARN(true, "devfreq->lock must be locked by the caller.\n");
+> @@ -94,7 +95,24 @@ int update_devfreq(struct devfreq *devfreq)
+>        if (err)
+>                return err;
+>
+> -       err = devfreq->profile->target(devfreq->dev.parent, &freq);
+> +       /*
+> +        * Adjust the freuqency with user freq and QoS.
+> +        *
+> +        * List from the highest proiority
+> +        * max_freq (probably called by thermal when it's too hot)
+> +        * min_freq
+> +        */
+> +
+> +       if (devfreq->min_freq && freq < devfreq->min_freq) {
+> +               freq = devfreq->min_freq;
+> +               flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
+> +       }
+> +       if (devfreq->max_freq && freq > devfreq->max_freq) {
+> +               freq = devfreq->max_freq;
+> +               flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
+> +       }
+> +
+> +       err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
+>        if (err)
+>                return err;
+>
+> @@ -625,14 +643,30 @@ module_exit(devfreq_exit);
+>  *                          freq value given to target callback.
+>  * @dev                The devfreq user device. (parent of devfreq)
+>  * @freq       The frequency given to target function
+> + * @flags      Flags handed from devfreq framework.
+>  *
+>  */
+> -struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
+> +struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+> +                                   u32 flags)
+>  {
+> -       struct opp *opp = opp_find_freq_ceil(dev, freq);
+> +       struct opp *opp;
+>
+> -       if (opp == ERR_PTR(-ENODEV))
+> +       if (flags & DEVFREQ_FLAG_LEAST_UPPER_BOUND) {
+> +               /* The freq is an upper bound. opp should be lower */
+>                opp = opp_find_freq_floor(dev, freq);
+> +
+> +               /* If not available, use the closest opp */
+> +               if (opp == ERR_PTR(-ENODEV))
+> +                       opp = opp_find_freq_ceil(dev, freq);
+> +       } else {
+> +               /* The freq is an lower bound. opp should be higher */
+> +               opp = opp_find_freq_ceil(dev, freq);
+> +
+> +               /* If not available, use the closest opp */
+> +               if (opp == ERR_PTR(-ENODEV))
+> +                       opp = opp_find_freq_floor(dev, freq);
+> +       }
+> +
+>        return opp;
+>  }
+>
+> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+> index 590d686..1a361e9 100644
+> --- a/drivers/devfreq/exynos4_bus.c
+> +++ b/drivers/devfreq/exynos4_bus.c
+> @@ -619,13 +619,19 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
+>        return err;
+>  }
+>
+> -static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
+> +static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
+> +                             u32 flags)
+>  {
+>        int err = 0;
+> -       struct busfreq_data *data = dev_get_drvdata(dev);
+> -       struct opp *opp = devfreq_recommended_opp(dev, _freq);
+> -       unsigned long old_freq = opp_get_freq(data->curr_opp);
+> +       struct platform_device *pdev = container_of(dev, struct platform_device,
+> +                                                   dev);
+> +       struct busfreq_data *data = platform_get_drvdata(pdev);
+> +       struct opp *opp = devfreq_recommended_opp(dev, _freq, flags);
+>        unsigned long freq = opp_get_freq(opp);
+> +       unsigned long old_freq = opp_get_freq(data->curr_opp);
+> +
+> +       if (IS_ERR(opp))
+> +               return PTR_ERR(opp);
+>
+>        if (old_freq == freq)
+>                return 0;
+> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+> index 5862475..281c72a 100644
+> --- a/include/linux/devfreq.h
+> +++ b/include/linux/devfreq.h
+> @@ -44,6 +44,14 @@ struct devfreq_dev_status {
+>        void *private_data;
+>  };
+>
+> +/*
+> + * The resulting frequency should be at most this. (this bound is the
+> + * least upper bound; thus, the resulting freq should be lower or same)
+> + * If the flag is not set, the resulting frequency should be at most the
+> + * bound (greatest lower bound)
+> + */
+> +#define DEVFREQ_FLAG_LEAST_UPPER_BOUND         0x1
+> +
+>  /**
+>  * struct devfreq_dev_profile - Devfreq's user device profile
+>  * @initial_freq       The operating frequency when devfreq_add_device() is
+> @@ -54,6 +62,8 @@ struct devfreq_dev_status {
+>  *                     higher than any operable frequency, set maximum.
+>  *                     Before returning, target function should set
+>  *                     freq at the current frequency.
+> + *                     The "flags" parameter's possible values are
+> + *                     explained above with "DEVFREQ_FLAG_*" macros.
+>  * @get_dev_status     The device should provide the current performance
+>  *                     status to devfreq, which is used by governors.
+>  * @exit               An optional callback that is called when devfreq
+> @@ -66,7 +76,7 @@ struct devfreq_dev_profile {
+>        unsigned long initial_freq;
+>        unsigned int polling_ms;
+>
+> -       int (*target)(struct device *dev, unsigned long *freq);
+> +       int (*target)(struct device *dev, unsigned long *freq, u32 flags);
+>        int (*get_dev_status)(struct device *dev,
+>                              struct devfreq_dev_status *stat);
+>        void (*exit)(struct device *dev);
+> @@ -165,7 +175,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
+>
+>  /* Helper functions for devfreq user device driver with OPP. */
+>  extern struct opp *devfreq_recommended_opp(struct device *dev,
+> -                                          unsigned long *freq);
+> +                                          unsigned long *freq, u32 flags);
+>  extern int devfreq_register_opp_notifier(struct device *dev,
+>                                         struct devfreq *devfreq);
+>  extern int devfreq_unregister_opp_notifier(struct device *dev,
+> @@ -216,7 +226,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
+>  }
+>
+>  static struct opp *devfreq_recommended_opp(struct device *dev,
+> -                                          unsigned long *freq)
+> +                                          unsigned long *freq, u32 flags)
+>  {
+>        return -EINVAL;
+>  }
+> --
+> 1.7.4.1
+>
