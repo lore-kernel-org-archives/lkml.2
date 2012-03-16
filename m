@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946061Ab2CPXhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:37:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946031Ab2CPXhu (ORCPT
+	id S1946107Ab2CPXiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:38:09 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41205 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946082Ab2CPXiF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:37:50 -0400
-Message-Id: <20120316233447.832020745@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:34:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Carl Karsten <carl@personnelware.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 06/38] firewire: cdev: fix 32 bit userland on 64 bit kernel compat corner cases
-In-Reply-To: <20120316233422.GA5461@kroah.com>
+	Fri, 16 Mar 2012 19:38:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <201203162357.10770.rjw@sisk.pl>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203162319.53460.rjw@sisk.pl>
+ <201203162325.56303.chunkeey@googlemail.com> <201203162357.10770.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 16 Mar 2012 16:37:43 -0700
+X-Google-Sender-Auth: bQc1AXR4byYP1gRZ4XvNF_0bgCA
+Message-ID: <CA+55aFwTZjLHvZLBuNG-aO-+ex_yTYfaqOGqQ+6Krx9Z7EUNQQ@mail.gmail.com>
+Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is
+ not yet available
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Mar 16, 2012 at 3:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> +       if (nowait) {
+> +               int limit = loading_timeout * MSEC_PER_SEC;
+> +               int timeout = 10;  /* in msec */
+> +
+> +               while (usermodehelper_is_disabled()) {
+> +                       read_unlock_usermodehelper();
+> +
+> +                       msleep(timeout);
 
-------------------
+Ugh, this is disgusting.
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+The whole point of nowait was that it's not synchronous - so it should
+just be driven by timers, not some kind of random "while sleep" loop.
 
-commit 9c1176b6a28850703ea6e3a0f0c703f6d6c61cd3 upstream.
+And that fw thing already does have a timeout associated with it, and
+quite frankly, the *sane* approach is to do all this not in
+_request_firmware(), but in request_firmware_work_func() - never even
+call _request_firmware() in the first place if the system isn't ready,
+just reset the timeout to retry it again later.
 
-Clemens points out that we need to use compat_ptr() in order to safely
-cast from u64 to addresses of a 32-bit usermode client.
+Seriously. The rule should be really simple: nothing should *ever*
+call "request_firmware()" (or the _request_firmware() helper function)
+while the system is not up. That WARN_ON() should remain totally and
+utterly unconditional, and it should *not* be conditional on "nowait"
+or any idiotic crappy hack like that.
 
-Before, our conversion went wrong
-  - in practice if the client cast from pointer to integer such that
-    sign-extension happened, (libraw1394 and libdc1394 at least were not
-    doing that, IOW were not affected)
-or
-  - in theory on s390 (which doesn't have FireWire though) and on the
-    tile architecture, regardless of what the client does.
-The bug would usually be observed as the initial get_info ioctl failing
-with "Bad address" (EFAULT).
+If there is an asynchronous thread - and there is, for the _nowait()
+case - that asynchronous thread should set up the timer and retry in
+ten seconds or whatever. It should *not* call 'request_firmware()" and
+expect that to do something special.
 
-Reported-by: Carl Karsten <carl@personnelware.com>
-Reported-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/firewire/core-cdev.c |   24 +++++++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
-
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -216,15 +216,33 @@ struct inbound_phy_packet_event {
- 	struct fw_cdev_event_phy_packet phy_packet;
- };
- 
--static inline void __user *u64_to_uptr(__u64 value)
-+#ifdef CONFIG_COMPAT
-+static void __user *u64_to_uptr(u64 value)
-+{
-+	if (is_compat_task())
-+		return compat_ptr(value);
-+	else
-+		return (void __user *)(unsigned long)value;
-+}
-+
-+static u64 uptr_to_u64(void __user *ptr)
-+{
-+	if (is_compat_task())
-+		return ptr_to_compat(ptr);
-+	else
-+		return (u64)(unsigned long)ptr;
-+}
-+#else
-+static inline void __user *u64_to_uptr(u64 value)
- {
- 	return (void __user *)(unsigned long)value;
- }
- 
--static inline __u64 uptr_to_u64(void __user *ptr)
-+static inline u64 uptr_to_u64(void __user *ptr)
- {
--	return (__u64)(unsigned long)ptr;
-+	return (u64)(unsigned long)ptr;
- }
-+#endif /* CONFIG_COMPAT */
- 
- static int fw_device_op_open(struct inode *inode, struct file *file)
- {
-
-
+                    Linus
