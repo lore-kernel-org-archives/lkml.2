@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032658Ab2CPKHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:07:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34174 "EHLO mx2.suse.de"
+	id S1032691Ab2CPKIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:08:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56102 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932494Ab2CPKHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:07:31 -0400
-Date: Fri, 16 Mar 2012 11:07:28 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jan Kara <jack@suse.cz>, George Spelvin <linux@horizon.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Oops in ext3_block_to_path.isra.40+0x26/0x11b
-Message-ID: <20120316100728.GA28098@quack.suse.cz>
-References: <20120313133945.4642.qmail@science.horizon.com>
- <20120316085231.GA24821@quack.suse.cz>
- <alpine.LNX.2.00.1203161028420.18356@pobox.suse.cz>
+	id S1032672Ab2CPKI3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 06:08:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="78305725"
+From: "Du, Alek" <alek.du@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: "jiris >> Jiri Slaby" <jirislaby@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ//99bYD//3mIQIAAiHuA//95JNA=
+Date: Fri, 16 Mar 2012 10:08:26 +0000
+Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3D6B@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
+ <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
+ <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
+ <4F630B4D.3040508@suse.cz>
+ <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
+ <4F630E6D.4000307@suse.cz>
+ <09F19C497AD02E4EA4E14917772649B70FCD3D59@SHSMSX102.ccr.corp.intel.com>
+ <4F63101D.70507@suse.cz>
+In-Reply-To: <4F63101D.70507@suse.cz>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1203161028420.18356@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-03-12 10:29:56, Jiri Kosina wrote:
-> On Fri, 16 Mar 2012, Jan Kara wrote:
-> 
-> > > CPU is a Core i3 530, on a Gigabyte motherbord, 4 GB RAM.  No ECC,
-> > > unfortunately, so I can't rule out hardware bit rot.  Distribution is
-> > > a fairly stock Debian/unstable.
-> >   Hmm, is any mounting & unmounting happening during your backup? Because
-> > the oops happened because sb->s_fs_info was NULL. Dissassembly shows:
-> >   16:	48 8b 47 18          	mov    0x18(%rdi),%rax
-> > store sb->s_blocksize into RAX
-> >   1a:	48 8b 8f b0 02 00 00 	mov    0x2b0(%rdi),%rcx
-> > store sb->s_fs_info into RCX
-> >   21:	48 c1 e8 02          	shr    $0x2,%rax
-> > This is division from EXT3_ADDR_PER_BLOCK() - RAX carries 1024 after
-> > division so that looks correct.
-> > 
-> >   25:	48 85 db             	test   %rbx,%rbx
-> > Now check passed i_block argument.
-> > 
-> >   28:	41 89 c4             	mov    %eax,%r12d
-> >   2b:*	8b b1 94 00 00 00    	mov    0x94(%rcx),%esi     <-- trapping ins
-> > Try to get RCX->s_addr_per_block_bits...
-> > 
-> >  sb->s_fs_info is set when a superblock is mounted and cleared when
-> > superblock gets unmounted and otherwise it is never changed. So most likely
-> > it was some memory corruption clearing that pointer (I wouldn't really
-> > suspect HW here).
-> > 
-> > It somewhat looks like the issue described here:
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1202.3/00132.html
-> > 
-> > Although there we had f_path.dentry (completely different structure) being
-> > NULL. But similarity here is that something stomped NULL over our existing
-> > structure.
-> > 
-> > Linus, Jiri, that bug didn't get resolved, did it?
-> 
-> I am not aware of anything, but I have a question -- George, did the 
-> machine get suspended/resumed before this happened?
-  And by any chance, do you use i915 driver? Because that one seems to
-cause corruption - see: https://lkml.org/lkml/2012/3/9/217. I believe
-Jiri's corruption is likely caused by that...
+If you really look at the original patch from Xiaobing, the tty_prepare_flip_string is also patched :-)
+Actually it fills up all the possible spin_lock gaps in tty_buffer.c
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+@@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);  int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+ 								size_t size)
+ {
+-	int space = tty_buffer_request_room(tty, size);
++	int space;
++	unsigned long flags;
++	struct tty_buffer *tb;
++	
++	spin_lock_irqsave(&tty->buf.lock, flags);
++	space = __tty_buffer_request_room(tty, size);
++
++	tb = tty->buf.tail;
+ 	if (likely(space)) {
+-		struct tty_buffer *tb = tty->buf.tail;
+ 		*chars = tb->char_buf_ptr + tb->used;
+ 		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
+ 		tb->used += space;
+ 	}
++	spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 	return space;
+ }
+
+Thanks,
+Alek
+-----Original Message-----
+From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
+Sent: Friday, March 16, 2012 6:04 PM
+To: Du, Alek
+Cc: jiris >> Jiri Slaby; Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
+
+On 03/16/2012 11:01 AM, Du, Alek wrote:
+> We prepared the buffer, and use it. And during this, we don't release the spinlock of buf.lock, how the flush could happen?
+> 
+>                A
+> spin_lock
+> prepare the buffer
+> user the buffer
+> spin unlock
+> 
+> 
+>               B
+> Spin_lock
+> Flush
+> Free the buffer
+> Put buf.tail = NULL
+> Spin unlock
+
+Well, you do. Not all drivers use tty_insert_flip_string. Take a look at tty_prepare_flip_string and its users.
+
+thanks,
+--
+js
+suse labs
