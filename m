@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab2CPFX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 01:23:59 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23725 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab2CPFX4 (ORCPT
+	id S932166Ab2CPFcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 01:32:14 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:46623 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab2CPFcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 01:23:56 -0400
-Date: Fri, 16 Mar 2012 08:26:12 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Miller <amiller@amilx.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] Staging: rtl8187se: r8180_dm.c: Removed old comments
-Message-ID: <20120316052612.GF3163@mwanda>
-References: <1331850519-20726-1-git-send-email-amiller@amilx.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3oCie2+XPXTnK5a5"
-Content-Disposition: inline
-In-Reply-To: <1331850519-20726-1-git-send-email-amiller@amilx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F62CE69.0035,ss=1,re=0.000,fgs=0
+	Fri, 16 Mar 2012 01:32:11 -0400
+X-AuditID: cbfee60f-b7bd0ae00000422c-66-4f62d05aa131
+Date: Fri, 16 Mar 2012 05:32:09 +0000 (GMT)
+From: Yong-Sul Oh <yongsul96.oh@samsung.com>
+Subject: Re: Re: [PATCH] USB: Gadget: Composite: Added error handling codes to
+ prevent a memory leak case when the configuration's bind function failed
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: yongsul96.oh@samsung.com
+MIME-version: 1.0
+X-MTR: 20120316052554170@yongsul96.oh
+Msgkey: 20120316052554170@yongsul96.oh
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120316052554170@yongsul96.oh
+X-ParentMTR: 
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <3092434.202651331875926961.JavaMail.weblogic@epml26>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2G5WouG008863
+
+Dear Sergei Shtylyov
+
+I appreciate your guideline.
+(i will check again the "submittingpatches & submitchecklist")
+I will fix it & try to send it soundly again.
+
+Best regards,  
+Yongsul Oh
+
+------- Original Message -------
+Sender : Sergei Shtylyov
+Date : 2012-03-15 22:57 (GMT+09:00)
+Title : Re: [PATCH] USB: Gadget: Composite: Added error handling codes to prevent a memory leak case when the configuration's bind function failed
+
+Hello.
+
+On 15-03-2012 5:23, Yongsul@vger.kernel.org wrote:
+
+> From: yongsul96.oh@samsung.com
+
+>   In some usb gadget driver, for example usb gadget serial driver(serial.c),
+> multifunction composite driver(multi,c), nokia composite gadget driver(nokia.c),
+> HID composite driver(hid.c), CDC composite driver(cdc2.c).., the configuration's
+> bind function by called the 'usb_add_config()' has multiple bind config functions
+> for each functionality, for example cdc2 configuration bind function -'cdc_do_config()'
+> has two functionality bind config functions -'ecm_bind_config()'&  'acm_bind_config()'
+> in CDC composite driver.
+>   In each functionality bind config function, new instance for each functionality is
+> allocated&  initialized by 'kzalloc()' ,and finally the new instance is added by
+> 'usb_add_function()'. After 'usb_add_function' state, already created the instance
+> is only handled by its configuration&  freed from functionality unbind function.
+>   So, If an error occurred during the second functionality bind config state, for example
+> an error occurred at 'acm_bind_config()' after succeeding 'ecm_bind_function()',
+> The created instance by 'acm_bind_config()' cannot be freed.
+> And it makes memory leak situation.
+
+> This patch fixes this issue.
+
+> Signed-off-by: yongsul96.oh@samsung.com 
+
+    Real name is required on the left, not another copy of email.
+
+WBR, Sergei
 
 
---3oCie2+XPXTnK5a5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Mar 15, 2012 at 06:28:39PM -0400, Andrew Miller wrote:
-> Removed some old comments
->=20
-> Signed-off-by: Andrew Miller <amiller@amilx.com>
-> ---
->  drivers/staging/rtl8187se/r8180_dm.c |  307 +++-------------------------=
-------
->  1 files changed, 21 insertions(+), 286 deletions(-)
->=20
-> diff --git a/drivers/staging/rtl8187se/r8180_dm.c b/drivers/staging/rtl81=
-87se/r8180_dm.c
-> index 54b676f..4d7a595 100644
-> --- a/drivers/staging/rtl8187se/r8180_dm.c
-> +++ b/drivers/staging/rtl8187se/r8180_dm.c
-> @@ -1,15 +1,8 @@
-> -/*#include "r8180.h" */
->  #include "r8180_dm.h"
->  #include "r8180_hw.h"
->  #include "r8180_93cx6.h"
-> -/*{by amy 080312 */
-> =20
-> -/*
-> - *	Description:
-> - *		Return TRUE if we shall perform High Power Mecahnism, FALSE otherwis=
-e.
-> - *
-> - *+by amy 080312
-> - */
-> + /*	Return TRUE if we shall perform High Power Mecahnism, FALSE otherwis=
-e. */
->  #define RATE_ADAPTIVE_TIMER_PERIOD      300
-> =20
->  bool CheckHighPower(struct net_device *dev)
-
-I meant just remove the "*+by amy 080312" line, but I don't really
-mind how you redid the formatting either.  Btw, the comment should
-probably be a line below to go with the CheckHighPower() function
-or people will think it belongs to the RATE_ADAPTIVE_TIMER_PERIOD
-macro.
-
-regards,
-dan carpenter
 
 
---3oCie2+XPXTnK5a5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPYs70AAoJEOnZkXI/YHqRzpUP/AwNfmclFTINW+/lekuo7jqi
-x6DDqL5flXMu615UY/jERqRDts+f7J5rYya+xqWpzu14h+YWBdMAtgHUQEXBtjzg
-1Zvc40hNCWrUD4AxQETp/basFb945UQyFCYzXk9W4r+2zCxcgeuv6nzFBBFn9Thb
-hoKHVcOaWaTgYpH+JiFYn3DS3SNej2HA4ZRPeBeIPHHUlrr5ttzOCXnqM3biIhrP
-Gr6jGknxBW6VAWHHq6oBJz+mc7ln4BQGDchBFefY7w1oJRuUGjMFw7c6mk1/xS7t
-zCegoReqQU4YQXE9CpuNrR22t8R3vMkFWfuUvaqSOHAt5NiTT6hYFIN/8/RioMsb
-pMkBqRv/CUGGT43YiEJLjpnL4xkKhEpmE0u0bHO1Ytz9IuzK0APMmlVyxdc+gIPr
-7ph+dJ79ljHzpq1F3l2noasG3maTLUKeCSc97IZTbnriI81cZbc2yJwtJqzVv/Zr
-OKP33mySdAKh7nAgssJxw/CtFZjaNpPulVkLaXygh3uZ5yNzNzl8yDYxKIANZr41
-z2Un3jdSFwiRdlPiS+8P/aoqfw7ELnfOsK1RtT+RvVhI/tsomHBQcHcoWqQAsu34
-b/F77PXhC08p+iiAQtv/Z1XCTX+5wjj9w2XnjqcbGVvHDOt6yaaEJ4DyrAZgsw3O
-nqmATOs1m3QzIcqw8h7d
-=vZfF
------END PGP SIGNATURE-----
+Oh, Yong-Sul
+Engineer
 
---3oCie2+XPXTnK5a5--
+Mobile S/W Platform Lab.
+Telecommunication R&D Center
+Telecommunication Network Business
+
+SAMSUNG ELECTRONICS CO.,LTD
+
+Tel : +82-31-279-0284
+Mobile : +82-10-9530-0284
+Fax : +82-31-279-5521
+E-mail : yongsul96.oh@samsung.com
+
+
+
+
+Copyright‚ìí 2005 Samsung Electronics Co., Ltd. All rights reserved | Confidential
+
+The information contained in this message is confidential and may be legally privileged. The message is intended solely for the addressee(s). If you are not the intended recipient, you are hereby notified that any use, dissemination, or reproduction is strictly prohibited and may be unlawful. If you are not the intended recipient, please contact the sender by return e-mail and destroy all copies of the original message. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
