@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab2CPVXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:23:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59413 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767Ab2CPVXa (ORCPT
+	id S1758072Ab2CPVZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:25:55 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:56616 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab2CPVZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:23:30 -0400
-Message-ID: <4F63AF4E.2020400@gmail.com>
-Date: Fri, 16 Mar 2012 22:23:26 +0100
-From: Mircea Gherzan <mgherzan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	Fri, 16 Mar 2012 17:25:54 -0400
+Message-ID: <4F63AFD5.3010607@shealevy.com>
+Date: Fri, 16 Mar 2012 17:25:41 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: alexandrasava18@gmail.com
-CC: razvan.deaconescu@cs.pub.ro, tavi@cs.pub.ro, daniel.baluta@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] Enhance logging for Shared Transport - TI driver
-References: <y> <9ea802684dee3b531a19f93424c77e22a955dd54.1331920050.git.alexandrasava18@gmail.com>
-In-Reply-To: <9ea802684dee3b531a19f93424c77e22a955dd54.1331920050.git.alexandrasava18@gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Cc: matt.fleming@intel.com, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Proposal: EFI boot stub configuration file
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Salutare Alexandra,
+Hello,
 
-Eu zic sa schimbam un pic tactica: pentru fiecare iteratie a patch-ului
-tau dai intai un mail intern (catre mine, Tavi, RD, Daniel si eventual
-altii din SO2-Staff) pentru un prim feedback si niste testare. Apoi, cu
-sugestiile integrate, mail catre Greg, Pavan, LKML, si cei de mai sus.
+In some EFI boot environments (e.g. booting from an external medium or 
+non-standard systems where tools like efibootmgr don't work), it is 
+currently impossible to pass the right arguments to the kernel unless an 
+EFI shell is launched. To ameliorate this, I propose that if 
+image->load_options_size is 0 (indicating no arguments were passed) AND 
+image->parent_handle is NULL (indicating that the image was loaded 
+automatically by the firmware), then the kernel looks for a file in some 
+fixed, possibly configurable place (e.g. \efi\linux\params), sets 
+image->load_options_size to its size, and sets image->load_options to 
+its contents. On any error whatsoever (finding the file, reading it, 
+getting its size, whatever), any allocated memory would be freed and 
+load_options_size would be set back to 0. Since the arguments are 
+already converted to ASCII and parsed during the boot process, the file 
+would be expected to be in UCS-2 format and no validation would be done 
+in the configuration loading code. I'll write something up over the next 
+week or so and submit it as an RFC patch series, but I thought I'd post 
+this here first in case anyone has immediate feedback based on this 
+description.
 
-Cum ti/vi se pare?
-
-Mircea
+Cheers,
+Shea Levy
