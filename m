@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946499Ab2CPXoC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:44:02 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
+	id S1946515Ab2CPXoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:44:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946422Ab2CPXlR (ORCPT
+	with ESMTP id S1946417Ab2CPXlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:17 -0400
-Message-Id: <20120316233813.546537856@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:14 -0400
+Message-Id: <20120316233812.757301211@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:43 -0700
+Date: Fri, 16 Mar 2012 16:38:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        alan@lxorguk.ukuu.org.uk, Ulrich Weber <ulrich.weber@sophos.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/41] sparc32: Add -Av8 to assembler command line.
+Subject: [ 24/41] bridge: check return value of ipv6_dev_get_saddr()
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
 
-commit e0adb9902fb338a9fe634c3c2a3e474075c733ba upstream.
+From: Ulrich Weber <ulrich.weber@sophos.com>
 
-Newer version of binutils are more strict about specifying the
-correct options to enable certain classes of instructions.
+[ Upstream commit d1d81d4c3dd886d5fa25a2c4fa1e39cb89613712 ]
 
-The sparc32 build is done for v7 in order to support sun4c systems
-which lack hardware integer multiply and divide instructions.
+otherwise source IPv6 address of ICMPV6_MGM_QUERY packet
+might be random junk if IPv6 is disabled on interface or
+link-local address is not yet ready (DAD).
 
-So we have to pass -Av8 when building the assembler routines that
-use these instructions and get patched into the kernel when we find
-out that we have a v8 capable cpu.
-
-Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/sparc/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bridge/br_multicast.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/Makefile
-+++ b/arch/sparc/Makefile
-@@ -31,7 +31,7 @@ UTS_MACHINE    := sparc
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -446,8 +446,11 @@ static struct sk_buff *br_ip6_multicast_
+ 	ip6h->nexthdr = IPPROTO_HOPOPTS;
+ 	ip6h->hop_limit = 1;
+ 	ipv6_addr_set(&ip6h->daddr, htonl(0xff020000), 0, 0, htonl(1));
+-	ipv6_dev_get_saddr(dev_net(br->dev), br->dev, &ip6h->daddr, 0,
+-			   &ip6h->saddr);
++	if (ipv6_dev_get_saddr(dev_net(br->dev), br->dev, &ip6h->daddr, 0,
++			       &ip6h->saddr)) {
++		kfree_skb(skb);
++		return NULL;
++	}
+ 	ipv6_eth_mc_map(&ip6h->daddr, eth->h_dest);
  
- #KBUILD_CFLAGS += -g -pipe -fcall-used-g5 -fcall-used-g7
- KBUILD_CFLAGS += -m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7
--KBUILD_AFLAGS += -m32
-+KBUILD_AFLAGS += -m32 -Wa,-Av8
- 
- #LDFLAGS_vmlinux = -N -Ttext 0xf0004000
- #  Since 2.5.40, the first stage is left not btfix-ed.
+ 	hopopt = (u8 *)(ip6h + 1);
 
 
