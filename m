@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946322Ab2CPXz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:55:26 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42595 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946120Ab2CPXzX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:55:23 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <4F63472C.5050102@metafoo.de>
-References: <1331904943.2891.1.camel@phoenix> <4F63472C.5050102@metafoo.de>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Sat, 17 Mar 2012 07:55:00 +0800
-Message-ID: <CAF+7xWmV71m4HR4wk-X1WxudNR5AFEuKpa=1wDa2Eo8krmLOcQ@mail.gmail.com>
-Subject: Re: [PATCH RFT 1/2] regulator: pcf50633: Don't write to reserved bits
- of AUTO output voltage select register
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1946258Ab2CPXzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:55:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032768Ab2CPXii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 19:38:38 -0400
+Message-Id: <20120316233448.437458567@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 16 Mar 2012 16:35:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>
+Subject: [ 13/38] acer-wmi: Add wireless quirk for Lenovo 3000 N200
+In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> --- a/drivers/regulator/pcf50633-regulator.c
->> +++ b/drivers/regulator/pcf50633-regulator.c
->> @@ -52,7 +52,7 @@ static const u8 pcf50633_regulator_registers[PCF50633_NUM_REGULATORS] = {
->>[...]
->>
->> @@ -161,6 +158,9 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
->>
->>       switch (id) {
->>       case PCF50633_REGULATOR_AUTO:
->> +             /* AUTOOUT: 00000000 to 00101110 are reserved */
->> +             if (bits < 0x2f)
->> +                     return -EINVAL;
->>               millivolts = auto_voltage_value(bits);
->>               break;
->>       case PCF50633_REGULATOR_DOWN1:
->> @@ -208,20 +208,7 @@ static int pcf50633_regulator_get_voltage(struct regulator_dev *rdev)
->>  static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
->>                                               unsigned int index)
->>  {
->> -     struct pcf50633 *pcf;
->> -     int regulator_id;
->> -
->> -     pcf = rdev_get_drvdata(rdev);
->> -
->> -     regulator_id = rdev_get_id(rdev);
->> -
->> -     switch (regulator_id) {
->> -     case PCF50633_REGULATOR_AUTO:
->> -             index += 0x2f;
->> -             break;
->> -     default:
->> -             break;
->> -     }
->
-> Does this make sense? Now we return -EINVAL if index is less than 0x2f
->
->
-I check the code and regulator core again.
-I think for this case we should return 0 instead of -EINVAL.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-/**
- * regulator_list_voltage - enumerate supported voltages
- * @regulator: regulator source
- * @selector: identify voltage to list
- * Context: can sleep
- *
- * Returns a voltage that can be passed to @regulator_set_voltage(),
- * zero if this selector code can't be used on this system, or a
- * negative errno.
- */
+------------------
 
-I'll send a V2 soon.
-Thanks for the review.
-Axel
+From: Seth Forshee <seth.forshee@canonical.com>
+
+commit be3128b107e36271f7973ef213ccde603a494fe8 upstream.
+
+This quirk fixes the wlan rfkill status on this machine. Without
+it, wlan is permanently soft blocked whenever acer-wmi is loaded.
+
+BugLink: https://bugs.launchpad.net/bugs/857297
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Reviewed-by: Lee, Chun-Yi <jlee@novell.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/platform/x86/acer-wmi.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -463,6 +463,15 @@ static struct dmi_system_id acer_quirks[
+ 		},
+ 		.driver_data = &quirk_lenovo_ideapad_s205,
+ 	},
++	{
++		.callback = dmi_matched,
++		.ident = "Lenovo 3000 N200",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "0687A31"),
++		},
++		.driver_data = &quirk_fujitsu_amilo_li_1718,
++	},
+ 	{}
+ };
+ 
+
+
