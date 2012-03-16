@@ -1,73 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031316Ab2CPDmC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:42:02 -0400
-Received: from void.printf.net ([89.145.121.20]:50581 "EHLO void.printf.net"
+	id S965445Ab2CPDnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:43:41 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41175 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965275Ab2CPDl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:41:59 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 1/3] mmc: sdhci-pci: Add MSI support
-References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com>
-Date: Thu, 15 Mar 2012 23:41:37 -0400
-In-Reply-To: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com>
-	(Alexander Stein's message of "Tue, 13 Mar 2012 18:16:40 +0100")
-Message-ID: <87ty1pb4b2.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S965275Ab2CPDnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 23:43:39 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Weiping Pan <panweiping3@gmail.com>
+cc: Andy Gospodarek (supporter:BONDING DRIVER) <andy@greyhouse.net>,
+        netdev@vger.kernel.org (open list:BONDING DRIVER),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH net V3] bonding: send igmp report for its master
+In-reply-to: <3072c40712c2f5506fc57937da921da0d3d83450.1331778582.git.panweiping3@gmail.com>
+References: <20120314172237.GA12372@quad.redhat.com> <3072c40712c2f5506fc57937da921da0d3d83450.1331778582.git.panweiping3@gmail.com>
+Comments: In-reply-to Weiping Pan <panweiping3@gmail.com>
+   message dated "Thu, 15 Mar 2012 11:11:58 +0800."
+X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
+Date: Thu, 15 Mar 2012 20:43:19 -0700
+Message-ID: <31016.1331869399@death.nxdomain>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031603-1976-0000-0000-00000B805EAC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+Weiping Pan <panweiping3@gmail.com> wrote:
 
-On Tue, Mar 13 2012, Alexander Stein wrote:
-> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-> ---
->  drivers/mmc/host/sdhci-pci.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+>Liang Zheng(lzheng@redhat.com) found that in the following topo,
+>bonding does not send igmp report when we trigger a fail-over of bonding.
 >
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 7165e6a..9382f27 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -1379,6 +1379,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
->  
->  	slots = chip->num_slots;	/* Quirk may have changed this */
->  
-> +	pci_enable_msi(pdev);
-> +
->  	for (i = 0; i < slots; i++) {
->  		slot = sdhci_pci_probe_slot(pdev, chip, first_bar, i);
->  		if (IS_ERR(slot)) {
-> @@ -1397,6 +1399,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
->  	return 0;
->  
->  free:
-> +	pci_disable_msi(pdev);
-> +
->  	pci_set_drvdata(pdev, NULL);
->  	kfree(chip);
->  
-> @@ -1419,6 +1423,8 @@ static void __devexit sdhci_pci_remove(struct pci_dev *pdev)
->  		for (i = 0; i < chip->num_slots; i++)
->  			sdhci_pci_remove_slot(chip->slots[i]);
->  
-> +		pci_disable_msi(pdev);
-> +
->  		pci_set_drvdata(pdev, NULL);
->  		kfree(chip);
->  	}
+>eth0--
+>      |-- bond0 -- br0
+>eth1--
+>
+>modprobe bonding mode=1 miimon=100 resend_igmp=10
+>ifconfig bond0 up
+>ifenslave bond0 eth0 eth1
+>
+>brctl addbr br0
+>ifconfig br0 192.168.100.2/24 up
+>brctl addif br0 bond0
+>
+>Add 192.168.100.2(br0) into a multicast group, like 224.10.10.10,
+>then trigger a fali-over in bonding.
+>You can see that parameter "resend_igmp" does not work.
+>
+>The reason is that when we add br0 into a multicast group,
+>it does not propagate multicast knowledge down to its ports.
+>
+>If we choose to propagate multicast knowledge down to all ports for bridge,
+>then we have to track every change that is done to bridge, and keep a backup
+>for all ports. It is hard to track, I think.
+>
+>Instead I choose to modify bonding to send igmp report for its master.
+>
+>Changelog:
+>V2: correct comments
+>V3: move this check into bond_resend_igmp_join_requests()
+>
+>Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+>---
+> drivers/net/bonding/bond_main.c |   14 +++++++++++---
+> 1 files changed, 11 insertions(+), 3 deletions(-)
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index 435984a..037fdd3 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -766,18 +766,26 @@ static void __bond_resend_igmp_join_requests(struct net_device *dev)
+>  */
+> static void bond_resend_igmp_join_requests(struct bonding *bond)
+> {
+>-	struct net_device *vlan_dev;
+>+	struct net_device *bond_dev, *vlan_dev, *master_dev;
+> 	struct vlan_entry *vlan;
+>
+> 	read_lock(&bond->lock);
+>
+>+	bond_dev = bond->dev;
+>+
+> 	/* rejoin all groups on bond device */
+>-	__bond_resend_igmp_join_requests(bond->dev);
+>+	__bond_resend_igmp_join_requests(bond_dev);
+>+
+>+	/* rejoin all groups on its master */
+>+	master_dev = bond_dev->master;
+>+	if (unlikely(master_dev)) {
+>+		__bond_resend_igmp_join_requests(master_dev);
+>+	}
 
-Thanks, I've merged all three patches to mmc-next for 3.4, using v2 of
-patches 2 and 3, and adding Adrian's ACK to patch 2.
+	Will this do the right thing if the master is not a bridge?
+Granted, right now the only other possible master is a team (since
+bonding will not enslave itself), but is this generically safe and
+desirable for any possible master_dev?
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+	-J
+
+> 	/* rejoin all groups on vlan devices */
+> 	list_for_each_entry(vlan, &bond->vlan_list, vlan_list) {
+> 		rcu_read_lock();
+>-		vlan_dev = __vlan_find_dev_deep(bond->dev,
+>+		vlan_dev = __vlan_find_dev_deep(bond_dev,
+> 						vlan->vlan_id);
+> 		rcu_read_unlock();
+> 		if (vlan_dev)
+>-- 
+>1.7.4.4
+
+---
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+
