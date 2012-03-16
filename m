@@ -1,169 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031565Ab2CPGtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 02:49:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51094 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030370Ab2CPGtv (ORCPT
+	id S1032293Ab2CPG4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 02:56:37 -0400
+Received: from cpanel23.proisp.no ([88.87.44.74]:33778 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030475Ab2CPG4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 02:49:51 -0400
-Date: Fri, 16 Mar 2012 17:49:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-Id: <20120316174941.40421ba160741a0f6aab6611@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Mar_2012_17_49_41_+1100_54VYpWMxodL+OC9x"
+	Fri, 16 Mar 2012 02:56:35 -0400
+Message-ID: <4F62E417.40905@numascale.com>
+Date: Fri, 16 Mar 2012 07:56:23 +0100
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid()
+ function.
+References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com> <1331834583-16070-1-git-send-email-sp@numascale.com> <CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com> <1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com> <CAE9FiQXXy3UDFpm5uCmpnn7Q53FhQN6h-BSAizgk_Sqkg+d4bA@mail.gmail.com> <CAE9FiQUtf9Pix3rmhgk_+oOf19dOvvgQYt+gbHQyag0xkH_bxA@mail.gmail.com>
+In-Reply-To: <CAE9FiQUtf9Pix3rmhgk_+oOf19dOvvgQYt+gbHQyag0xkH_bxA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Mar_2012_17_49_41_+1100_54VYpWMxodL+OC9x
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 3/16/2012 05:19, Yinghai Lu wrote:
+> On Thu, Mar 15, 2012 at 7:08 PM, Yinghai Lu<yinghai@kernel.org>  wrote:
+>>> So this change breaks the commit
+>>> c284b42abadbb22083bfde24d308899c08d44ffa.
+>>>
+>>> I think the right thing is to have two different apid_id_valid checks
+>>> one for xapic driver (apic_flat_64.c) and another for x2apic driver
+>>> (x2apic_phys/cluster.c) and that way, x2apic MADT entries will be parsed
+>>> only if bios has handed over the OS in x2apic mode or if we have
+>>> selected the numachip model.
+>>
+>> that looks like more clear.
+>
+> after more thinking, I think We should still use cpu_has_x2apic checking.
+>
+> one maybe invalid case:
+>
+> System have some cpus apic id<  255, and some cpu apic id>  255.
+> BSP apic id<  255.
+> those cpus apic id<  255 will be put into xapic mode, cpus>  255 will
+> be put into x2apic mode.
+> and DMAR table intr-remapping will be working.
 
-Hi all,
+Hmm, I didn't know you could have two apic drivers (e.g. apic_flat_64 
+and x2apic_*) available at the same time ? Or did I read the above wrong ?
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-msm/timer.c between commit f8e56c42e4e3 ("msm: timer:
-Support sched_clock()") from the arm tree and commit 5ca709c16d0f ("ARM:
-local timers: convert MSM to runtime registration interface") from the
-arm-soc tree.
+>
+> So if we check x2apic_mode early, will skip cpu with apic id>  255,
+> even switch to x2apic later.
+>
 
-I fixed it up (see below) and can carry the fax as necessary.
---=20
+Which one of the two patches I sent, do you (Suresh/Yinghai/others) 
+believe is the best/cleanest and works in all cases. I, unfortunately, 
+can't test the Intel case as I don't have any available to test on :/
+
+Either patch works fine for NumaChip enabled systems.
+
+If desired I will re-post the patch with the approach you find best, but 
+add the apic->apic_id_valid() check in the SRAT code aswell.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-msm/timer.c
-index 61983da,75f4be4..0000000
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@@ -128,11 -127,45 +128,50 @@@ static struct clocksource msm_clocksour
-  	.flags	=3D CLOCK_SOURCE_IS_CONTINUOUS,
-  };
- =20
- +static notrace u32 msm_sched_clock_read(void)
- +{
- +	return msm_clocksource.read(&msm_clocksource);
- +}
- +
-+ #ifdef CONFIG_LOCAL_TIMERS
-+ static int __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
-+ {
-+ 	/* Use existing clock_event for cpu 0 */
-+ 	if (!smp_processor_id())
-+ 		return 0;
-+=20
-+ 	writel_relaxed(0, event_base + TIMER_ENABLE);
-+ 	writel_relaxed(0, event_base + TIMER_CLEAR);
-+ 	writel_relaxed(~0, event_base + TIMER_MATCH_VAL);
-+ 	evt->irq =3D msm_clockevent.irq;
-+ 	evt->name =3D "local_timer";
-+ 	evt->features =3D msm_clockevent.features;
-+ 	evt->rating =3D msm_clockevent.rating;
-+ 	evt->set_mode =3D msm_timer_set_mode;
-+ 	evt->set_next_event =3D msm_timer_set_next_event;
-+ 	evt->shift =3D msm_clockevent.shift;
-+ 	evt->mult =3D div_sc(GPT_HZ, NSEC_PER_SEC, evt->shift);
-+ 	evt->max_delta_ns =3D clockevent_delta2ns(0xf0000000, evt);
-+ 	evt->min_delta_ns =3D clockevent_delta2ns(4, evt);
-+=20
-+ 	*__this_cpu_ptr(msm_evt.percpu_evt) =3D evt;
-+ 	clockevents_register_device(evt);
-+ 	enable_percpu_irq(evt->irq, 0);
-+ 	return 0;
-+ }
-+=20
-+ static void msm_local_timer_stop(struct clock_event_device *evt)
-+ {
-+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-+ 	disable_percpu_irq(evt->irq);
-+ }
-+=20
-+ static struct local_timer_ops msm_local_timer_ops __cpuinitdata =3D {
-+ 	.setup	=3D msm_local_timer_setup,
-+ 	.stop	=3D msm_local_timer_stop,
-+ };
-+ #endif /* CONFIG_LOCAL_TIMERS */
-+=20
-  static void __init msm_timer_init(void)
-  {
-  	struct clock_event_device *ce =3D &msm_clockevent;
-@@@ -195,44 -232,8 +238,10 @@@ err
-  	res =3D clocksource_register_hz(cs, dgt_hz);
-  	if (res)
-  		pr_err("clocksource_register failed\n");
- +	setup_sched_clock(msm_sched_clock_read,
- +			cpu_is_msm7x01() ? 32 - MSM_DGT_SHIFT : 32, dgt_hz);
-  }
- =20
-- #ifdef CONFIG_LOCAL_TIMERS
-- int __cpuinit local_timer_setup(struct clock_event_device *evt)
-- {
-- 	/* Use existing clock_event for cpu 0 */
-- 	if (!smp_processor_id())
-- 		return 0;
--=20
-- 	writel_relaxed(0, event_base + TIMER_ENABLE);
-- 	writel_relaxed(0, event_base + TIMER_CLEAR);
-- 	writel_relaxed(~0, event_base + TIMER_MATCH_VAL);
-- 	evt->irq =3D msm_clockevent.irq;
-- 	evt->name =3D "local_timer";
-- 	evt->features =3D msm_clockevent.features;
-- 	evt->rating =3D msm_clockevent.rating;
-- 	evt->set_mode =3D msm_timer_set_mode;
-- 	evt->set_next_event =3D msm_timer_set_next_event;
-- 	evt->shift =3D msm_clockevent.shift;
-- 	evt->mult =3D div_sc(GPT_HZ, NSEC_PER_SEC, evt->shift);
-- 	evt->max_delta_ns =3D clockevent_delta2ns(0xf0000000, evt);
-- 	evt->min_delta_ns =3D clockevent_delta2ns(4, evt);
--=20
-- 	*__this_cpu_ptr(msm_evt.percpu_evt) =3D evt;
-- 	clockevents_register_device(evt);
-- 	enable_percpu_irq(evt->irq, 0);
-- 	return 0;
-- }
--=20
-- void local_timer_stop(struct clock_event_device *evt)
-- {
-- 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-- 	disable_percpu_irq(evt->irq);
-- }
-- #endif /* CONFIG_LOCAL_TIMERS */
--=20
-  struct sys_timer msm_timer =3D {
-  	.init =3D msm_timer_init
-  };
-
---Signature=_Fri__16_Mar_2012_17_49_41_+1100_54VYpWMxodL+OC9x
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYuKFAAoJEECxmPOUX5FE4v0QAKdmD5VCcRamgtKKM8Z1Vzsb
-+6lOMLo+N9mAto6MB6RFWwALHwq1iMytVcZ+Hk71dwy6jRdJYZOlDUI6WqvZ1uOE
-V4j1FtOqfBwONkZipCwkCr3ipVcUD7ZLHTrpy8keKTsmGfFISe6X28XYIJ8ETfvW
-2Lje3Ohgp84tw/Muopx4IH9tdixbfG2qOuL0akLfxGbltfzOqVl3Z7yx02USKlc6
-078ve80FoPgN1KCXWVg0DHzXJ03XVwAh3fJzsPndFhhD+Ovhj9f6hDWd89nsYMy3
-jq52dbmbRxQ0KNtSBBOTHTCobpKwlrNh/msnAqG/BEVLhly7GiYcGOeYbW+k0rhv
-9qc3wZ5DlRKGhujlgI2bMQQ7VIhTIfACv9X0WCDvirYr0OLzwFNUmtRTp7z5scG0
-70SbPEG+gcR76mt27tErgnsuIwwzWQzomN/Bz7zsmaLASiIM9o3/pd8xWNRPLCjm
-LjR5D4kxsS0HBocOzZpPXydC5+hFK9slskZAObIsOU8zCp3uobpLdqflqDheUIM8
-Gifns9QhfKtvaClpCTKIDk/1ykJwnqxvKOR52GGmWbVzhNdSAjtXJiaOsdXgKzOi
-Nf3jsEoqjD1xV/77wKNJaNji7GagtfyGAX/xyV4t2g1M65jDf7hg3kppyqnUbYne
-cuqbPopcc8ie2o8DEaUb
-=Imfj
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Mar_2012_17_49_41_+1100_54VYpWMxodL+OC9x--
+-- 
+Steffen Persvold, Chief Architect NumaChip
+Numascale AS - www.numascale.com
+Tel: +47 92 49 25 54 Skype: spersvold
