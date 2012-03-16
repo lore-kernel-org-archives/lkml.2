@@ -1,126 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab2CPUOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:14:25 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44505 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab2CPUOY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:14:24 -0400
-Date: Fri, 16 Mar 2012 21:14:22 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH 11/11] checkpatch: Check for spin_is_locked
-Message-ID: <20120316201422.GL22197@one.firstfloor.org>
-References: <1331924464-18023-1-git-send-email-andi@firstfloor.org> <1331924464-18023-12-git-send-email-andi@firstfloor.org> <1331925755.11368.14.camel@joe2Laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331925755.11368.14.camel@joe2Laptop>
-User-Agent: Mutt/1.4.2.2i
+	id S965062Ab2CPUPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:15:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49386 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932115Ab2CPUOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 16:14:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
+Date: Fri, 16 Mar 2012 21:19:05 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+References: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org> <201203152331.14314.rjw@sisk.pl> <4F6299D9.9000004@codeaurora.org>
+In-Reply-To: <4F6299D9.9000004@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203162119.05382.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 12:22:35PM -0700, Joe Perches wrote:
-> On Fri, 2012-03-16 at 12:01 -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > spin_is_locked is usually misused. In checkpatch.pl
-> > - warn when it is used at all
-> > - error out when it is asserted on free, because that's usually broken
-> []
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> []
-> > +# spin_is_locked is usually misused. warn about it.
-> > +		if ($line =~ /\bspin_is_locked\s*\(/) {
-> > +			# BUG_ON/WARN_ON(!spin_is_locked() is generally a bug
-> > +			if ($line =~ /(BUG_ON|WARN_ON|ASSERT)\s*\(!spin_is_locked/) {
-> > +				ERROR("ASSERT_SPIN_IS_LOCKED",
-> > +				     "Use lockdep_assert_held() instead of asserts on !spin_is_locked\n"
-> > +				      . $herecurr);
-> > +			} else {
-> > +				WARN("SPIN_IS_LOCKED",
-> > +				     "spin_is_locked is very rarely correctly used. Please reconsider\n"
-> > +					. $herecurr)
-> > +			}
-> > +		}
-> > +
+On Friday, March 16, 2012, Stephen Boyd wrote:
+> On 03/15/12 15:31, Rafael J. Wysocki wrote:
+> > On Thursday, March 15, 2012, Stephen Boyd wrote:
+> >> On 03/15/12 13:07, Christian Lamparter wrote:
+> >>> On Thursday, March 15, 2012 08:50:15 PM Stephen Boyd wrote:
+> >>>> Oddly enough a work_struct was already part of the firmware_work
+> >>>> structure but nobody was using it. Instead of creating a new
+> >>>> kthread for each request_firmware_nowait() just schedule the work
+> >>>> on the system workqueue. This should avoid some overhead in
+> >>>> forking new threads when they're not strictly necessary if
+> >>>> workqueues are available.
+> >>>>
+> >>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>>> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> >>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>> ---
+> >>>>
+> >>>> I saw this while looking at this problem we're having.
+> >>> Correct me if I'm wrong, but wouldn't that stall all other
+> >>> global workqueue tasks for up to 60 seconds [in worst case]?
+> >>>
+> >>> But I think we can get rid of the firmware_work work struct...
+> >>>
+> >> My understanding is that with concurrency managed workqueues when the
+> >> work item blocks another will be scheduled to run almost immediately. So
+> >> before that change by Tejun workqueues would have been a bad idea
+> >> because it could have blocked up to 60 second but now it should be fine
+> >> because that work item will just be put to sleep and another request
+> >> will run.
+> > Please read the description of system_wq in workqueue.h.
+> >
+> > You should have used either system_long_wq or system_nrt_wq (depending on
+> > what you really need).
+> >
+> >
 > 
-> I suggest you use a single --ignore string of
-> "SPIN_IS_LOCKED" instead of different ones.
+> Thanks. I think we can use system_nrt_wq then? Or maybe even the
+> unbounded workqueue system_unbound_wq?
 
-Done.
-> 
-> Grammar might be improved in the WARN.  Maybe:
-> "Using spin_is_locked() is generally wrong. See [foo documentation]\n"
+Hmm.  Can you please remind me what the exact role of that work item is?
 
-Done.
+It loads the device's firmware, but I'm not sure in what situations that's
+supposed to happen.
 
-> 
-> Also, like what was done for yield(), perhaps
-> some kernel-doc content would be useful.
-
-Added to spinlocks.txt and spinlock.h
-
-
-+/**
-+ * spin_is_locked() - Check if a spinlock is being held.
-+ * @lock: Lock to check.
-+ *
-+ * This function should normally not be used. Especially using it in
-+ * WARN and BUG_ONs is usually incorrect or redundant.
-+ * If you want to check if a lock is held in a function
-+ * use lockdep_assert_held(). A lot of other usages are racy.
-+ */
-
-
-+spin_is_locked is a bad idea
-+
-+spin_is_locked checks if a lock is currently hold.  On uniprocessor kernels
-+it always returns 0. In general this function should be avoided because most 
-+uses of it are either redundant or broken.
-+
-+People often use spin_is_locked() to check if a particular lock is hold when a function
-+is called to enforce a locking discipline, like
-+
-+       WARN_ON(!spin_is_locked(!my_lock))
-+
-+or 
-+
-+       BUG_ON(!spin_is_locked(!my_lock))
-+
-+or some variant of those.
-+
-+This does not work on uniprocessor kernels because they will always fail.
-+While there are ways around that they are ugly and not recommended.
-+Better use lockdep_assert_held(). This also only checks on a lock debugging
-+kernel (which you should occasionally run on your code anyways because
-+it catches many more problems). 
-+
-+In generally this would be better done with static annotation anyways 
-+(there's some support for it in sparse)
-+
-+       BUG_ON(spin_is_locked(obj->lock));
-+       kfree(obj);
-+
-+Another usage is checking whether a lock is not hold when freeing an object.
-+However this is redundant because lock debugging supports this anyways
-+without explicit code. Just delete the BUG_ON.
-+
-+A third usage is to check in a console function if a lock is hold, to get
-+a panic crash dump out even when some other thread died in it.
-+This is better implemented with spin_try_lock() et.al. and a timeout.
-+
-+Other usages are usually simply races.
-+
-+In summary just don't use it.
-
-
-
-
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks,
+Rafael
