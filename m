@@ -1,104 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab2CPRlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 13:41:14 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52856 "EHLO
+	id S1753163Ab2CPRkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 13:40:04 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52821 "EHLO
 	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab2CPRkF (ORCPT
+	with ESMTP id S1752863Ab2CPRjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 13:40:05 -0400
+	Fri, 16 Mar 2012 13:39:55 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V4 10/10] memcg: Add memory controller documentation for hugetlb management
-Date: Fri, 16 Mar 2012 23:09:30 +0530
-Message-Id: <1331919570-2264-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V4 03/10] hugetlbfs: Add an inline helper for finding hstate index
+Date: Fri, 16 Mar 2012 23:09:23 +0530
+Message-Id: <1331919570-2264-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12031617-4790-0000-0000-000001D40207
+x-cbid: 12031617-4790-0000-0000-000001D401EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
+Add and inline helper and use it in the code.
+
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- Documentation/cgroups/memory.txt |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+ include/linux/hugetlb.h |    6 ++++++
+ mm/hugetlb.c            |   18 ++++++++++--------
+ 2 files changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 4c95c00..d99c41b 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -43,6 +43,7 @@ Features:
-  - usage threshold notifier
-  - oom-killer disable knob and oom-notifier
-  - Root cgroup has no limit controls.
-+ - resource accounting for HugeTLB pages
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index d9d6c86..a2675b0 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -311,6 +311,11 @@ static inline unsigned hstate_index_to_shift(unsigned index)
+ 	return hstates[index].order + PAGE_SHIFT;
+ }
  
-  Kernel memory support is work in progress, and the current version provides
-  basically functionality. (See Section 2.7)
-@@ -75,6 +76,12 @@ Brief summary of control files.
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
- 
++static inline int hstate_index(struct hstate *h)
++{
++	return h - hstates;
++}
 +
-+ memory.hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
-+ memory.hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
-+ memory.hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
-+						  # see 5.7 for details
-+
- 1. History
+ #else
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -329,6 +334,7 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ 	return 1;
+ }
+ #define hstate_index_to_shift(index) 0
++#define hstate_index(h) 0
+ #endif
  
- The memory controller has a long history. A request for comments for the memory
-@@ -279,6 +286,15 @@ per cgroup, instead of globally.
+ #endif /* _LINUX_HUGETLB_H */
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 3782da8..ebe245c 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1557,7 +1557,7 @@ static int hugetlb_sysfs_add_hstate(struct hstate *h, struct kobject *parent,
+ 				    struct attribute_group *hstate_attr_group)
+ {
+ 	int retval;
+-	int hi = h - hstates;
++	int hi = hstate_index(h);
  
- * tcp memory pressure: sockets memory pressure for the tcp protocol.
+ 	hstate_kobjs[hi] = kobject_create_and_add(h->name, parent);
+ 	if (!hstate_kobjs[hi])
+@@ -1652,11 +1652,13 @@ void hugetlb_unregister_node(struct node *node)
+ 	if (!nhs->hugepages_kobj)
+ 		return;		/* no hstate attributes */
  
-+2.8 HugeTLB extension
-+
-+This extension allows to limit the HugeTLB usage per control group and
-+enforces the controller limit during page fault. Since HugeTLB doesn't
-+support page reclaim, enforcing the limit at page fault time implies that,
-+the application will get SIGBUS signal if it tries to access HugeTLB pages
-+beyond its limit. This requires the application to know beforehand how much
-+HugeTLB pages it would require for its use.
-+
- 3. User Interface
+-	for_each_hstate(h)
+-		if (nhs->hstate_kobjs[h - hstates]) {
+-			kobject_put(nhs->hstate_kobjs[h - hstates]);
+-			nhs->hstate_kobjs[h - hstates] = NULL;
++	for_each_hstate(h) {
++		int idx = hstate_index(h);
++		if (nhs->hstate_kobjs[idx]) {
++			kobject_put(nhs->hstate_kobjs[idx]);
++			nhs->hstate_kobjs[idx] = NULL;
+ 		}
++	}
  
- 0. Configuration
-@@ -287,6 +303,7 @@ a. Enable CONFIG_CGROUPS
- b. Enable CONFIG_RESOURCE_COUNTERS
- c. Enable CONFIG_CGROUP_MEM_RES_CTLR
- d. Enable CONFIG_CGROUP_MEM_RES_CTLR_SWAP (to use swap extension)
-+f. Enable CONFIG_MEM_RES_CTLR_HUGETLB (to use HugeTLB extension)
+ 	kobject_put(nhs->hugepages_kobj);
+ 	nhs->hugepages_kobj = NULL;
+@@ -1759,7 +1761,7 @@ static void __exit hugetlb_exit(void)
+ 	hugetlb_unregister_all_nodes();
  
- 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
- # mount -t tmpfs none /sys/fs/cgroup
-@@ -510,6 +527,18 @@ unevictable=<total anon pages> N0=<node 0 pages> N1=<node 1 pages> ...
+ 	for_each_hstate(h) {
+-		kobject_put(hstate_kobjs[h - hstates]);
++		kobject_put(hstate_kobjs[hstate_index(h)]);
+ 	}
  
- And we have total = file + anon + unevictable.
+ 	kobject_put(hugepages_kobj);
+@@ -2587,7 +2589,7 @@ retry:
+ 		 */
+ 		if (unlikely(PageHWPoison(page))) {
+ 			ret = VM_FAULT_HWPOISON |
+-			      VM_FAULT_SET_HINDEX(h - hstates);
++				VM_FAULT_SET_HINDEX(hstate_index(h));
+ 			goto backout_unlocked;
+ 		}
+ 	}
+@@ -2660,7 +2662,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+-			       VM_FAULT_SET_HINDEX(h - hstates);
++				VM_FAULT_SET_HINDEX(hstate_index(h));
+ 	}
  
-+5.7 HugeTLB resource control files
-+For a system supporting two hugepage size (16M and 16G) the control
-+files include:
-+
-+ memory.hugetlb.16GB.limit_in_bytes
-+ memory.hugetlb.16GB.max_usage_in_bytes
-+ memory.hugetlb.16GB.usage_in_bytes
-+ memory.hugetlb.16MB.limit_in_bytes
-+ memory.hugetlb.16MB.max_usage_in_bytes
-+ memory.hugetlb.16MB.usage_in_bytes
-+
-+
- 6. Hierarchy support
- 
- The memory controller supports a deep hierarchy and hierarchical accounting.
+ 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
 -- 
 1.7.9
 
