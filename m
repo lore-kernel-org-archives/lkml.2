@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946521Ab2CPXoi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:44:38 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946525Ab2CPXo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:44:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946369Ab2CPXlL (ORCPT
+	with ESMTP id S1946398Ab2CPXlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:11 -0400
-Message-Id: <20120316233813.357784764@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:04 -0400
+Message-Id: <20120316233813.184459935@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:41 -0700
+Date: Fri, 16 Mar 2012 16:38:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 31/41] block: fix __blkdev_get and add_disk race condition
+        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 29/41] block: Fix NULL pointer dereference in sd_revalidate_disk
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,161 +26,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-commit 9f53d2fe815b4011ff930a7b6db98385d45faa68 upstream.
+commit fe316bf2d5847bc5dd975668671a7b1067603bc7 upstream.
 
-The following situation might occur:
+Since 2.6.39 (1196f8b), when a driver returns -ENOMEDIUM for open(),
+__blkdev_get() calls rescan_partitions() to remove
+in-kernel partition structures and raise KOBJ_CHANGE uevent.
 
-__blkdev_get:			add_disk:
+However it ends up calling driver's revalidate_disk without open
+and could cause oops.
 
-				register_disk()
-get_gendisk()
+In the case of SCSI:
 
-disk_block_events()
-	disk->ev == NULL
+  process A                  process B
+  ----------------------------------------------
+  sys_open
+    __blkdev_get
+      sd_open
+        returns -ENOMEDIUM
+                             scsi_remove_device
+                               <scsi_device torn down>
+      rescan_partitions
+        sd_revalidate_disk
+          <oops>
+Oopses are reported here:
+http://marc.info/?l=linux-scsi&m=132388619710052
 
-				disk_add_events()
+This patch separates the partition invalidation from rescan_partitions()
+and use it for -ENOMEDIUM case.
 
-__disk_unblock_events()
-	disk->ev != NULL
-	--ev->block
-
-Then we unblock events, when they are suppose to be blocked. This can
-trigger events related block/genhd.c warnings, but also can crash in
-sd_check_events() or other places.
-
-I'm able to reproduce crashes with the following scripts (with
-connected usb dongle as sdb disk).
-
-<snip>
-DEV=/dev/sdb
-ENABLE=/sys/bus/usb/devices/1-2/bConfigurationValue
-
-function stop_me()
-{
-	for i in `jobs -p` ; do kill $i 2> /dev/null ; done
-	exit
-}
-
-trap stop_me SIGHUP SIGINT SIGTERM
-
-for ((i = 0; i < 10; i++)) ; do
-	while true; do fdisk -l $DEV  2>&1 > /dev/null ; done &
-done
-
-while true ; do
-echo 1 > $ENABLE
-sleep 1
-echo 0 > $ENABLE
-done
-</snip>
-
-I use the script to verify patch fixing oops in sd_revalidate_disk
-http://marc.info/?l=linux-scsi&m=132935572512352&w=2
-Without Jun'ichi Nomura patch titled "Fix NULL pointer dereference in
-sd_revalidate_disk" or this one, script easily crash kernel within
-a few seconds. With both patches applied I do not observe crash.
-Unfortunately after some time (dozen of minutes), script will hung in:
-
-[ 1563.906432]  [<c08354f5>] schedule_timeout_uninterruptible+0x15/0x20
-[ 1563.906437]  [<c04532d5>] msleep+0x15/0x20
-[ 1563.906443]  [<c05d60b2>] blk_drain_queue+0x32/0xd0
-[ 1563.906447]  [<c05d6e00>] blk_cleanup_queue+0xd0/0x170
-[ 1563.906454]  [<c06d278f>] scsi_free_queue+0x3f/0x60
-[ 1563.906459]  [<c06d7e6e>] __scsi_remove_device+0x6e/0xb0
-[ 1563.906463]  [<c06d4aff>] scsi_forget_host+0x4f/0x60
-[ 1563.906468]  [<c06cd84a>] scsi_remove_host+0x5a/0xf0
-[ 1563.906482]  [<f7f030fb>] quiesce_and_remove_host+0x5b/0xa0 [usb_storage]
-[ 1563.906490]  [<f7f03203>] usb_stor_disconnect+0x13/0x20 [usb_storage]
-
-Anyway I think this patch is some step forward.
-
-As drawback, I do not teardown on sysfs file create error, because I do
-not know how to nullify disk->ev (since it can be used). However add_disk
-error handling practically does not exist too, and things will work
-without this sysfs file, except events will not be exported to user
-space.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reported-by: Huajun Li <huajun.li.lee@gmail.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 Acked-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+ fs/block_dev.c        |   16 ++++++++++++----
+ fs/partitions/check.c |   48 ++++++++++++++++++++++++++++++++++++++++--------
+ include/linux/genhd.h |    1 +
+ 3 files changed, 53 insertions(+), 12 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -36,6 +36,7 @@ static DEFINE_IDR(ext_devt_idr);
- 
- static struct device_type disk_type;
- 
-+static void disk_alloc_events(struct gendisk *disk);
- static void disk_add_events(struct gendisk *disk);
- static void disk_del_events(struct gendisk *disk);
- static void disk_release_events(struct gendisk *disk);
-@@ -602,6 +603,8 @@ void add_disk(struct gendisk *disk)
- 	disk->major = MAJOR(devt);
- 	disk->first_minor = MINOR(devt);
- 
-+	disk_alloc_events(disk);
-+
- 	/* Register BDI before referencing it from bdev */
- 	bdi = &disk->queue->backing_dev_info;
- 	bdi_register_dev(bdi, disk_devt(disk));
-@@ -1734,9 +1737,9 @@ module_param_cb(events_dfl_poll_msecs, &
- 		&disk_events_dfl_poll_msecs, 0644);
- 
- /*
-- * disk_{add|del|release}_events - initialize and destroy disk_events.
-+ * disk_{alloc|add|del|release}_events - initialize and destroy disk_events.
-  */
--static void disk_add_events(struct gendisk *disk)
-+static void disk_alloc_events(struct gendisk *disk)
- {
- 	struct disk_events *ev;
- 
-@@ -1749,16 +1752,6 @@ static void disk_add_events(struct gendi
- 		return;
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1159,8 +1159,12 @@ static int __blkdev_get(struct block_dev
+ 			 * The latter is necessary to prevent ghost
+ 			 * partitions on a removed medium.
+ 			 */
+-			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
+-				rescan_partitions(disk, bdev);
++			if (bdev->bd_invalidated) {
++				if (!ret)
++					rescan_partitions(disk, bdev);
++				else if (ret == -ENOMEDIUM)
++					invalidate_partitions(disk, bdev);
++			}
+ 			if (ret)
+ 				goto out_clear;
+ 		} else {
+@@ -1190,8 +1194,12 @@ static int __blkdev_get(struct block_dev
+ 			if (bdev->bd_disk->fops->open)
+ 				ret = bdev->bd_disk->fops->open(bdev, mode);
+ 			/* the same as first opener case, read comment there */
+-			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
+-				rescan_partitions(bdev->bd_disk, bdev);
++			if (bdev->bd_invalidated) {
++				if (!ret)
++					rescan_partitions(bdev->bd_disk, bdev);
++				else if (ret == -ENOMEDIUM)
++					invalidate_partitions(bdev->bd_disk, bdev);
++			}
+ 			if (ret)
+ 				goto out_unlock_bdev;
+ 		}
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -539,17 +539,11 @@ static bool disk_unlock_native_capacity(
  	}
+ }
  
--	if (sysfs_create_files(&disk_to_dev(disk)->kobj,
--			       disk_events_attrs) < 0) {
--		pr_warn("%s: failed to create sysfs files for events\n",
--			disk->disk_name);
--		kfree(ev);
--		return;
+-int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
++static int drop_partitions(struct gendisk *disk, struct block_device *bdev)
+ {
+-	struct parsed_partitions *state = NULL;
+ 	struct disk_part_iter piter;
+ 	struct hd_struct *part;
+-	int p, highest, res;
+-rescan:
+-	if (state && !IS_ERR(state)) {
+-		kfree(state);
+-		state = NULL;
 -	}
--
--	disk->ev = ev;
--
- 	INIT_LIST_HEAD(&ev->node);
- 	ev->disk = disk;
- 	spin_lock_init(&ev->lock);
-@@ -1767,8 +1760,21 @@ static void disk_add_events(struct gendi
- 	ev->poll_msecs = -1;
- 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
++	int res;
  
-+	disk->ev = ev;
+ 	if (bdev->bd_part_count)
+ 		return -EBUSY;
+@@ -562,6 +556,24 @@ rescan:
+ 		delete_partition(disk, part->partno);
+ 	disk_part_iter_exit(&piter);
+ 
++	return 0;
 +}
 +
-+static void disk_add_events(struct gendisk *disk)
++int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
 +{
-+	if (!disk->ev)
-+		return;
++	struct parsed_partitions *state = NULL;
++	struct hd_struct *part;
++	int p, highest, res;
++rescan:
++	if (state && !IS_ERR(state)) {
++		kfree(state);
++		state = NULL;
++	}
 +
-+	/* FIXME: error handling */
-+	if (sysfs_create_files(&disk_to_dev(disk)->kobj, disk_events_attrs) < 0)
-+		pr_warn("%s: failed to create sysfs files for events\n",
-+			disk->disk_name);
++	res = drop_partitions(disk, bdev);
++	if (res)
++		return res;
 +
- 	mutex_lock(&disk_events_mutex);
--	list_add_tail(&ev->node, &disk_events);
-+	list_add_tail(&disk->ev->node, &disk_events);
- 	mutex_unlock(&disk_events_mutex);
+ 	if (disk->fops->revalidate_disk)
+ 		disk->fops->revalidate_disk(disk);
+ 	check_disk_size_change(disk, bdev);
+@@ -665,6 +677,26 @@ rescan:
+ 	return 0;
+ }
  
- 	/*
++int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
++{
++	int res;
++
++	if (!bdev->bd_invalidated)
++		return 0;
++
++	res = drop_partitions(disk, bdev);
++	if (res)
++		return res;
++
++	set_capacity(disk, 0);
++	check_disk_size_change(disk, bdev);
++	bdev->bd_invalidated = 0;
++	/* tell userspace that the media / partition table may have changed */
++	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
++
++	return 0;
++}
++
+ unsigned char *read_dev_sector(struct block_device *bdev, sector_t n, Sector *p)
+ {
+ 	struct address_space *mapping = bdev->bd_inode->i_mapping;
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -596,6 +596,7 @@ extern char *disk_name (struct gendisk *
+ 
+ extern int disk_expand_part_tbl(struct gendisk *disk, int target);
+ extern int rescan_partitions(struct gendisk *disk, struct block_device *bdev);
++extern int invalidate_partitions(struct gendisk *disk, struct block_device *bdev);
+ extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
+ 						     int partno, sector_t start,
+ 						     sector_t len, int flags,
 
 
