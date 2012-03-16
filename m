@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032866Ab2CPXik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946157Ab2CPXiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:38:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032736Ab2CPXif (ORCPT
+	with ESMTP id S1032736Ab2CPXil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:38:35 -0400
-Message-Id: <20120316233449.058356003@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:38:41 -0400
+Message-Id: <20120316233449.226999265@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:07 -0700
+Date: Fri, 16 Mar 2012 16:35:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shreyas N Bhatewara <sbhatewara@vmware.com>,
+        alan@lxorguk.ukuu.org.uk, Ulrich Weber <ulrich.weber@sophos.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/38] vmxnet3: Fix transport header size
+Subject: [ 22/38] bridge: check return value of ipv6_dev_get_saddr()
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
+From: Ulrich Weber <ulrich.weber@sophos.com>
 
-[ Upstream commit efead8710aad9e384730ecf25eae0287878840d7 ]
+[ Upstream commit d1d81d4c3dd886d5fa25a2c4fa1e39cb89613712 ]
 
-Fix transport header size
+otherwise source IPv6 address of ICMPV6_MGM_QUERY packet
+might be random junk if IPv6 is disabled on interface or
+link-local address is not yet ready (DAD).
 
-Fix the transpoert header size for UDP packets.
-
-Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c |    7 +------
- drivers/net/vmxnet3/vmxnet3_int.h |    4 ++--
- 2 files changed, 3 insertions(+), 8 deletions(-)
+ net/bridge/br_multicast.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -830,13 +830,8 @@ vmxnet3_parse_and_copy_hdr(struct sk_buf
- 					ctx->l4_hdr_size = ((struct tcphdr *)
- 					   skb_transport_header(skb))->doff * 4;
- 				else if (iph->protocol == IPPROTO_UDP)
--					/*
--					 * Use tcp header size so that bytes to
--					 * be copied are more than required by
--					 * the device.
--					 */
- 					ctx->l4_hdr_size =
--							sizeof(struct tcphdr);
-+							sizeof(struct udphdr);
- 				else
- 					ctx->l4_hdr_size = 0;
- 			} else {
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -69,10 +69,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.1.18.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.1.29.0-k"
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -446,8 +446,11 @@ static struct sk_buff *br_ip6_multicast_
+ 	ip6h->nexthdr = IPPROTO_HOPOPTS;
+ 	ip6h->hop_limit = 1;
+ 	ipv6_addr_set(&ip6h->daddr, htonl(0xff020000), 0, 0, htonl(1));
+-	ipv6_dev_get_saddr(dev_net(br->dev), br->dev, &ip6h->daddr, 0,
+-			   &ip6h->saddr);
++	if (ipv6_dev_get_saddr(dev_net(br->dev), br->dev, &ip6h->daddr, 0,
++			       &ip6h->saddr)) {
++		kfree_skb(skb);
++		return NULL;
++	}
+ 	ipv6_eth_mc_map(&ip6h->daddr, eth->h_dest);
  
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01011200
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01011D00
- 
- #if defined(CONFIG_PCI_MSI)
- 	/* RSS only makes sense if MSI-X is supported. */
+ 	hopopt = (u8 *)(ip6h + 1);
 
 
