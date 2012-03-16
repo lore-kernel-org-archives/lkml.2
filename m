@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032686Ab2CPKUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:20:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54119 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965391Ab2CPKUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:20:33 -0400
-From: Rajendra Nayak <rnayak@ti.com>
-To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
-CC: <linux-kernel@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH] regulator: Fix up a confusing dev_warn when regulator_get fails
-Date: Fri, 16 Mar 2012 15:50:21 +0530
-Message-ID: <1331893221-14426-1-git-send-email-rnayak@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1032716Ab2CPKV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:21:28 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:38852 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1031028Ab2CPKV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 06:21:26 -0400
+From: Shiraz Hashim <shiraz.hashim@st.com>
+To: <linux-ide@vger.kernel.org>, Jeff Garzik <jgarzik@pobox.com>
+Cc: <linux-kernel@vger.kernel.org>, <spear-devel@list.st.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>
+Subject: [PATCH resend] ata/ahci_platform: add hibernation callbacks
+Date: Fri, 16 Mar 2012 15:49:55 +0530
+Message-ID: <1331893195-27078-1-git-send-email-shiraz.hashim@st.com>
+X-Mailer: git-send-email 1.7.9.rc0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_parse_phandle() returns NULL either if the property name
-itself does not exist or if it (exists and) does not
-reference a valid phandle.
-Giving out a warn like the one below (that the property references
-an invalid phandle) can be confusing when the property itself
-does not exist in the node.
-Fix it with a more sensible message and make it a dev_dbg instead
-of a dev_warn.
+Use existing suspend, resume implementation for hibernation callbacks.
 
-Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
 ---
- drivers/regulator/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/ata/ahci_platform.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 5a6b8ba..e2f3afa 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -148,7 +148,7 @@ static struct device_node *of_get_regulator(struct device *dev, const char *supp
- 	regnode = of_parse_phandle(dev->of_node, prop_name, 0);
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 2bbcbbe..4431c60 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -16,6 +16,7 @@
+ #include <linux/kernel.h>
+ #include <linux/gfp.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+@@ -286,13 +287,10 @@ static int ahci_resume(struct device *dev)
  
- 	if (!regnode) {
--		dev_warn(dev, "%s property in node %s references invalid phandle",
-+		dev_dbg(dev, "Looking up %s property in node %s failed",
- 				prop_name, dev->of_node->full_name);
- 		return NULL;
- 	}
+ 	return 0;
+ }
+-
+-static struct dev_pm_ops ahci_pm_ops = {
+-	.suspend		= &ahci_suspend,
+-	.resume			= &ahci_resume,
+-};
+ #endif
+ 
++SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
++
+ static const struct of_device_id ahci_of_match[] = {
+ 	{ .compatible = "calxeda,hb-ahci", },
+ 	{},
+@@ -305,9 +303,7 @@ static struct platform_driver ahci_driver = {
+ 		.name = "ahci",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = ahci_of_match,
+-#ifdef CONFIG_PM
+ 		.pm = &ahci_pm_ops,
+-#endif
+ 	},
+ 	.id_table	= ahci_devtype,
+ };
 -- 
-1.7.1
+1.7.9.rc0
 
