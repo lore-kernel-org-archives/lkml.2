@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946543Ab2CPXt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:49:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946533Ab2CPXt4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:49:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946227Ab2CPXj7 (ORCPT
+	with ESMTP id S1946234Ab2CPXkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:59 -0400
-Message-Id: <20120316233811.305109391@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:02 -0400
+Message-Id: <20120316233811.387658477@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:18 -0700
+Date: Fri, 16 Mar 2012 16:38:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 08/41] rt2x00: fix random stalls
+        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [ 09/41] perf/x86: Fix local vs remote memory events for NHM/WSM
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +25,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 3780d038fdf4b5ef26ead10b0604ab1f46dd9510 upstream.
+commit 87e24f4b67e68d9fd8df16e0bf9c66d1ad2a2533 upstream.
 
-Is possible that we stop queue and then do not wake up it again,
-especially when packets are transmitted fast. That can be easily
-reproduced with modified tx queue entry_num to some small value e.g. 16.
+Verified using the below proglet.. before:
 
-If mac80211 already hold local->queue_stop_reason_lock, then we can wait
-on that lock in both rt2x00queue_pause_queue() and
-rt2x00queue_unpause_queue(). After drooping ->queue_stop_reason_lock
-is possible that __ieee80211_wake_queue() will be performed before
-__ieee80211_stop_queue(), hence we stop queue and newer wake up it
-again.
+[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 0
+remote write
 
-Another race condition is possible when between rt2x00queue_threshold()
-check and rt2x00queue_pause_queue() we will process all pending tx
-buffers on different cpu. This might happen if for example interrupt
-will be triggered on cpu performing rt2x00mac_tx().
+ Performance counter stats for './numa 0':
 
-To prevent race conditions serialize pause/unpause by queue->tx_lock.
+         2,101,554 node-stores
+         2,096,931 node-store-misses
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+       5.021546079 seconds time elapsed
+
+[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 1
+local write
+
+ Performance counter stats for './numa 1':
+
+           501,137 node-stores
+               199 node-store-misses
+
+       5.124451068 seconds time elapsed
+
+After:
+
+[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 0
+remote write
+
+ Performance counter stats for './numa 0':
+
+         2,107,516 node-stores
+         2,097,187 node-store-misses
+
+       5.012755149 seconds time elapsed
+
+[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 1
+local write
+
+ Performance counter stats for './numa 1':
+
+         2,063,355 node-stores
+               165 node-store-misses
+
+       5.082091494 seconds time elapsed
+
+#define _GNU_SOURCE
+
+#include <sched.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <signal.h>
+#include <unistd.h>
+#include <numaif.h>
+#include <stdlib.h>
+
+#define SIZE (32*1024*1024)
+
+volatile int done;
+
+void sig_done(int sig)
+{
+	done = 1;
+}
+
+int main(int argc, char **argv)
+{
+	cpu_set_t *mask, *mask2;
+	size_t size;
+	int i, err, t;
+	int nrcpus = 1024;
+	char *mem;
+	unsigned long nodemask = 0x01; /* node 0 */
+	DIR *node;
+	struct dirent *de;
+	int read = 0;
+	int local = 0;
+
+	if (argc < 2) {
+		printf("usage: %s [0-3]\n", argv[0]);
+		printf("  bit0 - local/remote\n");
+		printf("  bit1 - read/write\n");
+		exit(0);
+	}
+
+	switch (atoi(argv[1])) {
+	case 0:
+		printf("remote write\n");
+		break;
+	case 1:
+		printf("local write\n");
+		local = 1;
+		break;
+	case 2:
+		printf("remote read\n");
+		read = 1;
+		break;
+	case 3:
+		printf("local read\n");
+		local = 1;
+		read = 1;
+		break;
+	}
+
+	mask = CPU_ALLOC(nrcpus);
+	size = CPU_ALLOC_SIZE(nrcpus);
+	CPU_ZERO_S(size, mask);
+
+	node = opendir("/sys/devices/system/node/node0/");
+	if (!node)
+		perror("opendir");
+	while ((de = readdir(node))) {
+		int cpu;
+
+		if (sscanf(de->d_name, "cpu%d", &cpu) == 1)
+			CPU_SET_S(cpu, size, mask);
+	}
+	closedir(node);
+
+	mask2 = CPU_ALLOC(nrcpus);
+	CPU_ZERO_S(size, mask2);
+	for (i = 0; i < size; i++)
+		CPU_SET_S(i, size, mask2);
+	CPU_XOR_S(size, mask2, mask2, mask); // invert
+
+	if (!local)
+		mask = mask2;
+
+	err = sched_setaffinity(0, size, mask);
+	if (err)
+		perror("sched_setaffinity");
+
+	mem = mmap(0, SIZE, PROT_READ|PROT_WRITE,
+			MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	err = mbind(mem, SIZE, MPOL_BIND, &nodemask, 8*sizeof(nodemask), MPOL_MF_MOVE);
+	if (err)
+		perror("mbind");
+
+	signal(SIGALRM, sig_done);
+	alarm(5);
+
+	if (!read) {
+		while (!done) {
+			for (i = 0; i < SIZE; i++)
+				mem[i] = 0x01;
+		}
+	} else {
+		while (!done) {
+			for (i = 0; i < SIZE; i++)
+				t += *(volatile char *)(mem + i);
+		}
+	}
+
+	return 0;
+}
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-tq73sxus35xmqpojf7ootxgs@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c   |    6 +++++-
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    9 +++++++++
- drivers/net/wireless/rt2x00/rt2x00queue.c |    3 +++
- 3 files changed, 17 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -426,10 +426,14 @@ void rt2x00lib_txdone(struct queue_entry
- 	/*
- 	 * If the data queue was below the threshold before the txdone
- 	 * handler we must make sure the packet queue in the mac80211 stack
--	 * is reenabled when the txdone handler has finished.
-+	 * is reenabled when the txdone handler has finished. This has to be
-+	 * serialized with rt2x00mac_tx(), otherwise we can wake up queue
-+	 * before it was stopped.
- 	 */
-+	spin_lock_bh(&entry->queue->tx_lock);
- 	if (!rt2x00queue_threshold(entry->queue))
- 		rt2x00queue_unpause_queue(entry->queue);
-+	spin_unlock_bh(&entry->queue->tx_lock);
- }
- EXPORT_SYMBOL_GPL(rt2x00lib_txdone);
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -389,14 +389,15 @@ static __initconst const u64 westmere_hw
+ #define NHM_LOCAL_DRAM		(1 << 14)
+ #define NHM_NON_DRAM		(1 << 15)
  
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -152,13 +152,22 @@ void rt2x00mac_tx(struct ieee80211_hw *h
- 	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
- 		goto exit_fail;
+-#define NHM_ALL_DRAM		(NHM_REMOTE_DRAM|NHM_LOCAL_DRAM)
++#define NHM_LOCAL		(NHM_LOCAL_DRAM|NHM_REMOTE_CACHE_FWD)
++#define NHM_REMOTE		(NHM_REMOTE_DRAM)
  
-+	/*
-+	 * Pausing queue has to be serialized with rt2x00lib_txdone(). Note
-+	 * we should not use spin_lock_bh variant as bottom halve was already
-+	 * disabled before ieee80211_xmit() call.
-+	 */
-+	spin_lock(&queue->tx_lock);
- 	if (rt2x00queue_threshold(queue))
- 		rt2x00queue_pause_queue(queue);
-+	spin_unlock(&queue->tx_lock);
+ #define NHM_DMND_READ		(NHM_DMND_DATA_RD)
+ #define NHM_DMND_WRITE		(NHM_DMND_RFO|NHM_DMND_WB)
+ #define NHM_DMND_PREFETCH	(NHM_PF_DATA_RD|NHM_PF_DATA_RFO)
  
- 	return;
+ #define NHM_L3_HIT	(NHM_UNCORE_HIT|NHM_OTHER_CORE_HIT_SNP|NHM_OTHER_CORE_HITM)
+-#define NHM_L3_MISS	(NHM_NON_DRAM|NHM_ALL_DRAM|NHM_REMOTE_CACHE_FWD)
++#define NHM_L3_MISS	(NHM_NON_DRAM|NHM_LOCAL_DRAM|NHM_REMOTE_DRAM|NHM_REMOTE_CACHE_FWD)
+ #define NHM_L3_ACCESS	(NHM_L3_HIT|NHM_L3_MISS)
  
-  exit_fail:
-+	spin_lock(&queue->tx_lock);
- 	rt2x00queue_pause_queue(queue);
-+	spin_unlock(&queue->tx_lock);
-  exit_free_skb:
- 	dev_kfree_skb_any(skb);
- }
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -619,6 +619,9 @@ int rt2x00queue_write_tx_frame(struct da
- 	else if (test_bit(REQUIRE_DMA, &queue->rt2x00dev->cap_flags))
- 		rt2x00queue_align_frame(skb);
- 
-+	/*
-+	 * That function must be called with bh disabled.
-+	 */
- 	spin_lock(&queue->tx_lock);
- 
- 	if (unlikely(rt2x00queue_full(queue))) {
+ static __initconst const u64 nehalem_hw_cache_extra_regs
+@@ -420,16 +421,16 @@ static __initconst const u64 nehalem_hw_
+  },
+  [ C(NODE) ] = {
+ 	[ C(OP_READ) ] = {
+-		[ C(RESULT_ACCESS) ] = NHM_DMND_READ|NHM_ALL_DRAM,
+-		[ C(RESULT_MISS)   ] = NHM_DMND_READ|NHM_REMOTE_DRAM,
++		[ C(RESULT_ACCESS) ] = NHM_DMND_READ|NHM_LOCAL|NHM_REMOTE,
++		[ C(RESULT_MISS)   ] = NHM_DMND_READ|NHM_REMOTE,
+ 	},
+ 	[ C(OP_WRITE) ] = {
+-		[ C(RESULT_ACCESS) ] = NHM_DMND_WRITE|NHM_ALL_DRAM,
+-		[ C(RESULT_MISS)   ] = NHM_DMND_WRITE|NHM_REMOTE_DRAM,
++		[ C(RESULT_ACCESS) ] = NHM_DMND_WRITE|NHM_LOCAL|NHM_REMOTE,
++		[ C(RESULT_MISS)   ] = NHM_DMND_WRITE|NHM_REMOTE,
+ 	},
+ 	[ C(OP_PREFETCH) ] = {
+-		[ C(RESULT_ACCESS) ] = NHM_DMND_PREFETCH|NHM_ALL_DRAM,
+-		[ C(RESULT_MISS)   ] = NHM_DMND_PREFETCH|NHM_REMOTE_DRAM,
++		[ C(RESULT_ACCESS) ] = NHM_DMND_PREFETCH|NHM_LOCAL|NHM_REMOTE,
++		[ C(RESULT_MISS)   ] = NHM_DMND_PREFETCH|NHM_REMOTE,
+ 	},
+  },
+ };
 
 
