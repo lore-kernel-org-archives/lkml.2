@@ -1,176 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161655Ab2CPAEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 20:04:23 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46649 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755998Ab2CPAEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 20:04:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F62830F.4060303@jp.fujitsu.com>
-Date: Fri, 16 Mar 2012 09:02:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1762150Ab2CPAEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 20:04:36 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:40261 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1762123Ab2CPAEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 20:04:31 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-pm@lists.linux-foundation.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 3/5] cpuidle: add support for states that affect multiple cpus
+Organization: Texas Instruments, Inc.
+References: <1331749794-8056-1-git-send-email-ccross@android.com>
+	<1331749794-8056-4-git-send-email-ccross@android.com>
+Date: Thu, 15 Mar 2012 17:04:43 -0700
+In-Reply-To: <1331749794-8056-4-git-send-email-ccross@android.com> (Colin
+	Cross's message of "Wed, 14 Mar 2012 11:29:52 -0700")
+Message-ID: <87lin18l7o.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, gthelen@google.com,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC REPOST] cgroup: removing css reference drain wait during
- cgroup removal
-References: <20120312213155.GE23255@google.com> <20120312213343.GF23255@google.com> <20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com> <20120313163914.GD7349@google.com> <20120314092828.3321731c.kamezawa.hiroyu@jp.fujitsu.com> <4F6068F4.4090909@parallels.com> <4F6134E1.5090601@jp.fujitsu.com> <4F61D167.4000402@parallels.com>
-In-Reply-To: <4F61D167.4000402@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/15 20:24), Glauber Costa wrote:
+Colin Cross <ccross@android.com> writes:
 
-> On 03/15/2012 04:16 AM, KAMEZAWA Hiroyuki wrote:
->> (2012/03/14 18:46), Glauber Costa wrote:
->>
->>> On 03/14/2012 04:28 AM, KAMEZAWA Hiroyuki wrote:
->>>> IIUC, in general, even in the processes are in a tree, in major case
->>>> of servers, their workloads are independent.
->>>> I think FLAT mode is the dafault. 'heararchical' is a crazy thing which
->>>> cannot be managed.
->>>
->>> Better pay attention to the current overall cgroups discussions being
->>> held by Tejun then. ([RFD] cgroup: about multiple hierarchies)
->>>
->>> The topic of whether of adapting all cgroups to be hierarchical by
->>> deafult is a recurring one.
->>>
->>> I personally think that it is not unachievable to make res_counters
->>> cheaper, therefore making this less of a problem.
->>>
->>
->>
->> I thought of this a little yesterday. Current my idea is applying following
->> rule for res_counter.
->>
->> 1. All res_counter is hierarchical. But behavior should be optimized.
->>
->> 2. If parent res_counter has UNLIMITED limit, 'usage' will not be propagated
->>    to its parent at _charge_.
-> 
-> That doesn't seem to make much sense. If you are unlimited, but your 
-> parent is limited,
-> he has a lot more interest to know about the charge than you do. 
+> +/**
+> + * cpuidle_coupled_cpu_set_alive - adjust alive_count during hotplug transitions
+> + * @cpu: target cpu number
+> + * @alive: whether the target cpu is going up or down
+> + *
+> + * Run on the cpu that is bringing up the target cpu, before the target cpu
+> + * has been booted, or after the target cpu is completely dead.
+> + */
+> +static void cpuidle_coupled_cpu_set_alive(int cpu, bool alive)
+> +{
+> +	struct cpuidle_device *dev;
+> +	struct cpuidle_coupled *coupled;
+> +
+> +	mutex_lock(&cpuidle_lock);
+> +
+> +	dev = per_cpu(cpuidle_devices, cpu);
+> +	if (!dev->coupled)
+> +		goto out;
+> +
+> +	coupled = dev->coupled;
+> +
+> +	/*
+> +	 * waiting_count must be at least 1 less than alive_count, because
+> +	 * this cpu is not waiting.  Spin until all cpus have noticed this cpu
+> +	 * is not idle and exited the ready loop before changing alive_count.
+> +	 */
+> +	while (atomic_read(&coupled->ready_count))
+> +		cpu_relax();
+> +
+> +	smp_mb__before_atomic_inc();
+> +	atomic_inc(&coupled->alive_count);
 
+This doesn't look quite right.  alive_count is incrmented whether the
+CPU is going up or down?
 
-Sorry, I should write "If all ancestors are umlimited'.
-If parent is limited, the children should be treated as limited.
+Maybe I misunderstood something, but I don't see anywhere where
+alive_count is decrmemented after a CPU is removed.
 
-> So the 
-> logic should rather be the opposite: Don't go around getting locks and 
-> all that if you are unlimited. Your parent might, though.
-> 
-> I am trying to experiment a bit with billing to percpu counters for 
-> unlimited res_counters. But their inexact nature is giving me quite a 
-> headache.
-> 
+Kevin
 
-
-Personally, I think percpu counter is not the best one. Yes, it will work but...
-Because of its nature of error range, it has scalability problem. Considering
-to have a tree like
-
-	/A/B/Guest0/tasks
-             Guest1/tasks
-             Guest2/tasks
-             Guest4/tasks
-             Guest5/tasks
-             ......
-
-percpu res_counter may work scarable in GuestX level but will conflict in level B.
-And I don't want to think what happens in 256 cpu system. Error in B will be
-very big.
-
-Another idea is to borrow a resource from memcg to the tasks. i.e.having per-task
-caching of charges. But it has two problems that draining unused resource is difficult
-and precise usage is unknown.
-
-IMHO, hard-limited resource counter itself may be a problem ;)
-
-So, an idea, 'if all ancestors are unlimited, don't propagate charges.'
-comes to my mind. With this, people use resource in FLAT (but has hierarchical cgroup
-tree) will not see any performance problem.
-
-
-
->> 3. If a res_counter has UNLIMITED limit, at reading usage, it must visit
->>     all children and returns a sum of them.
->>
->> Then,
->> 	/cgroup/
->> 		memory/                       (unlimited)
->> 			libivirt/             (unlimited)
->> 				 qeumu/       (unlimited)
->> 				        guest/(limited)
->>
->> All dir can show hierarchical usage and the guest will not have
->> any lock contention at runtime.
-> 
-> If we are okay with summing it up at read time, we may as well
-> keep everything in percpu counters at all times.
->
-
-
-If all ancestors are unlimited, we don't need to propagate usage upwards
-at charging. If one of ancestors are limited, we need to propagate and
-check usage at charging.
-
-
-
->> By this
->>   1. no runtime overhead if the parent has unlimited limit.
->>   2. All res_counter can show aggregate resource usage of children.
->>
->> To do this
->>   1. res_coutner should have children list by itself.
->>
->> Implementation problem
->>   - What should happens when a user set new limit to a res_counter which have
->>     childrens ? Shouldn't we allow it ? Or take all locks of children and
->>     update in atomic ?
-> Well, increasing the limit should be always possible.
-> 
-
-
-> As for the kids, how about:
-> 
-> - ) Take their locks
-> - ) scan through them seeing if their usage is bellow the new allowance
->      -) if it is, then ok
->      -) if it is not, then try to reclaim (*). Fail if it is not possible.
-> 
-> (*) May be hard to implement, because we already have the res_counter 
-> lock taken, and the code may get nasty. So maybe it is better just fail 
-> if any of your kids usage is over the new allowance...
-> 
-
-
-Seems enough and seems worth to try.
-
-
-> 
-> 
->>   - memory.use_hierarchy should be obsolete ?
-> If we're going fully hierarchical, yes.
-> 
-
-Another big problem is 'when' we should do this change..
-Maybe this 'hierarchical' problem will be good topic in MM summit.
-
-Thanks,
--Kame
-
-
+> +	smp_mb__after_atomic_inc();
+> +
+> +	if (alive)
+> +		coupled->requested_state[dev->cpu] = CPUIDLE_COUPLED_NOT_IDLE;
+> +	else
+> +		coupled->requested_state[dev->cpu] = CPUIDLE_COUPLED_DEAD;
+> +
+> +out:
+> +	mutex_unlock(&cpuidle_lock);
+> +}
+> +
