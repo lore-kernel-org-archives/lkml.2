@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946336Ab2CPXuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:50:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946163Ab2CPXj4 (ORCPT
+	id S1946546Ab2CPXvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:51:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946019Ab2CPXjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:56 -0400
-Message-Id: <20120316233810.704870765@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:39:46 -0400
+Message-Id: <20120316233810.959440427@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:11 -0700
+Date: Fri, 16 Mar 2012 16:38:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Denis GNUtoo Carikli <GNUtoo@no-log.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 01/41] ASoC: neo1973: fix neo1973 wm8753 initialization
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
+        Jeff Moyer <jmoyer@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>
+Subject: [ 04/41] aio: fix the "too late munmap()" race
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit b2ccf065f7b23147ed135a41b01d05a332ca6b7e upstream.
+commit c7b285550544c22bc005ec20978472c9ac7138c6 upstream.
 
-The neo1973 driver had wrong codec name which prevented the "sound card"
-from appearing.
+Current code has put_ioctx() called asynchronously from aio_fput_routine();
+that's done *after* we have killed the request that used to pin ioctx,
+so there's nothing to stop io_destroy() waiting in wait_for_all_aios()
+from progressing.  As the result, we can end up with async call of
+put_ioctx() being the last one and possibly happening during exit_mmap()
+or elf_core_dump(), neither of which expects stray munmap() being done
+to them...
 
-Signed-off-by: Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+We do need to prevent _freeing_ ioctx until aio_fput_routine() is done
+with that, but that's all we care about - neither io_destroy() nor
+exit_aio() will progress past wait_for_all_aios() until aio_fput_routine()
+does really_put_req(), so the ioctx teardown won't be done until then
+and we don't care about the contents of ioctx past that point.
+
+Since actual freeing of these suckers is RCU-delayed, we don't need to
+bump ioctx refcount when request goes into list for async removal.
+All we need is rcu_read_lock held just over the ->ctx_lock-protected
+area in aio_fput_routine().
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/samsung/neo1973_wm8753.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/aio.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -421,7 +421,7 @@ static struct snd_soc_dai_link neo1973_d
- 	.platform_name = "samsung-audio",
- 	.cpu_dai_name = "s3c24xx-iis",
- 	.codec_dai_name = "wm8753-hifi",
--	.codec_name = "wm8753-codec.0-001a",
-+	.codec_name = "wm8753.0-001a",
- 	.init = neo1973_wm8753_init,
- 	.ops = &neo1973_hifi_ops,
- },
-@@ -430,7 +430,7 @@ static struct snd_soc_dai_link neo1973_d
- 	.stream_name = "Voice",
- 	.cpu_dai_name = "dfbmcs320-pcm",
- 	.codec_dai_name = "wm8753-voice",
--	.codec_name = "wm8753-codec.0-001a",
-+	.codec_name = "wm8753.0-001a",
- 	.ops = &neo1973_voice_ops,
- },
- };
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -228,12 +228,6 @@ static void __put_ioctx(struct kioctx *c
+ 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
+ }
+ 
+-static inline void get_ioctx(struct kioctx *kioctx)
+-{
+-	BUG_ON(atomic_read(&kioctx->users) <= 0);
+-	atomic_inc(&kioctx->users);
+-}
+-
+ static inline int try_get_ioctx(struct kioctx *kioctx)
+ {
+ 	return atomic_inc_not_zero(&kioctx->users);
+@@ -609,11 +603,16 @@ static void aio_fput_routine(struct work
+ 			fput(req->ki_filp);
+ 
+ 		/* Link the iocb into the context's free list */
++		rcu_read_lock();
+ 		spin_lock_irq(&ctx->ctx_lock);
+ 		really_put_req(ctx, req);
++		/*
++		 * at that point ctx might've been killed, but actual
++		 * freeing is RCU'd
++		 */
+ 		spin_unlock_irq(&ctx->ctx_lock);
++		rcu_read_unlock();
+ 
+-		put_ioctx(ctx);
+ 		spin_lock_irq(&fput_lock);
+ 	}
+ 	spin_unlock_irq(&fput_lock);
+@@ -644,7 +643,6 @@ static int __aio_put_req(struct kioctx *
+ 	 * this function will be executed w/out any aio kthread wakeup.
+ 	 */
+ 	if (unlikely(!fput_atomic(req->ki_filp))) {
+-		get_ioctx(ctx);
+ 		spin_lock(&fput_lock);
+ 		list_add(&req->ki_list, &fput_head);
+ 		spin_unlock(&fput_lock);
 
 
