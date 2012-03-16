@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946570Ab2CPXxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:53:52 -0400
+	id S1946536Ab2CPXyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:54:13 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946161Ab2CPXjK (ORCPT
+	with ESMTP id S1162109Ab2CPXjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:10 -0400
-Message-Id: <20120316233450.043884482@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:39:07 -0400
+Message-Id: <20120316233449.140916302@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:18 -0700
+Date: Fri, 16 Mar 2012 16:35:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 31/38] block: fix __blkdev_get and add_disk race condition
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Yuchung Cheng <ycheng@google.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 21/38] tcp: dont fragment SACKed skbs in tcp_mark_head_lost()
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,161 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 9f53d2fe815b4011ff930a7b6db98385d45faa68 upstream.
+From: Neal Cardwell <ncardwell@google.com>
 
-The following situation might occur:
+[ Upstream commit c0638c247f559e1a16ee79e54df14bca2cb679ea ]
 
-__blkdev_get:			add_disk:
+In tcp_mark_head_lost() we should not attempt to fragment a SACKed skb
+to mark the first portion as lost. This is for two primary reasons:
 
-				register_disk()
-get_gendisk()
+(1) tcp_shifted_skb() coalesces adjacent regions of SACKed skbs. When
+doing this, it preserves the sum of their packet counts in order to
+reflect the real-world dynamics on the wire. But given that skbs can
+have remainders that do not align to MSS boundaries, this packet count
+preservation means that for SACKed skbs there is not necessarily a
+direct linear relationship between tcp_skb_pcount(skb) and
+skb->len. Thus tcp_mark_head_lost()'s previous attempts to fragment
+off and mark as lost a prefix of length (packets - oldcnt)*mss from
+SACKed skbs were leading to occasional failures of the WARN_ON(len >
+skb->len) in tcp_fragment() (which used to be a BUG_ON(); see the
+recent "crash in tcp_fragment" thread on netdev).
 
-disk_block_events()
-	disk->ev == NULL
+(2) there is no real point in fragmenting off part of a SACKed skb and
+calling tcp_skb_mark_lost() on it, since tcp_skb_mark_lost() is a NOP
+for SACKed skbs.
 
-				disk_add_events()
-
-__disk_unblock_events()
-	disk->ev != NULL
-	--ev->block
-
-Then we unblock events, when they are suppose to be blocked. This can
-trigger events related block/genhd.c warnings, but also can crash in
-sd_check_events() or other places.
-
-I'm able to reproduce crashes with the following scripts (with
-connected usb dongle as sdb disk).
-
-<snip>
-DEV=/dev/sdb
-ENABLE=/sys/bus/usb/devices/1-2/bConfigurationValue
-
-function stop_me()
-{
-	for i in `jobs -p` ; do kill $i 2> /dev/null ; done
-	exit
-}
-
-trap stop_me SIGHUP SIGINT SIGTERM
-
-for ((i = 0; i < 10; i++)) ; do
-	while true; do fdisk -l $DEV  2>&1 > /dev/null ; done &
-done
-
-while true ; do
-echo 1 > $ENABLE
-sleep 1
-echo 0 > $ENABLE
-done
-</snip>
-
-I use the script to verify patch fixing oops in sd_revalidate_disk
-http://marc.info/?l=linux-scsi&m=132935572512352&w=2
-Without Jun'ichi Nomura patch titled "Fix NULL pointer dereference in
-sd_revalidate_disk" or this one, script easily crash kernel within
-a few seconds. With both patches applied I do not observe crash.
-Unfortunately after some time (dozen of minutes), script will hung in:
-
-[ 1563.906432]  [<c08354f5>] schedule_timeout_uninterruptible+0x15/0x20
-[ 1563.906437]  [<c04532d5>] msleep+0x15/0x20
-[ 1563.906443]  [<c05d60b2>] blk_drain_queue+0x32/0xd0
-[ 1563.906447]  [<c05d6e00>] blk_cleanup_queue+0xd0/0x170
-[ 1563.906454]  [<c06d278f>] scsi_free_queue+0x3f/0x60
-[ 1563.906459]  [<c06d7e6e>] __scsi_remove_device+0x6e/0xb0
-[ 1563.906463]  [<c06d4aff>] scsi_forget_host+0x4f/0x60
-[ 1563.906468]  [<c06cd84a>] scsi_remove_host+0x5a/0xf0
-[ 1563.906482]  [<f7f030fb>] quiesce_and_remove_host+0x5b/0xa0 [usb_storage]
-[ 1563.906490]  [<f7f03203>] usb_stor_disconnect+0x13/0x20 [usb_storage]
-
-Anyway I think this patch is some step forward.
-
-As drawback, I do not teardown on sysfs file create error, because I do
-not know how to nullify disk->ev (since it can be used). However add_disk
-error handling practically does not exist too, and things will work
-without this sysfs file, except events will not be exported to user
-space.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Acked-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Acked-by: Yuchung Cheng <ycheng@google.com>
+Acked-by: Nandita Dukkipati <nanditad@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- block/genhd.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+ net/ipv4/tcp_input.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -36,6 +36,7 @@ static DEFINE_IDR(ext_devt_idr);
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -2549,6 +2549,7 @@ static void tcp_mark_head_lost(struct so
  
- static struct device_type disk_type;
+ 		if (cnt > packets) {
+ 			if ((tcp_is_sack(tp) && !tcp_is_fack(tp)) ||
++			    (TCP_SKB_CB(skb)->sacked & TCPCB_SACKED_ACKED) ||
+ 			    (oldcnt >= packets))
+ 				break;
  
-+static void disk_alloc_events(struct gendisk *disk);
- static void disk_add_events(struct gendisk *disk);
- static void disk_del_events(struct gendisk *disk);
- static void disk_release_events(struct gendisk *disk);
-@@ -602,6 +603,8 @@ void add_disk(struct gendisk *disk)
- 	disk->major = MAJOR(devt);
- 	disk->first_minor = MINOR(devt);
- 
-+	disk_alloc_events(disk);
-+
- 	/* Register BDI before referencing it from bdev */ 
- 	bdi = &disk->queue->backing_dev_info;
- 	bdi_register_dev(bdi, disk_devt(disk));
-@@ -1740,9 +1743,9 @@ module_param_cb(events_dfl_poll_msecs, &
- 		&disk_events_dfl_poll_msecs, 0644);
- 
- /*
-- * disk_{add|del|release}_events - initialize and destroy disk_events.
-+ * disk_{alloc|add|del|release}_events - initialize and destroy disk_events.
-  */
--static void disk_add_events(struct gendisk *disk)
-+static void disk_alloc_events(struct gendisk *disk)
- {
- 	struct disk_events *ev;
- 
-@@ -1755,16 +1758,6 @@ static void disk_add_events(struct gendi
- 		return;
- 	}
- 
--	if (sysfs_create_files(&disk_to_dev(disk)->kobj,
--			       disk_events_attrs) < 0) {
--		pr_warn("%s: failed to create sysfs files for events\n",
--			disk->disk_name);
--		kfree(ev);
--		return;
--	}
--
--	disk->ev = ev;
--
- 	INIT_LIST_HEAD(&ev->node);
- 	ev->disk = disk;
- 	spin_lock_init(&ev->lock);
-@@ -1773,8 +1766,21 @@ static void disk_add_events(struct gendi
- 	ev->poll_msecs = -1;
- 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
- 
-+	disk->ev = ev;
-+}
-+
-+static void disk_add_events(struct gendisk *disk)
-+{
-+	if (!disk->ev)
-+		return;
-+
-+	/* FIXME: error handling */
-+	if (sysfs_create_files(&disk_to_dev(disk)->kobj, disk_events_attrs) < 0)
-+		pr_warn("%s: failed to create sysfs files for events\n",
-+			disk->disk_name);
-+
- 	mutex_lock(&disk_events_mutex);
--	list_add_tail(&ev->node, &disk_events);
-+	list_add_tail(&disk->ev->node, &disk_events);
- 	mutex_unlock(&disk_events_mutex);
- 
- 	/*
 
 
