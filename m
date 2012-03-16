@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032435Ab2CPWvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 18:51:35 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:38481 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031562Ab2CPWvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 18:51:22 -0400
+	id S1032270Ab2CPWvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 18:51:21 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36948 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031562Ab2CPWvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 18:51:18 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -18,90 +19,54 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
         Andrea Righi <andrea@betterlinux.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 0/2] [RFC] Volatile ranges (v4)
-Date: Fri, 16 Mar 2012 15:51:05 -0700
-Message-Id: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/2] [RFC] Range tree implementation
+Date: Fri, 16 Mar 2012 15:51:06 -0700
+Message-Id: <1331938267-13583-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
+References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031622-9360-0000-0000-0000049DD83A
+x-cbid: 12031622-5518-0000-0000-0000030393F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok. So here's another iteration of the fadvise volatile range code.
+After Andrew suggested something like his mumbletree idea
+to better store a list of ranges, I worked on a few different
+approaches, and this is what I've finally managed to get working.
 
-I realize this is still a way off from being ready, but I wanted to post
-what I have to share with folks working on the various range/interval
-management ideas as well as update folks who've provided feedback on the
-volatile range code.
+I suspect range-tree isn't a totally accurate name, but I
+couldn't quite make out the difference between range trees
+and interval trees, so I just picked one to call it. Do
+let me know if you have a better name.
 
-So just on the premise: Ideally, I want delayed reclaim based hole
-punching.
+The idea of storing ranges in a tree is nice, but has a number
+of complications. When adding a range, its possible that a
+large range will consume and merge a number of smaller ranges.
+When removing a range, its possible you may end up splitting an
+existing range, causing one range to become two. This makes it
+very difficult to provide generic list_head like behavior, as
+the parent structures would need to be duplicated and removed,
+and that has lots of memory ownership issues.
 
-Application has a possibly shared mmapped cache file, which it can mark
-chunks of which volatile or nonvolatile as it uses it.  If the kernel
-needs memory, it can zap any ranges that are currently marked volatile. 
+So, this is a much simplified and more list_head like
+implementation. You can add a node to a tree, or remove a node
+to a tree, but the generic implementation doesn't do the
+merging or splitting for you. But it does provide helpers to
+find overlapping and adjacent ranges.
 
-Some examples would be rendering of images or web pages that are not
-on-screen. This allows the application to volunteer memory for
-reclaiming, and the kernel to grab it only when it needs. This differs
-from some of the memory notification schemes, in that it allows the
-kernel to immediately reclaim what it needs, rather then having to
-request applications to give up memory (which may add further memory
-load) until enough is free. However, unlike the notification scheme,
-it does require applications to mark and unmark pages as volatile as
-they use them.
+Andrew also really wanted this range-tree implementation to be
+resuable so we don't duplicate the file locking logic. I'm not
+totally convinced that the requirements between the volatile
+ranges and file locking are really equivelent, but this reduced
+impelementation may make it possible.
 
-Current use cases (ie: users of Android's ashmem) only use shmfs/tmpfs.
-However, I don't see right off why it should be limited to shm. As long
-as punching a hole in a file can be done w/ minimal memory overhead
-this could be useful and have somewhat sane behavior. 
+Do let me know what you think or if you have other ideas for
+better ways to do the same.
 
-We could also only zap the page cache, not writing any dirty data out.
-However, w/ non-shm files, discarding dirty data without hole punching
-would obviously leave persistent files in a non-coherent state. This
-may further re-inforce that the design should be shm only if we don't
-do hole punching.
-
-On the topic of hole punching, the kernel doesn't seem completely
-unified in this as well. As I understand, there are two methods to do
-hole punching: FALLOCATE_FL_PUNCH_HOLE vs MADV_REMOVE, and they don't
-necessarily overlap in support. For the most part, it seems persistent
-filesystems require FALLOCATE_FL_PUNCH, where as shmfs/tmpfs uses
-MADV_REMOVE. But I may be misunderstanding the subtle difference here,
-so if anyone wants to clarify this, it would be great.
-
-One concern was that if the design is shm only, fadvise might not be
-the right interface, as it should be generic. The
-madvise(MADV_REMOVE,...) interface gives some precedence to shmfs/tmpfs
-only calls, but I'd like to get some further feedback as to what folks
-think of this. If we are shm/tmpfs only, I could rework this design to
-use madvise instead of fadvise if folks would prefer.
-
-Also, there's still the issue that lockdep doesn't like me calling
-vmtruncate_range from the shrinker due to any allocations being done
-while the i_mutex is taken could cause the shrinker to run and need the
-i_mutex again.  I did try using invalidate_inode_pages2_range() but it
-always returns EBUSY in this context, so I suspect I want something
-else. I'm currently reading shmem_truncate_range() and zap_page_range()
-to get a better idea of how to this might be best accomplished.
-
-Regarding feedback suggesting dropping the LRU ranges, and instead
-keeping the volatile/purged data in radix tags and to manage things at
-writeout time. My concern there is having the LRU behavior on the
-entire range from when it was marked volatile instead of the actual
-last page access (you might have ranges that have frequent use areas
-and non-frequent use).  Also sorting out how to evict the entire range
-when one page is dropped might be funky.  However, I'll likely revisit
-this soon, but for this iteration I didn't get to it.
-
-I still also realize I have the issue of bloating the address_space
-structure to handle, and I suspect if I continue w/ this approach
-I'll use a separate hash table to store the range-tree roots in my
-next revision.
-
-Anyway, thanks for the continued advice and feedback!
--john
+Changelog:
+v2:
+* Reworked code to use an rbtree instead of splaying
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -115,27 +80,198 @@ CC: Dave Chinner <david@fromorbit.com>
 CC: Neil Brown <neilb@suse.de>
 CC: Andrea Righi <andrea@betterlinux.com>
 CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-John Stultz (2):
-  [RFC] Range tree implementation
-  [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE flags
-
- fs/inode.c                |    4 +
- include/linux/fadvise.h   |    5 +
- include/linux/fs.h        |    2 +
- include/linux/rangetree.h |   53 ++++++++
- include/linux/volatile.h  |   14 ++
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/rangetree.h |   53 +++++++++++++++++++++++
  lib/Makefile              |    2 +-
- lib/rangetree.c           |  105 +++++++++++++++
- mm/Makefile               |    2 +-
- mm/fadvise.c              |   16 ++-
- mm/volatile.c             |  313 +++++++++++++++++++++++++++++++++++++++++++++
- 10 files changed, 513 insertions(+), 3 deletions(-)
+ lib/rangetree.c           |  105 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 159 insertions(+), 1 deletions(-)
  create mode 100644 include/linux/rangetree.h
- create mode 100644 include/linux/volatile.h
  create mode 100644 lib/rangetree.c
- create mode 100644 mm/volatile.c
 
+diff --git a/include/linux/rangetree.h b/include/linux/rangetree.h
+new file mode 100644
+index 0000000..ca03821
+--- /dev/null
++++ b/include/linux/rangetree.h
+@@ -0,0 +1,53 @@
++#ifndef _LINUX_RANGETREE_H
++#define _LINUX_RANGETREE_H
++
++#include <linux/types.h>
++#include <linux/rbtree.h>
++
++struct range_tree_node {
++	struct rb_node rb;
++	u64 start;
++	u64 end;
++};
++
++struct range_tree_root {
++	struct rb_root head;
++};
++
++static inline void range_tree_init(struct range_tree_root *root)
++{
++	root->head = RB_ROOT;
++}
++
++static inline void range_tree_node_init(struct range_tree_node *node)
++{
++	rb_init_node(&node->rb);
++	node->start = 0;
++	node->end = 0;
++}
++
++static inline int range_tree_empty(struct range_tree_root *root)
++{
++	return RB_EMPTY_ROOT(&root->head);
++}
++
++static inline
++struct range_tree_node *range_tree_root_node(struct range_tree_root *root)
++{
++	struct range_tree_node *ret;
++	ret = container_of(root->head.rb_node, struct range_tree_node, rb);
++	return ret;
++}
++
++extern struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_in_range_adjacent(
++						struct range_tree_root *root,
++							 u64 start, u64 end);
++extern void range_tree_add(struct range_tree_root *root,
++						struct range_tree_node *node);
++extern void range_tree_remove(struct range_tree_root *root,
++						struct range_tree_node *node);
++#endif
++
++
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..f43ef0d 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o rangetree.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/rangetree.c b/lib/rangetree.c
+new file mode 100644
+index 0000000..0f6208a
+--- /dev/null
++++ b/lib/rangetree.c
+@@ -0,0 +1,105 @@
++#include <linux/rangetree.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++
++
++/**
++ * range_tree_in_range - Returns the first node that overlaps with the
++ *                       given range
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
++						u64 start, u64 end)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct range_tree_node *candidate;
++
++	while (*p) {
++		candidate = rb_entry(*p, struct range_tree_node, rb);
++		if (end < candidate->start)
++			p = &(*p)->rb_left;
++		else if (start > candidate->end)
++			p = &(*p)->rb_right;
++		else
++			return candidate;
++	}
++
++	return 0;
++}
++
++
++/**
++ * range_tree_in_range - Returns the first node that overlaps or is adjacent
++ *                       with the given range
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range_adjacent(
++					struct range_tree_root *root,
++					u64 start, u64 end)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct range_tree_node *candidate;
++
++	while (*p) {
++		candidate = rb_entry(*p, struct range_tree_node, rb);
++		if (end+1 < candidate->start)
++			p = &(*p)->rb_left;
++		else if (start > candidate->end + 1)
++			p = &(*p)->rb_right;
++		else
++			return candidate;
++	}
++	return 0;
++}
++
++/**
++ * range_tree_add - Add a node to a range tree
++ * @root: range tree to be added to
++ * @node: range_tree_node to be added
++ *
++ * Adds a node to the range tree.
++ */
++void range_tree_add(struct range_tree_root *root,
++					struct range_tree_node *node)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct range_tree_node *ptr;
++
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct range_tree_node, rb);
++		if (node->start < ptr->start)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->rb, parent, p);
++	rb_insert_color(&node->rb, &root->head);
++
++}
++
++
++/**
++ * range_tree_remove: Removes a given node from the tree
++ * @root: root of tree
++ * @node: Node to be removed
++ *
++ * Removes a node and splays the tree
++ */
++void range_tree_remove(struct range_tree_root *root,
++						struct range_tree_node *node)
++{
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
++
++	rb_erase(&node->rb, &root->head);
++	RB_CLEAR_NODE(&node->rb);
++}
 -- 
 1.7.3.2.146.gca209
 
