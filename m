@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422941Ab2CPO7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:59:39 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41968 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032604Ab2CPO7f (ORCPT
+	id S1422782Ab2CPOxS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:53:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45518 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761724Ab2CPOxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:59:35 -0400
-Date: Fri, 16 Mar 2012 18:01:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com
-Subject: Re: [PATCH RESEND 1/3] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Message-ID: <20120316150145.GK3163@mwanda>
-References: <1331910089-5207-1-git-send-email-kys@microsoft.com>
- <1331910147-5259-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3W6riq+uV6J42Ub"
-Content-Disposition: inline
-In-Reply-To: <1331910147-5259-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4F63554E.0041,ss=1,re=0.000,fgs=0
+	Fri, 16 Mar 2012 10:53:13 -0400
+Message-Id: <20120316144240.763518310@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Fri, 16 Mar 2012 15:40:38 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
+References: <20120316144028.036474157@chello.nl>
+Content-Disposition: inline; filename=numa-foo-2.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add another layer of fallback policy to make the home node concept
+useful from a memory allocation PoV.
 
---u3W6riq+uV6J42Ub
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This changes the mpol order to:
 
-On Fri, Mar 16, 2012 at 08:02:25AM -0700, K. Y. Srinivasan wrote:
-> Support the newly defined KVP message types. It turns out that the host
-> pushes a set of standard key value pairs as soon as the guest opens the K=
-VP channel.
-> Since we cannot handle these tuples until the user level daemon loads up,=
- defer
-> reading the KVP channel until the user level daemon is launched.
->=20
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+ - vma->vm_ops->get_policy	[if applicable]
+ - vma->vm_policy		[if applicable]
+ - task->mempolicy
+ - tsk_home_node() preferred	[NEW]
+ - default_policy
 
-Great.  Thanks for doing this.
+Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+facilitate efficient on-demand memory migration.
 
-regards,
-dan carpenter
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ mm/mempolicy.c |   29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
+
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -117,6 +117,22 @@ static struct mempolicy default_policy =
+ 	.flags = MPOL_F_LOCAL,
+ };
+ 
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
++
++static struct mempolicy *get_task_policy(struct task_struct *p)
++{
++	struct mempolicy *pol = p->mempolicy;
++	int node;
++
++	if (!pol) {
++		node = tsk_home_node(p);
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++	}
++
++	return pol;
++}
++
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1478,7 +1494,7 @@ asmlinkage long compat_sys_mbind(compat_
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
+ 
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -1856,7 +1872,7 @@ alloc_pages_vma(gfp_t gfp, int order, st
+  */
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 
+ 	if (!pol || in_interrupt() || (gfp & __GFP_THISNODE))
+@@ -2302,6 +2318,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
+ 
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF,
++			.v = { .preferred_node = nid, },
++		};
++	}
++
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
 
 
---u3W6riq+uV6J42Ub
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPY1XYAAoJEOnZkXI/YHqR9DYP/2d+ZuJEuNxXeFBqHZIruKNp
-Q+RjGbXWqwifTbdoDd/0N2vp3xSAJj9+citaZK59ubeKllvaEvnaGts2nHkqnm8L
-QW1bT7Cs93wCVNJLYHT9khYNjiTlPSyzg0RmtC1+h3veqHPxNuOCgXVCMfYt50d6
-N9rI2LHi4ri4AgEsk/b586pJhHgkxy58XiSrkkmIz7UDkDQvTU6QfrreR6fSC1FG
-Cmb+yfcurC1QDDoJp1nG9wyQafrSet7rGIABfHxayVgMJCv3xSGOImrUcz4YMqCA
-9kDLSNVJP8K+8zlBBPd2I1S2JwbMfQ4enVi/QUXeiRuyInfzO39DHKu+wZkoNAG3
-GE4Jczzx5ju3bFcmYrc76UMz/DPlh3DjheNi/gKSVFBnH24fqVz8hOIMyoyu6On6
-u3FhKJu+IDDh6KMHS6Aj96PQtwKLtcVXHaTqYHD/a04Xf4+Cgi41ROPXbPubuhQE
-j5eAq212W1uB5Qp+CiSjnBoY4Q1UE8YMQDgqs99xI2AIY6A/oZ4Ftbiv+ely2DFi
-bAfFypZx383nGmQUmLPs2v1f2EVEFzEoF5N8UfWsd0ztexhYyHdtRluKtMoHDgQu
-2p2VNCcb/z5xEnJYyI0RZ4pfZyymlC6HtbPN1LfdKbt/FINdyS9XceX3/InSuHe3
-QLMSXoCiGtUDvTtlkfWr
-=NVdi
------END PGP SIGNATURE-----
-
---u3W6riq+uV6J42Ub--
