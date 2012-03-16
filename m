@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030613Ab2CPMsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 08:48:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47767 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030320Ab2CPMsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 08:48:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="118321816"
-Message-ID: <1331902271.3730.76.camel@sauron.fi.intel.com>
-Subject: Re: [patch] Remove notion of key schemes
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 Mar 2012 14:51:11 +0200
-In-Reply-To: <alpine.DEB.2.00.1203151545410.26775@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	 <1329152067.22240.214.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>
-	 <alpine.DEB.2.00.1203151545410.26775@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Sig/7iVrSPtJ51bG1RyB"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1030883Ab2CPMwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 08:52:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57873 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495Ab2CPMwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 08:52:33 -0400
+Message-ID: <4F63378D.80105@gmail.com>
+Date: Fri, 16 Mar 2012 13:52:29 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: Willy Tarreau <w@1wt.eu>
+CC: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: stable-3.0: s390 build breakage [was: Linux 3.0.24]
+References: <20120312203451.GA16773@kroah.com> <4F61C911.5010204@suse.cz> <4F62186E.4050806@suse.cz> <20120315164624.GB25159@kroah.com> <20120315164954.GR2264@1wt.eu> <4F621E1A.5000602@gmail.com>
+In-Reply-To: <4F621E1A.5000602@gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: multipart/mixed;
+ boundary="------------010007060204020503090006"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-Sig/7iVrSPtJ51bG1RyB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2012-03-15 at 15:48 +0100, Joel Reardon wrote:
-> +       __u8 padding0[8]; /* Watch 'zero_dent_node_unused()' if changing!=
- */
-
-Also please, be consistent with overall UBIFS coding style and comment
-fields at the structure header comment, not near the field itself.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-Sig/7iVrSPtJ51bG1RyB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+This is a multi-part message in MIME format.
+--------------010007060204020503090006
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+On 03/15/2012 05:51 PM, Jiri Slaby wrote:
+> On 03/15/2012 05:49 PM, Willy Tarreau wrote:
+>> On Thu, Mar 15, 2012 at 09:46:24AM -0700, Greg KH wrote:
+>>> On Thu, Mar 15, 2012 at 05:27:26PM +0100, Jiri Slaby wrote:
+>>>> On 03/15/2012 11:48 AM, Jiri Slaby wrote:
+>>>>> On 03/12/2012 09:34 PM, Greg KH wrote:
+>>>>>> I'm announcing the release of the 3.0.24 kernel.
+>>>>> ...
+>>>>>> Heiko Carstens (1): compat: fix compile breakage on s390
+>>>>>
+>>>>> It looks like we need the same fix as for 2.6.32.59:
+>>>>> arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
+>>>>> arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
+>>>>> (first use in this function)
+>>>>> arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
+>>>>> reported only once
+>>>>> arch/s390/kernel/setup.c:328: error: for each function it appears in.)
+>>>>
+>>>> And when that one is fixed, there is another error:
+>>>> drivers/s390/char/fs3270.c: In function 'fs3270_ioctl':
+>>>> drivers/s390/char/fs3270.c:335: error: implicit declaration of function
+>>>> 'compat_ptr'
+>>>> drivers/s390/char/fs3270.c:335: warning: assignment makes pointer from
+>>>> integer without a cast
+>>>
+>>> Ick, have a patch for this?
+>>
+>> This one is declared in arch/s390/include/asm/compat.h:
+>>
+>> static inline void __user *compat_ptr(compat_uptr_t uptr)
+>> {
+>>         return (void __user *)(unsigned long)(uptr & 0x7fffffffUL);
+>> }
+>>
+>> In 2.6.32, fs3270.c include linux/compat.h. In 3.0 it includes asm/compat.h
+>> instead. I would have thought the later would have been enough.
+> 
+> But it was changed to linux/compat.h in 3.0.24 -- that's why it doesn't
+> build. So the same fix as for setup.c should help here.
 
-iQIcBAABAgAGBQJPYzc/AAoJECmIfjd9wqK0FHYQALYK8W6S+J+BB6VQSQAnZ59x
-/HB8OOxzFmP9ZQ+3X56KTH4aoGYZdIb8NxdEl2DtKfearOxQDXIr2m0wH+V5TYO/
-4+s3oYxAKgS/i+QMCxZ5sMBATxQAyyW5LgRciFPVJJ7zBIQLsItU+NcI1PMHzBWb
-3JVP/ORZMhthFRmB/+FfRVOv0Qrk5i+1q5pUYrZmI47fJVttMltkEYLF5XVMft+x
-EWzr/K9su3fuXVw4R7sPh4AvVbTcC6yWEEQddW1N80pdvuZ9Ife+W81nHehbqZu5
-66zuxaT3ikGYY5QchsLJ2L2MNbpT8lu0wBdDnjxpcCteOfIoRGsrpEq+MWdaaFNV
-Sl1H5qaDpYENnsevR6Gu7XiZCblkMqrpNR1nzVCK8hO1M7sEbwvlmUd5QIxMLTbP
-DzmrE7753A3YiQjc7sn/llsThqCdJg+Uq86y9ekzNULim7iU0KACOU6WL5rJ4PYo
-3BT4P1F3azf9yhYpGDovMiXNJ4YbBRRCQQ9XzZsoGvqwIRbs+mW9RpSdz0NX4K9Y
-Z7WxLb4qRYa4ityjYgLrHs4ALTPXrfUN//JmgfkptZZbxNcDTunmNtXDrVZieqH7
-Wf61bqwHBRChJ8Cj3NklGKBwFc8mkZdz7KkDgFvv7F4XGKzXI6JINHe1cvF+lyWm
-X0thRLlX/NUG4A3mbjnq
-=cJId
------END PGP SIGNATURE-----
+It is attached. With that patch (and the previous one), s390 builds fine
+now.
 
---=-Sig/7iVrSPtJ51bG1RyB--
+thanks,
+-- 
+js
 
+--------------010007060204020503090006
+Content-Type: text/x-patch;
+ name="compat-Re-add-missing-asm-compat.h-include.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="compat-Re-add-missing-asm-compat.h-include.patch"
+
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Mon, 5 Mar 2012 14:06:38 +0100
+Subject: compat: Re-add missing asm/compat.h include to fix compile breakage on s390
+
+For 3.0 stable kernel the backport of 048cd4e51d24ebf7f3552226d03c769d6ad91658
+"compat: fix compile breakage on s390" breaks compilation...
+
+Re-add a single #include <asm/compat.h> in order to fix this.
+
+This patch is _not_ necessary for upstream, only for stable kernels
+which include the "build fix" mentioned above.
+
+One fix for arch/s390/kernel/setup.c was already sent and applied. But
+we need a similar patch for drivers/s390/char/fs3270.c.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/s390/char/fs3270.c |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/s390/char/fs3270.c
++++ b/drivers/s390/char/fs3270.c
+@@ -16,6 +16,7 @@
+ #include <linux/types.h>
+ #include <linux/compat.h>
+ 
++#include <asm/compat.h>
+ #include <asm/ccwdev.h>
+ #include <asm/cio.h>
+ #include <asm/ebcdic.h>
+
+--------------010007060204020503090006--
