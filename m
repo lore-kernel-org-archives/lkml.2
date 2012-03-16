@@ -1,218 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161313Ab2CPGPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 02:15:20 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:44372 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753950Ab2CPGPR convert rfc822-to-8bit
+	id S1756722Ab2CPGWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 02:22:31 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:51175 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755717Ab2CPGW1 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 02:15:17 -0400
+	Fri, 16 Mar 2012 02:22:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <1331877770-12150-1-git-send-email-myungjoo.ham@samsung.com>
-References: <201203150125.14896.rjw@sisk.pl> <1331877770-12150-1-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <20120315094357.GX3852@pengutronix.de>
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
+ <1331366064-1273-3-git-send-email-mturquette@linaro.org> <20120311113414.GM3852@pengutronix.de>
+ <CAJOA=zMdkLB-DCPOk=kz5mn6BK6A_swocyCHJHeGE6H7FxBbmQ@mail.gmail.com>
+ <20120312115117.GN3852@pengutronix.de> <CAJOA=zPx0ARsoO4ueSTMe_z2Gs4xG4P2qn1=-vHFf7_k=+K6hQ@mail.gmail.com>
+ <20120313120507.GS3852@pengutronix.de> <CAJOA=zMT4vK7WPF7iEH9kN6GHHAv-LChHoadzieqV-Wd3Qj=WQ@mail.gmail.com>
+ <20120315094357.GX3852@pengutronix.de>
 From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 15 Mar 2012 23:14:53 -0700
-Message-ID: <CAJOA=zMZE51Bcb67pf-jU99BYswDnhtvPiA+Y+EQcMpToN7xPg@mail.gmail.com>
-Subject: Re: [PATCH v3] PM / devfreq: add relation of recommended frequency.
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kevin Hilman <khilman@ti.com>, myungjoo.ham@gmail.com
+Date: Thu, 15 Mar 2012 23:22:00 -0700
+Message-ID: <CAJOA=zOLaFJ3xoaL2EtX=rkA1XM2gEzyns6meiiGLrbX8HFujQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 11:02 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> The semantics of "target frequency" given to devfreq driver from
-> devfreq framework has always been interpretted as "at least" or GLB
-> (greatest lower bound). However, the framework might want the
-> device driver to limit its max frequency (LUB: least upper bound),
-> especially if it is given by thermal framework (it's too hot).
+On Thu, Mar 15, 2012 at 2:43 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Wed, Mar 14, 2012 at 05:51:48PM -0700, Turquette, Mike wrote:
+>> @@ -84,9 +78,9 @@ static int clk_divider_bestdiv(struct clk_hw *hw,
+>> unsigned long rate,
+>>
+>>       for (i = 1; i <= maxdiv; i++) {
+>>               parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
+>> -                             MULT_ROUND_UP(rate, i));
+>> +                             (rate * i));
 >
-> Thus, the target fuction should have another parameter to express
-> whether the framework wants GLB or LUB. And, the additional parameter,
-> "u32 flags", does it.
->
-> With the update, devfreq_recommended_opp() is also updated.
->
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> I think MULT_ROUND_UP is the right thing to use here (not sure if this
+> is a good name though)
+> Consider we want to have an output rate of 33Hz. Now acceptable input
+> rates for a divider value of 3 would be 99, 100 and 101Hz, so we have
+> to call round_rate for the parent with 101Hz which includes 100 and
+> 99Hz.
 
-I know Rafael already said he'd take it but I might as well add:
+We're back to the point Rob brought up about .round_rate rounding up
+or down.  We really need a least-upper-bounds or greatest-lower-bounds
+flag, similar to how CPUfreq selects target frequencies today.  I'm
+freezing features for this patchset now, so I'll keep your
+MULT_ROUND_UP approach and some day I'll fix .round_rate for good.
 
-Reviewed-by: Mike Turquette <mturquette@ti.com>
+> If you have problems with your PLL than most likely because it does
+> something different on clk_round_rate than it does in clk_set_rate,
+> for example clk_round_rate(10000) returns 10000, but clk_set_rate then
+> sets the rate 9999 due to some rounding error. Being consistent between
+> round_rate and set_rate is very important for this mechanism to work
+> properly. It did cost me some nerves to get it right for the divider
+> (and even more nerves to figure out why it is correct the way it works)
 
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> Changes from v2
-> - Updated comments
-> - Rebased.
+What I'd like to do is request the *exact* frequency I want when
+passing in a rate to my PLLs .round_rate.  Due to the way that my MN
+dividers are calculated, and due to some jitter avoidance code, it is
+bad for me to request 600000001 Hz when I really want 600MHz exactly.
+Anyways I fixed this up on my end enough to work with MULT_ROUND_UP,
+so that can stay for the immediate future.
+
 >
-> Changes from v1
-> - Style update.
+>>               now = parent_rate / i;
+>> -             if (now <= rate && now >= best) {
+>> +             if (now <= rate && now > best) {
 >
->  drivers/devfreq/devfreq.c     |   42 +++++++++++++++++++++++++++++++++++++---
->  drivers/devfreq/exynos4_bus.c |   14 +++++++++---
->  include/linux/devfreq.h       |   16 ++++++++++++--
->  3 files changed, 61 insertions(+), 11 deletions(-)
+> This change is an optimization, but should be unrelated to your PLL
+> problem, right?
+
+MULT_ROUND_UP yields multiples of 'rate' plus an incrementing value (m
+- 1).  Without that incrementing value added to the rate passed into
+__clk_round_rate the for loop above will always max out the divider.
+To illustrate:
+
+The rate we want is 300MHz.  Without MULT_ROUND_UP the for loop will
+start yielding these combinations:
+
+__clk_round_rate(parent, 300MHz), divide-by-1
+__clk_round_rate(parent, 600MHz), divide-by-2
+__clk_round_rate(parent, 900MHz), divide-by-3
+__clk_round_rate(parent, 1200MHz), divide-by-4
+...etc...
+
+These all yield the desired 300MHz for our divider so it just keeps
+going until you max out the divider and requests some crazy rate for
+the parent.  On most hardware that I am aware of it is desirable to
+keep the divider as low as possible so the change to the conditional
+prevents us from overwriting best every single time while keeping the
+divider low.  So yes, it is an optimization, but it is also quite
+necessary without MULT_ROUND_UP.
+
+Anyways I've kept MULT_ROUND_UP exactly as-is with the exception that
+I've added that small optimization to keep dividers low.  I hope there
+are no objections to that.
+
+Regards,
+Mike
+
 >
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index a129a7b..70c31d4 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -83,6 +83,7 @@ int update_devfreq(struct devfreq *devfreq)
->  {
->        unsigned long freq;
->        int err = 0;
-> +       u32 flags = 0;
+> Sascha
 >
->        if (!mutex_is_locked(&devfreq->lock)) {
->                WARN(true, "devfreq->lock must be locked by the caller.\n");
-> @@ -94,7 +95,24 @@ int update_devfreq(struct devfreq *devfreq)
->        if (err)
->                return err;
->
-> -       err = devfreq->profile->target(devfreq->dev.parent, &freq);
-> +       /*
-> +        * Adjust the freuqency with user freq and QoS.
-> +        *
-> +        * List from the highest proiority
-> +        * max_freq (probably called by thermal when it's too hot)
-> +        * min_freq
-> +        */
-> +
-> +       if (devfreq->min_freq && freq < devfreq->min_freq) {
-> +               freq = devfreq->min_freq;
-> +               flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
-> +       }
-> +       if (devfreq->max_freq && freq > devfreq->max_freq) {
-> +               freq = devfreq->max_freq;
-> +               flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
-> +       }
-> +
-> +       err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
->        if (err)
->                return err;
->
-> @@ -625,14 +643,30 @@ module_exit(devfreq_exit);
->  *                          freq value given to target callback.
->  * @dev                The devfreq user device. (parent of devfreq)
->  * @freq       The frequency given to target function
-> + * @flags      Flags handed from devfreq framework.
->  *
->  */
-> -struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
-> +struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
-> +                                   u32 flags)
->  {
-> -       struct opp *opp = opp_find_freq_ceil(dev, freq);
-> +       struct opp *opp;
->
-> -       if (opp == ERR_PTR(-ENODEV))
-> +       if (flags & DEVFREQ_FLAG_LEAST_UPPER_BOUND) {
-> +               /* The freq is an upper bound. opp should be lower */
->                opp = opp_find_freq_floor(dev, freq);
-> +
-> +               /* If not available, use the closest opp */
-> +               if (opp == ERR_PTR(-ENODEV))
-> +                       opp = opp_find_freq_ceil(dev, freq);
-> +       } else {
-> +               /* The freq is an lower bound. opp should be higher */
-> +               opp = opp_find_freq_ceil(dev, freq);
-> +
-> +               /* If not available, use the closest opp */
-> +               if (opp == ERR_PTR(-ENODEV))
-> +                       opp = opp_find_freq_floor(dev, freq);
-> +       }
-> +
->        return opp;
->  }
->
-> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> index 590d686..1a361e9 100644
-> --- a/drivers/devfreq/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos4_bus.c
-> @@ -619,13 +619,19 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
->        return err;
->  }
->
-> -static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
-> +static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
-> +                             u32 flags)
->  {
->        int err = 0;
-> -       struct busfreq_data *data = dev_get_drvdata(dev);
-> -       struct opp *opp = devfreq_recommended_opp(dev, _freq);
-> -       unsigned long old_freq = opp_get_freq(data->curr_opp);
-> +       struct platform_device *pdev = container_of(dev, struct platform_device,
-> +                                                   dev);
-> +       struct busfreq_data *data = platform_get_drvdata(pdev);
-> +       struct opp *opp = devfreq_recommended_opp(dev, _freq, flags);
->        unsigned long freq = opp_get_freq(opp);
-> +       unsigned long old_freq = opp_get_freq(data->curr_opp);
-> +
-> +       if (IS_ERR(opp))
-> +               return PTR_ERR(opp);
->
->        if (old_freq == freq)
->                return 0;
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index 5862475..281c72a 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -44,6 +44,14 @@ struct devfreq_dev_status {
->        void *private_data;
->  };
->
-> +/*
-> + * The resulting frequency should be at most this. (this bound is the
-> + * least upper bound; thus, the resulting freq should be lower or same)
-> + * If the flag is not set, the resulting frequency should be at most the
-> + * bound (greatest lower bound)
-> + */
-> +#define DEVFREQ_FLAG_LEAST_UPPER_BOUND         0x1
-> +
->  /**
->  * struct devfreq_dev_profile - Devfreq's user device profile
->  * @initial_freq       The operating frequency when devfreq_add_device() is
-> @@ -54,6 +62,8 @@ struct devfreq_dev_status {
->  *                     higher than any operable frequency, set maximum.
->  *                     Before returning, target function should set
->  *                     freq at the current frequency.
-> + *                     The "flags" parameter's possible values are
-> + *                     explained above with "DEVFREQ_FLAG_*" macros.
->  * @get_dev_status     The device should provide the current performance
->  *                     status to devfreq, which is used by governors.
->  * @exit               An optional callback that is called when devfreq
-> @@ -66,7 +76,7 @@ struct devfreq_dev_profile {
->        unsigned long initial_freq;
->        unsigned int polling_ms;
->
-> -       int (*target)(struct device *dev, unsigned long *freq);
-> +       int (*target)(struct device *dev, unsigned long *freq, u32 flags);
->        int (*get_dev_status)(struct device *dev,
->                              struct devfreq_dev_status *stat);
->        void (*exit)(struct device *dev);
-> @@ -165,7 +175,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
->
->  /* Helper functions for devfreq user device driver with OPP. */
->  extern struct opp *devfreq_recommended_opp(struct device *dev,
-> -                                          unsigned long *freq);
-> +                                          unsigned long *freq, u32 flags);
->  extern int devfreq_register_opp_notifier(struct device *dev,
->                                         struct devfreq *devfreq);
->  extern int devfreq_unregister_opp_notifier(struct device *dev,
-> @@ -216,7 +226,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
->  }
->
->  static struct opp *devfreq_recommended_opp(struct device *dev,
-> -                                          unsigned long *freq)
-> +                                          unsigned long *freq, u32 flags)
->  {
->        return -EINVAL;
->  }
 > --
-> 1.7.4.1
->
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
