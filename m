@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946496Ab2CPXm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:42:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
+	id S1946413Ab2CPXms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:42:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946480Ab2CPXli (ORCPT
+	with ESMTP id S1946473Ab2CPXlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:38 -0400
-Message-Id: <20120316233813.446360654@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:35 -0400
+Message-Id: <20120316233814.097132945@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:42 -0700
+Date: Fri, 16 Mar 2012 16:38:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 32/41] Block: use a freezable workqueue for disk-event polling
+        alan@lxorguk.ukuu.org.uk, Martin Svec <martin.svec@zoner.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 39/41] iscsi-target: Fix reservation conflict -EBUSY response handling bug
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,122 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 62d3c5439c534b0e6c653fc63e6d8c67be3a57b1 upstream.
+commit 00fdc6bbef77844ce397a7de7acfaf25e8e2e4eb upstream.
 
-This patch (as1519) fixes a bug in the block layer's disk-events
-polling.  The polling is done by a work routine queued on the
-system_nrt_wq workqueue.  Since that workqueue isn't freezable, the
-polling continues even in the middle of a system sleep transition.
+This patch addresses a iscsi-target specific bug related to reservation conflict
+handling in iscsit_handle_scsi_cmd() that has been causing reservation conflicts
+to complete and not fail as expected due to incorrect errno checking.  The problem
+occured with the change to return -EBUSY from transport_generic_cmd_sequencer() ->
+transport_generic_allocate_tasks() failures, that broke iscsit_handle_scsi_cmd()
+checking for -EINVAL in order to invoke a non GOOD status response.
 
-Obviously, polling a suspended drive for media changes and such isn't
-a good thing to do; in the case of USB mass-storage devices it can
-lead to real problems requiring device resets and even re-enumeration.
+This was manifesting itself as data corruption with legacy SPC-2 reservations,
+but also effects iscsi-target LUNs with SPC-3 persistent reservations.
 
-The patch fixes things by creating a new system-wide, non-reentrant,
-freezable workqueue and using it for disk-events polling.
+This bug was originally introduced in lio-core commit:
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+commit 03e98c9eb916f3f0868c1dc344dde2a60287ff72
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Fri Nov 4 02:36:16 2011 -0700
+
+    target: Address legacy PYX_TRANSPORT_* return code breakage
+
+Reported-by: Martin Svec <martin.svec@zoner.cz>
+Cc: Martin Svec <martin.svec@zoner.cz>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c             |   10 +++++-----
- include/linux/workqueue.h |    4 ++++
- kernel/workqueue.c        |    7 ++++++-
- 3 files changed, 15 insertions(+), 6 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1479,9 +1479,9 @@ static void __disk_unblock_events(struct
- 	intv = disk_events_poll_jiffies(disk);
- 	set_timer_slack(&ev->dwork.timer, intv / 4);
- 	if (check_now)
--		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	else if (intv)
--		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
- out_unlock:
- 	spin_unlock_irqrestore(&ev->lock, flags);
- }
-@@ -1525,7 +1525,7 @@ void disk_flush_events(struct gendisk *d
- 	ev->clearing |= mask;
- 	if (!ev->block) {
- 		cancel_delayed_work(&ev->dwork);
--		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	}
- 	spin_unlock_irq(&ev->lock);
- }
-@@ -1562,7 +1562,7 @@ unsigned int disk_clear_events(struct ge
- 
- 	/* uncondtionally schedule event check and wait for it to finish */
- 	disk_block_events(disk);
--	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
-+	queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	flush_delayed_work(&ev->dwork);
- 	__disk_unblock_events(disk, false);
- 
-@@ -1599,7 +1599,7 @@ static void disk_events_workfn(struct wo
- 
- 	intv = disk_events_poll_jiffies(disk);
- 	if (!ev->block && intv)
--		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
- 
- 	spin_unlock_irq(&ev->lock);
- 
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -289,12 +289,16 @@ enum {
-  *
-  * system_freezable_wq is equivalent to system_wq except that it's
-  * freezable.
-+ *
-+ * system_nrt_freezable_wq is equivalent to system_nrt_wq except that
-+ * it's freezable.
-  */
- extern struct workqueue_struct *system_wq;
- extern struct workqueue_struct *system_long_wq;
- extern struct workqueue_struct *system_nrt_wq;
- extern struct workqueue_struct *system_unbound_wq;
- extern struct workqueue_struct *system_freezable_wq;
-+extern struct workqueue_struct *system_nrt_freezable_wq;
- 
- extern struct workqueue_struct *
- __alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -253,11 +253,13 @@ struct workqueue_struct *system_long_wq
- struct workqueue_struct *system_nrt_wq __read_mostly;
- struct workqueue_struct *system_unbound_wq __read_mostly;
- struct workqueue_struct *system_freezable_wq __read_mostly;
-+struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_wq);
- EXPORT_SYMBOL_GPL(system_long_wq);
- EXPORT_SYMBOL_GPL(system_nrt_wq);
- EXPORT_SYMBOL_GPL(system_unbound_wq);
- EXPORT_SYMBOL_GPL(system_freezable_wq);
-+EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/workqueue.h>
-@@ -3821,8 +3823,11 @@ static int __init init_workqueues(void)
- 					    WQ_UNBOUND_MAX_ACTIVE);
- 	system_freezable_wq = alloc_workqueue("events_freezable",
- 					      WQ_FREEZABLE, 0);
-+	system_nrt_freezable_wq = alloc_workqueue("events_nrt_freezable",
-+			WQ_NON_REENTRANT | WQ_FREEZABLE, 0);
- 	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
--	       !system_unbound_wq || !system_freezable_wq);
-+	       !system_unbound_wq || !system_freezable_wq ||
-+		!system_nrt_freezable_wq);
- 	return 0;
- }
- early_initcall(init_workqueues);
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1029,7 +1029,7 @@ done:
+ 		return iscsit_add_reject_from_cmd(
+ 				ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+ 				1, 1, buf, cmd);
+-	} else if (transport_ret == -EINVAL) {
++	} else if (transport_ret < 0) {
+ 		/*
+ 		 * Unsupported SAM Opcode.  CHECK_CONDITION will be sent
+ 		 * in iscsit_execute_cmd() during the CmdSN OOO Execution
 
 
