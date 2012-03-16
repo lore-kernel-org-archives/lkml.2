@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031105Ab2CPDGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:06:17 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52970 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030260Ab2CPDGM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:06:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <201203151902.25640.vapier@gentoo.org>
-References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
-	<20120315205620.28759.65095.stgit@warthog.procyon.org.uk>
-	<201203151902.25640.vapier@gentoo.org>
-Date: Fri, 16 Mar 2012 11:06:10 +0800
-Message-ID: <CAA_GA1coF6zzALMs6iKYfrEW-HGcDb24UJfdG1BNtOxTCpaj_g@mail.gmail.com>
-Subject: Re: [PATCH 07/38] Disintegrate asm/system.h for Blackfin [ver #3]
-From: Bob Liu <lliubbo@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org,
-        David Howells <dhowells@redhat.com>, paul.gortmaker@windriver.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1031067Ab2CPDIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:08:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12265 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932376Ab2CPDIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 23:08:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="139715918"
+Subject: Re: [PATCH 1/6] dmaengine: Kconfig: fix Atmel at_hdmac entry
+From: Vinod Koul <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, ludovic.desroches@atmel.com,
+        dmitry.torokhov@gmail.com, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, a.zummo@towertech.it
+In-Reply-To: <7cdf1e94a17a7d872cb1eeaef812aab25b3caf40.1331826095.git.nicolas.ferre@atmel.com>
+References: <cover.1331826095.git.nicolas.ferre@atmel.com>
+	 <7cdf1e94a17a7d872cb1eeaef812aab25b3caf40.1331826095.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Mar 2012 08:43:57 +0530
+Message-ID: <1331867637.1727.29.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike，
+On Thu, 2012-03-15 at 16:57 +0100, Nicolas Ferre wrote:
+> Remove SoC dependency and make it generic for every Atmel ARM AT91. That will
+> allow to select this driver for newer chips. Keep dependency on AT91 because of
+> the use of an header file located in include/mach directory.
+> Modify the comment to reflect this.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+> ---
+>  drivers/dma/Kconfig |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index f1a2749..6d50f35 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -91,11 +91,10 @@ config DW_DMAC
+>  
+>  config AT_HDMAC
+>  	tristate "Atmel AHB DMA support"
+> -	depends on ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
+> +	depends on ARCH_AT91
+>  	select DMA_ENGINE
+>  	help
+> -	  Support the Atmel AHB DMA controller.  This can be integrated in
+> -	  chips such as the Atmel AT91SAM9RL.
+> +	  Support the Atmel AHB DMA controller.
+>  
+>  config FSL_DMA
+>  	tristate "Freescale Elo and Elo Plus DMA support"
 
-On Fri, Mar 16, 2012 at 7:02 AM, Mike Frysinger <vapier@gentoo.org> wrote:
-> On Thursday 15 March 2012 16:56:21 David Howells wrote:
->> Disintegrate asm/system.h for Blackfin.
->
-> i think Bob found an error in this patch.  he'll have to comment though.
-
-This patch has no error.
-But when i apply it to our internal tree i didn't fix a conflict in
-the right way.
-Sorry for my mistake.
 
 -- 
-Regards,
---Bob
+~Vinod
+
