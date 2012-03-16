@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032927Ab2CPPZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:25:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58208 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1032796Ab2CPPZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:25:33 -0400
-Date: Fri, 16 Mar 2012 16:25:32 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: George Spelvin <linux@horizon.com>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: Oops in ext3_block_to_path.isra.40+0x26/0x11b
-In-Reply-To: <20120316142843.20538.qmail@science.horizon.com>
-Message-ID: <alpine.LNX.2.00.1203161623130.18356@pobox.suse.cz>
-References: <20120316142843.20538.qmail@science.horizon.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1161697Ab2CPP3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:29:08 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48795 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1032894Ab2CPP3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 11:29:06 -0400
+X-Sasl-enc: MxVRCKvgPrKPXPFtqT7NL+7AAIkC86l32Gfs3OcrVf7D 1331911745
+Date: Fri, 16 Mar 2012 08:29:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: linux-next: manual merge of the char-misc tree with the powerpc
+ tree
+Message-ID: <20120316152903.GG28696@kroah.com>
+References: <20120316165207.5a4f0985863b5ae7c50bdd81@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120316165207.5a4f0985863b5ae7c50bdd81@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Mar 2012, George Spelvin wrote:
-
-> > I am not aware of anything, but I have a question -- George, did the 
-> > machine get suspended/resumed before this happened?
+On Fri, Mar 16, 2012 at 04:52:07PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> I'm pretty sure it didn't.  It's a desktop machine, and I don't ever
-> suspend it.  It had been up for a while, and /sys/power/state exists, and
-> *maybe* I played with it sometime since boot, but the backup runs nightly
-> and I *definitely* did not suspend it the day (or even several days)
-> before the oops.
+> Today's linux-next merge of the char-misc tree got a conflict in
+> drivers/char/viotape.c between commit ba7a4822b48f ("powerpc: Remove some
+> of the legacy iSeries specific device drivers") from the powerpc tree and
+> commit 5fb15db4376f ("char: Fix typo in viotape.c") from the char-misc
+> tree.
 > 
-> (I tried to preserve the machine state, but processes started getting
-> stuck in the kernel a few hours after the report, so I had to reboot it.)
-> 
-> Jan Kara asked:
-> >   And by any chance, do you use i915 driver? Because that one seems to
-> > cause corruption - see: https://lkml.org/lkml/2012/3/9/217. I believe
-> > Jiri's corruption is likely caused by that...
-> 
-> Yes!  lspci -nn and abbreviated .config attached.  But, as mentioned, the machine
-> hasn't been suspended...
+> The former removed this file, so I did that.
 
-So it might be the culprit. As the reason of the corruption is not yet 
-understood, it might be that suspend/resume cycle is not necessary 
-pre-requisite for this to trigger, it might just make it more likely.
+Sounds good to me, thanks.
 
-And the corruption is observed to be indeed several writes of 0x00000000, 
-so it could easily lead to null pointer dereferences all over the place.
-
-Are you able to reproduce the problem if you turn kernel modesetting off?
-
--- 
-Jiri Kosina
-SUSE Labs
+greg k-h
