@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab2CPSyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 14:54:24 -0400
-Received: from smtp.cs.ucla.edu ([131.179.128.62]:45429 "EHLO smtp.cs.ucla.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755268Ab2CPSyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 14:54:21 -0400
-Message-ID: <4F638C5C.6080507@cs.ucla.edu>
-Date: Fri, 16 Mar 2012 11:54:20 -0700
-From: Paul Eggert <eggert@cs.ucla.edu>
-Organization: UCLA Computer Science Department
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        GNU C Library <libc-alpha@sourceware.org>
-Subject: Re: PATCH [3/n]: Add __snseconds_t and __SNSECONDS_T_TYPE
-References: <20120315192515.GA6585@intel.com> <20120315195000.7E3BE2C0A3@topped-with-meat.com> <CAMe9rOpXRcO6a4cFEU=s1Gjzzt87zvyzuLhAWupc2pOX6az6ig@mail.gmail.com> <4F625570.7050003@cs.ucla.edu> <CAMe9rOpvnhPmpmsLedmOjjYB9SghZiov-cOUi+wrYvKaP+c9pQ@mail.gmail.com> <4F6267B1.3090805@cs.ucla.edu> <CAMe9rOrRdj_ns=rkonB2BwgmZa3KHBHTQQCv0bkH8PQ2UMXtHw@mail.gmail.com> <4F62F152.1040909@cs.ucla.edu> <CAMe9rOqz0bC6hb=f0BCGzaRHhdnqi65gFCF0h8S0Okgo7TjSsQ@mail.gmail.com>
-In-Reply-To: <CAMe9rOqz0bC6hb=f0BCGzaRHhdnqi65gFCF0h8S0Okgo7TjSsQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755101Ab2CPS4a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 14:56:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40079 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab2CPS43 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 14:56:29 -0400
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: takedakn@nttdata.co.jp
+Cc: penguin-kernel@I-love.SAKURA.ne.jp, james.l.morris@oracle.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] TOMOYO: Return error if fails to delete a domain.
+Date: Sat, 17 Mar 2012 00:25:00 +0530
+Message-Id: <1331924100-26033-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2012 08:49 AM, H.J. Lu wrote:
-> I'd prefer to change POSIX. This isn't the only place where x32 isn't
-> 100% compatible with POSIX.
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-If this approach is taken, the compatibility issues with tv_nsec,
-blksize_t, and suseconds_t should be documented in the glibc manual,
-in areas where programmers using the interfaces are likely to find
-out about the problem.  Could you propose a patch to do that?
+Call sequence:
+tomoyo_write_domain() --> tomoyo_delete_domain()
 
-It should be possible to change POSIX at some point, once the POSIX folks
-decide that C90 compatibility is no longer an issue.  If POSIX
-conformance is not a goal of x32, then this is not an urgent matter --
-which is probably just as well, as I think they still worry about C90.
+In 'tomoyo_delete_domain',  return  -EINTR if locking attempt is
+interrupted by signal.
 
-In the meantime, I guess applications will just have to know not to take
-the address of a tv_nsec member.  I just now added a note
-about this in the Gnulib portability manual, where it talks about
-glitches on systems that don't conform to POSIX:
+At present it returns success to its caller 'tomoyo_write_domain()'
+even though domain is not deleted. 'tomoyo_write_domain()' assumes
+domain is deleted and returns success to its caller. This is
+wrong behaviour.
 
-http://git.savannah.gnu.org/cgit/gnulib.git/commit/?id=47834c92f8122f4ba5e6fca5199a4611425bfe69
+'tomoyo_write_domain' should return error '-EAGAIN' to its caller if
+tomoyo_delete_domain() returns -EINTR.
+
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ security/tomoyo/common.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
+index c47d3ce..3ee1c3a 100644
+--- a/security/tomoyo/common.c
++++ b/security/tomoyo/common.c
+@@ -1081,7 +1081,7 @@ static int tomoyo_delete_domain(char *domainname)
+ 	name.name = domainname;
+ 	tomoyo_fill_path_info(&name);
+ 	if (mutex_lock_interruptible(&tomoyo_policy_lock))
+-		return 0;
++		return -EINTR;
+ 	/* Is there an active domain? */
+ 	list_for_each_entry_rcu(domain, &tomoyo_domain_list, list) {
+ 		/* Never delete tomoyo_kernel_domain */
+@@ -1163,16 +1163,20 @@ static int tomoyo_write_domain(struct tomoyo_io_buffer *head)
+ 	const bool is_delete = head->w.is_delete;
+ 	bool is_select = !is_delete && tomoyo_str_starts(&data, "select ");
+ 	unsigned int profile;
++	int ret = 0;
+ 	if (*data == '<') {
+ 		domain = NULL;
+-		if (is_delete)
+-			tomoyo_delete_domain(data);
++		if (is_delete) {
++			ret = tomoyo_delete_domain(data);
++			if (ret)
++				return -EAGAIN;
++		}
+ 		else if (is_select)
+ 			domain = tomoyo_find_domain(data);
+ 		else
+ 			domain = tomoyo_assign_domain(data, false);
+ 		head->w.domain = domain;
+-		return 0;
++		return ret;
+ 	}
+ 	if (!domain)
+ 		return -EINVAL;
+-- 
+1.7.4.4
+
