@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946566Ab2CPXxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:53:30 -0400
+	id S1946570Ab2CPXxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:53:52 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946184Ab2CPXjN (ORCPT
+	with ESMTP id S1946161Ab2CPXjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:39:13 -0400
-Message-Id: <20120316233450.131197745@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:39:10 -0400
+Message-Id: <20120316233450.043884482@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:19 -0700
+Date: Fri, 16 Mar 2012 16:35:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 32/38] Block: use a freezable workqueue for disk-event polling
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 31/38] block: fix __blkdev_get and add_disk race condition
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,122 +25,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 62d3c5439c534b0e6c653fc63e6d8c67be3a57b1 upstream.
+commit 9f53d2fe815b4011ff930a7b6db98385d45faa68 upstream.
 
-This patch (as1519) fixes a bug in the block layer's disk-events
-polling.  The polling is done by a work routine queued on the
-system_nrt_wq workqueue.  Since that workqueue isn't freezable, the
-polling continues even in the middle of a system sleep transition.
+The following situation might occur:
 
-Obviously, polling a suspended drive for media changes and such isn't
-a good thing to do; in the case of USB mass-storage devices it can
-lead to real problems requiring device resets and even re-enumeration.
+__blkdev_get:			add_disk:
 
-The patch fixes things by creating a new system-wide, non-reentrant,
-freezable workqueue and using it for disk-events polling.
+				register_disk()
+get_gendisk()
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+disk_block_events()
+	disk->ev == NULL
+
+				disk_add_events()
+
+__disk_unblock_events()
+	disk->ev != NULL
+	--ev->block
+
+Then we unblock events, when they are suppose to be blocked. This can
+trigger events related block/genhd.c warnings, but also can crash in
+sd_check_events() or other places.
+
+I'm able to reproduce crashes with the following scripts (with
+connected usb dongle as sdb disk).
+
+<snip>
+DEV=/dev/sdb
+ENABLE=/sys/bus/usb/devices/1-2/bConfigurationValue
+
+function stop_me()
+{
+	for i in `jobs -p` ; do kill $i 2> /dev/null ; done
+	exit
+}
+
+trap stop_me SIGHUP SIGINT SIGTERM
+
+for ((i = 0; i < 10; i++)) ; do
+	while true; do fdisk -l $DEV  2>&1 > /dev/null ; done &
+done
+
+while true ; do
+echo 1 > $ENABLE
+sleep 1
+echo 0 > $ENABLE
+done
+</snip>
+
+I use the script to verify patch fixing oops in sd_revalidate_disk
+http://marc.info/?l=linux-scsi&m=132935572512352&w=2
+Without Jun'ichi Nomura patch titled "Fix NULL pointer dereference in
+sd_revalidate_disk" or this one, script easily crash kernel within
+a few seconds. With both patches applied I do not observe crash.
+Unfortunately after some time (dozen of minutes), script will hung in:
+
+[ 1563.906432]  [<c08354f5>] schedule_timeout_uninterruptible+0x15/0x20
+[ 1563.906437]  [<c04532d5>] msleep+0x15/0x20
+[ 1563.906443]  [<c05d60b2>] blk_drain_queue+0x32/0xd0
+[ 1563.906447]  [<c05d6e00>] blk_cleanup_queue+0xd0/0x170
+[ 1563.906454]  [<c06d278f>] scsi_free_queue+0x3f/0x60
+[ 1563.906459]  [<c06d7e6e>] __scsi_remove_device+0x6e/0xb0
+[ 1563.906463]  [<c06d4aff>] scsi_forget_host+0x4f/0x60
+[ 1563.906468]  [<c06cd84a>] scsi_remove_host+0x5a/0xf0
+[ 1563.906482]  [<f7f030fb>] quiesce_and_remove_host+0x5b/0xa0 [usb_storage]
+[ 1563.906490]  [<f7f03203>] usb_stor_disconnect+0x13/0x20 [usb_storage]
+
+Anyway I think this patch is some step forward.
+
+As drawback, I do not teardown on sysfs file create error, because I do
+not know how to nullify disk->ev (since it can be used). However add_disk
+error handling practically does not exist too, and things will work
+without this sysfs file, except events will not be exported to user
+space.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c             |   10 +++++-----
- include/linux/workqueue.h |    4 ++++
- kernel/workqueue.c        |    7 ++++++-
- 3 files changed, 15 insertions(+), 6 deletions(-)
+ block/genhd.c |   32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
 
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -1487,9 +1487,9 @@ static void __disk_unblock_events(struct
- 	intv = disk_events_poll_jiffies(disk);
- 	set_timer_slack(&ev->dwork.timer, intv / 4);
- 	if (check_now)
--		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	else if (intv)
--		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
- out_unlock:
- 	spin_unlock_irqrestore(&ev->lock, flags);
- }
-@@ -1530,7 +1530,7 @@ void disk_check_events(struct gendisk *d
- 	spin_lock_irqsave(&ev->lock, flags);
- 	if (!ev->block) {
- 		cancel_delayed_work(&ev->dwork);
--		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	}
- 	spin_unlock_irqrestore(&ev->lock, flags);
- }
-@@ -1568,7 +1568,7 @@ unsigned int disk_clear_events(struct ge
+@@ -36,6 +36,7 @@ static DEFINE_IDR(ext_devt_idr);
  
- 	/* uncondtionally schedule event check and wait for it to finish */
- 	disk_block_events(disk);
--	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
-+	queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	flush_delayed_work(&ev->dwork);
- 	__disk_unblock_events(disk, false);
+ static struct device_type disk_type;
  
-@@ -1605,7 +1605,7 @@ static void disk_events_workfn(struct wo
++static void disk_alloc_events(struct gendisk *disk);
+ static void disk_add_events(struct gendisk *disk);
+ static void disk_del_events(struct gendisk *disk);
+ static void disk_release_events(struct gendisk *disk);
+@@ -602,6 +603,8 @@ void add_disk(struct gendisk *disk)
+ 	disk->major = MAJOR(devt);
+ 	disk->first_minor = MINOR(devt);
  
- 	intv = disk_events_poll_jiffies(disk);
- 	if (!ev->block && intv)
--		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
-+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
++	disk_alloc_events(disk);
++
+ 	/* Register BDI before referencing it from bdev */ 
+ 	bdi = &disk->queue->backing_dev_info;
+ 	bdi_register_dev(bdi, disk_devt(disk));
+@@ -1740,9 +1743,9 @@ module_param_cb(events_dfl_poll_msecs, &
+ 		&disk_events_dfl_poll_msecs, 0644);
  
- 	spin_unlock_irq(&ev->lock);
- 
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -289,12 +289,16 @@ enum {
-  *
-  * system_freezable_wq is equivalent to system_wq except that it's
-  * freezable.
-+ *
-+ * system_nrt_freezable_wq is equivalent to system_nrt_wq except that
-+ * it's freezable.
+ /*
+- * disk_{add|del|release}_events - initialize and destroy disk_events.
++ * disk_{alloc|add|del|release}_events - initialize and destroy disk_events.
   */
- extern struct workqueue_struct *system_wq;
- extern struct workqueue_struct *system_long_wq;
- extern struct workqueue_struct *system_nrt_wq;
- extern struct workqueue_struct *system_unbound_wq;
- extern struct workqueue_struct *system_freezable_wq;
-+extern struct workqueue_struct *system_nrt_freezable_wq;
+-static void disk_add_events(struct gendisk *disk)
++static void disk_alloc_events(struct gendisk *disk)
+ {
+ 	struct disk_events *ev;
  
- extern struct workqueue_struct *
- __alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -252,11 +252,13 @@ struct workqueue_struct *system_long_wq
- struct workqueue_struct *system_nrt_wq __read_mostly;
- struct workqueue_struct *system_unbound_wq __read_mostly;
- struct workqueue_struct *system_freezable_wq __read_mostly;
-+struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_wq);
- EXPORT_SYMBOL_GPL(system_long_wq);
- EXPORT_SYMBOL_GPL(system_nrt_wq);
- EXPORT_SYMBOL_GPL(system_unbound_wq);
- EXPORT_SYMBOL_GPL(system_freezable_wq);
-+EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
+@@ -1755,16 +1758,6 @@ static void disk_add_events(struct gendi
+ 		return;
+ 	}
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/workqueue.h>
-@@ -3796,8 +3798,11 @@ static int __init init_workqueues(void)
- 					    WQ_UNBOUND_MAX_ACTIVE);
- 	system_freezable_wq = alloc_workqueue("events_freezable",
- 					      WQ_FREEZABLE, 0);
-+	system_nrt_freezable_wq = alloc_workqueue("events_nrt_freezable",
-+			WQ_NON_REENTRANT | WQ_FREEZABLE, 0);
- 	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
--	       !system_unbound_wq || !system_freezable_wq);
-+	       !system_unbound_wq || !system_freezable_wq ||
-+		!system_nrt_freezable_wq);
- 	return 0;
- }
- early_initcall(init_workqueues);
+-	if (sysfs_create_files(&disk_to_dev(disk)->kobj,
+-			       disk_events_attrs) < 0) {
+-		pr_warn("%s: failed to create sysfs files for events\n",
+-			disk->disk_name);
+-		kfree(ev);
+-		return;
+-	}
+-
+-	disk->ev = ev;
+-
+ 	INIT_LIST_HEAD(&ev->node);
+ 	ev->disk = disk;
+ 	spin_lock_init(&ev->lock);
+@@ -1773,8 +1766,21 @@ static void disk_add_events(struct gendi
+ 	ev->poll_msecs = -1;
+ 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
+ 
++	disk->ev = ev;
++}
++
++static void disk_add_events(struct gendisk *disk)
++{
++	if (!disk->ev)
++		return;
++
++	/* FIXME: error handling */
++	if (sysfs_create_files(&disk_to_dev(disk)->kobj, disk_events_attrs) < 0)
++		pr_warn("%s: failed to create sysfs files for events\n",
++			disk->disk_name);
++
+ 	mutex_lock(&disk_events_mutex);
+-	list_add_tail(&ev->node, &disk_events);
++	list_add_tail(&disk->ev->node, &disk_events);
+ 	mutex_unlock(&disk_events_mutex);
+ 
+ 	/*
 
 
