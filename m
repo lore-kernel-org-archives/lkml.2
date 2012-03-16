@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946474Ab2CPXlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:41:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946443Ab2CPXl0 (ORCPT
+	id S1946505Ab2CPXls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:41:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946492Ab2CPXll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:26 -0400
-Message-Id: <20120316233813.825485126@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:41 -0400
+Message-Id: <20120316233814.308629950@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:46 -0700
+Date: Fri, 16 Mar 2012 16:38:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
+        alan@lxorguk.ukuu.org.uk, Vivek Gani <vgani@intersil.com>,
         Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 36/41] hwmon: (w83627ehf) Fix temp2 source for W83627UHG
+Subject: [ 41/41] hwmon: (zl6100) Enable interval between chip accesses for all chips
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-commit aacb6b0052692c72fe0cb94c6b547202def6ef46 upstream.
+commit fecfb64422d91a9621a3f96ab75c3a5f13e80b58 upstream.
 
-Properly set the source of temp2 for the W83627UHG. Also fix a
-comment right before that, and document the W83627UHG as reporting up
-to 3 temperatures.
+Intersil reports that all chips supported by the zl6100 driver require
+an interval between chip accesses, even ZL2004 and ZL6105 which were thought
+to be safe.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Reported-by: Vivek Gani <vgani@intersil.com>
 Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/hwmon/w83627ehf |    2 +-
- drivers/hwmon/w83627ehf.c     |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ Documentation/hwmon/zl6100   |   14 ++++++--------
+ drivers/hwmon/pmbus/zl6100.c |   11 +++--------
+ 2 files changed, 9 insertions(+), 16 deletions(-)
 
---- a/Documentation/hwmon/w83627ehf
-+++ b/Documentation/hwmon/w83627ehf
-@@ -50,7 +50,7 @@ W83627DHG, W83627DHG-P, W83627UHG, W8366
- (NCT6775F), and NCT6776F super I/O chips. We will refer to them collectively
- as Winbond chips.
+--- a/Documentation/hwmon/zl6100
++++ b/Documentation/hwmon/zl6100
+@@ -73,14 +73,12 @@ Module parameters
+ delay
+ -----
  
--The chips implement 2 to 4 temperature sensors (9 for NCT6775F and NCT6776F),
-+The chips implement 3 to 4 temperature sensors (9 for NCT6775F and NCT6776F),
- 2 to 5 fan rotation speed sensors, 8 to 10 analog voltage sensors, one VID
- (except for 627UHG), alarms with beep warnings (control unimplemented),
- and some automatic fan regulation strategies (plus manual fan control mode).
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -39,7 +39,7 @@
- 					       0x8860 0xa1
-     w83627dhg    9      5       4       3      0xa020 0xc1    0x5ca3
-     w83627dhg-p  9      5       4       3      0xb070 0xc1    0x5ca3
--    w83627uhg    8      2       2       2      0xa230 0xc1    0x5ca3
-+    w83627uhg    8      2       2       3      0xa230 0xc1    0x5ca3
-     w83667hg     9      5       3       3      0xa510 0xc1    0x5ca3
-     w83667hg-b   9      5       3       4      0xb350 0xc1    0x5ca3
-     nct6775f     9      4       3       9      0xb470 0xc1    0x5ca3
-@@ -2158,16 +2158,16 @@ static int __devinit w83627ehf_probe(str
- 		w83627ehf_set_temp_reg_ehf(data, 3);
+-Some Intersil/Zilker Labs DC-DC controllers require a minimum interval between
+-I2C bus accesses. According to Intersil, the minimum interval is 2 ms, though
+-1 ms appears to be sufficient and has not caused any problems in testing.
+-The problem is known to affect ZL6100, ZL2105, and ZL2008. It is known not to
+-affect ZL2004 and ZL6105. The driver automatically sets the interval to 1 ms
+-except for ZL2004 and ZL6105. To enable manual override, the driver provides a
+-writeable module parameter, 'delay', which can be used to set the interval to
+-a value between 0 and 65,535 microseconds.
++Intersil/Zilker Labs DC-DC controllers require a minimum interval between I2C
++bus accesses. According to Intersil, the minimum interval is 2 ms, though 1 ms
++appears to be sufficient and has not caused any problems in testing. The problem
++is known to affect all currently supported chips. For manual override, the
++driver provides a writeable module parameter, 'delay', which can be used to set
++the interval to a value between 0 and 65,535 microseconds.
  
- 		/*
--		 * Temperature sources for temp1 and temp2 are selected with
-+		 * Temperature sources for temp2 and temp3 are selected with
- 		 * bank 0, registers 0x49 and 0x4a.
- 		 */
- 		data->temp_src[0] = 0;	/* SYSTIN */
- 		reg = w83627ehf_read_value(data, 0x49) & 0x07;
- 		/* Adjust to have the same mapping as other source registers */
- 		if (reg == 0)
--			data->temp_src[1]++;
-+			data->temp_src[1] = 1;
- 		else if (reg >= 2 && reg <= 5)
--			data->temp_src[1] += 2;
-+			data->temp_src[1] = reg + 2;
- 		else	/* should never happen */
- 			data->have_temp &= ~(1 << 1);
- 		reg = w83627ehf_read_value(data, 0x4a);
+ 
+ Sysfs entries
+--- a/drivers/hwmon/pmbus/zl6100.c
++++ b/drivers/hwmon/pmbus/zl6100.c
+@@ -178,16 +178,11 @@ static int zl6100_probe(struct i2c_clien
+ 	data->id = mid->driver_data;
+ 
+ 	/*
+-	 * ZL2008, ZL2105, and ZL6100 are known to require a wait time
+-	 * between I2C accesses. ZL2004 and ZL6105 are known to be safe.
+-	 *
+-	 * Only clear the wait time for chips known to be safe. The wait time
+-	 * can be cleared later for additional chips if tests show that it
+-	 * is not needed (in other words, better be safe than sorry).
++	 * According to information from the chip vendor, all currently
++	 * supported chips are known to require a wait time between I2C
++	 * accesses.
+ 	 */
+ 	data->delay = delay;
+-	if (data->id == zl2004 || data->id == zl6105)
+-		data->delay = 0;
+ 
+ 	/*
+ 	 * Since there was a direct I2C device access above, wait before
 
 
