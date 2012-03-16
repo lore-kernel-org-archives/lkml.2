@@ -1,215 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab2CPDAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:00:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56602 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab2CPDAa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:00:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="78205936"
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+	id S1758548Ab2CPDBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:01:11 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:51854
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751226Ab2CPDBH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 23:01:07 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275chz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 16 Mar 2012 11:01:35 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Du, Alek" <alek.du@intel.com>, "Zuo, Jiao" <jiao.zuo@intel.com>
-Subject: [PATCH v2] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Topic: [PATCH v2] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Index: Ac0DIO/snHniEJX7Rb2Ggo2n/ounqg==
-Date: Fri, 16 Mar 2012 03:00:26 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FCC5EC3@SHSMSX102.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120316030134.GA5161@shlinux2.ap.freescale.net>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-2-git-send-email-b29396@freescale.com>
+ <20120313172351.97C5E3E053B@localhost>
+ <20120314124512.GG1180@shlinux2.ap.freescale.net>
+ <20120314141643.GP3852@pengutronix.de>
+ <20120315030206.GB13022@shlinux2.ap.freescale.net>
+ <20321.37353.63115.664975@ipc1.ka-ro>
+ <20120315105927.GE13022@shlinux2.ap.freescale.net>
+ <20321.53468.310199.875966@ipc1.ka-ro>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20321.53468.310199.875966@ipc1.ka-ro>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaobing Tu <xiaobing.tu@intel.com>
+On Thu, Mar 15, 2012 at 07:22:04PM +0800, Lothar Waßmann wrote:
+> Hi,
+> 
+> Dong Aisheng writes:
+> > On Thu, Mar 15, 2012 at 02:53:29PM +0800, Lothar Waßmann wrote:
+> > > Hi,
+> > > 
+> > > Dong Aisheng writes:
+> > > > On Wed, Mar 14, 2012 at 10:16:43PM +0800, s.hauer@pengutronix.de wrote:
+> > > > > On Wed, Mar 14, 2012 at 08:45:23PM +0800, Dong Aisheng wrote:
+> > > > > > On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
+> > > [...]
+> > > > > > But it seems this needs pass mac address to fec driver via platforom data which is
+> > > > > > not friendly to dt.
+> > > > > > 
+> > > > > > Another way may be changing fec driver to get the fixed part of mac address(first
+> > > > > > two bytes) from device tree and read the left dynamical part from otp which i'm not
+> > > > > > sure is better enough.
+> > > > > > 
+> > > > > > BTW, filling with zeros seems not work since it's invalid mac address.
+> > > > > 
+> > > > > Yes, that's the idea of using this value...
+> > > > > 
+> > > > But comparing to use an invalid value, why not just do not define that
+> > > > local-mac-address property?
+> > > > 
+> > > Because a MAC address is by definition a GLOBALLY UNIQUE IDENTIFIER
+> > > which is contrary to coding a "valid" default value for it somewhere!
+> > > The owner of a certain MAC address range (OUI) is responsible for
+> > > ensuring the uniqueness. Thus only they may assign a specific MAC
+> > > address to a specific device.
+> > > 
+> > Yes, you're correct.
+> > So i propose to read the MAC address from MX28 OTP in fec driver instead of
+> > define it in device tree in my last mail.
+> > http://www.spinics.net/lists/arm-kernel/msg165040.html
+> > Do you have any comment on that way?
+> > 
+> That patch sets the OUI to the Freescale owned MAC range. Thus only
+> Freescale products may be able to use the driver.
+> 
+No.
+My proposal is only set the fixed part(first two octets) in board dts file,
+each board knows it's value, and read the left 4 octets from OCOTP dynamically.
+Obviously the freeescale board dts file is only for FSL platforms.
+Other platforms can define their fix part of MAC address in their dts file.
 
-tty_buffer_request_room is well protected, but while after it returns,
- it releases the port->lock. tty->buf.tail might be modified
-by either irq handler or other threads. The patch adds more protection
-by holding the lock across tty buffer finding and buffer filling.
-Signed-off-by: Alek Du <alek.du@intel.com>
-Signed-off-by: Xiaobing Tu <xiaobing.tu@intel.com>
----
- drivers/tty/tty_buffer.c |   85 +++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 65 insertions(+), 20 deletions(-)
+> Anyway there is no definite spec how the MAC address(es) are stored
+> in the fuse map. Thus reading the MAC from there is more or less
+> platform specific.
+> 
+It's just provide one more option since there are customers storing the MAC
+in the fuse map.
 
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 6c9b7cd..91e326f 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -185,25 +185,19 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
- 	/* Should possibly check if this fails for the largest buffer we
- 	   have queued and recycle that ? */
- }
--
- /**
-- *	tty_buffer_request_room		-	grow tty buffer if needed
-+ *	__tty_buffer_request_room		-	grow tty buffer if needed
-  *	@tty: tty structure
-  *	@size: size desired
-  *
-  *	Make at least size bytes of linear space available for the tty
-  *	buffer. If we fail return the size we managed to find.
-- *
-- *	Locking: Takes tty->buf.lock
-+ *      Locking: Caller must hold tty->buf.lock
-  */
--int tty_buffer_request_room(struct tty_struct *tty, size_t size)
-+static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
- {
- 	struct tty_buffer *b, *n;
- 	int left;
--	unsigned long flags;
--
--	spin_lock_irqsave(&tty->buf.lock, flags);
--
- 	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
- 	   remove this conditional if its worth it. This would be invisible
- 	   to the callers */
-@@ -225,9 +219,30 @@ int tty_buffer_request_room(struct tty_struct *tty, size_t size)
- 			size = left;
- 	}
- 
--	spin_unlock_irqrestore(&tty->buf.lock, flags);
- 	return size;
- }
-+
-+
-+/**
-+ *	tty_buffer_request_room		-	grow tty buffer if needed
-+ *	@tty: tty structure
-+ *	@size: size desired
-+ *
-+ *	Make at least size bytes of linear space available for the tty
-+ *	buffer. If we fail return the size we managed to find.
-+ *
-+ *	Locking: Takes tty->buf.lock
-+ */
-+int tty_buffer_request_room(struct tty_struct *tty, size_t size)
-+{
-+	unsigned long flags;
-+	int length;
-+
-+	spin_lock_irqsave(&tty->buf.lock, flags);
-+	length = __tty_buffer_request_room(tty, size);
-+	spin_unlock_irqrestore(&tty->buf.lock, flags);
-+	return length;
-+}
- EXPORT_SYMBOL_GPL(tty_buffer_request_room);
- 
- /**
-@@ -249,14 +264,22 @@ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
- 	int copied = 0;
- 	do {
- 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
--		int space = tty_buffer_request_room(tty, goal);
--		struct tty_buffer *tb = tty->buf.tail;
-+		int space;
-+		unsigned long flags;
-+		struct tty_buffer *tb;
-+
-+		spin_lock_irqsave(&tty->buf.lock, flags);
-+		space = __tty_buffer_request_room(tty, goal);
-+		tb = tty->buf.tail;
- 		/* If there is no space then tb may be NULL */
--		if (unlikely(space == 0))
-+		if (unlikely(space == 0)) {
-+			spin_unlock_irqrestore(&tty->buf.lock, flags);
- 			break;
-+		}
- 		memcpy(tb->char_buf_ptr + tb->used, chars, space);
- 		memset(tb->flag_buf_ptr + tb->used, flag, space);
- 		tb->used += space;
-+		spin_unlock_irqrestore(&tty->buf.lock, flags);
- 		copied += space;
- 		chars += space;
- 		/* There is a small chance that we need to split the data over
-@@ -286,14 +309,22 @@ int tty_insert_flip_string_flags(struct tty_struct *tty,
- 	int copied = 0;
- 	do {
- 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
--		int space = tty_buffer_request_room(tty, goal);
--		struct tty_buffer *tb = tty->buf.tail;
-+		int space;
-+		unsigned long __flags;
-+		struct tty_buffer *tb;
-+
-+		spin_lock_irqsave(&tty->buf.lock, __flags);
-+		space = __tty_buffer_request_room(tty, goal);
-+		tb = tty->buf.tail;
- 		/* If there is no space then tb may be NULL */
--		if (unlikely(space == 0))
-+		if (unlikely(space == 0)) {
-+			spin_unlock_irqrestore(&tty->buf.lock, __flags);
- 			break;
-+		}
- 		memcpy(tb->char_buf_ptr + tb->used, chars, space);
- 		memcpy(tb->flag_buf_ptr + tb->used, flags, space);
- 		tb->used += space;
-+		spin_unlock_irqrestore(&tty->buf.lock, __flags);
- 		copied += space;
- 		chars += space;
- 		flags += space;
-@@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);
- int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
- 								size_t size)
- {
--	int space = tty_buffer_request_room(tty, size);
-+	int space;
-+	unsigned long flags;
-+	struct tty_buffer *tb;
-+
-+	spin_lock_irqsave(&tty->buf.lock, flags);
-+	space = __tty_buffer_request_room(tty, size);
-+
-+	tb = tty->buf.tail;
- 	if (likely(space)) {
--		struct tty_buffer *tb = tty->buf.tail;
- 		*chars = tb->char_buf_ptr + tb->used;
- 		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
- 		tb->used += space;
- 	}
-+	spin_unlock_irqrestore(&tty->buf.lock, flags);
- 	return space;
- }
- EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
-@@ -374,13 +412,20 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
- int tty_prepare_flip_string_flags(struct tty_struct *tty,
- 			unsigned char **chars, char **flags, size_t size)
- {
--	int space = tty_buffer_request_room(tty, size);
-+	int space;
-+	unsigned long __flags;
-+	struct tty_buffer *tb;
-+
-+	spin_lock_irqsave(&tty->buf.lock, __flags);
-+	space = __tty_buffer_request_room(tty, size);
-+
-+	tb = tty->buf.tail;
- 	if (likely(space)) {
--		struct tty_buffer *tb = tty->buf.tail;
- 		*chars = tb->char_buf_ptr + tb->used;
- 		*flags = tb->flag_buf_ptr + tb->used;
- 		tb->used += space;
- 	}
-+	spin_unlock_irqrestore(&tty->buf.lock, __flags);
- 	return space;
- }
- EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
--- 
-1.7.4.1
+> Currently I'm setting up the MAC address for our TX28 from the fuses
+> in the platform code passed via platform_data, but that will obviously
+> not work with DT.
+> 
+Non-dt can also use my proposal, then you only need to pass the fixed part of
+MAC via platfrom data, the left will be read by fec driver.
+
+> The correct way would probably be to pass the MAC from the bootloader
+> via a DT blob. But that would require all bootloaders to be updated
+> first to support DTS. :(
+> 
+But uboot will face the same problem that can not define a valid MAC
+in dts, did i undertand correctly?
+
+> An intermediate solution could be using OF_DEV_AUXDATA to pass a
+> platform_data struct that may contain a MAC address set up by the
+> platform code.
+> 
+Yes, it's a way but i'm afraid will not get accepted by dt people.
+
+Regards
+Dong Aisheng
 
