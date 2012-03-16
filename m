@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422918Ab2CPPA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:00:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45524 "EHLO
+	id S1422849Ab2CPPA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:00:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45525 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965352Ab2CPOxP (ORCPT
+	with ESMTP id S965406Ab2CPOxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Mar 2012 10:53:15 -0400
-Message-Id: <20120316144241.682156918@chello.nl>
+Message-Id: <20120316144240.690180983@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:52 +0100
+Date: Fri, 16 Mar 2012 15:40:37 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -25,241 +25,122 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 24/26] mm, mpol: Implement numa_group RSS accounting
+Subject: [RFC][PATCH 09/26] sched, mm: Introduce tsk_home_node()
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=numa-rss.patch
+Content-Disposition: inline; filename=numa-foo-1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somewhat invasive, add another call next to every
-{add,dec}_mm_counter() that takes a vma argument instead.
+Introduce the home-node concept for tasks. In order to keep memory
+locality we need to have a something to stay local to, we define the
+home-node of a task as the node we prefer to allocate memory from and
+prefer to execute on.
 
-Should we fold and do a single call taking both mm and vma?
+These are no hard guarantees, merely preferences. This allows for
+optimal resource usage, we can run a task away from the home-node, the
+remote memory hit -- while expensive -- is less expensive than not
+running at all, or very little, due to severe cpu overload.
+
+Similarly, we can allocate memory from another node if our home-node
+is depleted, again, some memory is better than no memory.
+
+This patch merely introduces the basic infrastructure, all policy
+comes later.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- mm/filemap_xip.c |    1 +
- mm/fremap.c      |    2 ++
- mm/huge_memory.c |    4 ++++
- mm/memory.c      |   26 ++++++++++++++++++++------
- mm/rmap.c        |   14 +++++++++++---
- mm/swapfile.c    |    2 ++
- 6 files changed, 40 insertions(+), 9 deletions(-)
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -196,6 +196,7 @@ __xip_unmap (struct address_space * mapp
- 			pteval = ptep_clear_flush_notify(vma, address, pte);
- 			page_remove_rmap(page);
- 			dec_mm_counter(mm, MM_FILEPAGES);
-+			numa_add_vma_counter(vma, MM_FILEPAGES, -1);
- 			BUG_ON(pte_dirty(pteval));
- 			pte_unmap_unlock(pte, ptl);
- 			page_cache_release(page);
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -15,6 +15,7 @@
- #include <linux/rmap.h>
- #include <linux/syscalls.h>
- #include <linux/mmu_notifier.h>
-+#include <linux/mempolicy.h>
+ include/linux/init_task.h |    8 ++++++++
+ include/linux/sched.h     |    6 ++++++
+ kernel/sched/core.c       |   32 ++++++++++++++++++++++++++++++++
+ 3 files changed, 46 insertions(+)
+
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -127,6 +127,13 @@ extern struct cred init_cred;
  
- #include <asm/mmu_context.h>
- #include <asm/cacheflush.h>
-@@ -40,6 +41,7 @@ static void zap_pte(struct mm_struct *mm
- 			page_cache_release(page);
- 			update_hiwater_rss(mm);
- 			dec_mm_counter(mm, MM_FILEPAGES);
-+			numa_add_vma_counter(vma, MM_FILEPAGES, -1);
- 		}
- 	} else {
- 		if (!pte_file(pte))
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -672,6 +672,7 @@ static int __do_huge_pmd_anonymous_page(
- 		prepare_pmd_huge_pte(pgtable, mm);
- 		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
- 		mm->nr_ptes++;
-+		numa_add_vma_counter(vma, MM_ANONPAGES, HPAGE_PMD_NR);
- 		spin_unlock(&mm->page_table_lock);
- 	}
+ #define INIT_TASK_COMM "swapper"
  
-@@ -785,6 +786,7 @@ int copy_huge_pmd(struct mm_struct *dst_
- 	get_page(src_page);
- 	page_dup_rmap(src_page);
- 	add_mm_counter(dst_mm, MM_ANONPAGES, HPAGE_PMD_NR);
-+	numa_add_vma_counter(vma, MM_ANONPAGES, HPAGE_PMD_NR);
- 
- 	pmdp_set_wrprotect(src_mm, addr, src_pmd);
- 	pmd = pmd_mkold(pmd_wrprotect(pmd));
-@@ -1047,6 +1049,7 @@ int zap_huge_pmd(struct mmu_gather *tlb,
- 			page_remove_rmap(page);
- 			VM_BUG_ON(page_mapcount(page) < 0);
- 			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-+			numa_add_vma_counter(vma, MM_ANONPAGES, -HPAGE_PMD_NR);
- 			VM_BUG_ON(!PageHead(page));
- 			tlb->mm->nr_ptes--;
- 			spin_unlock(&tlb->mm->page_table_lock);
-@@ -1805,6 +1808,7 @@ static void __collapse_huge_page_copy(pt
- 		if (pte_none(pteval)) {
- 			clear_user_highpage(page, address);
- 			add_mm_counter(vma->vm_mm, MM_ANONPAGES, 1);
-+			numa_add_vma_counter(vma, MM_ANONPAGES, 1);
- 		} else {
- 			src_page = pte_page(pteval);
- 			copy_user_highpage(page, src_page, address, vma);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -657,15 +657,19 @@ static inline void init_rss_vec(int *rss
- 	memset(rss, 0, sizeof(int) * NR_MM_COUNTERS);
- }
- 
--static inline void add_mm_rss_vec(struct mm_struct *mm, int *rss)
-+static inline
-+void add_mm_rss_vec(struct mm_struct *mm, struct vm_area_struct *vma, int *rss)
- {
- 	int i;
- 
- 	if (current->mm == mm)
- 		sync_mm_rss(current, mm);
--	for (i = 0; i < NR_MM_COUNTERS; i++)
--		if (rss[i])
-+	for (i = 0; i < NR_MM_COUNTERS; i++) {
-+		if (rss[i]) {
- 			add_mm_counter(mm, i, rss[i]);
-+			numa_add_vma_counter(vma, i, rss[i]);
-+		}
-+	}
- }
- 
++#ifdef CONFIG_NUMA
++# define INIT_TASK_NUMA(tsk)						\
++	.node = -1,
++#else
++# define INIT_TASK_NUMA(tsk)
++#endif
++
  /*
-@@ -983,7 +987,7 @@ int copy_pte_range(struct mm_struct *dst
- 	arch_leave_lazy_mmu_mode();
- 	spin_unlock(src_ptl);
- 	pte_unmap(orig_src_pte);
--	add_mm_rss_vec(dst_mm, rss);
-+	add_mm_rss_vec(dst_mm, vma, rss);
- 	pte_unmap_unlock(orig_dst_pte, dst_ptl);
- 	cond_resched();
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -192,6 +199,7 @@ extern struct cred init_cred;
+ 	INIT_FTRACE_GRAPH						\
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
++	INIT_TASK_NUMA(tsk)						\
+ }
  
-@@ -1217,7 +1221,7 @@ static unsigned long zap_pte_range(struc
- 		pte_clear_not_present_full(mm, addr, pte, tlb->fullmm);
- 	} while (pte++, addr += PAGE_SIZE, addr != end);
  
--	add_mm_rss_vec(mm, rss);
-+	add_mm_rss_vec(mm, vma, rss);
- 	arch_leave_lazy_mmu_mode();
- 	pte_unmap_unlock(start_pte, ptl);
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1541,6 +1541,7 @@ struct task_struct {
+ 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
+ 	short il_next;
+ 	short pref_node_fork;
++	int node;
+ #endif
+ 	struct rcu_head rcu;
  
-@@ -2024,6 +2028,7 @@ static int insert_page(struct vm_area_st
- 	/* Ok, finally just insert the thing.. */
- 	get_page(page);
- 	inc_mm_counter_fast(mm, MM_FILEPAGES);
-+	numa_add_vma_counter(vma, MM_FILEPAGES, 1);
- 	page_add_file_rmap(page);
- 	set_pte_at(mm, addr, pte, mk_pte(page, prot));
+@@ -1615,6 +1616,11 @@ struct task_struct {
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
  
-@@ -2680,9 +2685,13 @@ static int do_wp_page(struct mm_struct *
- 			if (!PageAnon(old_page)) {
- 				dec_mm_counter_fast(mm, MM_FILEPAGES);
- 				inc_mm_counter_fast(mm, MM_ANONPAGES);
-+				numa_add_vma_counter(vma, MM_FILEPAGES, -1);
-+				numa_add_vma_counter(vma, MM_ANONPAGES, 1);
- 			}
--		} else
-+		} else {
- 			inc_mm_counter_fast(mm, MM_ANONPAGES);
-+			numa_add_vma_counter(vma, MM_ANONPAGES, 1);
-+		}
- 		flush_cache_page(vma, address, pte_pfn(orig_pte));
- 		entry = mk_pte(new_page, vma->vm_page_prot);
- 		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
-@@ -3006,6 +3015,8 @@ static int do_swap_page(struct mm_struct
++static inline int tsk_home_node(struct task_struct *p)
++{
++	return p->node;
++}
++
+ /*
+  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
+  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5874,6 +5874,38 @@ __setup("isolcpus=", isolated_cpu_setup)
  
- 	inc_mm_counter_fast(mm, MM_ANONPAGES);
- 	dec_mm_counter_fast(mm, MM_SWAPENTS);
-+	numa_add_vma_counter(vma, MM_ANONPAGES, 1);
-+	numa_add_vma_counter(vma, MM_SWAPENTS, -1);
- 	pte = mk_pte(page, vma->vm_page_prot);
- 	if ((flags & FAULT_FLAG_WRITE) && reuse_swap_page(page)) {
- 		pte = maybe_mkwrite(pte_mkdirty(pte), vma);
-@@ -3146,6 +3157,7 @@ static int do_anonymous_page(struct mm_s
- 		goto release;
+ #ifdef CONFIG_NUMA
  
- 	inc_mm_counter_fast(mm, MM_ANONPAGES);
-+	numa_add_vma_counter(vma, MM_ANONPAGES, 1);
- 	page_add_new_anon_rmap(page, vma, address);
- setpte:
- 	set_pte_at(mm, address, page_table, entry);
-@@ -3301,9 +3313,11 @@ static int __do_fault(struct mm_struct *
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 		if (anon) {
- 			inc_mm_counter_fast(mm, MM_ANONPAGES);
-+			numa_add_vma_counter(vma, MM_ANONPAGES, 1);
- 			page_add_new_anon_rmap(page, vma, address);
- 		} else {
- 			inc_mm_counter_fast(mm, MM_FILEPAGES);
-+			numa_add_vma_counter(vma, MM_FILEPAGES, 1);
- 			page_add_file_rmap(page);
- 			if (flags & FAULT_FLAG_WRITE) {
- 				dirty_page = page;
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1255,10 +1255,13 @@ int try_to_unmap_one(struct page *page,
- 	update_hiwater_rss(mm);
- 
- 	if (PageHWPoison(page) && !(flags & TTU_IGNORE_HWPOISON)) {
--		if (PageAnon(page))
-+		if (PageAnon(page)) {
- 			dec_mm_counter(mm, MM_ANONPAGES);
--		else
-+			numa_add_vma_counter(vma, MM_ANONPAGES, -1);
-+		} else {
- 			dec_mm_counter(mm, MM_FILEPAGES);
-+			numa_add_vma_counter(vma, MM_FILEPAGES, -1);
-+		}
- 		set_pte_at(mm, address, pte,
- 				swp_entry_to_pte(make_hwpoison_entry(page)));
- 	} else if (PageAnon(page)) {
-@@ -1282,6 +1285,8 @@ int try_to_unmap_one(struct page *page,
- 			}
- 			dec_mm_counter(mm, MM_ANONPAGES);
- 			inc_mm_counter(mm, MM_SWAPENTS);
-+			numa_add_vma_counter(vma, MM_ANONPAGES, -1);
-+			numa_add_vma_counter(vma, MM_SWAPENTS, 1);
- 		} else if (PAGE_MIGRATION) {
- 			/*
- 			 * Store the pfn of the page in a special migration
-@@ -1299,8 +1304,10 @@ int try_to_unmap_one(struct page *page,
- 		swp_entry_t entry;
- 		entry = make_migration_entry(page, pte_write(pteval));
- 		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
--	} else
-+	} else {
- 		dec_mm_counter(mm, MM_FILEPAGES);
-+		numa_add_vma_counter(vma, MM_FILEPAGES, -1);
-+	}
- 
- 	page_remove_rmap(page);
- 	page_cache_release(page);
-@@ -1440,6 +1447,7 @@ static int try_to_unmap_cluster(unsigned
- 		page_remove_rmap(page);
- 		page_cache_release(page);
- 		dec_mm_counter(mm, MM_FILEPAGES);
-+		numa_add_vma_counter(vma, MM_FILEPAGES, -1);
- 		(*mapcount)--;
- 	}
- 	pte_unmap_unlock(pte - 1, ptl);
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -881,6 +881,8 @@ static int unuse_pte(struct vm_area_stru
- 
- 	dec_mm_counter(vma->vm_mm, MM_SWAPENTS);
- 	inc_mm_counter(vma->vm_mm, MM_ANONPAGES);
-+	numa_add_vma_counter(vma, MM_SWAPENTS, -1);
-+	numa_add_vma_counter(vma, MM_ANONPAGES, 1);
- 	get_page(page);
- 	set_pte_at(vma->vm_mm, addr, pte,
- 		   pte_mkold(mk_pte(page, vma->vm_page_prot)));
++/*
++ * Requeues a task ensuring its on the right load-balance list so
++ * that it might get migrated to its new home.
++ *
++ * Note that we cannot actively migrate ourselves since our callers
++ * can be from atomic context. We rely on the regular load-balance
++ * mechanisms to move us around -- its all preference anyway.
++ */
++void sched_setnode(struct task_struct *p, int node)
++{
++	unsigned long flags;
++	int on_rq, running;
++	struct rq *rq;
++
++	rq = task_rq_lock(p, &flags);
++	on_rq = p->on_rq;
++	running = task_current(rq, p);
++
++	if (on_rq)
++		dequeue_task(rq, p, 0);
++	if (running)
++		p->sched_class->put_prev_task(rq, p);
++
++	p->node = node;
++
++	if (running)
++		p->sched_class->set_curr_task(rq);
++	if (on_rq)
++		enqueue_task(rq, p, 0);
++	task_rq_unlock(rq, p, &flags);
++}
++
+ /**
+  * find_next_best_node - find the next node to include in a sched_domain
+  * @node: node whose sched_domain we're building
 
 
