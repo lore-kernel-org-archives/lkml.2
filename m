@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946533Ab2CPXt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:49:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946234Ab2CPXkC (ORCPT
+	id S1946336Ab2CPXuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:50:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59349 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946163Ab2CPXj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:02 -0400
-Message-Id: <20120316233811.387658477@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:39:56 -0400
+Message-Id: <20120316233810.704870765@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:19 -0700
+Date: Fri, 16 Mar 2012 16:38:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [ 09/41] perf/x86: Fix local vs remote memory events for NHM/WSM
+        alan@lxorguk.ukuu.org.uk, Denis GNUtoo Carikli <GNUtoo@no-log.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 01/41] ASoC: neo1973: fix neo1973 wm8753 initialization
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,219 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>
 
-commit 87e24f4b67e68d9fd8df16e0bf9c66d1ad2a2533 upstream.
+commit b2ccf065f7b23147ed135a41b01d05a332ca6b7e upstream.
 
-Verified using the below proglet.. before:
+The neo1973 driver had wrong codec name which prevented the "sound card"
+from appearing.
 
-[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 0
-remote write
-
- Performance counter stats for './numa 0':
-
-         2,101,554 node-stores
-         2,096,931 node-store-misses
-
-       5.021546079 seconds time elapsed
-
-[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 1
-local write
-
- Performance counter stats for './numa 1':
-
-           501,137 node-stores
-               199 node-store-misses
-
-       5.124451068 seconds time elapsed
-
-After:
-
-[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 0
-remote write
-
- Performance counter stats for './numa 0':
-
-         2,107,516 node-stores
-         2,097,187 node-store-misses
-
-       5.012755149 seconds time elapsed
-
-[root@westmere ~]# perf stat -e node-stores -e node-store-misses ./numa 1
-local write
-
- Performance counter stats for './numa 1':
-
-         2,063,355 node-stores
-               165 node-store-misses
-
-       5.082091494 seconds time elapsed
-
-#define _GNU_SOURCE
-
-#include <sched.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <signal.h>
-#include <unistd.h>
-#include <numaif.h>
-#include <stdlib.h>
-
-#define SIZE (32*1024*1024)
-
-volatile int done;
-
-void sig_done(int sig)
-{
-	done = 1;
-}
-
-int main(int argc, char **argv)
-{
-	cpu_set_t *mask, *mask2;
-	size_t size;
-	int i, err, t;
-	int nrcpus = 1024;
-	char *mem;
-	unsigned long nodemask = 0x01; /* node 0 */
-	DIR *node;
-	struct dirent *de;
-	int read = 0;
-	int local = 0;
-
-	if (argc < 2) {
-		printf("usage: %s [0-3]\n", argv[0]);
-		printf("  bit0 - local/remote\n");
-		printf("  bit1 - read/write\n");
-		exit(0);
-	}
-
-	switch (atoi(argv[1])) {
-	case 0:
-		printf("remote write\n");
-		break;
-	case 1:
-		printf("local write\n");
-		local = 1;
-		break;
-	case 2:
-		printf("remote read\n");
-		read = 1;
-		break;
-	case 3:
-		printf("local read\n");
-		local = 1;
-		read = 1;
-		break;
-	}
-
-	mask = CPU_ALLOC(nrcpus);
-	size = CPU_ALLOC_SIZE(nrcpus);
-	CPU_ZERO_S(size, mask);
-
-	node = opendir("/sys/devices/system/node/node0/");
-	if (!node)
-		perror("opendir");
-	while ((de = readdir(node))) {
-		int cpu;
-
-		if (sscanf(de->d_name, "cpu%d", &cpu) == 1)
-			CPU_SET_S(cpu, size, mask);
-	}
-	closedir(node);
-
-	mask2 = CPU_ALLOC(nrcpus);
-	CPU_ZERO_S(size, mask2);
-	for (i = 0; i < size; i++)
-		CPU_SET_S(i, size, mask2);
-	CPU_XOR_S(size, mask2, mask2, mask); // invert
-
-	if (!local)
-		mask = mask2;
-
-	err = sched_setaffinity(0, size, mask);
-	if (err)
-		perror("sched_setaffinity");
-
-	mem = mmap(0, SIZE, PROT_READ|PROT_WRITE,
-			MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	err = mbind(mem, SIZE, MPOL_BIND, &nodemask, 8*sizeof(nodemask), MPOL_MF_MOVE);
-	if (err)
-		perror("mbind");
-
-	signal(SIGALRM, sig_done);
-	alarm(5);
-
-	if (!read) {
-		while (!done) {
-			for (i = 0; i < SIZE; i++)
-				mem[i] = 0x01;
-		}
-	} else {
-		while (!done) {
-			for (i = 0; i < SIZE; i++)
-				t += *(volatile char *)(mem + i);
-		}
-	}
-
-	return 0;
-}
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-tq73sxus35xmqpojf7ootxgs@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ sound/soc/samsung/neo1973_wm8753.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -389,14 +389,15 @@ static __initconst const u64 westmere_hw
- #define NHM_LOCAL_DRAM		(1 << 14)
- #define NHM_NON_DRAM		(1 << 15)
- 
--#define NHM_ALL_DRAM		(NHM_REMOTE_DRAM|NHM_LOCAL_DRAM)
-+#define NHM_LOCAL		(NHM_LOCAL_DRAM|NHM_REMOTE_CACHE_FWD)
-+#define NHM_REMOTE		(NHM_REMOTE_DRAM)
- 
- #define NHM_DMND_READ		(NHM_DMND_DATA_RD)
- #define NHM_DMND_WRITE		(NHM_DMND_RFO|NHM_DMND_WB)
- #define NHM_DMND_PREFETCH	(NHM_PF_DATA_RD|NHM_PF_DATA_RFO)
- 
- #define NHM_L3_HIT	(NHM_UNCORE_HIT|NHM_OTHER_CORE_HIT_SNP|NHM_OTHER_CORE_HITM)
--#define NHM_L3_MISS	(NHM_NON_DRAM|NHM_ALL_DRAM|NHM_REMOTE_CACHE_FWD)
-+#define NHM_L3_MISS	(NHM_NON_DRAM|NHM_LOCAL_DRAM|NHM_REMOTE_DRAM|NHM_REMOTE_CACHE_FWD)
- #define NHM_L3_ACCESS	(NHM_L3_HIT|NHM_L3_MISS)
- 
- static __initconst const u64 nehalem_hw_cache_extra_regs
-@@ -420,16 +421,16 @@ static __initconst const u64 nehalem_hw_
-  },
-  [ C(NODE) ] = {
- 	[ C(OP_READ) ] = {
--		[ C(RESULT_ACCESS) ] = NHM_DMND_READ|NHM_ALL_DRAM,
--		[ C(RESULT_MISS)   ] = NHM_DMND_READ|NHM_REMOTE_DRAM,
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_READ|NHM_LOCAL|NHM_REMOTE,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_READ|NHM_REMOTE,
- 	},
- 	[ C(OP_WRITE) ] = {
--		[ C(RESULT_ACCESS) ] = NHM_DMND_WRITE|NHM_ALL_DRAM,
--		[ C(RESULT_MISS)   ] = NHM_DMND_WRITE|NHM_REMOTE_DRAM,
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_WRITE|NHM_LOCAL|NHM_REMOTE,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_WRITE|NHM_REMOTE,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		[ C(RESULT_ACCESS) ] = NHM_DMND_PREFETCH|NHM_ALL_DRAM,
--		[ C(RESULT_MISS)   ] = NHM_DMND_PREFETCH|NHM_REMOTE_DRAM,
-+		[ C(RESULT_ACCESS) ] = NHM_DMND_PREFETCH|NHM_LOCAL|NHM_REMOTE,
-+		[ C(RESULT_MISS)   ] = NHM_DMND_PREFETCH|NHM_REMOTE,
- 	},
-  },
+--- a/sound/soc/samsung/neo1973_wm8753.c
++++ b/sound/soc/samsung/neo1973_wm8753.c
+@@ -421,7 +421,7 @@ static struct snd_soc_dai_link neo1973_d
+ 	.platform_name = "samsung-audio",
+ 	.cpu_dai_name = "s3c24xx-iis",
+ 	.codec_dai_name = "wm8753-hifi",
+-	.codec_name = "wm8753-codec.0-001a",
++	.codec_name = "wm8753.0-001a",
+ 	.init = neo1973_wm8753_init,
+ 	.ops = &neo1973_hifi_ops,
+ },
+@@ -430,7 +430,7 @@ static struct snd_soc_dai_link neo1973_d
+ 	.stream_name = "Voice",
+ 	.cpu_dai_name = "dfbmcs320-pcm",
+ 	.codec_dai_name = "wm8753-voice",
+-	.codec_name = "wm8753-codec.0-001a",
++	.codec_name = "wm8753.0-001a",
+ 	.ops = &neo1973_voice_ops,
+ },
  };
 
 
