@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762150Ab2CPAEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 20:04:36 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:40261 "EHLO
-	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1762123Ab2CPAEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 20:04:31 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-pm@lists.linux-foundation.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 3/5] cpuidle: add support for states that affect multiple cpus
-Organization: Texas Instruments, Inc.
-References: <1331749794-8056-1-git-send-email-ccross@android.com>
-	<1331749794-8056-4-git-send-email-ccross@android.com>
-Date: Thu, 15 Mar 2012 17:04:43 -0700
-In-Reply-To: <1331749794-8056-4-git-send-email-ccross@android.com> (Colin
-	Cross's message of "Wed, 14 Mar 2012 11:29:52 -0700")
-Message-ID: <87lin18l7o.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1032407Ab2CPAH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 20:07:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53242 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751750Ab2CPAHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 20:07:53 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-ext4@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/9] ext4: Message logging corrections and neatening
+Date: Thu, 15 Mar 2012 17:07:28 -0700
+Message-Id: <cover.1331856299.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin Cross <ccross@android.com> writes:
+Joe Perches (9):
+  ext4: Add -DDEBUG to Makefile
+  ext4: Use pr_fmt and pr_<level>
+  ext4: Fix indentation
+  ext4: Add no_printk argument validation, fix fallout
+  ext4: Avoid output message interleaving in ext4_error_<foo>
+  ext4: Remove redundant "EXT4-fs: " from uses of ext4_msg
+  ext4: Format neatening for easier grep
+  ext4: Neaten ext4_error uses
+  ext4: Rename ext4_warning to ext4_warn and ext4_error to ext4_err
 
-> +/**
-> + * cpuidle_coupled_cpu_set_alive - adjust alive_count during hotplug transitions
-> + * @cpu: target cpu number
-> + * @alive: whether the target cpu is going up or down
-> + *
-> + * Run on the cpu that is bringing up the target cpu, before the target cpu
-> + * has been booted, or after the target cpu is completely dead.
-> + */
-> +static void cpuidle_coupled_cpu_set_alive(int cpu, bool alive)
-> +{
-> +	struct cpuidle_device *dev;
-> +	struct cpuidle_coupled *coupled;
-> +
-> +	mutex_lock(&cpuidle_lock);
-> +
-> +	dev = per_cpu(cpuidle_devices, cpu);
-> +	if (!dev->coupled)
-> +		goto out;
-> +
-> +	coupled = dev->coupled;
-> +
-> +	/*
-> +	 * waiting_count must be at least 1 less than alive_count, because
-> +	 * this cpu is not waiting.  Spin until all cpus have noticed this cpu
-> +	 * is not idle and exited the ready loop before changing alive_count.
-> +	 */
-> +	while (atomic_read(&coupled->ready_count))
-> +		cpu_relax();
-> +
-> +	smp_mb__before_atomic_inc();
-> +	atomic_inc(&coupled->alive_count);
+ fs/ext4/Makefile         |    2 +
+ fs/ext4/balloc.c         |   38 ++--
+ fs/ext4/block_validity.c |   11 +-
+ fs/ext4/dir.c            |    5 +-
+ fs/ext4/ext4.h           |   31 ++--
+ fs/ext4/ext4_extents.h   |    4 +-
+ fs/ext4/ext4_jbd2.c      |    3 +-
+ fs/ext4/extents.c        |  140 +++++++--------
+ fs/ext4/file.c           |    3 +-
+ fs/ext4/fsync.c          |    2 +-
+ fs/ext4/ialloc.c         |   75 ++++----
+ fs/ext4/indirect.c       |   12 +-
+ fs/ext4/inode.c          |   95 +++++-----
+ fs/ext4/mballoc.c        |  163 ++++++++---------
+ fs/ext4/mballoc.h        |   18 +-
+ fs/ext4/mmp.c            |   39 ++---
+ fs/ext4/move_extent.c    |   94 ++++------
+ fs/ext4/namei.c          |  140 +++++++-------
+ fs/ext4/page-io.c        |   29 ++--
+ fs/ext4/resize.c         |  202 ++++++++++-----------
+ fs/ext4/super.c          |  465 ++++++++++++++++++++++------------------------
+ fs/ext4/xattr.c          |   37 ++--
+ 22 files changed, 766 insertions(+), 842 deletions(-)
 
-This doesn't look quite right.  alive_count is incrmented whether the
-CPU is going up or down?
+-- 
+1.7.8.111.gad25c.dirty
 
-Maybe I misunderstood something, but I don't see anywhere where
-alive_count is decrmemented after a CPU is removed.
-
-Kevin
-
-> +	smp_mb__after_atomic_inc();
-> +
-> +	if (alive)
-> +		coupled->requested_state[dev->cpu] = CPUIDLE_COUPLED_NOT_IDLE;
-> +	else
-> +		coupled->requested_state[dev->cpu] = CPUIDLE_COUPLED_DEAD;
-> +
-> +out:
-> +	mutex_unlock(&cpuidle_lock);
-> +}
-> +
