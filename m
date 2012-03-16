@@ -1,246 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971Ab2CPUTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:19:35 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49413 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964867Ab2CPUTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:19:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
-Date: Fri, 16 Mar 2012 21:23:44 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Kay Sievers <kay@vrfy.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        skannan@codeaurora.org, Stephen Boyd <sboyd@codeaurora.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203142354.04256.rjw@sisk.pl> <4F62E841.70405@linux.vnet.ibm.com>
-In-Reply-To: <4F62E841.70405@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203162123.44927.rjw@sisk.pl>
+	id S965141Ab2CPUUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:20:08 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:43619 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964867Ab2CPUUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 16:20:05 -0400
+From: Aneesh V <aneesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Aneesh V <aneesh@ti.com>, Greg KH <greg@kroah.com>
+Subject: [PATCH v3] misc: ddr: add LPDDR2 data from JESD209-2
+Date: Sat, 17 Mar 2012 01:49:37 +0530
+Message-Id: <1331929177-11694-1-git-send-email-aneesh@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20120315190238.GD11142@kroah.com>
+References: <20120315190238.GD11142@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 16, 2012, Srivatsa S. Bhat wrote:
-> On 03/15/2012 04:24 AM, Rafael J. Wysocki wrote:
-> 
-> > On Wednesday, March 14, 2012, Srivatsa S. Bhat wrote:
-> >> On 03/14/2012 05:40 AM, Rafael J. Wysocki wrote:
-> >>
-> >>> On Wednesday, March 14, 2012, Kay Sievers wrote:
-> >>>> On Tue, Mar 13, 2012 at 20:42, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>>>> On Sunday, March 11, 2012, Kay Sievers wrote:
-> >>>>>> On Sat, Mar 10, 2012 at 00:36, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >>>>
-> >>>>>>> What does uevent have to do with things here?
-> >>>>>>
-> >>>>>> I don't think that the firmware loader should care about the
-> >>>>>> usermodehelper at all, and that stuff fiddling should just be removed
-> >>>>>> from the firmware class.
-> >>>>>
-> >>>>> It's there to warn people that their drivers do stupid things like
-> >>>>> loading frimware during system resume, which is guaranteed not to work.
-> >>>>>
-> >>>>> IOW, it's there very much on purpose.
-> >>>>
-> >>>> Using the /sbin/hotplug is no case that needs any warning. It' such a
-> >>>> broken model these days, that firmware loading is the least problem
-> >>>> that occurs with it.
-> >>>>
-> >>>>>> Forking /sbin/hotplug is disabled by default, it is a broken concept,
-> >>>>>> and it cannot work reliably on today's systems.
-> >>>>>>
-> >>>>>> Firmware is not loaded by /sbin/hotplug since many years, but by udev
-> >>>>>> or whatever service handles uevents, like ueventd on android.
-> >>>>>
-> >>>>> Which I'm not sure why is relevant here.
-> >>>>
-> >>>> It is relevant in the sense that the firmware loader should not even
-> >>>> know that a uevent *can* cause a usermodehelper exec() if it runs in
-> >>>> legacy mode. The firmware loader just has no business in fiddling with
-> >>>> the details of driver core legacy stuff. I don't think his warning
-> >>>> makes much sense.
-> >>>
-> >>> But that warning actually triggers for drivers that attempt to use
-> >>> request_firmware() during system resume, even though /sbin/hotplug isn't
-> >>> used any more.
-> >>>
-> >>
-> >>
-> >> I agree with Rafael about why the warning and the bail out is required,
-> >> including the part about the races with freezer which he explained in his
-> >> other mail. These problems have already been well documented too.
-> >> (See Documentation/power/freezing-of-tasks.txt).
-> >>
-> >>> usermodehelper_is_disabled() means "we are in the middle of system power
-> >>> transition" rather than anything else (I agree it should be called
-> >>> suspend_in_progress() or something similar these days).
-> >>>
-> >>
-> >>
-> >> How about this patch then?
-> >>
-> >> ---
-> >>
-> >> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >> Subject: PM/firmware loader: Use better name for usermodehelper_is_disabled()
-> >>
-> >> Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>
-> >> | usermodehelper_is_disabled() means "we are in the middle of system power
-> >> | transition" rather than anything else (I agree it should be called
-> >> | suspend_in_progress() or something similar these days).
-> >>
-> >>
-> >> But simply renaming usermodehelper_is_disabled() to suspend_in_progress()
-> >> isn't the best thing to do since that would be misleading because suspend
-> >> transitions are begun much before usermodehelpers are disabled.
-> >>
-> >> Apart from that, we don't want people to suddenly start abusing this function
-> >> in future in a totally different context to check if suspend is in progress.
-> >>
-> >> So, add an alias specific to firmware loaders alone, that will internally
-> >> call usermodehelpers_is_disabled().
-> >>
-> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >> ---
-> >>
-> >>  drivers/base/firmware_class.c |   12 +++++++++++-
-> >>  1 files changed, 11 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> >> index 6c9387d..9e401e1 100644
-> >> --- a/drivers/base/firmware_class.c
-> >> +++ b/drivers/base/firmware_class.c
-> >> @@ -510,6 +510,8 @@ static void fw_destroy_instance(struct firmware_priv *fw_priv)
-> >>  	device_unregister(f_dev);
-> >>  }
-> >>  
-> >> +#define suspend_in_progress()	usermodehelper_is_disabled()
-> > 
-> > This looks like an overstretch to me.  I think a comment would be sufficient.
-> 
-> 
-> On second thoughts... I agree, a comment is good enough.
-> 
-> > 
-> >> +
-> >>  static int _request_firmware(const struct firmware **firmware_p,
-> >>  			     const char *name, struct device *device,
-> >>  			     bool uevent, bool nowait)
-> >> @@ -535,7 +537,15 @@ static int _request_firmware(const struct firmware **firmware_p,
-> >>  
-> >>  	read_lock_usermodehelper();
-> >>  
-> >> -	if (WARN_ON(usermodehelper_is_disabled())) {
-> >> +	/*
-> >> +	 * It is wrong to request firmware when the system is suspended,
-> >> +	 * because it simply won't work reliably.
-> > 
-> > In fact, it won't work at all.
-> > 
-> >> +	 Also, it can cause races with
-> >> +	 * the freezer, leading to freezing failures.
-> > 
-> > It actually is worse than that too.  It may cause a user space process
-> > to run when we think we have frozen user space and _that_ may lead to
-> > all kinds of interesting breakage.
-> > 
-> 
-> 
-> Oh, yes! That would be really dreadful!
-> 
-> >> 	 * So check if the system is
-> >> +	 * in a state which is unsuitable for requesting firmware (because the
-> >> +	 * system is suspended or not yet fully resumed) and bail out early if
-> >> +	 * needed.
-> > 
-> > And here I'd explain why usermodehelper_is_disabled() is used for that.
-> >
-> 
-> 
-> OK
->  
-> 
-> >> +	 */
-> >> +	if (WARN_ON(suspend_in_progress())) {
-> >>  		dev_err(device, "firmware: %s will not be loaded\n", name);
-> >>  		retval = -EBUSY;
-> >>  		goto out;
-> > 
-> 
-> 
-> So here is the updated patch:
-> (I know its a bit verbose, but given that it is causing a considerable amount of
-> confusion, may be a proper comment with good explanation is worthwhile).
-> 
-> ---
-> 
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: PM/firmware loader: Explain why usermodehelper_is_disabled() check is used
-> 
-> 
-> Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> 
-> | usermodehelper_is_disabled() means "we are in the middle of system power
-> | transition" rather than anything else (I agree it should be called
-> | suspend_in_progress() or something similar these days).
-> 
-> But instead of renaming usermodehelper_is_disabled(), add a comment
-> explaining its importance and also why the warning and bail out at
-> _request_firmware() makes sense.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+add LPDDR2 data from the JEDEC spec JESD209-2. The data
+includes:
 
-That's fine by me.
+1. Addressing information for LPDDR2 memories of different
+   densities and types(S2/S4)
+2. AC timing data.
 
-If no one objects, I'll apply it.
+This data will useful for memory controller device drivers
 
-Thanks,
-Rafael
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Aneesh V <aneesh@ti.com>
+---
+v3:
+- Converted EXPORT_SYMBOL to EXPORT_SYMBOL_GPL
+- Removed un-necessary newline
 
+v1:
+- Moved to /lib from /drivers/misc
+- Corrected Copyright year
+---
+ include/misc/jedec_ddr.h |  177 ++++++++++++++++++++++++++++++++++++++++++++++
+ lib/Kconfig              |    8 ++
+ lib/Makefile             |    2 +
+ lib/jedec_ddr_data.c     |  135 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 322 insertions(+), 0 deletions(-)
+ create mode 100644 include/misc/jedec_ddr.h
+ create mode 100644 lib/jedec_ddr_data.c
 
-> ---
-> 
->  drivers/base/firmware_class.c |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 6c9387d..9199e3e 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -535,6 +535,22 @@ static int _request_firmware(const struct firmware **firmware_p,
->  
->  	read_lock_usermodehelper();
->  
-> +	/*
-> +	 * It is wrong to request firmware when the system is suspended,
-> +	 * because it simply won't work. Also, it can cause races with
-> +	 * the freezer, leading to freezing failures. Worse than that,
-> +	 * it may even cause a user space process to run when we think
-> +	 * we have frozen the user space! - and that can lead to all kinds
-> +	 * of interesting breakage..
-> +	 *
-> +	 * So check if the system is in a state which is unsuitable for
-> +	 * requesting firmware (because it is suspended or not yet fully
-> +	 * resumed) and bail out early if needed.
-> +	 * Usermodehelpers are disabled at the beginning of suspend, before
-> +	 * freezing tasks and re-enabled only towards the end of resume, after
-> +	 * thawing tasks, when it is safe. So all we need to do here is ensure
-> +	 * that we don't request firmware when usermodehelpers are disabled.
-> +	 */
->  	if (WARN_ON(usermodehelper_is_disabled())) {
->  		dev_err(device, "firmware: %s will not be loaded\n", name);
->  		retval = -EBUSY;
-> 
-> 
-> 
-> 
+diff --git a/include/misc/jedec_ddr.h b/include/misc/jedec_ddr.h
+new file mode 100644
+index 0000000..93ffd4a
+--- /dev/null
++++ b/include/misc/jedec_ddr.h
+@@ -0,0 +1,177 @@
++/*
++ * Definitions for DDR memories based on JEDEC specs
++ *
++ * Copyright (C) 2012 Texas Instruments, Inc.
++ *
++ * Aneesh V <aneesh@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __LINUX_JEDEC_DDR_H
++#define __LINUX_JEDEC_DDR_H
++
++#ifndef __ASSEMBLY__
++#include <linux/types.h>
++
++/* DDR Densities */
++#define DDR_DENSITY_64Mb	1
++#define DDR_DENSITY_128Mb	2
++#define DDR_DENSITY_256Mb	3
++#define DDR_DENSITY_512Mb	4
++#define DDR_DENSITY_1Gb		5
++#define DDR_DENSITY_2Gb		6
++#define DDR_DENSITY_4Gb		7
++#define DDR_DENSITY_8Gb		8
++#define DDR_DENSITY_16Gb	9
++#define DDR_DENSITY_32Gb	10
++
++/* DDR type */
++#define DDR_TYPE_DDR2		1
++#define DDR_TYPE_DDR3		2
++#define DDR_TYPE_LPDDR2_S4	3
++#define DDR_TYPE_LPDDR2_S2	4
++#define DDR_TYPE_LPDDR2_NVM	5
++
++/* DDR IO width */
++#define DDR_IO_WIDTH_4		1
++#define DDR_IO_WIDTH_8		2
++#define DDR_IO_WIDTH_16		3
++#define DDR_IO_WIDTH_32		4
++
++/* Number of Row bits */
++#define R9			9
++#define R10			10
++#define R11			11
++#define R12			12
++#define R13			13
++#define R14			14
++#define R15			15
++#define R16			16
++
++/* Number of Column bits */
++#define C7			7
++#define C8			8
++#define C9			9
++#define C10			10
++#define C11			11
++#define C12			12
++
++/* Number of Banks */
++#define B1			0
++#define B2			1
++#define B4			2
++#define B8			3
++
++/* Refresh rate in nano-seconds */
++#define T_REFI_15_6		15600
++#define T_REFI_7_8		7800
++#define T_REFI_3_9		3900
++
++/* tRFC values */
++#define T_RFC_90		90000
++#define T_RFC_110		110000
++#define T_RFC_130		130000
++#define T_RFC_160		160000
++#define T_RFC_210		210000
++#define T_RFC_300		300000
++#define T_RFC_350		350000
++
++/* Mode register numbers */
++#define DDR_MR0			0
++#define DDR_MR1			1
++#define DDR_MR2			2
++#define DDR_MR3			3
++#define DDR_MR4			4
++#define DDR_MR5			5
++#define DDR_MR6			6
++#define DDR_MR7			7
++#define DDR_MR8			8
++#define DDR_MR9			9
++#define DDR_MR10		10
++#define DDR_MR11		11
++#define DDR_MR16		16
++#define DDR_MR17		17
++#define DDR_MR18		18
++
++/*
++ * LPDDR2 related defines
++ */
++
++/* MR4 register fields */
++#define MR4_SDRAM_REF_RATE_SHIFT			0
++#define MR4_SDRAM_REF_RATE_MASK				7
++#define MR4_TUF_SHIFT					7
++#define MR4_TUF_MASK					(1 << 7)
++
++/* MR4 SDRAM Refresh Rate field values */
++#define SDRAM_TEMP_NOMINAL				0x3
++#define SDRAM_TEMP_RESERVED_4				0x4
++#define SDRAM_TEMP_HIGH_DERATE_REFRESH			0x5
++#define SDRAM_TEMP_HIGH_DERATE_REFRESH_AND_TIMINGS	0x6
++#define SDRAM_TEMP_VERY_HIGH_SHUTDOWN			0x7
++
++#define NUM_DDR_ADDR_TABLE_ENTRIES			11
++#define NUM_DDR_TIMING_TABLE_ENTRIES			4
++
++/* Structure for DDR addressing info from the JEDEC spec */
++struct lpddr2_addressing {
++	u32 num_banks;
++	u32 tREFI_ns;
++	u32 tRFCab_ps;
++};
++
++/*
++ * Structure for timings from the LPDDR2 datasheet
++ * All parameters are in pico seconds(ps) unless explicitly indicated
++ * with a suffix like tRAS_max_ns below
++ */
++struct lpddr2_timings {
++	u32 max_freq;
++	u32 min_freq;
++	u32 tRPab;
++	u32 tRCD;
++	u32 tWR;
++	u32 tRAS_min;
++	u32 tRRD;
++	u32 tWTR;
++	u32 tXP;
++	u32 tRTP;
++	u32 tCKESR;
++	u32 tDQSCK_max;
++	u32 tDQSCK_max_derated;
++	u32 tFAW;
++	u32 tZQCS;
++	u32 tZQCL;
++	u32 tZQinit;
++	u32 tRAS_max_ns;
++};
++
++/*
++ * Min value for some parameters in terms of number of tCK cycles(nCK)
++ * Please set to zero parameters that are not valid for a given memory
++ * type
++ */
++struct lpddr2_min_tck {
++	u32 tRPab;
++	u32 tRCD;
++	u32 tWR;
++	u32 tRASmin;
++	u32 tRRD;
++	u32 tWTR;
++	u32 tXP;
++	u32 tRTP;
++	u32 tCKE;
++	u32 tCKESR;
++	u32 tFAW;
++};
++
++extern const struct lpddr2_addressing
++	lpddr2_jedec_addressing_table[NUM_DDR_ADDR_TABLE_ENTRIES];
++extern const struct lpddr2_timings
++	lpddr2_jedec_timings[NUM_DDR_TIMING_TABLE_ENTRIES];
++extern const struct lpddr2_min_tck lpddr2_jedec_min_tck;
++#endif /* __ASSEMBLY__ */
++
++#endif /* __LINUX_JEDEC_DDR_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 028aba9..c5d4f1f 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -291,6 +291,14 @@ config CORDIC
+ 	  This option provides an implementation of the CORDIC algorithm;
+ 	  calculations are in fixed point. Module will be called cordic.
+ 
++config DDR
++	bool "JEDEC DDR data"
++	help
++	  Data from JEDEC specs for DDR SDRAM memories,
++	  particularly the AC timing parameters and addressing
++	  information. This data is useful for drivers handling
++	  DDR SDRAM controllers.
++
+ config MPILIB
+ 	tristate
+ 	select CLZ_TAB
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..74290c9 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -123,6 +123,8 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
+ 
+ obj-$(CONFIG_CLZ_TAB) += clz_tab.o
+ 
++obj-$(CONFIG_DDR) += jedec_ddr_data.o
++
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+diff --git a/lib/jedec_ddr_data.c b/lib/jedec_ddr_data.c
+new file mode 100644
+index 0000000..498c78f
+--- /dev/null
++++ b/lib/jedec_ddr_data.c
+@@ -0,0 +1,135 @@
++/*
++ * DDR addressing details and AC timing parameters from JEDEC specs
++ *
++ * Copyright (C) 2012 Texas Instruments, Inc.
++ *
++ * Aneesh V <aneesh@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <misc/jedec_ddr.h>
++#include <linux/module.h>
++
++/* LPDDR2 addressing details from JESD209-2 section 2.4 */
++const struct lpddr2_addressing
++	lpddr2_jedec_addressing_table[NUM_DDR_ADDR_TABLE_ENTRIES] = {
++	{B4, T_REFI_15_6, T_RFC_90}, /* 64M */
++	{B4, T_REFI_15_6, T_RFC_90}, /* 128M */
++	{B4, T_REFI_7_8,  T_RFC_90}, /* 256M */
++	{B4, T_REFI_7_8,  T_RFC_90}, /* 512M */
++	{B8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
++	{B8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
++	{B8, T_REFI_3_9, T_RFC_130}, /* 4G */
++	{B8, T_REFI_3_9, T_RFC_210}, /* 8G */
++	{B4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
++	{B4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
++};
++EXPORT_SYMBOL_GPL(lpddr2_jedec_addressing_table);
++
++/* LPDDR2 AC timing parameters from JESD209-2 section 12 */
++const struct lpddr2_timings
++	lpddr2_jedec_timings[NUM_DDR_TIMING_TABLE_ENTRIES] = {
++	/* Speed bin 400(200 MHz) */
++	[0] = {
++		.max_freq	= 200000000,
++		.min_freq	= 10000000,
++		.tRPab		= 21000,
++		.tRCD		= 18000,
++		.tWR		= 15000,
++		.tRAS_min	= 42000,
++		.tRRD		= 10000,
++		.tWTR		= 10000,
++		.tXP		= 7500,
++		.tRTP		= 7500,
++		.tCKESR		= 15000,
++		.tDQSCK_max	= 5500,
++		.tFAW		= 50000,
++		.tZQCS		= 90000,
++		.tZQCL		= 360000,
++		.tZQinit	= 1000000,
++		.tRAS_max_ns	= 70000,
++		.tDQSCK_max_derated = 6000,
++	},
++	/* Speed bin 533(266 MHz) */
++	[1] = {
++		.max_freq	= 266666666,
++		.min_freq	= 10000000,
++		.tRPab		= 21000,
++		.tRCD		= 18000,
++		.tWR		= 15000,
++		.tRAS_min	= 42000,
++		.tRRD		= 10000,
++		.tWTR		= 7500,
++		.tXP		= 7500,
++		.tRTP		= 7500,
++		.tCKESR		= 15000,
++		.tDQSCK_max	= 5500,
++		.tFAW		= 50000,
++		.tZQCS		= 90000,
++		.tZQCL		= 360000,
++		.tZQinit	= 1000000,
++		.tRAS_max_ns	= 70000,
++		.tDQSCK_max_derated = 6000,
++	},
++	/* Speed bin 800(400 MHz) */
++	[2] = {
++		.max_freq	= 400000000,
++		.min_freq	= 10000000,
++		.tRPab		= 21000,
++		.tRCD		= 18000,
++		.tWR		= 15000,
++		.tRAS_min	= 42000,
++		.tRRD		= 10000,
++		.tWTR		= 7500,
++		.tXP		= 7500,
++		.tRTP		= 7500,
++		.tCKESR		= 15000,
++		.tDQSCK_max	= 5500,
++		.tFAW		= 50000,
++		.tZQCS		= 90000,
++		.tZQCL		= 360000,
++		.tZQinit	= 1000000,
++		.tRAS_max_ns	= 70000,
++		.tDQSCK_max_derated = 6000,
++	},
++	/* Speed bin 1066(533 MHz) */
++	[3] = {
++		.max_freq	= 533333333,
++		.min_freq	= 10000000,
++		.tRPab		= 21000,
++		.tRCD		= 18000,
++		.tWR		= 15000,
++		.tRAS_min	= 42000,
++		.tRRD		= 10000,
++		.tWTR		= 7500,
++		.tXP		= 7500,
++		.tRTP		= 7500,
++		.tCKESR		= 15000,
++		.tDQSCK_max	= 5500,
++		.tFAW		= 50000,
++		.tZQCS		= 90000,
++		.tZQCL		= 360000,
++		.tZQinit	= 1000000,
++		.tRAS_max_ns	= 70000,
++		.tDQSCK_max_derated = 5620,
++	},
++};
++EXPORT_SYMBOL_GPL(lpddr2_jedec_timings);
++
++const struct lpddr2_min_tck lpddr2_jedec_min_tck = {
++	.tRPab		= 3,
++	.tRCD		= 3,
++	.tWR		= 3,
++	.tRASmin	= 3,
++	.tRRD		= 2,
++	.tWTR		= 2,
++	.tXP		= 2,
++	.tRTP		= 2,
++	.tCKE		= 3,
++	.tCKESR		= 3,
++	.tFAW		= 8
++};
++EXPORT_SYMBOL_GPL(lpddr2_jedec_min_tck);
+-- 
+1.7.1
 
