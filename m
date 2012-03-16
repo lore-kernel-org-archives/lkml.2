@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945985Ab2CPXea (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:34:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41442 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945904Ab2CPXe1 (ORCPT
+	id S1758458Ab2CPXfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:35:55 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49871 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2CPXfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:34:27 -0400
-Date: Fri, 16 Mar 2012 16:34:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/38] 3.0.25-stable review
-Message-ID: <20120316233422.GA5461@kroah.com>
+	Fri, 16 Mar 2012 19:35:53 -0400
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
+Date: Sat, 17 Mar 2012 00:35:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc6-wl+; KDE/4.7.4; x86_64; ; )
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203162325.56303.chunkeey@googlemail.com> <201203162357.10770.rjw@sisk.pl>
+In-Reply-To: <201203162357.10770.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203170035.47756.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.25 release.
-There are 38 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+On Friday 16 March 2012 23:57:10 Rafael J. Wysocki wrote:
+> On Friday, March 16, 2012, Christian Lamparter wrote:
+> > On Friday 16 March 2012 23:19:53 Rafael J. Wysocki wrote:
+> > > > On 03/04/2012 01:52 AM, Christian Lamparter wrote:
+> > > > > During resume, the userhelper might not be available. However for
+> > > > > drivers which use the request_firmware_nowait interface, this will
+> > > > > only lead to a pointless WARNING and a device which no longer works
+> > > > > after the resume [since it couldn't get the firmware, because the
+> > > > > userhelper was not available to take the request].
+> > > > > 
+> > > > > In order to solve this "chicken or egg" dilemma, the code now
+> > > > > retries _nowait requests at one second intervals until the
+> > > > > "loading_timeout" time is up.
+> > > 
+> > > BTW, I wonder what comments on this patch were posted?
+> > Only Alan Cox was kind enough to drop me a few words.
+> > 
+> > Why? Do you think it is actually sane from a specific POV?
+> > [Don't tell me you do :D !]
+> 
+> I don't think it's really wrong.
+Of course, I've tested both patches [the RFC and the other one].
+The RFC might not be "really wrong" but the concept of busy
+msleeping strikes me as a bit insane. [Maybe, that's because I
+write drivers and I hate it when IO needs msleeps... brrr]
+ 
+> I agree that the WARN_ON() isn't really useful in the request_firmware_nowait()
+> case, because the user of that doesn't really know when exactly the firmware is
+> going to be requested, so it can't really do anything about the warning.
+> 
+> Moreover, failures of request_firmware_nowait() just because it happens to
+> race with system suspend (or something of that kind), just because of "bad"
+> timing, aren't really useful either.
+> 
+If it's just about "waiting until the firmware can be loaded" then why not go
+with the "easy approach in the [PATCH] don't cancel...". This just queues the
+request in the _nowait case. And once the userspace helper is running, it will
+pick up all backlogged firmware requests [of course, only the ones that have
+not been timeouted yet] and life goes on!
 
-Responses should be made by Sun Mar 18 23:00:00 UTC 2012.
-Anything received after that time might be too late.
+Anyway, I know that I don't really have a say in what will be accepted.
+So, it's all up to you guys! But I'll happily test any patches.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.25-rc1.gz
-and the diffstat can be found below.
+> So, I think it makes sense for it to wait until the firmware can be loaded.
+> 
+> I'd do that a bit differently, though, for example like in the appended patch
+> (untested).
+Just one comment. [see below] 
 
-thanks,
+And now, I'm off to bed.
 
-greg k-h
+Good night,
+	Chr
 
--------------
- Makefile                                  |    4 +-
- arch/s390/kernel/setup.c                  |    1 +
- arch/sparc/Makefile                       |    2 +-
- arch/x86/lib/delay.c                      |    4 +-
- block/genhd.c                             |   42 +++++-----
- drivers/base/core.c                       |    6 +-
- drivers/block/sx8.c                       |    2 +-
- drivers/firewire/core-cdev.c              |   24 +++++-
- drivers/firewire/core-device.c            |   15 ++--
- drivers/hwmon/w83627ehf.c                 |    9 +--
- drivers/i2c/algos/i2c-algo-bit.c          |    8 +-
- drivers/net/atl1c/atl1c_main.c            |    4 -
- drivers/net/ppp_generic.c                 |   23 ++++++
- drivers/net/sfc/rx.c                      |    4 +-
- drivers/net/usb/asix.c                    |    4 +
- drivers/net/vmxnet3/vmxnet3_drv.c         |    7 +-
- drivers/net/vmxnet3/vmxnet3_int.h         |    4 +-
- drivers/net/wireless/rt2x00/rt2x00dev.c   |    6 +-
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    9 +++
- drivers/net/wireless/rt2x00/rt2x00queue.c |    3 +
- drivers/pci/pcie/aspm.c                   |    3 +
- drivers/platform/x86/acer-wmi.c           |  121 ++++++++++++++++++++++++-----
- drivers/regulator/tps6524x-regulator.c    |    2 +-
- drivers/s390/char/fs3270.c                |    1 +
- fs/aio.c                                  |   22 +++---
- fs/block_dev.c                            |   16 +++-
- fs/namei.c                                |    4 +-
- fs/partitions/check.c                     |   48 ++++++++++--
- include/linux/genhd.h                     |    1 +
- include/linux/skbuff.h                    |   10 +++
- include/linux/workqueue.h                 |    4 +
- kernel/workqueue.c                        |    7 +-
- net/bridge/br_multicast.c                 |    7 +-
- net/core/neighbour.c                      |    2 +
- net/ipv4/tcp_input.c                      |   23 ++++--
- net/ipv4/xfrm4_mode_beet.c                |    5 +-
- net/ipv4/xfrm4_mode_tunnel.c              |    6 +-
- net/ipv6/addrconf.c                       |    4 +
- net/ipv6/xfrm6_mode_beet.c                |    6 +-
- net/ipv6/xfrm6_mode_tunnel.c              |    6 +-
- sound/soc/samsung/neo1973_wm8753.c        |    4 +-
- 41 files changed, 351 insertions(+), 132 deletions(-)
+> ---
+>  drivers/base/firmware_class.c |   31 +++++++++++++++++++++++++++----
+>  1 file changed, 27 insertions(+), 4 deletions(-)
 
+
+> Index: linux/drivers/base/firmware_class.c
+> ===================================================================
+> --- linux.orig/drivers/base/firmware_class.c
+> +++ linux/drivers/base/firmware_class.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/highmem.h>
+>  #include <linux/firmware.h>
+>  #include <linux/slab.h>
+> +#include <linux/delay.h>
+>  
+>  #define to_dev(obj) container_of(obj, struct device, kobj)
+>  
+> @@ -535,10 +536,31 @@ static int _request_firmware(const struc
+>  
+>  	read_lock_usermodehelper();
+>  
+> -	if (WARN_ON(usermodehelper_is_disabled())) {
+> +	if (nowait) {
+> +		int limit = loading_timeout * MSEC_PER_SEC;
+> +		int timeout = 10;  /* in msec */
+> +
+> +		while (usermodehelper_is_disabled()) {
+> +			read_unlock_usermodehelper();
+> +
+> +			msleep(timeout);
+timeout is 10 ms, right?
+
+so this might apply:
+Documentation/timers/timers-howto.txt
+	- Why not msleep for (1ms - 20ms)?
+		Explained originally here:
+			http://lkml.org/lkml/2007/8/3/250
+		msleep(1~20) may not do what the caller intends, and
+		will often sleep longer (~20 ms actual sleep for any
+		value given in the 1~20ms range). In many cases this
+		is not the desired behavior.
+
+Of course, that's of little importance.
