@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031273Ab2CPM0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 08:26:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48236 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab2CPM0K (ORCPT
+	id S1761502Ab2CPM12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 08:27:28 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:42628 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2CPM1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 08:26:10 -0400
-Date: Fri, 16 Mar 2012 20:25:45 +0800
-From: Richard Zhao <richard.zhao@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Mike Turquette <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 3/3] clk: basic clock hardware types
-Message-ID: <20120316122542.GA1774@richard-laptop>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
- <1331878280-2758-4-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331878280-2758-4-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 16 Mar 2012 08:27:25 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=UTF-8
+Date: Fri, 16 Mar 2012 13:27:27 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH 0/2] i2c: Don't assume bus nr 0 if none was specified
+In-reply-to: <1331900343-6743-1-git-send-email-k.lewandowsk@samsung.com>
+To: w.sang@pengutronix.de
+Cc: ben-linux@fluff.org, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hskinnemoen@gmail.com,
+        dirk.brandewie@gmail.com, bigeasy@linutronix.de,
+        m.szyprowski@samsung.com, grant.likely@secretlab.ca,
+        kyungmin.park@samsung.com
+Message-id: <4F6331AF.3010007@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <1331900343-6743-1-git-send-email-k.lewandowsk@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> +static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
-> +		unsigned long *best_parent_rate)
-> +{
-> +	struct clk_divider *divider = to_clk_divider(hw);
-> +	int i, bestdiv = 0;
-> +	unsigned long parent_rate, best = 0, now, maxdiv;
-> +
-> +	if (!rate)
-> +		rate = 1;
-> +
-> +	maxdiv = (1 << divider->width);
-> +
-> +	if (divider->flags & CLK_DIVIDER_ONE_BASED)
-> +		maxdiv--;
-> +
-> +	if (!best_parent_rate) {
-> +		parent_rate = __clk_get_rate(__clk_get_parent(hw->clk));
-> +		bestdiv = DIV_ROUND_UP(parent_rate, rate);
-> +		bestdiv = bestdiv == 0 ? 1 : bestdiv;
-> +		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
-> +		return bestdiv;
-> +	}
-> +
-> +	/*
-> +	 * The maximum divider we can use without overflowing
-> +	 * unsigned long in rate * i below
-> +	 */
-> +	maxdiv = min(ULONG_MAX / rate, maxdiv);
-> +
-> +	for (i = 1; i <= maxdiv; i++) {
-> +		parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
-> +				MULT_ROUND_UP(rate, i));
-> +		now = parent_rate / i;
-> +		if (now <= rate && now > best) {
-> +			bestdiv = i;
-> +			best = now;
-> +			*best_parent_rate = parent_rate;
-Better add		if (now == rate)
-				break;
-There may be more than one hit for (now == rate). We'd better select
-smallest div, thus smallest parent_rate.
+On 16.03.2012 13:19, Karol Lewandowski wrote:
 
-It's the same comment for v6, but not show stopper.
+> Hi,
+> 
+> i2c controller drivers used to assume bus number 0 when none (-1) was specified.
+> 
+> This worked on non-device tree systems, where one could explicitly specify
+> bus number via platform data.  On DT-enabled systems bus number is always -1.
+> 
+> Some drivers assume bus number 0 when -1 is specified.  This patchset kills
+> this logic and switches to dynamic bus allocation (default when -1 is provided[1]).
 
-Thanks
-Richard
-> +		}
-> +	}
-> +
-> +	if (!bestdiv) {
-> +		bestdiv = (1 << divider->width);
-> +		if (divider->flags & CLK_DIVIDER_ONE_BASED)
-> +			bestdiv--;
-> +		*best_parent_rate = __clk_round_rate(__clk_get_parent(hw->clk), 1);
-> +	}
-> +
-> +	return bestdiv;
-> +}
- 
+
+[ I must have lost actual problem description while rewording
+  message itself... ]
+
+Problem arises when multiple drivers (or multiple instances
+of one driver) try to assume the same fixed bus number (0).
+
+This causes simply causes i2c_add_numbered_bus() to fail.
+Leaving -1 works perfectly, as registration function switches
+to dynamic id registration.
+
+> 
+> [ I've found out this when I've tried to instantiate more than one i2c-gpio
+>   instance on DT-enabled system. I've, hopefully, fixed few other drivers too. ]
+> 
+> [1] Introduced by Grant Likely in 488bf314b ("i2c: Allow i2c_add_numbered_adapter()
+>     to assign a bus id")
+> 
+> Karol Lewandowski (2):
+>   i2c-pxa: Drop leftover comment
+>   i2c: Dynamically assign adapter id if it wasn't explictly specified
+> 
+>  drivers/i2c/busses/i2c-gpio.c         |    7 +------
+>  drivers/i2c/busses/i2c-octeon.c       |    2 +-
+>  drivers/i2c/busses/i2c-pca-platform.c |    2 +-
+>  drivers/i2c/busses/i2c-pxa.c          |    5 -----
+>  drivers/i2c/busses/i2c-versatile.c    |    9 ++-------
+>  5 files changed, 5 insertions(+), 20 deletions(-)
+> 
+
+
+
+-- 
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
