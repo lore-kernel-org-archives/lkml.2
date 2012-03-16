@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab2CPDFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:05:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59827 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757802Ab2CPDFF (ORCPT
+	id S1031105Ab2CPDGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:06:17 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52970 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030260Ab2CPDGM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:05:05 -0400
-Message-ID: <4F62ADC8.1030502@gmail.com>
-Date: Fri, 16 Mar 2012 11:04:40 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 15 Mar 2012 23:06:12 -0400
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs/async-thread.c: decrease workers->num_workers only
- on worker can be freed in btrfs_stop_workers
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201203151902.25640.vapier@gentoo.org>
+References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
+	<20120315205620.28759.65095.stgit@warthog.procyon.org.uk>
+	<201203151902.25640.vapier@gentoo.org>
+Date: Fri, 16 Mar 2012 11:06:10 +0800
+Message-ID: <CAA_GA1coF6zzALMs6iKYfrEW-HGcDb24UJfdG1BNtOxTCpaj_g@mail.gmail.com>
+Subject: Re: [PATCH 07/38] Disintegrate asm/system.h for Blackfin [ver #3]
+From: Bob Liu <lliubbo@gmail.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org,
+        David Howells <dhowells@redhat.com>, paul.gortmaker@windriver.com,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the worker cannot be freed, decrease workers->num_workers can
-corrupt the statistics. The workers->num_workers should be decreased
-only when the worker can be stopped and freed in btrfs_stop_workers.
+Hi Mike，
 
+On Fri, Mar 16, 2012 at 7:02 AM, Mike Frysinger <vapier@gentoo.org> wrote:
+> On Thursday 15 March 2012 16:56:21 David Howells wrote:
+>> Disintegrate asm/system.h for Blackfin.
+>
+> i think Bob found an error in this patch.  he'll have to comment though.
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- fs/btrfs/async-thread.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This patch has no error.
+But when i apply it to our internal tree i didn't fix a conflict in
+the right way.
+Sorry for my mistake.
 
-diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
-index 0cc20b3..5a7d756 100644
---- a/fs/btrfs/async-thread.c
-+++ b/fs/btrfs/async-thread.c
-@@ -413,9 +413,9 @@ int btrfs_stop_workers(struct btrfs_workers *workers)
- 				    worker_list);
- 
- 		atomic_inc(&worker->refs);
--		workers->num_workers -= 1;
- 		if (!list_empty(&worker->worker_list)) {
- 			list_del_init(&worker->worker_list);
-+			workers->num_workers--;
- 			put_worker(worker);
- 			can_stop = 1;
- 		} else
 -- 
-1.7.1
+Regards,
+--Bob
