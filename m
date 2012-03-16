@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032847Ab2CPOSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:18:54 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:33358 "EHLO
+	id S1032834Ab2CPOSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:18:52 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:33364 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761754Ab2CPOSp (ORCPT
+	by vger.kernel.org with ESMTP id S1032793Ab2CPOSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:18:45 -0400
+	Fri, 16 Mar 2012 10:18:48 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Matthew Garret <mjg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: [PATCH 2/3] x86, efi; Add EFI boot stub console support
-Date: Fri, 16 Mar 2012 14:18:36 +0000
-Message-Id: <1331907517-3985-3-git-send-email-matt@console-pimps.org>
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH 3/3] x86, efi: Add EFI boot stub documentation
+Date: Fri, 16 Mar 2012 14:18:37 +0000
+Message-Id: <1331907517-3985-4-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
 References: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
@@ -23,240 +24,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-We need a way of printing useful messages to the user, for example
-when we fail to open an initrd file, instead of just hanging the
-machine without giving the user any indication of what went wrong. So
-sprinkle some error messages throughout the EFI boot stub code to make
-it easier for users to diagnose/report problems.
+Since we can't expect every user to read the EFI boot stub code it
+seems prudent to have a couple of paragraphs explaining what it is and
+how it works.
 
-Reported-by: Keshav P R <the.ridikulus.rat@gmail.com>
+The "initrd=" option in particular is tricky because it only
+understands absolute EFI-style paths (backslashes as directory
+separators), and until now this hasn't been documented anywhere. This
+has tripped up a couple of users.
+
 Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/boot/compressed/eboot.c |   86 +++++++++++++++++++++++++++++++-------
- arch/x86/boot/compressed/eboot.h |    6 +++
- 2 files changed, 76 insertions(+), 16 deletions(-)
+ Documentation/x86/efi-stub.txt |   65 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/Kconfig               |    2 +
+ 2 files changed, 67 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/x86/efi-stub.txt
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index fb810ce..90f6fbc 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -16,6 +16,27 @@
- 
- static efi_system_table_t *sys_table;
- 
-+static void efi_printk(char *str)
-+{
-+	efi_char16_t *s16;
-+	char *s8;
+diff --git a/Documentation/x86/efi-stub.txt b/Documentation/x86/efi-stub.txt
+new file mode 100644
+index 0000000..44e6bb6
+--- /dev/null
++++ b/Documentation/x86/efi-stub.txt
+@@ -0,0 +1,65 @@
++			  The EFI Boot Stub
++		     ---------------------------
 +
-+	for (s8 = str; *s8; s8++) {
-+		struct efi_simple_text_output_protocol *out;
-+		efi_char16_t ch[2] = { 0 };
++On the x86 platform, a bzImage can masquerade as a PE/COFF image,
++thereby convincing EFI firmware loaders to load it as an EFI
++executable. The code that modifies the bzImage header, along with the
++EFI-specific entry point that the firmware loader jumps to are
++collectively known as the "EFI boot stub", and live in
++arch/x86/boot/header.S and arch/x86/boot/compressed/eboot.c,
++respectively.
 +
-+		ch[0] = *s8;
-+		out = (struct efi_simple_text_output_protocol *)sys_table->con_out;
++By using the EFI boot stub it's possible to boot a Linux kernel
++without the use of a conventional EFI boot loader, such as grub or
++elilo. Since the EFI boot stub performs the jobs of a boot loader, in
++a certain sense it *IS* the boot loader.
 +
-+		if (*s8 == '\n') {
-+			efi_char16_t nl[2] = { '\r', 0 };
-+			efi_call_phys2(out->output_string, out, nl);
-+		}
++The EFI boot stub is enabled with the CONFIG_EFI_STUB kernel option.
 +
-+		efi_call_phys2(out->output_string, out, ch);
-+	}
-+}
 +
- static efi_status_t __get_map(efi_memory_desc_t **map, unsigned long *map_size,
- 			      unsigned long *desc_size)
- {
-@@ -531,8 +552,10 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 				EFI_LOADER_DATA,
- 				nr_initrds * sizeof(*initrds),
- 				&initrds);
--	if (status != EFI_SUCCESS)
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc mem for initrds\n");
- 		goto fail;
-+	}
- 
- 	str = (char *)(unsigned long)hdr->cmd_line_ptr;
- 	for (i = 0; i < nr_initrds; i++) {
-@@ -575,32 +598,42 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 
- 			status = efi_call_phys3(boottime->handle_protocol,
- 					image->device_handle, &fs_proto, &io);
--			if (status != EFI_SUCCESS)
-+			if (status != EFI_SUCCESS) {
-+				efi_printk("Failed to handle fs_proto\n");
- 				goto free_initrds;
-+			}
- 
- 			status = efi_call_phys2(io->open_volume, io, &fh);
--			if (status != EFI_SUCCESS)
-+			if (status != EFI_SUCCESS) {
-+				efi_printk("Failed to open volume\n");
- 				goto free_initrds;
-+			}
- 		}
- 
- 		status = efi_call_phys5(fh->open, fh, &h, filename,
- 					EFI_FILE_MODE_READ, (u64)0);
--		if (status != EFI_SUCCESS)
-+		if (status != EFI_SUCCESS) {
-+			efi_printk("Failed to open initrd file\n");
- 			goto close_handles;
-+		}
- 
- 		initrd->handle = h;
- 
- 		info_sz = 0;
- 		status = efi_call_phys4(h->get_info, h, &info_guid,
- 					&info_sz, NULL);
--		if (status != EFI_BUFFER_TOO_SMALL)
-+		if (status != EFI_BUFFER_TOO_SMALL) {
-+			efi_printk("Failed to get initrd info size\n");
- 			goto close_handles;
-+		}
- 
- grow:
- 		status = efi_call_phys3(sys_table->boottime->allocate_pool,
- 					EFI_LOADER_DATA, info_sz, &info);
--		if (status != EFI_SUCCESS)
-+		if (status != EFI_SUCCESS) {
-+			efi_printk("Failed to alloc mem for initrd info\n");
- 			goto close_handles;
-+		}
- 
- 		status = efi_call_phys4(h->get_info, h, &info_guid,
- 					&info_sz, info);
-@@ -612,8 +645,10 @@ grow:
- 		file_sz = info->file_size;
- 		efi_call_phys1(sys_table->boottime->free_pool, info);
- 
--		if (status != EFI_SUCCESS)
-+		if (status != EFI_SUCCESS) {
-+			efi_printk("Failed to get initrd info\n");
- 			goto close_handles;
-+		}
- 
- 		initrd->size = file_sz;
- 		initrd_total += file_sz;
-@@ -629,11 +664,14 @@ grow:
- 		 */
- 		status = high_alloc(initrd_total, 0x1000,
- 				   &initrd_addr, hdr->initrd_addr_max);
--		if (status != EFI_SUCCESS)
-+		if (status != EFI_SUCCESS) {
-+			efi_printk("Failed to alloc highmem for initrds\n");
- 			goto close_handles;
-+		}
- 
- 		/* We've run out of free low memory. */
- 		if (initrd_addr > hdr->initrd_addr_max) {
-+			efi_printk("We've run out of free low memory\n");
- 			status = EFI_INVALID_PARAMETER;
- 			goto free_initrd_total;
- 		}
-@@ -652,8 +690,10 @@ grow:
- 				status = efi_call_phys3(fh->read,
- 							initrds[j].handle,
- 							&chunksize, addr);
--				if (status != EFI_SUCCESS)
-+				if (status != EFI_SUCCESS) {
-+					efi_printk("Failed to read initrd\n");
- 					goto free_initrd_total;
-+				}
- 				addr += chunksize;
- 				size -= chunksize;
- 			}
-@@ -732,8 +772,10 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
- 			options_size++;	/* NUL termination */
- 
- 			status = low_alloc(options_size, 1, &cmdline);
--			if (status != EFI_SUCCESS)
-+			if (status != EFI_SUCCESS) {
-+				efi_printk("Failed to alloc mem for cmdline\n");
- 				goto fail;
-+			}
- 
- 			s1 = (u8 *)(unsigned long)cmdline;
- 			s2 = (u16 *)options;
-@@ -895,12 +937,16 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table)
- 
- 	status = efi_call_phys3(sys_table->boottime->handle_protocol,
- 				handle, &proto, (void *)&image);
--	if (status != EFI_SUCCESS)
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
- 		goto fail;
-+	}
- 
- 	status = low_alloc(0x4000, 1, (unsigned long *)&boot_params);
--	if (status != EFI_SUCCESS)
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc lowmem for boot params\n");
- 		goto fail;
-+	}
- 
- 	memset(boot_params, 0x0, 0x4000);
- 
-@@ -925,8 +971,10 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table)
- 	if (status != EFI_SUCCESS) {
- 		status = low_alloc(hdr->init_size, hdr->kernel_alignment,
- 				   &start);
--		if (status != EFI_SUCCESS)
-+		if (status != EFI_SUCCESS) {
-+			efi_printk("Failed to alloc mem for kernel\n");
- 			goto fail;
-+		}
- 	}
- 
- 	hdr->code32_start = (__u32)start;
-@@ -937,19 +985,25 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table)
- 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
- 				EFI_LOADER_DATA, sizeof(*gdt),
- 				(void **)&gdt);
--	if (status != EFI_SUCCESS)
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc mem for gdt structure\n");
- 		goto fail;
-+	}
- 
- 	gdt->size = 0x800;
- 	status = low_alloc(gdt->size, 8, (unsigned long *)&gdt->address);
--	if (status != EFI_SUCCESS)
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc mem for gdt\n");
- 		goto fail;
-+	}
- 
- 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
- 				EFI_LOADER_DATA, sizeof(*idt),
- 				(void **)&idt);
--	if (status != EFI_SUCCESS)
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc mem for idt structure\n");
- 		goto fail;
-+	}
- 
- 	idt->size = 0;
- 	idt->address = 0;
-diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
-index 3925166..3c9a2a4 100644
---- a/arch/x86/boot/compressed/eboot.h
-+++ b/arch/x86/boot/compressed/eboot.h
-@@ -58,4 +58,10 @@ struct efi_uga_draw_protocol {
- 	void *blt;
- };
- 
-+struct efi_simple_text_output_protocol {
-+	unsigned long reset;
-+	unsigned long output_string;
-+	unsigned long test_string;
-+};
++**** How to install bzImage.efi
 +
- #endif /* BOOT_COMPRESSED_EBOOT_H */
++The bzImage located in arch/x86/boot/bzImage must be copied to the EFI
++System Partiion (ESP) and renamed with the extension ".efi". Without
++the extension the EFI firmware loader will refuse to execute it. It's
++not possible to execute bzImage.efi from the usual Linux file systems
++because EFI firmware doesn't have support for them.
++
++
++**** Passing kernel parameters from the EFI shell
++
++Arguments to the kernel can be passed after bzImage.efi, e.g.
++
++	fs0:> bzImage.efi console=ttyS0 root=/dev/sda4
++
++
++**** The "initrd=" option
++
++Like most boot loaders, the EFI stub allows the user to specify
++multiple initrd files using the "initrd=" option. This is the only EFI
++stub-specific command line parameter, everything else is passed to the
++kernel when it boots.
++
++The path to the initrd file must be an absolute path from the
++beginning of the ESP, relative path names do not work. Also, the path
++is an EFI-style path and directory elements must be separated with
++backslashes (\). For example, given the following directory layout,
++
++fs0:>
++	Kernels\
++			bzImage.efi
++			initrd-large.img
++
++	Ramdisks\
++			initrd-small.img
++			initrd-medium.img
++
++to boot with the initrd-large.img file if the current working
++directory is fs0:\Kernels, the following command must be used,
++
++	fs0:\Kernels> bzImage.efi initrd=\Kernels\initrd-large.img
++
++Notice how bzImage.efi can be specified with a relative path. That's
++because the image we're executing is interpreted by the EFI shell,
++which understands relative paths, whereas the rest of the command line
++is passed to bzImage.efi.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..591c1a5 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1521,6 +1521,8 @@ config EFI_STUB
+           This kernel feature allows a bzImage to be loaded directly
+ 	  by EFI firmware without the use of a bootloader.
+ 
++	  See Documentation/x86/efi-stub.txt for more information.
++
+ config SECCOMP
+ 	def_bool y
+ 	prompt "Enable seccomp to safely compute untrusted bytecode"
 -- 
 1.7.4.4
 
