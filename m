@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965173Ab2CPUea (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:34:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58182 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964867Ab2CPUe2 convert rfc822-to-8bit (ORCPT
+	id S932612Ab2CPUgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:36:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59785 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757285Ab2CPUgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:34:28 -0400
+	Fri, 16 Mar 2012 16:36:47 -0400
+Date: Fri, 16 Mar 2012 13:36:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] Drivers: scsi: storvsc: Set the scsi result
+ correctly when SRB status is INVALID
+Message-ID: <20120316203642.GA14802@kroah.com>
+References: <1331929448-6838-1-git-send-email-kys@microsoft.com>
+ <1331929472-6877-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <m1zkbjauqj.fsf@fess.ebiederm.org>
-References: <1331690897-26496-1-git-send-email-jesse@nicira.com> <m1zkbjauqj.fsf@fess.ebiederm.org>
-From: Jesse Gross <jesse@nicira.com>
-Date: Fri, 16 Mar 2012 13:34:07 -0700
-Message-ID: <CAEP_g=-OD5m+VGxmk+r1C=3T1qsFm4vyFhS-zE_34CoPi4zBEw@mail.gmail.com>
-Subject: Re: [PATCH] proc-ns: Use d_set_d_op() API to set dentry ops in proc_ns_instantiate().
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Justin Pettit <jpettit@nicira.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331929472-6877-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 11:43 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Jesse Gross <jesse@nicira.com> writes:
->
->> From: Pravin B Shelar <pshelar@nicira.com>
->>
->> Use d_set_d_op() so that DCACHE_OP_* flags are set correctly which fixes ns
->> cleanup path i.e. `ip netns delete `.
->>
->> This issue exists back to 3.0.
->
-> Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
->
-> Jesse thanks for picking this up and giving this a push.  This is most
-> definitely the right fix and it most definitely solves issues.   Somehow
-> this fix got lost when I sent it to Linus the first time.
+On Fri, Mar 16, 2012 at 01:24:31PM -0700, K. Y. Srinivasan wrote:
+> Currently Windows hosts only support a subset of scsi commands and for commands
+> that are not supported, the host returns a generic SRB failure status.
+> However, they have agreed to change the return value to indicate that
+> the command is not supported. In preparation for that, handle the 
+> SRB_STATUS_INVALID_REQUEST return value correctly.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/scsi/storvsc_drv.c |    8 ++++++++
 
-Thanks Eric, I didn't realize that you had picked it up the first time
-around, which is why I figured that I'd try Andrew.  I haven't heard
-anything from him so do you want to take it? (I'm not quite sure who
-owns this piece of code, sorry if it's already been handled.)
+I need an ack from the scsi maintainer before I can accept this patch.
+
+James?
+
