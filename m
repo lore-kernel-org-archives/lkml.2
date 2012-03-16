@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946284Ab2CPXk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:40:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
+	id S1946357Ab2CPXrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:47:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38586 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946248Ab2CPXkJ (ORCPT
+	with ESMTP id S1946276Ab2CPXkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:09 -0400
-Message-Id: <20120316233811.589196908@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:24 -0400
+Message-Id: <20120316233812.045833021@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:21 -0700
+Date: Fri, 16 Mar 2012 16:38:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 11/41] vfs: fix return value from do_last()
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Niccol=F2=20Belli?= <darkbasic@linuxsystems.it>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/41] ipsec: be careful of non existing mac headers
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 7f6c7e62fcc123e6bd9206da99a2163fe3facc31 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-complete_walk() returns either ECHILD or ESTALE.  do_last() turns this into
-ECHILD unconditionally.  If not in RCU mode, this error will reach userspace
-which is complete nonsense.
+[ Upstream commit 03606895cd98c0a628b17324fd7b5ff15db7e3cd ]
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Niccolo Belli reported ipsec crashes in case we handle a frame without
+mac header (atm in his case)
+
+Before copying mac header, better make sure it is present.
+
+Bugzilla reference:  https://bugzilla.kernel.org/show_bug.cgi?id=42809
+
+Reported-by: Niccolò Belli <darkbasic@linuxsystems.it>
+Tested-by: Niccolò Belli <darkbasic@linuxsystems.it>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/namei.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/skbuff.h       |   10 ++++++++++
+ net/ipv4/xfrm4_mode_beet.c   |    5 +----
+ net/ipv4/xfrm4_mode_tunnel.c |    6 ++----
+ net/ipv6/xfrm6_mode_beet.c   |    6 +-----
+ net/ipv6/xfrm6_mode_tunnel.c |    6 ++----
+ 5 files changed, 16 insertions(+), 17 deletions(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2139,7 +2139,7 @@ static struct file *do_last(struct namei
- 		/* sayonara */
- 		error = complete_walk(nd);
- 		if (error)
--			return ERR_PTR(-ECHILD);
-+			return ERR_PTR(error);
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1453,6 +1453,16 @@ static inline void skb_set_mac_header(st
+ }
+ #endif /* NET_SKBUFF_DATA_USES_OFFSET */
  
- 		error = -ENOTDIR;
- 		if (nd->flags & LOOKUP_DIRECTORY) {
++static inline void skb_mac_header_rebuild(struct sk_buff *skb)
++{
++	if (skb_mac_header_was_set(skb)) {
++		const unsigned char *old_mac = skb_mac_header(skb);
++
++		skb_set_mac_header(skb, -skb->mac_len);
++		memmove(skb_mac_header(skb), old_mac, skb->mac_len);
++	}
++}
++
+ static inline int skb_checksum_start_offset(const struct sk_buff *skb)
+ {
+ 	return skb->csum_start - skb_headroom(skb);
+--- a/net/ipv4/xfrm4_mode_beet.c
++++ b/net/ipv4/xfrm4_mode_beet.c
+@@ -110,10 +110,7 @@ static int xfrm4_beet_input(struct xfrm_
+ 
+ 	skb_push(skb, sizeof(*iph));
+ 	skb_reset_network_header(skb);
+-
+-	memmove(skb->data - skb->mac_len, skb_mac_header(skb),
+-		skb->mac_len);
+-	skb_set_mac_header(skb, -skb->mac_len);
++	skb_mac_header_rebuild(skb);
+ 
+ 	xfrm4_beet_make_header(skb);
+ 
+--- a/net/ipv4/xfrm4_mode_tunnel.c
++++ b/net/ipv4/xfrm4_mode_tunnel.c
+@@ -66,7 +66,6 @@ static int xfrm4_mode_tunnel_output(stru
+ 
+ static int xfrm4_mode_tunnel_input(struct xfrm_state *x, struct sk_buff *skb)
+ {
+-	const unsigned char *old_mac;
+ 	int err = -EINVAL;
+ 
+ 	if (XFRM_MODE_SKB_CB(skb)->protocol != IPPROTO_IPIP)
+@@ -84,10 +83,9 @@ static int xfrm4_mode_tunnel_input(struc
+ 	if (!(x->props.flags & XFRM_STATE_NOECN))
+ 		ipip_ecn_decapsulate(skb);
+ 
+-	old_mac = skb_mac_header(skb);
+-	skb_set_mac_header(skb, -skb->mac_len);
+-	memmove(skb_mac_header(skb), old_mac, skb->mac_len);
+ 	skb_reset_network_header(skb);
++	skb_mac_header_rebuild(skb);
++
+ 	err = 0;
+ 
+ out:
+--- a/net/ipv6/xfrm6_mode_beet.c
++++ b/net/ipv6/xfrm6_mode_beet.c
+@@ -80,7 +80,6 @@ static int xfrm6_beet_output(struct xfrm
+ static int xfrm6_beet_input(struct xfrm_state *x, struct sk_buff *skb)
+ {
+ 	struct ipv6hdr *ip6h;
+-	const unsigned char *old_mac;
+ 	int size = sizeof(struct ipv6hdr);
+ 	int err;
+ 
+@@ -90,10 +89,7 @@ static int xfrm6_beet_input(struct xfrm_
+ 
+ 	__skb_push(skb, size);
+ 	skb_reset_network_header(skb);
+-
+-	old_mac = skb_mac_header(skb);
+-	skb_set_mac_header(skb, -skb->mac_len);
+-	memmove(skb_mac_header(skb), old_mac, skb->mac_len);
++	skb_mac_header_rebuild(skb);
+ 
+ 	xfrm6_beet_make_header(skb);
+ 
+--- a/net/ipv6/xfrm6_mode_tunnel.c
++++ b/net/ipv6/xfrm6_mode_tunnel.c
+@@ -63,7 +63,6 @@ static int xfrm6_mode_tunnel_output(stru
+ static int xfrm6_mode_tunnel_input(struct xfrm_state *x, struct sk_buff *skb)
+ {
+ 	int err = -EINVAL;
+-	const unsigned char *old_mac;
+ 
+ 	if (XFRM_MODE_SKB_CB(skb)->protocol != IPPROTO_IPV6)
+ 		goto out;
+@@ -80,10 +79,9 @@ static int xfrm6_mode_tunnel_input(struc
+ 	if (!(x->props.flags & XFRM_STATE_NOECN))
+ 		ipip6_ecn_decapsulate(skb);
+ 
+-	old_mac = skb_mac_header(skb);
+-	skb_set_mac_header(skb, -skb->mac_len);
+-	memmove(skb_mac_header(skb), old_mac, skb->mac_len);
+ 	skb_reset_network_header(skb);
++	skb_mac_header_rebuild(skb);
++
+ 	err = 0;
+ 
+ out:
 
 
