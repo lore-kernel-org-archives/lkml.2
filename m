@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031410Ab2CPVcd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 17:32:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64538 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab2CPVcb (ORCPT
+	id S1758236Ab2CPVdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 17:33:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47397 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754554Ab2CPVdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 17:32:31 -0400
-Date: Fri, 16 Mar 2012 14:32:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
-Message-ID: <20120316213227.GB24556@kroah.com>
-References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	Fri, 16 Mar 2012 17:33:19 -0400
+X-Sasl-enc: QVY1pDqT2UBYkFkZL/tmbqky1dCw575CIuZUFV9iFR8F 1331933598
+Date: Fri, 16 Mar 2012 14:33:17 -0700
+From: Greg KH <greg@kroah.com>
+To: Aneesh V <aneesh@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] misc: ddr: add LPDDR2 data from JESD209-2
+Message-ID: <20120316213316.GC24556@kroah.com>
+References: <1331835457-5390-1-git-send-email-aneesh@ti.com>
+ <1331835457-5390-2-git-send-email-aneesh@ti.com>
+ <20120315190238.GD11142@kroah.com>
+ <4F63A987.3@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <4F63A987.3@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 04:04:48PM -0500, Seth Jennings wrote:
-> This patch allows a zsmalloc user to define the page
-> allocation and free functions to be used when growing
-> or releasing parts of the memory pool.
+On Sat, Mar 17, 2012 at 02:28:47AM +0530, Aneesh V wrote:
+> Hi Greg,
 > 
-> The functions are passed in the struct zs_pool_ops parameter
-> of zs_create_pool() at pool creation time.  If this parameter
-> is NULL, zsmalloc uses alloc_page and __free_page() by default.
+> On Friday 16 March 2012 12:32 AM, Greg KH wrote:
+> >On Thu, Mar 15, 2012 at 11:47:31PM +0530, Aneesh V wrote:
+> >>add LPDDR2 data from the JEDEC spec JESD209-2. The data
+> >>includes:
+> >>
+> >>1. Addressing information for LPDDR2 memories of different
+> >>    densities and types(S2/S4)
+> >>2. AC timing data.
+> >>
+> >>This data will useful for memory controller device drivers
+> >
+> >Right now, only one driver, right?
+> >
+> >>+#ifndef __ASSEMBLY__
+> >
+> >Why is this needed?
+> >
+> >>+/* Structure for DDR addressing info from the JEDEC spec */
+> >>+struct lpddr2_addressing {
+> >>+	u32 num_banks;
+> >>+	u32 tREFI_ns;
+> >>+	u32 tRFCab_ps;
+> >>+};
+> >
+> >Do these structures cross the user/kernel boundry somehow?  If so,
+> >please use the proper kernel types for this.
+> >
+> >>--- a/lib/Makefile
+> >>+++ b/lib/Makefile
+> >>@@ -123,6 +123,9 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
+> >>
+> >>  obj-$(CONFIG_CLZ_TAB) += clz_tab.o
+> >>
+> >>+obj-$(CONFIG_DDR) += jedec_ddr_data.o
+> >>+
+> >>+
+> >
+> >Why the extra line?
+> >
+> >>  hostprogs-y	:= gen_crc32table
+> >>  clean-files	:= crc32table.h
+> >>
+> >>diff --git a/lib/jedec_ddr_data.c b/lib/jedec_ddr_data.c
+> >>new file mode 100644
+> >>index 0000000..fc223d6
+> >>--- /dev/null
+> >>+++ b/lib/jedec_ddr_data.c
+> >>@@ -0,0 +1,135 @@
+> >>+/*
+> >>+ * DDR addressing details and AC timing parameters from JEDEC specs
+> >>+ *
+> >>+ * Copyright (C) 2012 Texas Instruments, Inc.
+> >>+ *
+> >>+ * Aneesh V<aneesh@ti.com>
+> >>+ *
+> >>+ * This program is free software; you can redistribute it and/or modify
+> >>+ * it under the terms of the GNU General Public License version 2 as
+> >>+ * published by the Free Software Foundation.
+> >>+ */
+> >>+
+> >>+#include<misc/jedec_ddr.h>
+> >>+#include<linux/module.h>
+> >>+
+> >>+/* LPDDR2 addressing details from JESD209-2 section 2.4 */
+> >>+const struct lpddr2_addressing
+> >>+	lpddr2_jedec_addressing_table[NUM_DDR_ADDR_TABLE_ENTRIES] = {
+> >>+	{B4, T_REFI_15_6, T_RFC_90}, /* 64M */
+> >>+	{B4, T_REFI_15_6, T_RFC_90}, /* 128M */
+> >>+	{B4, T_REFI_7_8,  T_RFC_90}, /* 256M */
+> >>+	{B4, T_REFI_7_8,  T_RFC_90}, /* 512M */
+> >>+	{B8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
+> >>+	{B8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
+> >>+	{B8, T_REFI_3_9, T_RFC_130}, /* 4G */
+> >>+	{B8, T_REFI_3_9, T_RFC_210}, /* 8G */
+> >>+	{B4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
+> >>+	{B4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
+> >>+};
+> >>+EXPORT_SYMBOL(lpddr2_jedec_addressing_table);
+> >
+> >EXPORT_SYMBOL_GPL for these and the others?
 > 
-> While there is no current user of this functionality, zcache
-> development plans to make use of it in the near future.
+> I have fixed these comments and pushed my latest patches at:
+> git://github.com/aneeshv/linux.git
+> branch: emif-upstream-v4
 
-I'm starting to get tired of seeing new features be added to this chunk
-of code, and the other related bits, without any noticable movement
-toward getting it merged into the mainline tree.
+Sorry, but I don't take git pulls for stuff like this, please send all
+of the patches in email so it can be reviewed properly.
 
-So, I'm going to take a stance here and say, no more new features until
-it gets merged into the "real" part of the kernel tree, as you all
-should not be spinning your wheels on new stuff, when there's no
-guarantee that the whole thing could just be rejected outright tomorrow.
-
-I'm sorry, I know this isn't fair for your specific patch, but we have
-to stop this sometime, and as this patch adds code isn't even used by
-anyone, its a good of a time as any.
+thanks,
 
 greg k-h
