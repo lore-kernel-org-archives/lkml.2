@@ -1,204 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422666Ab2CPKWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:22:55 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:40118 "EHLO mx2.parallels.com"
+	id S1422680Ab2CPK1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:27:16 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60975 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761145Ab2CPKWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:22:52 -0400
-Message-ID: <4F63141E.8070709@parallels.com>
-Date: Fri, 16 Mar 2012 14:21:18 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizf@cn.fujitsu.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC REPOST] cgroup: removing css reference drain wait during
- cgroup removal
-References: <20120312213155.GE23255@google.com> <20120312213343.GF23255@google.com> <20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com> <20120313163914.GD7349@google.com> <20120314092828.3321731c.kamezawa.hiroyu@jp.fujitsu.com> <4F6068F4.4090909@parallels.com> <4F6134E1.5090601@jp.fujitsu.com> <4F61D167.4000402@parallels.com> <4F62830F.4060303@jp.fujitsu.com>
-In-Reply-To: <4F62830F.4060303@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1161009Ab2CPK1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 06:27:14 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH] drivers/edac/amd8131_edac.c: add missing pci_dev_put
+Date: Fri, 16 Mar 2012 11:27:06 +0100
+Message-Id: <1331893626-5368-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
->>>
->>> I thought of this a little yesterday. Current my idea is applying following
->>> rule for res_counter.
->>>
->>> 1. All res_counter is hierarchical. But behavior should be optimized.
->>>
->>> 2. If parent res_counter has UNLIMITED limit, 'usage' will not be propagated
->>>     to its parent at _charge_.
->>
->> That doesn't seem to make much sense. If you are unlimited, but your
->> parent is limited,
->> he has a lot more interest to know about the charge than you do.
->
->
-> Sorry, I should write "If all ancestors are umlimited'.
-> If parent is limited, the children should be treated as limited.
->
->> So the
->> logic should rather be the opposite: Don't go around getting locks and
->> all that if you are unlimited. Your parent might, though.
->>
->> I am trying to experiment a bit with billing to percpu counters for
->> unlimited res_counters. But their inexact nature is giving me quite a
->> headache.
->>
->
->
-> Personally, I think percpu counter is not the best one. Yes, it will work but...
-> Because of its nature of error range, it has scalability problem. Considering
-> to have a tree like
->
-> 	/A/B/Guest0/tasks
->               Guest1/tasks
->               Guest2/tasks
->               Guest4/tasks
->               Guest5/tasks
->               ......
->
-> percpu res_counter may work scarable in GuestX level but will conflict in level B.
-> And I don't want to think what happens in 256 cpu system. Error in B will be
-> very big.
+Add a call to pci_dev_put in each error case.  This is motivated by the
+associated remove function, which always calls pci_dev_put.
 
-Usually the recommendation in this case is to follow 
-percpu_counter_read() with percpu_counter_sum()
+Shift the error-handling code to the end of the function.
 
-If we additionally wrap the updaters in rcu_read_lock(), we can sum it 
-up when needed with relative confidence. It does have performance 
-scalability problems in big systems, but no bigger than we have today.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The advantage of percpu counters, is that we don't need to think in 
-terms of "unlimited", but rather, in terms of "close enough to the limit".
+---
+ drivers/edac/amd8131_edac.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-Here is an excerpt of a patch I am experimenting with
+diff --git a/drivers/edac/amd8131_edac.c b/drivers/edac/amd8131_edac.c
+index a5c6805..dcfd53b 100644
+--- a/drivers/edac/amd8131_edac.c
++++ b/drivers/edac/amd8131_edac.c
+@@ -249,6 +249,7 @@ static struct amd8131_info amd8131_chipset = {
+ static int amd8131_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ {
+ 	struct amd8131_dev_info *dev_info;
++	int ret;
+ 
+ 	for (dev_info = amd8131_chipset.devices; dev_info->inst != NO_BRIDGE;
+ 		dev_info++)
+@@ -265,12 +266,12 @@ static int amd8131_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	dev_info->dev = pci_dev_get(dev);
+ 
+ 	if (pci_enable_device(dev_info->dev)) {
+-		pci_dev_put(dev_info->dev);
+ 		printk(KERN_ERR "failed to enable:"
+ 			"vendor %x, device %x, devfn %x, name %s\n",
+ 			PCI_VENDOR_ID_AMD, amd8131_chipset.err_dev,
+ 			dev_info->devfn, dev_info->ctl_name);
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto error;
+ 	}
+ 
+ 	/*
+@@ -280,8 +281,10 @@ static int amd8131_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	 */
+ 	dev_info->edac_idx = edac_pci_alloc_index();
+ 	dev_info->edac_dev = edac_pci_alloc_ctl_info(0, dev_info->ctl_name);
+-	if (!dev_info->edac_dev)
+-		return -ENOMEM;
++	if (!dev_info->edac_dev) {
++		ret = -ENOMEM;
++		goto error;
++	}
+ 
+ 	dev_info->edac_dev->pvt_info = dev_info;
+ 	dev_info->edac_dev->dev = &dev_info->dev->dev;
+@@ -298,8 +301,8 @@ static int amd8131_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	if (edac_pci_add_device(dev_info->edac_dev, dev_info->edac_idx) > 0) {
+ 		printk(KERN_ERR "failed edac_pci_add_device() for %s\n",
+ 			dev_info->ctl_name);
+-		edac_pci_free_ctl_info(dev_info->edac_dev);
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto error_info;
+ 	}
+ 
+ 	printk(KERN_INFO "added one device on AMD8131 "
+@@ -308,6 +311,11 @@ static int amd8131_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 		dev_info->devfn, dev_info->ctl_name);
+ 
+ 	return 0;
++error_info:
++	edac_pci_free_ctl_info(dev_info->edac_dev);
++error:
++	pci_dev_put(dev_info->dev);
++	return ret;
+ }
+ 
+ static void amd8131_remove(struct pci_dev *dev)
 
-1:      usage = percpu_counter_read(&c->usage_pcp);
-
-         if (percpu_counter_read(&c->usage_pcp) + val <
-             c->limit + num_online_cpus() * percpu_counter_batch) {
-5:              percpu_counter_add(&c->usage_pcp, val);
-                 rcu_read_unlock();
-                 return 0;
-         }
-         rcu_read_unlock();
-10:
-         raw_spin_lock(&c->usage_pcp.lock);
-         usage = __percpu_counter_sum_locked(&c->usage_pcp);
-
-         if (usage + val > c->limit) {
-5:              c->failcnt++;
-                 ret = -ENOMEM;
-                 goto out;
-         }
-
-20:      usage += val;
-         c->usage_pcp.count = usage;
-         if (usage > c->usage_pcp.max)
-                 c->usage_pcp.max = usage;
-
-25: out:
-         raw_spin_unlock(&c->usage_pcp.lock);
-         return ret;
-
-
-So we probe the current counter, and if we are unlimited, or not close 
-to the limits, we update it per-cpu, and let it go.
-
-If we believe we're in a suspicious area, we take the lock (as a quick 
-hack, I am holding the percpu lock directly), and then proceed 
-everything under the lock.
-
-In the unlimited case, we'll always be writing to the percpu storage.
-
-Note, also, that this is always either under a spinlock, or rcu marked area.
-
-This can also possibly be improved by an unfrequent slow-path update in 
-which once we start reading from percpu_counter_sum, we flip a 
-res_counter bit to mark that, and then we start dealing with the 
-usage_pcp.count directly, without any percpu. This would work exactly 
-like the res_counters today, so it is kind of a fallback mode.
-
-For readers, a combination of synchronize_rcu() + spin_lock() on the 
-reader side should be enough to guarantee that the result of 
-percpu_counter_sum() is reliable enough.
-
-Also please note, that our read-side these days is not that good as 
-well: because the way we do caching in memcg, we can end up with the 
-*exact* situation as this proposal. If the same memcg is being updated 
-in all cpus, we can have up to 32 * nr_cpus() pages in the cache, that 
-are not really used by memcg.
-
-I actually have patches to force a drain_all_caches_sync() before reads, 
-but I am holding them waiting for something to happen in this discussion.
-
-
->
-> Another idea is to borrow a resource from memcg to the tasks. i.e.having per-task
-> caching of charges. But it has two problems that draining unused resource is difficult
-> and precise usage is unknown.
->
-> IMHO, hard-limited resource counter itself may be a problem ;)
-Yes, it is.
-
-Indeed, if percpu charging as I described above is still not acceptable, 
-our way out of this may be heavier caching. Maybe we need per-level 
-cache, or something like that.
-Per-task may get tricky, specially when we start having charges that 
-can't be directly related to a task, like slab objects.
-
-> So, an idea, 'if all ancestors are unlimited, don't propagate charges.'
-> comes to my mind. With this, people use resource in FLAT (but has hierarchical cgroup
-> tree) will not see any performance problem.
->
->
->
->>> 3. If a res_counter has UNLIMITED limit, at reading usage, it must visit
->>>      all children and returns a sum of them.
->>>
->>> Then,
->>> 	/cgroup/
->>> 		memory/                       (unlimited)
->>> 			libivirt/             (unlimited)
->>> 				 qeumu/       (unlimited)
->>> 				        guest/(limited)
->>>
->>> All dir can show hierarchical usage and the guest will not have
->>> any lock contention at runtime.
->>
->> If we are okay with summing it up at read time, we may as well
->> keep everything in percpu counters at all times.
->>
->
->
-> If all ancestors are unlimited, we don't need to propagate usage upwards
-> at charging. If one of ancestors are limited, we need to propagate and
-> check usage at charging.
-
-The only problem is that "one of ancestors is limited" is expected to be 
-quite a common case. So by optimizing for unlimited, I think we're 
-tricking ourselves into believing we're solving anything, when in 
-reality we're not.
-
->
->>
->>
->>>    - memory.use_hierarchy should be obsolete ?
->> If we're going fully hierarchical, yes.
->>
->
-> Another big problem is 'when' we should do this change..
-> Maybe this 'hierarchical' problem will be good topic in MM summit.
-
-we're in no shortage of topics! =)
