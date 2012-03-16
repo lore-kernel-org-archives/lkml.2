@@ -1,128 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161966Ab2CPW0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 18:26:04 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44364 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964942Ab2CPW0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 18:26:01 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
-Date: Fri, 16 Mar 2012 23:25:55 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc6-wl+; KDE/4.7.4; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+	id S1758463Ab2CPWbL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 18:31:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49655 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757905Ab2CPWbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 18:31:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Subject: Re: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
+Date: Fri, 16 Mar 2012 23:35:17 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         alan@lxorguk.ukuu.org.uk,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <4F551E46.7000100@linux.vnet.ibm.com> <201203162319.53460.rjw@sisk.pl>
-In-Reply-To: <201203162319.53460.rjw@sisk.pl>
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+References: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org> <201203162245.52281.rjw@sisk.pl> <201203162318.30770.chunkeey@googlemail.com>
+In-Reply-To: <201203162318.30770.chunkeey@googlemail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203162325.56303.chunkeey@googlemail.com>
+Message-Id: <201203162335.18222.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 March 2012 23:19:53 Rafael J. Wysocki wrote:
-> > On 03/04/2012 01:52 AM, Christian Lamparter wrote:
+On Friday, March 16, 2012, Christian Lamparter wrote:
+> On Friday 16 March 2012 22:45:52 Rafael J. Wysocki wrote:
+> > On Friday, March 16, 2012, Stephen Boyd wrote:
+> > > On 03/16/12 13:19, Rafael J. Wysocki wrote:
+> > > > On Friday, March 16, 2012, Stephen Boyd wrote:
+> > > >> On 03/15/12 15:31, Rafael J. Wysocki wrote:
+> > > >>> On Thursday, March 15, 2012, Stephen Boyd wrote:
+> > > >>>> On 03/15/12 13:07, Christian Lamparter wrote:
+> > > >>>>> On Thursday, March 15, 2012 08:50:15 PM Stephen Boyd wrote:
+> > > >>>>>> Oddly enough a work_struct was already part of the firmware_work
+> > > >>>>>> structure but nobody was using it. Instead of creating a new
+> > > >>>>>> kthread for each request_firmware_nowait() just schedule the work
+> > > >>>>>> on the system workqueue. This should avoid some overhead in
+> > > >>>>>> forking new threads when they're not strictly necessary if
+> > > >>>>>> workqueues are available.
+> > > >>>>>>
+> > > >>>>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > > >>>>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > >>>>>> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> > > >>>>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> > > >>>>>> ---
+> > > >>>>>>
+> > > >>>>>> I saw this while looking at this problem we're having.
+> > > >>>>> Correct me if I'm wrong, but wouldn't that stall all other
+> > > >>>>> global workqueue tasks for up to 60 seconds [in worst case]?
+> > > >>>>>
+> > > >>>>> But I think we can get rid of the firmware_work work struct...
+> > > >>>>>
+> > > >>>> My understanding is that with concurrency managed workqueues when the
+> > > >>>> work item blocks another will be scheduled to run almost immediately. So
+> > > >>>> before that change by Tejun workqueues would have been a bad idea
+> > > >>>> because it could have blocked up to 60 second but now it should be fine
+> > > >>>> because that work item will just be put to sleep and another request
+> > > >>>> will run.
+> > > >>> Please read the description of system_wq in workqueue.h.
+> > > >>>
+> > > >>> You should have used either system_long_wq or system_nrt_wq (depending on
+> > > >>> what you really need).
+> > > >>>
+> > > >>>
+> > > >> Thanks. I think we can use system_nrt_wq then? Or maybe even the
+> > > >> unbounded workqueue system_unbound_wq?
+> > > > Hmm.  Can you please remind me what the exact role of that work item is?
+> > > >
+> > > > It loads the device's firmware, but I'm not sure in what situations that's
+> > > > supposed to happen.
+> > > >
+> > > 
+> > > request_firmware_nowait() is used by code that wants to get the firmware
+> > > asynchronously. Callers pass in a callback function which is called once
+> > > the firmware is retrieved. The work item will correspond to one call to
+> > > request_firmware_nowait(), where the work item will handle the sysfs
+> > > entry generation, uevent generation, and wait_for_completion() calls
+> > > that _request_firmware() does.
+> > > 
+> > > The work item also executes the callback function the caller passes in
+> > > which could do probably anything and could take an arbitrarily long
+> > > time. It looks like some drivers even chain request_firmware_nowait()
+> > > together by calling request_firmware_nowait() from the callback functions.
 > > 
-> > > During resume, the userhelper might not be available. However for
-> > > drivers which use the request_firmware_nowait interface, this will
-> > > only lead to a pointless WARNING and a device which no longer works
-> > > after the resume [since it couldn't get the firmware, because the
-> > > userhelper was not available to take the request].
-> > > 
-> > > In order to solve this "chicken or egg" dilemma, the code now
-> > > retries _nowait requests at one second intervals until the
-> > > "loading_timeout" time is up.
-> > > 
-> > > ---
-> > > I'm aware about the previous "request_firmware* in probe" discussions.
-> > > Unfortunately, the hardware needs firmware so there is no other way
-> > > around it. So please, I just wanted to know what the general opinion
-> > > about the idea behind this patch is.
-> 
-> BTW, I wonder what comments on this patch were posted?
-Only Alan Cox was kind enough to drop me a few words.
+> > So it looks like an unbound workqueue would be suitable for that, but
+> > perhaps it may even be an ordered one?
+> Just a note:
+> kernel/kmod.c currently defines a workqueue "khelper"... So since we are
+> already "using" kmod's usermodehelper_*, then why not the mess with the
+> workqueue as well?
 
-Why? Do you think it is actually sane from a specific POV?
-[Don't tell me you do :D !]
+Well, under a different name, maybe ...
 
-Really, it wasn't until:
-"[PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available"
-https://lkml.org/lkml/2012/3/9/612 
-that things started to pick up.
-
-Regards,
-	Chr
-
-> > > ---
-> > >  drivers/base/firmware_class.c |   24 +++++++++++++++++++++++-
-> > >  1 files changed, 23 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> > > index 6c9387d..9f70096 100644
-> > > --- a/drivers/base/firmware_class.c
-> > > +++ b/drivers/base/firmware_class.c
-> > > @@ -19,6 +19,7 @@
-> > >  #include <linux/kthread.h>
-> > >  #include <linux/highmem.h>
-> > >  #include <linux/firmware.h>
-> > > +#include <linux/delay.h>
-> > >  #include <linux/slab.h>
-> > > 
-> > >  #define to_dev(obj) container_of(obj, struct device, kobj)
-> > > @@ -535,6 +536,11 @@ static int _request_firmware(const struct firmware **firmware_p,
-> > > 
-> > >  	read_lock_usermodehelper();
-> > > 
-> > > +	if (nowait && usermodehelper_is_disabled()) {
-> > > +		retval = -EBUSY;
-> > > +		goto out;
-> > > +	}
-> > > +
-> > >  	if (WARN_ON(usermodehelper_is_disabled())) {
-> > >  		dev_err(device, "firmware: %s will not be loaded\n", name);
-> > >  		retval = -EBUSY;
-> > > @@ -633,7 +639,7 @@ static int request_firmware_work_func(void *arg)
-> > >  {
-> > >  	struct firmware_work *fw_work = arg;
-> > >  	const struct firmware *fw;
-> > > -	int ret;
-> > > +	int ret, timeout = loading_timeout;
-> > > 
-> > >  	if (!arg) {
-> > >  		WARN_ON(1);
-> > > @@ -642,6 +648,22 @@ static int request_firmware_work_func(void *arg)
-> > > 
-> > >  	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-> > >  				fw_work->uevent, true);
-> > > +
-> > > +	while (ret == -EBUSY) {
-> > > +		/*
-> > > +		 * Try to retrieve the firmware within the loading timeout.
-> > > +		 * To stick with the loading timeout convention from above:
-> > > +		 *	loading_timeout = 0 means 'try forever' as well.
-> > > +		 */
-> > > +
-> > > +		msleep(1000);
-> > > +		ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-> > > +					fw_work->uevent, true);
-> > > +
-> > > +		if (timeout != 0 && timeout-- == 1)
-> > 
-> > > +			break;
-> > 
-> > > +	};
-> > 
-> > > +
-> > 
-> > >  	fw_work->cont(fw, fw_work->context);
-> > > 
-> > >  	module_put(fw_work->module);
-> > 
+Rafael
