@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946145Ab2CPXi0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
+	id S1946590Ab2CPX5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:57:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946120Ab2CPXiQ (ORCPT
+	with ESMTP id S1946131Ab2CPXiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:38:16 -0400
-Message-Id: <20120316233448.529242021@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:38:22 -0400
+Message-Id: <20120316233448.700578666@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:35:01 -0700
+Date: Fri, 16 Mar 2012 16:35:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, AceLan Kao <acelan.kao@canonical.com>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Thomas Renninger <trenn@suse.de>, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [ 14/38] acer-wmi: check wireless capability flag before register rfkill
+        alan@lxorguk.ukuu.org.uk, Michel Machado <michel@digirati.com.br>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [ 16/38] neighbour: Fixed race condition at tbl->nht
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,138 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 
-commit 1709adab0773616da7a8190f2762e599afb0a295 upstream.
+From: Michel Machado <michel@digirati.com.br>
 
-There will be better to check the wireless capability flag
-(ACER_CAP_WIRELESS) before register wireless rfkill because maybe
-the machine doesn't have wifi module or the module removed by user.
+[ Upstream commit 84338a6c9dbb6ff3de4749864020f8f25d86fc81 ]
 
-Tested on Acer Travelmate 8572
-Tested on Acer Aspire 4739Z
+When the fixed race condition happens:
 
-Tested-by: AceLan Kao <acelan.kao@canonical.com>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+1. While function neigh_periodic_work scans the neighbor hash table
+pointed by field tbl->nht, it unlocks and locks tbl->lock between
+buckets in order to call cond_resched.
+
+2. Assume that function neigh_periodic_work calls cond_resched, that is,
+the lock tbl->lock is available, and function neigh_hash_grow runs.
+
+3. Once function neigh_hash_grow finishes, and RCU calls
+neigh_hash_free_rcu, the original struct neigh_hash_table that function
+neigh_periodic_work was using doesn't exist anymore.
+
+4. Once back at neigh_periodic_work, whenever the old struct
+neigh_hash_table is accessed, things can go badly.
+
+Signed-off-by: Michel Machado <michel@digirati.com.br>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/platform/x86/acer-wmi.c |   64 ++++++++++++++++++++++++++--------------
- 1 file changed, 42 insertions(+), 22 deletions(-)
+ net/core/neighbour.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -1293,12 +1293,13 @@ static void acer_rfkill_update(struct wo
- 	u32 state;
- 	acpi_status status;
- 
--	status = get_u32(&state, ACER_CAP_WIRELESS);
--	if (ACPI_SUCCESS(status)) {
--		if (quirks->wireless == 3) {
--			rfkill_set_hw_state(wireless_rfkill, !state);
--		} else {
--			rfkill_set_sw_state(wireless_rfkill, !state);
-+	if (has_cap(ACER_CAP_WIRELESS)) {
-+		status = get_u32(&state, ACER_CAP_WIRELESS);
-+		if (ACPI_SUCCESS(status)) {
-+			if (quirks->wireless == 3)
-+				rfkill_set_hw_state(wireless_rfkill, !state);
-+			else
-+				rfkill_set_sw_state(wireless_rfkill, !state);
- 		}
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -823,6 +823,8 @@ next_elt:
+ 		write_unlock_bh(&tbl->lock);
+ 		cond_resched();
+ 		write_lock_bh(&tbl->lock);
++		nht = rcu_dereference_protected(tbl->nht,
++						lockdep_is_held(&tbl->lock));
  	}
- 
-@@ -1367,19 +1368,24 @@ static struct rfkill *acer_rfkill_regist
- 
- static int acer_rfkill_init(struct device *dev)
- {
--	wireless_rfkill = acer_rfkill_register(dev, RFKILL_TYPE_WLAN,
--		"acer-wireless", ACER_CAP_WIRELESS);
--	if (IS_ERR(wireless_rfkill))
--		return PTR_ERR(wireless_rfkill);
-+	int err;
-+
-+	if (has_cap(ACER_CAP_WIRELESS)) {
-+		wireless_rfkill = acer_rfkill_register(dev, RFKILL_TYPE_WLAN,
-+			"acer-wireless", ACER_CAP_WIRELESS);
-+		if (IS_ERR(wireless_rfkill)) {
-+			err = PTR_ERR(wireless_rfkill);
-+			goto error_wireless;
-+		}
-+	}
- 
- 	if (has_cap(ACER_CAP_BLUETOOTH)) {
- 		bluetooth_rfkill = acer_rfkill_register(dev,
- 			RFKILL_TYPE_BLUETOOTH, "acer-bluetooth",
- 			ACER_CAP_BLUETOOTH);
- 		if (IS_ERR(bluetooth_rfkill)) {
--			rfkill_unregister(wireless_rfkill);
--			rfkill_destroy(wireless_rfkill);
--			return PTR_ERR(bluetooth_rfkill);
-+			err = PTR_ERR(bluetooth_rfkill);
-+			goto error_bluetooth;
- 		}
- 	}
- 
-@@ -1388,30 +1394,44 @@ static int acer_rfkill_init(struct devic
- 			RFKILL_TYPE_WWAN, "acer-threeg",
- 			ACER_CAP_THREEG);
- 		if (IS_ERR(threeg_rfkill)) {
--			rfkill_unregister(wireless_rfkill);
--			rfkill_destroy(wireless_rfkill);
--			rfkill_unregister(bluetooth_rfkill);
--			rfkill_destroy(bluetooth_rfkill);
--			return PTR_ERR(threeg_rfkill);
-+			err = PTR_ERR(threeg_rfkill);
-+			goto error_threeg;
- 		}
- 	}
- 
- 	rfkill_inited = true;
- 
--	if (ec_raw_mode || !wmi_has_guid(ACERWMID_EVENT_GUID))
-+	if ((ec_raw_mode || !wmi_has_guid(ACERWMID_EVENT_GUID)) &&
-+	    has_cap(ACER_CAP_WIRELESS | ACER_CAP_BLUETOOTH | ACER_CAP_THREEG))
- 		schedule_delayed_work(&acer_rfkill_work,
- 			round_jiffies_relative(HZ));
- 
- 	return 0;
-+
-+error_threeg:
-+	if (has_cap(ACER_CAP_BLUETOOTH)) {
-+		rfkill_unregister(bluetooth_rfkill);
-+		rfkill_destroy(bluetooth_rfkill);
-+	}
-+error_bluetooth:
-+	if (has_cap(ACER_CAP_WIRELESS)) {
-+		rfkill_unregister(wireless_rfkill);
-+		rfkill_destroy(wireless_rfkill);
-+	}
-+error_wireless:
-+	return err;
- }
- 
- static void acer_rfkill_exit(void)
- {
--	if (ec_raw_mode || !wmi_has_guid(ACERWMID_EVENT_GUID))
-+	if ((ec_raw_mode || !wmi_has_guid(ACERWMID_EVENT_GUID)) &&
-+	    has_cap(ACER_CAP_WIRELESS | ACER_CAP_BLUETOOTH | ACER_CAP_THREEG))
- 		cancel_delayed_work_sync(&acer_rfkill_work);
- 
--	rfkill_unregister(wireless_rfkill);
--	rfkill_destroy(wireless_rfkill);
-+	if (has_cap(ACER_CAP_WIRELESS)) {
-+		rfkill_unregister(wireless_rfkill);
-+		rfkill_destroy(wireless_rfkill);
-+	}
- 
- 	if (has_cap(ACER_CAP_BLUETOOTH)) {
- 		rfkill_unregister(bluetooth_rfkill);
+ 	/* Cycle through all hash buckets every base_reachable_time/2 ticks.
+ 	 * ARP entry timeouts range from 1/2 base_reachable_time to 3/2
 
 
