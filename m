@@ -1,80 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965062Ab2CPUPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:15:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49386 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932115Ab2CPUOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:14:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
-Date: Fri, 16 Mar 2012 21:19:05 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-References: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org> <201203152331.14314.rjw@sisk.pl> <4F6299D9.9000004@codeaurora.org>
-In-Reply-To: <4F6299D9.9000004@codeaurora.org>
+	id S964963Ab2CPUPC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:15:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42191 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757580Ab2CPUOt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 16:14:49 -0400
+Date: Fri, 16 Mar 2012 13:14:45 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Tu, Xiaobing" <xiaobing.tu@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Cc: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Du, Alek" <alek.du@intel.com>, "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: Re: [PATCH v2] tty: hold lock across tty buffer finding and buffer
+ filling
+Message-ID: <20120316201445.GA1240@kroah.com>
+References: <EE928378561BF1449699C96571234A740FCC5EC3@SHSMSX102.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203162119.05382.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EE928378561BF1449699C96571234A740FCC5EC3@SHSMSX102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 16, 2012, Stephen Boyd wrote:
-> On 03/15/12 15:31, Rafael J. Wysocki wrote:
-> > On Thursday, March 15, 2012, Stephen Boyd wrote:
-> >> On 03/15/12 13:07, Christian Lamparter wrote:
-> >>> On Thursday, March 15, 2012 08:50:15 PM Stephen Boyd wrote:
-> >>>> Oddly enough a work_struct was already part of the firmware_work
-> >>>> structure but nobody was using it. Instead of creating a new
-> >>>> kthread for each request_firmware_nowait() just schedule the work
-> >>>> on the system workqueue. This should avoid some overhead in
-> >>>> forking new threads when they're not strictly necessary if
-> >>>> workqueues are available.
-> >>>>
-> >>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> >>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>>> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> >>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>> ---
-> >>>>
-> >>>> I saw this while looking at this problem we're having.
-> >>> Correct me if I'm wrong, but wouldn't that stall all other
-> >>> global workqueue tasks for up to 60 seconds [in worst case]?
-> >>>
-> >>> But I think we can get rid of the firmware_work work struct...
-> >>>
-> >> My understanding is that with concurrency managed workqueues when the
-> >> work item blocks another will be scheduled to run almost immediately. So
-> >> before that change by Tejun workqueues would have been a bad idea
-> >> because it could have blocked up to 60 second but now it should be fine
-> >> because that work item will just be put to sleep and another request
-> >> will run.
-> > Please read the description of system_wq in workqueue.h.
-> >
-> > You should have used either system_long_wq or system_nrt_wq (depending on
-> > what you really need).
-> >
-> >
+Jiri,
+
+Do you have any objections to me applying the patch below?
+
+thanks,
+
+greg k-h
+
+On Fri, Mar 16, 2012 at 03:00:26AM +0000, Tu, Xiaobing wrote:
+> From: Xiaobing Tu <xiaobing.tu@intel.com>
 > 
-> Thanks. I think we can use system_nrt_wq then? Or maybe even the
-> unbounded workqueue system_unbound_wq?
-
-Hmm.  Can you please remind me what the exact role of that work item is?
-
-It loads the device's firmware, but I'm not sure in what situations that's
-supposed to happen.
-
-Thanks,
-Rafael
+> tty_buffer_request_room is well protected, but while after it returns,
+>  it releases the port->lock. tty->buf.tail might be modified
+> by either irq handler or other threads. The patch adds more protection
+> by holding the lock across tty buffer finding and buffer filling.
+> Signed-off-by: Alek Du <alek.du@intel.com>
+> Signed-off-by: Xiaobing Tu <xiaobing.tu@intel.com>
+> ---
+>  drivers/tty/tty_buffer.c |   85 +++++++++++++++++++++++++++++++++++-----------
+>  1 files changed, 65 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+> index 6c9b7cd..91e326f 100644
+> --- a/drivers/tty/tty_buffer.c
+> +++ b/drivers/tty/tty_buffer.c
+> @@ -185,25 +185,19 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
+>  	/* Should possibly check if this fails for the largest buffer we
+>  	   have queued and recycle that ? */
+>  }
+> -
+>  /**
+> - *	tty_buffer_request_room		-	grow tty buffer if needed
+> + *	__tty_buffer_request_room		-	grow tty buffer if needed
+>   *	@tty: tty structure
+>   *	@size: size desired
+>   *
+>   *	Make at least size bytes of linear space available for the tty
+>   *	buffer. If we fail return the size we managed to find.
+> - *
+> - *	Locking: Takes tty->buf.lock
+> + *      Locking: Caller must hold tty->buf.lock
+>   */
+> -int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+> +static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
+>  {
+>  	struct tty_buffer *b, *n;
+>  	int left;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&tty->buf.lock, flags);
+> -
+>  	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+>  	   remove this conditional if its worth it. This would be invisible
+>  	   to the callers */
+> @@ -225,9 +219,30 @@ int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+>  			size = left;
+>  	}
+>  
+> -	spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  	return size;
+>  }
+> +
+> +
+> +/**
+> + *	tty_buffer_request_room		-	grow tty buffer if needed
+> + *	@tty: tty structure
+> + *	@size: size desired
+> + *
+> + *	Make at least size bytes of linear space available for the tty
+> + *	buffer. If we fail return the size we managed to find.
+> + *
+> + *	Locking: Takes tty->buf.lock
+> + */
+> +int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+> +{
+> +	unsigned long flags;
+> +	int length;
+> +
+> +	spin_lock_irqsave(&tty->buf.lock, flags);
+> +	length = __tty_buffer_request_room(tty, size);
+> +	spin_unlock_irqrestore(&tty->buf.lock, flags);
+> +	return length;
+> +}
+>  EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+>  
+>  /**
+> @@ -249,14 +264,22 @@ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
+>  	int copied = 0;
+>  	do {
+>  		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+> -		int space = tty_buffer_request_room(tty, goal);
+> -		struct tty_buffer *tb = tty->buf.tail;
+> +		int space;
+> +		unsigned long flags;
+> +		struct tty_buffer *tb;
+> +
+> +		spin_lock_irqsave(&tty->buf.lock, flags);
+> +		space = __tty_buffer_request_room(tty, goal);
+> +		tb = tty->buf.tail;
+>  		/* If there is no space then tb may be NULL */
+> -		if (unlikely(space == 0))
+> +		if (unlikely(space == 0)) {
+> +			spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  			break;
+> +		}
+>  		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+>  		memset(tb->flag_buf_ptr + tb->used, flag, space);
+>  		tb->used += space;
+> +		spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  		copied += space;
+>  		chars += space;
+>  		/* There is a small chance that we need to split the data over
+> @@ -286,14 +309,22 @@ int tty_insert_flip_string_flags(struct tty_struct *tty,
+>  	int copied = 0;
+>  	do {
+>  		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+> -		int space = tty_buffer_request_room(tty, goal);
+> -		struct tty_buffer *tb = tty->buf.tail;
+> +		int space;
+> +		unsigned long __flags;
+> +		struct tty_buffer *tb;
+> +
+> +		spin_lock_irqsave(&tty->buf.lock, __flags);
+> +		space = __tty_buffer_request_room(tty, goal);
+> +		tb = tty->buf.tail;
+>  		/* If there is no space then tb may be NULL */
+> -		if (unlikely(space == 0))
+> +		if (unlikely(space == 0)) {
+> +			spin_unlock_irqrestore(&tty->buf.lock, __flags);
+>  			break;
+> +		}
+>  		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+>  		memcpy(tb->flag_buf_ptr + tb->used, flags, space);
+>  		tb->used += space;
+> +		spin_unlock_irqrestore(&tty->buf.lock, __flags);
+>  		copied += space;
+>  		chars += space;
+>  		flags += space;
+> @@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);
+>  int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+>  								size_t size)
+>  {
+> -	int space = tty_buffer_request_room(tty, size);
+> +	int space;
+> +	unsigned long flags;
+> +	struct tty_buffer *tb;
+> +
+> +	spin_lock_irqsave(&tty->buf.lock, flags);
+> +	space = __tty_buffer_request_room(tty, size);
+> +
+> +	tb = tty->buf.tail;
+>  	if (likely(space)) {
+> -		struct tty_buffer *tb = tty->buf.tail;
+>  		*chars = tb->char_buf_ptr + tb->used;
+>  		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
+>  		tb->used += space;
+>  	}
+> +	spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  	return space;
+>  }
+>  EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+> @@ -374,13 +412,20 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+>  int tty_prepare_flip_string_flags(struct tty_struct *tty,
+>  			unsigned char **chars, char **flags, size_t size)
+>  {
+> -	int space = tty_buffer_request_room(tty, size);
+> +	int space;
+> +	unsigned long __flags;
+> +	struct tty_buffer *tb;
+> +
+> +	spin_lock_irqsave(&tty->buf.lock, __flags);
+> +	space = __tty_buffer_request_room(tty, size);
+> +
+> +	tb = tty->buf.tail;
+>  	if (likely(space)) {
+> -		struct tty_buffer *tb = tty->buf.tail;
+>  		*chars = tb->char_buf_ptr + tb->used;
+>  		*flags = tb->flag_buf_ptr + tb->used;
+>  		tb->used += space;
+>  	}
+> +	spin_unlock_irqrestore(&tty->buf.lock, __flags);
+>  	return space;
+>  }
+>  EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
+> -- 
+> 1.7.4.1
