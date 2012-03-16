@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032782Ab2CPNut (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 09:50:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36087 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030389Ab2CPNur convert rfc822-to-8bit (ORCPT
+	id S1761739Ab2CPN47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 09:56:59 -0400
+Received: from smtp-out-236.synserver.de ([212.40.185.236]:1159 "EHLO
+	smtp-out-227.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761162Ab2CPN45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 09:50:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="119784925"
-From: "Du, Alek" <alek.du@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ//99bYD//3mIQIAAiHuA//95JNCAAIvVgP//ZyLgABannID//12AYA==
-Date: Fri, 16 Mar 2012 13:50:44 +0000
-Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3E02@SHSMSX102.ccr.corp.intel.com>
-References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
- <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
- <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
- <4F630B4D.3040508@suse.cz>
- <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
- <4F630E6D.4000307@suse.cz>
- <09F19C497AD02E4EA4E14917772649B70FCD3D59@SHSMSX102.ccr.corp.intel.com>
- <4F63101D.70507@suse.cz>
- <09F19C497AD02E4EA4E14917772649B70FCD3D6B@SHSMSX102.ccr.corp.intel.com>
- <4F631449.7090302@suse.cz>
- <09F19C497AD02E4EA4E14917772649B70FCD3DCC@SHSMSX102.ccr.corp.intel.com>
- <4F632C15.5070902@suse.cz>
-In-Reply-To: <4F632C15.5070902@suse.cz>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Mar 2012 09:56:57 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 3703
+Message-ID: <4F63472C.5050102@metafoo.de>
+Date: Fri, 16 Mar 2012 14:59:08 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Balaji Rao <balajirrao@openmoko.org>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH RFT 1/2] regulator: pcf50633: Don't write to reserved
+ bits of AUTO output voltage select register
+References: <1331904943.2891.1.camel@phoenix>
+In-Reply-To: <1331904943.2891.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For #1, as I said, we already held the tty refcount. The tty refcount cannot help this crash.
-
-For #2, this patch will avoid memcpy to a NULL pointer and avoid a kernel crash.
-
-Thanks,
-Alek
------Original Message-----
-From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
-Sent: Friday, March 16, 2012 8:04 PM
-To: Du, Alek
-Cc: Jiri Slaby; Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao
-Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
-
-On 03/16/2012 12:33 PM, Du, Alek wrote:
-> Isn't this the nature of "flush" ? If the driver is trying to insert 
-> chars to tty buffer, while the app is going to flush the buffer, or shutdown the port, that's quite nature that those data gone. Why should I care ?
+On 03/16/2012 02:35 PM, Axel Lin wrote:
+> The datasheet says 00000000 to 00101110 are reserved, and the min value of the
+> voltage setting is 1.8 V.
+> Thus don't write 0 to AUTO output voltage select register (address 1Ah).
 > 
-> Sorry, you missed the point of this patch.
+> Table 50. AUTOOUT - AUTO output voltage select register (address 1Ah) bit description[1]
+> Bit Symbol Access Description
+> 7:0 auto_out R/W VO(prog) = 0.625 + auto_out × 0.025 V
+> eg. 00000000 to 00101110: reserved
+> 00101111: 1.8 V (min)
+> 01010011: 2.7 V
+> 01101010: 3.275 V
+> 01101011: 3.300 V
+> 01101100: 3.325 V
+> 01111111 : 3.800 V (max)
+> ..... .....
+> 11111110 : 3.800 V
+> 11111111 : 3.800 V
+> 
+> This patch also fixes a bug in pcf50633_regulator_list_voltage.
+> It is wrong to do "index += 0x2f" for PCF50633_REGULATOR_AUTO in
+> pcf50633_regulator_list_voltage. The purpose of adding 0x2f to index is because
+> current code return 0 in auto_voltage_bits when millivolts < 1800.
+> For millivolts > 1800, adding 0x2f to index is wrong.
+> 
+> We should handle this by
+> return -EINVAL if the selector is in the reserved range of AUTOOUT.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/regulator/pcf50633-regulator.c |   23 +++++------------------
+>  1 files changed, 5 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/regulator/pcf50633-regulator.c b/drivers/regulator/pcf50633-regulator.c
+> index 6db46c6..3cefc63 100644
+> --- a/drivers/regulator/pcf50633-regulator.c
+> +++ b/drivers/regulator/pcf50633-regulator.c
+> @@ -52,7 +52,7 @@ static const u8 pcf50633_regulator_registers[PCF50633_NUM_REGULATORS] = {
+>[...]
+>  
+> @@ -161,6 +158,9 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
+>  
+>  	switch (id) {
+>  	case PCF50633_REGULATOR_AUTO:
+> +		/* AUTOOUT: 00000000 to 00101110 are reserved */
+> +		if (bits < 0x2f)
+> +			return -EINVAL;
+>  		millivolts = auto_voltage_value(bits);
+>  		break;
+>  	case PCF50633_REGULATOR_DOWN1:
+> @@ -208,20 +208,7 @@ static int pcf50633_regulator_get_voltage(struct regulator_dev *rdev)
+>  static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
+>  						unsigned int index)
+>  {
+> -	struct pcf50633 *pcf;
+> -	int regulator_id;
+> -
+> -	pcf = rdev_get_drvdata(rdev);
+> -
+> -	regulator_id = rdev_get_id(rdev);
+> -
+> -	switch (regulator_id) {
+> -	case PCF50633_REGULATOR_AUTO:
+> -		index += 0x2f;
+> -		break;
+> -	default:
+> -		break;
+> -	}
 
-No, you do not follow what I am writing.
+Does this make sense? Now we return -EINVAL if index is less than 0x2f
 
-1) Your driver is broken.
-2) Your patch does not solve the problem universally.
 
-ad 1) Use tty refcounting and you won't need to care about buf.tail being NULL due to shutdown. As an added value, you will fix the other races too.
-
-ad 2) With your patch, drivers which use tty_prepare_flip_string are given a tty buffer (chars parameter) which may be *freed* (not flushed,
-_freed_) at any time by ioctl flush after the function returns. I.e. the relocking is hopeless in that case. It only helps drivers which use tty_insert_flip_string*.
-
-I don't know right now what could be a real cure for point 2). Maybe RCU. Maybe leaving the lock locked in tty_prepare_flip_string and introducing tty_finish_flip_string containing an unlock. To be called right after memcpy_fromio or alike in the drivers.
-
-Or maybe even removing that interface completely...
-
-thanks,
---
-js
-suse labs
