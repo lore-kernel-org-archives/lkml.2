@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161830Ab2CPAIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 20:08:47 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60552 "EHLO
+	id S1161851Ab2CPAJC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 20:09:02 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60364 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1161802Ab2CPAIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 20:08:38 -0400
+	id S1032384Ab2CPAI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 20:08:57 -0400
 From: Joe Perches <joe@perches.com>
 To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
 Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/9] ext4: Add no_printk argument validation, fix fallout
-Date: Thu, 15 Mar 2012 17:07:32 -0700
-Message-Id: <12b7235b4eeb7c50ac888b7f28bc1cf737bc397b.1331856300.git.joe@perches.com>
+Subject: [PATCH 6/9] ext4: Remove redundant "EXT4-fs: " from uses of ext4_msg
+Date: Thu, 15 Mar 2012 17:07:34 -0700
+Message-Id: <d029f3995ba3c6f50a031671c40dfbcc764da4d2.1331856300.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1331856299.git.joe@perches.com>
 References: <cover.1331856299.git.joe@perches.com>
@@ -19,106 +19,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add argument validation to debug functions.
-Use ##__VA_ARGS__.
-
-Fix format and argument mismatches.
+ext4_msg adds "EXT4-fs: " to the messsage output.
+Remove the redundant bits from uses.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/ext4/ext4.h         |    2 +-
- fs/ext4/ext4_extents.h |    4 ++--
- fs/ext4/inode.c        |    2 +-
- fs/ext4/xattr.c        |   13 ++++++++-----
- 4 files changed, 12 insertions(+), 9 deletions(-)
+ fs/ext4/mballoc.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 30d32e2..2aaf549 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -50,7 +50,7 @@
- 	pr_debug("DEBUG (%s, %d): %s:" fmt,				\
- 		 __FILE__, __LINE__, __func__, ##__VA_ARGS__)
- #else
--#define ext4_debug(f, a...)	do {} while (0)
-+#define ext4_debug(fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
- #endif
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index c26b600..cd4d7c6 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2178,7 +2178,7 @@ int ext4_mb_add_groupinfo(struct super_block *sb, ext4_group_t group,
+ 			EXT4_DESC_PER_BLOCK_BITS(sb);
+ 		meta_group_info = kmalloc(metalen, GFP_KERNEL);
+ 		if (meta_group_info == NULL) {
+-			ext4_msg(sb, KERN_ERR, "EXT4-fs: can't allocate mem "
++			ext4_msg(sb, KERN_ERR, "can't allocate mem "
+ 				 "for a buddy group");
+ 			goto exit_meta_group_info;
+ 		}
+@@ -2192,7 +2192,7 @@ int ext4_mb_add_groupinfo(struct super_block *sb, ext4_group_t group,
  
- #define EXT4_ERROR_INODE(inode, fmt, a...) \
-diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
-index a52db3a..0f58b86 100644
---- a/fs/ext4/ext4_extents.h
-+++ b/fs/ext4/ext4_extents.h
-@@ -47,9 +47,9 @@
-  */
- #define EXT_DEBUG__
- #ifdef EXT_DEBUG
--#define ext_debug(a...)		printk(a)
-+#define ext_debug(fmt, ...)	printk(fmt, ##__VA_ARGS__)
- #else
--#define ext_debug(a...)
-+#define ext_debug(fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
- #endif
+ 	meta_group_info[i] = kmem_cache_alloc(cachep, GFP_KERNEL);
+ 	if (meta_group_info[i] == NULL) {
+-		ext4_msg(sb, KERN_ERR, "EXT4-fs: can't allocate buddy mem");
++		ext4_msg(sb, KERN_ERR, "can't allocate buddy mem");
+ 		goto exit_group_info;
+ 	}
+ 	memset(meta_group_info[i], 0, kmem_cache_size(cachep));
+@@ -3864,11 +3864,11 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 	    (EXT4_SB(sb)->s_mount_flags & EXT4_MF_FS_ABORTED))
+ 		return;
  
- /*
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index c67be80..a2a1ae4 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2766,7 +2766,7 @@ static void ext4_end_io_dio(struct kiocb *iocb, loff_t offset,
- 		goto out;
- 
- 	ext_debug("ext4_end_io_dio(): io_end 0x%p "
--		  "for inode %lu, iocb 0x%p, offset %llu, size %llu\n",
-+		  "for inode %lu, iocb 0x%p, offset %llu, size %zd\n",
-  		  iocb->private, io_end->inode->i_ino, iocb, offset,
- 		  size);
- 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index a8674d2..5bc718c 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -78,8 +78,8 @@ do {									\
- 		 (unsigned long)bh->b_blocknr, ##__VA_ARGS__);		\
- } while (0)
- #else
--# define ea_idebug(f...)
--# define ea_bdebug(f...)
-+# define ea_idebug(inode, fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
-+# define ea_bdebug(bh, fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
- #endif
- 
- static void ext4_xattr_cache_insert(struct buffer_head *);
-@@ -213,7 +213,8 @@ ext4_xattr_block_get(struct inode *inode, int name_index, const char *name,
- 	error = -ENODATA;
- 	if (!EXT4_I(inode)->i_file_acl)
- 		goto cleanup;
--	ea_idebug(inode, "reading block %u", EXT4_I(inode)->i_file_acl);
-+	ea_idebug(inode, "reading block %llu",
-+		  (unsigned long long)EXT4_I(inode)->i_file_acl);
- 	bh = sb_bread(inode->i_sb, EXT4_I(inode)->i_file_acl);
- 	if (!bh)
- 		goto cleanup;
-@@ -356,7 +357,8 @@ ext4_xattr_block_list(struct dentry *dentry, char *buffer, size_t buffer_size)
- 	error = 0;
- 	if (!EXT4_I(inode)->i_file_acl)
- 		goto cleanup;
--	ea_idebug(inode, "reading block %u", EXT4_I(inode)->i_file_acl);
-+	ea_idebug(inode, "reading block %llu",
-+		  (unsigned long long)EXT4_I(inode)->i_file_acl);
- 	bh = sb_bread(inode->i_sb, EXT4_I(inode)->i_file_acl);
- 	error = -EIO;
- 	if (!bh)
-@@ -828,7 +830,8 @@ inserted:
- 			if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 				BUG_ON(block > EXT4_MAX_BLOCK_FILE_PHYS);
- 
--			ea_idebug(inode, "creating block %d", block);
-+			ea_idebug(inode, "creating block %llu",
-+				  (unsigned long long)block);
- 
- 			new_bh = sb_getblk(sb, block);
- 			if (!new_bh) {
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: Can't allocate:"
++	ext4_msg(ac->ac_sb, KERN_ERR, "Can't allocate:"
+ 			" Allocation context details:");
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: status %d flags %d",
++	ext4_msg(ac->ac_sb, KERN_ERR, "status %d flags %d",
+ 			ac->ac_status, ac->ac_flags);
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: orig %lu/%lu/%lu@%lu, "
++	ext4_msg(ac->ac_sb, KERN_ERR, "orig %lu/%lu/%lu@%lu, "
+ 		 	"goal %lu/%lu/%lu@%lu, "
+ 			"best %lu/%lu/%lu@%lu cr %d",
+ 			(unsigned long)ac->ac_o_ex.fe_group,
+@@ -3884,9 +3884,9 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			(unsigned long)ac->ac_b_ex.fe_len,
+ 			(unsigned long)ac->ac_b_ex.fe_logical,
+ 			(int)ac->ac_criteria);
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: %lu scanned, %d found",
++	ext4_msg(ac->ac_sb, KERN_ERR, "%lu scanned, %d found",
+ 		 ac->ac_ex_scanned, ac->ac_found);
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: groups: ");
++	ext4_msg(ac->ac_sb, KERN_ERR, "groups: ");
+ 	ngroups = ext4_get_groups_count(sb);
+ 	for (i = 0; i < ngroups; i++) {
+ 		struct ext4_group_info *grp = ext4_get_group_info(sb, i);
 -- 
 1.7.8.111.gad25c.dirty
 
