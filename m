@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032519Ab2CPH2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 03:28:50 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10317 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032330Ab2CPH2s (ORCPT
+	id S1032545Ab2CPHa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 03:30:56 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:58665 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032330Ab2CPHax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 03:28:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 16 Mar 2012 00:28:41 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: sameo@linux.intel.com, linux-kernel@vger.kernel.org, jedu@slimlogic.co.uk,
-        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
-        gg@slimlogic.co.uk
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] mfd: Fix compilation error in TPS65910.h
-Date: Fri, 16 Mar 2012 12:58:37 +0530
-Message-Id: <1331882917-27960-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-X-NVConfidentiality: public
+	Fri, 16 Mar 2012 03:30:53 -0400
+Message-ID: <4F62EC25.5060306@linux.vnet.ibm.com>
+Date: Fri, 16 Mar 2012 15:30:45 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp> <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp> <4F62C9B4.7060804@linux.vnet.ibm.com> <20120316155511.70455b4a.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120316155511.70455b4a.yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12031521-1396-0000-0000-000000D32566
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
+On 03/16/2012 02:55 PM, Takuya Yoshikawa wrote:
 
-Fix compilation error due to including TPS65910.h
+> On Fri, 16 Mar 2012 13:03:48 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> 
+>> For my quickly review, mmu_lock can not protect everything, if the guest page
+> 
+> Yes and ...
+> 
+>> is written out of the shadow page/ept table, dirty page will be lost.
+> 
+> No.
+> 
+>>
+>> There is a example:
+>>
+>>              CPU A                                   CPU  B
+>> guest page is written by write-emulation
+>>
+>>                                                   hold mmu-lock and see dirty-bitmap
+>>                                                   is not be changed, then migration is
+>>                                                   completed.
+> 
+> We do not allow this break.
+> 
 
-'struct gpio_chip' is declared in include/asm-generic/gpio.h
-which is included by include/linux/gpio.h.
-However without including gpio.h, TPS65910.h declares
-a member of this type as part of 'struct tps65910' declaration.
 
-This causes compilation error, if gpio.h is not included
-before including tps65910.h, in source files.
+Hmm? what can avoid this? Could you please point it out?
 
-Hence fixing it.
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
- include/linux/mfd/tps65910.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> call mark_page_dirty() to set dirty_bit map
+>>
+>>
+>> Right?
+> 
+> 
+> As you pointed out, we cannot assume mutual exclusion by mmu_lock.
+> That is why we are using atomic bitmap operations: xchg and set_bit.
+> 
+> In this sense we are at least guaranteed to get the dirty page
+> information in dirty_bitmap - the current one or next one.
+> 
 
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 82b4c88..f226065 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -17,6 +17,8 @@
- #ifndef __LINUX_MFD_TPS65910_H
- #define __LINUX_MFD_TPS65910_H
- 
-+#include <linux/gpio.h>
-+
- /* TPS chip id list */
- #define TPS65910			0
- #define TPS65911			1
--- 
-1.7.1.1
+
+The problem is the guest page is written before dirty-bitmap is set,
+we may log the dirty page in this window like above case...
+
+> So what we should care about is to not miss the information written in
+> the next bitmap at the time we actually migrate the guest.
+> 
+
+
+Actually, the way log dirty page in MMU page-table is tricky:
+
+set dirty-bitmap
+
+allow spte to be writeable
+
+page can be written
+
+That means we always set dirty-bitmap _before_ page become dirty that is
+the reason why your bitmap-way can work.
+
+> Actually the userspace stops the guest at the final stage and then send the
+> remaining pages found in the bitmap.  So the above break between write and
+> mark_page_dirty() cannot happen IIUC.
+> 
+
+
+Maybe i'd better firstly understand why "We do not allow this break" :)
+
 
