@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab2CPDEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 23:04:04 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:4428
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753797Ab2CPDD7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 23:03:59 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zzc89bh1432N98dK1447Mzz1202hzz8275chz2dh2a8h668h839hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 16 Mar 2012 11:05:21 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
-Message-ID: <20120316030521.GB5161@shlinux2.ap.freescale.net>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-2-git-send-email-b29396@freescale.com>
- <20120313172351.97C5E3E053B@localhost>
- <20120314124512.GG1180@shlinux2.ap.freescale.net>
- <20120314141643.GP3852@pengutronix.de>
- <20120315030206.GB13022@shlinux2.ap.freescale.net>
- <20321.37353.63115.664975@ipc1.ka-ro>
- <20120315105927.GE13022@shlinux2.ap.freescale.net>
- <20120315112419.GA3852@pengutronix.de>
+	id S1030947Ab2CPDE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 23:04:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306Ab2CPDEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 23:04:25 -0400
+Date: Fri, 16 Mar 2012 11:02:16 +0800
+From: Dave Young <dyoung@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux@arm.linux.org.uk, vgoyal@redhat.com,
+        kexec@lists.infradead.org, akpm@linux-foundation.org
+Subject: [PATCH v2 resend] kdump x86: fix total mem size calculation for
+ reservation
+Message-ID: <20120316030216.GA5123@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120315112419.GA3852@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 07:24:19PM +0800, s.hauer@pengutronix.de wrote:
-> On Thu, Mar 15, 2012 at 06:59:28PM +0800, Dong Aisheng wrote:
-> > On Thu, Mar 15, 2012 at 02:53:29PM +0800, Lothar Waßmann wrote:
-> > > Hi,
-> > > 
-> > > Dong Aisheng writes:
-> > > > On Wed, Mar 14, 2012 at 10:16:43PM +0800, s.hauer@pengutronix.de wrote:
-> > > > > On Wed, Mar 14, 2012 at 08:45:23PM +0800, Dong Aisheng wrote:
-> > > > > > On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
-> > > [...]
-> > > > > > But it seems this needs pass mac address to fec driver via platforom data which is
-> > > > > > not friendly to dt.
-> > > > > > 
-> > > > > > Another way may be changing fec driver to get the fixed part of mac address(first
-> > > > > > two bytes) from device tree and read the left dynamical part from otp which i'm not
-> > > > > > sure is better enough.
-> > > > > > 
-> > > > > > BTW, filling with zeros seems not work since it's invalid mac address.
-> > > > > 
-> > > > > Yes, that's the idea of using this value...
-> > > > > 
-> > > > But comparing to use an invalid value, why not just do not define that
-> > > > local-mac-address property?
-> > > > 
-> > > Because a MAC address is by definition a GLOBALLY UNIQUE IDENTIFIER
-> > > which is contrary to coding a "valid" default value for it somewhere!
-> > > The owner of a certain MAC address range (OUI) is responsible for
-> > > ensuring the uniqueness. Thus only they may assign a specific MAC
-> > > address to a specific device.
-> > > 
-> > Yes, you're correct.
-> > So i propose to read the MAC address from MX28 OTP in fec driver instead of
-> > define it in device tree in my last mail.
-> > http://www.spinics.net/lists/arm-kernel/msg165040.html
-> > Do you have any comment on that way?
-> 
-> Yes, you could do that. Otherwise it's perfectly fine to pass the MAC
-> address in the device tree, it's just not ok to put specific values
-> into the kernel source. You could leave the values blank and let the
-Yes, correct.
+crashkernel reservation need know the total memory size. Current get_total_mem
+simply use max_pfn - min_low_pfn. It is wrong because it will including
+memory holes in the middle.
 
-> bootloader fill them in. Or you could fill in valid values before you
-> compile the devicetree, but be prepared for surprises once you have
-> two boards in your network and use the devicetree for both.
-> 
+Especially for kvm guest with memory > 0xe0000000, there's below in qemu code:
+qemu split memory as below:
+    if (ram_size >= 0xe0000000 ) {
+        above_4g_mem_size = ram_size - 0xe0000000;
+        below_4g_mem_size = 0xe0000000;
+    } else {
+        below_4g_mem_size = ram_size;
+    }
+So for 4G mem guest, seabios will insert a 512M usable region beyond of 4G.
+Thus in above case max_pfn - min_low_pfn will be more than original memsize.
 
-Thanks for the info.
-I will submit that patch for discussion.
+Fixing this issue by using memblock_phys_mem_size() to get the total memsize.
 
-Regards
-Dong Aisheng
+[v1 -> v2]: refresh the patch based on latest linus tree
 
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+---
+ arch/x86/kernel/setup.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+--- linux-2.6.orig/arch/x86/kernel/setup.c	2012-03-04 03:46:35.000000000 +0800
++++ linux-2.6/arch/x86/kernel/setup.c	2012-03-10 12:44:58.133300788 +0800
+@@ -509,15 +509,6 @@ static void __init memblock_x86_reserve_
+ 
+ #ifdef CONFIG_KEXEC
+ 
+-static inline unsigned long long get_total_mem(void)
+-{
+-	unsigned long long total;
+-
+-	total = max_pfn - min_low_pfn;
+-
+-	return total << PAGE_SHIFT;
+-}
+-
+ /*
+  * Keep the crash kernel below this limit.  On 32 bits earlier kernels
+  * would limit the kernel to the low 512 MiB due to mapping restrictions.
+@@ -536,7 +527,7 @@ static void __init reserve_crashkernel(v
+ 	unsigned long long crash_size, crash_base;
+ 	int ret;
+ 
+-	total_mem = get_total_mem();
++	total_mem = memblock_phys_mem_size();
+ 
+ 	ret = parse_crashkernel(boot_command_line, total_mem,
+ 			&crash_size, &crash_base);
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
