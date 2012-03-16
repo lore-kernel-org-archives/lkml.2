@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032942Ab2CPQ07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 12:26:59 -0400
-Received: from host171.canaca.com ([67.55.55.225]:49099 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740Ab2CPQ05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 12:26:57 -0400
-Message-ID: <8107d8a0e50b64dd45dc749da87b2c7b.squirrel@mungewell.org>
-In-Reply-To: <20323.25792.171143.809563@quad.stoffel.home>
-References: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
-    <20323.25792.171143.809563@quad.stoffel.home>
-Date: Fri, 16 Mar 2012 12:26:56 -0400
-Subject: Re: Building BarGraph with LED subsystem
-From: simon@mungewell.org
-To: "John Stoffel" <john@stoffel.org>
-Cc: simon@mungewell.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1423112Ab2CPQ3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 12:29:05 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57174 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1031359Ab2CPQ3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 12:29:04 -0400
+Message-ID: <1331915341.9591.2.camel@joe2Laptop>
+Subject: Re: [PATCH 1/9] ext4: Add -DDEBUG to Makefile
+From: Joe Perches <joe@perches.com>
+To: David Daney <david.daney@cavium.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 Mar 2012 09:29:01 -0700
+In-Reply-To: <4F63646D.1040700@cavium.com>
+References: <cover.1331856299.git.joe@perches.com>
+	 <7ee60f3b750f4500f9bdcb64f358acbf17987036.1331856300.git.joe@perches.com>
+	 <4F63646D.1040700@cavium.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-03-16 at 09:03 -0700, David Daney wrote:
+> On 03/15/2012 05:07 PM, Joe Perches wrote:
+> > Add -DDEBUG to enable future use of pr_debug.
+> > No changes to objects as no DEBUG uses currently exist.
+[]
+> > diff --git a/fs/ext4/Makefile b/fs/ext4/Makefile
+[]
+> > +ccflags-$(CONFIG_EXT4_FS) := -DDEBUG
 
-> simon> Also I have a question about the default permissions on the LED
-> simon> controls; Is it possible to register LEDs so that users have
-> simon> write permission? At present the controls are only accessible
-> simon> as root.
->
-> udev is the answer here.  You probably want to make it so that the
-> LEDs are open to the user logged into the system console or currently
-> active Xsession.
->
-> John
->
+> In many other susbsystems/drivers, the definition of DEBUG is gated by a 
+> separate Kconfig symbol used to select debugging just for that 
+> susbsystem/driver (see CONFIG_MMC_DEBUG for example).
+> 
+> Why aren't you doing the same here?
 
-So what would be the best way to achieve this (once the code gets into
-kernel)? I mean so that 'Jane Doe' get the LEDs working when she plugs in
-her wheel...
+It can be done later with an additional symbol if
+desired.
 
-At present the patch uses the devices ID's to register the LED's. ie.
---
-Mar 14 14:57:35 ubuntu kernel: [ 6462.204185] Registered led device:
-0003:046D:C294.0009::RPM1
-Mar 14 14:57:35 ubuntu kernel: [ 6462.204251] Registered led device:
-0003:046D:C294.0009::RPM2
-Mar 14 14:57:35 ubuntu kernel: [ 6462.204301] Registered led device:
-0003:046D:C294.0009::RPM3
-Mar 14 14:57:35 ubuntu kernel: [ 6462.204354] Registered led device:
-0003:046D:C294.0009::RPM4
-Mar 14 14:57:35 ubuntu kernel: [ 6462.204402] Registered led device:
-0003:046D:C294.0009::RPM5
---
+For now the current code uses printk(KERN_DEBUG and a
+straight conversion to pr_debug would eliminate the
+KERN_DEBUG the output.
 
-Simon.
+pr_debug without #define DEBUG or dynamic_debug is
+compiled away to nothing.
 
 
