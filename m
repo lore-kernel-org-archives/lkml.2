@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032953Ab2CPPl4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:41:56 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37311 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031171Ab2CPPly (ORCPT
+	id S1032959Ab2CPPmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:42:21 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31196 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374Ab2CPPmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:41:54 -0400
-Date: Fri, 16 Mar 2012 15:41:52 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] platform/x86: Add driver for Apple gmux device
-Message-ID: <20120316154151.GB2399@srcf.ucam.org>
-References: <1331847128-16339-1-git-send-email-seth.forshee@canonical.com>
- <1331847128-16339-3-git-send-email-seth.forshee@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331847128-16339-3-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 16 Mar 2012 11:42:19 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 16 Mar 2012 16:42:10 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: [PATCH v2 0/2] [media] s5p-tv: Add initial DT-support to s5p-tv's
+ subdevices
+To: t.stanislaws@samsung.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        kyungmin.park@samsung.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+Message-id: <1331912532-7798-1-git-send-email-k.lewandowsk@samsung.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:32:08PM -0500, Seth Forshee wrote:
+Changes since v1:
+ - dropped patch for sii9234 driver - driver itself hasn't been merged yet
+ - changed compatible string to name first known SoC having given features
+   (IP blocks, actually) [Thanks Thomas!]
 
-> +	select BACKLIGHT_APPLE
 
-If you add the aforementioned stubs then you can drop this. Otherwise, 
-looks good.
+This patchset adds initial device tree support to drivers used by
+s5p-tv on Exynos4.
+
+DT support for s5p-tv driver itself would benefit from changes to v4l
+core (missing OF helper functions) and thus, will be sent later in
+separate patchset.
+
+Karol Lewandowski (2):
+  s5p-tv: Add initial DT-support for TV mixer
+  s5p-tv: Add initial DT-support for HDMIPHY
+
+ drivers/media/video/s5p-tv/hdmiphy_drv.c |   10 ++++++++++
+ drivers/media/video/s5p-tv/mixer_drv.c   |    9 +++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.9
+
