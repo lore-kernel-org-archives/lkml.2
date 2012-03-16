@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946473Ab2CPXnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:43:42 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
+	id S1946499Ab2CPXoC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:44:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946385Ab2CPXlX (ORCPT
+	with ESMTP id S1946422Ab2CPXlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:41:23 -0400
-Message-Id: <20120316233813.738454903@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:41:17 -0400
+Message-Id: <20120316233813.546537856@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:45 -0700
+Date: Fri, 16 Mar 2012 16:38:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 35/41] hwmon: (w83627ehf) Fix memory leak in probe function
+        alan@lxorguk.ukuu.org.uk,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 33/41] sparc32: Add -Av8 to assembler command line.
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 32260d94408c553dca4ce54104edf79941a27536 upstream.
+commit e0adb9902fb338a9fe634c3c2a3e474075c733ba upstream.
 
-The driver probe function leaked memory if creating the cpu0_vid attribute file
-failed. Fix by converting the driver to use devm_kzalloc.
+Newer version of binutils are more strict about specifying the
+correct options to enable certain classes of instructions.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+The sparc32 build is done for v7 in order to support sun4c systems
+which lack hardware integer multiply and divide instructions.
+
+So we have to pass -Av8 when building the assembler routines that
+use these instructions and get patched into the kernel when we find
+out that we have a v8 capable cpu.
+
+Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/w83627ehf.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/sparc/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -2004,7 +2004,8 @@ static int __devinit w83627ehf_probe(str
- 		goto exit;
- 	}
+--- a/arch/sparc/Makefile
++++ b/arch/sparc/Makefile
+@@ -31,7 +31,7 @@ UTS_MACHINE    := sparc
  
--	data = kzalloc(sizeof(struct w83627ehf_data), GFP_KERNEL);
-+	data = devm_kzalloc(&pdev->dev, sizeof(struct w83627ehf_data),
-+			    GFP_KERNEL);
- 	if (!data) {
- 		err = -ENOMEM;
- 		goto exit_release;
-@@ -2498,9 +2499,8 @@ static int __devinit w83627ehf_probe(str
+ #KBUILD_CFLAGS += -g -pipe -fcall-used-g5 -fcall-used-g7
+ KBUILD_CFLAGS += -m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7
+-KBUILD_AFLAGS += -m32
++KBUILD_AFLAGS += -m32 -Wa,-Av8
  
- exit_remove:
- 	w83627ehf_device_remove_files(dev);
--	kfree(data);
--	platform_set_drvdata(pdev, NULL);
- exit_release:
-+	platform_set_drvdata(pdev, NULL);
- 	release_region(res->start, IOREGION_LENGTH);
- exit:
- 	return err;
-@@ -2514,7 +2514,6 @@ static int __devexit w83627ehf_remove(st
- 	w83627ehf_device_remove_files(&pdev->dev);
- 	release_region(data->addr, IOREGION_LENGTH);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(data);
- 
- 	return 0;
- }
+ #LDFLAGS_vmlinux = -N -Ttext 0xf0004000
+ #  Since 2.5.40, the first stage is left not btfix-ed.
 
 
