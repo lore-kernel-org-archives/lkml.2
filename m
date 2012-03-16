@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab2CPFcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 01:32:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:46623 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab2CPFcL (ORCPT
+	id S964961Ab2CPFgX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 01:36:23 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22586 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab2CPFgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 01:32:11 -0400
-X-AuditID: cbfee60f-b7bd0ae00000422c-66-4f62d05aa131
-Date: Fri, 16 Mar 2012 05:32:09 +0000 (GMT)
-From: Yong-Sul Oh <yongsul96.oh@samsung.com>
-Subject: Re: Re: [PATCH] USB: Gadget: Composite: Added error handling codes to
- prevent a memory leak case when the configuration's bind function failed
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: yongsul96.oh@samsung.com
-MIME-version: 1.0
-X-MTR: 20120316052554170@yongsul96.oh
-Msgkey: 20120316052554170@yongsul96.oh
-X-EPLocale: ko_KR.utf-8
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120316052554170@yongsul96.oh
-X-ParentMTR: 
-Content-type: text/plain; charset=utf-8
-MIME-version: 1.0
-Message-id: <3092434.202651331875926961.JavaMail.weblogic@epml26>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 16 Mar 2012 01:36:21 -0400
+Date: Fri, 16 Mar 2012 08:38:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
+ messages in the driver
+Message-ID: <20120316053829.GG3163@mwanda>
+References: <1331422331-4381-1-git-send-email-kys@microsoft.com>
+ <1331422331-4381-2-git-send-email-kys@microsoft.com>
+ <20120311104230.GC3337@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481B75B403@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20120311184916.GD3337@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481B75D433@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20120312052221.GE3337@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481B75D4CE@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20120312130353.GF3337@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481B7663B1@TK5EX14MBXC126.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3xoW37o/FfUZJwQG"
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B7663B1@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090206.4F62D14D.0045,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2G5WouG008863
-
-Dear Sergei Shtylyov
-
-I appreciate your guideline.
-(i will check again the "submittingpatches & submitchecklist")
-I will fix it & try to send it soundly again.
-
-Best regards,  
-Yongsul Oh
-
-------- Original Message -------
-Sender : Sergei Shtylyov
-Date : 2012-03-15 22:57 (GMT+09:00)
-Title : Re: [PATCH] USB: Gadget: Composite: Added error handling codes to prevent a memory leak case when the configuration's bind function failed
-
-Hello.
-
-On 15-03-2012 5:23, Yongsul@vger.kernel.org wrote:
-
-> From: yongsul96.oh@samsung.com
-
->   In some usb gadget driver, for example usb gadget serial driver(serial.c),
-> multifunction composite driver(multi,c), nokia composite gadget driver(nokia.c),
-> HID composite driver(hid.c), CDC composite driver(cdc2.c).., the configuration's
-> bind function by called the 'usb_add_config()' has multiple bind config functions
-> for each functionality, for example cdc2 configuration bind function -'cdc_do_config()'
-> has two functionality bind config functions -'ecm_bind_config()'&  'acm_bind_config()'
-> in CDC composite driver.
->   In each functionality bind config function, new instance for each functionality is
-> allocated&  initialized by 'kzalloc()' ,and finally the new instance is added by
-> 'usb_add_function()'. After 'usb_add_function' state, already created the instance
-> is only handled by its configuration&  freed from functionality unbind function.
->   So, If an error occurred during the second functionality bind config state, for example
-> an error occurred at 'acm_bind_config()' after succeeding 'ecm_bind_function()',
-> The created instance by 'acm_bind_config()' cannot be freed.
-> And it makes memory leak situation.
-
-> This patch fixes this issue.
-
-> Signed-off-by: yongsul96.oh@samsung.com 
-
-    Real name is required on the left, not another copy of email.
-
-WBR, Sergei
 
 
+--3xoW37o/FfUZJwQG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Mar 15, 2012 at 11:36:16PM +0000, KY Srinivasan wrote:
+>=20
+> Dan,=20
+>=20
+> Sorry I could not get back to you earlier. You are right, in that I am tr=
+usting
+> the host! I am of the firm belief that in a virtualized environment, if y=
+ou don't trust
+> the host, there is not a whole lot you can do in a guest! I have had this=
+ arguments=20
+> with other on this mailing list in the past. Having said that, I think we=
+ have spent more
+> time debating this than we should; your proposal is reasonable and I will=
+ go ahead and
+> re-spin those patches based on your comments. I should be posting them sh=
+ortly.
+>=20
+> Regards,
+
+It's not about trusting the host or not trusting the host.  It's
+about "if you're going to specify a limitter, it can't be off by one
+even if you don't expect to hit the limit".
+
+But thanks for redoing these.
+
+regards,
+dan carpenter
 
 
+--3xoW37o/FfUZJwQG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Oh, Yong-Sul
-Engineer
+iQIcBAEBAgAGBQJPYtHVAAoJEOnZkXI/YHqR+iwQAIGXQLqYp2KkFKGuQYybNQVr
+7HaKEsMy8ZD6af+BqhXR2xbUJilcIqy9XYjpWMsRWbtnSJgylttiZm5fJiqjXMmx
+9DFMab2lzRKO/JsnAB70QBnZ+a5t2/znXOx2oM2kn/5rCd7MZvgDPqfaAa9UYC+W
+lgoEdcWy7ugHpLGSYS0iQH6ulQOxZp2c9MKnBTZKqbh6NN1GEBp7KNcrE0wLRdAX
+W3d6r9z6k97B3YU+Pbx1641q4eh3AigWUQOLhwag+JI9DgA8hDnzPK3iWY1IIbk9
+REaV94Fbi3b2k3o8xkBaKcqyenScRF095EWqvmiYhR9B6tvpi6Wyh4bpnymPUz1b
+u63Q1C81VcpmgfhxYacFO90UfnOmXiLFr3FfiM8bJxY29ULrXcfdaCRTuS90RqQ3
+hulzv/Duelgeva+LUWB8afQmHi+hwgPqAJeZ/Xbsj5PJP3XP7kE4zZ3hMJP+C8H4
+QDD6WCZhmsBMwIXzSIZPIZUEYyOmq1F+1x84s7aNXq4FJMXfT8g/QiwrHCQ9LkIY
+6kf2H+VkCC3/Vh4Z3zxVIzeZLm8MMdQYPnGZm8sxdQG4+heu5WSAIEESeR+/RNYt
+mQbJiOvk3e3FlTmyev+SwJL0+emTi8QFpxPGIcs2cL6Fm15mr+gVsjk/A6OR120v
+qBqOwk33iqOs9OkrqGBB
+=3ARM
+-----END PGP SIGNATURE-----
 
-Mobile S/W Platform Lab.
-Telecommunication R&D Center
-Telecommunication Network Business
-
-SAMSUNG ELECTRONICS CO.,LTD
-
-Tel : +82-31-279-0284
-Mobile : +82-10-9530-0284
-Fax : +82-31-279-5521
-E-mail : yongsul96.oh@samsung.com
-
-
-
-
-Copyright‚ìí 2005 Samsung Electronics Co., Ltd. All rights reserved | Confidential
-
-The information contained in this message is confidential and may be legally privileged. The message is intended solely for the addressee(s). If you are not the intended recipient, you are hereby notified that any use, dissemination, or reproduction is strictly prohibited and may be unlawful. If you are not the intended recipient, please contact the sender by return e-mail and destroy all copies of the original message. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--3xoW37o/FfUZJwQG--
