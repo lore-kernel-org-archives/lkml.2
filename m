@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032842Ab2CPOxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:53:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45539 "EHLO
+	id S1422907Ab2CPOxn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:53:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45542 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422856Ab2CPOxa (ORCPT
+	with ESMTP id S1032850Ab2CPOxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:53:30 -0400
-Message-Id: <20120316144240.556223451@chello.nl>
+	Fri, 16 Mar 2012 10:53:37 -0400
+Message-Id: <20120316144240.889278872@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Mar 2012 15:40:35 +0100
+Date: Fri, 16 Mar 2012 15:40:40 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -24,110 +24,132 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 07/26] mm: Handle misplaced anon pages
+Subject: [RFC][PATCH 12/26] sched, mm: sched_{fork,exec} node assignment
 References: <20120316144028.036474157@chello.nl>
-Content-Disposition: inline; filename=migrate-on-fault-05.1-misplaced-anon-pages.patch
+Content-Disposition: inline; filename=numa-foo-4.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Rework the scheduler fork,exec hooks to allow home-node assignment.
 
-This patch simply hooks the anon page fault handler [do_swap_page()]
-to check for and migrate misplaced pages if enabled and page won't
-be "COWed".
+In particular:
+  - call sched_fork() after the mm is set up and the thread
+    group list is initialized (such that we can iterate the mm_owner
+    thread group).
+  - call sched_exec() after we've got our fresh mm.
 
-This introduces can_reuse_swap_page() since reuse_swap_page() does
-delete_from_swap_cache() which messes our migration path (since that
-assumes its still a swapcache page).
-
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-[ removed the retry loops after lock_page on a swapcache which tried
-  to fixup the wreckage caused by ignoring the page count on migate;
-  added can_reuse_swap_page(); moved the migrate-on-fault enabled
-  test into check_migrate_misplaced_page() ]
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/swap.h |    4 +++-
- mm/memory.c          |   17 +++++++++++++++++
- mm/swapfile.c        |   13 +++++++++++++
- 3 files changed, 33 insertions(+), 1 deletion(-)
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -342,6 +342,7 @@ extern unsigned int count_swap_pages(int
- extern sector_t map_swap_page(struct page *, struct block_device **);
- extern sector_t swapdev_block(int, pgoff_t);
- extern int reuse_swap_page(struct page *);
-+extern int can_reuse_swap_page(struct page *);
- extern int try_to_free_swap(struct page *);
- struct backing_dev_info;
+ fs/exec.c             |    4 ++--
+ include/linux/sched.h |    4 ++--
+ kernel/fork.c         |    9 +++++----
+ kernel/sched/core.c   |    7 +++++--
+ kernel/sched/sched.h  |    2 ++
+ 5 files changed, 16 insertions(+), 10 deletions(-)
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1505,8 +1505,6 @@ static int do_execve_common(const char *
+ 	if (IS_ERR(file))
+ 		goto out_unmark;
  
-@@ -459,7 +460,8 @@ static inline void delete_from_swap_cach
- {
- }
+-	sched_exec();
+-
+ 	bprm->file = file;
+ 	bprm->filename = filename;
+ 	bprm->interp = filename;
+@@ -1515,6 +1513,8 @@ static int do_execve_common(const char *
+ 	if (retval)
+ 		goto out_file;
  
--#define reuse_swap_page(page)	(page_mapcount(page) == 1)
-+#define reuse_swap_page(page)		(page_mapcount(page) == 1)
-+#define can_reuse_swap_page(page)	(page_mapcount(page) == 1)
- 
- static inline int try_to_free_swap(struct page *page)
- {
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -57,6 +57,7 @@
- #include <linux/swapops.h>
- #include <linux/elf.h>
- #include <linux/gfp.h>
-+#include <linux/mempolicy.h>	/* check_migrate_misplaced_page() */
- 
- #include <asm/io.h>
- #include <asm/pgalloc.h>
-@@ -2962,6 +2963,22 @@ static int do_swap_page(struct mm_struct
- 	}
- 
- 	/*
-+	 * No sense in migrating a page that will be "COWed" as the new
-+	 * new page will be allocated according to effective mempolicy.
-+	 */
-+	if ((flags & FAULT_FLAG_WRITE) && can_reuse_swap_page(page)) {
-+		/*
-+		 * check for misplacement and migrate, if necessary/possible,
-+		 * here and now.  Note that if we're racing with another thread,
-+		 * we may end up discarding the migrated page after locking
-+		 * the page table and checking the pte below.  However, we
-+		 * don't want to hold the page table locked over migration, so
-+		 * we'll live with that [unlikely, one hopes] possibility.
-+		 */
-+		page = check_migrate_misplaced_page(page, vma, address);
-+	}
++	sched_exec(bprm->mm);
 +
-+	/*
- 	 * Back out if somebody else already faulted in this pte.
+ 	bprm->argc = count(argv, MAX_ARG_STRINGS);
+ 	if ((retval = bprm->argc) < 0)
+ 		goto out;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1999,9 +1999,9 @@ task_sched_runtime(struct task_struct *t
+ 
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+-extern void sched_exec(void);
++extern void sched_exec(struct mm_struct *mm);
+ #else
+-#define sched_exec()   {}
++#define sched_exec(mm)   {}
+ #endif
+ 
+ extern void sched_clock_idle_sleep_event(void);
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1229,9 +1229,6 @@ static struct task_struct *copy_process(
+ 	p->memcg_batch.memcg = NULL;
+ #endif
+ 
+-	/* Perform scheduler related setup. Assign this task to a CPU. */
+-	sched_fork(p);
+-
+ 	retval = perf_event_init_task(p);
+ 	if (retval)
+ 		goto bad_fork_cleanup_policy;
+@@ -1284,6 +1281,11 @@ static struct task_struct *copy_process(
+ 	 * Clear TID on mm_release()?
  	 */
- 	page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -640,6 +640,19 @@ int reuse_swap_page(struct page *page)
- 	return count <= 1;
+ 	p->clear_child_tid = (clone_flags & CLONE_CHILD_CLEARTID) ? child_tidptr : NULL;
++
++	INIT_LIST_HEAD(&p->thread_group);
++	/* Perform scheduler related setup. Assign this task to a CPU. */
++	sched_fork(p);
++
+ #ifdef CONFIG_BLOCK
+ 	p->plug = NULL;
+ #endif
+@@ -1326,7 +1328,6 @@ static struct task_struct *copy_process(
+ 	 * We dont wake it up yet.
+ 	 */
+ 	p->group_leader = p;
+-	INIT_LIST_HEAD(&p->thread_group);
+ 
+ 	/* Now that the task is set up, run cgroup callbacks if
+ 	 * necessary. We need to run them before the task is visible
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1767,8 +1767,9 @@ void sched_fork(struct task_struct *p)
+ #ifdef CONFIG_SMP
+ 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
+ #endif
+-
+ 	put_cpu();
++
++	select_task_node(p, p->mm, SD_BALANCE_FORK);
  }
  
-+int can_reuse_swap_page(struct page *page)
-+{
-+	int count;
-+
-+	VM_BUG_ON(!PageLocked(page));
-+	if (unlikely(PageKsm(page)))
-+		return 0;
-+	count = page_mapcount(page);
-+	if (count <= 1 && PageSwapCache(page))
-+		count += page_swapcount(page);
-+	return count <= 1;
-+}
-+
  /*
-  * If swap is getting full, or if there are no more mappings of this page,
-  * then try_to_free_swap is called to free its swap space.
+@@ -2507,12 +2508,14 @@ static void update_cpu_load_active(struc
+  * sched_exec - execve() is a valuable balancing opportunity, because at
+  * this point the task has the smallest effective memory and cache footprint.
+  */
+-void sched_exec(void)
++void sched_exec(struct mm_struct *mm)
+ {
+ 	struct task_struct *p = current;
+ 	unsigned long flags;
+ 	int dest_cpu;
+ 
++	select_task_node(p, mm, SD_BALANCE_EXEC);
++
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
+ 	if (dest_cpu == smp_processor_id())
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1153,3 +1153,5 @@ enum rq_nohz_flag_bits {
+ 
+ #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
+ #endif
++
++static inline void select_task_node(struct task_struct *p, struct mm_struct *mm, int sd_flags) { }
 
 
