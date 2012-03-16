@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946091Ab2CPXiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:38:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49074 "EHLO
+	id S1946114Ab2CPX6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:58:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946057Ab2CPXhx (ORCPT
+	with ESMTP id S1946094Ab2CPXiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:37:53 -0400
-Message-Id: <20120316233447.914553454@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:38:07 -0400
+Message-Id: <20120316233448.268854497@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:34:54 -0700
+Date: Fri, 16 Mar 2012 16:34:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 07/38] firewire: core: handle ack_busy when fetching the Config ROM
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 11/38] vfs: fix double put after complete_walk()
 In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,79 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit aaff12039ffd812d0c8bbff50b87b6f1f09bec3e upstream.
+commit 097b180ca09b581ef0dc24fbcfc1b227de3875df upstream.
 
-Some older Panasonic made camcorders (Panasonic AG-EZ30 and NV-DX110,
-Grundig Scenos DLC 2000) reject requests with ack_busy_X if a request is
-sent immediately after they sent a response to a prior transaction.
-This causes firewire-core to fail probing of the camcorder with "giving
-up on config rom for node id ...".  Consequently, programs like kino or
-dvgrab are unaware of the presence of a camcorder.
+complete_walk() already puts nd->path, no need to do it again at cleanup time.
 
-Such transaction failures happen also with the ieee1394 driver stack
-(of the 2.4...2.6 kernel series until 2.6.36 inclusive) but with a lower
-likelihood, such that kino or dvgrab are generally able to use these
-camcorders via the older driver stack.  The cause for firewire-ohci's or
-firewire-core's worse behavior is not yet known.  Gap count optimization
-in firewire-core is not the cause.  Perhaps the slightly higher latency
-of transaction completion in the older stack plays a role.  (ieee1394:
-AR-resp DMA context tasklet -> packet completion ktread -> user process;
-firewire-core: tasklet -> user process.)
+This would result in Oopses if triggered, apparently the codepath is not too
+well exercised.
 
-This change introduces retries and delays after ack_busy_X into
-firewire-core's Config ROM reader, such that at least firewire-core's
-probing and /dev/fw* creation are successful.  This still leaves the
-problem that userland processes are facing transaction failures.
-gscanbus's built-in retry routines deal with them successfully, but
-neither kino's nor dvgrab's do ever succeed.
-
-But at least DV capture with "dvgrab -noavc -card 0" works now.  Live
-video preview in kino works too, but not actual capture.
-
-One way to prevent Configuration ROM reading failures in application
-programs is to modify libraw1394 to synthesize read responses by means
-of firewire-core's Configuration ROM cache.  This would only leave
-CMP and FCP transaction failures as a potential problem source for
-applications.
-
-Reported-and-tested-by: Thomas Seilund <tps@netmaster.dk>
-Reported-and-tested-by: René Fritz <rene@colorcube.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/core-device.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/namei.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -455,15 +455,20 @@ static struct device_attribute fw_device
- static int read_rom(struct fw_device *device,
- 		    int generation, int index, u32 *data)
- {
--	int rcode;
-+	u64 offset = (CSR_REGISTER_BASE | CSR_CONFIG_ROM) + index * 4;
-+	int i, rcode;
- 
- 	/* device->node_id, accessed below, must not be older than generation */
- 	smp_rmb();
- 
--	rcode = fw_run_transaction(device->card, TCODE_READ_QUADLET_REQUEST,
--			device->node_id, generation, device->max_speed,
--			(CSR_REGISTER_BASE | CSR_CONFIG_ROM) + index * 4,
--			data, 4);
-+	for (i = 10; i < 100; i += 10) {
-+		rcode = fw_run_transaction(device->card,
-+				TCODE_READ_QUADLET_REQUEST, device->node_id,
-+				generation, device->max_speed, offset, data, 4);
-+		if (rcode != RCODE_BUSY)
-+			break;
-+		msleep(i);
-+	}
- 	be32_to_cpus(data);
- 
- 	return rcode;
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2208,7 +2208,7 @@ static struct file *do_last(struct namei
+ 	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
+ 	error = complete_walk(nd);
+ 	if (error)
+-		goto exit;
++		return ERR_PTR(error);
+ 	error = -EISDIR;
+ 	if (S_ISDIR(nd->inode->i_mode))
+ 		goto exit;
 
 
