@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422892Ab2CPPYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:24:50 -0400
-Received: from host171.canaca.com ([67.55.55.225]:60104 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032852Ab2CPPYs (ORCPT
+	id S1423006Ab2CPPY5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:24:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53212 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1032852Ab2CPPYy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:24:48 -0400
-Message-ID: <1b29a178dd288b0f17608b5815ca77a5.squirrel@mungewell.org>
-Date: Fri, 16 Mar 2012 11:24:47 -0400
-Subject: Building BarGraph with LED subsystem
-From: simon@mungewell.org
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Fri, 16 Mar 2012 11:24:54 -0400
+Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com>
+Date: Fri, 16 Mar 2012 10:21:12 -0500
+Cc: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AC087E7A-B7BC-43E5-948F-68AEB8251FD3@kernel.crashing.org>
+References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net> <4EBD4FB8.2020406@freescale.com> <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net> <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com> <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org> <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com>
+To: Tabi Timur-B04825 <B04825@freescale.com>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I have a couple of questions about the (user-land) use of the LED subsystem.
 
-I recently offered a patch for controlling the LEDs of the G27 gaming
-wheel, on which the LEDs are arranged in a bar-graph of 5 to show
-simulation RPM. The suggestion was to use the LED subsystem, which this
-patch implements.
+On Nov 24, 2011, at 7:57 AM, Tabi Timur-B04825 wrote:
 
-http://www.spinics.net/lists/linux-input/msg19747.html
+> On Nov 24, 2011, at 1:55 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
+> 
+>>> 
+>>> I'll have to check.  But this patch can't be applied as-is unless it's
+>>> proven safe for all QE-enabled chips.
+>> 
+>> Any update on trying this on a MPC8323?
+> 
+> Haiying said it should be ok, but I haven't tried it yet.  I'll try it on Monday.
 
-Thinking further about how to about how to control this I was wondering
-whether a 'threshold' trigger would be useful. This would allow the use of
-value (uint?) to be compare against a threshold and the LED turned on/off
-automatically.
+Did you ever test this?
 
-The main benefit of doing this as a 'trigger' is that we could 'link' (or
-'sync') multiple LEDs to use the same value input, thus making the
-user-land stuff trivial.
-
-Concept - ledtrig-thres would provide the controls:
-   threshold - value to compare against.
-   value - incoming value, if >= threshold LED is lit, if < threshold LED
-is dark.
-   link - 'none' (standalone comparison), or the path to the value of
-another LED's value to use (ie '/sys/leds/my_device::2/value')
-
-Comments? Is this all too complex?
-
-
-Also I have a question about the default permissions on the LED controls;
-Is it possible to register LEDs so that users have write permission? At
-present the controls are only accessible as root.
-
-Many thanks,
-Simon.
-
-
+- k
