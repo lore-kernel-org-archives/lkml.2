@@ -1,198 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032644Ab2CPIpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 04:45:47 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:54371 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965450Ab2CPIpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 04:45:41 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1863uoBuT46WnRf2/tSigVb+a42CaOliRI7VEFrKq
-	N/2n9w5n11sm9x
-Message-ID: <1331887535.11010.18.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
- online
-From: Mike Galbraith <efault@gmx.de>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Date: Fri, 16 Mar 2012 09:45:35 +0100
-In-Reply-To: <1331885384.11010.15.camel@marge.simpson.net>
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
-	 <1331717099.5752.15.camel@marge.simpson.net>
-	 <1331728841.7465.7.camel@marge.simpson.net>
-	 <20120314130801.GA11722@sgi.com> <20120314151717.GA2435@linux.vnet.ibm.com>
-	 <20120314165657.GA19117@linux.vnet.ibm.com>
-	 <1331779343.14263.6.camel@marge.simpson.net>
-	 <1331780831.14263.15.camel@marge.simpson.net>
-	 <20120315175933.GB8705@sgi.com>
-	 <1331882861.11010.13.camel@marge.simpson.net>
-	 <1331885384.11010.15.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	id S1759830Ab2CPIsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 04:48:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278Ab2CPIsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 04:48:07 -0400
+Message-ID: <4F62FE38.6060704@redhat.com>
+Date: Fri, 16 Mar 2012 05:47:52 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com> <20120313233217.GB31106@kroah.com> <4F60F2E4.7060707@redhat.com> <20120314204355.GA10187@kroah.com> <20120314223102.GA27602@aftab> <4F61496D.8030000@redhat.com> <20120315113115.GA32149@aftab> <4F61E35B.9000906@redhat.com> <20120315213844.GA3781@aftab>
+In-Reply-To: <20120315213844.GA3781@aftab>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-16 at 09:09 +0100, Mike Galbraith wrote: 
-> On Fri, 2012-03-16 at 08:27 +0100, Mike Galbraith wrote: 
-> > On Thu, 2012-03-15 at 12:59 -0500, Dimitri Sivanich wrote: 
-
-> > > Could I try your 3.0 enterprise patch?
-> > 
-> > Sure, v3 below.
+Em 15-03-2012 18:38, Borislav Petkov escreveu:
+> On Thu, Mar 15, 2012 at 09:40:59AM -0300, Mauro Carvalho Chehab wrote:
+>>> What are you talking about? Those per-rank counters should be the same
+>>> as the per-csrow ch0 and ch1 counters...
+>>
+>> Yes, but with your proposal, the per-csrow counters will not be added
+>> (the equivalent of):
+>> 	/sys/devices/system/edac/mc/mc0/csrow0/ue_count
+>> 	/sys/devices/system/edac/mc/mc0/csrow0/ce_count
 > 
-> Erm, a bit of that went missing.  I'll put it back.
+> What the hell? Those are already there:
+> 
+> /sys/devices/system/edac/mc/mc0/csrow0/
+> |-- ce_count
+> |-- ch0_ce_count
+> |-- ch0_dimm_label
+> |-- ch1_ce_count
+> |-- ch1_dimm_label
+> |-- dev_type
+> |-- edac_mode
+> |-- mem_type
+> |-- size_mb
+> `-- ue_count
+> 
+> and since userspace uses them, they cannot be removed.
 
-OK, box finally finished rebuild/boot.
+Two reasons:
 
+1) a per-csrow counter only works properly for amd64 and the Intel drivers for
+   hardware shipped 5+ years ago;
 
-rcu: Limit GP initialization to CPUs that have been online
+2) per Greg's request, we should not use struct sysdev, using instead,
+   struct device. That means that everything under
+	/sys/devices/system/edac/mc/
+   will move to another place, likely:
+	/sys/devices/ras/
 
-The current grace-period initialization initializes all leaf rcu_node
-structures, even those corresponding to CPUs that have never been online.
-This is harmless in many configurations, but results in 200-microsecond
-latency spikes for kernels built with NR_CPUS=4096.
+and everything at /sys/devices/system/edac/mc/ will need to be provided by a
+legacy compat API code, to be dropped on some future.
 
-This commit therefore keeps track of the largest-numbered CPU that has
-ever been online, and limits grace-period initialization to rcu_node
-structures corresponding to that CPU and to smaller-numbered CPUs.
+>>> It depends - if the 128 bit word comes from a single DIMM (unganged
+>>> mode) then you have a per-rank UE.
+>>
+>> True, and there are other types of ECC logic that would allow to identify
+>> what DIMM/rank produced the error.
+>>
+>> Yet, the typical case is to use two DIMMs for a 128-bits cacheline
+>> on separate channels, due to performance improvements, and ECC chipkill
+>> using the 128+16 bits, as it improves the probability of error correction.
+> 
+> ... and in this typical case, on smart hardware you can get the rank
+> too. 
 
-Reported-by: Dimitri Sivanich <sivanich@sgi.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Mike Galbraith <mgalbraith@suse.de>
+I've analyzed all edac drivers. Almost all points to a single
+DIMM or rank on UE errors. They can only blame two dimms/ranks. The
+very few ones that will point to a single DIMM seem to be due to a
+the way they cheat with the EDAC API in order to implement support
+for FB-DIMM (or RAMBUS), telling the EDAC core that there's just one
+channel.
 
----
- kernel/rcutree.c |   36 ++++++++++++++++++++++++++++++++----
- kernel/rcutree.h |   16 ++++++++++++++--
- 2 files changed, 46 insertions(+), 6 deletions(-)
+> If one cannot discern between the two DIMMs, then there should be
+> one counter and the other one should be a symlink to that counter, or
+> something to that effect.
 
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -84,6 +84,8 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_d
- 
- static struct rcu_state *rcu_state;
- 
-+int rcu_max_cpu __read_mostly;	/* Largest # CPU that has ever been online. */
-+
- /*
-  * The rcu_scheduler_active variable transitions from zero to one just
-  * before the first task is spawned.  So when this variable is zero, RCU
-@@ -827,25 +829,31 @@ rcu_start_gp(struct rcu_state *rsp, unsi
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
- 	if (!cpu_needs_another_gp(rsp, rdp) || rsp->fqs_active) {
-+		struct rcu_node *rnp_root = rnp;
-+
- 		if (cpu_needs_another_gp(rsp, rdp))
- 			rsp->fqs_need_gp = 1;
- 		if (rnp->completed == rsp->completed) {
--			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+			raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
- 			return;
- 		}
--		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
- 
- 		/*
- 		 * Propagate new ->completed value to rcu_node structures
- 		 * so that other CPUs don't have to wait until the start
- 		 * of the next grace period to process their callbacks.
-+		 * We must hold the root rcu_node structure's ->lock
-+		 * across rcu_for_each_node_breadth_first() in order to
-+		 * synchronize with CPUs coming online for the first time.
- 		 */
- 		rcu_for_each_node_breadth_first(rsp, rnp) {
-+			raw_spin_unlock(&rnp_root->lock); /* remain disabled. */
- 			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
- 			rnp->completed = rsp->completed;
- 			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+			raw_spin_lock(&rnp_root->lock); /* already disabled. */
- 		}
--		local_irq_restore(flags);
-+		raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
- 		return;
- 	}
- 
-@@ -935,7 +943,7 @@ static void rcu_report_qs_rsp(struct rcu
- 		rsp->gp_max = gp_duration;
- 	rsp->completed = rsp->gpnum;
- 	rsp->signaled = RCU_GP_IDLE;
--	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
-+	rcu_start_gp(rsp, flags);  /* releases root node's ->lock. */
- }
- 
- /*
-@@ -1862,6 +1870,7 @@ rcu_init_percpu_data(int cpu, struct rcu
- 	unsigned long mask;
- 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
- 	struct rcu_node *rnp = rcu_get_root(rsp);
-+	struct rcu_node *rnp_init;
- 
- 	/* Set up local state, ensuring consistent view of global state. */
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
-@@ -1882,6 +1891,20 @@ rcu_init_percpu_data(int cpu, struct rcu
- 	/* Exclude any attempts to start a new GP on large systems. */
- 	raw_spin_lock(&rsp->onofflock);		/* irqs already disabled. */
- 
-+	/*
-+	 * Initialize any rcu_node structures that will see their first use.
-+	 * Note that rcu_max_cpu cannot change out from under us because the
-+	 * hotplug locks are held.
-+	 */
-+	raw_spin_lock(&rnp->lock);		/* irqs already disabled. */
-+	for (rnp_init = per_cpu_ptr(rsp->rda, rcu_max_cpu)->mynode + 1;
-+	     rnp_init <= rdp->mynode;
-+	     rnp_init++) {
-+		rnp_init->gpnum = rsp->gpnum;
-+		rnp_init->completed = rsp->completed;
-+	}
-+	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
-+
- 	/* Add CPU to rcu_node bitmasks. */
- 	rnp = rdp->mynode;
- 	mask = rdp->grpmask;
-@@ -1907,6 +1930,11 @@ static void __cpuinit rcu_prepare_cpu(in
- 	rcu_init_percpu_data(cpu, &rcu_sched_state, 0);
- 	rcu_init_percpu_data(cpu, &rcu_bh_state, 0);
- 	rcu_preempt_init_percpu_data(cpu);
-+	if (cpu > rcu_max_cpu) {
-+		smp_mb(); /* Initialization before rcu_max_cpu assignment. */
-+		rcu_max_cpu = cpu;
-+		smp_mb(); /* rcu_max_cpu assignment before later uses. */
-+	}
- }
- 
- /*
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -191,11 +191,23 @@ struct rcu_node {
- 
- /*
-  * Do a full breadth-first scan of the rcu_node structures for the
-- * specified rcu_state structure.
-+ * specified rcu_state structure.  The caller must hold either the
-+ * ->onofflock or the root rcu_node structure's ->lock.
-  */
-+extern int rcu_max_cpu;
-+static inline int rcu_get_max_cpu(void)
-+{
-+	int ret;
-+
-+	smp_mb();  /* Pairs with barriers in rcu_prepare_cpu(). */
-+	ret = rcu_max_cpu;
-+	smp_mb();  /* Pairs with barriers in rcu_prepare_cpu(). */
-+	return ret;
-+}
- #define rcu_for_each_node_breadth_first(rsp, rnp) \
- 	for ((rnp) = &(rsp)->node[0]; \
--	     (rnp) < &(rsp)->node[NUM_RCU_NODES]; (rnp)++)
-+	     (rnp) <= per_cpu_ptr((rsp)->rda, rcu_get_max_cpu())->mynode; \
-+	     (rnp)++)
- 
- /*
-  * Do a breadth-first scan of the non-leaf rcu_node structures for the
+Doesn't sound easy to implement it, nor for userspace to convert back
+from a series of symlinks into a set of locations.
 
+>>>> Of course, the EDAC logic could increment multiple UE error counters
+>>>> in such case, (meaning that an error happened on either one of the
+>>>> affected DIMMs/Ranks) but this is a different behavior than the
+>>>> current API.
+>>>
+>>> Well, the API should be changed to accomodate such configurations.
+>>
+>> True, but changing the propagation logic to propagate the error down
+>> to the several DIMMs from where the error might have occurred is:
+>>
+>> 	- the opposite of the current propagation logic;
+>>
+>> 	- the opposite on how ITU-T TMN architecture and all EMS/NMS
+>> 	  implementations I'm aware with work.
+>>
+>> So, using such propagation logic doesn't sound right to me. What I'm
+>> saying is that, if all the driver can be sure is that the error happened
+>> at the csrow level, it should not propagate the errors to the channel
+>> level. 
+>>
+>> So, I think that csrow-level counter is needed (and the equivalent
+>> "group" counters for non-rank-based memory controllers).
+> 
+> See above, we already have 'ce_count' and 'ue_count' and those are
+> csrow-level counters.
 
+They're not branch-level counters (a requirement for FB-DIMM drivers).
+
+The role target of this patchset is to fix the core of the reporting system.
+The old sysfs nodes don't work properly with Intel's systems
+manufactured after 2005 (and with a few others manufactured before).
+
+All Xeon 3xxx/5xxx/7xxx/E3 chipsets[1] use advanced memory controllers that 
+abstract csrows, either because they're for FB-DIMMs (where the memory ranks and 
+chip select rows aren't visible by the memory controller), or, more recently,
+because their registers are per DIMM slots, instead of per ranks, and users
+can't replace a damaged rank on a dual-ranked DIMM in field.
+
+[1] The Intel's CPU/chipset series of Servers since 2005. Desktop processors
+aren't relevant for EDAC, as they're either not supported, or they're 
+supported by the same driver that provides support for servers.
+
+Regards,
+Mauro
