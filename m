@@ -1,68 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab2CPFwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 01:52:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55230 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab2CPFwR (ORCPT
+	id S1754839Ab2CPGCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 02:02:49 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:48747 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab2CPGCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 01:52:17 -0400
-Date: Fri, 16 Mar 2012 16:52:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the char-misc tree with the powerpc
- tree
-Message-Id: <20120316165207.5a4f0985863b5ae7c50bdd81@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Mar_2012_16_52_07_+1100_pZRK/URh1E+iqQ6N"
+	Fri, 16 Mar 2012 02:02:45 -0400
+X-AuditID: cbfee61a-b7b78ae000001ceb-47-4f62d78470ed
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kevin Hilman <khilman@ti.com>, Mike Turquette <mturquette@ti.com>,
+        myungjoo.ham@gmail.com
+Subject: [PATCH v3] PM / devfreq: add relation of recommended frequency.
+Date: Fri, 16 Mar 2012 15:02:50 +0900
+Message-id: <1331877770-12150-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <201203150125.14896.rjw@sisk.pl>
+References: <201203150125.14896.rjw@sisk.pl>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Mar_2012_16_52_07_+1100_pZRK/URh1E+iqQ6N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The semantics of "target frequency" given to devfreq driver from
+devfreq framework has always been interpretted as "at least" or GLB
+(greatest lower bound). However, the framework might want the
+device driver to limit its max frequency (LUB: least upper bound),
+especially if it is given by thermal framework (it's too hot).
 
-Hi all,
+Thus, the target fuction should have another parameter to express
+whether the framework wants GLB or LUB. And, the additional parameter,
+"u32 flags", does it.
 
-Today's linux-next merge of the char-misc tree got a conflict in
-drivers/char/viotape.c between commit ba7a4822b48f ("powerpc: Remove some
-of the legacy iSeries specific device drivers") from the powerpc tree and
-commit 5fb15db4376f ("char: Fix typo in viotape.c") from the char-misc
-tree.
+With the update, devfreq_recommended_opp() is also updated.
 
-The former removed this file, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Changes from v2
+- Updated comments
+- Rebased.
 
---Signature=_Fri__16_Mar_2012_16_52_07_+1100_pZRK/URh1E+iqQ6N
-Content-Type: application/pgp-signature
+Changes from v1
+- Style update.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ drivers/devfreq/devfreq.c     |   42 +++++++++++++++++++++++++++++++++++++---
+ drivers/devfreq/exynos4_bus.c |   14 +++++++++---
+ include/linux/devfreq.h       |   16 ++++++++++++--
+ 3 files changed, 61 insertions(+), 11 deletions(-)
 
-iQIcBAEBCAAGBQJPYtUHAAoJEECxmPOUX5FEIbMQAI7+lm2VCotsYT3Ac2hqKxZk
-AQ/hFemsdWgbvl9hgF7OO0lFHjA9A5VX7+bMyFirTjxdkE06IyPRP+vvx7edwEJt
-3h/ETOyDDlfZk2Y/oF7Z888t4KXPg9Ln4KJGaz1ZDCfHIeDNn/Ub31Aj30bvpcX+
-bcJYzmd+EiRXAQcls4oay3pt3u7gZwmEZOx7L462+GF3ATpyqpgfCbMtRFU4XkdD
-bSZ+Yn2ar5ObO2SGROvcetCXtKFl+/etJz4u96f6MhdSw92EU/C0yMLSLAbAnUBh
-5D9XVNTSDwMcOxNV+7jyUuPkkyixfm3CIRqUo8B5ZznKPgKdeTySNO3KviNIdx9C
-67qt9gGcXIB8G5TXVWqYx98HWTo5d9IL1X67j9QDK1mmG4R8KJrzoggdL4HIeiao
-3EZHgtWWP21S//rjVwQAicbeqweU38DeD2hBxw/jUv7j5DsY2ozSZYF9eVRERBce
-phC06cg1/Tnvha7SH2aghdp9f8p15IAyVpLitUqJ5hUYtz6apu0lF6VDp+j3l13o
-QfdWAU+k6eXjmawSQd1Wmw1Hbsmy6M+6tjToe18M77cxydoyyxYGNfqpoLx/u/QF
-QDHSJX4asD8GsMZpnnbc4Qacb/CdQlbo8+Q8RmrDW+JtKmFHuoUl7AXmbQ9lGV2t
-Q12qtB5lHzyojqgtNNkc
-=IPdg
------END PGP SIGNATURE-----
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index a129a7b..70c31d4 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -83,6 +83,7 @@ int update_devfreq(struct devfreq *devfreq)
+ {
+ 	unsigned long freq;
+ 	int err = 0;
++	u32 flags = 0;
+ 
+ 	if (!mutex_is_locked(&devfreq->lock)) {
+ 		WARN(true, "devfreq->lock must be locked by the caller.\n");
+@@ -94,7 +95,24 @@ int update_devfreq(struct devfreq *devfreq)
+ 	if (err)
+ 		return err;
+ 
+-	err = devfreq->profile->target(devfreq->dev.parent, &freq);
++	/*
++	 * Adjust the freuqency with user freq and QoS.
++	 *
++	 * List from the highest proiority
++	 * max_freq (probably called by thermal when it's too hot)
++	 * min_freq
++	 */
++
++	if (devfreq->min_freq && freq < devfreq->min_freq) {
++		freq = devfreq->min_freq;
++		flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
++	}
++	if (devfreq->max_freq && freq > devfreq->max_freq) {
++		freq = devfreq->max_freq;
++		flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
++	}
++
++	err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
+ 	if (err)
+ 		return err;
+ 
+@@ -625,14 +643,30 @@ module_exit(devfreq_exit);
+  *			     freq value given to target callback.
+  * @dev		The devfreq user device. (parent of devfreq)
+  * @freq	The frequency given to target function
++ * @flags	Flags handed from devfreq framework.
+  *
+  */
+-struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
++struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
++				    u32 flags)
+ {
+-	struct opp *opp = opp_find_freq_ceil(dev, freq);
++	struct opp *opp;
+ 
+-	if (opp == ERR_PTR(-ENODEV))
++	if (flags & DEVFREQ_FLAG_LEAST_UPPER_BOUND) {
++		/* The freq is an upper bound. opp should be lower */
+ 		opp = opp_find_freq_floor(dev, freq);
++
++		/* If not available, use the closest opp */
++		if (opp == ERR_PTR(-ENODEV))
++			opp = opp_find_freq_ceil(dev, freq);
++	} else {
++		/* The freq is an lower bound. opp should be higher */
++		opp = opp_find_freq_ceil(dev, freq);
++
++		/* If not available, use the closest opp */
++		if (opp == ERR_PTR(-ENODEV))
++			opp = opp_find_freq_floor(dev, freq);
++	}
++
+ 	return opp;
+ }
+ 
+diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+index 590d686..1a361e9 100644
+--- a/drivers/devfreq/exynos4_bus.c
++++ b/drivers/devfreq/exynos4_bus.c
+@@ -619,13 +619,19 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
+ 	return err;
+ }
+ 
+-static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
++static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
++			      u32 flags)
+ {
+ 	int err = 0;
+-	struct busfreq_data *data = dev_get_drvdata(dev);
+-	struct opp *opp = devfreq_recommended_opp(dev, _freq);
+-	unsigned long old_freq = opp_get_freq(data->curr_opp);
++	struct platform_device *pdev = container_of(dev, struct platform_device,
++						    dev);
++	struct busfreq_data *data = platform_get_drvdata(pdev);
++	struct opp *opp = devfreq_recommended_opp(dev, _freq, flags);
+ 	unsigned long freq = opp_get_freq(opp);
++	unsigned long old_freq = opp_get_freq(data->curr_opp);
++
++	if (IS_ERR(opp))
++		return PTR_ERR(opp);
+ 
+ 	if (old_freq == freq)
+ 		return 0;
+diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+index 5862475..281c72a 100644
+--- a/include/linux/devfreq.h
++++ b/include/linux/devfreq.h
+@@ -44,6 +44,14 @@ struct devfreq_dev_status {
+ 	void *private_data;
+ };
+ 
++/*
++ * The resulting frequency should be at most this. (this bound is the
++ * least upper bound; thus, the resulting freq should be lower or same)
++ * If the flag is not set, the resulting frequency should be at most the
++ * bound (greatest lower bound)
++ */
++#define DEVFREQ_FLAG_LEAST_UPPER_BOUND		0x1
++
+ /**
+  * struct devfreq_dev_profile - Devfreq's user device profile
+  * @initial_freq	The operating frequency when devfreq_add_device() is
+@@ -54,6 +62,8 @@ struct devfreq_dev_status {
+  *			higher than any operable frequency, set maximum.
+  *			Before returning, target function should set
+  *			freq at the current frequency.
++ *			The "flags" parameter's possible values are
++ *			explained above with "DEVFREQ_FLAG_*" macros.
+  * @get_dev_status	The device should provide the current performance
+  *			status to devfreq, which is used by governors.
+  * @exit		An optional callback that is called when devfreq
+@@ -66,7 +76,7 @@ struct devfreq_dev_profile {
+ 	unsigned long initial_freq;
+ 	unsigned int polling_ms;
+ 
+-	int (*target)(struct device *dev, unsigned long *freq);
++	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
+ 	int (*get_dev_status)(struct device *dev,
+ 			      struct devfreq_dev_status *stat);
+ 	void (*exit)(struct device *dev);
+@@ -165,7 +175,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
+ 
+ /* Helper functions for devfreq user device driver with OPP. */
+ extern struct opp *devfreq_recommended_opp(struct device *dev,
+-					   unsigned long *freq);
++					   unsigned long *freq, u32 flags);
+ extern int devfreq_register_opp_notifier(struct device *dev,
+ 					 struct devfreq *devfreq);
+ extern int devfreq_unregister_opp_notifier(struct device *dev,
+@@ -216,7 +226,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
+ }
+ 
+ static struct opp *devfreq_recommended_opp(struct device *dev,
+-					   unsigned long *freq)
++					   unsigned long *freq, u32 flags)
+ {
+ 	return -EINVAL;
+ }
+-- 
+1.7.4.1
 
---Signature=_Fri__16_Mar_2012_16_52_07_+1100_pZRK/URh1E+iqQ6N--
