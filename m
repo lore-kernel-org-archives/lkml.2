@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161834Ab2CPU6s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 16:58:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61017 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031888Ab2CPU6q (ORCPT
+	id S1161949Ab2CPU67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 16:58:59 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:40633 "EHLO
+	na3sys009amx257.postini.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161935Ab2CPU6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 16:58:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 1/3] Documentation: common clk API
-Date: Fri, 16 Mar 2012 20:57:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Amit Kucheria <amit.kucheria@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <CAP245DXV5oE+-y+PQCcSM016h-J+UgTi1efmdrcyeQge4k1Cfw@mail.gmail.com> <201203161218.05125.arnd.bergmann@linaro.org>
-In-Reply-To: <201203161218.05125.arnd.bergmann@linaro.org>
+	Fri, 16 Mar 2012 16:58:55 -0400
+Message-ID: <4F63A987.3@ti.com>
+Date: Sat, 17 Mar 2012 02:28:47 +0530
+From: Aneesh V <aneesh@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] misc: ddr: add LPDDR2 data from JESD209-2
+References: <1331835457-5390-1-git-send-email-aneesh@ti.com> <1331835457-5390-2-git-send-email-aneesh@ti.com> <20120315190238.GD11142@kroah.com>
+In-Reply-To: <20120315190238.GD11142@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203162057.58706.arnd@arndb.de>
-X-Provags-ID: V02:K0:U2WW33MoXXYfUA3aZR5/fc69MuIIXIic7oLJwxJTl65
- PkFfQf7Aw5FjQkYOxeXaOlGiDIYugMk1wQ9hewxb6mFmC1wlkX
- eLENZTlWHsNBYTi0tokboKd2oXMDHq4q0zGQKtlMT6FZ1MsSRV
- IgcWuF1KVMP5501DfwQ+s9wyuW0yU+sw06zVyNt12RqIoUno/z
- EzV1NPRCmb2Sq1Q96JOjZtBR7mXiAWLgszHnJGVTPLsapDHApd
- L3ixDuM+7DbiKc5BuH8l0yiCDZj47gXIvOVVlxTBdNrJGjp7Fw
- JcOA9s/hMBuljtz9bJBLFQoPyTm4oLAv8XCqCfO7LMtvbSBBJ9
- rm7P2gsBSTc+EgMTVT80=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 March 2012, Arnd Bergmann wrote:
-> > 
-> > Can we shoe-horn this thing into 3.4 (it is a bit late, i know) so
-> > that platform ports can gather speed? Several people are waiting for a
-> > somewhat stable version before starting their ports.
-> > 
-> > And what is the path into mainline - will Russell carry it or Arnd
-> > (with Russell's blessing)?
-> 
-> I would suggest putting it into a late/* branch of arm-soc so it finally
-> gets some linux-next exposure, and then sending it in the second week of the
-> merge window.
-> 
-> Russell, please let me know if you want to carry it instead or if you
-> have found any last-minute show stoppers in the code.
+Hi Greg,
 
-FWIW, it's in arm-soc now, and it's the last thing I  put in there
-for v3.4. From now on until v3.4-rc1, feature patches can only get
-removed from arm-soc, not added.
+On Friday 16 March 2012 12:32 AM, Greg KH wrote:
+> On Thu, Mar 15, 2012 at 11:47:31PM +0530, Aneesh V wrote:
+>> add LPDDR2 data from the JEDEC spec JESD209-2. The data
+>> includes:
+>>
+>> 1. Addressing information for LPDDR2 memories of different
+>>     densities and types(S2/S4)
+>> 2. AC timing data.
+>>
+>> This data will useful for memory controller device drivers
+>
+> Right now, only one driver, right?
+>
+>> +#ifndef __ASSEMBLY__
+>
+> Why is this needed?
+>
+>> +/* Structure for DDR addressing info from the JEDEC spec */
+>> +struct lpddr2_addressing {
+>> +	u32 num_banks;
+>> +	u32 tREFI_ns;
+>> +	u32 tRFCab_ps;
+>> +};
+>
+> Do these structures cross the user/kernel boundry somehow?  If so,
+> please use the proper kernel types for this.
+>
+>> --- a/lib/Makefile
+>> +++ b/lib/Makefile
+>> @@ -123,6 +123,9 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
+>>
+>>   obj-$(CONFIG_CLZ_TAB) += clz_tab.o
+>>
+>> +obj-$(CONFIG_DDR) += jedec_ddr_data.o
+>> +
+>> +
+>
+> Why the extra line?
+>
+>>   hostprogs-y	:= gen_crc32table
+>>   clean-files	:= crc32table.h
+>>
+>> diff --git a/lib/jedec_ddr_data.c b/lib/jedec_ddr_data.c
+>> new file mode 100644
+>> index 0000000..fc223d6
+>> --- /dev/null
+>> +++ b/lib/jedec_ddr_data.c
+>> @@ -0,0 +1,135 @@
+>> +/*
+>> + * DDR addressing details and AC timing parameters from JEDEC specs
+>> + *
+>> + * Copyright (C) 2012 Texas Instruments, Inc.
+>> + *
+>> + * Aneesh V<aneesh@ti.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include<misc/jedec_ddr.h>
+>> +#include<linux/module.h>
+>> +
+>> +/* LPDDR2 addressing details from JESD209-2 section 2.4 */
+>> +const struct lpddr2_addressing
+>> +	lpddr2_jedec_addressing_table[NUM_DDR_ADDR_TABLE_ENTRIES] = {
+>> +	{B4, T_REFI_15_6, T_RFC_90}, /* 64M */
+>> +	{B4, T_REFI_15_6, T_RFC_90}, /* 128M */
+>> +	{B4, T_REFI_7_8,  T_RFC_90}, /* 256M */
+>> +	{B4, T_REFI_7_8,  T_RFC_90}, /* 512M */
+>> +	{B8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
+>> +	{B8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
+>> +	{B8, T_REFI_3_9, T_RFC_130}, /* 4G */
+>> +	{B8, T_REFI_3_9, T_RFC_210}, /* 8G */
+>> +	{B4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
+>> +	{B4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
+>> +};
+>> +EXPORT_SYMBOL(lpddr2_jedec_addressing_table);
+>
+> EXPORT_SYMBOL_GPL for these and the others?
 
-	Arnd
+I have fixed these comments and pushed my latest patches at:
+git://github.com/aneeshv/linux.git
+branch: emif-upstream-v4
+
+thanks,
+Aneesh
+
