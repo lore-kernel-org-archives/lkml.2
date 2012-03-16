@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab2CPKBh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:01:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47908 "EHLO mga14.intel.com"
+	id S1032579Ab2CPKC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:02:26 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56423 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932386Ab2CPKBf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:01:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="78303681"
-From: "Du, Alek" <alek.du@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
- filling
-Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ//99bYD//3mIQA==
-Date: Fri, 16 Mar 2012 10:01:17 +0000
-Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3D59@SHSMSX102.ccr.corp.intel.com>
-References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
- <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
- <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
- <4F630B4D.3040508@suse.cz>
- <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
- <4F630E6D.4000307@suse.cz>
-In-Reply-To: <4F630E6D.4000307@suse.cz>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932490Ab2CPKCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 06:02:23 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Len Brown <lenb@kernel.org>, srivatsa.bhat@linux.vnet.ibm.com,
+        deepthi@linux.vnet.ibm.com, venki@google.com, trenn@suse.de,
+        bhelgaas@google.com
+Cc: kernel-janitors@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/acpi/processor_driver.c: add missing kfree
+Date: Fri, 16 Mar 2012 11:02:16 +0100
+Message-Id: <1331892136-4790-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We prepared the buffer, and use it. And during this, we don't release the spinlock of buf.lock, how the flush could happen?
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-               A
-spin_lock
-prepare the buffer
-user the buffer
-spin unlock
+The function acpi_processor_add is stored in the ops.add field of a
+acpi_driver structure.  This function is then called in
+acpi_bus_driver_init.  On failure, this function clears the field
+device->driver_data, but does not free its contents.  Thus the free has to
+be done by the add function.  In acpi_processor_add, the corresponding
+value is pr.  This value is currently freed on failure before storing it in
+device->driver_data, but not after.  This free is added in the error
+handling code at the end of the function.  The per_cpu variable
+processors is also cleared so that it does not refer to a dangling pointer.
 
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-              B
-Spin_lock
-Flush
-Free the buffer
-Put buf.tail = NULL
-Spin unlock
+---
+v2: Adjusted the comment format
 
+ drivers/acpi/processor_driver.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-
-Thanks,
-Alek
------Original Message-----
-From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
-Sent: Friday, March 16, 2012 5:57 PM
-To: Du, Alek
-Cc: Jiri Slaby; Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao
-Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
-
-On 03/16/2012 10:49 AM, Du, Alek wrote:
-> The tty structure is protect and not null, the tty->buf.tail is null. 
-> Many people think the tty reference count isn't protected and cause 
-> this bug, it is not true. :-)
-
-You protect the pointer, not what is inside that structure. If you increment a tty reference count, tty->buf.tail won't be NULL iff tty is not NULL. IOW, you have to use tty_port_tty_set/get all around.
-
-> For the flush case, it need acquire the spinlock to free the buffer and put buf.tail to NULL. So this patch will help:
-> 
-> Here is the example place, you can see the __tty_buffer_flush is inside the spinlock.
-
-I'm not talking about flush. I'm talking about prepare. It returns a pointer to a tty buffer which may be concurrently freed by flush.
-
-     A                                   B
-================================================
-prepare(&chars);
-                                        flush(); memcpy(chars, data_from_HW); <- chars is freed now flip();
-
-thanks,
---
-js
-suse labs
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index 2801b41..c5ce91c 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -536,8 +536,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 		return -ENOMEM;
+ 
+ 	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
+-		kfree(pr);
+-		return -ENOMEM;
++		result = -ENOMEM;
++		goto err_free_pr;
+ 	}
+ 
+ 	pr->handle = device->handle;
+@@ -577,7 +577,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 	dev = get_cpu_device(pr->id);
+ 	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
+ 		result = -EFAULT;
+-		goto err_free_cpumask;
++		goto err_clear_processor;
+ 	}
+ 
+ 	/*
+@@ -595,9 +595,16 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 
+ err_remove_sysfs:
+ 	sysfs_remove_link(&device->dev.kobj, "sysdev");
++err_clear_processor:
++	/*
++	 * processor_device_array is not cleared to allow checks for buggy
++	 *  BIOSes
++	 */
++	per_cpu(processors, pr->id) = NULL;
+ err_free_cpumask:
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+-
++err_free_pr:
++	kfree(pr);
+ 	return result;
+ }
+ 
