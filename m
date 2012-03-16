@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761793Ab2CPOYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 10:24:54 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46953 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab2CPOYw (ORCPT
+	id S1032777Ab2CPO0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 10:26:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59407 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030751Ab2CPO0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 10:24:52 -0400
-Date: Fri, 16 Mar 2012 17:26:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/3] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Message-ID: <20120316142649.GJ3163@mwanda>
-References: <1331858893-775-1-git-send-email-kys@microsoft.com>
- <1331858925-827-1-git-send-email-kys@microsoft.com>
- <20120316054556.GH3163@mwanda>
- <6E21E5352C11B742B20C142EB499E0481B7666A2@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20120316071858.GH3220@mwanda>
- <6E21E5352C11B742B20C142EB499E0481B76671F@TK5EX14MBXC126.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+9faIjRurCDpBc7U"
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B76671F@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090209.4F634D20.00A1,ss=1,re=0.000,fgs=0
+	Fri, 16 Mar 2012 10:26:45 -0400
+Date: Sat, 17 Mar 2012 01:26:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, akpm@linux-foundation.org,
+        rob.lee@linaro.org, j-pihet@ti.com, khilman@ti.com,
+        deepthi@linux.vnet.ibm.com, dan.carpenter@oracle.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuidle : fix random hangs with intel_idle
+Message-Id: <20120317012628.4239343e48d748af2514b5b2@canb.auug.org.au>
+In-Reply-To: <CAHLCerOeSHvFXb9ZnBDc1RjETbMLoMNYWqtrM=ipp_iX9XZ1cQ@mail.gmail.com>
+References: <alpine.LSU.2.00.1203131454500.1335@eggly.anvils>
+	<1331770181-800-1-git-send-email-daniel.lezcano@linaro.org>
+	<20120315111415.cd119171ac86967aebe85545@canb.auug.org.au>
+	<alpine.LSU.2.00.1203141720360.2003@eggly.anvils>
+	<20120315135841.affff2d75681451d9ddd1a58@canb.auug.org.au>
+	<CAHLCerOeSHvFXb9ZnBDc1RjETbMLoMNYWqtrM=ipp_iX9XZ1cQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__17_Mar_2012_01_26_28_+1100_mxFIdaebezXMbWbk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---+9faIjRurCDpBc7U
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Sat__17_Mar_2012_01_26_28_+1100_mxFIdaebezXMbWbk
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Mar 16, 2012 at 01:14:07PM +0000, KY Srinivasan wrote:
-> Dan,
-> I am trying to understand your concern here:
-> You will agree with me that the current code does not overflow the=20
-> buffer since the output is limited to MAX bytes and that is how=20
-> big the output buffer is sized. Now, as I pointed out earlier, if the
-> string to be converted were to fully occupy the MAX bytes or even be
-> larger than MAX bytes (no buffer overflow here since we limit the
-> conversion to MAX bytes), we will get a malformed packet that will be
-> sent to the host since the size field of the message would exceed
-> the protocol specified size limit. I was merely pointing out that in
-> this case, I would rather have the host reject the message than send
-> a truncated Key/Value string (if we were to ever get invalid key or
-> value strings).=20
->=20
+Hi Amit,
 
-Sending malformed packets is a bad idea.
+On Fri, 16 Mar 2012 15:37:07 +0200 Amit Kucheria <amit.kucheria@linaro.org>=
+ wrote:
+>
+> A slight glitch: Rob is away until Tuesday. Should Daniel create a new
+> branch to carry this?
 
-Normally, if you handle the error as close to the cause of the error
-as possible then it makes everything easier to read.  In this case
-especially, it's so easy to catch any errors.  If you decide to go
-ahead and send the malformed message, at least put a comment.
+I can keep applying it to linux-next, it just needs to be added to Rob's
+tree before Linus is asked to merge it.
 
-When I read code, I spend all my time looking for what it does
-wrong.  So when code doesn't have any error handling and sets
-keylen =3D -EINVAL then sure, it's fewer lines of code to read, but
-it doesn't make my life easier.  Readable code has obvious error
-handling.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Introducing off by one errors is an especially bad idea.  It doesn't
-matter how harmless they are, because they end up getting copy and
-pasted.  I don't know how to make it any clearer than that.  :/
-Never never never do that!
-
-regards,
-dan carpenter
-
-
---+9faIjRurCDpBc7U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Signature=_Sat__17_Mar_2012_01_26_28_+1100_mxFIdaebezXMbWbk
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPY02pAAoJEOnZkXI/YHqRDEoP+gKhaThrvNOFUEb7aWMq1ilE
-SI1nqWD7mBeDdYxDKtyv/kexXXWaGirkBFkR0uxNI3ZVBqdLByl0HYSqoqzAhy2b
-yjI3RNSJ5NVA4TJfUcsIGHztCFNsk/ODBSSnpzkEON18kzutblZmZFlRIHxlRgc4
-7EZ9b4u+U/l/EL6hmOnO2jM7ZQqnTJhJdzWIvbFE+a7tK9/azuwVKotBUOvtb6eY
-StBbJfVSXg/GUyX03aABpsJfzpTuaeDKx7XT/ZBVgk1RtP4naMYXU4DMMuwOBw5S
-BNPY5bGIEgQcma0/y127peqTQJWgRKTKYBHTx/uPYuIzvC/2XpeHwqIg5uFk4ThT
-v+RPInkEaiG+s5mn4eHbHEzyzY7AboYpaKt8C4FGJLSRfN1CGnAgYp1CGnDhHEPm
-5mpcGu1UrjSEM1CiWWOqSra8cWCucFjsIb7hX/VbxYiJHwq7OFKGxyEVM/gRmzea
-/zMN3S1EPPmRPvtg56vhyxMINSMH0vMQfjMtLeH6o/KMwT8TASIWMugFwN7P4qQt
-QuwPqU1k8MJXfmM2SY3kZ2klRMRlCc6VvZwqjryeDm3D8RjRcsG1iUL2A+b4jij3
-0RkP9qqujx5Mccy3/sMbfcqZPtG2LuKYGNHFSZLdtJpJOdhwQY+6vAvJ5+JufWKa
-gbJWkgdlXgNTTlBbkb78
-=EXNg
+iQIcBAEBCAAGBQJPY02UAAoJEECxmPOUX5FEmLsP+gN+CaJmHIVMbEa2PxTY4Xge
+CxAxP7Zjoxo2wHQ2viixB0iSUSq2lAkrk7aQeI4jHehp/y5l2Pfcl/xJGgU856Br
+W3EowcHieIjcKzQGEmvFSn6jDfE8k9ktI5uA2qaRfGQOtYtREnTCWxzgCRVVFueA
+k+LRROoYDpwLS+39VM5Gss68vtFfbezapFisPbYrWHGsk3vL4SfphpEJhaB9VGo+
+eojI6fyiF2tCnHtOCSFOvilTT2DI28ljr3eDWdayL6Lei/gbpvBJfUtGXJdQs7XK
+PDH7CoXDMz4uOhFteG8onEZw9KvoIR3XeWfzTs0+jtPSTozZNg22uKyk9e6JuwDQ
+JhAg5XSqcIl2wLFTFEFCYqrbm9gFagOx+Di3keCw0VmiOV49JVlsP744MLrwHodE
+BusyfaKCfKEX+CxjEGTLPQdSvDH/AY1MjWOdtabhQ2Kl5ZaU7ZBs12q3zqgr5LWY
+Om4xLiul8aaiYAUc4utxDy5WRZM2VY/OC09fZul/HYbfA/aSvf5ZFqqu71bfVhdu
+EQe1/igne64QZX/wWeDV5iJt0x0wKVIuXsxhAufOOje06ftrVh7g+DlAFr7zjpX8
+3HoTPkRJaLWe46HwrKuRGfg2mIzDumn8Xx1z8qRxadG+qn0QuiMPH4omPHoi29rX
+7ax7I4jjG0J2AXMtQ+d4
+=Sinv
 -----END PGP SIGNATURE-----
 
---+9faIjRurCDpBc7U--
+--Signature=_Sat__17_Mar_2012_01_26_28_+1100_mxFIdaebezXMbWbk--
