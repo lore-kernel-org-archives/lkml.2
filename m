@@ -1,217 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162104Ab2CPXgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:36:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62384 "EHLO
+	id S1946044Ab2CPXht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:37:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39045 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162076Ab2CPXg3 (ORCPT
+	with ESMTP id S1946031Ab2CPXho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:36:29 -0400
-From: Tejun Heo <tj@kernel.org>
-To: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/10] cgroup: introduce struct cfent
-Date: Fri, 16 Mar 2012 16:36:02 -0700
-Message-Id: <1331940963-15756-10-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331940963-15756-1-git-send-email-tj@kernel.org>
-References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+	Fri, 16 Mar 2012 19:37:44 -0400
+Message-Id: <20120316233447.657865319@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 16 Mar 2012 16:34:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 04/38] x86: Derandom delay_tsc for 64 bit
+In-Reply-To: <20120316233422.GA5461@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds cfent (cgroup file entry) which is the association
-between a cgroup and a file.  This is in-cgroup representation of
-files under a cgroup directory.  This simplifies walking walking
-cgroup files and thus cgroup_clear_directory(), which is now
-implemented in two parts - cgroup_rm_file() and a loop around it.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-cgroup_rm_file() will be used to implement cftype removal and cfent is
-scheduled to serve cgroup specific per-file data (e.g. for sysfs-like
-"sever" semantics).
+------------------
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+From: Thomas Gleixner <tglx@linutronix.de>
+
+commit a7f4255f906f60f72e00aad2fb000939449ff32e upstream.
+
+Commit f0fbf0abc093 ("x86: integrate delay functions") converted
+delay_tsc() into a random delay generator for 64 bit.  The reason is
+that it merged the mostly identical versions of delay_32.c and
+delay_64.c.  Though the subtle difference of the result was:
+
+ static void delay_tsc(unsigned long loops)
+ {
+-	unsigned bclock, now;
++	unsigned long bclock, now;
+
+Now the function uses rdtscl() which returns the lower 32bit of the
+TSC. On 32bit that's not problematic as unsigned long is 32bit. On 64
+bit this fails when the lower 32bit are close to wrap around when
+bclock is read, because the following check
+
+       if ((now - bclock) >= loops)
+       	  	break;
+
+evaluated to true on 64bit for e.g. bclock = 0xffffffff and now = 0
+because the unsigned long (now - bclock) of these values results in
+0xffffffff00000001 which is definitely larger than the loops
+value. That explains Tvortkos observation:
+
+"Because I am seeing udelay(500) (_occasionally_) being short, and
+ that by delaying for some duration between 0us (yep) and 491us."
+
+Make those variables explicitely u32 again, so this works for both 32
+and 64 bit.
+
+Reported-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/cgroup.h |    1 +
- kernel/cgroup.c        |  107 ++++++++++++++++++++++++++++++++----------------
- 2 files changed, 72 insertions(+), 36 deletions(-)
+ arch/x86/lib/delay.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 05ddf59..caeaafc 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -175,6 +175,7 @@ struct cgroup {
- 	 */
- 	struct list_head sibling;	/* my parent's children */
- 	struct list_head children;	/* my children */
-+	struct list_head files;		/* my files */
- 
- 	struct cgroup *parent;		/* my parent */
- 	struct dentry __rcu *dentry;	/* cgroup fs entry, RCU protected */
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 765d9f5..c0c61b9 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -158,6 +158,15 @@ struct cftype_set {
- };
- 
- /*
-+ * cgroupfs file entry, pointed to from leaf dentry->d_fsdata.
-+ */
-+struct cfent {
-+	struct list_head		node;
-+	struct dentry			*dentry;
-+	struct cftype			*type;
-+};
-+
-+/*
-  * CSS ID -- ID per subsys's Cgroup Subsys State(CSS). used only when
-  * cgroup_subsys->use_id != 0.
-  */
-@@ -297,11 +306,16 @@ static inline struct cgroup *__d_cgrp(struct dentry *dentry)
- 	return dentry->d_fsdata;
+--- a/arch/x86/lib/delay.c
++++ b/arch/x86/lib/delay.c
+@@ -48,9 +48,9 @@ static void delay_loop(unsigned long loo
  }
  
--static inline struct cftype *__d_cft(struct dentry *dentry)
-+static inline struct cfent *__d_cfe(struct dentry *dentry)
+ /* TSC based delay: */
+-static void delay_tsc(unsigned long loops)
++static void delay_tsc(unsigned long __loops)
  {
- 	return dentry->d_fsdata;
- }
+-	unsigned long bclock, now;
++	u32 bclock, now, loops = __loops;
+ 	int cpu;
  
-+static inline struct cftype *__d_cft(struct dentry *dentry)
-+{
-+	return __d_cfe(dentry)->type;
-+}
-+
- /* the list of cgroups eligible for automatic release. Protected by
-  * release_list_lock */
- static LIST_HEAD(release_list);
-@@ -905,34 +919,38 @@ static void remove_dir(struct dentry *d)
- 	dput(parent);
- }
- 
--static void cgroup_clear_directory(struct dentry *dentry)
--{
--	struct list_head *node;
--
--	BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
--	spin_lock(&dentry->d_lock);
--	node = dentry->d_subdirs.next;
--	while (node != &dentry->d_subdirs) {
--		struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
--
--		spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
--		list_del_init(node);
--		if (d->d_inode) {
--			/* This should never be called on a cgroup
--			 * directory with child cgroups */
--			BUG_ON(d->d_inode->i_mode & S_IFDIR);
--			dget_dlock(d);
--			spin_unlock(&d->d_lock);
--			spin_unlock(&dentry->d_lock);
--			d_delete(d);
--			simple_unlink(dentry->d_inode, d);
--			dput(d);
--			spin_lock(&dentry->d_lock);
--		} else
--			spin_unlock(&d->d_lock);
--		node = dentry->d_subdirs.next;
-+static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
-+{
-+	struct cfent *cfe;
-+
-+	lockdep_assert_held(&cgrp->dentry->d_inode->i_mutex);
-+	lockdep_assert_held(&cgroup_mutex);
-+
-+	list_for_each_entry(cfe, &cgrp->files, node) {
-+		struct dentry *d = cfe->dentry;
-+
-+		if (cft && cfe->type != cft)
-+			continue;
-+
-+		dget(d);
-+		d_delete(d);
-+		simple_unlink(d->d_inode, d);
-+		dput(d);
-+
-+		list_del_init(&cfe->node);
-+		kfree(cfe);
-+		return 0;
- 	}
--	spin_unlock(&dentry->d_lock);
-+	return -ENOENT;
-+}
-+
-+static void cgroup_clear_directory(struct dentry *dir)
-+{
-+	struct cgroup *cgrp = __d_cgrp(dir);
-+
-+	while (!list_empty(&cgrp->files))
-+		cgroup_rm_file(cgrp, NULL);
-+	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
- }
- 
- /*
-@@ -1362,6 +1380,7 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
- {
- 	INIT_LIST_HEAD(&cgrp->sibling);
- 	INIT_LIST_HEAD(&cgrp->children);
-+	INIT_LIST_HEAD(&cgrp->files);
- 	INIT_LIST_HEAD(&cgrp->css_sets);
- 	INIT_LIST_HEAD(&cgrp->release_list);
- 	INIT_LIST_HEAD(&cgrp->pidlists);
-@@ -2633,7 +2652,9 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 			   const struct cftype *cft)
- {
- 	struct dentry *dir = cgrp->dentry;
-+	struct cgroup *parent = __d_cgrp(dir);
- 	struct dentry *dentry;
-+	struct cfent *cfe;
- 	int error;
- 	umode_t mode;
- 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
-@@ -2649,17 +2670,31 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 		strcat(name, ".");
- 	}
- 	strcat(name, cft->name);
-+
- 	BUG_ON(!mutex_is_locked(&dir->d_inode->i_mutex));
-+
-+	cfe = kzalloc(sizeof(*cfe), GFP_KERNEL);
-+	if (!cfe)
-+		return -ENOMEM;
-+
- 	dentry = lookup_one_len(name, dir, strlen(name));
--	if (!IS_ERR(dentry)) {
--		mode = cgroup_file_mode(cft);
--		error = cgroup_create_file(dentry, mode | S_IFREG,
--						cgrp->root->sb);
--		if (!error)
--			dentry->d_fsdata = (void *)cft;
--		dput(dentry);
--	} else
-+	if (IS_ERR(dentry)) {
- 		error = PTR_ERR(dentry);
-+		goto out;
-+	}
-+
-+	mode = cgroup_file_mode(cft);
-+	error = cgroup_create_file(dentry, mode | S_IFREG, cgrp->root->sb);
-+	if (!error) {
-+		cfe->type = (void *)cft;
-+		cfe->dentry = dentry;
-+		dentry->d_fsdata = cfe;
-+		list_add_tail(&cfe->node, &parent->files);
-+		cfe = NULL;
-+	}
-+	dput(dentry);
-+out:
-+	kfree(cfe);
- 	return error;
- }
- 
--- 
-1.7.7.3
+ 	preempt_disable();
+
 
