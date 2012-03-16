@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946397Ab2CPXrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 19:47:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45118 "EHLO
+	id S1946284Ab2CPXk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 19:40:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48094 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946300Ab2CPXka (ORCPT
+	with ESMTP id S1946248Ab2CPXkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:40:30 -0400
-Message-Id: <20120316233812.218798802@linuxfoundation.org>
+	Fri, 16 Mar 2012 19:40:09 -0400
+Message-Id: <20120316233811.589196908@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 16 Mar 2012 16:38:28 -0700
+Date: Fri, 16 Mar 2012 16:38:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/41] sfc: Fix assignment of ip_summed for pre-allocated skbs
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 11/41] vfs: fix return value from do_last()
 In-Reply-To: <20120316233829.GA14022@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+commit 7f6c7e62fcc123e6bd9206da99a2163fe3facc31 upstream.
 
-[ Upstream commit ff3bc1e7527504a93710535611b2f812f3bb89bf ]
+complete_walk() returns either ECHILD or ESTALE.  do_last() turns this into
+ECHILD unconditionally.  If not in RCU mode, this error will reach userspace
+which is complete nonsense.
 
-When pre-allocating skbs for received packets, we set ip_summed =
-CHECKSUM_UNNCESSARY.  We used to change it back to CHECKSUM_NONE when
-the received packet had an incorrect checksum or unhandled protocol.
-
-Commit bc8acf2c8c3e43fcc192762a9f964b3e9a17748b ('drivers/net: avoid
-some skb->ip_summed initializations') mistakenly replaced the latter
-assignment with a DEBUG-only assertion that ip_summed ==
-CHECKSUM_NONE.  This assertion is always false, but it seems no-one
-has exercised this code path in a DEBUG build.
-
-Fix this by moving our assignment of CHECKSUM_UNNECESSARY into
-efx_rx_packet_gro().
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/sfc/rx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -156,11 +156,10 @@ static int efx_init_rx_buffers_skb(struc
- 		if (unlikely(!skb))
- 			return -ENOMEM;
+---
+ fs/namei.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2139,7 +2139,7 @@ static struct file *do_last(struct namei
+ 		/* sayonara */
+ 		error = complete_walk(nd);
+ 		if (error)
+-			return ERR_PTR(-ECHILD);
++			return ERR_PTR(error);
  
--		/* Adjust the SKB for padding and checksum */
-+		/* Adjust the SKB for padding */
- 		skb_reserve(skb, NET_IP_ALIGN);
- 		rx_buf->len = skb_len - NET_IP_ALIGN;
- 		rx_buf->is_page = false;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		rx_buf->dma_addr = pci_map_single(efx->pci_dev,
- 						  skb->data, rx_buf->len,
-@@ -499,6 +498,7 @@ static void efx_rx_packet_gro(struct efx
- 
- 		EFX_BUG_ON_PARANOID(!checksummed);
- 		rx_buf->u.skb = NULL;
-+		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		gro_result = napi_gro_receive(napi, skb);
- 	}
+ 		error = -ENOTDIR;
+ 		if (nd->flags & LOOKUP_DIRECTORY) {
 
 
