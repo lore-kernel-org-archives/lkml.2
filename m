@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422982Ab2CPPNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:13:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62239 "EHLO mx1.redhat.com"
+	id S1032899Ab2CPPNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:13:32 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58251 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965352Ab2CPPNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:13:11 -0400
-Subject: [GIT PULL] C6X: remove dead code from entry.S
-From: Mark Salter <msalter@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        dhowells <dhowells@redhat.com>,
-        "JACQUIOT-XID, Aurelien" <a-jacquiot@ti.com>
-Date: Fri, 16 Mar 2012 11:13:06 -0400
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
+	id S1032861Ab2CPPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 11:13:30 -0400
+Subject: Re: [PATCH] powerpc/srio: Fix the relocation errors when building with 64bit
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1331002692-9061-1-git-send-email-Gang.Liu@freescale.com>
+Date: Fri, 16 Mar 2012 10:12:51 -0500
+Cc: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>, <r61911@freescale.com>,
+        <scottwood@freescale.com>, <paul.gortmaker@windriver.com>
 Content-Transfer-Encoding: 7bit
-Message-ID: <1331910787.12353.6.camel@deneb.redhat.com>
-Mime-Version: 1.0
+Message-Id: <5B36FC4C-E8D4-459C-8040-B7F4A3B88A77@kernel.crashing.org>
+References: <1331002692-9061-1-git-send-email-Gang.Liu@freescale.com>
+To: Liu Gang <Gang.Liu@freescale.com>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit fde7d9049e55ab85a390be7f415d74c9f62dd0f9:
 
-  Linux 3.3-rc7 (2012-03-10 13:49:52 -0800)
+On Mar 5, 2012, at 8:58 PM, Liu Gang wrote:
 
-are available in the git repository at:
+> For the file "arch/powerpc/sysdev/fsl_rio.c", there will be some relocation
+> errors while using the corenet64_smp_defconfig:
+> 
+> WARNING: modpost: Found 6 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>  GEN     .version
+>  CHK     include/generated/compile.h
+>  UPD     include/generated/compile.h
+>  CC      init/version.o
+>  LD      init/built-in.o
+>  LD      .tmp_vmlinux1
+> arch/powerpc/sysdev/built-in.o:(__ex_table+0x0):
+> 	relocation truncated to fit: R_PPC64_ADDR16 against `.text'+3208
+> arch/powerpc/sysdev/built-in.o:(__ex_table+0x2):
+> 	relocation truncated to fit: R_PPC64_ADDR16 against `.fixup'
+> arch/powerpc/sysdev/built-in.o:(__ex_table+0x4):
+> 	relocation truncated to fit: R_PPC64_ADDR16 against `.text'+3230
+> arch/powerpc/sysdev/built-in.o:(__ex_table+0x6):
+> 	relocation truncated to fit: R_PPC64_ADDR16 against `.fixup'+c
+> arch/powerpc/sysdev/built-in.o:(__ex_table+0x8):
+> 	relocation truncated to fit: R_PPC64_ADDR16 against `.text'+3250
+> arch/powerpc/sysdev/built-in.o:(__ex_table+0xa):
+> 	relocation truncated to fit: R_PPC64_ADDR16 against `.fixup'+18
+> 
+> Rewrote the corresponding code with the support of 64bit building.
+> 
+> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+> ---
+> arch/powerpc/sysdev/fsl_rio.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
 
-  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git tags/for-linus
+applied
 
-for you to fetch changes up to 6e780cf5c07ab85b9b1825ddd586a53ead10b579:
-
-  C6X: remove dead code from entry.S (2012-03-16 09:27:57 -0400)
-
-----------------------------------------------------------------
-Remove dead code from entry.S which causes a build failure when using
-a newer assembler (v2.22 complains about it, v2.20 ignores it).
-
-----------------------------------------------------------------
-Mark Salter (1):
-      C6X: remove dead code from entry.S
-
- arch/c6x/kernel/entry.S |   27 ---------------------------
- 1 files changed, 0 insertions(+), 27 deletions(-)
-
-
+- k
