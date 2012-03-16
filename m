@@ -1,312 +1,505 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964958Ab2CPTpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 15:45:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39441 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab2CPTp1 (ORCPT
+	id S965003Ab2CPTqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 15:46:17 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41028 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757342Ab2CPTqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 15:45:27 -0400
-Message-ID: <4F639851.5080500@gmail.com>
-Date: Fri, 16 Mar 2012 12:45:21 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 16 Mar 2012 15:46:14 -0400
+From: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
+Date: Fri, 16 Mar 2012 20:48:13 +0100
+Message-Id: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
+X-Mailer: git-send-email 1.7.8.5
 MIME-Version: 1.0
-To: Linux-wireless <linux-wireless@vger.kernel.org>
-CC: Felix Fietkau <nbd@openwrt.org>, Mohammed Shafi <shafi.wireless@gmail.com>,
-        linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com>
-In-Reply-To: <4F61F551.5010608@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 06:57 AM, Justin P. Mattock wrote:
->
->>> ok! I have set that on the machine.. will see if I get this message in
->>> the upcoming weeks.
->> Also, please try this patch with powersave enabled:
->> http://nbd.name/ps-fix.patch
->>
->> - Felix
->>
->
-> I did have ps-fix patch running, but removed it in the kernel due to not
-> being able to connect once I wakeup from suspend. anyway I have enable
-> debugging for the wireless(hopefully) and was able to trigger this after
-> a fresh build of the kernel last night(git clean -fx and all)
->
-> the message I have in dmesg is:
->
-> [ 3348.274932] ath: Failed to stop TX DMA, queues=0x004!
-> [ 3348.292637] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
-> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-> [ 3348.292643] ath: Could not stop RX, we could be confusing the DMA
-> engine when we start RX up
-> [ 3348.292648] ------------[ cut here ]------------
-> [ 3348.292662] WARNING: at drivers/net/wireless/ath/ath9k/recv.c:537
-> ath_stoprecv+0xed/0x100 [ath9k]()
-> [ 3348.292666] Hardware name: 0914
-> [ 3348.292669] Modules linked in: dm_crypt ipt_REJECT ipt_LOG xt_limit
-> xt_tcpudp xt_addrtype joydev xt_state arc4 snd_hda_codec_hdmi
-> snd_hda_codec_conexant ath9k snd_hda_intel snd_hda_codec snd_hwdep
-> mac80211 snd_pcm snd_seq_midi nf_conntrack_netbios_ns
-> nf_conntrack_broadcast nf_nat_ftp nf_nat snd_rawmidi ath9k_common
-> nf_conntrack_ipv4 uvcvideo nf_defrag_ipv4 ath9k_hw snd_seq_midi_event
-> nf_conntrack_ftp nf_conntrack snd_seq snd_timer snd_seq_device ath
-> videobuf2_core videodev cfg80211 psmouse iptable_filter ip_tables
-> videobuf2_vmalloc videobuf2_memops name_laptop intel_ips sparse_keymap
-> serio_raw snd lp parport x_tables soundcore snd_page_alloc i915
-> drm_kms_helper drm i2c_algo_bit intel_agp intel_gtt usb_storage agpgart
-> video r8169 uas
-> [ 3348.292786] Pid: 5972, comm: kworker/u:24 Not tainted
-> 3.3.0-rc7-00048-g762ad8a #1
-> [ 3348.292790] Call Trace:
-> [ 3348.292804] [<c1046f32>] warn_slowpath_common+0x72/0xa0
-> [ 3348.292816] [<f8f528bd>] ? ath_stoprecv+0xed/0x100 [ath9k]
-> [ 3348.292826] [<f8f528bd>] ? ath_stoprecv+0xed/0x100 [ath9k]
-> [ 3348.292832] [<c1046f82>] warn_slowpath_null+0x22/0x30
-> [ 3348.292842] [<f8f528bd>] ath_stoprecv+0xed/0x100 [ath9k]
-> [ 3348.292855] [<f8f4e35d>] ath_prepare_reset+0x5d/0xd0 [ath9k]
-> [ 3348.292865] [<f8f4f92c>] ath_reset_internal+0x7c/0x160 [ath9k]
-> [ 3348.292875] [<c10a862b>] ? trace_hardirqs_on+0xb/0x10
-> [ 3348.292885] [<f8f4fa35>] ath_reset+0x25/0xb0 [ath9k]
-> [ 3348.292891] [<c10a8594>] ? trace_hardirqs_on_caller+0xf4/0x180
-> [ 3348.292901] [<f8f51377>] ath_reset_work+0x17/0x20 [ath9k]
-> [ 3348.292909] [<c10663d6>] process_one_work+0x166/0x5b0
-> [ 3348.292916] [<c1066362>] ? process_one_work+0xf2/0x5b0
-> [ 3348.292924] [<c12ca72b>] ? do_raw_spin_lock+0x3b/0xf0
-> [ 3348.292935] [<f8f51360>] ? ath_isr+0x270/0x270 [ath9k]
-> [ 3348.292944] [<c1066b34>] worker_thread+0x124/0x2c0
-> [ 3348.292950] [<c1066a10>] ? rescuer_thread+0x1c0/0x1c0
-> [ 3348.292957] [<c106b77d>] kthread+0x7d/0x90
-> [ 3348.292963] [<c106b700>] ? __init_kthread_worker+0x60/0x60
-> [ 3348.292972] [<c158ed42>] kernel_thread_helper+0x6/0x10
-> [ 3348.292976] ---[ end trace ced0f48896d487b2 ]---
-> [ 3349.735411] ath: Failed to stop TX DMA, queues=0x005!
-> [ 3349.753028] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
-> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-> [ 3349.753034] ath: Could not stop RX, we could be confusing the DMA
-> engine when we start RX up
->
->
-> full dmesg is here;
-> http://fpaste.org/YhqT/
->
-> hope this helps with finding the bug!
->
-> Justin P. Mattock
+The driver is currently written for IT8728, but the code in it87_wdt
+suggest it would work the same way on many other versions.
 
-not sure if this is correct, but from what I remember, not cleaning the 
-directory of the kernel seems to hide this bug, doing a git clean -fx 
-has triggered this twice now, as opposed to waiting a week.. anyway I 
-added more debug options to the kernel to see what it might produce when 
-this is triggered. this is what i have now..:
+This is just a first step to verify the working status of the code,
+and might require moving to a MFD approach to share with hwmon/it87
+and it87_wdt, as they all share the same access to the Super I/O chip.
+That would also allow to set a few more opitons so that you could for
+instance change the function selection of a few pins from their
+default to GPIO pins.
 
+It does not yet support the polarity-inversion register that is
+allowed by the chipset, which might require sysfs attributes per-gpio.
 
-[10558.732792] TKIP decrypt: data(len=1468) 08 28 08 20 00 00 00 00 aa 
-aa 03 00 00 00 08 00 45 00 05 a8 54 36 40 00 3a 06 6a 5d cc 02 a6 81 0a 
-00 00 39 00 50 9f 02 8c ff aa e2 22 c1 69 aa 80 10 10 f8 1d 52 00 00 01 
-01 08 0a 0d 20 6d 44 00 27 3b 4d c1 08 29 9c c6 b1 d3 18 22 9e 13 08 a5 
-dd ac 66 24 3a 18 22 11 84 ac 6a 49 94 c4 84 fb 73 86 94 10 9e 72 e9 04 
-51 04 d2 93 d3 2e a3 28 51 4c b4 8c 89 27 4c bd 3e 8c 60 44 10 2a 91 32 
-e9 da 25 84 08 81 49 45 47 0e cc e0 8a 00 25 34 26 5d 7e 5c 47 e0 85 10 
-9e 03 c8 9c 57 fe 4f 4c c6 50 44 46 09 e0 74 23 0b 10 00 13 ef 12 3d 12 
-82 21 18 0f 22 47 12 64 25 e9 96 30 44 23 03 b9 10 c4 63 8c cf b3 38 6b 
-98 14 16 a5 12 27 d3 db 02 20 52 41 3d 92 9e 03 38 51 4e 05 0d 3d a0 fe 
-08 22 8c 25 20 9c 44 bd b8 41 14 40 a1 23 2c 06 70 45 38 14 06 a3 98 97 
-5c a0 4a 09 19 1f 7a 5e d1 9c 28 84 c3 49 42 58 ce 72 f5 fa 7d 30 44 23 
-09 e4 49 53 96 03 0c 25 28 69 42 29 aa d5 99 18 9e 9d 61 45 38 14 81 5c 
-f2 eb 39 67 0d 28 14 e2 48 c3 db 02 64 10 84 ba 4b d7 02 20 51 4c c0 9e 
-42 04 10 42 72 54 0e 7e 88 e5 c5 0d 69 37 27 24 28 93 21 1c c5 3c 27 91 
-05 1e d0 41 ed 8e 81 48 85 6c f9 74 6d b5 d4 de 90 65 de 69 a6 c3 10 74 
-4d 73 f4 4a 72 f6 c6 35 67 ee 75 2f 41 4c d8 53 03 fe 47 dc 16 9f 3d ad 
-6a a1 db 64 ac 68 fc fe a6 c4 a7 30 94 49 5d b9 18 96 82 f3 d0 aa 57 64 
-e9 50 39 04 a4 4e 53 fc 71 82 5c 62 57 d4 98 c6 e1 11 01 09 7a 23 98 95 
-26 10 81 06 63 4a 4a dc 24 04 21 22 65 44 99 00 07 69 30 07 11 72 4e 63 
-4d a4 05 66 5c f8 9b 6b ed 1b 15 be b3 7c 57 5c 9d bb 5d 4a 91 4b 65 b0 
-32 cb 8f 05 a4 05 29 33 75 2a 0e 68 04 6b 20 a7 1c a7 9c 5c 95 21 cf ca 
-bc ad 4f ac 86 98 4b 68 87 3e 5f 72 e5 6e 9d 8b b6 2d 9b 0e 9f 71 5b ab 
-2b aa 1f ab ba 0b 78 a4 ad 61 14 ab a6 4f 86 71 e2 87 5a 91 58 74 68 9e 
-ad 5a 4a 48 90 eb 1c 3e 49 6c 6d b9 5b a3 f5 31 3a 6b 58 5a 00 20 c3 a6 
-fc d6 67 50 93 22 7d 99 f6 45 58 af 43 00 9c 94 80 71 18 fe 48 71 29 16 
-8e 44 48 c2 52 04 41 14 83 42 b3 78 a7 89 f6 6e f7 a1 79 0a b9 5c a9 ee 
-74 68 6d 75 c8 4a 18 4b 00 be a7 83 7d d9 29 52 95 ee b4 75 4f ac 4c d6 
-44 46 2b 06 b3 d4 26 53 cc c2 1a d8 75 aa f6 f6 9b 20 ae d5 65 f1 a6 d6 
-a4 21 54 cf 5c 5a 4b 4e ba 0a 41 2a 09 4f bb a7 51 c0 88 26 cb 32 cc 15 
-ef 4f ab 15 4c c5 0b 41 5a 3a 42 44 d3 9f 5e 91 09 71 39 56 80 63 40 80 
-02 08 89 6a 9a 46 13 cb d1 04 4a eb 08 37 a6 fb b8 4f 0f c5 04 4a 30 0e 
-45 2a e3 4d ad b5 f7 2d f9 16 8b c5 5d 6d 25 4d 61 4b 76 ef 06 86 96 8d 
-49 43 ab 74 ba 56 09 48 92 40 4c 86 71 24 b6 e2 ca b3 7d 42 a1 d2 1a 1c 
-d6 82 23 6a d9 e4 bd 9d b6 76 bd d5 cb 45 ad fb 85 65 6d 39 42 ab 5f a9 
-69 1e 19 b4 ba 84 ad 21 2e 36 94 cd 7e f6 51 23 e4 90 dc 51 b1 52 a1 f5 
-3d bc dc 0e 68 06 19 14 45 23 51 13 00 7a fd 18 e3 15 e2 b7 8b 44 11 28 
-46 a9 80 31 12 20 f4 9c 04 94 83 40 c8 92 90 24 41 12 ea 65 04 4a e8 00 
-a7 5b 47 8a a8 6a b6 75 56 f5 dd 77 07 2d 3b 69 84 a9 6c a6 95 b4 ae a5 
-f4 a5 5d de a9 ac 29 28 d6 b9 25 03 49 2a cf 01 29 cf 2a 5b 9c 60 b0 ab 
-fd 4d b2 1d 85 ad 05 c2 f8 dc b2 db b6 16 c0 ba d9 af 97 6a 1a 8b e5 20 
-b4 5a ea ee 0c 5b 6e b4 ac d3 be ff 00 70 8d 69 74 38 90 50 eb 22 52 50 
-40 49 9a 93 88 eb 33 a9 88 30 8a cf 97 eb a6 11 2c 02 db 6c c9 df c9 6a 
-af 34 04 e6 31 94 c0 22 71 46 25 7a fc 2d 39 12 f7 49 38 65 99 eb f2 c3 
-c4 50 58 d3 78 09 69 4c 89 90 9e 32 10 62 3c a8 32 da 4d a0 29 67 17 ed 
-4d af ba 37 18 b2 5d ab 2a e9 2a ab 24 9b 6f 83 6d a2 da 8b 4d bc f3 bd 
-ea 9c 4a 8a 7d c4 0d 32 19 ce 24 60 c5 64 56 67 a8 ce 75 3b 43 da d6 9c 
-87 e0 bb f5 7c 63 b2 93 c9 ed ec 5a 4a ab d5 55 43 28 52 ae 4f 34 c5 3a 
-92 d1 71 0c 38 d2 b5 e9 09 0d 25 0e 28 b8 48 9c e4 04 e2 63 26 00 18 de 
-b2 99 ea ee 73 5c ec 2d 8b 61 90 c3 a3 a6 d1 67 24 54 6b 7b 59 b8 fa dc 
-f3 b4 bb 5e be be f0 f5 2b dd d5 65 6a da 6c d0 a6 49 24 84 3c da 52 14 
-ad 52 1d 9d 90 e6 c9 7b 5b 88 95 2f a7 7a 9b 67 cd c0 5a d1 1e 41 94 28 
-c9 50 19 65 2e 9e d8 a7 15 e9 c3 42 1a 40 90 e8 7a f4 94 30 e2 12 2c 69 
-bc 04 56 90 72 cb af 66 38 c2 89 40 68 e4 4d d2 99 e5 81 fb fe 88 22 ba 
-c2 10 29 44 86 19 e5 86 7d 21 e2 3c ab 91 2d bc 81 00 10 44 b3 90 eb db 
-0b 11 be 29 e0 6c 21 01 04 a4 08 00 1c 4e 1e a9 99 08 22 53 c2 39 14 bf 
-8c f6 7e d8 dc f7 63 6a b9 56 56 d3 5c 1f 27 c2 0a 54 34 59 29 6d b5 2d 
-5a d4 b0 a2 14 74 99 44 ac 6e 28 da b1 fd 46 ad f4 f0 2d 6b 48 2b ae be 
-3b d8 83 90 53 b5 3c 75 de 53 14 cb ab ee 59 d0 6b 1c 09 71 28 0b d3 22 
-80 da bd ec 27 38 98 c9 22 06 37 ac c6 7a c3 de c7 41 ad 8b 79 8c 20 b9 
-bc 9d b2 b6 ce d6 ac 16 cb 6b d7 1a bb 8b 5d db 95 6e 54 34 df 85 6d a7 
-52 ad 3f 9c 42 53 ef 95 01 81 e9 1c ba 49 0d 72 9f 8f ed
-[10558.734622] TKIP decrypt: iv16=0808 iv32=00000000
-[10560.232164] wlan0: detected beacon loss from AP - sending probe request
-[10560.645078] ath: Failed to stop TX DMA, queues=0x005!
-[10560.662741] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10560.662750] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10560.662754] ------------[ cut here ]------------
-[10560.662770] WARNING: at drivers/net/wireless/ath/ath9k/recv.c:537 
-ath_stoprecv+0xed/0x100 [ath9k]()
-[10560.662775] Hardware name: 0914
-[10560.662778] Modules linked in: dm_crypt ipt_REJECT ipt_LOG joydev 
-xt_limit xt_tcpudp xt_addrtype xt_state arc4 ath9k mac80211 
-snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec 
-snd_hwdep ath9k_common ath9k_hw nf_conntrack_netbios_ns 
-nf_conntrack_broadcast snd_pcm snd_seq_midi snd_rawmidi nf_nat_ftp 
-nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 snd_seq_midi_event 
-nf_conntrack_ftp psmouse uvcvideo lp snd_seq videobuf2_core nf_conntrack 
-ath videodev serio_raw ideapad_laptop sparse_keymap parport intel_ips 
-cfg80211 videobuf2_vmalloc videobuf2_memops snd_timer snd_seq_device snd 
-iptable_filter ip_tables x_tables soundcore snd_page_alloc usb_storage 
-uas i915 drm_kms_helper drm intel_agp r8169 i2c_algo_bit intel_gtt 
-agpgart video
-[10560.662895] Pid: 10046, comm: kworker/u:20 Not tainted 
-3.3.0-rc7-00103-g0c4d067 #1
-[10560.662899] Call Trace:
-[10560.662914]  [<c1047572>] warn_slowpath_common+0x72/0xa0
-[10560.662925]  [<f8c08bdd>] ? ath_stoprecv+0xed/0x100 [ath9k]
-[10560.662935]  [<f8c08bdd>] ? ath_stoprecv+0xed/0x100 [ath9k]
-[10560.662942]  [<c10475c2>] warn_slowpath_null+0x22/0x30
-[10560.662952]  [<f8c08bdd>] ath_stoprecv+0xed/0x100 [ath9k]
-[10560.662965]  [<f8c0452d>] ath_prepare_reset+0x5d/0xd0 [ath9k]
-[10560.662975]  [<f8c05adc>] ath_reset_internal+0x7c/0x160 [ath9k]
-[10560.662984]  [<c10a8cab>] ? trace_hardirqs_on+0xb/0x10
-[10560.662994]  [<f8c05be5>] ath_reset+0x25/0xb0 [ath9k]
-[10560.663000]  [<c10a8c14>] ? trace_hardirqs_on_caller+0xf4/0x180
-[10560.663011]  [<f8c07527>] ath_reset_work+0x17/0x20 [ath9k]
-[10560.663020]  [<c10669d8>] process_one_work+0x168/0x5c0
-[10560.663027]  [<c1066964>] ? process_one_work+0xf4/0x5c0
-[10560.663035]  [<c12cc55b>] ? do_raw_spin_lock+0x3b/0xf0
-[10560.663045]  [<f8c07510>] ? ath_isr+0x270/0x270 [ath9k]
-[10560.663054]  [<c1067141>] worker_thread+0x121/0x2c0
-[10560.663061]  [<c1067020>] ? rescuer_thread+0x1c0/0x1c0
-[10560.663067]  [<c106be5d>] kthread+0x7d/0x90
-[10560.663073]  [<c106bde0>] ? __init_kthread_worker+0x60/0x60
-[10560.663083]  [<c15a1102>] kernel_thread_helper+0x6/0x10
-[10560.663087] ---[ end trace 7fd01c4e029fbbc7 ]---
-[10560.670137] ieee80211 phy0: wlan0: No ack for nullfunc frame to AP 
-00:1e:2a:62:6b:1e, try 1/2
-[10561.166344] ieee80211 phy0: wlan0: Failed to send nullfunc to AP 
-00:1e:2a:62:6b:1e after 500ms, disconnecting.
-[10561.168266] wlan0: moving STA 00:1e:2a:62:6b:1e to state 2
-[10561.168272] wlan0: moving STA 00:1e:2a:62:6b:1e to state 1
-[10561.168277] wlan0: moving STA 00:1e:2a:62:6b:1e to state 0
-[10561.174026] ieee80211 phy0: Removed STA 00:1e:2a:62:6b:1e
-[10561.174390] ieee80211 phy0: Destroyed STA 00:1e:2a:62:6b:1e
-[10561.175170] ieee80211 phy0: device now idle
-[10561.175231] cfg80211: All devices are disconnected, going to restore 
-regulatory settings
-[10561.175271] cfg80211: Restoring regulatory settings
-[10561.175292] cfg80211: Calling CRDA to update world regulatory domain
-[10561.185363] cfg80211: Ignoring regulatory request Set by core since 
-the driver uses its own custom regulatory domain
-[10561.185415] cfg80211: World regulatory domain updated:
-[10561.185419] cfg80211:   (start_freq - end_freq @ bandwidth), 
-(max_antenna_gain, max_eirp)
-[10561.185424] cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
-mBi, 2000 mBm)
-[10561.185429] cfg80211:   (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 
-mBi, 2000 mBm)
-[10561.185434] cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 
-mBi, 2000 mBm)
-[10561.185439] cfg80211:   (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
-mBi, 2000 mBm)
-[10561.185444] cfg80211:   (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
-mBi, 2000 mBm)
-[10561.578320] ieee80211 phy0: device no longer idle - scanning
-[10561.603489] ath: Failed to stop TX DMA, queues=0x005!
-[10561.621059] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10561.621067] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10561.694090] ath: Failed to stop TX DMA, queues=0x001!
-[10561.711600] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-[10561.711608] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10561.785820] ath: Failed to stop TX DMA, queues=0x001!
-[10561.803374] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10561.803382] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10561.877450] ath: Failed to stop TX DMA, queues=0x001!
-[10561.894814] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10561.894821] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10561.969359] ath: Failed to stop TX DMA, queues=0x001!
-[10561.986773] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-[10561.986777] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.061391] ath: Failed to stop TX DMA, queues=0x001!
-[10562.078921] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-[10562.078928] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.153191] ath: Failed to stop TX DMA, queues=0x001!
-[10562.170828] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10562.170835] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.244937] ath: Failed to stop TX DMA, queues=0x001!
-[10562.262556] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-[10562.262563] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.336708] ath: Failed to stop TX DMA, queues=0x001!
-[10562.354225] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-[10562.354232] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.428559] ath: Failed to stop TX DMA, queues=0x001!
-[10562.446067] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10562.446075] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.520388] ath: Failed to stop TX DMA, queues=0x001!
-[10562.537981] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
-AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
-[10562.537987] ath: Could not stop RX, we could be confusing the DMA 
-engine when we start RX up
-[10562.612159] ath: Failed to stop TX DMA, queues=0x001!
+CC: Grant Likely <grant.likely@secretlab.ca>
+CC: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Diego Elio Pettenò <flameeyes@flameeyes.eu>
+---
+ MAINTAINERS              |    5 +
+ drivers/gpio/Kconfig     |   11 ++
+ drivers/gpio/Makefile    |    1 +
+ drivers/gpio/gpio-it87.c |  397 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 414 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-it87.c
 
-
-
-hope this helps.
-
-Justin P. Mattock
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 553ac10..a196f14 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3692,6 +3692,11 @@ S:	Maintained
+ F:	Documentation/hwmon/it87
+ F:	drivers/hwmon/it87.c
+ 
++IT87xx GPIO DRIVER
++M:	Diego Elio Pettenò <flameeyes@flameeyes.eu>
++S:	Maintained
++F:	drivers/gpio/gpio-it87.c
++
+ IVTV VIDEO4LINUX DRIVER
+ M:	Andy Walls <awalls@md.metrocast.net>
+ L:	ivtv-devel@ivtvdriver.org (moderated for non-subscribers)
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 3359f1e..8dc26b7 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -91,6 +91,17 @@ config GPIO_IT8761E
+ 	help
+ 	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
+ 
++config GPIO_IT87
++	tristate "IT87xx GPIO support"
++	depends on X86 # unconditional access to IO space.
++	help
++	  Say yes here to support GPIO functionality of IT87xx Super I/O chips.
++
++	  This driver currently supports ITE IT8728 Super I/O chips.
++
++	  To compile this driver as a module, choose M here: the module will
++	  be called gpio_it87
++
+ config GPIO_EP93XX
+ 	def_bool y
+ 	depends on ARCH_EP93XX
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 41fe67f..affe510 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
+ obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+ obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
+ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
++obj-$(CONFIG_GPIO_IT87)		+= gpio-it87.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+ obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
+ obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
+diff --git a/drivers/gpio/gpio-it87.c b/drivers/gpio/gpio-it87.c
+new file mode 100644
+index 0000000..958c126
+--- /dev/null
++++ b/drivers/gpio/gpio-it87.c
+@@ -0,0 +1,397 @@
++/*
++ *  GPIO interface for IT87xx Super I/O chips
++ *
++ *  Author: Diego Elio Pettenò <flameeyes@flameeyes.eu>
++ *
++ *  Based on it87_wdt.c     by Oliver Schuster
++ *           gpio-it8761e.c by Denis Turischev
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License 2 as published
++ *  by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; see the file COPYING.  If not, write to
++ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/errno.h>
++#include <linux/ioport.h>
++
++#include <linux/gpio.h>
++
++#define GPIO_NAME "it87-gpio"
++#define PFX GPIO_NAME ": "
++
++/* Chip Id numbers */
++#define NO_DEV_ID	0xffff
++#define IT8728_ID	0x8728
++
++/* IO Ports */
++#define REG		0x2e
++#define VAL		0x2f
++
++/* Logical device Numbers LDN */
++#define GPIO		0x07
++
++/* Configuration Registers and Functions */
++#define LDNREG		0x07
++#define CHIPID		0x20
++#define CHIPREV		0x22
++
++/* GPIO Simple I/O Base Address registers */
++#define GPIO_BASE	0x62
++#define GPIO_IOSIZE	8
++
++/* GPIO polarity inverting registers base */
++#define GPIO_PS_BASE	0xb0 /* to 0xb4 */
++/* Simple I/O Enable registers base */
++#define GPIO_SE_BASE	0xc0 /* to 0xc4 */
++#define GPIO_SE_SIZE	5
++/* Output Enable registers base */
++#define GPIO_OE_BASE	0xc8 /* to 0xcf */
++
++/* Superio Chip */
++
++static inline int superio_enter(void)
++{
++	/*
++	 * Try to reserve REG and REG + 1 for exclusive access.
++	 */
++	if (!request_muxed_region(REG, 2, GPIO_NAME))
++		return -EBUSY;
++
++	outb(0x87, REG);
++	outb(0x01, REG);
++	outb(0x55, REG);
++	outb(0x55, REG);
++	return 0;
++}
++
++static inline void superio_exit(void)
++{
++	outb(0x02, REG);
++	outb(0x02, VAL);
++	release_region(REG, 2);
++}
++
++static inline void superio_select(int ldn)
++{
++	outb(LDNREG, REG);
++	outb(ldn, VAL);
++}
++
++static inline int superio_inb(int reg)
++{
++	outb(reg, REG);
++	return inb(VAL);
++}
++
++static inline void superio_outb(int val, int reg)
++{
++	outb(reg, REG);
++	outb(val, VAL);
++}
++
++static inline int superio_inw(int reg)
++{
++	int val;
++	outb(reg++, REG);
++	val = inb(VAL) << 8;
++	outb(reg, REG);
++	val |= inb(VAL);
++	return val;
++}
++
++static inline void superio_outw(int val, int reg)
++{
++	outb(reg++, REG);
++	outb(val >> 8, VAL);
++	outb(reg, REG);
++	outb(val, VAL);
++}
++
++static inline void superio_set_bit(int bit, int reg)
++{
++	u8 curr_val = superio_inb(reg);
++	u8 new_val = curr_val | 1 << bit;
++
++	if (curr_val != new_val)
++		superio_outb(new_val, reg);
++}
++
++static inline void superio_clear_bit(int bit, int reg)
++{
++	u8 curr_val = superio_inb(reg);
++	u8 new_val = curr_val & ~(1 << bit);
++
++	if (curr_val != new_val)
++		superio_outb(new_val, reg);
++}
++
++static u16 gpio_ba;
++
++static int it87_gpio_request(struct gpio_chip *gc, unsigned gpio_num)
++{
++	u8 bit, group;
++	int rc;
++
++	bit = gpio_num % 8;
++	group = (gpio_num / 8);
++
++	if ((rc = superio_enter()))
++		return rc;
++
++	/* enable Simple I/O on the GPIO pin, removing alternate
++	 * function; only the first five groups are programmable as
++	 * either Simple I/O or alternate function, the final free are
++	 * always set to Simple I/O.
++	 *
++	 * This might differ depending on chip type so it could have
++	 * to be made configurable.
++	 */
++	if (group >= GPIO_SE_SIZE)
++		superio_set_bit(bit, group + GPIO_SE_BASE);
++
++	/* clear output enable, setting the pin to input, as all the
++	 * newly-exported GPIO interfaces are set to input.
++	 */
++	superio_clear_bit(bit, group + GPIO_OE_BASE);
++
++	superio_exit();
++
++	return 0;
++}
++
++static int it87_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
++{
++	u16 reg;
++	u8 bit;
++
++	bit = gpio_num % 8;
++	reg = (gpio_num / 8) + gpio_ba;
++
++	return !!(inb(reg) & (1 << bit));
++}
++
++static int it87_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
++{
++	u8 bit, group;
++	int rc;
++
++	bit = gpio_num % 8;
++	group = (gpio_num / 8);
++
++	if ((rc = superio_enter()))
++		return rc;
++
++	/* clear the output enable bit */
++	superio_clear_bit(bit, group + GPIO_OE_BASE);
++
++	superio_exit();
++
++	return 0;
++}
++
++static void it87_gpio_set(struct gpio_chip *gc,
++			  unsigned gpio_num, int val)
++{
++	unsigned long flags;
++	u8 curr_vals, bit;
++	u16 reg;
++
++	bit = gpio_num % 8;
++	reg = (gpio_num / 8) + gpio_ba;
++
++	curr_vals = inb(reg);
++	if (val)
++		outb(curr_vals | (1 << bit) , reg);
++	else
++		outb(curr_vals & ~(1 << bit), reg);
++}
++
++static int it87_gpio_direction_out(struct gpio_chip *gc,
++				   unsigned gpio_num, int val)
++{
++	u8 bit, group;
++	int rc;
++
++	bit = gpio_num % 8;
++	group = (gpio_num / 8);
++
++	if ((rc = superio_enter()))
++		return rc;
++
++	/* set the output enable bit */
++	superio_set_bit(bit, group + GPIO_OE_BASE);
++
++	it87_gpio_set(gc, gpio_num, val);
++
++	superio_exit();
++
++	return 0;
++}
++
++/* ITE documentation refers to the GPIO registers as coordinates of
++ * group/bit; we alias them as otherwise it becomes hard to find a
++ * correlation between the chip's offsets and the names in the
++ * documentation.
++ */
++static const char *const it87_gpio_aliases[] = {
++	"it87_gp10",
++	"it87_gp11",
++	"it87_gp12",
++	"it87_gp13",
++	"it87_gp14",
++	"it87_gp15",
++	"it87_gp16",
++	"it87_gp17",
++	"it87_gp20",
++	"it87_gp21",
++	"it87_gp22",
++	"it87_gp23",
++	"it87_gp24",
++	"it87_gp25",
++	"it87_gp26",
++	"it87_gp27",
++	"it87_gp30",
++	"it87_gp31",
++	"it87_gp32",
++	"it87_gp33",
++	"it87_gp34",
++	"it87_gp35",
++	"it87_gp36",
++	"it87_gp37",
++	"it87_gp40",
++	"it87_gp41",
++	"it87_gp42",
++	"it87_gp43",
++	"it87_gp44",
++	"it87_gp45",
++	"it87_gp46",
++	"it87_gp47",
++	"it87_gp50",
++	"it87_gp51",
++	"it87_gp52",
++	"it87_gp53",
++	"it87_gp54",
++	"it87_gp55",
++	"it87_gp56",
++	"it87_gp57",
++	"it87_gp60",
++	"it87_gp61",
++	"it87_gp62",
++	"it87_gp63",
++	"it87_gp64",
++	"it87_gp65",
++	"it87_gp66",
++	"it87_gp67",
++	"it87_gp70",
++	"it87_gp71",
++	"it87_gp72",
++	"it87_gp73",
++	"it87_gp74",
++	"it87_gp75",
++	"it87_gp76",
++	"it87_gp77",
++	"it87_gp80",
++	"it87_gp81",
++	"it87_gp82",
++	"it87_gp83",
++	"it87_gp84",
++	"it87_gp85",
++	"it87_gp86",
++	"it87_gp87"
++};
++
++static struct gpio_chip it87_gpio_chip = {
++	.label			= GPIO_NAME,
++	.owner			= THIS_MODULE,
++	.request		= it87_gpio_request,
++	.get			= it87_gpio_get,
++	.direction_input	= it87_gpio_direction_in,
++	.set			= it87_gpio_set,
++	.direction_output	= it87_gpio_direction_out,
++	.names			= it87_gpio_aliases
++};
++
++static int __init it87_gpio_init(void)
++{
++	int rc = 0;
++	u8 chip_rev;
++	u16 chip_type;
++
++	if ((rc = superio_enter()))
++		return rc;
++
++	chip_type = superio_inw(CHIPID);
++	chip_rev  = superio_inb(CHIPREV) & 0x0f;
++	superio_exit();
++
++	switch(chip_type) {
++	case IT8728_ID:
++		break;
++	case NO_DEV_ID:
++		printk(KERN_ERR PFX "no device\n");
++		return -ENODEV;
++	default:
++		printk(KERN_ERR PFX
++		       "Unknown Chip found, Chip %04x Revision %x\n",
++		       chip_type, chip_rev);
++		return -ENODEV;
++	}
++
++	if ((rc = superio_enter()))
++		return rc;
++
++	superio_select(GPIO);
++
++	/* fetch GPIO base address */
++	gpio_ba = superio_inw(GPIO_BASE);
++
++	superio_exit();
++
++	if (!request_region(gpio_ba, GPIO_IOSIZE, GPIO_NAME))
++		return -EBUSY;
++
++	it87_gpio_chip.base = -1;
++	it87_gpio_chip.ngpio = 64;
++
++	if ((rc = gpiochip_add(&it87_gpio_chip)) < 0)
++		goto gpiochip_add_err;
++
++	return 0;
++
++gpiochip_add_err:
++	release_region(gpio_ba, GPIO_IOSIZE);
++	gpio_ba = 0;
++	return rc;
++}
++
++static void __exit it87_gpio_exit(void)
++{
++	if (gpio_ba) {
++		int ret = gpiochip_remove(&it87_gpio_chip);
++
++		WARN(ret, "%s(): gpiochip_remove() failed, ret=%d\n",
++				__func__, ret);
++
++		release_region(gpio_ba, GPIO_IOSIZE);
++		gpio_ba = 0;
++	}
++}
++module_init(it87_gpio_init);
++module_exit(it87_gpio_exit);
++
++MODULE_AUTHOR("Diego Elio Pettenò <flameeyes@flameeyes.eu>");
++MODULE_DESCRIPTION("GPIO interface for IT87xx Super I/O chips");
++MODULE_LICENSE("GPL");
+-- 
+1.7.8.5
 
