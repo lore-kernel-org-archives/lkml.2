@@ -1,128 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759802Ab2CPMk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 08:40:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4664 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756527Ab2CPMkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 08:40:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="139908569"
-Message-ID: <1331901784.3730.72.camel@sauron.fi.intel.com>
-Subject: Re: [patch] Remove notion of key schemes
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 Mar 2012 14:43:04 +0200
-In-Reply-To: <alpine.DEB.2.00.1203151545410.26775@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	 <1329152067.22240.214.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>
-	 <alpine.DEB.2.00.1203151545410.26775@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-2uWgSi+Dric7/+wGK+Tb"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1761242Ab2CPMlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 08:41:10 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47266 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab2CPMlI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 08:41:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331539663-29641-1-git-send-email-mla@apm.com>
+References: <1331539663-29641-1-git-send-email-mla@apm.com>
+Date: Fri, 16 Mar 2012 08:41:07 -0400
+Message-ID: <CA+5PVA7K66kKwKHUsNRjw9GLjvKBWgovmKPR4uOMMNFtiWfrzw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] [v3] powerpc/44x: Fix PCI MSI support for Maui
+ APM821xx SoC and Bluestone board
+From: Josh Boyer <jwboyer@gmail.com>
+To: Mai La <mla@apm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Tirumala R Marri <tmarri@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Michael Neuling <mikey@neuling.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, open-source-review@apm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 12, 2012 at 4:07 AM, Mai La <mla@apm.com> wrote:
+> diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
+> index 1c2d7af..63989d0 100644
+> --- a/arch/powerpc/sysdev/ppc4xx_msi.c
+> +++ b/arch/powerpc/sysdev/ppc4xx_msi.c
+> @@ -28,10 +28,11 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/export.h>
+> +#include <linux/kernel.h>
+>  #include <asm/prom.h>
+>  #include <asm/hw_irq.h>
+>  #include <asm/ppc-pci.h>
+> -#include <boot/dcr.h>
+> +#include <asm/dcr.h>
+>  #include <asm/dcr-regs.h>
+>  #include <asm/msi_bitmap.h>
+>
+> @@ -43,13 +44,14 @@
+>  #define PEIH_FLUSH0    0x30
+>  #define PEIH_FLUSH1    0x38
+>  #define PEIH_CNTRST    0x48
+> -#define NR_MSI_IRQS    4
+> +
+> +int msi_irqs;
 
---=-2uWgSi+Dric7/+wGK+Tb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This should be static.
 
-On Thu, 2012-03-15 at 15:48 +0100, Joel Reardon wrote:
-> @@ -112,8 +109,7 @@ static inline void ino_key_init_flash(const struct ub=
-ifs_info *c, void *k,
->  	union ubifs_key *key =3D k;
->=20
->  	key->j32[0] =3D cpu_to_le32(inum);
-> -	key->j32[1] =3D cpu_to_le32(UBIFS_INO_KEY << UBIFS_S_KEY_BLOCK_BITS);
-> -	memset(k + 8, 0, UBIFS_MAX_KEY_LEN - 8);
-> +	key->j32[1] =3D cpu_to_le32(UBIFS_INO_KEY << UBIFS_KEY_BLOCK_BITS);
->  }
+>  struct ppc4xx_msi {
+>        u32 msi_addr_lo;
+>        u32 msi_addr_hi;
+>        void __iomem *msi_regs;
+> -       int msi_virqs[NR_MSI_IRQS];
+> +       int *msi_virqs;
+>        struct msi_bitmap bitmap;
+>        struct device_node *msi_dev;
+>  };
+> @@ -61,7 +63,7 @@ static int ppc4xx_msi_init_allocator(struct platform_device *dev,
+>  {
+>        int err;
+>
+> -       err = msi_bitmap_alloc(&msi_data->bitmap, NR_MSI_IRQS,
+> +       err = msi_bitmap_alloc(&msi_data->bitmap, msi_irqs,
+>                              dev->dev.of_node);
+>        if (err)
+>                return err;
+> @@ -83,6 +85,9 @@ static int ppc4xx_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>        struct msi_desc *entry;
+>        struct ppc4xx_msi *msi_data = &ppc4xx_msi;
+>
+> +       msi_data->msi_virqs = kmalloc((msi_irqs) * sizeof(int),
+> +                                           GFP_KERNEL);
+> +
 
-So current UBIFS driver will always zero out unused parts of the key.
-Looks like a flaw in UBIFS, but it is too late to do anything about
-this. Could you please also think about the situation when a
-security-enabled image is mounted in an older kernel which will start
-zeroing unused bytes. What will happen when it is mounted by newer UBIFS
-with the security stuff? Would be great to make sure this is handled
-nicely.
+What happens if this allocation fails?  Unlikely perhaps, but we should still
+probably try and handle the error.
 
->  /**
-> - * key_max_inode_size - get maximum file size allowed by current key for=
-mat.
-> + * key_max_inode_size - get maximum file size allowed.
->   * @c: UBIFS file-system description object
->   */
->  static inline unsigned long long key_max_inode_size(const struct ubifs_i=
-nfo *c)
->  {
-> -	switch (c->key_fmt) {
-> -	case UBIFS_SIMPLE_KEY_FMT:
-> -		return (1ULL << UBIFS_S_KEY_BLOCK_BITS) * UBIFS_BLOCK_SIZE;
-> -	default:
-> -		return 0;
-> -	}
-> +	return (1ULL << UBIFS_KEY_BLOCK_BITS) * UBIFS_BLOCK_SIZE;
->  }
+>        list_for_each_entry(entry, &dev->msi_list, list) {
+>                int_no = msi_bitmap_alloc_hwirqs(&msi_data->bitmap, 1);
+>                if (int_no >= 0)
 
-I think this function should also be removed and turned into a macro.=20
->  struct ubifs_dent_node {
->  	struct ubifs_ch ch;
-> -	__u8 key[UBIFS_MAX_KEY_LEN];
-> +	__u8 key[UBIFS_KEY_LEN];
-> +	__u8 padding0[8]; /* Watch 'zero_dent_node_unused()' if changing! */
->  	__le64 inum;
-> -	__u8 padding1;
-> +	__u8 padding1; /* Watch 'zero_dent_node_unused()' if changing! */
->  	__u8 type;
->  	__le16 nlen;
->  	__u8 padding2[4]; /* Watch 'zero_dent_node_unused()' if changing! */
-> @@ -552,7 +547,8 @@ struct ubifs_dent_node {
->   */
->  struct ubifs_data_node {
->  	struct ubifs_ch ch;
-> -	__u8 key[UBIFS_MAX_KEY_LEN];
-> +	__u8 key[UBIFS_KEY_LEN];
-> +	__le64 crypto_lookup;
+<snip>
 
-Err, no, this patch should be _pure_ key schemes removal. All the crypto
-stuff should be separate.
+> @@ -234,6 +241,10 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
+>                goto error_out;
+>        }
+>
+> +       msi_irqs = of_irq_count(dev->dev.of_node);
+> +       if (!msi_irqs)
+> +               return -1;
+> +
 
-Otherwise looks good!
+Maybe return -ENODEV here instead of -1?  It probably doesn't matter at the
+moment, but if anything actually checked why the probe function failed, that
+would be more descriptive.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-2uWgSi+Dric7/+wGK+Tb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPYzVYAAoJECmIfjd9wqK0lPIQALimbYgWSrh4G/zNEaywVCtH
-vdN1GwCCDAkiyk9jv82Rgwrq9GynzF08bmHEbfMY5BNGfVQJC5ZE/RJWvDR7v2Jj
-W/F9ZKM9O1RUw3fFcBF2SHhTHyAIhHgqXNfr0I8Ug9dzUItRM/eU0WkwSGmgMbsf
-5lcHgrHkpzfwu0Mk1HacyE5VRK0Vcr2TLqqJfcXwpCs8Flddd+UN7DEF03zBRZtp
-bOdQm+m4AHHYIqolibdhzI/EC5mQ7f6+ajEgMXUy0uconDK4y5yV1ml6Ef5IJAp9
-6nZ3L8gbpCRza5ViErMCu5kakW/359P7v59+HPlfcTnjpue6H5RmYRDDTBCObql2
-eOmnEn6oLZka1NFucGmBxQZY7M4pTmareUNsYVIrzhXC8FUwT4LyVe8CX2WGr4KB
-qmRSFY+5pap4nTI76SMSAlJ2e9T/ZL2OShXUdxqxN9glbVVPzaI5fRziy0sS9KAz
-b/NXTdGN0b/k4lepVSqHFlQeSll8XaNmgqRYgugE47TTZQmIqKkBez8tqdFK+7mL
-qyYnW22CrRf4R5TWuXOiBmD2f7HiPyZs0FpMWWNUIpmzmmxnqftY/s3CZQiZ1+2h
-Q439oyyNvnXOqKf4DVI1XxLx+ntRnzo4KgOEKUSM0s+o4G0EbmOXEDgV6dQWfiJD
-bNwxqwyF7EuCJEuadiJp
-=e6O4
------END PGP SIGNATURE-----
-
---=-2uWgSi+Dric7/+wGK+Tb--
-
+josh
