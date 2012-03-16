@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423006Ab2CPPY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 11:24:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53212 "EHLO gate.crashing.org"
+	id S1032927Ab2CPPZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 11:25:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58208 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1032852Ab2CPPYy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 11:24:54 -0400
-Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com>
-Date: Fri, 16 Mar 2012 10:21:12 -0500
-Cc: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AC087E7A-B7BC-43E5-948F-68AEB8251FD3@kernel.crashing.org>
-References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net> <4EBD4FB8.2020406@freescale.com> <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net> <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com> <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org> <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-X-Mailer: Apple Mail (2.1257)
+	id S1032796Ab2CPPZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 11:25:33 -0400
+Date: Fri, 16 Mar 2012 16:25:32 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: George Spelvin <linux@horizon.com>
+Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: Oops in ext3_block_to_path.isra.40+0x26/0x11b
+In-Reply-To: <20120316142843.20538.qmail@science.horizon.com>
+Message-ID: <alpine.LNX.2.00.1203161623130.18356@pobox.suse.cz>
+References: <20120316142843.20538.qmail@science.horizon.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 16 Mar 2012, George Spelvin wrote:
 
-On Nov 24, 2011, at 7:57 AM, Tabi Timur-B04825 wrote:
-
-> On Nov 24, 2011, at 1:55 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
+> > I am not aware of anything, but I have a question -- George, did the 
+> > machine get suspended/resumed before this happened?
 > 
->>> 
->>> I'll have to check.  But this patch can't be applied as-is unless it's
->>> proven safe for all QE-enabled chips.
->> 
->> Any update on trying this on a MPC8323?
+> I'm pretty sure it didn't.  It's a desktop machine, and I don't ever
+> suspend it.  It had been up for a while, and /sys/power/state exists, and
+> *maybe* I played with it sometime since boot, but the backup runs nightly
+> and I *definitely* did not suspend it the day (or even several days)
+> before the oops.
 > 
-> Haiying said it should be ok, but I haven't tried it yet.  I'll try it on Monday.
+> (I tried to preserve the machine state, but processes started getting
+> stuck in the kernel a few hours after the report, so I had to reboot it.)
+> 
+> Jan Kara asked:
+> >   And by any chance, do you use i915 driver? Because that one seems to
+> > cause corruption - see: https://lkml.org/lkml/2012/3/9/217. I believe
+> > Jiri's corruption is likely caused by that...
+> 
+> Yes!  lspci -nn and abbreviated .config attached.  But, as mentioned, the machine
+> hasn't been suspended...
 
-Did you ever test this?
+So it might be the culprit. As the reason of the corruption is not yet 
+understood, it might be that suspend/resume cycle is not necessary 
+pre-requisite for this to trigger, it might just make it more likely.
 
-- k
+And the corruption is observed to be indeed several writes of 0x00000000, 
+so it could easily lead to null pointer dereferences all over the place.
+
+Are you able to reproduce the problem if you turn kernel modesetting off?
+
+-- 
+Jiri Kosina
+SUSE Labs
