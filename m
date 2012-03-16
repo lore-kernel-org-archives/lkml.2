@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161486Ab2CPKAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 06:00:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41442 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab2CPKAP (ORCPT
+	id S932444Ab2CPKBh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 06:01:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47908 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932386Ab2CPKBf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 06:00:15 -0400
-Message-ID: <4F630F29.6020101@samsung.com>
-Date: Fri, 16 Mar 2012 03:00:09 -0700
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Fri, 16 Mar 2012 06:01:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="78303681"
+From: "Du, Alek" <alek.du@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: RE: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2AAADUEAABDKXdAAIKULgAAQyYZQ//99bYD//3mIQA==
+Date: Fri, 16 Mar 2012 10:01:17 +0000
+Message-ID: <09F19C497AD02E4EA4E14917772649B70FCD3D59@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
+ <20120315100812.6cda2ef9@pyramind.ukuu.org.uk>
+ <09F19C497AD02E4EA4E14917772649B70FCD36C2@SHSMSX102.ccr.corp.intel.com>
+ <4F630B4D.3040508@suse.cz>
+ <09F19C497AD02E4EA4E14917772649B70FCD3D3F@SHSMSX102.ccr.corp.intel.com>
+ <4F630E6D.4000307@suse.cz>
+In-Reply-To: <4F630E6D.4000307@suse.cz>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the s5p tree
-References: <20120316174546.5121be30a86c2937579bd3f5@canb.auug.org.au> <201203160826.36287.arnd@arndb.de>
-In-Reply-To: <201203160826.36287.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/12 01:26, Arnd Bergmann wrote:
-> On Friday 16 March 2012, Stephen Rothwell wrote:
->> Today's linux-next merge of the arm-soc tree got a conflict in
->> arch/arm/mach-exynos/common.c between commit 1d7233ac478a ("Merge branch
->> 'next/soc-exynos5250-arch-gpio' into for-next") from the s5p tree and
->> commit 853a0231e057 ("Merge branch 'samsung/soc' into next/soc2") from
->> the arm-soc tree.
->>
->> These merge commits both looks suspect, but I fixed it up as best I could
->> (see below).
->
-Thank you, Stehpen.
+We prepared the buffer, and use it. And during this, we don't release the spinlock of buf.lock, how the flush could happen?
 
-> Right, both the arm-soc and the s5p tree merge the same commits and
-> come to different results. Kgene, please have a look and let me know
-> which of the three solutions is correct.
->
+               A
+spin_lock
+prepare the buffer
+user the buffer
+spin unlock
 
-Yeah, my resolution is missing and both looks OK to me, actually it's 
-just different the position of declaration for 'int ret' and I'm not 
-sure which one is better even though I fixed with Arnd's resolution.
 
-Arnd, Stephen, thanks :)
+              B
+Spin_lock
+Flush
+Free the buffer
+Put buf.tail = NULL
+Spin unlock
 
-Best regards,
-Kgene.
+
+
+Thanks,
+Alek
+-----Original Message-----
+From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
+Sent: Friday, March 16, 2012 5:57 PM
+To: Du, Alek
+Cc: Jiri Slaby; Alan Cox; Tu, Xiaobing; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Zhang, Yanmin; Zuo, Jiao
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer filling
+
+On 03/16/2012 10:49 AM, Du, Alek wrote:
+> The tty structure is protect and not null, the tty->buf.tail is null. 
+> Many people think the tty reference count isn't protected and cause 
+> this bug, it is not true. :-)
+
+You protect the pointer, not what is inside that structure. If you increment a tty reference count, tty->buf.tail won't be NULL iff tty is not NULL. IOW, you have to use tty_port_tty_set/get all around.
+
+> For the flush case, it need acquire the spinlock to free the buffer and put buf.tail to NULL. So this patch will help:
+> 
+> Here is the example place, you can see the __tty_buffer_flush is inside the spinlock.
+
+I'm not talking about flush. I'm talking about prepare. It returns a pointer to a tty buffer which may be concurrently freed by flush.
+
+     A                                   B
+================================================
+prepare(&chars);
+                                        flush(); memcpy(chars, data_from_HW); <- chars is freed now flip();
+
+thanks,
 --
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+js
+suse labs
