@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123Ab2CQKx5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 06:53:57 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:49583 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756743Ab2CQKxz convert rfc822-to-8bit (ORCPT
+	id S1757064Ab2CQLuk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 07:50:40 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44514
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754151Ab2CQLuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 06:53:55 -0400
-Date: Sat, 17 Mar 2012 11:53:24 +0100
-From: Emmanuel Florac <eflorac@intellique.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Wakko Warner <wakko@animx.eu.org>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: Burning multiple DVDs at one time
-Message-ID: <20120317115324.10b39bb7@galadriel.home>
-In-Reply-To: <20120317095644.145d0588@stein>
-References: <20120315225310.GB3152@animx.eu.org>
-	<20120317095644.145d0588@stein>
-Organization: Intellique
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 17 Mar 2012 07:50:39 -0400
+Date: Sat, 17 Mar 2012 07:50:34 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Gerard Snitselaar <dev@snitselaar.org>
+Cc: bpm@sgi.com, xfs@oss.sgi.com, elder@kernel.org,
+        linux-kernel@vger.kernel.org, xfs-master@oss.sgi.com
+Subject: Re: [PATCH] fs: xfs: fix section mismatch in linux-next
+Message-ID: <20120317115034.GA12342@infradead.org>
+References: <1331922978-28572-1-git-send-email-dev@snitselaar.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331922978-28572-1-git-send-email-dev@snitselaar.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Sat, 17 Mar 2012 09:56:44 +0100 vous écriviez:
+On Fri, Mar 16, 2012 at 11:36:18AM -0700, Gerard Snitselaar wrote:
+> xfs_qm_exit() is called in init_xfs_fs().
+> 
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
 
-> This is likely due to serialization by a global mutex in the sr
-> driver. Have a look at thread "[PATCH] [SCSI] sr: fix multi-drive
-> performance, remove BKL replacement" from February.
-> https://lkml.org/lkml/2012/2/28/230 
+Thanks for catching this, the fix looks good to me.
 
-When was this regression introduced? I have a dedicated cd burning
-machine running 2.6.35.x, and it works great with 4 drives at a time.
-
--- 
-------------------------------------------------------------------------
-Emmanuel Florac     |   Direction technique
-                    |   Intellique
-                    |	<eflorac@intellique.com>
-                    |   +33 1 78 94 84 02
-------------------------------------------------------------------------
+Reviewed-by: Christoph Hellwig <hch@lst.de>
