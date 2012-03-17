@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031384Ab2CQSvf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 14:51:35 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60369 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab2CQSve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 14:51:34 -0400
-Message-ID: <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
-From: Diego Elio =?ISO-8859-1?Q?Petten=F2?= <flameeyes@flameeyes.eu>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Denis Turischev <denis@compulab.co.il>
-Date: Sat, 17 Mar 2012 19:53:42 +0100
-In-Reply-To: <20120317123151.AAF9A3E0952@localhost>
-References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
-	 <20120317123151.AAF9A3E0952@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S932506Ab2CQS4d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 14:56:33 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:58405 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756900Ab2CQS4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 14:56:31 -0400
+Message-ID: <4F64DE2C.1030809@interlog.com>
+Date: Sat, 17 Mar 2012 19:55:40 +0100
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Jeff Garzik <jeff@garzik.org>
+CC: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Don't pass ATA_16 command
+ to the host
+References: <1331929448-6838-1-git-send-email-kys@microsoft.com> <1331929472-6877-1-git-send-email-kys@microsoft.com> <1331929472-6877-2-git-send-email-kys@microsoft.com> <4F64A80C.6040206@garzik.org>
+In-Reply-To: <4F64A80C.6040206@garzik.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il giorno sab, 17/03/2012 alle 12.31 +0000, Grant Likely ha scritto:
-> Really?  The config line above claims IT8761E support.  How similar are
-> these devices?  Either this line needs to be more specifc, or the drivers
-> need to be merged.
+On 12-03-17 04:04 PM, Jeff Garzik wrote:
+> On 03/16/2012 04:24 PM, K. Y. Srinivasan wrote:
+>> The current Windows hosts don't handle the ATA_16 command and furthermore
+>> return a generic error code after filtering the command on the host side.
+>> For now filter the command on the guest side until the host is modified to
+>> properly handle unsupported commands.
+>>
+>> Signed-off-by: K. Y. Srinivasan<kys@microsoft.com>
+>> Reviewed-by: Haiyang Zhang<haiyangz@microsoft.com>
+>> ---
+>> drivers/scsi/storvsc_drv.c | 9 +++++++++
+>> 1 files changed, 9 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+>> index 8b967c9..783bab8 100644
+>> --- a/drivers/scsi/storvsc_drv.c
+>> +++ b/drivers/scsi/storvsc_drv.c
+>> @@ -1229,8 +1229,17 @@ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
+>> /*
+>> * smartd sends this command and the host does not handle
+>> * this. So, don't send it.
+>> + * The current Windows hosts implement a subset of scsi commands
+>> + * and for the commands that are not implemented, the host filters
+>> + * them and returns a generic failure SRB status. I have been in
+>> + * discussions with the Windows team to return the appropriate SRB
+>> + * status code for unsupported scsi commands and while they have
+>> + * agreed to implement this, it is not clear when this change will be
+>> + * available. Consequently, filtering the command before submitting it
+>> + * to the host is a resonable interim solution.
+>> */
+>> case SET_WINDOW:
+>> + case ATA_16:
+>> scmnd->result = ILLEGAL_REQUEST<< 16;
+>> allowed = false;
+>
+> It would be even nicer to fill out a nice SCSI status for this. For an illegal
+> request such as this, the libata SCSI simulator (drivers/ata/libata-scsi.c) uses
+> a more complete sense buffer setup,
+>
+> static void ata_scsi_set_sense(struct scsi_cmnd *cmd, u8 sk,
+> u8 asc, u8 ascq)
+> {
+> cmd->result = (DRIVER_SENSE << 24) | SAM_STAT_CHECK_CONDITION;
+>
+> scsi_build_sense_buffer(0, cmd->sense_buffer, sk, asc, ascq);
+> }
+>
+> and calls this function for invalid/unknown/unsupported command ops thusly,
+>
+> ata_scsi_set_sense(cmd, ILLEGAL_REQUEST, 0x20, 0x0);
+> /* "Invalid command operation code" */
+>
+> Supplying asc/ascq provides additional information that may be useful in
+> determining whether or not to retry, provide better error diagnostics, etc.
+>
+> The asc/ascq values are found in the SCSI standards documents.
 
-I'm not sure about IT8761E, and it seems it's only partially the case
-from the code I read; it probably would be possible — Denis would you
-mind taking a look?
+Jeff,
+I agree with your suggestion and would point out that the
+originally proposed:
+     scmnd->result = ILLEGAL_REQUEST<<  16;
 
-It could possibly work to merge them. For what it's worth I've more or
-less followed on the steps of the two watchdog timer drivers for IT87
-series.
+is just plain wrong. result[23:16] is a Linux invented host byte
+code (they typically start with "DID_") while ILLEGAL_REQUEST is
+a SCSI sense key.
 
-> use #define pr_fmt and pr_*() macros.  Better yet, use dev_{info,err,debug}()
-> macros where possible.
-
-Will do.
-
-> Why "superio_" prefix here?  Are these functions that are cut-and-paste
-> from another driver, or are they it87xx specific?  If they are it87xx specific
-> then they should have the it87_ prefix.
-
-They seem to be shared across a number of different Super I/O chips; in
-particular though they come out of wdt_it87 (which interfaces in part
-through the GPIO). As I said, and as Guenter already confirmed, it might
-be the case to have an it87_sio driver for the Super I/O chip that
-provides the basic interface for gpio, hwmon and wdt at the same time.
-
-I'm just not sure if I can get through it alone, especially since
-reading through the mfd drivers there seem to be those that simply
-"earmark" the ports for other drivers, which can then be loaded, and
-those that simply create everything in their own code, and I wouldn't
-know which one of the two to use ...
-
-Another reason to have a MFD driver would be to allow tweaking the few
-more knobs that (at least IT8728F) expose, such as the ability to switch
-a few pre-defined inputs and outputs to GPIO instead, and so on...
-
-> No spinlock around the critical regions?  This is racy.
-
-Okay I'll reintroduce that. I wonder though if it should be a ngpio/8
-array of spinlocks or just one, but I guess it's fast enough it
-shouldn't matter.
-
-> If you're going to do a lookup table like this, then be explicit for
-> the offsets:
-
-Will do that.
-
--- 
-Diego Elio Pettenò — Flameeyes
-http://blog.flameeyes.eu/
-
+Doug Gilbert
 
