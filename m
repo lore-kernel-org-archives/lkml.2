@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270Ab2CQTk7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 15:40:59 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25589
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753511Ab2CQTk4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 15:40:56 -0400
-X-SpamScore: -3
-X-BigFish: VPS-3(zz936eKzz1202hzz8275bhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M11NZT-02-0XV-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "beattiem@uk.ibm.com" <beattiem@uk.ibm.com>,
-        "holzheu@de.ibm.com" <holzheu@de.ibm.com>,
-        "munzert@de.ibm.com" <munzert@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Subject: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
-Thread-Topic: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
-Thread-Index: Ac0EddW23nEJHEP4TgOzkdjHvih49A==
-Date: Sat, 17 Mar 2012 19:40:41 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE0430495F2@SCYBEXDAG04.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755646Ab2CQUBx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 16:01:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50492 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751226Ab2CQUBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 16:01:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
+Date: Sat, 17 Mar 2012 21:06:00 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <4F63FB59.9010104@codeaurora.org> <CA+55aFyUAiVpueCTe2rDMZxcDkoQ=gYM+-Qmu0KG2SPTV4B+zA@mail.gmail.com>
+In-Reply-To: <CA+55aFyUAiVpueCTe2rDMZxcDkoQ=gYM+-Qmu0KG2SPTV4B+zA@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203172106.01052.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is used to fix a memory leak issue in s390/char/vmur.c: a character device instance is 
-allocated by cdev_alloc, the cdev_del will not free that space if cdev_init is applied before. 
+On Saturday, March 17, 2012, Linus Torvalds wrote:
+> On Fri, Mar 16, 2012 at 7:47 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > -       if (WARN_ON(usermodehelper_is_disabled())) {
+> > +       if (is_sleep_task()) {
+> >                dev_err(device, "firmware: %s will not be loaded\n", name);
+> 
+> Stop these idiotic games already!
+> 
+> It's very simple: you cannot load firmware while the system is not
+> readt. Your moronic "let's change the test to something else" is
+> entirely and utterly misguided and totally misses the point.
+> 
+> It's not about sleeping, and it's not about anything even *remotely*
+> about that. Stop the idiocy already.
+> 
+> How hard is it to understand? How many times do people have to tell you?
+> 
+> That warning is very much valid during bootup, and that warning has
+> been *seen* during bootup. For example, try to compile in most
+> wireless drivers as non-modular, and that warning *has* to trigger.
+> 
+> Rafael, please consider everything along these *IDIOTIC* lines
+> completely NAK'ed.
 
-Signed-off-by: dennis1.chen@amd.com
---- a/s390/char/vmur.c  2012-03-18 02:50:47.950963949 +0800
-+++ b/s390/char/vmur.c  2012-03-18 03:12:04.790936740 +0800
-@@ -903,7 +903,7 @@ static int ur_set_online(struct ccw_devi
-                goto fail_urdev_put;
-        }
+I will.
 
--       cdev_init(urd->char_device, &ur_fops);
-+       urd->char_device->ops = &ur_fops;
-        urd->char_device->dev = MKDEV(major, minor);
-        urd->char_device->owner = ur_fops.owner;
-
+Thanks,
+Rafael
