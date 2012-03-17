@@ -1,103 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030988Ab2CQNPb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 09:15:31 -0400
-Received: from 1wt.eu ([62.212.114.60]:63416 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965084Ab2CQNP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 09:15:26 -0400
-Date: Sat, 17 Mar 2012 14:15:24 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Linux 2.6.27.62
-Message-ID: <20120317131524.GA16943@1wt.eu>
+	id S1031092Ab2CQNtx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 09:49:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41445 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2CQNtu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 09:49:50 -0400
+Message-ID: <1331992184.2466.45.camel@edumazet-laptop>
+Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Date: Sat, 17 Mar 2012 06:49:44 -0700
+In-Reply-To: <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+	 <1331658828.4449.16.camel@edumazet-glaptop>
+	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+	 <1331704535.2456.37.camel@edumazet-laptop>
+	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
+	 <1331712357.2456.58.camel@edumazet-laptop>
+	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've just released Linux 2.6.27.62.
+Le samedi 17 mars 2012 à 21:14 +1100, Indan Zupancic a écrit :
+> On Wed, March 14, 2012 19:05, Eric Dumazet wrote:
+> > Le mercredi 14 mars 2012 à 08:59 +0100, Indan Zupancic a écrit :
+> >
+> >> The only remaining question is, is it worth the extra code to release
+> >> up to 32kB of unused memory? It seems a waste to not free it, but if
+> >> people think it's not worth it then let's just leave it around.
+> >
+> > Quite frankly its not an issue, given JIT BPF is not yet default
+> > enabled.
+> 
+> And what if assuming JIT BPF would be default enabled?
+> 
 
-The patch and changelog will appear soon at the following locations:
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/patch-2.6.27.62.bz2
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/patch-2.6.27.62.xz
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/patch-2.6.27.62.gz
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/ChangeLog-2.6.27.62
+OK, so here are the reasons why I chose not doing this :
+---------------------------------------------------------
 
-The updated 2.6.27.y git tree can be found at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.27.y
-  http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.27.y
+1) When I wrote this code, I _wanted_ keeping the original BPF around
+for post morterm analysis. When we are 100% confident code is bug free,
+we might remove the "BPF source code", but I am not convinced.
 
-The tree can be browsed on the gitweb interface:
-  http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.27.y
+2) Most filters are less than 1 Kbytes, and who run thousands of BPF
+network filters on a machine ? Do you have real cases ? Because in these
+cases, the vmalloc() PAGE granularity might be a problem anyway.
 
 
-  Testing status (build/boot, OK/FAIL, otherwise not tested) :
+Some filters are setup for a very short period of time...
+(tcpdump for example setup a "ret 0" at the very beginning of a capture
+). Doing the extra kmalloc()/copy/kfree() is a loss.
 
-         ARCH  |         CONFIGURATION
-       --------+-----------------------------------
-               |  allmodconfig     other-config
-        x86_64 |       -                -
-          i386 |       -             build:OK
+tcpdump -n -s 0 -c 1000 arp
 
-Thanks to all reviewers, and to Greg for the final packaging.
-Willy
+[29211.083449] JIT code: ffffffffa0cbe000: 31 c0 c3
+[29211.083481] flen=4 proglen=55 pass=3 image=ffffffffa0cc0000
+[29211.083487] JIT code: ffffffffa0cc0000: 55 48 89 e5 48 83 ec 60 48 89 5d f8 44 8b 4f 68
+[29211.083494] JIT code: ffffffffa0cc0010: 44 2b 4f 6c 4c 8b 87 e0 00 00 00 be 0c 00 00 00
+[29211.083500] JIT code: ffffffffa0cc0020: e8 04 32 38 e0 3d 06 08 00 00 75 07 b8 ff ff 00
+[29211.083506] JIT code: ffffffffa0cc0030: 00 eb 02 31 c0 c9 c3
 
----------
- Makefile                           |    2 +-
- arch/powerpc/include/asm/ppc_asm.h |    1 +
- arch/powerpc/include/asm/reg.h     |   45 +++++++++++++++++++++++++++++++++++-
- drivers/cdrom/cdrom.c              |    8 +-----
- drivers/infiniband/hw/mlx4/mad.c   |    7 +----
- drivers/video/atmel_lcdfb.c        |    2 +-
- fs/ecryptfs/file.c                 |    2 +-
- fs/ecryptfs/inode.c                |    4 +-
- fs/ecryptfs/read_write.c           |    4 +-
- fs/udf/super.c                     |    6 ++++
- include/linux/proportions.h        |    4 +++
- kernel/relay.c                     |   10 ++++++-
- mm/filemap_xip.c                   |    7 ++++-
- 13 files changed, 79 insertions(+), 23 deletions(-)
 
-Summary of changes from 2.6.27.61 to 2.6.27.62
-==============================================
-Andy Whitcroft (1):
-      ecryptfs: read on a directory should return EISDIR if not supported
 
-Carsten Otte (1):
-      mm/filemap_xip.c: fix race condition in xip_file_fault()
+> The current JIT doesn't handle negative offsets: The stuff that's handled
+> by __load_pointer(). Easiest solution would be to make it non-static and
+> call it instead of doing bpf_error. I guess __load_pointer was added later
+> and the JIT code didn't get updated.
 
-Dan Carpenter (2):
-      relay: prevent integer overflow in relay_open()
-      cdrom: use copy_to_user() without the underscores
+I dont think so, check git history if you want :)
 
-Hubert Feurstein (1):
-      atmel_lcdfb: fix usage of CONTRAST_CTR in suspend/resume
+> 
+> But gcc refuses to inline load_pointer, instead it inlines __load_pointer
+> and does the important checks first. Considering the current assembly code
+> does a call too, it could as well call load_pointer() directly. That would
+> save a lot of assembly code, handle all negative cases too and be pretty
+> much the same speed. The only question is if this slow down some other
+> archs than x86. What do you think?
 
-Jack Morgenstein (1):
-      IB/mlx4: pass SMP vendor-specific attribute MADs to firmware
+You miss the point : 99.999 % of offsets are positive in filters.
 
-Jan Kara (1):
-      udf: Mark LVID buffer as uptodate before marking it dirty
+Best is to not call load_pointer() and only call skb_copy_bits() if the
+data is not in skb head, but in some fragment.
 
-Li Wang (1):
-      eCryptfs: Infinite loop due to overflow in ecryptfs_write()
+I dont know, I never had to use negative offsets in my own filters.
+So in the BPF JIT I said : If we have a negative offset in a filter,
+just disable JIT code completely for this filter (lines 478-479).
 
-Michael Neuling (1):
-      powerpc: Add more Power7 specific definitions
+Same for fancy instructions like BPF_S_ANC_NLATTR /
+BPF_S_ANC_NLATTR_NEST
 
-Tyler Hicks (3):
-      eCryptfs: Remove mmap from directory operations
-      eCryptfs: Remove extra d_delete in ecryptfs_rmdir
-      eCryptfs: Clear i_nlink in rmdir
+Show me a real use first.
 
-Willy Tarreau (1):
-      Linux 2.6.27.62
+I am pragmatic : I spend time coding stuff if there is a real need.
 
-Wu Fengguang (1):
-      lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit kernel
+> 
+> The EMIT_COND_JMP(f_op, f_offset); should be in an else case, otherwise
+> it's superfluous. It's a harmless bug though. I haven't spotted anything
+> else yet.
+
+Its not superflous, see my comment at the end of this mail.
+
+> 
+> You can get rid of all the "if (is_imm8(offsetof(struct sk_buff, len)))"
+> code by making sure everything is near: Somewhere at the start, just
+> add 127 to %rdi and a BUILD_BUG_ON(sizeof(struct sk_buff) > 255).
+> 
+
+This code is optimized away by the compiler, you know that ?
+
+Adding "add 127 to rdi" is one more instruction, adding dependencies and
+making out slow path code more complex (calls to skb_copy_bits() in
+bpf_jit.S ...). Thats a bad idea.
+
+
+> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+> index 7c1b765..7e0f575 100644
+> --- a/arch/x86/net/bpf_jit_comp.c
+> +++ b/arch/x86/net/bpf_jit_comp.c
+> @@ -581,8 +581,9 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
+>  					if (filter[i].jf)
+>  						EMIT_JMP(f_offset);
+>  					break;
+> +				} else {
+> +					EMIT_COND_JMP(f_op, f_offset);
+>  				}
+> -				EMIT_COND_JMP(f_op, f_offset);
+>  				break;
+>  			default:
+>  				/* hmm, too complex filter, give up with jit compiler */
+> 
+> 
+> 
+
+I see no change in your patch in the code generation.
+
+if (filter[i].jt == 0), we want to EMIT_COND_JMP(f_op, f_offset);
+because we know at this point that filter[i].jf != 0) [ line 536 ]
+
+if (filter[i].jt != 0), the break; in line 583 prevents the
+EMIT_COND_JMP(f_op, f_offset);
+
+Thanks !
+
 
