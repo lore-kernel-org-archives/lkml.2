@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2CQQUN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 12:20:13 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:44621 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2CQQUK convert rfc822-to-8bit (ORCPT
+	id S1754984Ab2CQQVy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 12:21:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43965 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2CQQVt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 12:20:10 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-Subject: Re: [PATCH] [media] staging: Return -EINTR in s2250_probe() if fails to get lock.
-Date: Sat, 17 Mar 2012 17:20:16 +0100
-User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: mchehab@infradead.org, gregkh@linuxfoundation.org, khoroshilov@ispras.ru,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <1331915038-11231-1-git-send-email-santoshprasadnayak@gmail.com> <201203161859.35104.oliver@neukum.org> <CAOD=uF6wD1sx2=Rk3ZaxtykBR32_GMsHmiuXuAQP2U_=c-Ytbw@mail.gmail.com>
-In-Reply-To: <CAOD=uF6wD1sx2=Rk3ZaxtykBR32_GMsHmiuXuAQP2U_=c-Ytbw@mail.gmail.com>
+	Sat, 17 Mar 2012 12:21:49 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+In-Reply-To: <1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
+	<1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+Date: Sat, 17 Mar 2012 17:21:48 +0100
+Message-ID: <CAO6Zf6D4bgQrpLhT3nzwim_PFzhiB0wzH77Coj04APgHfkSMCQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201203171720.16945.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 17. März 2012, 17:00:36 schrieb santosh prasad nayak:
-> Oliver,
-> 
-> The following changes are for review only  not a formal patch.
-> 
-> -------------------------------------------------------------------------------------------------------------
-> -       if (mutex_lock_interruptible(&usb->i2c_lock) == 0) {
-> +       mutex_lock(&usb->i2c_lock);
->                 data = kzalloc(16, GFP_KERNEL);
-> -               if (data != NULL) {
-> +               if(data == NULL) {
-> +                       i2c_unregister_device(audio);
-> +                       kfree(state);
-> +                       return -ENOMEM;
-> +               } else {
->                         int rc;
->                         rc = go7007_usb_vendor_request(go, 0x41, 0, 0,
->                                                        data, 16, 1);
-> @@ -657,7 +661,7 @@ static int s2250_probe(struct i2c_client *client,
->                         kfree(data);
->                 }
->                 mutex_unlock(&usb->i2c_lock);
-> -       }
+Hi John,
+
+[ ... ]
+
+> +/*
+> + * Mark a region as volatile, allowing dirty pages to be purged
+> + * under memory pressure
+> + */
+> +long mapping_range_volatile(struct address_space *mapping,
+> +                               pgoff_t start_index, pgoff_t end_index)
+> +{
+> +       struct volatile_range *new;
+> +       struct range_tree_node *node;
 > +
-> 
-> ----------------------------------------------------------------------
-> 
-> 
-> Is it ok ?
+> +       u64 start, end;
+> +       int purged = 0;
+> +       start = (u64)start_index;
+> +       end = (u64)end_index;
+> +
+> +       new = vrange_alloc();
+> +       if (!new)
+> +               return -ENOMEM;
+> +
+> +       mutex_lock(&volatile_mutex);
+> +
+> +       node = range_tree_in_range_adjacent(&mapping->volatile_root,
+> +                                               start, end);
+> +       while (node) {
+> +               struct volatile_range *vrange;
+> +
+> +               /* Already entirely marked volatile, so we're done */
+> +               if (node->start < start && node->end > end) {
+> +                       /* don't need the allocated value */
+> +                       kfree(new);
+> +                       goto out;
+> +               }
+> +
+> +               /* Grab containing volatile range */
+> +               vrange = container_of(node, struct volatile_range, range_node);
+> +
+> +               /* resize range */
+> +               start = min_t(u64, start, node->start);
+> +               end = max_t(u64, end, node->end);
+> +               purged |= vrange->purged;
+> +
+> +
+> +               vrange_del(vrange);
+> +
+> +               /* get the next possible overlap */
+> +               node = range_tree_in_range(&mapping->volatile_root, start, end);
 
-Hi,
+I guess range_tree_in_range_adjacent() should be used here again.
+There can be 2 adjacent regions (left and right), and we'll miss one
+of them with range_tree_in_range().
 
-well done. That's correct.
+Also (as I had already mentioned before), I think that new ranges must
+not be merged with the existing "vrange->purged == 1" ranges.
+Otherwise, for some use cases, the whole idea of 'volatility' gets
+broken. For example, when an application is processing a big buffer in
+small consequent chunks (marking a chunk as volatile when done with
+it), and the range gets 'purged' by the kernel early in this process
+(when it's still small).
 
-	Regards
-		Oliver
+-- Dmitry
