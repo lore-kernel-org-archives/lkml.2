@@ -1,96 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2CQQVy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 12:21:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43965 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2CQQVt convert rfc822-to-8bit (ORCPT
+	id S1755971Ab2CQQ1k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 12:27:40 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49272 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab2CQQ1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 12:21:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331938267-13583-3-git-send-email-john.stultz@linaro.org>
-References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
-	<1331938267-13583-3-git-send-email-john.stultz@linaro.org>
-Date: Sat, 17 Mar 2012 17:21:48 +0100
-Message-ID: <CAO6Zf6D4bgQrpLhT3nzwim_PFzhiB0wzH77Coj04APgHfkSMCQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 17 Mar 2012 12:27:38 -0400
+From: Mircea Gherzan <mgherzan@gmail.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: Mircea Gherzan <mgherzan@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] wl12xx: fix DMA-API-related warnings
+Date: Sat, 17 Mar 2012 17:26:32 +0100
+Message-Id: <1332001592-17074-1-git-send-email-mgherzan@gmail.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On the PandaBoard (omap_hsmmc + wl12xx_sdio) with DMA_API_DEBUG:
 
-[ ... ]
+ WARNING: at lib/dma-debug.c:930 check_for_stack.part.8+0x7c/0xe0()
+ omap_hsmmc omap_hsmmc.4: DMA-API: device driver maps memory fromstack
 
-> +/*
-> + * Mark a region as volatile, allowing dirty pages to be purged
-> + * under memory pressure
-> + */
-> +long mapping_range_volatile(struct address_space *mapping,
-> +                               pgoff_t start_index, pgoff_t end_index)
-> +{
-> +       struct volatile_range *new;
-> +       struct range_tree_node *node;
-> +
-> +       u64 start, end;
-> +       int purged = 0;
-> +       start = (u64)start_index;
-> +       end = (u64)end_index;
-> +
-> +       new = vrange_alloc();
-> +       if (!new)
-> +               return -ENOMEM;
-> +
-> +       mutex_lock(&volatile_mutex);
-> +
-> +       node = range_tree_in_range_adjacent(&mapping->volatile_root,
-> +                                               start, end);
-> +       while (node) {
-> +               struct volatile_range *vrange;
-> +
-> +               /* Already entirely marked volatile, so we're done */
-> +               if (node->start < start && node->end > end) {
-> +                       /* don't need the allocated value */
-> +                       kfree(new);
-> +                       goto out;
-> +               }
-> +
-> +               /* Grab containing volatile range */
-> +               vrange = container_of(node, struct volatile_range, range_node);
-> +
-> +               /* resize range */
-> +               start = min_t(u64, start, node->start);
-> +               end = max_t(u64, end, node->end);
-> +               purged |= vrange->purged;
-> +
-> +
-> +               vrange_del(vrange);
-> +
-> +               /* get the next possible overlap */
-> +               node = range_tree_in_range(&mapping->volatile_root, start, end);
+Signed-off-by: Mircea Gherzan <mgherzan@gmail.com>
+---
+ drivers/net/wireless/wl12xx/boot.c  |   14 +++++++++++---
+ drivers/net/wireless/wl12xx/cmd.c   |   25 ++++++++++++++++---------
+ drivers/net/wireless/wl12xx/event.c |   18 +++++++++++-------
+ 3 files changed, 38 insertions(+), 19 deletions(-)
 
-I guess range_tree_in_range_adjacent() should be used here again.
-There can be 2 adjacent regions (left and right), and we'll miss one
-of them with range_tree_in_range().
+diff --git a/drivers/net/wireless/wl12xx/boot.c b/drivers/net/wireless/wl12xx/boot.c
+index 8f9cf5a..89c78d1 100644
+--- a/drivers/net/wireless/wl12xx/boot.c
++++ b/drivers/net/wireless/wl12xx/boot.c
+@@ -142,14 +142,22 @@ static void wl1271_parse_fw_ver(struct wl1271 *wl)
+ 
+ static void wl1271_boot_fw_version(struct wl1271 *wl)
+ {
+-	struct wl1271_static_data static_data;
++	struct wl1271_static_data *static_data;
+ 
+-	wl1271_read(wl, wl->cmd_box_addr, &static_data, sizeof(static_data),
++	static_data = kmalloc(sizeof(*static_data), GFP_DMA);
++	if (!static_data) {
++		__WARN();
++		return;
++	}
++
++	wl1271_read(wl, wl->cmd_box_addr, static_data, sizeof(*static_data),
+ 		    false);
+ 
+-	strncpy(wl->chip.fw_ver_str, static_data.fw_version,
++	strncpy(wl->chip.fw_ver_str, static_data->fw_version,
+ 		sizeof(wl->chip.fw_ver_str));
+ 
++	kfree(static_data);
++
+ 	/* make sure the string is NULL-terminated */
+ 	wl->chip.fw_ver_str[sizeof(wl->chip.fw_ver_str) - 1] = '\0';
+ 
+diff --git a/drivers/net/wireless/wl12xx/cmd.c b/drivers/net/wireless/wl12xx/cmd.c
+index 25990bd..a5c8800 100644
+--- a/drivers/net/wireless/wl12xx/cmd.c
++++ b/drivers/net/wireless/wl12xx/cmd.c
+@@ -342,8 +342,12 @@ int wl1271_cmd_ext_radio_parms(struct wl1271 *wl)
+  */
+ static int wl1271_cmd_wait_for_event_or_timeout(struct wl1271 *wl, u32 mask)
+ {
+-	u32 events_vector, event;
++	u32 *events_vector;
++	u32 event;
+ 	unsigned long timeout;
++	int ret = 0;
++
++	events_vector = kmalloc(sizeof(*events_vector), GFP_DMA);
+ 
+ 	timeout = jiffies + msecs_to_jiffies(WL1271_EVENT_TIMEOUT);
+ 
+@@ -351,21 +355,24 @@ static int wl1271_cmd_wait_for_event_or_timeout(struct wl1271 *wl, u32 mask)
+ 		if (time_after(jiffies, timeout)) {
+ 			wl1271_debug(DEBUG_CMD, "timeout waiting for event %d",
+ 				     (int)mask);
+-			return -ETIMEDOUT;
++			ret = -ETIMEDOUT;
++			goto out;
+ 		}
+ 
+ 		msleep(1);
+ 
+ 		/* read from both event fields */
+-		wl1271_read(wl, wl->mbox_ptr[0], &events_vector,
+-			    sizeof(events_vector), false);
+-		event = events_vector & mask;
+-		wl1271_read(wl, wl->mbox_ptr[1], &events_vector,
+-			    sizeof(events_vector), false);
+-		event |= events_vector & mask;
++		wl1271_read(wl, wl->mbox_ptr[0], events_vector,
++			    sizeof(*events_vector), false);
++		event = *events_vector & mask;
++		wl1271_read(wl, wl->mbox_ptr[1], events_vector,
++			    sizeof(*events_vector), false);
++		event |= *events_vector & mask;
+ 	} while (!event);
+ 
+-	return 0;
++out:
++	kfree(events_vector);
++	return ret;
+ }
+ 
+ static int wl1271_cmd_wait_for_event(struct wl1271 *wl, u32 mask)
+diff --git a/drivers/net/wireless/wl12xx/event.c b/drivers/net/wireless/wl12xx/event.c
+index d3280df68..bcd0c93 100644
+--- a/drivers/net/wireless/wl12xx/event.c
++++ b/drivers/net/wireless/wl12xx/event.c
+@@ -439,25 +439,29 @@ void wl1271_event_mbox_config(struct wl1271 *wl)
+ 
+ int wl1271_event_handle(struct wl1271 *wl, u8 mbox_num)
+ {
+-	struct event_mailbox mbox;
+-	int ret;
++	struct event_mailbox *mbox;
++	int ret = 0;
+ 
+ 	wl1271_debug(DEBUG_EVENT, "EVENT on mbox %d", mbox_num);
+ 
+ 	if (mbox_num > 1)
+ 		return -EINVAL;
+ 
++	/* no GFP_ATOMIC: we're called from the threaded IRQ handler */
++	mbox = kmalloc(sizeof(*mbox), GFP_DMA);
++
+ 	/* first we read the mbox descriptor */
+-	wl1271_read(wl, wl->mbox_ptr[mbox_num], &mbox,
+-		    sizeof(struct event_mailbox), false);
++	wl1271_read(wl, wl->mbox_ptr[mbox_num], mbox, sizeof(*mbox), false);
+ 
+ 	/* process the descriptor */
+-	ret = wl1271_event_process(wl, &mbox);
++	ret = wl1271_event_process(wl, mbox);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 
+ 	/* then we let the firmware know it can go on...*/
+ 	wl1271_write32(wl, ACX_REG_INTERRUPT_TRIG, INTR_TRIG_EVENT_ACK);
+ 
+-	return 0;
++out:
++	kfree(mbox);
++	return ret;
+ }
+-- 
+1.7.9.1
 
-Also (as I had already mentioned before), I think that new ranges must
-not be merged with the existing "vrange->purged == 1" ranges.
-Otherwise, for some use cases, the whole idea of 'volatility' gets
-broken. For example, when an application is processing a big buffer in
-small consequent chunks (marking a chunk as volatile when done with
-it), and the range gets 'purged' by the kernel early in this process
-(when it's still small).
-
--- Dmitry
