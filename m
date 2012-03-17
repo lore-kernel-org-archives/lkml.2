@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab2CQGje (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 02:39:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38393 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2CQGjc (ORCPT
+	id S1755539Ab2CQG6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 02:58:14 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:34313 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754703Ab2CQG6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 02:39:32 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.50.212]
-In-Reply-To: <4F6354E4.8030704@monstr.eu>
-References: <1330589497-4139-1-git-send-email-ohad@wizery.com>
- <1330589497-4139-2-git-send-email-ohad@wizery.com> <4F6354E4.8030704@monstr.eu>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 17 Mar 2012 08:39:08 +0200
-Message-ID: <CAK=Wgbbbi4GnuHedSh6cR1LhkZr8c9q6i=_TLSL252LpPB8Xsw@mail.gmail.com>
-Subject: Re: [PATCH 1/7] remoteproc: resource table overhaul
-To: monstr@monstr.eu
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Brian Swetland <swetland@google.com>,
-        Iliyan Malchev <malchev@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rusty Russell <rusty@rustcorp.com.au>, Mark Grosen <mgrosen@ti.com>,
-        John Williams <john.williams@petalogix.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Guzman Lugo Fernando <fernando.lugo@ti.com>,
-        Anna Suman <s-anna@ti.com>, Clark Rob <rob@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Kieran Bingham <kieranbingham@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 17 Mar 2012 02:58:08 -0400
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Mar 2012 02:58:08 EDT
+Message-ID: <1331967113.1877.9.camel@shrek.rexursive.com>
+Subject: [PATCH]: Lower the amount of pages used for buffering on hibernation
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 17 Mar 2012 17:51:53 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+Hi Rafael,
 
-On Fri, Mar 16, 2012 at 4:57 PM, Michal Simek <monstr@monstr.eu> wrote:
-> In previous version I had carverout first which means that code was copyied
-> to physical address 0x0 and then vrigns were allocated. Current code
-> allocate vring first and then RTOS is not able to run from zero address.
+The patch below reduces the amount of pages that can used by hibernation
+code for buffering. Previously, we would take half of what was available
+as a starting point, now only a quarter. And, we clamp the value to an
+absolute maximum, just to be sure.
 
-In general, depending on specific allocation ordering is error prone
-and you shouldn't do it.
+Also, the calculation of the maximum number of pages used for buffering
+does not depend on the size of the sector type, which it inadvertently
+did before.
 
-For a given device, we treat memory allocated with
-dma_alloc_coherent() as homogeneous. We care about its utilization and
-alignments of allocations rather than their specific location in the
-total region.
+In my testing, this had negligible effect on performance, but may
+provide more pages to other kernel needs during hibernation.
 
-If that's not the case, and there's special memory you want assigned
-with a specific purpose, than it's recommended to let the code make
-sure it happens explicitly, and not rely on implicit order of
-allocation.
+---------------------------------------
+ kernel/power/swap.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-Today there's no way to assign several memory regions with a specific
-device, but a reasonable workaround that's being used is creating
-several sub-devices with the special memory, and then looking them up
-with stuff like device_for_each_child() or device_find_child().
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 8742fd0..6212351 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -51,6 +51,9 @@
+ 
+ #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
+ 
++/* Maximum number of pages for write buffering. */
++#define BUF_WRITE_PAGES		(1 << 15)
++
+ struct swap_map_page {
+ 	sector_t entries[MAP_PAGE_ENTRIES];
+ 	sector_t next_swap;
+@@ -316,7 +319,9 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
+-	handle->nr_free_pages = nr_free_pages() >> 1;
++	handle->nr_free_pages = nr_free_pages() >> 2;
++	handle->nr_free_pages = clamp_val(handle->nr_free_pages,
++	                                  1, BUF_WRITE_PAGES);
+ 	handle->written = 0;
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+@@ -404,7 +409,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ #define LZO_THREADS	3
+ 
+ /* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++#define LZO_READ_PAGES	(1 << 12)
+ 
+ 
+ /**
+@@ -618,7 +623,9 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	 * Adjust number of free pages after all allocations have been done.
+ 	 * We don't want to run out of pages when writing.
+ 	 */
+-	handle->nr_free_pages = nr_free_pages() >> 1;
++	handle->nr_free_pages = nr_free_pages() >> 2;
++	handle->nr_free_pages = clamp_val(handle->nr_free_pages,
++	                                  1, BUF_WRITE_PAGES);
+ 
+ 	/*
+ 	 * Start the CRC32 thread.
+@@ -1130,7 +1137,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	/*
+ 	 * Adjust number of pages for read buffering, in case we are short.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
++	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 2;
+ 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+---------------------------------------
 
-About your specific issue: the current allocation scheme was chosen
-for simplicity, but I do plan to change it back by postponing the
-vring dma allocation until a remote processor is really powered on.
-It's not a lot of memory, but this way we'd only allocate it when
-really needed (so if it's CMA, others could use it).
+-- 
+Bojan
 
-IOW: you can probably just wait a bit until this patch is ready and
-take it into your tree. It will most likely bring back the behavior you
-need :)
-
-Ohad.
