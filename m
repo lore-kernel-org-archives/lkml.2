@@ -1,108 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965033Ab2CQKPP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 06:15:15 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:57590 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755677Ab2CQKPL (ORCPT
+	id S1030637Ab2CQKhM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 06:37:12 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:49257 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754307Ab2CQKhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 06:15:11 -0400
-Message-ID: <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1331712357.2456.58.camel@edumazet-laptop>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-    <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
-    <1331658828.4449.16.camel@edumazet-glaptop>
-    <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-    <1331704535.2456.37.camel@edumazet-laptop>
-    <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
-    <1331712357.2456.58.camel@edumazet-laptop>
-Date: Sat, 17 Mar 2012 21:14:55 +1100
-Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
+	Sat, 17 Mar 2012 06:37:08 -0400
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] [resend] Add support for Rise mP6 CPUs
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Sat, 17 Mar 2012 11:36:42 +0100
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 4b8baa00aa45d625c6ee6c23f4cb0de1
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203171136.44415.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, March 14, 2012 19:05, Eric Dumazet wrote:
-> Le mercredi 14 mars 2012 à 08:59 +0100, Indan Zupancic a écrit :
->
->> The only remaining question is, is it worth the extra code to release
->> up to 32kB of unused memory? It seems a waste to not free it, but if
->> people think it's not worth it then let's just leave it around.
->
-> Quite frankly its not an issue, given JIT BPF is not yet default
-> enabled.
+Add detection for Rise mP6 x86 CPUs and a quirk to mark CMPXCHG8B as present.
 
-And what if assuming JIT BPF would be default enabled?
+Result:
+$ cat /proc/cpuinfo
+processor       : 0
+vendor_id       : RiseRiseRise
+cpu family      : 5
+model           : 0
+model name      : mP6 (Kirin)
+stepping        : 4
+cpu MHz         : 200.443
+cache size      : 16 KB
+fdiv_bug        : no
+hlt_bug         : no
+f00f_bug        : no
+coma_bug        : no
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 1
+wp              : yes
+flags           : fpu tsc cx8 mmx up
+bogomips        : 400.88
+clflush size    : 32
+cache_alignment : 32
+address sizes   : 32 bits physical, 32 bits virtual
+power management:
 
-> I am not sure all bugs were found and fixed. I would warn users before
-> considering using it in production.
->
-> If you have time, I would appreciate if you could double check and find
-> last bugs in it.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-I'll do my best.
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 3c57033..5a356f3 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -505,3 +505,12 @@ config CPU_SUP_UMC_32
+ 	  CPU might render the kernel unbootable.
+ 
+ 	  If unsure, say N.
++
++config CPU_SUP_RISE_32
++	default y
++	bool "Support Rise processors" if PROCESSOR_SELECT
++	depends on !64BIT
++	---help---
++	  This enables detection, tunings and quirks for Rise processors
++
++	  If unsure, say N.
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index aa9088c..e3a4e7f 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -119,7 +119,8 @@ struct cpuinfo_x86 {
+ #define X86_VENDOR_CENTAUR	5
+ #define X86_VENDOR_TRANSMETA	7
+ #define X86_VENDOR_NSC		8
+-#define X86_VENDOR_NUM		9
++#define X86_VENDOR_RISE		9
++#define X86_VENDOR_NUM		10
+ 
+ #define X86_VENDOR_UNKNOWN	0xff
+ 
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 25f24dc..1013eb6 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
+ obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
+ obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
+ obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
++obj-$(CONFIG_CPU_SUP_RISE_32)		+= rise.o
+ 
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
+ 
+diff --git a/arch/x86/kernel/cpu/rise.c b/arch/x86/kernel/cpu/rise.c
+new file mode 100644
+index 0000000..2072a0f
+--- /dev/null
++++ b/arch/x86/kernel/cpu/rise.c
+@@ -0,0 +1,34 @@
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <asm/processor.h>
++#include "cpu.h"
++
++static void __cpuinit init_rise(struct cpuinfo_x86 *c)
++{
++	/*
++	 * Datasheet says:
++	 * The CMPXCHG8B instruction is supported and always enabled on the
++	 * Rise mP6 processor; however, the default CPUID function bit is set
++	 * to 0 to circumvent a reported bug in Windows NT.
++	 */
++	set_cpu_cap(c, X86_FEATURE_CX8);
++	/* cache is always 16KB (8KB code + 8KB data) */
++	c->x86_cache_size = 16;
++}
++
++static const struct cpu_dev __cpuinitconst rise_cpu_dev = {
++	.c_vendor	= "Rise",
++	.c_ident	= { "RiseRiseRise" },
++	.c_models = {
++		{ .vendor = X86_VENDOR_RISE, .family = 5, .model_names =
++		  {
++			  [0] = "mP6 (Kirin)",
++			  [2] = "mP6 (Lynx)",
++		  }
++		},
++	},
++	.c_init		= init_rise,
++	.c_x86_vendor	= X86_VENDOR_RISE,
++};
++
++cpu_dev_register(rise_cpu_dev);
 
-The current JIT doesn't handle negative offsets: The stuff that's handled
-by __load_pointer(). Easiest solution would be to make it non-static and
-call it instead of doing bpf_error. I guess __load_pointer was added later
-and the JIT code didn't get updated.
-
-But gcc refuses to inline load_pointer, instead it inlines __load_pointer
-and does the important checks first. Considering the current assembly code
-does a call too, it could as well call load_pointer() directly. That would
-save a lot of assembly code, handle all negative cases too and be pretty
-much the same speed. The only question is if this slow down some other
-archs than x86. What do you think?
-
-The EMIT_COND_JMP(f_op, f_offset); should be in an else case, otherwise
-it's superfluous. It's a harmless bug though. I haven't spotted anything
-else yet.
-
-You can get rid of all the "if (is_imm8(offsetof(struct sk_buff, len)))"
-code by making sure everything is near: Somewhere at the start, just
-add 127 to %rdi and a BUILD_BUG_ON(sizeof(struct sk_buff) > 255).
-
-I'll write some more patches tomorrow.
-
-Greetings,
-
-Indan
-
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index 7c1b765..7e0f575 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -581,8 +581,9 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
- 					if (filter[i].jf)
- 						EMIT_JMP(f_offset);
- 					break;
-+				} else {
-+					EMIT_COND_JMP(f_op, f_offset);
- 				}
--				EMIT_COND_JMP(f_op, f_offset);
- 				break;
- 			default:
- 				/* hmm, too complex filter, give up with jit compiler */
-
-
-
+-- 
+Ondrej Zary
