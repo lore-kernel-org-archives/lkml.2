@@ -1,115 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162056Ab2CQAHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 20:07:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49113 "EHLO
+	id S1162079Ab2CQAIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 20:08:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37131 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161220Ab2CQAHS (ORCPT
+	with ESMTP id S1031820Ab2CQAIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 20:07:18 -0400
-Message-ID: <1331942824.6622.1.camel@phoenix>
-Subject: [PATCH v2 1/2] regulator: pcf50633: Don't write to reserved bits of
- AUTO output voltage select register
+	Fri, 16 Mar 2012 20:08:41 -0400
+Message-ID: <1331942914.6622.3.camel@phoenix>
+Subject: [PATCH v2 2/2] regulator: Convert pcf50633 to get_voltage_sel
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Sat, 17 Mar 2012 08:07:04 +0800
+Date: Sat, 17 Mar 2012 08:08:34 +0800
+In-Reply-To: <1331942824.6622.1.camel@phoenix>
+References: <1331942824.6622.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The datasheet says 00000000 to 00101110 are reserved, and the min value of the
-voltage setting is 1.8 V.
-Thus don't write 0 to AUTO output voltage select register (address 1Ah).
-
-Table 50. AUTOOUT - AUTO output voltage select register (address 1Ah) bit description[1]
-Bit Symbol Access Description
-7:0 auto_out R/W VO(prog) = 0.625 + auto_out × 0.025 V
-eg. 00000000 to 00101110: reserved
-00101111: 1.8 V (min)
-01010011: 2.7 V
-01101010: 3.275 V
-01101011: 3.300 V
-01101100: 3.325 V
-01111111 : 3.800 V (max)
-..... .....
-11111110 : 3.800 V
-11111111 : 3.800 V
-
-This patch also fixes a bug in pcf50633_regulator_list_voltage.
-It is wrong to do "index += 0x2f" for PCF50633_REGULATOR_AUTO in
-pcf50633_regulator_list_voltage. The purpose of adding 0x2f to index is because
-current code return 0 in auto_voltage_bits when millivolts < 1800.
-For millivolts > 1800, adding 0x2f to index is wrong.
-
-We should handle this by
-return 0 if the selector is in the reserved range of AUTOOUT.
+Convert pcf50633 to get_voltage_sel and then we can remove
+pcf50633_regulator_voltage_value function and move its implementation
+to pcf50633_regulator_list_voltage.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/pcf50633-regulator.c |   23 +++++------------------
- 1 files changed, 5 insertions(+), 18 deletions(-)
+ drivers/regulator/pcf50633-regulator.c |   65 ++++++++++++++-----------------
+ 1 files changed, 29 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/regulator/pcf50633-regulator.c b/drivers/regulator/pcf50633-regulator.c
-index 6db46c6..9ef7dff 100644
+index 9ef7dff..b02cbb9 100644
 --- a/drivers/regulator/pcf50633-regulator.c
 +++ b/drivers/regulator/pcf50633-regulator.c
-@@ -52,7 +52,7 @@ static const u8 pcf50633_regulator_registers[PCF50633_NUM_REGULATORS] = {
- static u8 auto_voltage_bits(unsigned int millivolts)
- {
- 	if (millivolts < 1800)
--		return 0;
-+		return 0x2f;
- 	if (millivolts > 3800)
- 		return 0xff;
- 
-@@ -87,9 +87,6 @@ static u8 ldo_voltage_bits(unsigned int millivolts)
- /* Obtain voltage value from bits */
- static unsigned int auto_voltage_value(u8 bits)
- {
--	if (bits < 0x2f)
--		return 0;
--
- 	return 625 + (bits * 25);
+@@ -151,23 +151,43 @@ static int pcf50633_regulator_set_voltage(struct regulator_dev *rdev,
+ 	return pcf50633_reg_write(pcf, regnr, volt_bits);
  }
  
-@@ -161,6 +158,9 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
+-static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
+-						u8 bits)
++static int pcf50633_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ {
++	struct pcf50633 *pcf;
++	int regulator_id;
++	u8 volt_bits, regnr;
++
++	pcf = rdev_get_drvdata(rdev);
++
++	regulator_id = rdev_get_id(rdev);
++	if (regulator_id >= PCF50633_NUM_REGULATORS)
++		return -EINVAL;
++
++	regnr = pcf50633_regulator_registers[regulator_id];
++
++	volt_bits = pcf50633_reg_read(pcf, regnr);
++
++	return volt_bits;
++}
++
++static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
++						unsigned int index)
++{
++	int regulator_id = rdev_get_id(rdev);
+ 	int millivolts;
  
- 	switch (id) {
+-	switch (id) {
++	switch (regulator_id) {
  	case PCF50633_REGULATOR_AUTO:
-+		/* AUTOOUT: 00000000 to 00101110 are reserved */
-+		if (bits < 0x2f)
-+			return 0;
- 		millivolts = auto_voltage_value(bits);
+ 		/* AUTOOUT: 00000000 to 00101110 are reserved */
+-		if (bits < 0x2f)
++		if (index < 0x2f)
+ 			return 0;
+-		millivolts = auto_voltage_value(bits);
++		millivolts = auto_voltage_value(index);
  		break;
  	case PCF50633_REGULATOR_DOWN1:
-@@ -208,20 +208,7 @@ static int pcf50633_regulator_get_voltage(struct regulator_dev *rdev)
- static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
- 						unsigned int index)
- {
+-		millivolts = down_voltage_value(bits);
++		millivolts = down_voltage_value(index);
+ 		break;
+ 	case PCF50633_REGULATOR_DOWN2:
+-		millivolts = down_voltage_value(bits);
++		millivolts = down_voltage_value(index);
+ 		break;
+ 	case PCF50633_REGULATOR_LDO1:
+ 	case PCF50633_REGULATOR_LDO2:
+@@ -177,7 +197,7 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
+ 	case PCF50633_REGULATOR_LDO6:
+ 	case PCF50633_REGULATOR_HCLDO:
+ 	case PCF50633_REGULATOR_MEMLDO:
+-		millivolts = ldo_voltage_value(bits);
++		millivolts = ldo_voltage_value(index);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -186,33 +206,6 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
+ 	return millivolts * 1000;
+ }
+ 
+-static int pcf50633_regulator_get_voltage(struct regulator_dev *rdev)
+-{
 -	struct pcf50633 *pcf;
 -	int regulator_id;
+-	u8 volt_bits, regnr;
 -
 -	pcf = rdev_get_drvdata(rdev);
 -
 -	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= PCF50633_NUM_REGULATORS)
+-		return -EINVAL;
 -
--	switch (regulator_id) {
--	case PCF50633_REGULATOR_AUTO:
--		index += 0x2f;
--		break;
--	default:
--		break;
--	}
-+	int regulator_id = rdev_get_id(rdev);
+-	regnr = pcf50633_regulator_registers[regulator_id];
+-
+-	volt_bits = pcf50633_reg_read(pcf, regnr);
+-
+-	return pcf50633_regulator_voltage_value(regulator_id, volt_bits);
+-}
+-
+-static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
+-						unsigned int index)
+-{
+-	int regulator_id = rdev_get_id(rdev);
+-
+-	return pcf50633_regulator_voltage_value(regulator_id, index);
+-}
+-
+ static int pcf50633_regulator_enable(struct regulator_dev *rdev)
+ {
+ 	struct pcf50633 *pcf = rdev_get_drvdata(rdev);
+@@ -265,7 +258,7 @@ static int pcf50633_regulator_is_enabled(struct regulator_dev *rdev)
  
- 	return pcf50633_regulator_voltage_value(regulator_id, index);
- }
+ static struct regulator_ops pcf50633_regulator_ops = {
+ 	.set_voltage = pcf50633_regulator_set_voltage,
+-	.get_voltage = pcf50633_regulator_get_voltage,
++	.get_voltage_sel = pcf50633_regulator_get_voltage_sel,
+ 	.list_voltage = pcf50633_regulator_list_voltage,
+ 	.enable = pcf50633_regulator_enable,
+ 	.disable = pcf50633_regulator_disable,
 -- 
 1.7.5.4
 
