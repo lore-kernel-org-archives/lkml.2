@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab2CQHhj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 03:37:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54145 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab2CQHhg (ORCPT
+	id S1030228Ab2CQHw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 03:52:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63997 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab2CQHwZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 03:37:36 -0400
-Message-ID: <1331969851.30866.3.camel@phoenix>
-Subject: [PATCH 2/2] power_supply: ds2781: Use DS2781_PARAM_EEPROM_SIZE and
- DS2781_USER_EEPROM_SIZE
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Renata Sayakhova <rsayakhova@gmail.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Date: Sat, 17 Mar 2012 15:37:31 +0800
-In-Reply-To: <1331969590.30866.0.camel@phoenix>
-References: <1331969590.30866.0.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 17 Mar 2012 03:52:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331969567.3022.233.camel@deadeye>
+References: <20120316233829.GA14022@kroah.com>
+	<20120316233811.484341257@linuxfoundation.org>
+	<20120317023740.GH12704@decadent.org.uk>
+	<CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
+	<1331969567.3022.233.camel@deadeye>
+Date: Sat, 17 Mar 2012 11:52:24 +0400
+X-Google-Sender-Auth: vMjR4YaC07DFXG6zb1HLEhj4tDE
+Message-ID: <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
+Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we have defined DS2781_PARAM_EEPROM_SIZE and DS2781_USER_EEPROM_SIZE,
-use them to simplify the code.
+17 марта 2012 г. 11:32 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
+>> 17 марта 2012 г. 6:37 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+>> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
+>> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> [...]
+>> > But we test this before flock->fl_flags & FL_POSIX, which means we
+>> > don't know whether this lock actually needs to be assigned one of
+>> > those structures.  So it appears that we might report a spurious error
+>> > if the lock list ends with a mandatory lock.  If so, this is
+>> > relatively harmless but does need to be fixed.
+>> >
+>>
+>> You are right here, thanks for the catch! I will repost the patch asap.
+>
+> This has already been merged into Linus's tree, so you need to submit a
+> patch to apply on top of it.
+>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/power/ds2781_battery.c |   20 ++++++--------------
- 1 files changed, 6 insertions(+), 14 deletions(-)
+I posted two patches:
+1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
+kmalloc under the flocks spinlock
+2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
+cifs_push_posix_locks
 
-diff --git a/drivers/power/ds2781_battery.c b/drivers/power/ds2781_battery.c
-index ca0d653..975684a 100644
---- a/drivers/power/ds2781_battery.c
-+++ b/drivers/power/ds2781_battery.c
-@@ -643,9 +643,7 @@ static ssize_t ds2781_read_param_eeprom_bin(struct file *filp,
- 	struct power_supply *psy = to_power_supply(dev);
- 	struct ds2781_device_info *dev_info = to_ds2781_device_info(psy);
- 
--	count = min_t(loff_t, count,
--		DS2781_EEPROM_BLOCK1_END -
--		DS2781_EEPROM_BLOCK1_START + 1 - off);
-+	count = min_t(loff_t, count, DS2781_PARAM_EEPROM_SIZE - off);
- 
- 	return ds2781_read_block(dev_info, buf,
- 				DS2781_EEPROM_BLOCK1_START + off, count);
-@@ -661,9 +659,7 @@ static ssize_t ds2781_write_param_eeprom_bin(struct file *filp,
- 	struct ds2781_device_info *dev_info = to_ds2781_device_info(psy);
- 	int ret;
- 
--	count = min_t(loff_t, count,
--		DS2781_EEPROM_BLOCK1_END -
--		DS2781_EEPROM_BLOCK1_START + 1 - off);
-+	count = min_t(loff_t, count, DS2781_PARAM_EEPROM_SIZE - off);
- 
- 	ret = ds2781_write(dev_info, buf,
- 				DS2781_EEPROM_BLOCK1_START + off, count);
-@@ -682,7 +678,7 @@ static struct bin_attribute ds2781_param_eeprom_bin_attr = {
- 		.name = "param_eeprom",
- 		.mode = S_IRUGO | S_IWUSR,
- 	},
--	.size = DS2781_EEPROM_BLOCK1_END - DS2781_EEPROM_BLOCK1_START + 1,
-+	.size = DS2781_PARAM_EEPROM_SIZE,
- 	.read = ds2781_read_param_eeprom_bin,
- 	.write = ds2781_write_param_eeprom_bin,
- };
-@@ -696,9 +692,7 @@ static ssize_t ds2781_read_user_eeprom_bin(struct file *filp,
- 	struct power_supply *psy = to_power_supply(dev);
- 	struct ds2781_device_info *dev_info = to_ds2781_device_info(psy);
- 
--	count = min_t(loff_t, count,
--		DS2781_EEPROM_BLOCK0_END -
--		DS2781_EEPROM_BLOCK0_START + 1 - off);
-+	count = min_t(loff_t, count, DS2781_USER_EEPROM_SIZE - off);
- 
- 	return ds2781_read_block(dev_info, buf,
- 				DS2781_EEPROM_BLOCK0_START + off, count);
-@@ -715,9 +709,7 @@ static ssize_t ds2781_write_user_eeprom_bin(struct file *filp,
- 	struct ds2781_device_info *dev_info = to_ds2781_device_info(psy);
- 	int ret;
- 
--	count = min_t(loff_t, count,
--		DS2781_EEPROM_BLOCK0_END -
--		DS2781_EEPROM_BLOCK0_START + 1 - off);
-+	count = min_t(loff_t, count, DS2781_USER_EEPROM_SIZE - off);
- 
- 	ret = ds2781_write(dev_info, buf,
- 				DS2781_EEPROM_BLOCK0_START + off, count);
-@@ -736,7 +728,7 @@ static struct bin_attribute ds2781_user_eeprom_bin_attr = {
- 		.name = "user_eeprom",
- 		.mode = S_IRUGO | S_IWUSR,
- 	},
--	.size = DS2781_EEPROM_BLOCK0_END - DS2781_EEPROM_BLOCK0_START + 1,
-+	.size = DS2781_USER_EEPROM_SIZE,
- 	.read = ds2781_read_user_eeprom_bin,
- 	.write = ds2781_write_user_eeprom_bin,
- };
 -- 
-1.7.5.4
-
-
-
+Best regards,
+Pavel Shilovsky.
