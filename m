@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab2CQSDG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 14:03:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62029 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757207Ab2CQSDE (ORCPT
+	id S1757469Ab2CQSPG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 14:15:06 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:48378 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753992Ab2CQSOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 14:03:04 -0400
-Message-ID: <1332007375.2110.8.camel@aks>
-Subject: RE: [RFC 1/2] kvm: host-side changes for tmem on KVM
-From: Akshay Karle <akshay.a.karle@gmail.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, ashu tripathi <er.ashutripathi@gmail.com>,
-        nishant gulhane <nishant.s.gulhane@gmail.com>,
-        Shreyas Mahure <shreyas.mahure@gmail.com>,
-        amarmore2006 <amarmore2006@gmail.com>,
-        mahesh mohan <mahesh6490@gmail.com>
-Date: Sat, 17 Mar 2012 23:32:55 +0530
-In-Reply-To: <33e296c5-825f-44a2-8f42-e76caf3715a6@default>
-References: <1331225648.2585.27.camel@aks>
-	 <20120315165400.GL30250@phenom.dumpdata.com> <1331836868.2215.43.camel@aks>
-	 <33e296c5-825f-44a2-8f42-e76caf3715a6@default>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Sat, 17 Mar 2012 14:14:45 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArwBAKU/KE8Y9geI/2dsb2JhbAAMgVOCPbt0hkyBK4NngQcEnyI
+X-IronPort-AV: E=Sophos;i="4.73,1,1325480400"; 
+   d="scan'208";a="168605855"
+Message-ID: <4F64D493.9010404@teksavvy.com>
+Date: Sat, 17 Mar 2012 14:14:43 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Shaohua Li <shli@kernel.org>
+CC: NeilBrown <neilb@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
+References: <20120312030412.375458948@fusionio.com> <20120314132422.3aeb6d49@notabene.brown> <4F6006C3.4010204@kernel.org>
+In-Reply-To: <4F6006C3.4010204@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > From: Akshay Karle [mailto:akshay.a.karle@gmail.com]
-> > Subject: Re: [RFC 1/2] kvm: host-side changes for tmem on KVM
-> > 
-> > >> @@ -669,7 +670,6 @@ static struct zv_hdr *zv_create(struct x
-> > >>       int chunks = (alloc_size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
-> > >>       int ret;
-> > >>
-> > >> -     BUG_ON(!irqs_disabled());
-> > > 
-> > > Can you explain why?
-> >
-> > Zcache is by default used in the non-virtualized environment for page compression. Whenever
-> > a page is to be evicted from the page cache the spin_lock_irq is held on the page mapping.
-> > To ensure that this is done, the BUG_ON(!irqs_disabled()) was used.
-> > But now the situation is different, we are using zcache functions for kvm VM's.
-> > So if any page of the guest is to be evicted the irqs should be disabled in just that
-> > guest and not the host, so we removed the BUG_ON(!irqs_disabled()); line.
->
-> I think irqs may still need to be disabled (in your code by the caller)
-> since the tmem code (in tmem.c) takes spinlocks with this assumption.
-> I'm not sure since I don't know what can occur with scheduling a
-> kvm guest during an interrupt... can a different vcpu of the same guest
-> be scheduled on this same host pcpu?
-> 
-> Dan
+On 12-03-13 10:47 PM, Shaohua Li wrote:
+> On 3/14/12 10:24 AM, NeilBrown wrote:
+>>  On Mon, 12 Mar 2012 11:04:12 +0800 Shaohua Li <shli@fusionio.com> wrote:
+..
+>>  Also I wonder about handling failure in RAID1.
+>>  I think the code will currently treat it like a write error, and
+>>  maybe record a bad block (then fail the device is writing the badblock
+>>  record fails). Is that what were want?
+> Mainly to simplify the code. And I thought a normal discard should not fail.
+> If it fails, something is wrong, marked it as badblock maybe not bad.
 
-The irqs are disabled but only in the guest kernel not in the host. We 
-tried adding the spin_lock_irq code into the host but that was resulting
-in host panic as the lock is being taken on the entire mapping. If the
-irqs are disabled in the guest, is there a need to disable them on the
-host as well? Because the mappings maybe different in the host and the
-guest.
-
+That sounds like a VERY bad idea.
+Failures happen for lots of reasons,
+but generic comm errors are not an excuse to suddenly mark sectors as bad.
