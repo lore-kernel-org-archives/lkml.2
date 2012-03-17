@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030544Ab2CQFYD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 01:24:03 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:39531 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030188Ab2CQFX6 (ORCPT
+	id S932074Ab2CQFv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 01:51:58 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35538 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab2CQFvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 01:23:58 -0400
-Date: Fri, 16 Mar 2012 22:23:52 -0700 (PDT)
-Message-Id: <20120316.222352.1067507516750800594.davem@davemloft.net>
-To: santoshprasadnayak@gmail.com
-Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 3/3 v3] netxen: qlogic ethernet : Fix endian bug.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1331629104-3283-1-git-send-email-santoshprasadnayak@gmail.com>
-References: <1331629104-3283-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 16 Mar 2012 22:23:54 -0700 (PDT)
+	Sat, 17 Mar 2012 01:51:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F63FB59.9010104@codeaurora.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203150034.08863.rjw@sisk.pl>
+ <4F612C05.8010301@codeaurora.org> <201203150111.05724.rjw@sisk.pl> <4F63FB59.9010104@codeaurora.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 16 Mar 2012 22:51:32 -0700
+X-Google-Sender-Auth: QhMDn6U-pajKqXbVB-Pir4ke72w
+Message-ID: <CA+55aFyUAiVpueCTe2rDMZxcDkoQ=gYM+-Qmu0KG2SPTV4B+zA@mail.gmail.com>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
+ helper is not yet available
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: santosh nayak <santoshprasadnayak@gmail.com>
-Date: Tue, 13 Mar 2012 14:28:24 +0530
+On Fri, Mar 16, 2012 at 7:47 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> -       if (WARN_ON(usermodehelper_is_disabled())) {
+> +       if (is_sleep_task()) {
+>                dev_err(device, "firmware: %s will not be loaded\n", name);
 
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> 
-> Change the datatype of "ip_addr" to __be32 as 'ip' should be in
-> big endian format.
-> 
-> Adapter needs "ip address" in big endian format stored at lower 32bit
-> of req.word[1]. netxen_config_ipaddr() now receives 'ip' in big endian
-> format. To satisfy adapter's need, use memcpy() to copy byte by byte
-> of 'ip' into lower 32bit of req.word[1].
-> 
-> Mac address and serial number of adapter need to be in little endian format.
-> Change the data type of the related  variables to __le32 / __le64 or cast it
-> explicitly to __le32 / __le64 depending upon the requirement.
-> 
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+Stop these idiotic games already!
 
-Applied.
+It's very simple: you cannot load firmware while the system is not
+readt. Your moronic "let's change the test to something else" is
+entirely and utterly misguided and totally misses the point.
+
+It's not about sleeping, and it's not about anything even *remotely*
+about that. Stop the idiocy already.
+
+How hard is it to understand? How many times do people have to tell you?
+
+That warning is very much valid during bootup, and that warning has
+been *seen* during bootup. For example, try to compile in most
+wireless drivers as non-modular, and that warning *has* to trigger.
+
+Rafael, please consider everything along these *IDIOTIC* lines
+completely NAK'ed. In fact, until Stephen starts showing any sign of
+understanding that it's not about just some random small detail, just
+ignore anything and everything from him.
+
+Stephen, you've been told multiple times that that WARN_ON() is
+correct. Until you understand that, just stop sending these entirely
+random patches that change it to something completely wrong.
+
+How hard can it be to understand that you cannot and must not load
+firmware when the system isn't up-and-running.
+
+And *dammit*, the fact that you send these kinds of completely
+nonsensical patches that seem to think that "up-and-running" is just
+about suspend (and not bootup, for example), all you are showing is
+that you don't understand the problem. Stop, think, and read the
+emails that have been in this thread and that have explained how it
+*could* be solved.
+
+Until you do that, any patch you send is just worthless. Really.
+
+                     Linus
+
+                              Linus
