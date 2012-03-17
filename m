@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032797Ab2CQACP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 20:02:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38397 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032085Ab2CPXgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 19:36:14 -0400
-From: Tejun Heo <tj@kernel.org>
-To: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/10] cgroup: build list of all cgroups under a given cgroupfs_root
-Date: Fri, 16 Mar 2012 16:35:55 -0700
-Message-Id: <1331940963-15756-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331940963-15756-1-git-send-email-tj@kernel.org>
-References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+	id S1946096Ab2CQACv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 20:02:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12259 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946023Ab2CQACM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 20:02:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="78549003"
+Message-ID: <4F63D481.50202@intel.com>
+Date: Sat, 17 Mar 2012 08:02:09 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: gregkh <gregkh@linuxfoundation.org>,
+        "Sharp, Sarah A" <sarah.a.sharp@intel.com>,
+        Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+References: <1331787186.2979.71.camel@debian> <20120315145743.GA7928@kroah.com> <4F6204B7.5010908@intel.com> <20120315175608.GA6077@xanatos>
+In-Reply-To: <20120315175608.GA6077@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build a list of all cgroups anchored at cgroupfs_root->allcg_list and
-going through cgroup->allcg_node.  The list is protected by
-cgroup_mutex and will be used to improve cgroup file handling.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/cgroup.h |    2 ++
- kernel/cgroup.c        |   10 ++++++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+>> Sarah, would you like to give some comments here?
+> 
+> Looks fine.  I'll send a pull request to Greg with this patch after I
+> verify it doesn't generate new warnings.
+> 
+> Sarah Sharp
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 501adb1..908f26f 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -191,6 +191,8 @@ struct cgroup {
- 	 */
- 	struct list_head css_sets;
- 
-+	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
-+
- 	/*
- 	 * Linked list running through all cgroups that can
- 	 * potentially be reaped by the release agent. Protected by
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 2e2f93b..fceee52 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -127,6 +127,9 @@ struct cgroupfs_root {
- 	/* A list running through the active hierarchies */
- 	struct list_head root_list;
- 
-+	/* All cgroups on this root, cgroup_mutex protected */
-+	struct list_head allcg_list;
-+
- 	/* Hierarchy-specific flags */
- 	unsigned long flags;
- 
-@@ -1350,11 +1353,14 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
- static void init_cgroup_root(struct cgroupfs_root *root)
- {
- 	struct cgroup *cgrp = &root->top_cgroup;
-+
- 	INIT_LIST_HEAD(&root->subsys_list);
- 	INIT_LIST_HEAD(&root->root_list);
-+	INIT_LIST_HEAD(&root->allcg_list);
- 	root->number_of_cgroups = 1;
- 	cgrp->root = root;
- 	cgrp->top_cgroup = cgrp;
-+	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
- 	init_cgroup_housekeeping(cgrp);
- }
- 
-@@ -3794,6 +3800,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	/* The cgroup directory was pre-locked for us */
- 	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
- 
-+	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
-+
- 	err = cgroup_populate_dir(cgrp);
- 	/* If err < 0, we have a half-filled directory - oh well ;) */
- 
-@@ -4002,6 +4010,8 @@ again:
- 	list_del_init(&cgrp->sibling);
- 	cgroup_unlock_hierarchy(cgrp->root);
- 
-+	list_del_init(&cgrp->allcg_node);
-+
- 	d = dget(cgrp->dentry);
- 
- 	cgroup_d_remove_dir(d);
--- 
-1.7.7.3
 
+Thanks!
