@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab2CQP3e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 11:29:34 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57552 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254Ab2CQP3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 11:29:31 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 17 Mar 2012 16:28:53 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Wakko Warner <wakko@animx.eu.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: Burning multiple DVDs at one time
-Message-ID: <20120317162853.13afa28b@stein>
-In-Reply-To: <20120317142255.GB26403@animx.eu.org>
-References: <20120315225310.GB3152@animx.eu.org>
-	<20120317095644.145d0588@stein>
-	<20120317142255.GB26403@animx.eu.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756222Ab2CQPiV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 11:38:21 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42892 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754983Ab2CQPiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 11:38:19 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Len Brown <lenb@kernel.org>, srivatsa.bhat@linux.vnet.ibm.com,
+        deepthi@linux.vnet.ibm.com, venki@google.com, trenn@suse.de,
+        bhelgaas@google.com
+Cc: kernel-janitors@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/acpi/processor_driver.c: add missing kfree
+Date: Sat, 17 Mar 2012 16:38:11 +0100
+Message-Id: <1331998691-29679-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 17 Wakko Warner wrote:
-> Stefan Richter wrote:
-> > On Mar 15 Wakko Warner wrote:
-> > > I'm having problems doing this.
-> > > 
-> > > When I burn a single disk, wodim shows the drive buf @ 99% consistently. 
-> > > The instant that a 2nd disk is being burned, the drive buf on the first one
-> > > starts to drop and data stops when the 2nd wodim is performing OPC.
-> > > 
-> > > During the burn of both discs, the drive buf will drop on both until one of
-> > > them finishes.  Both drives see under runs.
-> > > 
-> > > When one starts fixating, the other will hang until the fixation is
-> > > completed.
-> > > 
-> > > During the burns, the fifo of both never drop below 99%
-> > > 
-> > > There are no logs that are produced.
-> > > 
-> > > My burners are:
-> > > [6:0:0:0]    cd/dvd  ATAPI    iHAS422   8      4L11  /dev/sr7
-> > > [7:0:0:0]    cd/dvd  ATAPI    iHAS224   B      GL05  /dev/sr8
-> > > 
-> > > Both are SATA drives attached to the onboard sata controller
-> > > 00:1f.2 SATA controller: Intel Corporation 631xESB/632xESB SATA AHCI Controller (rev 09)
-> > > 00:1f.2 0106: 8086:2681 (rev 09)
-[...]
-> > This is likely due to serialization by a global mutex in the sr driver.
-> > Have a look at thread "[PATCH] [SCSI] sr: fix multi-drive performance,
-> > remove BKL replacement" from February. https://lkml.org/lkml/2012/2/28/230
-> 
-> Thanks.  I looked at the patch.  I would just like to confirm that I can
-> patch my 3.0.0 vanilla kernel, compile the sr module, unload the current and
-> load the patched one without the need to reboot.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Yes, this should be possible.
+The function acpi_processor_add is stored in the ops.add field of a
+acpi_driver structure.  This function is then called in
+acpi_bus_driver_init.  On failure, this function clears the field
+device->driver_data, but does not free its contents.  Thus the free has to
+be done by the add function.  In acpi_processor_add, the corresponding
+value is pr.  This value is currently freed on failure before storing it in
+device->driver_data, but not after.  This free is added in the error
+handling code at the end of the function.  The per_cpu variable
+processors is also cleared so that it does not refer to a dangling pointer.
 
-Oh, I only noticed just know that you also wrote:
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 
-> > > The kernel is a vanilla kernel v3.0.0.  (This also happened with 2.6.35)
+---
+v3: Added reviews and acks
 
-In 2.6.35, the Big Kernel Lock was still in place there.  That lock
-behaved differently from a plain mutex --- notably it was released when a
-thread went to sleep --- so maybe there is more to your problem than just
-sr_mutex blocking unrelated sr accesses.
--- 
-Stefan Richter
--=====-===-- --== =---=
-http://arcgraph.de/sr/
+ drivers/acpi/processor_driver.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index 2801b41..c5ce91c 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -536,8 +536,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 		return -ENOMEM;
+ 
+ 	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
+-		kfree(pr);
+-		return -ENOMEM;
++		result = -ENOMEM;
++		goto err_free_pr;
+ 	}
+ 
+ 	pr->handle = device->handle;
+@@ -577,7 +577,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 	dev = get_cpu_device(pr->id);
+ 	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
+ 		result = -EFAULT;
+-		goto err_free_cpumask;
++		goto err_clear_processor;
+ 	}
+ 
+ 	/*
+@@ -595,9 +595,16 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 
+ err_remove_sysfs:
+ 	sysfs_remove_link(&device->dev.kobj, "sysdev");
++err_clear_processor:
++	/*
++	 * processor_device_array is not cleared to allow checks for buggy
++	 *  BIOSes
++	 */
++	per_cpu(processors, pr->id) = NULL;
+ err_free_cpumask:
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+-
++err_free_pr:
++	kfree(pr);
+ 	return result;
+ }
+ 
