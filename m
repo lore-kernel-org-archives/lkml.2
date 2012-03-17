@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758190Ab2CQTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 15:22:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59942 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab2CQTWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 15:22:23 -0400
-Message-ID: <4F64E441.1010806@pengutronix.de>
-Date: Sat, 17 Mar 2012 20:21:37 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1757270Ab2CQTk7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 15:40:59 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25589
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753511Ab2CQTk4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 15:40:56 -0400
+X-SpamScore: -3
+X-BigFish: VPS-3(zz936eKzz1202hzz8275bhz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M11NZT-02-0XV-02
+X-M-MSG: 
+From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "beattiem@uk.ibm.com" <beattiem@uk.ibm.com>,
+        "holzheu@de.ibm.com" <holzheu@de.ibm.com>,
+        "munzert@de.ibm.com" <munzert@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+Subject: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
+Thread-Topic: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
+Thread-Index: Ac0EddW23nEJHEP4TgOzkdjHvih49A==
+Date: Sat, 17 Mar 2012 19:40:41 +0000
+Message-ID: <491D6B4EAD0A714894D8AD22F4BDE0430495F2@SCYBEXDAG04.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.74.102]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Geoff Levand <geoff@infradead.org>,
-        Ishizaki Kou <kou.ishizaki@toshiba.co.jp>,
-        Jens Osterkamp <jens@de.ibm.com>, Samuel Ortiz <samuel@sortiz.org>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH 2/2] drivers: net: Remove unnecessary line continuations
-References: <1d738d4a4dd61978f969ed4a43f2dd3717f51a19.1332011552.git.joe@perches.com> <67ad900b6f6451b5b28b004def471c9a41b1ee24.1332011552.git.joe@perches.com>
-In-Reply-To: <67ad900b6f6451b5b28b004def471c9a41b1ee24.1332011552.git.joe@perches.com>
-X-Enigmail-Version: 1.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC13B6932E2237BCE0BF9A2C1"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC13B6932E2237BCE0BF9A2C1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+This patch is used to fix a memory leak issue in s390/char/vmur.c: a character device instance is 
+allocated by cdev_alloc, the cdev_del will not free that space if cdev_init is applied before. 
 
-On 03/17/2012 08:14 PM, Joe Perches wrote:
-> Line continuations are error prone so just remove them.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/can/usb/peak_usb/pcan_usb_pro.c  |    4 ++--
->  drivers/net/ethernet/micrel/ks8695net.c      |    4 ++--
->  drivers/net/ethernet/toshiba/ps3_gelic_net.c |    3 +--
->  drivers/net/ethernet/toshiba/spider_net.c    |    4 ++--
->  drivers/net/irda/bfin_sir.c                  |    4 ++--
->  drivers/net/phy/et1011c.c                    |    9 +++++----
->  6 files changed, 14 insertions(+), 14 deletions(-)
+Signed-off-by: dennis1.chen@amd.com
+--- a/s390/char/vmur.c  2012-03-18 02:50:47.950963949 +0800
++++ b/s390/char/vmur.c  2012-03-18 03:12:04.790936740 +0800
+@@ -903,7 +903,7 @@ static int ur_set_online(struct ccw_devi
+                goto fail_urdev_put;
+        }
 
-For the peak_usb:
-Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+-       cdev_init(urd->char_device, &ur_fops);
++       urd->char_device->ops = &ur_fops;
+        urd->char_device->dev = MKDEV(major, minor);
+        urd->char_device->owner = ur_fops.owner;
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigC13B6932E2237BCE0BF9A2C1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk9k5EYACgkQjTAFq1RaXHNvqACfcA8xYJdhqLIJuZ9UNECRiD6P
-AdcAoJS+B5nTjsu/VOTdaegOYL8PeJJt
-=QmIL
------END PGP SIGNATURE-----
-
---------------enigC13B6932E2237BCE0BF9A2C1--
