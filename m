@@ -1,109 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030790Ab2CQNJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 09:09:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:63415 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965084Ab2CQNJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 09:09:55 -0400
-Date: Sat, 17 Mar 2012 14:09:53 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Linux 2.6.32.59
-Message-ID: <20120317130953.GA16926@1wt.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+	id S1030881Ab2CQNM7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 09:12:59 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:59502 "EHLO
+	homiemail-a93.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030307Ab2CQNM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 09:12:57 -0400
+Message-ID: <4F648DD3.3000405@shealevy.com>
+Date: Sat, 17 Mar 2012 09:12:51 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, matt.fleming@intel.com
+Subject: Re: EFI Boot Stub Early Console
+References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com> <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com> <4F5E775D.7080702@zytor.com>
+In-Reply-To: <4F5E775D.7080702@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've just released Linux 2.6.32.59.
+On 3/12/12 6:23 PM, H. Peter Anvin wrote:
+> I don't think anyone has implemented an EFI earlyconsole yet
 
-The patch and changelog will appear soon at the following locations:
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.32/
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.32/patch-2.6.32.59.bz2
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.32/patch-2.6.32.59.xz
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.32/patch-2.6.32.59.gz
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.32/ChangeLog-2.6.32.59
+I'm considering taking a shot at this. Do you have any pointers about where to look or how to approach it? Will I have to use UGA/GOP or is there some way to take advantage of the text console after exit_boot_services?
 
-The updated 2.6.32.y git tree can be found at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-  http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-
-The tree can be browsed on the gitweb interface:
-  http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.32.y
-
-
-  Testing status (build/boot, OK/FAIL, otherwise not tested) :
-
-         ARCH  |         CONFIGURATION
-       --------+-----------------------------------
-               |  allmodconfig     other-config
-        x86_64 |    build:OK            -
-          i386 |    build:OK         boot:OK
-
-Thanks to all reviewers, and to Greg for the final packaging.
-Willy
-
----------
- Makefile                      |    2 +-
- arch/ia64/Kconfig             |   17 -----------------
- arch/s390/Kconfig             |    3 +++
- arch/s390/kernel/setup.c      |    1 +
- block/bsg.c                   |    3 ++-
- drivers/block/xen-blkfront.c  |    4 ++--
- drivers/net/usb/usbnet.c      |    2 ++
- drivers/watchdog/hpwdt.c      |    5 +++--
- fs/binfmt_elf.c               |    2 +-
- fs/cifs/dir.c                 |   20 ++++++++++++++++++--
- fs/ecryptfs/crypto.c          |   21 +++++++++++++++++++++
- fs/ecryptfs/ecryptfs_kernel.h |    2 ++
- fs/ecryptfs/file.c            |    3 ++-
- fs/ecryptfs/inode.c           |   18 +++---------------
- include/linux/backing-dev.h   |    1 +
- include/linux/regset.h        |   10 ++++++++--
- mm/backing-dev.c              |   15 ++++++++++-----
- mm/page-writeback.c           |    1 +
- 18 files changed, 81 insertions(+), 49 deletions(-)
-
-Summary of changes from 2.6.32.58 to 2.6.32.59
-==============================================
-Ben Hutchings (1):
-      IA64: Remove COMPAT_IA32 support
-
-David Howells (1):
-      KEYS: Enable the compat keyctl wrapper on s390x
-
-David Vrabel (1):
-      blkfront: Fix backtrace in del_gendisk
-
-H. Peter Anvin (2):
-      regset: Prevent null pointer reference on readonly regsets
-      regset: Return -EFAULT, not -EIO, on host-side memory fault
-
-Heiko Carstens (1):
-      compat: Re-add missing asm/compat.h include to fix compile breakage on s390
-
-Jeff Layton (1):
-      cifs: fix dentry refcount leak when opening a FIFO on lookup
-
-Jens Axboe (1):
-      writeback: fixups for !dirty_writeback_centisecs
-
-Maxim Uvarov (1):
-      watchdog: hpwdt: clean up set_memory_x call for 32 bit
-
-Sebastian Siewior (1):
-      net/usbnet: avoid recursive locking in usbnet_stop()
-
-Stanislaw Gruszka (1):
-      bsg: fix sysfs link remove warning
-
-Tyler Hicks (1):
-      eCryptfs: Handle failed metadata read in lookup
-
-Willy Tarreau (1):
-      Linux 2.6.32.59
+Cheers,
+Shea
 
