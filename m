@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab2CQLuk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 07:50:40 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44514
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754151Ab2CQLuj (ORCPT
+	id S1030776Ab2CQMB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 08:01:56 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62723 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756909Ab2CQMBv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 07:50:39 -0400
-Date: Sat, 17 Mar 2012 07:50:34 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Gerard Snitselaar <dev@snitselaar.org>
-Cc: bpm@sgi.com, xfs@oss.sgi.com, elder@kernel.org,
-        linux-kernel@vger.kernel.org, xfs-master@oss.sgi.com
-Subject: Re: [PATCH] fs: xfs: fix section mismatch in linux-next
-Message-ID: <20120317115034.GA12342@infradead.org>
-References: <1331922978-28572-1-git-send-email-dev@snitselaar.org>
+	Sat, 17 Mar 2012 08:01:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331922978-28572-1-git-send-email-dev@snitselaar.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LRH.2.02.1203161217060.32664@tundra.namei.org>
+References: <alpine.LRH.2.02.1203161217060.32664@tundra.namei.org>
+Date: Sat, 17 Mar 2012 13:01:49 +0100
+Message-ID: <CAFLxGvwqdHe1b9szks-EMPB-_886xpt22b3wAhnJ-TDhbPbb2g@mail.gmail.com>
+Subject: Re: [GIT] MAINTAINERS: Add Serge as maintainer of capabilities
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: James Morris <jmorris@namei.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 11:36:18AM -0700, Gerard Snitselaar wrote:
-> xfs_qm_exit() is called in init_xfs_fs().
-> 
-> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+On Fri, Mar 16, 2012 at 2:20 AM, James Morris <jmorris@namei.org> wrote:
+> James Morris (1):
+>      MAINTAINERS: Add Serge as maintainer of capabilities
 
-Thanks for catching this, the fix looks good to me.
+This patch contains also ugly trailing whitespace.
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+-- 
+Thanks,
+//richard
