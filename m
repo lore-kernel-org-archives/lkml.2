@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2CQDjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 23:39:06 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:48116 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab2CQDjD (ORCPT
+	id S1030385Ab2CQDlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 23:41:52 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:53679 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753234Ab2CQDlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 23:39:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6651"; a="173320389"
-Message-ID: <4F64074E.2070903@codeaurora.org>
-Date: Fri, 16 Mar 2012 20:38:54 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 16 Mar 2012 23:41:50 -0400
+Message-ID: <4F6407EF.5080403@xenotime.net>
+Date: Fri, 16 Mar 2012 20:41:35 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linaro-dev@lists.linaro.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>, linux-omap@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 1/3] Documentation: common clk API
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <CAP245DXV5oE+-y+PQCcSM016h-J+UgTi1efmdrcyeQge4k1Cfw@mail.gmail.com> <201203161218.05125.arnd.bergmann@linaro.org> <201203162057.58706.arnd@arndb.de> <alpine.DEB.2.00.1203161509470.4395@utopia.booyaka.com> <20120316234706.GJ3852@pengutronix.de> <4F63E0D3.3060106@gmail.com>
-In-Reply-To: <4F63E0D3.3060106@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        corentincj@iksaif.net, mjg@redhat.com, reintjes@google.com
+Subject: Re: + drivers-platform-x86-samsung-laptopc-fix-build.patch added
+ to -mm tree
+References: <20120316233728.857605C0050@hpza9.eem.corp.google.com>
+In-Reply-To: <20120316233728.857605C0050@hpza9.eem.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2012 05:54 PM, Rob Herring wrote:
-> On 03/16/2012 06:47 PM, Sascha Hauer wrote:
->> Hi Paul,
->>
->> On Fri, Mar 16, 2012 at 04:21:17PM -0600, Paul Walmsley wrote:
->>> Hi
->>>
->>> On Fri, 16 Mar 2012, Arnd Bergmann wrote:
->>>
->>>
->>> If the common clock code is to go upstream now, it should be marked as
->>> experimental.
->>
->> No, please don't do this. This effectively marks the architectures using
->> the generic clock framework experimental. We can mark drivers as 'you
->> have been warned', but marking an architecture as experimental is the
->> wrong sign for both its users and people willing to adopt the framework.
->> Also we get this:
->>
->> warning: (ARCH_MX1&&  MACH_MX21&&  ARCH_MX25&&  MACH_MX27) selects COMMON_CLK which has unmet direct dependencies (EXPERIMENTAL)
->>
->> (and no, I don't want to support to clock frameworks in parallel)
->>
->
-> +1
->
-> For simple users at least, the api is perfectly adequate and it is not
-> experimental (unless new means experimental).
->
+On 03/16/2012 03:53 PM, akpm@linux-foundation.org wrote:
 
-+1 - not experimental please.
+> The patch titled
+>      Subject: drivers/platform/x86/samsung-laptop.c: fix build
+> has been added to the -mm tree.  Its filename is
+>      drivers-platform-x86-samsung-laptopc-fix-build.patch
+> 
 
-While I agree with Mike and Paul that there is room for a lot of 
-improvements to the clock APIs, I think the existing APIs in this patch 
-series can become macro wrappers around any new APIs improvements we add 
-in the future.
 
-We should have really done that for the 
-clk_prepare_enable/unprepare_disable(), but it should certainly be 
-doable for future API additions now that we have the atomic/non-atomic 
-differentiation out of the way.
+See https://lkml.org/lkml/2012/3/14/25
+and https://lkml.org/lkml/2012/3/14/27
+from David Reintjes.
 
-Thanks,
-Saravana
+
+> 
+> ------------------------------------------------------
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: drivers/platform/x86/samsung-laptop.c: fix build
+> 
+> gcc-4.4.4:
+> 
+> drivers/platform/x86/samsung-laptop.c: In function 'sabi_set_commandb':
+> drivers/platform/x86/samsung-laptop.c:433: error: unknown field 'd0' specified in initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: missing braces around initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for 'in.<anonymous>')
+> drivers/platform/x86/samsung-laptop.c:433: error: unknown field 'd1' specified in initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: excess elements in struct initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for 'in')
+> drivers/platform/x86/samsung-laptop.c:433: error: unknown field 'd2' specified in initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: excess elements in struct initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for 'in')
+> drivers/platform/x86/samsung-laptop.c:433: error: unknown field 'd3' specified in initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: excess elements in struct initializer
+> drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for 'in')
+> drivers/platform/x86/samsung-laptop.c: At top level:
+> drivers/platform/x86/samsung-laptop.c:1108: warning: initialization from incompatible pointer type
+> 
+> Cc: Corentin Chary <corentincj@iksaif.net>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  drivers/platform/x86/samsung-laptop.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff -puN drivers/platform/x86/samsung-laptop.c~drivers-platform-x86-samsung-laptopc-fix-build drivers/platform/x86/samsung-laptop.c
+> --- a/drivers/platform/x86/samsung-laptop.c~drivers-platform-x86-samsung-laptopc-fix-build
+> +++ a/drivers/platform/x86/samsung-laptop.c
+> @@ -430,7 +430,7 @@ exit:
+>  static int sabi_set_commandb(struct samsung_laptop *samsung,
+>  			     u16 command, u8 data)
+>  {
+> -	struct sabi_data in = { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 };
+> +	struct sabi_data in = { { { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 } } };
+>  
+>  	in.data[0] = data;
+>  	return sabi_command(samsung, command, &in, NULL);
+> _
+> Subject: Subject: drivers/platform/x86/samsung-laptop.c: fix build
+
 
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+~Randy
