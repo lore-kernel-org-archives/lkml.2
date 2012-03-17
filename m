@@ -1,712 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab2CQEop (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 00:44:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53352 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752869Ab2CQEoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 00:44:09 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 2/2] drm/ttm: Use pr_fmt and pr_<level>
-Date: Fri, 16 Mar 2012 21:43:50 -0700
-Message-Id: <6080f381faad88e1b1c81adb0c0a8b2d6ca3868b.1331959343.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
-References: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
+	id S1753626Ab2CQE5n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 00:57:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:51034 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab2CQE5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 00:57:40 -0400
+Date: Sat, 17 Mar 2012 15:57:34 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: aik@ozlabs.ru, dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Isolation groups
+Message-ID: <20120317045734.GL24916@truffala.fritz.box>
+Mail-Followup-To: Alex Williamson <alex.williamson@redhat.com>,
+	aik@ozlabs.ru, dwmw2@infradead.org,
+	iommu@lists.linux-foundation.org, benh@kernel.crashing.org,
+	qemu-devel@nongnu.org, joerg.roedel@amd.com, kvm@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120312220109.30321.83419.stgit@bling.home>
+ <20120312223254.30321.74405.stgit@bling.home>
+ <20120313143340.GT24916@truffala.fritz.box>
+ <1331657387.2969.79.camel@bling.home>
+ <20120314095808.GX24916@truffala.fritz.box>
+ <1331842501.22038.58.camel@ul30vt>
+ <20120316034527.GJ24916@truffala.fritz.box>
+ <1331926278.13855.57.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331926278.13855.57.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the more current logging style.
+On Fri, Mar 16, 2012 at 01:31:18PM -0600, Alex Williamson wrote:
+> On Fri, 2012-03-16 at 14:45 +1100, David Gibson wrote:
+> > On Thu, Mar 15, 2012 at 02:15:01PM -0600, Alex Williamson wrote:
+> > > On Wed, 2012-03-14 at 20:58 +1100, David Gibson wrote:
+> > > > On Tue, Mar 13, 2012 at 10:49:47AM -0600, Alex Williamson wrote:
+> > > > > On Wed, 2012-03-14 at 01:33 +1100, David Gibson wrote:
+> > > > > > On Mon, Mar 12, 2012 at 04:32:54PM -0600, Alex Williamson wrote:
+> > > > > > > +/*
+> > > > > > > + * Add a device to an isolation group.  Isolation groups start empty and
+> > > > > > > + * must be told about the devices they contain.  Expect this to be called
+> > > > > > > + * from isolation group providers via notifier.
+> > > > > > > + */
+> > > > > > 
+> > > > > > Doesn't necessarily have to be from a notifier, particularly if the
+> > > > > > provider is integrated into host bridge code.
+> > > > > 
+> > > > > Sure, a provider could do this on it's own if it wants.  This just
+> > > > > provides some infrastructure for a common path.  Also note that this
+> > > > > helps to eliminate all the #ifdef CONFIG_ISOLATION in the provider.  Yet
+> > > > > to be seen whether that can reasonably be the case once isolation groups
+> > > > > are added to streaming DMA paths.
+> > > > 
+> > > > Right, but other than the #ifdef safety, which could be achieved more
+> > > > simply, I'm not seeing what benefit the infrastructure provides over
+> > > > directly calling the bus notifier function.  The infrastructure groups
+> > > > the notifiers by bus type internally, but AFAICT exactly one bus
+> > > > notifier call would become exactly one isolation notifier call, and
+> > > > the notifier callback itself would be almost identical.
+> > > 
+> > > I guess I don't see this as a fundamental design point of the proposal,
+> > > it's just a convenient way to initialize groups as a side-band addition
+> > > until isolation groups become a more fundamental part of the iommu
+> > > infrastructure.  If you want to do that level of integration in your
+> > > provider, do it and make the callbacks w/o the notifier.  If nobody ends
+> > > up using them, we'll remove them.  Maybe it will just end up being a
+> > > bootstrap.  In the typical case, yes, one bus notifier is one isolation
+> > > notifier.  It does however also allow one bus notifier to become
+> > > multiple isolation notifiers, and includes some filtering that would
+> > > just be duplicated if every provider decided to implement their own bus
+> > > notifier.
+> > 
+> > Uh.. I didn't notice any filtering?  That's why I'm asking.
+> 
+> Not much, but a little:
+> 
+> +       switch (action) {
+> +       case BUS_NOTIFY_ADD_DEVICE:
+> +               if (!dev->isolation_group)
+> +                       blocking_notifier_call_chain(&notifier->notifier,
+> +                                       ISOLATION_NOTIFY_ADD_DEVICE, dev);
+> +               break;
+> +       case BUS_NOTIFY_DEL_DEVICE:
+> +               if (dev->isolation_group)
+> +                       blocking_notifier_call_chain(&notifier->notifier,
+> +                                       ISOLATION_NOTIFY_DEL_DEVICE, dev);
+> +               break;
+> +       }
 
-Add pr_fmt and remove the TTM_PFX uses.
-Coalesce formats and align arguments.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/gpu/drm/ttm/ttm_agp_backend.c    |    4 +-
- drivers/gpu/drm/ttm/ttm_bo.c             |   72 +++++++++++++-----------------
- drivers/gpu/drm/ttm/ttm_bo_vm.c          |    5 +-
- drivers/gpu/drm/ttm/ttm_memory.c         |   12 +++---
- drivers/gpu/drm/ttm/ttm_object.c         |    5 +-
- drivers/gpu/drm/ttm/ttm_page_alloc.c     |   55 ++++++++---------------
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   60 +++++++++++--------------
- drivers/gpu/drm/ttm/ttm_tt.c             |    8 ++-
- 8 files changed, 96 insertions(+), 125 deletions(-)
+Ah, I see, fair enough.
 
-diff --git a/drivers/gpu/drm/ttm/ttm_agp_backend.c b/drivers/gpu/drm/ttm/ttm_agp_backend.c
-index 747c141..4a87282 100644
---- a/drivers/gpu/drm/ttm/ttm_agp_backend.c
-+++ b/drivers/gpu/drm/ttm/ttm_agp_backend.c
-@@ -29,6 +29,8 @@
-  *          Keith Packard.
-  */
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include "ttm/ttm_module.h"
- #include "ttm/ttm_bo_driver.h"
- #include "ttm/ttm_page_alloc.h"
-@@ -74,7 +76,7 @@ static int ttm_agp_bind(struct ttm_tt *ttm, struct ttm_mem_reg *bo_mem)
- 
- 	ret = agp_bind_memory(mem, node->start);
- 	if (ret)
--		printk(KERN_ERR TTM_PFX "AGP Bind memory failed.\n");
-+		pr_err("AGP Bind memory failed\n");
- 
- 	return ret;
- }
-diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-index 7c3a57d..1f5c67c 100644
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -28,6 +28,8 @@
-  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
-  */
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include "ttm/ttm_module.h"
- #include "ttm/ttm_bo_driver.h"
- #include "ttm/ttm_placement.h"
-@@ -68,15 +70,13 @@ static void ttm_mem_type_debug(struct ttm_bo_device *bdev, int mem_type)
- {
- 	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
- 
--	printk(KERN_ERR TTM_PFX "    has_type: %d\n", man->has_type);
--	printk(KERN_ERR TTM_PFX "    use_type: %d\n", man->use_type);
--	printk(KERN_ERR TTM_PFX "    flags: 0x%08X\n", man->flags);
--	printk(KERN_ERR TTM_PFX "    gpu_offset: 0x%08lX\n", man->gpu_offset);
--	printk(KERN_ERR TTM_PFX "    size: %llu\n", man->size);
--	printk(KERN_ERR TTM_PFX "    available_caching: 0x%08X\n",
--		man->available_caching);
--	printk(KERN_ERR TTM_PFX "    default_caching: 0x%08X\n",
--		man->default_caching);
-+	pr_err("    has_type: %d\n", man->has_type);
-+	pr_err("    use_type: %d\n", man->use_type);
-+	pr_err("    flags: 0x%08X\n", man->flags);
-+	pr_err("    gpu_offset: 0x%08lX\n", man->gpu_offset);
-+	pr_err("    size: %llu\n", man->size);
-+	pr_err("    available_caching: 0x%08X\n", man->available_caching);
-+	pr_err("    default_caching: 0x%08X\n", man->default_caching);
- 	if (mem_type != TTM_PL_SYSTEM)
- 		(*man->func->debug)(man, TTM_PFX);
- }
-@@ -86,16 +86,16 @@ static void ttm_bo_mem_space_debug(struct ttm_buffer_object *bo,
- {
- 	int i, ret, mem_type;
- 
--	printk(KERN_ERR TTM_PFX "No space for %p (%lu pages, %luK, %luM)\n",
--		bo, bo->mem.num_pages, bo->mem.size >> 10,
--		bo->mem.size >> 20);
-+	pr_err("No space for %p (%lu pages, %luK, %luM)\n",
-+	       bo, bo->mem.num_pages, bo->mem.size >> 10,
-+	       bo->mem.size >> 20);
- 	for (i = 0; i < placement->num_placement; i++) {
- 		ret = ttm_mem_type_from_flags(placement->placement[i],
- 						&mem_type);
- 		if (ret)
- 			return;
--		printk(KERN_ERR TTM_PFX "  placement[%d]=0x%08X (%d)\n",
--			i, placement->placement[i], mem_type);
-+		pr_err("  placement[%d]=0x%08X (%d)\n",
-+		       i, placement->placement[i], mem_type);
- 		ttm_mem_type_debug(bo->bdev, mem_type);
- 	}
- }
-@@ -344,7 +344,7 @@ static int ttm_bo_add_ttm(struct ttm_buffer_object *bo, bool zero_alloc)
- 			ret = -ENOMEM;
- 		break;
- 	default:
--		printk(KERN_ERR TTM_PFX "Illegal buffer object type\n");
-+		pr_err("Illegal buffer object type\n");
- 		ret = -EINVAL;
- 		break;
- 	}
-@@ -432,7 +432,7 @@ moved:
- 	if (bo->evicted) {
- 		ret = bdev->driver->invalidate_caches(bdev, bo->mem.placement);
- 		if (ret)
--			printk(KERN_ERR TTM_PFX "Can not flush read caches\n");
-+			pr_err("Can not flush read caches\n");
- 		bo->evicted = false;
- 	}
- 
-@@ -734,9 +734,7 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
- 
- 	if (unlikely(ret != 0)) {
- 		if (ret != -ERESTARTSYS) {
--			printk(KERN_ERR TTM_PFX
--			       "Failed to expire sync object before "
--			       "buffer eviction.\n");
-+			pr_err("Failed to expire sync object before buffer eviction\n");
- 		}
- 		goto out;
- 	}
-@@ -757,9 +755,8 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
- 				no_wait_reserve, no_wait_gpu);
- 	if (ret) {
- 		if (ret != -ERESTARTSYS) {
--			printk(KERN_ERR TTM_PFX
--			       "Failed to find memory space for "
--			       "buffer 0x%p eviction.\n", bo);
-+			pr_err("Failed to find memory space for buffer 0x%p eviction\n",
-+			       bo);
- 			ttm_bo_mem_space_debug(bo, &placement);
- 		}
- 		goto out;
-@@ -769,7 +766,7 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
- 				     no_wait_reserve, no_wait_gpu);
- 	if (ret) {
- 		if (ret != -ERESTARTSYS)
--			printk(KERN_ERR TTM_PFX "Buffer eviction failed\n");
-+			pr_err("Buffer eviction failed\n");
- 		ttm_bo_mem_put(bo, &evict_mem);
- 		goto out;
- 	}
-@@ -1180,7 +1177,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
- 
- 	ret = ttm_mem_global_alloc(mem_glob, acc_size, false, false);
- 	if (ret) {
--		printk(KERN_ERR TTM_PFX "Out of kernel memory.\n");
-+		pr_err("Out of kernel memory\n");
- 		if (destroy)
- 			(*destroy)(bo);
- 		else
-@@ -1191,7 +1188,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
- 	size += buffer_start & ~PAGE_MASK;
- 	num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	if (num_pages == 0) {
--		printk(KERN_ERR TTM_PFX "Illegal buffer object size.\n");
-+		pr_err("Illegal buffer object size\n");
- 		if (destroy)
- 			(*destroy)(bo);
- 		else
-@@ -1342,8 +1339,7 @@ static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
- 			if (allow_errors) {
- 				return ret;
- 			} else {
--				printk(KERN_ERR TTM_PFX
--					"Cleanup eviction failed\n");
-+				pr_err("Cleanup eviction failed\n");
- 			}
- 		}
- 		spin_lock(&glob->lru_lock);
-@@ -1358,14 +1354,14 @@ int ttm_bo_clean_mm(struct ttm_bo_device *bdev, unsigned mem_type)
- 	int ret = -EINVAL;
- 
- 	if (mem_type >= TTM_NUM_MEM_TYPES) {
--		printk(KERN_ERR TTM_PFX "Illegal memory type %d\n", mem_type);
-+		pr_err("Illegal memory type %d\n", mem_type);
- 		return ret;
- 	}
- 	man = &bdev->man[mem_type];
- 
- 	if (!man->has_type) {
--		printk(KERN_ERR TTM_PFX "Trying to take down uninitialized "
--		       "memory manager type %u\n", mem_type);
-+		pr_err("Trying to take down uninitialized memory manager type %u\n",
-+		       mem_type);
- 		return ret;
- 	}
- 
-@@ -1388,16 +1384,12 @@ int ttm_bo_evict_mm(struct ttm_bo_device *bdev, unsigned mem_type)
- 	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
- 
- 	if (mem_type == 0 || mem_type >= TTM_NUM_MEM_TYPES) {
--		printk(KERN_ERR TTM_PFX
--		       "Illegal memory manager memory type %u.\n",
--		       mem_type);
-+		pr_err("Illegal memory manager memory type %u\n", mem_type);
- 		return -EINVAL;
- 	}
- 
- 	if (!man->has_type) {
--		printk(KERN_ERR TTM_PFX
--		       "Memory type %u has not been initialized.\n",
--		       mem_type);
-+		pr_err("Memory type %u has not been initialized\n", mem_type);
- 		return 0;
- 	}
- 
-@@ -1482,8 +1474,7 @@ int ttm_bo_global_init(struct drm_global_reference *ref)
- 	ttm_mem_init_shrink(&glob->shrink, ttm_bo_swapout);
- 	ret = ttm_mem_register_shrink(glob->mem_glob, &glob->shrink);
- 	if (unlikely(ret != 0)) {
--		printk(KERN_ERR TTM_PFX
--		       "Could not register buffer object swapout.\n");
-+		pr_err("Could not register buffer object swapout\n");
- 		goto out_no_shrink;
- 	}
- 
-@@ -1516,9 +1507,8 @@ int ttm_bo_device_release(struct ttm_bo_device *bdev)
- 			man->use_type = false;
- 			if ((i != TTM_PL_SYSTEM) && ttm_bo_clean_mm(bdev, i)) {
- 				ret = -EBUSY;
--				printk(KERN_ERR TTM_PFX
--				       "DRM memory manager type %d "
--				       "is not clean.\n", i);
-+				pr_err("DRM memory manager type %d is not clean\n",
-+				       i);
- 			}
- 			man->has_type = false;
- 		}
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_vm.c b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-index 5441284..a877813 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-@@ -28,6 +28,8 @@
-  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
-  */
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include <ttm/ttm_module.h>
- #include <ttm/ttm_bo_driver.h>
- #include <ttm/ttm_placement.h>
-@@ -262,8 +264,7 @@ int ttm_bo_mmap(struct file *filp, struct vm_area_struct *vma,
- 	read_unlock(&bdev->vm_lock);
- 
- 	if (unlikely(bo == NULL)) {
--		printk(KERN_ERR TTM_PFX
--		       "Could not find buffer object to map.\n");
-+		pr_err("Could not find buffer object to map\n");
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/gpu/drm/ttm/ttm_memory.c b/drivers/gpu/drm/ttm/ttm_memory.c
-index 9eba8e9..23d2ecb 100644
---- a/drivers/gpu/drm/ttm/ttm_memory.c
-+++ b/drivers/gpu/drm/ttm/ttm_memory.c
-@@ -25,6 +25,8 @@
-  *
-  **************************************************************************/
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include "ttm/ttm_memory.h"
- #include "ttm/ttm_module.h"
- #include "ttm/ttm_page_alloc.h"
-@@ -74,9 +76,8 @@ static void ttm_mem_zone_kobj_release(struct kobject *kobj)
- 	struct ttm_mem_zone *zone =
- 		container_of(kobj, struct ttm_mem_zone, kobj);
- 
--	printk(KERN_INFO TTM_PFX
--	       "Zone %7s: Used memory at exit: %llu kiB.\n",
--	       zone->name, (unsigned long long) zone->used_mem >> 10);
-+	pr_info("Zone %7s: Used memory at exit: %llu kiB\n",
-+		zone->name, (unsigned long long)zone->used_mem >> 10);
- 	kfree(zone);
- }
- 
-@@ -390,9 +391,8 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
- #endif
- 	for (i = 0; i < glob->num_zones; ++i) {
- 		zone = glob->zones[i];
--		printk(KERN_INFO TTM_PFX
--		       "Zone %7s: Available graphics memory: %llu kiB.\n",
--		       zone->name, (unsigned long long) zone->max_mem >> 10);
-+		pr_info("Zone %7s: Available graphics memory: %llu kiB\n",
-+			zone->name, (unsigned long long)zone->max_mem >> 10);
- 	}
- 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
- 	ttm_dma_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
-diff --git a/drivers/gpu/drm/ttm/ttm_object.c b/drivers/gpu/drm/ttm/ttm_object.c
-index 93577f2..68daca4 100644
---- a/drivers/gpu/drm/ttm/ttm_object.c
-+++ b/drivers/gpu/drm/ttm/ttm_object.c
-@@ -49,6 +49,8 @@
-  * for fast lookup of ref objects given a base object.
-  */
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include "ttm/ttm_object.h"
- #include "ttm/ttm_module.h"
- #include <linux/list.h>
-@@ -232,8 +234,7 @@ struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file *tfile,
- 		return NULL;
- 
- 	if (tfile != base->tfile && !base->shareable) {
--		printk(KERN_ERR TTM_PFX
--		       "Attempted access of non-shareable object.\n");
-+		pr_err("Attempted access of non-shareable object\n");
- 		ttm_base_object_unref(&base);
- 		return NULL;
- 	}
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index 499debd..ebc6fac 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -30,6 +30,9 @@
-  * - Use page->lru to keep a free list
-  * - doesn't track currently in use pages
-  */
-+
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/highmem.h>
-@@ -167,18 +170,13 @@ static ssize_t ttm_pool_store(struct kobject *kobj,
- 		m->options.small = val;
- 	else if (attr == &ttm_page_pool_alloc_size) {
- 		if (val > NUM_PAGES_TO_ALLOC*8) {
--			printk(KERN_ERR TTM_PFX
--			       "Setting allocation size to %lu "
--			       "is not allowed. Recommended size is "
--			       "%lu\n",
-+			pr_err("Setting allocation size to %lu is not allowed. Recommended size is %lu\n",
- 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 7),
- 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
- 			return size;
- 		} else if (val > NUM_PAGES_TO_ALLOC) {
--			printk(KERN_WARNING TTM_PFX
--			       "Setting allocation size to "
--			       "larger than %lu is not recommended.\n",
--			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
-+			pr_warn("Setting allocation size to larger than %lu is not recommended\n",
-+				NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
- 		}
- 		m->options.alloc_size = val;
- 	}
-@@ -279,8 +277,7 @@ static void ttm_pages_put(struct page *pages[], unsigned npages)
- {
- 	unsigned i;
- 	if (set_pages_array_wb(pages, npages))
--		printk(KERN_ERR TTM_PFX "Failed to set %d pages to wb!\n",
--				npages);
-+		pr_err("Failed to set %d pages to wb!\n", npages);
- 	for (i = 0; i < npages; ++i)
- 		__free_page(pages[i]);
- }
-@@ -315,8 +312,7 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
- 	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
- 			GFP_KERNEL);
- 	if (!pages_to_free) {
--		printk(KERN_ERR TTM_PFX
--		       "Failed to allocate memory for pool free operation.\n");
-+		pr_err("Failed to allocate memory for pool free operation\n");
- 		return 0;
- 	}
- 
-@@ -438,16 +434,12 @@ static int ttm_set_pages_caching(struct page **pages,
- 	case tt_uncached:
- 		r = set_pages_array_uc(pages, cpages);
- 		if (r)
--			printk(KERN_ERR TTM_PFX
--			       "Failed to set %d pages to uc!\n",
--			       cpages);
-+			pr_err("Failed to set %d pages to uc!\n", cpages);
- 		break;
- 	case tt_wc:
- 		r = set_pages_array_wc(pages, cpages);
- 		if (r)
--			printk(KERN_ERR TTM_PFX
--			       "Failed to set %d pages to wc!\n",
--			       cpages);
-+			pr_err("Failed to set %d pages to wc!\n", cpages);
- 		break;
- 	default:
- 		break;
-@@ -492,8 +484,7 @@ static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
- 	caching_array = kmalloc(max_cpages*sizeof(struct page *), GFP_KERNEL);
- 
- 	if (!caching_array) {
--		printk(KERN_ERR TTM_PFX
--		       "Unable to allocate table for new pages.");
-+		pr_err("Unable to allocate table for new pages\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -501,7 +492,7 @@ static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
- 		p = alloc_page(gfp_flags);
- 
- 		if (!p) {
--			printk(KERN_ERR TTM_PFX "Unable to get page %u.\n", i);
-+			pr_err("Unable to get page %u\n", i);
- 
- 			/* store already allocated pages in the pool after
- 			 * setting the caching state */
-@@ -599,8 +590,7 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
- 			++pool->nrefills;
- 			pool->npages += alloc_size;
- 		} else {
--			printk(KERN_ERR TTM_PFX
--			       "Failed to fill pool (%p).", pool);
-+			pr_err("Failed to fill pool (%p)\n", pool);
- 			/* If we have any pages left put them to the pool. */
- 			list_for_each_entry(p, &pool->list, lru) {
- 				++cpages;
-@@ -675,9 +665,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
- 		for (i = 0; i < npages; i++) {
- 			if (pages[i]) {
- 				if (page_count(pages[i]) != 1)
--					printk(KERN_ERR TTM_PFX
--					       "Erroneous page count. "
--					       "Leaking pages.\n");
-+					pr_err("Erroneous page count. Leaking pages.\n");
- 				__free_page(pages[i]);
- 				pages[i] = NULL;
- 			}
-@@ -689,9 +677,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
- 	for (i = 0; i < npages; i++) {
- 		if (pages[i]) {
- 			if (page_count(pages[i]) != 1)
--				printk(KERN_ERR TTM_PFX
--				       "Erroneous page count. "
--				       "Leaking pages.\n");
-+				pr_err("Erroneous page count. Leaking pages.\n");
- 			list_add_tail(&pages[i]->lru, &pool->list);
- 			pages[i] = NULL;
- 			pool->npages++;
-@@ -740,8 +726,7 @@ static int ttm_get_pages(struct page **pages, unsigned npages, int flags,
- 			p = alloc_page(gfp_flags);
- 			if (!p) {
- 
--				printk(KERN_ERR TTM_PFX
--				       "Unable to allocate page.");
-+				pr_err("Unable to allocate page\n");
- 				return -ENOMEM;
- 			}
- 
-@@ -781,9 +766,7 @@ static int ttm_get_pages(struct page **pages, unsigned npages, int flags,
- 		if (r) {
- 			/* If there is any pages in the list put them back to
- 			 * the pool. */
--			printk(KERN_ERR TTM_PFX
--			       "Failed to allocate extra pages "
--			       "for large request.");
-+			pr_err("Failed to allocate extra pages for large request\n");
- 			ttm_put_pages(pages, count, flags, cstate);
- 			return r;
- 		}
-@@ -809,7 +792,7 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
- 
- 	WARN_ON(_manager);
- 
--	printk(KERN_INFO TTM_PFX "Initializing pool allocator.\n");
-+	pr_info("Initializing pool allocator\n");
- 
- 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
- 
-@@ -844,7 +827,7 @@ void ttm_page_alloc_fini(void)
- {
- 	int i;
- 
--	printk(KERN_INFO TTM_PFX "Finalizing pool allocator.\n");
-+	pr_info("Finalizing pool allocator\n");
- 	ttm_pool_mm_shrink_fini(_manager);
- 
- 	for (i = 0; i < NUM_POOLS; ++i)
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index 0c46d8c..4f9e548 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -33,6 +33,8 @@
-  *   when freed).
-  */
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include <linux/dma-mapping.h>
- #include <linux/list.h>
- #include <linux/seq_file.h> /* for seq_printf */
-@@ -221,18 +223,13 @@ static ssize_t ttm_pool_store(struct kobject *kobj, struct attribute *attr,
- 		m->options.small = val;
- 	else if (attr == &ttm_page_pool_alloc_size) {
- 		if (val > NUM_PAGES_TO_ALLOC*8) {
--			printk(KERN_ERR TTM_PFX
--			       "Setting allocation size to %lu "
--			       "is not allowed. Recommended size is "
--			       "%lu\n",
-+			pr_err("Setting allocation size to %lu is not allowed. Recommended size is %lu\n",
- 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 7),
- 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
- 			return size;
- 		} else if (val > NUM_PAGES_TO_ALLOC) {
--			printk(KERN_WARNING TTM_PFX
--			       "Setting allocation size to "
--			       "larger than %lu is not recommended.\n",
--			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
-+			pr_warn("Setting allocation size to larger than %lu is not recommended\n",
-+				NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
- 		}
- 		m->options.alloc_size = val;
- 	}
-@@ -313,15 +310,13 @@ static int ttm_set_pages_caching(struct dma_pool *pool,
- 	if (pool->type & IS_UC) {
- 		r = set_pages_array_uc(pages, cpages);
- 		if (r)
--			pr_err(TTM_PFX
--			       "%s: Failed to set %d pages to uc!\n",
-+			pr_err("%s: Failed to set %d pages to uc!\n",
- 			       pool->dev_name, cpages);
- 	}
- 	if (pool->type & IS_WC) {
- 		r = set_pages_array_wc(pages, cpages);
- 		if (r)
--			pr_err(TTM_PFX
--			       "%s: Failed to set %d pages to wc!\n",
-+			pr_err("%s: Failed to set %d pages to wc!\n",
- 			       pool->dev_name, cpages);
- 	}
- 	return r;
-@@ -387,8 +382,8 @@ static void ttm_dma_pages_put(struct dma_pool *pool, struct list_head *d_pages,
- 	/* Don't set WB on WB page pool. */
- 	if (npages && !(pool->type & IS_CACHED) &&
- 	    set_pages_array_wb(pages, npages))
--		pr_err(TTM_PFX "%s: Failed to set %d pages to wb!\n",
--			pool->dev_name, npages);
-+		pr_err("%s: Failed to set %d pages to wb!\n",
-+		       pool->dev_name, npages);
- 
- 	list_for_each_entry_safe(d_page, tmp, d_pages, page_list) {
- 		list_del(&d_page->page_list);
-@@ -400,8 +395,8 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
- {
- 	/* Don't set WB on WB page pool. */
- 	if (!(pool->type & IS_CACHED) && set_pages_array_wb(&d_page->p, 1))
--		pr_err(TTM_PFX "%s: Failed to set %d pages to wb!\n",
--			pool->dev_name, 1);
-+		pr_err("%s: Failed to set %d pages to wb!\n",
-+		       pool->dev_name, 1);
- 
- 	list_del(&d_page->page_list);
- 	__ttm_dma_free_page(pool, d_page);
-@@ -430,17 +425,16 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
- #if 0
- 	if (nr_free > 1) {
- 		pr_debug("%s: (%s:%d) Attempting to free %d (%d) pages\n",
--			pool->dev_name, pool->name, current->pid,
--			npages_to_free, nr_free);
-+			 pool->dev_name, pool->name, current->pid,
-+			 npages_to_free, nr_free);
- 	}
- #endif
- 	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
- 			GFP_KERNEL);
- 
- 	if (!pages_to_free) {
--		pr_err(TTM_PFX
--		       "%s: Failed to allocate memory for pool free operation.\n",
--			pool->dev_name);
-+		pr_err("%s: Failed to allocate memory for pool free operation\n",
-+		       pool->dev_name);
- 		return 0;
- 	}
- 	INIT_LIST_HEAD(&d_pages);
-@@ -723,23 +717,21 @@ static int ttm_dma_pool_alloc_new_pages(struct dma_pool *pool,
- 	caching_array = kmalloc(max_cpages*sizeof(struct page *), GFP_KERNEL);
- 
- 	if (!caching_array) {
--		pr_err(TTM_PFX
--		       "%s: Unable to allocate table for new pages.",
--			pool->dev_name);
-+		pr_err("%s: Unable to allocate table for new pages\n",
-+		       pool->dev_name);
- 		return -ENOMEM;
- 	}
- 
- 	if (count > 1) {
- 		pr_debug("%s: (%s:%d) Getting %d pages\n",
--			pool->dev_name, pool->name, current->pid,
--			count);
-+			 pool->dev_name, pool->name, current->pid, count);
- 	}
- 
- 	for (i = 0, cpages = 0; i < count; ++i) {
- 		dma_p = __ttm_dma_alloc_page(pool);
- 		if (!dma_p) {
--			pr_err(TTM_PFX "%s: Unable to get page %u.\n",
--				pool->dev_name, i);
-+			pr_err("%s: Unable to get page %u\n",
-+			       pool->dev_name, i);
- 
- 			/* store already allocated pages in the pool after
- 			 * setting the caching state */
-@@ -821,8 +813,8 @@ static int ttm_dma_page_pool_fill_locked(struct dma_pool *pool,
- 			struct dma_page *d_page;
- 			unsigned cpages = 0;
- 
--			pr_err(TTM_PFX "%s: Failed to fill %s pool (r:%d)!\n",
--				pool->dev_name, pool->name, r);
-+			pr_err("%s: Failed to fill %s pool (r:%d)!\n",
-+			       pool->dev_name, pool->name, r);
- 
- 			list_for_each_entry(d_page, &d_pages, page_list) {
- 				cpages++;
-@@ -1038,8 +1030,8 @@ static int ttm_dma_pool_mm_shrink(struct shrinker *shrink,
- 		nr_free = shrink_pages;
- 		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free);
- 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
--			p->pool->dev_name, p->pool->name, current->pid, nr_free,
--			shrink_pages);
-+			 p->pool->dev_name, p->pool->name, current->pid,
-+			 nr_free, shrink_pages);
- 	}
- 	mutex_unlock(&_manager->lock);
- 	/* return estimated number of unused pages in pool */
-@@ -1064,7 +1056,7 @@ int ttm_dma_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
- 
- 	WARN_ON(_manager);
- 
--	printk(KERN_INFO TTM_PFX "Initializing DMA pool allocator.\n");
-+	pr_info("Initializing DMA pool allocator\n");
- 
- 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
- 	if (!_manager)
-@@ -1097,7 +1089,7 @@ void ttm_dma_page_alloc_fini(void)
- {
- 	struct device_pools *p, *t;
- 
--	printk(KERN_INFO TTM_PFX "Finalizing DMA pool allocator.\n");
-+	pr_info("Finalizing DMA pool allocator\n");
- 	ttm_dma_pool_mm_shrink_fini(_manager);
- 
- 	list_for_each_entry_safe_reverse(p, t, &_manager->pools, pools) {
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index c10cf5e..fa09daf 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -28,6 +28,8 @@
-  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
-  */
- 
-+#define pr_fmt(fmt) "[TTM] " fmt
-+
- #include <linux/sched.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-@@ -196,7 +198,7 @@ int ttm_tt_init(struct ttm_tt *ttm, struct ttm_bo_device *bdev,
- 	ttm_tt_alloc_page_directory(ttm);
- 	if (!ttm->pages) {
- 		ttm_tt_destroy(ttm);
--		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
-+		pr_err("Failed allocating page table\n");
- 		return -ENOMEM;
- 	}
- 	return 0;
-@@ -229,7 +231,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
- 	ttm_dma_tt_alloc_page_directory(ttm_dma);
- 	if (!ttm->pages || !ttm_dma->dma_address) {
- 		ttm_tt_destroy(ttm);
--		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
-+		pr_err("Failed allocating page table\n");
- 		return -ENOMEM;
- 	}
- 	return 0;
-@@ -347,7 +349,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
- 						ttm->num_pages << PAGE_SHIFT,
- 						0);
- 		if (unlikely(IS_ERR(swap_storage))) {
--			printk(KERN_ERR "Failed allocating swap storage.\n");
-+			pr_err("Failed allocating swap storage\n");
- 			return PTR_ERR(swap_storage);
- 		}
- 	} else
+A couple of tangential observations.  First, I suspect using
+BUS_NOTIFY_DEL_DEVICE is a very roundabout way of handling hot-unplug,
+it might be better to have an unplug callback in the group instead.
+
+Second, I don't think aborting the call chain early for hot-plug is
+actually a good idea.  I can't see a clear guarantee on the order, so
+individual providers couldn't rely on that short-cut behaviour.  Which
+means that if two providers would have attempted to claim the same
+device, something is seriously wrong and we should probably report
+that.
+
+> ...
+> > > > > > So, somewhere, I think we need a fallback path, but I'm not sure
+> > > > > > exactly where.  If an isolation provider doesn't explicitly put a
+> > > > > > device into a group, the device should go into the group of its parent
+> > > > > > bridge.  This covers the case of a bus with IOMMU which has below it a
+> > > > > > bridge to a different type of DMA capable bus (which the IOMMU isn't
+> > > > > > explicitly aware of).  DMAs from devices on the subordinate bus can be
+> > > > > > translated by the top-level IOMMU (assuming it sees them as coming
+> > > > > > from the bridge), but they all need to be treated as one group.
+> > > > > 
+> > > > > Why would the top level IOMMU provider not set the isolation group in
+> > > > > this case.
+> > > > 
+> > > > Because it knows nothing about the subordinate bus.  For example
+> > > > imagine a VT-d system, with a wacky PCI card into which you plug some
+> > > > other type of DMA capable device.  The PCI card is acting as a bridge
+> > > > from PCI to this, let's call it FooBus.  Obviously the VT-d code won't
+> > > > have a FooBus notifier, since it knows nothing about FooBus.  But the
+> > > > FooBus devices still need to end up in the group of the PCI bridge
+> > > > device, since their DMA operations will appear as coming from the PCI
+> > > > bridge card to the IOMMU, and can be isolated from the rest of the
+> > > > system (but not each other) on that basis.
+> > > 
+> > > I guess I was imagining that it's ok to have devices without an
+> > > isolation group.
+> > 
+> > It is, but having NULL isolation group has a pretty specific meaning -
+> > it means it's never safe to give that device to userspace, but it also
+> > means that normal kernel driver operation of that device must not
+> > interfere with anything in any iso group (otherwise we can never no
+> > that those iso groups _are_ safe to hand out).  Likewise userspace
+> > operation of any isolation group can't mess with no-group devices.
+> 
+> This is where wanting to use isolation groups as the working unit for an
+> iommu ops layer and also wanting to use iommu ops to replace dma ops
+> seem to collide a bit.  Do we want two interfaces for dma, one group
+> based and one for non-isolated devices?
+
+Well, I don't know enough about what dwmw2 had planned to answer
+that.  I was assuming the in-kernel dma reply would remain device/bus
+focussed, and how it looked up and used the groups was an internal
+matter.  I would expect it would probably need a fallback path for "no
+group" for transition purposes, even if it wasn't planned to keep that
+forever.
+
+>  Isolation providers like
+> intel-iommu would always use one, non-isolation capable dma paths, like
+> swiotlb or non-isolation hardware iommus, would use another.  And how do
+> we factor in the degree of isolation to avoid imposing policy in the
+> kernel?  MSI isolation is an example.  We should allow userspace to set
+> a policy of whether lack of MSI protection is an acceptable risk.  Does
+> that mean we can have isolation groups that provide no isolation and
+> sysfs files indicating capabilities?  Perhaps certain classes of groups
+> don't even allow manager binding?
+
+Ugh.  I thought about flagging groups with some sort of bitmap of
+isolation strength properties, but I think that way lies madness.  We
+might want a global policy bitmask though which expresses which
+constraints are acceptable risks.  The providers would then have to
+provide groups which are as strong as requested, or none at all.
+
+> > None of these conditions is true for the hypothetical Foobus case.
+> > The bus as a whole could be safely given to userspace, the devices on
+> > it *could* mess with an existing isolation group (suppose the group
+> > consisted of a PCI segment with the FooBus bridge plus another PCI
+> > card - FooBus DMAs would be bridged onto the PCI segment and might
+> > target the other card's MMIO space).  And other grouped devices can
+> > certainly mess with the FooBus devices (if userspace grabs the bridge
+> > and manipulates its IOMMU mappings, that would clearly screw up any
+> > kernel drivers doing DMA from FooBus devices behind it).
+> 
+> ---segment-----+---------------+
+>                |               |
+>         [whackyPCIcard]   [other device]
+>                |
+>                +---FooBus---+-------+
+>                             |       |
+>                        [FooDev1] [FooDev2]
+> 
+> This is another example of the quality of the isolation group and what
+> factors we incorporate in judging that.  If the bridge/switch port
+> generating the segment does not support or enable PCI ACS then the IOMMU
+> may be able to differentiate whackyPCIcard from the other device but not
+> prevent peer-to-peer traffic between the two (or between FooDevs and the
+> other device - same difference).  This would suggest that we might have
+> an isolation group at the root of the segment for which the provider can
+> guarantee isolation (includes everything on and below the bus), and we
+> might also have isolation groups at whackyPCIcard and the other device
+> that have a difference quality of isolation.  /me pauses for rant about
+> superior hardware... ;)
+
+Nested isolation groups? Please no.
+
+An isolation group at the bridge encompassing that segment was exactly
+what I had in mind, but my point is that all the FooBus devices *also*
+need to be in that group, even though the isolation provider knows
+nothing about FooBus.
+
+> > Oh.. and I just thought of an existing-in-the-field case with the same
+> > problem.  I'm pretty sure for devices that can appear on PCI but also
+> > have "dumb-bus" versions used on embedded systems, at least some of
+> > the kernel drivers are structured so that there is a separate struct
+> > device for the PCI "wrapper" and the device inside.  If the inner
+> > driver is initiating DMA, as it usually would, it has to be in the
+> > same iso group as it's PCI device parent.
+> 
+> I don't know that we can ever generically identify such devices, but
+> maybe this introduces the idea that we need to be able to blacklist
+> certain devices as multi-homed and tainting any isolation group that
+> contains them.
+
+Sorry, I was unclear.  These are not multi-homed devices, just
+multiple-variant devices, any given instance will either be PCI or
+not.  But to handle the two variants easily, the drivers have nested
+struct devices.  It's essentially a pure software artifact we're
+dealing with here, but nonetheless we need to get the group-ownership
+of those struct devices correct, whether they're synthetic or not.
+
+> > >  When that happens we can traverse up the bus to find a
+> > > higher level isolation group.
+> > 
+> > Well, that's one possible answer to my "where should the hook be
+> > question": rather than an initialization hook, when we look up a
+> > device's isolation group, if it doesn't say one explicitly, we try
+> > it's bridge parent and so forth up the tree.  I wonder about the
+> > overhead of having to walk all the way up the bus heirarchy before
+> > returning NULL whenever we ask about the group of a device that
+> > doesn't have one.
+> 
+> Yep, that could definitely be a concern for streaming dma.
+
+Right, which is why I'm suggesting handling at init time instead.
+We'd need something that runs in the generic hot-add path, after bus
+notifiers, which would set the device's group to the same as its
+parent's if a provider hasn't already given it one.
+
+> > >  It would probably make sense to have some
+> > > kind of top-most isolation group that contains everything as it's an
+> > > easy proof that if you own everything, you're isolated.
+> > 
+> > Hrm, no.  Things that have no IOMMU above them will have ungated
+> > access to system RAM, and so can never be safely isolated for
+> > userspace purposes, even if userspace owned every _device_ in the
+> > system (not that you could do that in practice, anyway).
+> 
+> RAM is a good point, there are "non-devices" to worry about.
+> Potentially that top level group doesn't allow managers.
+
+I don't really see the point of a "top-level" group.  Groups are
+exclusive, not heirarchical, and I don't see that there are any paths
+really simplified by having a (not manageable) "leftovers" group.
+
+> > >  Potentially
+> > > though, wackyPCIcard can also register isolation groups for each of it's
+> > > FooBus devices if it's able to provide that capability.  Thanks,
+> > 
+> > It could, but why should it.  It doesn't know anything about IOMMUs or
+> > isolation, and it doesn't need to.  Even less so for PCI devices which
+> > create subordinate non-PCI struct devices for internal reasons.
+> 
+> Sorry I wasn't clear.  If wackyPCIcard happens to include an onboard
+> IOMMU of some sort that's capable of isolation, it might be able to
+> register groups for each of the devices below it.  Therefore we could
+> end up with a scenario like above that the segment may not have ACS and
+> therefore not be able to isolate wackyPCIcard from otherdevice, but
+> wackyPCIcard can isolate FooDev1 from FooDev2 and otherdevice.  I think
+> that means we potentially need to check all devices downstream of an
+> isolation group to allow a manager to lock it, as well as checking the
+> path upstream to make sure it isn't used above...  Are you sure we're
+> ready for this kind of infrastructure?  Thanks,
+
+Hrm, at this stage I think I'm prepared to assume that IOMMUs are
+either strictly independent (e.g. covering different PCI domains) or
+are at least vaguely aware of each other (i.e. platform conventions
+cover the combination).  Truly nested IOMMUs, that are entirely
+unaware of each other is a problem for another day (by which I mean
+probably never).
+
+That said, again, groups have to be exclusive, not heirarchical, so
+in the above case, I think we'd have a few possible ways to go:
+
+	1) The FooBus isolation provider could refuse to initialize if
+the FooBus bridge is sharing an iso group with something else before
+it probes the FooBus.
+	2) The FooBus isolation provider could be in the FooBus bridge
+driver - meaning that if someone tried to grab the PCI group including
+the FooBridge, the provider driver would be booted out, causing the
+FooBus groups to cease to exist (meaning the PCI group manager would
+never get lock while someone was already using the FooGroups).  In
+this case, it gets a bit complex.  When the FooBus isolation provider
+is active, the FooBus devices would be in their own groups, not the
+group of the FooBridge and its sibling.  When the FooBus isolation
+provider is removed, it would have to configure the FooBus IOMMU to a
+passthrough mode, and revert the FooBus devices to the parent's
+group.  Hm.  Complicated.
+
 -- 
-1.7.8.111.gad25c.dirty
-
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
