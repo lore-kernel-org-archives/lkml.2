@@ -1,95 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab2CQRi2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 13:38:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35631 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab2CQRiZ (ORCPT
+	id S1031346Ab2CQRmW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 13:42:22 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62761 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755255Ab2CQRmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 13:38:25 -0400
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: mchehab@infradead.org
-Cc: oliver@neukum.org, gregkh@linuxfoundation.org, khoroshilov@ispras.ru,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH] [media] staging: use mutex_lock() in s2250_probe().
-Date: Sat, 17 Mar 2012 23:06:57 +0530
-Message-Id: <1332005817-10762-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sat, 17 Mar 2012 13:42:19 -0400
+From: Mircea Gherzan <mgherzan@gmail.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: Mircea Gherzan <mgherzan@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] wl12xx: fix DMA-API-related warnings
+Date: Sat, 17 Mar 2012 18:41:53 +0100
+Message-Id: <1332006114-30230-1-git-send-email-mgherzan@gmail.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On the PandaBoard (omap_hsmmc + wl12xx_sdio) with DMA_API_DEBUG:
 
-Use uninterruptable sleep lock  'mutex_lock()'  in place of
-mutex_lock_interruptible() because there is no userspace
-for s2250_probe().
+ WARNING: at lib/dma-debug.c:930 check_for_stack.part.8+0x7c/0xe0()
+ omap_hsmmc omap_hsmmc.4: DMA-API: device driver maps memory fromstack
 
-Return -ENOMEM   if kzalloc() fails to allocate and initialize.
-
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+Signed-off-by: Mircea Gherzan <mgherzan@gmail.com>
 ---
- drivers/staging/media/go7007/s2250-board.c |   43 +++++++++++++++------------
- 1 files changed, 24 insertions(+), 19 deletions(-)
+ drivers/net/wireless/wl12xx/boot.c   |   14 +++++++++++---
+ drivers/net/wireless/wl12xx/cmd.c    |   25 ++++++++++++++++---------
+ drivers/net/wireless/wl12xx/event.c  |   10 +++++-----
+ drivers/net/wireless/wl12xx/event.h  |    2 ++
+ drivers/net/wireless/wl12xx/main.c   |    9 +++++++++
+ drivers/net/wireless/wl12xx/wl12xx.h |    3 +++
+ 6 files changed, 46 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/media/go7007/s2250-board.c b/drivers/staging/media/go7007/s2250-board.c
-index 014d384..1406a37 100644
---- a/drivers/staging/media/go7007/s2250-board.c
-+++ b/drivers/staging/media/go7007/s2250-board.c
-@@ -637,27 +637,32 @@ static int s2250_probe(struct i2c_client *client,
- 	state->audio_input = 0;
- 	write_reg(client, 0x08, 0x02); /* Line In */
+diff --git a/drivers/net/wireless/wl12xx/boot.c b/drivers/net/wireless/wl12xx/boot.c
+index 8f9cf5a..89c78d1 100644
+--- a/drivers/net/wireless/wl12xx/boot.c
++++ b/drivers/net/wireless/wl12xx/boot.c
+@@ -142,14 +142,22 @@ static void wl1271_parse_fw_ver(struct wl1271 *wl)
  
--	if (mutex_lock_interruptible(&usb->i2c_lock) == 0) {
--		data = kzalloc(16, GFP_KERNEL);
--		if (data != NULL) {
--			int rc;
--			rc = go7007_usb_vendor_request(go, 0x41, 0, 0,
--						       data, 16, 1);
--			if (rc > 0) {
--				u8 mask;
--				data[0] = 0;
--				mask = 1<<5;
--				data[0] &= ~mask;
--				data[1] |= mask;
--				go7007_usb_vendor_request(go, 0x40, 0,
--							  (data[1]<<8)
--							  + data[1],
--							  data, 16, 0);
--			}
--			kfree(data);
--		}
-+	mutex_lock(&usb->i2c_lock);
-+	data = kzalloc(16, GFP_KERNEL);
-+	if (data == NULL) {
-+		i2c_unregister_device(audio);
-+		kfree(state);
- 		mutex_unlock(&usb->i2c_lock);
-+		return -ENOMEM;
-+	} else {
-+		int rc;
-+		rc = go7007_usb_vendor_request(go, 0x41, 0, 0,
-+					       data, 16, 1);
-+		if (rc > 0) {
-+			u8 mask;
-+			data[0] = 0;
-+			mask = 1<<5;
-+			data[0] &= ~mask;
-+			data[1] |= mask;
-+			go7007_usb_vendor_request(go, 0x40, 0,
-+						  (data[1]<<8)
-+						  + data[1],
-+						  data, 16, 0);
-+		}
-+		kfree(data);
- 	}
-+	mutex_unlock(&usb->i2c_lock);
+ static void wl1271_boot_fw_version(struct wl1271 *wl)
+ {
+-	struct wl1271_static_data static_data;
++	struct wl1271_static_data *static_data;
+ 
+-	wl1271_read(wl, wl->cmd_box_addr, &static_data, sizeof(static_data),
++	static_data = kmalloc(sizeof(*static_data), GFP_DMA);
++	if (!static_data) {
++		__WARN();
++		return;
++	}
 +
++	wl1271_read(wl, wl->cmd_box_addr, static_data, sizeof(*static_data),
+ 		    false);
  
- 	v4l2_info(sd, "initialized successfully\n");
- 	return 0;
+-	strncpy(wl->chip.fw_ver_str, static_data.fw_version,
++	strncpy(wl->chip.fw_ver_str, static_data->fw_version,
+ 		sizeof(wl->chip.fw_ver_str));
+ 
++	kfree(static_data);
++
+ 	/* make sure the string is NULL-terminated */
+ 	wl->chip.fw_ver_str[sizeof(wl->chip.fw_ver_str) - 1] = '\0';
+ 
+diff --git a/drivers/net/wireless/wl12xx/cmd.c b/drivers/net/wireless/wl12xx/cmd.c
+index 25990bd..a5c8800 100644
+--- a/drivers/net/wireless/wl12xx/cmd.c
++++ b/drivers/net/wireless/wl12xx/cmd.c
+@@ -342,8 +342,12 @@ int wl1271_cmd_ext_radio_parms(struct wl1271 *wl)
+  */
+ static int wl1271_cmd_wait_for_event_or_timeout(struct wl1271 *wl, u32 mask)
+ {
+-	u32 events_vector, event;
++	u32 *events_vector;
++	u32 event;
+ 	unsigned long timeout;
++	int ret = 0;
++
++	events_vector = kmalloc(sizeof(*events_vector), GFP_DMA);
+ 
+ 	timeout = jiffies + msecs_to_jiffies(WL1271_EVENT_TIMEOUT);
+ 
+@@ -351,21 +355,24 @@ static int wl1271_cmd_wait_for_event_or_timeout(struct wl1271 *wl, u32 mask)
+ 		if (time_after(jiffies, timeout)) {
+ 			wl1271_debug(DEBUG_CMD, "timeout waiting for event %d",
+ 				     (int)mask);
+-			return -ETIMEDOUT;
++			ret = -ETIMEDOUT;
++			goto out;
+ 		}
+ 
+ 		msleep(1);
+ 
+ 		/* read from both event fields */
+-		wl1271_read(wl, wl->mbox_ptr[0], &events_vector,
+-			    sizeof(events_vector), false);
+-		event = events_vector & mask;
+-		wl1271_read(wl, wl->mbox_ptr[1], &events_vector,
+-			    sizeof(events_vector), false);
+-		event |= events_vector & mask;
++		wl1271_read(wl, wl->mbox_ptr[0], events_vector,
++			    sizeof(*events_vector), false);
++		event = *events_vector & mask;
++		wl1271_read(wl, wl->mbox_ptr[1], events_vector,
++			    sizeof(*events_vector), false);
++		event |= *events_vector & mask;
+ 	} while (!event);
+ 
+-	return 0;
++out:
++	kfree(events_vector);
++	return ret;
+ }
+ 
+ static int wl1271_cmd_wait_for_event(struct wl1271 *wl, u32 mask)
+diff --git a/drivers/net/wireless/wl12xx/event.c b/drivers/net/wireless/wl12xx/event.c
+index d3280df68..10007f5 100644
+--- a/drivers/net/wireless/wl12xx/event.c
++++ b/drivers/net/wireless/wl12xx/event.c
+@@ -233,8 +233,9 @@ static void wl1271_event_mbox_dump(struct event_mailbox *mbox)
+ 	wl1271_debug(DEBUG_EVENT, "\tmask: 0x%x", mbox->events_mask);
+ }
+ 
+-static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
++static int wl1271_event_process(struct wl1271 *wl)
+ {
++	struct event_mailbox *mbox = wl->mbox;
+ 	struct ieee80211_vif *vif;
+ 	struct wl12xx_vif *wlvif;
+ 	int ret;
+@@ -439,7 +440,6 @@ void wl1271_event_mbox_config(struct wl1271 *wl)
+ 
+ int wl1271_event_handle(struct wl1271 *wl, u8 mbox_num)
+ {
+-	struct event_mailbox mbox;
+ 	int ret;
+ 
+ 	wl1271_debug(DEBUG_EVENT, "EVENT on mbox %d", mbox_num);
+@@ -448,11 +448,11 @@ int wl1271_event_handle(struct wl1271 *wl, u8 mbox_num)
+ 		return -EINVAL;
+ 
+ 	/* first we read the mbox descriptor */
+-	wl1271_read(wl, wl->mbox_ptr[mbox_num], &mbox,
+-		    sizeof(struct event_mailbox), false);
++	wl1271_read(wl, wl->mbox_ptr[mbox_num], wl->mbox,
++		    sizeof(*wl->mbox), false);
+ 
+ 	/* process the descriptor */
+-	ret = wl1271_event_process(wl, &mbox);
++	ret = wl1271_event_process(wl);
+ 	if (ret < 0)
+ 		return ret;
+ 
+diff --git a/drivers/net/wireless/wl12xx/event.h b/drivers/net/wireless/wl12xx/event.h
+index 1d878ba..7a6b18b 100644
+--- a/drivers/net/wireless/wl12xx/event.h
++++ b/drivers/net/wireless/wl12xx/event.h
+@@ -127,6 +127,8 @@ struct event_mailbox {
+ 	u8 reserved_7[12];
+ } __packed;
+ 
++struct wl1271;
++
+ int wl1271_event_unmask(struct wl1271 *wl);
+ void wl1271_event_mbox_config(struct wl1271 *wl);
+ int wl1271_event_handle(struct wl1271 *wl, u8 mbox);
+diff --git a/drivers/net/wireless/wl12xx/main.c b/drivers/net/wireless/wl12xx/main.c
+index d5f55a1..f63fde4 100644
+--- a/drivers/net/wireless/wl12xx/main.c
++++ b/drivers/net/wireless/wl12xx/main.c
+@@ -5071,8 +5071,17 @@ static struct ieee80211_hw *wl1271_alloc_hw(void)
+ 		goto err_dummy_packet;
+ 	}
+ 
++	wl->mbox = kmalloc(sizeof(*wl->mbox), GFP_DMA);
++	if (!wl->mbox) {
++		ret = -ENOMEM;
++		goto err_fwlog;
++	}
++
+ 	return hw;
+ 
++err_fwlog:
++	free_page((unsigned long)wl->fwlog);
++
+ err_dummy_packet:
+ 	dev_kfree_skb(wl->dummy_packet);
+ 
+diff --git a/drivers/net/wireless/wl12xx/wl12xx.h b/drivers/net/wireless/wl12xx/wl12xx.h
+index b2b09cd..0d02c7a 100644
+--- a/drivers/net/wireless/wl12xx/wl12xx.h
++++ b/drivers/net/wireless/wl12xx/wl12xx.h
+@@ -34,6 +34,7 @@
+ 
+ #include "conf.h"
+ #include "ini.h"
++#include "event.h"
+ 
+ #define WL127X_FW_NAME "ti-connectivity/wl127x-fw-3.bin"
+ #define WL128X_FW_NAME "ti-connectivity/wl128x-fw-3.bin"
+@@ -394,6 +395,8 @@ struct wl1271 {
+ 	/* Hardware recovery work */
+ 	struct work_struct recovery_work;
+ 
++	struct event_mailbox *mbox;
++
+ 	/* The mbox event mask */
+ 	u32 event_mask;
+ 
 -- 
-1.7.4.4
+1.7.9.1
 
