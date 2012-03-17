@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161041Ab2CQWHO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 18:07:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37745 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030235Ab2CQWG6 (ORCPT
+	id S932610Ab2CQWXU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 18:23:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37737 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932487Ab2CQWXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 18:06:58 -0400
-Subject: Re: [PATCH] timer: optimize apply_slack()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Felix Fietkau <nbd@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1332019895-59698-1-git-send-email-nbd@openwrt.org>
-References: <1332019895-59698-1-git-send-email-nbd@openwrt.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 17 Mar 2012 15:06:54 -0700
-Message-ID: <1332022014.9397.2.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 17 Mar 2012 18:23:18 -0400
+Date: Sat, 17 Mar 2012 23:23:18 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, acme@redhat.com, mingo@elte.hu, dsahern@gmail.com
+Subject: [PATCH] perf report: fix bug in raw smple parsing
+Message-ID: <20120317222317.GA8803@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-17 at 22:31 +0100, Felix Fietkau wrote:
-> __fls(mask) is equivalent to find_last_bit(&mask, BITS_PER_LONG), but cheaper.
-> find_last_bit was showing up high on the list when I was profiling for stalls
-> on icache misses on a system with very small cache size (MIPS).
-> 
-> Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-> ---
->  kernel/timer.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index a297ffc..659371e 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -809,7 +809,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
->  	if (mask == 0)
->  		return expires;
->  
-> -	bit = find_last_bit(&mask, BITS_PER_LONG);
-> +	bit = __fls(mask);
->  
->  	mask = (1 << bit) - 1;
->  
 
-Not a comment on your patch, but this code seems not correct.
+In perf_event__parse_sample(), the array variable was not incremented
+by the amount of data used by the raw_data. That was okay until
+we added PERF_SAMPLE_BRANCH_STACK which depends on the array variable
+pointing to the beginning of the branch stack data. But that was not
+the case if branch stack was combined with raw mode sampling. That led
+to bogus branch stack addresses and count.
 
-This probably should be :
+The bug would show up with:
+$ perf record -R -b foo
 
-	mask = (1UL << bit) - 1;
+This patch fixes the problem by correctly moving the array pointer
+forward for RAW samples.
 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f421f7c..9f35d92 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -578,6 +578,8 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			return -EFAULT;
+ 
+ 		data->raw_data = (void *) pdata;
++
++		array = (void *)array + data->raw_size + sizeof(u32);
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_BRANCH_STACK) {
