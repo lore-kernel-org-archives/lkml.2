@@ -1,139 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030637Ab2CQKhM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 06:37:12 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:49257 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754307Ab2CQKhI (ORCPT
+	id S965123Ab2CQKx5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 06:53:57 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:49583 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756743Ab2CQKxz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 06:37:08 -0400
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] [resend] Add support for Rise mP6 CPUs
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Sat, 17 Mar 2012 11:36:42 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203171136.44415.linux@rainbow-software.org>
+	Sat, 17 Mar 2012 06:53:55 -0400
+Date: Sat, 17 Mar 2012 11:53:24 +0100
+From: Emmanuel Florac <eflorac@intellique.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Wakko Warner <wakko@animx.eu.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: Burning multiple DVDs at one time
+Message-ID: <20120317115324.10b39bb7@galadriel.home>
+In-Reply-To: <20120317095644.145d0588@stein>
+References: <20120315225310.GB3152@animx.eu.org>
+	<20120317095644.145d0588@stein>
+Organization: Intellique
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add detection for Rise mP6 x86 CPUs and a quirk to mark CMPXCHG8B as present.
+Le Sat, 17 Mar 2012 09:56:44 +0100 vous écriviez:
 
-Result:
-$ cat /proc/cpuinfo
-processor       : 0
-vendor_id       : RiseRiseRise
-cpu family      : 5
-model           : 0
-model name      : mP6 (Kirin)
-stepping        : 4
-cpu MHz         : 200.443
-cache size      : 16 KB
-fdiv_bug        : no
-hlt_bug         : no
-f00f_bug        : no
-coma_bug        : no
-fpu             : yes
-fpu_exception   : yes
-cpuid level     : 1
-wp              : yes
-flags           : fpu tsc cx8 mmx up
-bogomips        : 400.88
-clflush size    : 32
-cache_alignment : 32
-address sizes   : 32 bits physical, 32 bits virtual
-power management:
+> This is likely due to serialization by a global mutex in the sr
+> driver. Have a look at thread "[PATCH] [SCSI] sr: fix multi-drive
+> performance, remove BKL replacement" from February.
+> https://lkml.org/lkml/2012/2/28/230 
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 3c57033..5a356f3 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -505,3 +505,12 @@ config CPU_SUP_UMC_32
- 	  CPU might render the kernel unbootable.
- 
- 	  If unsure, say N.
-+
-+config CPU_SUP_RISE_32
-+	default y
-+	bool "Support Rise processors" if PROCESSOR_SELECT
-+	depends on !64BIT
-+	---help---
-+	  This enables detection, tunings and quirks for Rise processors
-+
-+	  If unsure, say N.
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index aa9088c..e3a4e7f 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -119,7 +119,8 @@ struct cpuinfo_x86 {
- #define X86_VENDOR_CENTAUR	5
- #define X86_VENDOR_TRANSMETA	7
- #define X86_VENDOR_NSC		8
--#define X86_VENDOR_NUM		9
-+#define X86_VENDOR_RISE		9
-+#define X86_VENDOR_NUM		10
- 
- #define X86_VENDOR_UNKNOWN	0xff
- 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 25f24dc..1013eb6 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -26,6 +26,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
- obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
- obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
- obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
-+obj-$(CONFIG_CPU_SUP_RISE_32)		+= rise.o
- 
- obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
-diff --git a/arch/x86/kernel/cpu/rise.c b/arch/x86/kernel/cpu/rise.c
-new file mode 100644
-index 0000000..2072a0f
---- /dev/null
-+++ b/arch/x86/kernel/cpu/rise.c
-@@ -0,0 +1,34 @@
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <asm/processor.h>
-+#include "cpu.h"
-+
-+static void __cpuinit init_rise(struct cpuinfo_x86 *c)
-+{
-+	/*
-+	 * Datasheet says:
-+	 * The CMPXCHG8B instruction is supported and always enabled on the
-+	 * Rise mP6 processor; however, the default CPUID function bit is set
-+	 * to 0 to circumvent a reported bug in Windows NT.
-+	 */
-+	set_cpu_cap(c, X86_FEATURE_CX8);
-+	/* cache is always 16KB (8KB code + 8KB data) */
-+	c->x86_cache_size = 16;
-+}
-+
-+static const struct cpu_dev __cpuinitconst rise_cpu_dev = {
-+	.c_vendor	= "Rise",
-+	.c_ident	= { "RiseRiseRise" },
-+	.c_models = {
-+		{ .vendor = X86_VENDOR_RISE, .family = 5, .model_names =
-+		  {
-+			  [0] = "mP6 (Kirin)",
-+			  [2] = "mP6 (Lynx)",
-+		  }
-+		},
-+	},
-+	.c_init		= init_rise,
-+	.c_x86_vendor	= X86_VENDOR_RISE,
-+};
-+
-+cpu_dev_register(rise_cpu_dev);
+When was this regression introduced? I have a dedicated cd burning
+machine running 2.6.35.x, and it works great with 4 drives at a time.
 
 -- 
-Ondrej Zary
+------------------------------------------------------------------------
+Emmanuel Florac     |   Direction technique
+                    |   Intellique
+                    |	<eflorac@intellique.com>
+                    |   +33 1 78 94 84 02
+------------------------------------------------------------------------
