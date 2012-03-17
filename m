@@ -1,236 +1,712 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab2CQEoB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 00:44:01 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36473 "EHLO
+	id S1753401Ab2CQEop (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 00:44:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53352 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751812Ab2CQEn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 00:43:56 -0400
+	id S1752869Ab2CQEoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 00:44:09 -0400
 From: Joe Perches <joe@perches.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] i915: Add and use pr_fmt and pr_<level>
-Date: Fri, 16 Mar 2012 21:43:49 -0700
-Message-Id: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 2/2] drm/ttm: Use pr_fmt and pr_<level>
+Date: Fri, 16 Mar 2012 21:43:50 -0700
+Message-Id: <6080f381faad88e1b1c81adb0c0a8b2d6ca3868b.1331959343.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+In-Reply-To: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
+References: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a more current logging style.  Ensure that appropriate
-logging messages are prefixed with "i915: ".
+Use the more current logging style.
 
-Convert printks to pr_<level>.  Align arguments.
+Add pr_fmt and remove the TTM_PFX uses.
+Coalesce formats and align arguments.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c       |    6 ++-
- drivers/gpu/drm/i915/i915_irq.c       |   70 +++++++++++++--------------------
- drivers/gpu/drm/i915/intel_opregion.c |    4 +-
- drivers/gpu/drm/i915/intel_panel.c    |    4 +-
- 4 files changed, 37 insertions(+), 47 deletions(-)
+ drivers/gpu/drm/ttm/ttm_agp_backend.c    |    4 +-
+ drivers/gpu/drm/ttm/ttm_bo.c             |   72 +++++++++++++-----------------
+ drivers/gpu/drm/ttm/ttm_bo_vm.c          |    5 +-
+ drivers/gpu/drm/ttm/ttm_memory.c         |   12 +++---
+ drivers/gpu/drm/ttm/ttm_object.c         |    5 +-
+ drivers/gpu/drm/ttm/ttm_page_alloc.c     |   55 ++++++++---------------
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   60 +++++++++++--------------
+ drivers/gpu/drm/ttm/ttm_tt.c             |    8 ++-
+ 8 files changed, 96 insertions(+), 125 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 9341eb8..7e83818 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -26,6 +26,8 @@
-  *
+diff --git a/drivers/gpu/drm/ttm/ttm_agp_backend.c b/drivers/gpu/drm/ttm/ttm_agp_backend.c
+index 747c141..4a87282 100644
+--- a/drivers/gpu/drm/ttm/ttm_agp_backend.c
++++ b/drivers/gpu/drm/ttm/ttm_agp_backend.c
+@@ -29,6 +29,8 @@
+  *          Keith Packard.
   */
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define pr_fmt(fmt) "[TTM] " fmt
 +
- #include "drmP.h"
- #include "drm.h"
- #include "drm_crtc_helper.h"
-@@ -1158,14 +1160,14 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 	pm_message_t pmm = { .event = PM_EVENT_SUSPEND };
- 	if (state == VGA_SWITCHEROO_ON) {
--		printk(KERN_INFO "i915: switched on\n");
-+		pr_info("switched on\n");
- 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
- 		/* i915 resume handler doesn't set to D0 */
- 		pci_set_power_state(dev->pdev, PCI_D0);
- 		i915_resume(dev);
- 		dev->switch_power_state = DRM_SWITCH_POWER_ON;
- 	} else {
--		printk(KERN_ERR "i915: switched off\n");
-+		pr_err("switched off\n");
- 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
- 		i915_suspend(dev, pmm);
- 		dev->switch_power_state = DRM_SWITCH_POWER_OFF;
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index afd4e03..4c89149 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -26,6 +26,8 @@
-  *
+ #include "ttm/ttm_module.h"
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_page_alloc.h"
+@@ -74,7 +76,7 @@ static int ttm_agp_bind(struct ttm_tt *ttm, struct ttm_mem_reg *bo_mem)
+ 
+ 	ret = agp_bind_memory(mem, node->start);
+ 	if (ret)
+-		printk(KERN_ERR TTM_PFX "AGP Bind memory failed.\n");
++		pr_err("AGP Bind memory failed\n");
+ 
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index 7c3a57d..1f5c67c 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -28,6 +28,8 @@
+  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
   */
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define pr_fmt(fmt) "[TTM] " fmt
 +
- #include <linux/sysrq.h>
- #include <linux/slab.h>
- #include "drmP.h"
-@@ -1103,33 +1105,26 @@ static void i915_report_and_clear_eir(struct drm_device *dev)
- 	if (!eir)
- 		return;
+ #include "ttm/ttm_module.h"
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_placement.h"
+@@ -68,15 +70,13 @@ static void ttm_mem_type_debug(struct ttm_bo_device *bdev, int mem_type)
+ {
+ 	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
  
--	printk(KERN_ERR "render error detected, EIR: 0x%08x\n",
--	       eir);
-+	pr_err("render error detected, EIR: 0x%08x\n", eir);
+-	printk(KERN_ERR TTM_PFX "    has_type: %d\n", man->has_type);
+-	printk(KERN_ERR TTM_PFX "    use_type: %d\n", man->use_type);
+-	printk(KERN_ERR TTM_PFX "    flags: 0x%08X\n", man->flags);
+-	printk(KERN_ERR TTM_PFX "    gpu_offset: 0x%08lX\n", man->gpu_offset);
+-	printk(KERN_ERR TTM_PFX "    size: %llu\n", man->size);
+-	printk(KERN_ERR TTM_PFX "    available_caching: 0x%08X\n",
+-		man->available_caching);
+-	printk(KERN_ERR TTM_PFX "    default_caching: 0x%08X\n",
+-		man->default_caching);
++	pr_err("    has_type: %d\n", man->has_type);
++	pr_err("    use_type: %d\n", man->use_type);
++	pr_err("    flags: 0x%08X\n", man->flags);
++	pr_err("    gpu_offset: 0x%08lX\n", man->gpu_offset);
++	pr_err("    size: %llu\n", man->size);
++	pr_err("    available_caching: 0x%08X\n", man->available_caching);
++	pr_err("    default_caching: 0x%08X\n", man->default_caching);
+ 	if (mem_type != TTM_PL_SYSTEM)
+ 		(*man->func->debug)(man, TTM_PFX);
+ }
+@@ -86,16 +86,16 @@ static void ttm_bo_mem_space_debug(struct ttm_buffer_object *bo,
+ {
+ 	int i, ret, mem_type;
  
- 	if (IS_G4X(dev)) {
- 		if (eir & (GM45_ERROR_MEM_PRIV | GM45_ERROR_CP_PRIV)) {
- 			u32 ipeir = I915_READ(IPEIR_I965);
- 
--			printk(KERN_ERR "  IPEIR: 0x%08x\n",
--			       I915_READ(IPEIR_I965));
--			printk(KERN_ERR "  IPEHR: 0x%08x\n",
--			       I915_READ(IPEHR_I965));
--			printk(KERN_ERR "  INSTDONE: 0x%08x\n",
-+			pr_err("  IPEIR: 0x%08x\n", I915_READ(IPEIR_I965));
-+			pr_err("  IPEHR: 0x%08x\n", I915_READ(IPEHR_I965));
-+			pr_err("  INSTDONE: 0x%08x\n",
- 			       I915_READ(INSTDONE_I965));
--			printk(KERN_ERR "  INSTPS: 0x%08x\n",
--			       I915_READ(INSTPS));
--			printk(KERN_ERR "  INSTDONE1: 0x%08x\n",
--			       I915_READ(INSTDONE1));
--			printk(KERN_ERR "  ACTHD: 0x%08x\n",
--			       I915_READ(ACTHD_I965));
-+			pr_err("  INSTPS: 0x%08x\n", I915_READ(INSTPS));
-+			pr_err("  INSTDONE1: 0x%08x\n", I915_READ(INSTDONE1));
-+			pr_err("  ACTHD: 0x%08x\n", I915_READ(ACTHD_I965));
- 			I915_WRITE(IPEIR_I965, ipeir);
- 			POSTING_READ(IPEIR_I965);
- 		}
- 		if (eir & GM45_ERROR_PAGE_TABLE) {
- 			u32 pgtbl_err = I915_READ(PGTBL_ER);
--			printk(KERN_ERR "page table error\n");
--			printk(KERN_ERR "  PGTBL_ER: 0x%08x\n",
--			       pgtbl_err);
-+			pr_err("page table error\n");
-+			pr_err("  PGTBL_ER: 0x%08x\n", pgtbl_err);
- 			I915_WRITE(PGTBL_ER, pgtbl_err);
- 			POSTING_READ(PGTBL_ER);
- 		}
-@@ -1138,53 +1133,42 @@ static void i915_report_and_clear_eir(struct drm_device *dev)
- 	if (!IS_GEN2(dev)) {
- 		if (eir & I915_ERROR_PAGE_TABLE) {
- 			u32 pgtbl_err = I915_READ(PGTBL_ER);
--			printk(KERN_ERR "page table error\n");
--			printk(KERN_ERR "  PGTBL_ER: 0x%08x\n",
--			       pgtbl_err);
-+			pr_err("page table error\n");
-+			pr_err("  PGTBL_ER: 0x%08x\n", pgtbl_err);
- 			I915_WRITE(PGTBL_ER, pgtbl_err);
- 			POSTING_READ(PGTBL_ER);
- 		}
+-	printk(KERN_ERR TTM_PFX "No space for %p (%lu pages, %luK, %luM)\n",
+-		bo, bo->mem.num_pages, bo->mem.size >> 10,
+-		bo->mem.size >> 20);
++	pr_err("No space for %p (%lu pages, %luK, %luM)\n",
++	       bo, bo->mem.num_pages, bo->mem.size >> 10,
++	       bo->mem.size >> 20);
+ 	for (i = 0; i < placement->num_placement; i++) {
+ 		ret = ttm_mem_type_from_flags(placement->placement[i],
+ 						&mem_type);
+ 		if (ret)
+ 			return;
+-		printk(KERN_ERR TTM_PFX "  placement[%d]=0x%08X (%d)\n",
+-			i, placement->placement[i], mem_type);
++		pr_err("  placement[%d]=0x%08X (%d)\n",
++		       i, placement->placement[i], mem_type);
+ 		ttm_mem_type_debug(bo->bdev, mem_type);
+ 	}
+ }
+@@ -344,7 +344,7 @@ static int ttm_bo_add_ttm(struct ttm_buffer_object *bo, bool zero_alloc)
+ 			ret = -ENOMEM;
+ 		break;
+ 	default:
+-		printk(KERN_ERR TTM_PFX "Illegal buffer object type\n");
++		pr_err("Illegal buffer object type\n");
+ 		ret = -EINVAL;
+ 		break;
+ 	}
+@@ -432,7 +432,7 @@ moved:
+ 	if (bo->evicted) {
+ 		ret = bdev->driver->invalidate_caches(bdev, bo->mem.placement);
+ 		if (ret)
+-			printk(KERN_ERR TTM_PFX "Can not flush read caches\n");
++			pr_err("Can not flush read caches\n");
+ 		bo->evicted = false;
  	}
  
- 	if (eir & I915_ERROR_MEMORY_REFRESH) {
--		printk(KERN_ERR "memory refresh error:\n");
-+		pr_err("memory refresh error:\n");
- 		for_each_pipe(pipe)
--			printk(KERN_ERR "pipe %c stat: 0x%08x\n",
-+			pr_err("pipe %c stat: 0x%08x\n",
- 			       pipe_name(pipe), I915_READ(PIPESTAT(pipe)));
- 		/* pipestat has already been acked */
- 	}
- 	if (eir & I915_ERROR_INSTRUCTION) {
--		printk(KERN_ERR "instruction error\n");
--		printk(KERN_ERR "  INSTPM: 0x%08x\n",
--		       I915_READ(INSTPM));
-+		pr_err("instruction error\n");
-+		pr_err("  INSTPM: 0x%08x\n", I915_READ(INSTPM));
- 		if (INTEL_INFO(dev)->gen < 4) {
- 			u32 ipeir = I915_READ(IPEIR);
+@@ -734,9 +734,7 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
  
--			printk(KERN_ERR "  IPEIR: 0x%08x\n",
--			       I915_READ(IPEIR));
--			printk(KERN_ERR "  IPEHR: 0x%08x\n",
--			       I915_READ(IPEHR));
--			printk(KERN_ERR "  INSTDONE: 0x%08x\n",
--			       I915_READ(INSTDONE));
--			printk(KERN_ERR "  ACTHD: 0x%08x\n",
--			       I915_READ(ACTHD));
-+			pr_err("  IPEIR: 0x%08x\n", I915_READ(IPEIR));
-+			pr_err("  IPEHR: 0x%08x\n", I915_READ(IPEHR));
-+			pr_err("  INSTDONE: 0x%08x\n", I915_READ(INSTDONE));
-+			pr_err("  ACTHD: 0x%08x\n", I915_READ(ACTHD));
- 			I915_WRITE(IPEIR, ipeir);
- 			POSTING_READ(IPEIR);
- 		} else {
- 			u32 ipeir = I915_READ(IPEIR_I965);
- 
--			printk(KERN_ERR "  IPEIR: 0x%08x\n",
--			       I915_READ(IPEIR_I965));
--			printk(KERN_ERR "  IPEHR: 0x%08x\n",
--			       I915_READ(IPEHR_I965));
--			printk(KERN_ERR "  INSTDONE: 0x%08x\n",
-+			pr_err("  IPEIR: 0x%08x\n", I915_READ(IPEIR_I965));
-+			pr_err("  IPEHR: 0x%08x\n", I915_READ(IPEHR_I965));
-+			pr_err("  INSTDONE: 0x%08x\n",
- 			       I915_READ(INSTDONE_I965));
--			printk(KERN_ERR "  INSTPS: 0x%08x\n",
--			       I915_READ(INSTPS));
--			printk(KERN_ERR "  INSTDONE1: 0x%08x\n",
--			       I915_READ(INSTDONE1));
--			printk(KERN_ERR "  ACTHD: 0x%08x\n",
--			       I915_READ(ACTHD_I965));
-+			pr_err("  INSTPS: 0x%08x\n", I915_READ(INSTPS));
-+			pr_err("  INSTDONE1: 0x%08x\n", I915_READ(INSTDONE1));
-+			pr_err("  ACTHD: 0x%08x\n", I915_READ(ACTHD_I965));
- 			I915_WRITE(IPEIR_I965, ipeir);
- 			POSTING_READ(IPEIR_I965);
+ 	if (unlikely(ret != 0)) {
+ 		if (ret != -ERESTARTSYS) {
+-			printk(KERN_ERR TTM_PFX
+-			       "Failed to expire sync object before "
+-			       "buffer eviction.\n");
++			pr_err("Failed to expire sync object before buffer eviction\n");
  		}
-diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-index 289140b..34929ae 100644
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
+ 		goto out;
+ 	}
+@@ -757,9 +755,8 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
+ 				no_wait_reserve, no_wait_gpu);
+ 	if (ret) {
+ 		if (ret != -ERESTARTSYS) {
+-			printk(KERN_ERR TTM_PFX
+-			       "Failed to find memory space for "
+-			       "buffer 0x%p eviction.\n", bo);
++			pr_err("Failed to find memory space for buffer 0x%p eviction\n",
++			       bo);
+ 			ttm_bo_mem_space_debug(bo, &placement);
+ 		}
+ 		goto out;
+@@ -769,7 +766,7 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
+ 				     no_wait_reserve, no_wait_gpu);
+ 	if (ret) {
+ 		if (ret != -ERESTARTSYS)
+-			printk(KERN_ERR TTM_PFX "Buffer eviction failed\n");
++			pr_err("Buffer eviction failed\n");
+ 		ttm_bo_mem_put(bo, &evict_mem);
+ 		goto out;
+ 	}
+@@ -1180,7 +1177,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
+ 
+ 	ret = ttm_mem_global_alloc(mem_glob, acc_size, false, false);
+ 	if (ret) {
+-		printk(KERN_ERR TTM_PFX "Out of kernel memory.\n");
++		pr_err("Out of kernel memory\n");
+ 		if (destroy)
+ 			(*destroy)(bo);
+ 		else
+@@ -1191,7 +1188,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
+ 	size += buffer_start & ~PAGE_MASK;
+ 	num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	if (num_pages == 0) {
+-		printk(KERN_ERR TTM_PFX "Illegal buffer object size.\n");
++		pr_err("Illegal buffer object size\n");
+ 		if (destroy)
+ 			(*destroy)(bo);
+ 		else
+@@ -1342,8 +1339,7 @@ static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
+ 			if (allow_errors) {
+ 				return ret;
+ 			} else {
+-				printk(KERN_ERR TTM_PFX
+-					"Cleanup eviction failed\n");
++				pr_err("Cleanup eviction failed\n");
+ 			}
+ 		}
+ 		spin_lock(&glob->lru_lock);
+@@ -1358,14 +1354,14 @@ int ttm_bo_clean_mm(struct ttm_bo_device *bdev, unsigned mem_type)
+ 	int ret = -EINVAL;
+ 
+ 	if (mem_type >= TTM_NUM_MEM_TYPES) {
+-		printk(KERN_ERR TTM_PFX "Illegal memory type %d\n", mem_type);
++		pr_err("Illegal memory type %d\n", mem_type);
+ 		return ret;
+ 	}
+ 	man = &bdev->man[mem_type];
+ 
+ 	if (!man->has_type) {
+-		printk(KERN_ERR TTM_PFX "Trying to take down uninitialized "
+-		       "memory manager type %u\n", mem_type);
++		pr_err("Trying to take down uninitialized memory manager type %u\n",
++		       mem_type);
+ 		return ret;
+ 	}
+ 
+@@ -1388,16 +1384,12 @@ int ttm_bo_evict_mm(struct ttm_bo_device *bdev, unsigned mem_type)
+ 	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
+ 
+ 	if (mem_type == 0 || mem_type >= TTM_NUM_MEM_TYPES) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Illegal memory manager memory type %u.\n",
+-		       mem_type);
++		pr_err("Illegal memory manager memory type %u\n", mem_type);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (!man->has_type) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Memory type %u has not been initialized.\n",
+-		       mem_type);
++		pr_err("Memory type %u has not been initialized\n", mem_type);
+ 		return 0;
+ 	}
+ 
+@@ -1482,8 +1474,7 @@ int ttm_bo_global_init(struct drm_global_reference *ref)
+ 	ttm_mem_init_shrink(&glob->shrink, ttm_bo_swapout);
+ 	ret = ttm_mem_register_shrink(glob->mem_glob, &glob->shrink);
+ 	if (unlikely(ret != 0)) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Could not register buffer object swapout.\n");
++		pr_err("Could not register buffer object swapout\n");
+ 		goto out_no_shrink;
+ 	}
+ 
+@@ -1516,9 +1507,8 @@ int ttm_bo_device_release(struct ttm_bo_device *bdev)
+ 			man->use_type = false;
+ 			if ((i != TTM_PL_SYSTEM) && ttm_bo_clean_mm(bdev, i)) {
+ 				ret = -EBUSY;
+-				printk(KERN_ERR TTM_PFX
+-				       "DRM memory manager type %d "
+-				       "is not clean.\n", i);
++				pr_err("DRM memory manager type %d is not clean\n",
++				       i);
+ 			}
+ 			man->has_type = false;
+ 		}
+diff --git a/drivers/gpu/drm/ttm/ttm_bo_vm.c b/drivers/gpu/drm/ttm/ttm_bo_vm.c
+index 5441284..a877813 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
+@@ -28,6 +28,8 @@
+  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
+  */
+ 
++#define pr_fmt(fmt) "[TTM] " fmt
++
+ #include <ttm/ttm_module.h>
+ #include <ttm/ttm_bo_driver.h>
+ #include <ttm/ttm_placement.h>
+@@ -262,8 +264,7 @@ int ttm_bo_mmap(struct file *filp, struct vm_area_struct *vma,
+ 	read_unlock(&bdev->vm_lock);
+ 
+ 	if (unlikely(bo == NULL)) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Could not find buffer object to map.\n");
++		pr_err("Could not find buffer object to map\n");
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/ttm/ttm_memory.c b/drivers/gpu/drm/ttm/ttm_memory.c
+index 9eba8e9..23d2ecb 100644
+--- a/drivers/gpu/drm/ttm/ttm_memory.c
++++ b/drivers/gpu/drm/ttm/ttm_memory.c
 @@ -25,6 +25,8 @@
   *
+  **************************************************************************/
+ 
++#define pr_fmt(fmt) "[TTM] " fmt
++
+ #include "ttm/ttm_memory.h"
+ #include "ttm/ttm_module.h"
+ #include "ttm/ttm_page_alloc.h"
+@@ -74,9 +76,8 @@ static void ttm_mem_zone_kobj_release(struct kobject *kobj)
+ 	struct ttm_mem_zone *zone =
+ 		container_of(kobj, struct ttm_mem_zone, kobj);
+ 
+-	printk(KERN_INFO TTM_PFX
+-	       "Zone %7s: Used memory at exit: %llu kiB.\n",
+-	       zone->name, (unsigned long long) zone->used_mem >> 10);
++	pr_info("Zone %7s: Used memory at exit: %llu kiB\n",
++		zone->name, (unsigned long long)zone->used_mem >> 10);
+ 	kfree(zone);
+ }
+ 
+@@ -390,9 +391,8 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
+ #endif
+ 	for (i = 0; i < glob->num_zones; ++i) {
+ 		zone = glob->zones[i];
+-		printk(KERN_INFO TTM_PFX
+-		       "Zone %7s: Available graphics memory: %llu kiB.\n",
+-		       zone->name, (unsigned long long) zone->max_mem >> 10);
++		pr_info("Zone %7s: Available graphics memory: %llu kiB\n",
++			zone->name, (unsigned long long)zone->max_mem >> 10);
+ 	}
+ 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
+ 	ttm_dma_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
+diff --git a/drivers/gpu/drm/ttm/ttm_object.c b/drivers/gpu/drm/ttm/ttm_object.c
+index 93577f2..68daca4 100644
+--- a/drivers/gpu/drm/ttm/ttm_object.c
++++ b/drivers/gpu/drm/ttm/ttm_object.c
+@@ -49,6 +49,8 @@
+  * for fast lookup of ref objects given a base object.
   */
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define pr_fmt(fmt) "[TTM] " fmt
 +
- #include <linux/acpi.h>
- #include <linux/acpi_io.h>
- #include <acpi/video.h>
-@@ -355,7 +357,7 @@ static void intel_didl_outputs(struct drm_device *dev)
+ #include "ttm/ttm_object.h"
+ #include "ttm/ttm_module.h"
+ #include <linux/list.h>
+@@ -232,8 +234,7 @@ struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file *tfile,
+ 		return NULL;
+ 
+ 	if (tfile != base->tfile && !base->shareable) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Attempted access of non-shareable object.\n");
++		pr_err("Attempted access of non-shareable object\n");
+ 		ttm_base_object_unref(&base);
+ 		return NULL;
+ 	}
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index 499debd..ebc6fac 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -30,6 +30,9 @@
+  * - Use page->lru to keep a free list
+  * - doesn't track currently in use pages
+  */
++
++#define pr_fmt(fmt) "[TTM] " fmt
++
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/highmem.h>
+@@ -167,18 +170,13 @@ static ssize_t ttm_pool_store(struct kobject *kobj,
+ 		m->options.small = val;
+ 	else if (attr == &ttm_page_pool_alloc_size) {
+ 		if (val > NUM_PAGES_TO_ALLOC*8) {
+-			printk(KERN_ERR TTM_PFX
+-			       "Setting allocation size to %lu "
+-			       "is not allowed. Recommended size is "
+-			       "%lu\n",
++			pr_err("Setting allocation size to %lu is not allowed. Recommended size is %lu\n",
+ 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 7),
+ 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
+ 			return size;
+ 		} else if (val > NUM_PAGES_TO_ALLOC) {
+-			printk(KERN_WARNING TTM_PFX
+-			       "Setting allocation size to "
+-			       "larger than %lu is not recommended.\n",
+-			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
++			pr_warn("Setting allocation size to larger than %lu is not recommended\n",
++				NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
+ 		}
+ 		m->options.alloc_size = val;
+ 	}
+@@ -279,8 +277,7 @@ static void ttm_pages_put(struct page *pages[], unsigned npages)
+ {
+ 	unsigned i;
+ 	if (set_pages_array_wb(pages, npages))
+-		printk(KERN_ERR TTM_PFX "Failed to set %d pages to wb!\n",
+-				npages);
++		pr_err("Failed to set %d pages to wb!\n", npages);
+ 	for (i = 0; i < npages; ++i)
+ 		__free_page(pages[i]);
+ }
+@@ -315,8 +312,7 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
+ 	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
+ 			GFP_KERNEL);
+ 	if (!pages_to_free) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Failed to allocate memory for pool free operation.\n");
++		pr_err("Failed to allocate memory for pool free operation\n");
+ 		return 0;
  	}
  
- 	if (!acpi_video_bus) {
--		printk(KERN_WARNING "No ACPI video bus found\n");
-+		pr_warn("No ACPI video bus found\n");
- 		return;
+@@ -438,16 +434,12 @@ static int ttm_set_pages_caching(struct page **pages,
+ 	case tt_uncached:
+ 		r = set_pages_array_uc(pages, cpages);
+ 		if (r)
+-			printk(KERN_ERR TTM_PFX
+-			       "Failed to set %d pages to uc!\n",
+-			       cpages);
++			pr_err("Failed to set %d pages to uc!\n", cpages);
+ 		break;
+ 	case tt_wc:
+ 		r = set_pages_array_wc(pages, cpages);
+ 		if (r)
+-			printk(KERN_ERR TTM_PFX
+-			       "Failed to set %d pages to wc!\n",
+-			       cpages);
++			pr_err("Failed to set %d pages to wc!\n", cpages);
+ 		break;
+ 	default:
+ 		break;
+@@ -492,8 +484,7 @@ static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
+ 	caching_array = kmalloc(max_cpages*sizeof(struct page *), GFP_KERNEL);
+ 
+ 	if (!caching_array) {
+-		printk(KERN_ERR TTM_PFX
+-		       "Unable to allocate table for new pages.");
++		pr_err("Unable to allocate table for new pages\n");
+ 		return -ENOMEM;
  	}
  
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 230a141..d360df1 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -501,7 +492,7 @@ static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
+ 		p = alloc_page(gfp_flags);
+ 
+ 		if (!p) {
+-			printk(KERN_ERR TTM_PFX "Unable to get page %u.\n", i);
++			pr_err("Unable to get page %u\n", i);
+ 
+ 			/* store already allocated pages in the pool after
+ 			 * setting the caching state */
+@@ -599,8 +590,7 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
+ 			++pool->nrefills;
+ 			pool->npages += alloc_size;
+ 		} else {
+-			printk(KERN_ERR TTM_PFX
+-			       "Failed to fill pool (%p).", pool);
++			pr_err("Failed to fill pool (%p)\n", pool);
+ 			/* If we have any pages left put them to the pool. */
+ 			list_for_each_entry(p, &pool->list, lru) {
+ 				++cpages;
+@@ -675,9 +665,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
+ 		for (i = 0; i < npages; i++) {
+ 			if (pages[i]) {
+ 				if (page_count(pages[i]) != 1)
+-					printk(KERN_ERR TTM_PFX
+-					       "Erroneous page count. "
+-					       "Leaking pages.\n");
++					pr_err("Erroneous page count. Leaking pages.\n");
+ 				__free_page(pages[i]);
+ 				pages[i] = NULL;
+ 			}
+@@ -689,9 +677,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
+ 	for (i = 0; i < npages; i++) {
+ 		if (pages[i]) {
+ 			if (page_count(pages[i]) != 1)
+-				printk(KERN_ERR TTM_PFX
+-				       "Erroneous page count. "
+-				       "Leaking pages.\n");
++				pr_err("Erroneous page count. Leaking pages.\n");
+ 			list_add_tail(&pages[i]->lru, &pool->list);
+ 			pages[i] = NULL;
+ 			pool->npages++;
+@@ -740,8 +726,7 @@ static int ttm_get_pages(struct page **pages, unsigned npages, int flags,
+ 			p = alloc_page(gfp_flags);
+ 			if (!p) {
+ 
+-				printk(KERN_ERR TTM_PFX
+-				       "Unable to allocate page.");
++				pr_err("Unable to allocate page\n");
+ 				return -ENOMEM;
+ 			}
+ 
+@@ -781,9 +766,7 @@ static int ttm_get_pages(struct page **pages, unsigned npages, int flags,
+ 		if (r) {
+ 			/* If there is any pages in the list put them back to
+ 			 * the pool. */
+-			printk(KERN_ERR TTM_PFX
+-			       "Failed to allocate extra pages "
+-			       "for large request.");
++			pr_err("Failed to allocate extra pages for large request\n");
+ 			ttm_put_pages(pages, count, flags, cstate);
+ 			return r;
+ 		}
+@@ -809,7 +792,7 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
+ 
+ 	WARN_ON(_manager);
+ 
+-	printk(KERN_INFO TTM_PFX "Initializing pool allocator.\n");
++	pr_info("Initializing pool allocator\n");
+ 
+ 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
+ 
+@@ -844,7 +827,7 @@ void ttm_page_alloc_fini(void)
+ {
+ 	int i;
+ 
+-	printk(KERN_INFO TTM_PFX "Finalizing pool allocator.\n");
++	pr_info("Finalizing pool allocator\n");
+ 	ttm_pool_mm_shrink_fini(_manager);
+ 
+ 	for (i = 0; i < NUM_POOLS; ++i)
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index 0c46d8c..4f9e548 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -33,6 +33,8 @@
+  *   when freed).
+  */
+ 
++#define pr_fmt(fmt) "[TTM] " fmt
++
+ #include <linux/dma-mapping.h>
+ #include <linux/list.h>
+ #include <linux/seq_file.h> /* for seq_printf */
+@@ -221,18 +223,13 @@ static ssize_t ttm_pool_store(struct kobject *kobj, struct attribute *attr,
+ 		m->options.small = val;
+ 	else if (attr == &ttm_page_pool_alloc_size) {
+ 		if (val > NUM_PAGES_TO_ALLOC*8) {
+-			printk(KERN_ERR TTM_PFX
+-			       "Setting allocation size to %lu "
+-			       "is not allowed. Recommended size is "
+-			       "%lu\n",
++			pr_err("Setting allocation size to %lu is not allowed. Recommended size is %lu\n",
+ 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 7),
+ 			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
+ 			return size;
+ 		} else if (val > NUM_PAGES_TO_ALLOC) {
+-			printk(KERN_WARNING TTM_PFX
+-			       "Setting allocation size to "
+-			       "larger than %lu is not recommended.\n",
+-			       NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
++			pr_warn("Setting allocation size to larger than %lu is not recommended\n",
++				NUM_PAGES_TO_ALLOC*(PAGE_SIZE >> 10));
+ 		}
+ 		m->options.alloc_size = val;
+ 	}
+@@ -313,15 +310,13 @@ static int ttm_set_pages_caching(struct dma_pool *pool,
+ 	if (pool->type & IS_UC) {
+ 		r = set_pages_array_uc(pages, cpages);
+ 		if (r)
+-			pr_err(TTM_PFX
+-			       "%s: Failed to set %d pages to uc!\n",
++			pr_err("%s: Failed to set %d pages to uc!\n",
+ 			       pool->dev_name, cpages);
+ 	}
+ 	if (pool->type & IS_WC) {
+ 		r = set_pages_array_wc(pages, cpages);
+ 		if (r)
+-			pr_err(TTM_PFX
+-			       "%s: Failed to set %d pages to wc!\n",
++			pr_err("%s: Failed to set %d pages to wc!\n",
+ 			       pool->dev_name, cpages);
+ 	}
+ 	return r;
+@@ -387,8 +382,8 @@ static void ttm_dma_pages_put(struct dma_pool *pool, struct list_head *d_pages,
+ 	/* Don't set WB on WB page pool. */
+ 	if (npages && !(pool->type & IS_CACHED) &&
+ 	    set_pages_array_wb(pages, npages))
+-		pr_err(TTM_PFX "%s: Failed to set %d pages to wb!\n",
+-			pool->dev_name, npages);
++		pr_err("%s: Failed to set %d pages to wb!\n",
++		       pool->dev_name, npages);
+ 
+ 	list_for_each_entry_safe(d_page, tmp, d_pages, page_list) {
+ 		list_del(&d_page->page_list);
+@@ -400,8 +395,8 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
+ {
+ 	/* Don't set WB on WB page pool. */
+ 	if (!(pool->type & IS_CACHED) && set_pages_array_wb(&d_page->p, 1))
+-		pr_err(TTM_PFX "%s: Failed to set %d pages to wb!\n",
+-			pool->dev_name, 1);
++		pr_err("%s: Failed to set %d pages to wb!\n",
++		       pool->dev_name, 1);
+ 
+ 	list_del(&d_page->page_list);
+ 	__ttm_dma_free_page(pool, d_page);
+@@ -430,17 +425,16 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
+ #if 0
+ 	if (nr_free > 1) {
+ 		pr_debug("%s: (%s:%d) Attempting to free %d (%d) pages\n",
+-			pool->dev_name, pool->name, current->pid,
+-			npages_to_free, nr_free);
++			 pool->dev_name, pool->name, current->pid,
++			 npages_to_free, nr_free);
+ 	}
+ #endif
+ 	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
+ 			GFP_KERNEL);
+ 
+ 	if (!pages_to_free) {
+-		pr_err(TTM_PFX
+-		       "%s: Failed to allocate memory for pool free operation.\n",
+-			pool->dev_name);
++		pr_err("%s: Failed to allocate memory for pool free operation\n",
++		       pool->dev_name);
+ 		return 0;
+ 	}
+ 	INIT_LIST_HEAD(&d_pages);
+@@ -723,23 +717,21 @@ static int ttm_dma_pool_alloc_new_pages(struct dma_pool *pool,
+ 	caching_array = kmalloc(max_cpages*sizeof(struct page *), GFP_KERNEL);
+ 
+ 	if (!caching_array) {
+-		pr_err(TTM_PFX
+-		       "%s: Unable to allocate table for new pages.",
+-			pool->dev_name);
++		pr_err("%s: Unable to allocate table for new pages\n",
++		       pool->dev_name);
+ 		return -ENOMEM;
+ 	}
+ 
+ 	if (count > 1) {
+ 		pr_debug("%s: (%s:%d) Getting %d pages\n",
+-			pool->dev_name, pool->name, current->pid,
+-			count);
++			 pool->dev_name, pool->name, current->pid, count);
+ 	}
+ 
+ 	for (i = 0, cpages = 0; i < count; ++i) {
+ 		dma_p = __ttm_dma_alloc_page(pool);
+ 		if (!dma_p) {
+-			pr_err(TTM_PFX "%s: Unable to get page %u.\n",
+-				pool->dev_name, i);
++			pr_err("%s: Unable to get page %u\n",
++			       pool->dev_name, i);
+ 
+ 			/* store already allocated pages in the pool after
+ 			 * setting the caching state */
+@@ -821,8 +813,8 @@ static int ttm_dma_page_pool_fill_locked(struct dma_pool *pool,
+ 			struct dma_page *d_page;
+ 			unsigned cpages = 0;
+ 
+-			pr_err(TTM_PFX "%s: Failed to fill %s pool (r:%d)!\n",
+-				pool->dev_name, pool->name, r);
++			pr_err("%s: Failed to fill %s pool (r:%d)!\n",
++			       pool->dev_name, pool->name, r);
+ 
+ 			list_for_each_entry(d_page, &d_pages, page_list) {
+ 				cpages++;
+@@ -1038,8 +1030,8 @@ static int ttm_dma_pool_mm_shrink(struct shrinker *shrink,
+ 		nr_free = shrink_pages;
+ 		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free);
+ 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
+-			p->pool->dev_name, p->pool->name, current->pid, nr_free,
+-			shrink_pages);
++			 p->pool->dev_name, p->pool->name, current->pid,
++			 nr_free, shrink_pages);
+ 	}
+ 	mutex_unlock(&_manager->lock);
+ 	/* return estimated number of unused pages in pool */
+@@ -1064,7 +1056,7 @@ int ttm_dma_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
+ 
+ 	WARN_ON(_manager);
+ 
+-	printk(KERN_INFO TTM_PFX "Initializing DMA pool allocator.\n");
++	pr_info("Initializing DMA pool allocator\n");
+ 
+ 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
+ 	if (!_manager)
+@@ -1097,7 +1089,7 @@ void ttm_dma_page_alloc_fini(void)
+ {
+ 	struct device_pools *p, *t;
+ 
+-	printk(KERN_INFO TTM_PFX "Finalizing DMA pool allocator.\n");
++	pr_info("Finalizing DMA pool allocator\n");
+ 	ttm_dma_pool_mm_shrink_fini(_manager);
+ 
+ 	list_for_each_entry_safe_reverse(p, t, &_manager->pools, pools) {
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index c10cf5e..fa09daf 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
 @@ -28,6 +28,8 @@
-  *      Chris Wilson <chris@chris-wilson.co.uk>
+  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
   */
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define pr_fmt(fmt) "[TTM] " fmt
 +
- #include "intel_drv.h"
- 
- #define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
-@@ -171,7 +173,7 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
- 		/* XXX add code here to query mode clock or hardware clock
- 		 * and program max PWM appropriately.
- 		 */
--		printk_once(KERN_WARNING "fixme: max PWM is zero.\n");
-+		pr_warn_once("fixme: max PWM is zero\n");
- 		return 1;
+ #include <linux/sched.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
+@@ -196,7 +198,7 @@ int ttm_tt_init(struct ttm_tt *ttm, struct ttm_bo_device *bdev,
+ 	ttm_tt_alloc_page_directory(ttm);
+ 	if (!ttm->pages) {
+ 		ttm_tt_destroy(ttm);
+-		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
++		pr_err("Failed allocating page table\n");
+ 		return -ENOMEM;
  	}
- 
+ 	return 0;
+@@ -229,7 +231,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
+ 	ttm_dma_tt_alloc_page_directory(ttm_dma);
+ 	if (!ttm->pages || !ttm_dma->dma_address) {
+ 		ttm_tt_destroy(ttm);
+-		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
++		pr_err("Failed allocating page table\n");
+ 		return -ENOMEM;
+ 	}
+ 	return 0;
+@@ -347,7 +349,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
+ 						ttm->num_pages << PAGE_SHIFT,
+ 						0);
+ 		if (unlikely(IS_ERR(swap_storage))) {
+-			printk(KERN_ERR "Failed allocating swap storage.\n");
++			pr_err("Failed allocating swap storage\n");
+ 			return PTR_ERR(swap_storage);
+ 		}
+ 	} else
 -- 
 1.7.8.111.gad25c.dirty
 
