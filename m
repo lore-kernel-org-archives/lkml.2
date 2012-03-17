@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030310Ab2CQJ4R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 05:56:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56402 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab2CQJ4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 05:56:16 -0400
-Message-ID: <4F645FBB.2010709@gmail.com>
-Date: Sat, 17 Mar 2012 17:56:11 +0800
-From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1756834Ab2CQKN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 06:13:28 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:41105
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751481Ab2CQKNZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 06:13:25 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzc89bhzz1202hzzz2dh2a8h668h839h93fhd24hd2bh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: [PATCH 00/02] DA9052 patch series
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Dajun <dajun.chen@diasemi.com>, <linux-watchdog@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <sameo@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Mar 2012 15:32:53 +0530
+Message-ID: <1331978573.7058.68.camel@dhruva>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, ubuntu.fan.2012@gmail.com
-Subject: Installation Instructions for Xen 4.1.3-rc1-pre and Linux Kernel
- 3.3.0-rc7 on Ubuntu and Debian Linux
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+X-Originating-IP: [10.10.38.47]
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
+﻿The following patch series adds support for the ADC functionality in
+MFD and HWMON modules for Dialog Semiconductor DA9052/53 PMICs.
 
-I have written a set of installation instructions for building and 
-installing Xen 4.1.3-rc1-pre hypervisor and Linux kernel 3.3.0-rc7 / 
-3.2.11 on Ubuntu and Debian Linux in PDF format.
+The HWMON patch depends on the ADC patch.
 
-The mediafire.com download link for the PDF document I have written is
+Ashish Jangam (2):
+        [MFD]: Incremental patch for ADC support in DA9052/53 MFD
+module.
+        [HWMON]: HWMON driver for DA9052/53 PMICs. This patch is ACK-by
+Guenter Roeck however requires a minor modification.
 
-Download link: http://www.mediafire.com/?w1arfubbwsc3171
+ Documentation/hwmon/da9052        |   61 +++++++
+ drivers/hwmon/Kconfig             |   10 +
+ drivers/hwmon/Makefile            |    1 +
+ drivers/hwmon/da9052-hwmon.c      |  344
++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/da9052-core.c         |  136 +++++++++++++++
+ include/linux/mfd/da9052/da9052.h |   20 ++
+ 6 files changed, 572 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/da9052
+ create mode 100644 drivers/hwmon/da9052-hwmon.c
+        
 
-There is a total of 254 pages in the PDF document, but the most 
-important steps are in the first 8 pages.
-
-Thank you very much.
-
-Yours sincerely,
-
-Teo En Ming (Zhang Enming)
