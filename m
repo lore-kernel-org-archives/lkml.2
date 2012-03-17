@@ -1,98 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2CQS4d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 14:56:33 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:58405 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756900Ab2CQS4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 14:56:31 -0400
-Message-ID: <4F64DE2C.1030809@interlog.com>
-Date: Sat, 17 Mar 2012 19:55:40 +0100
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Jeff Garzik <jeff@garzik.org>
-CC: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-References: <1331929448-6838-1-git-send-email-kys@microsoft.com> <1331929472-6877-1-git-send-email-kys@microsoft.com> <1331929472-6877-2-git-send-email-kys@microsoft.com> <4F64A80C.6040206@garzik.org>
-In-Reply-To: <4F64A80C.6040206@garzik.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757825Ab2CQTFp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 15:05:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52264 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753755Ab2CQTFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 15:05:43 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Sandeep Gopalpet <sandeep.kumar@freescale.com>
+Subject: [PATCH] gianfar: Fix possible overrun and simplify interrupt name field creation
+Date: Sat, 17 Mar 2012 12:05:38 -0700
+Message-Id: <17d93e9eb16cbad75b20cdbcaf38f268260d6fd5.1332010469.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-03-17 04:04 PM, Jeff Garzik wrote:
-> On 03/16/2012 04:24 PM, K. Y. Srinivasan wrote:
->> The current Windows hosts don't handle the ATA_16 command and furthermore
->> return a generic error code after filtering the command on the host side.
->> For now filter the command on the guest side until the host is modified to
->> properly handle unsupported commands.
->>
->> Signed-off-by: K. Y. Srinivasan<kys@microsoft.com>
->> Reviewed-by: Haiyang Zhang<haiyangz@microsoft.com>
->> ---
->> drivers/scsi/storvsc_drv.c | 9 +++++++++
->> 1 files changed, 9 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
->> index 8b967c9..783bab8 100644
->> --- a/drivers/scsi/storvsc_drv.c
->> +++ b/drivers/scsi/storvsc_drv.c
->> @@ -1229,8 +1229,17 @@ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
->> /*
->> * smartd sends this command and the host does not handle
->> * this. So, don't send it.
->> + * The current Windows hosts implement a subset of scsi commands
->> + * and for the commands that are not implemented, the host filters
->> + * them and returns a generic failure SRB status. I have been in
->> + * discussions with the Windows team to return the appropriate SRB
->> + * status code for unsupported scsi commands and while they have
->> + * agreed to implement this, it is not clear when this change will be
->> + * available. Consequently, filtering the command before submitting it
->> + * to the host is a resonable interim solution.
->> */
->> case SET_WINDOW:
->> + case ATA_16:
->> scmnd->result = ILLEGAL_REQUEST<< 16;
->> allowed = false;
->
-> It would be even nicer to fill out a nice SCSI status for this. For an illegal
-> request such as this, the libata SCSI simulator (drivers/ata/libata-scsi.c) uses
-> a more complete sense buffer setup,
->
-> static void ata_scsi_set_sense(struct scsi_cmnd *cmd, u8 sk,
-> u8 asc, u8 ascq)
-> {
-> cmd->result = (DRIVER_SENSE << 24) | SAM_STAT_CHECK_CONDITION;
->
-> scsi_build_sense_buffer(0, cmd->sense_buffer, sk, asc, ascq);
-> }
->
-> and calls this function for invalid/unknown/unsupported command ops thusly,
->
-> ata_scsi_set_sense(cmd, ILLEGAL_REQUEST, 0x20, 0x0);
-> /* "Invalid command operation code" */
->
-> Supplying asc/ascq provides additional information that may be useful in
-> determining whether or not to retry, provide better error diagnostics, etc.
->
-> The asc/ascq values are found in the SCSI standards documents.
+Space allocated for int_name_<foo> is unsufficient for
+maximal device name, expand it.
 
-Jeff,
-I agree with your suggestion and would point out that the
-originally proposed:
-     scmnd->result = ILLEGAL_REQUEST<<  16;
+Code to create int_name_<foo> is obscure, simplify it
+by using sprintf.
 
-is just plain wrong. result[23:16] is a Linux invented host byte
-code (they typically start with "DID_") while ILLEGAL_REQUEST is
-a SCSI sense key.
+Found by looking for unnecessary \ line continuations.
+Uncompiled, untested.
 
-Doug Gilbert
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ethernet/freescale/gianfar.c |   39 +++++------------------------
+ drivers/net/ethernet/freescale/gianfar.h |    2 +-
+ 2 files changed, 8 insertions(+), 33 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index adb0ae4..770b8cf 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -971,7 +971,6 @@ static int gfar_probe(struct platform_device *ofdev)
+ 	struct gfar_private *priv = NULL;
+ 	struct gfar __iomem *regs = NULL;
+ 	int err = 0, i, grp_idx = 0;
+-	int len_devname;
+ 	u32 rstat = 0, tstat = 0, rqueue = 0, tqueue = 0;
+ 	u32 isrg = 0;
+ 	u32 __iomem *baddr;
+@@ -1172,40 +1171,16 @@ static int gfar_probe(struct platform_device *ofdev)
+ 		priv->device_flags & FSL_GIANFAR_DEV_HAS_MAGIC_PACKET);
+ 
+ 	/* fill out IRQ number and name fields */
+-	len_devname = strlen(dev->name);
+ 	for (i = 0; i < priv->num_grps; i++) {
+-		strncpy(&priv->gfargrp[i].int_name_tx[0], dev->name,
+-				len_devname);
+ 		if (priv->device_flags & FSL_GIANFAR_DEV_HAS_MULTI_INTR) {
+-			strncpy(&priv->gfargrp[i].int_name_tx[len_devname],
+-				"_g", sizeof("_g"));
+-			priv->gfargrp[i].int_name_tx[
+-				strlen(priv->gfargrp[i].int_name_tx)] = i+48;
+-			strncpy(&priv->gfargrp[i].int_name_tx[strlen(
+-				priv->gfargrp[i].int_name_tx)],
+-				"_tx", sizeof("_tx") + 1);
+-
+-			strncpy(&priv->gfargrp[i].int_name_rx[0], dev->name,
+-					len_devname);
+-			strncpy(&priv->gfargrp[i].int_name_rx[len_devname],
+-					"_g", sizeof("_g"));
+-			priv->gfargrp[i].int_name_rx[
+-				strlen(priv->gfargrp[i].int_name_rx)] = i+48;
+-			strncpy(&priv->gfargrp[i].int_name_rx[strlen(
+-				priv->gfargrp[i].int_name_rx)],
+-				"_rx", sizeof("_rx") + 1);
+-
+-			strncpy(&priv->gfargrp[i].int_name_er[0], dev->name,
+-					len_devname);
+-			strncpy(&priv->gfargrp[i].int_name_er[len_devname],
+-				"_g", sizeof("_g"));
+-			priv->gfargrp[i].int_name_er[strlen(
+-					priv->gfargrp[i].int_name_er)] = i+48;
+-			strncpy(&priv->gfargrp[i].int_name_er[strlen(\
+-				priv->gfargrp[i].int_name_er)],
+-				"_er", sizeof("_er") + 1);
++			sprintf(priv->gfargrp[i].int_name_tx, "%s%s%c%s",
++				dev->name, "_g", '0' + i, "_tx");
++			sprintf(priv->gfargrp[i].int_name_rx, "%s%s%c%s",
++				dev->name, "_g", '0' + i, "_rx");
++			sprintf(priv->gfargrp[i].int_name_er, "%s%s%c%s",
++				dev->name, "_g", '0' + i, "_er");
+ 		} else
+-			priv->gfargrp[i].int_name_tx[len_devname] = '\0';
++			strcpy(priv->gfargrp[i].int_name_tx, dev->name);
+ 	}
+ 
+ 	/* Initialize the filer table */
+diff --git a/drivers/net/ethernet/freescale/gianfar.h b/drivers/net/ethernet/freescale/gianfar.h
+index 4fe0f34..e537d81 100644
+--- a/drivers/net/ethernet/freescale/gianfar.h
++++ b/drivers/net/ethernet/freescale/gianfar.h
+@@ -520,7 +520,7 @@ extern const char gfar_driver_version[];
+ #define RXFCB_PERR_MASK		0x000c
+ #define RXFCB_PERR_BADL3	0x0008
+ 
+-#define GFAR_INT_NAME_MAX	IFNAMSIZ + 4
++#define GFAR_INT_NAME_MAX	(IFNAMSIZ + 6)	/* '_g#_xx' */
+ 
+ struct txbd8
+ {
+-- 
+1.7.8.111.gad25c.dirty
 
