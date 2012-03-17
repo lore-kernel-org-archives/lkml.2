@@ -1,518 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab2CQDDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 23:03:37 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:41515 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194Ab2CQDDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 23:03:34 -0400
-Date: Fri, 16 Mar 2012 20:01:56 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Diego Elio =?iso-8859-1?Q?Petten=F2?= <flameeyes@flameeyes.eu>
-CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
-Message-ID: <20120317030156.GA20319@ericsson.com>
-References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
+	id S1754885Ab2CQDGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 23:06:14 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48145 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab2CQDGM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Mar 2012 23:06:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.64.1203152149190.20644@file.rdu.redhat.com>
+References: <1330648393-20692-1-git-send-email-msb@chromium.org>
+	<Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
+	<20120306215947.GB27051@google.com>
+	<Pine.LNX.4.64.1203131742230.24876@file.rdu.redhat.com>
+	<CABqD9hYUVpC-NQ_WQ5bH8ZxLein+zxHQHDGJzwyRWHokMiPSbg@mail.gmail.com>
+	<Pine.LNX.4.64.1203152149190.20644@file.rdu.redhat.com>
+Date: Fri, 16 Mar 2012 22:06:10 -0500
+Message-ID: <CABqD9hav7MCrCfJ-5k0duvitXh2AOSk2of1MFZZmyv=kmoXb8w@mail.gmail.com>
+Subject: Re: [PATCH] dm: remake of the verity target
+From: Will Drewry <wad@chromium.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
+        Elly Jones <ellyjones@chromium.org>, Milan Broz <mbroz@redhat.com>,
+        Olof Johansson <olofj@chromium.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 08:48:13PM +0100, Diego Elio Pettenò wrote:
-> The driver is currently written for IT8728, but the code in it87_wdt
-> suggest it would work the same way on many other versions.
-> 
+On Fri, Mar 16, 2012 at 8:16 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> Hi Will
+>
+>
+> On Wed, 14 Mar 2012, Will Drewry wrote:
+>
+>> Hi Mikulas,
+>>
+>> This is a nice rewrite and takes advantage of your dm-bufio layer. I
+>> wish it'd existed (and or we wrote it :) in 2009 when we started this
+>> work!  Some comments below:
+>>
+>> > ---
+>> > +static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
+>> > +{
+>> > +       int i;
+>> > +       for (i = v->levels - 2; i >= 0; i--) {
+>> > +               sector_t hash_block_start;
+>> > +               sector_t hash_block_end;
+>> > +               verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
+>> > +               verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
+>> > +               if (!i) {
+>> > +                       unsigned cluster = prefetch_cluster;
+>> > +        /* barrier to stop GCC from re-reading prefetch_cluster again */
+>> > +                       barrier();
+>> > +                       cluster >>= v->data_dev_block_bits;
+>>
+>> Would:
+>>   unsigned cluster = prefetch_cluster >> v->data_dev_block_bits;
+>> not have similar behavior without a barrier?  (Yeah yeah I could
+>> compile and see, but I was curious if you already had.)
+>>
+>> Since the max iterations here is 61 in a worst-case, I don't think
+>> it's a big deal to barrier() each time, just thought I'd ask.
+>>
+>> > +                       if (unlikely(!cluster))
+>> > +                               goto no_prefetch_cluster;
+>> > +                       if (unlikely(cluster & (cluster - 1)))
+>> > +                               cluster = 1 << (fls(cluster) - 1);
+>> > +
+>> > +                       hash_block_start &= ~(sector_t)(cluster - 1);
+>> > +                       hash_block_end |= cluster - 1;
+>> > +                       if (unlikely(hash_block_end >= v->hash_blocks))
+>> > +                               hash_block_end = v->hash_blocks - 1;
+>> > +               }
+>> > +no_prefetch_cluster:
+>> > +               dm_bufio_prefetch(v->bufio, hash_block_start,
+>> > +                                       hash_block_end - hash_block_start + 1);
+>
+> The problem here is this. If you look at the code, you think that after
+> the clause "if (unlikely(!cluster)) goto no_prefetch_cluster;", cluster
+> can't be zero. But this assumption is wrong. The C compiler is allowed to
+> transform the above code into:
+>
+> unsigned cluster;
+> if (!(prefetch_cluster >> v->data_dev_block_bits))
+>        goto no_prefetch_cluster;
+> cluster = prefetch_cluster >> v->data_dev_block_bits;
+> if (unlikely(cluster & (cluster - 1)))
+>        cluster = 1 << (fls(cluster) - 1);
+>
+> I know it's suboptimal, but the C compiler is just allowed to perform this
+> transformation. Now, if you know that "prefetch_cluster" can change
+> asynchronously by another thread running simultaneously, the condition "if
+> (!(prefetch_cluster >> v->data_dev_block_bits))" is useless ---
+> prefetch_cluster may change just after this condition and we won't catch
+> the zero value. (if the cluster value is zero in the above code, it ends
+> up in hash_block_end being ORed with -1 and the prefetch goes wild over
+> the whole hash device).
+>
+> That's why I put that "barrier()" there. It would be better to declare
+> "prefetch_cluster" as volatile, but the module param macros issue warnings
+> if the variable is volatile.
+>
+> Or maybe I can change it this way:
+> "unsigned cluster = *(volatile unsigned *)&prefetch_cluster", it could be
+> better than the "barrier()".
 
-The it87 hwmon driver accesses superio registers only during initialization,
-so the risk for conflicts is quite low. Seems to me that is not the case here.
+I think that'd read a little bit more clearly, and I think the C
+standard supports that approach. If it doesn't work in practice, the
+barrier isn't the worst.
 
-Maybe about time to convert the drivers to use the mfd infrastructure.
-Hope that won't require datasheets for their recent chips, as close-lipped
-as ITD is about those lately.
+>> > +       case STATUSTYPE_TABLE:
+>> > +               DMEMIT("%u %s %s %llu %u %s ",
+>> > +                       0,
+>> > +                       v->data_dev->name,
+>> > +                       v->hash_dev->name,
+>>
+>> I understand the new approach is to use major:minor instead of the
+>> device name.  I don't care which, but I believe agk@ requested that.
+>
+> All the device mappers report dm_dev->name in their status routine, so I
+> do it this way too.
+>
+>> > +static int verity_ioctl(struct dm_target *ti, unsigned cmd,
+>> > +                       unsigned long arg)
+>> > +{
+>> > +       struct dm_verity *v = ti->private;
+>> > +       int r = 0;
+>> > +
+>> > +       if (v->data_start ||
+>> > +           ti->len != i_size_read(v->data_dev->bdev->bd_inode) >> SECTOR_SHIFT)
+>> > +               r = scsi_verify_blk_ioctl(NULL, cmd);
+>> > +
+>>
+>> Is it worth supporting ioctl at all given these hoops?  Nothing stops
+>> a privileged user from directly running the ioctl on the underlying
+>> device/devices, it's just very inconvenient :)
+>
+> I don't know. The other dm targets attempt to pass-thru ioctls too.
+>
+> You need ioctl pass-thru if you want to run it over a cd-rom because
+> the iso9660 filesystem needs to send an ioctl to find its superblock.
+> Other than that I don't know if other filesystems need ioctls.
 
-Guenter
+Makes sense. I just think the passthrough condition is ugly, but at
+least it provides some support.
 
-> This is just a first step to verify the working status of the code,
-> and might require moving to a MFD approach to share with hwmon/it87
-> and it87_wdt, as they all share the same access to the Super I/O chip.
-> That would also allow to set a few more opitons so that you could for
-> instance change the function selection of a few pins from their
-> default to GPIO pins.
-> 
-> It does not yet support the polarity-inversion register that is
-> allowed by the chipset, which might require sysfs attributes per-gpio.
-> 
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Linus Walleij <linus.walleij@stericsson.com>
-> Signed-off-by: Diego Elio Pettenò <flameeyes@flameeyes.eu>
-> ---
->  MAINTAINERS              |    5 +
->  drivers/gpio/Kconfig     |   11 ++
->  drivers/gpio/Makefile    |    1 +
->  drivers/gpio/gpio-it87.c |  397 ++++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 414 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/gpio/gpio-it87.c
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 553ac10..a196f14 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3692,6 +3692,11 @@ S:	Maintained
->  F:	Documentation/hwmon/it87
->  F:	drivers/hwmon/it87.c
->  
-> +IT87xx GPIO DRIVER
-> +M:	Diego Elio Pettenò <flameeyes@flameeyes.eu>
-> +S:	Maintained
-> +F:	drivers/gpio/gpio-it87.c
-> +
->  IVTV VIDEO4LINUX DRIVER
->  M:	Andy Walls <awalls@md.metrocast.net>
->  L:	ivtv-devel@ivtvdriver.org (moderated for non-subscribers)
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 3359f1e..8dc26b7 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -91,6 +91,17 @@ config GPIO_IT8761E
->  	help
->  	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
->  
-> +config GPIO_IT87
-> +	tristate "IT87xx GPIO support"
-> +	depends on X86 # unconditional access to IO space.
-> +	help
-> +	  Say yes here to support GPIO functionality of IT87xx Super I/O chips.
-> +
-> +	  This driver currently supports ITE IT8728 Super I/O chips.
-> +
-> +	  To compile this driver as a module, choose M here: the module will
-> +	  be called gpio_it87
-> +
->  config GPIO_EP93XX
->  	def_bool y
->  	depends on ARCH_EP93XX
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 41fe67f..affe510 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -18,6 +18,7 @@ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
->  obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
->  obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
->  obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
-> +obj-$(CONFIG_GPIO_IT87)		+= gpio-it87.o
->  obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
->  obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
->  obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
-> diff --git a/drivers/gpio/gpio-it87.c b/drivers/gpio/gpio-it87.c
-> new file mode 100644
-> index 0000000..958c126
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-it87.c
-> @@ -0,0 +1,397 @@
-> +/*
-> + *  GPIO interface for IT87xx Super I/O chips
-> + *
-> + *  Author: Diego Elio Pettenò <flameeyes@flameeyes.eu>
-> + *
-> + *  Based on it87_wdt.c     by Oliver Schuster
-> + *           gpio-it8761e.c by Denis Turischev
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License 2 as published
-> + *  by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; see the file COPYING.  If not, write to
-> + *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/io.h>
-> +#include <linux/errno.h>
-> +#include <linux/ioport.h>
-> +
-> +#include <linux/gpio.h>
-> +
-> +#define GPIO_NAME "it87-gpio"
-> +#define PFX GPIO_NAME ": "
-> +
-> +/* Chip Id numbers */
-> +#define NO_DEV_ID	0xffff
-> +#define IT8728_ID	0x8728
-> +
-> +/* IO Ports */
-> +#define REG		0x2e
-> +#define VAL		0x2f
-> +
-> +/* Logical device Numbers LDN */
-> +#define GPIO		0x07
-> +
-> +/* Configuration Registers and Functions */
-> +#define LDNREG		0x07
-> +#define CHIPID		0x20
-> +#define CHIPREV		0x22
-> +
-> +/* GPIO Simple I/O Base Address registers */
-> +#define GPIO_BASE	0x62
-> +#define GPIO_IOSIZE	8
-> +
-> +/* GPIO polarity inverting registers base */
-> +#define GPIO_PS_BASE	0xb0 /* to 0xb4 */
-> +/* Simple I/O Enable registers base */
-> +#define GPIO_SE_BASE	0xc0 /* to 0xc4 */
-> +#define GPIO_SE_SIZE	5
-> +/* Output Enable registers base */
-> +#define GPIO_OE_BASE	0xc8 /* to 0xcf */
-> +
-> +/* Superio Chip */
-> +
-> +static inline int superio_enter(void)
-> +{
-> +	/*
-> +	 * Try to reserve REG and REG + 1 for exclusive access.
-> +	 */
-> +	if (!request_muxed_region(REG, 2, GPIO_NAME))
-> +		return -EBUSY;
-> +
-> +	outb(0x87, REG);
-> +	outb(0x01, REG);
-> +	outb(0x55, REG);
-> +	outb(0x55, REG);
-> +	return 0;
-> +}
-> +
-> +static inline void superio_exit(void)
-> +{
-> +	outb(0x02, REG);
-> +	outb(0x02, VAL);
-> +	release_region(REG, 2);
-> +}
-> +
-> +static inline void superio_select(int ldn)
-> +{
-> +	outb(LDNREG, REG);
-> +	outb(ldn, VAL);
-> +}
-> +
-> +static inline int superio_inb(int reg)
-> +{
-> +	outb(reg, REG);
-> +	return inb(VAL);
-> +}
-> +
-> +static inline void superio_outb(int val, int reg)
-> +{
-> +	outb(reg, REG);
-> +	outb(val, VAL);
-> +}
-> +
-> +static inline int superio_inw(int reg)
-> +{
-> +	int val;
-> +	outb(reg++, REG);
-> +	val = inb(VAL) << 8;
-> +	outb(reg, REG);
-> +	val |= inb(VAL);
-> +	return val;
-> +}
-> +
-> +static inline void superio_outw(int val, int reg)
-> +{
-> +	outb(reg++, REG);
-> +	outb(val >> 8, VAL);
-> +	outb(reg, REG);
-> +	outb(val, VAL);
-> +}
-> +
-> +static inline void superio_set_bit(int bit, int reg)
-> +{
-> +	u8 curr_val = superio_inb(reg);
-> +	u8 new_val = curr_val | 1 << bit;
-> +
-> +	if (curr_val != new_val)
-> +		superio_outb(new_val, reg);
-> +}
-> +
-> +static inline void superio_clear_bit(int bit, int reg)
-> +{
-> +	u8 curr_val = superio_inb(reg);
-> +	u8 new_val = curr_val & ~(1 << bit);
-> +
-> +	if (curr_val != new_val)
-> +		superio_outb(new_val, reg);
-> +}
-> +
-> +static u16 gpio_ba;
-> +
-> +static int it87_gpio_request(struct gpio_chip *gc, unsigned gpio_num)
-> +{
-> +	u8 bit, group;
-> +	int rc;
-> +
-> +	bit = gpio_num % 8;
-> +	group = (gpio_num / 8);
-> +
-> +	if ((rc = superio_enter()))
-> +		return rc;
-> +
-> +	/* enable Simple I/O on the GPIO pin, removing alternate
-> +	 * function; only the first five groups are programmable as
-> +	 * either Simple I/O or alternate function, the final free are
-> +	 * always set to Simple I/O.
-> +	 *
-> +	 * This might differ depending on chip type so it could have
-> +	 * to be made configurable.
-> +	 */
-> +	if (group >= GPIO_SE_SIZE)
-> +		superio_set_bit(bit, group + GPIO_SE_BASE);
-> +
-> +	/* clear output enable, setting the pin to input, as all the
-> +	 * newly-exported GPIO interfaces are set to input.
-> +	 */
-> +	superio_clear_bit(bit, group + GPIO_OE_BASE);
-> +
-> +	superio_exit();
-> +
-> +	return 0;
-> +}
-> +
-> +static int it87_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
-> +{
-> +	u16 reg;
-> +	u8 bit;
-> +
-> +	bit = gpio_num % 8;
-> +	reg = (gpio_num / 8) + gpio_ba;
-> +
-> +	return !!(inb(reg) & (1 << bit));
-> +}
-> +
-> +static int it87_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
-> +{
-> +	u8 bit, group;
-> +	int rc;
-> +
-> +	bit = gpio_num % 8;
-> +	group = (gpio_num / 8);
-> +
-> +	if ((rc = superio_enter()))
-> +		return rc;
-> +
-> +	/* clear the output enable bit */
-> +	superio_clear_bit(bit, group + GPIO_OE_BASE);
-> +
-> +	superio_exit();
-> +
-> +	return 0;
-> +}
-> +
-> +static void it87_gpio_set(struct gpio_chip *gc,
-> +			  unsigned gpio_num, int val)
-> +{
-> +	unsigned long flags;
-> +	u8 curr_vals, bit;
-> +	u16 reg;
-> +
-> +	bit = gpio_num % 8;
-> +	reg = (gpio_num / 8) + gpio_ba;
-> +
-> +	curr_vals = inb(reg);
-> +	if (val)
-> +		outb(curr_vals | (1 << bit) , reg);
-> +	else
-> +		outb(curr_vals & ~(1 << bit), reg);
-> +}
-> +
-> +static int it87_gpio_direction_out(struct gpio_chip *gc,
-> +				   unsigned gpio_num, int val)
-> +{
-> +	u8 bit, group;
-> +	int rc;
-> +
-> +	bit = gpio_num % 8;
-> +	group = (gpio_num / 8);
-> +
-> +	if ((rc = superio_enter()))
-> +		return rc;
-> +
-> +	/* set the output enable bit */
-> +	superio_set_bit(bit, group + GPIO_OE_BASE);
-> +
-> +	it87_gpio_set(gc, gpio_num, val);
-> +
-> +	superio_exit();
-> +
-> +	return 0;
-> +}
-> +
-> +/* ITE documentation refers to the GPIO registers as coordinates of
-> + * group/bit; we alias them as otherwise it becomes hard to find a
-> + * correlation between the chip's offsets and the names in the
-> + * documentation.
-> + */
-> +static const char *const it87_gpio_aliases[] = {
-> +	"it87_gp10",
-> +	"it87_gp11",
-> +	"it87_gp12",
-> +	"it87_gp13",
-> +	"it87_gp14",
-> +	"it87_gp15",
-> +	"it87_gp16",
-> +	"it87_gp17",
-> +	"it87_gp20",
-> +	"it87_gp21",
-> +	"it87_gp22",
-> +	"it87_gp23",
-> +	"it87_gp24",
-> +	"it87_gp25",
-> +	"it87_gp26",
-> +	"it87_gp27",
-> +	"it87_gp30",
-> +	"it87_gp31",
-> +	"it87_gp32",
-> +	"it87_gp33",
-> +	"it87_gp34",
-> +	"it87_gp35",
-> +	"it87_gp36",
-> +	"it87_gp37",
-> +	"it87_gp40",
-> +	"it87_gp41",
-> +	"it87_gp42",
-> +	"it87_gp43",
-> +	"it87_gp44",
-> +	"it87_gp45",
-> +	"it87_gp46",
-> +	"it87_gp47",
-> +	"it87_gp50",
-> +	"it87_gp51",
-> +	"it87_gp52",
-> +	"it87_gp53",
-> +	"it87_gp54",
-> +	"it87_gp55",
-> +	"it87_gp56",
-> +	"it87_gp57",
-> +	"it87_gp60",
-> +	"it87_gp61",
-> +	"it87_gp62",
-> +	"it87_gp63",
-> +	"it87_gp64",
-> +	"it87_gp65",
-> +	"it87_gp66",
-> +	"it87_gp67",
-> +	"it87_gp70",
-> +	"it87_gp71",
-> +	"it87_gp72",
-> +	"it87_gp73",
-> +	"it87_gp74",
-> +	"it87_gp75",
-> +	"it87_gp76",
-> +	"it87_gp77",
-> +	"it87_gp80",
-> +	"it87_gp81",
-> +	"it87_gp82",
-> +	"it87_gp83",
-> +	"it87_gp84",
-> +	"it87_gp85",
-> +	"it87_gp86",
-> +	"it87_gp87"
-> +};
-> +
-> +static struct gpio_chip it87_gpio_chip = {
-> +	.label			= GPIO_NAME,
-> +	.owner			= THIS_MODULE,
-> +	.request		= it87_gpio_request,
-> +	.get			= it87_gpio_get,
-> +	.direction_input	= it87_gpio_direction_in,
-> +	.set			= it87_gpio_set,
-> +	.direction_output	= it87_gpio_direction_out,
-> +	.names			= it87_gpio_aliases
-> +};
-> +
-> +static int __init it87_gpio_init(void)
-> +{
-> +	int rc = 0;
-> +	u8 chip_rev;
-> +	u16 chip_type;
-> +
-> +	if ((rc = superio_enter()))
-> +		return rc;
-> +
-> +	chip_type = superio_inw(CHIPID);
-> +	chip_rev  = superio_inb(CHIPREV) & 0x0f;
-> +	superio_exit();
-> +
-> +	switch(chip_type) {
-> +	case IT8728_ID:
-> +		break;
-> +	case NO_DEV_ID:
-> +		printk(KERN_ERR PFX "no device\n");
-> +		return -ENODEV;
-> +	default:
-> +		printk(KERN_ERR PFX
-> +		       "Unknown Chip found, Chip %04x Revision %x\n",
-> +		       chip_type, chip_rev);
-> +		return -ENODEV;
-> +	}
-> +
-> +	if ((rc = superio_enter()))
-> +		return rc;
-> +
-> +	superio_select(GPIO);
-> +
-> +	/* fetch GPIO base address */
-> +	gpio_ba = superio_inw(GPIO_BASE);
-> +
-> +	superio_exit();
-> +
-> +	if (!request_region(gpio_ba, GPIO_IOSIZE, GPIO_NAME))
-> +		return -EBUSY;
-> +
-> +	it87_gpio_chip.base = -1;
-> +	it87_gpio_chip.ngpio = 64;
-> +
-> +	if ((rc = gpiochip_add(&it87_gpio_chip)) < 0)
-> +		goto gpiochip_add_err;
-> +
-> +	return 0;
-> +
-> +gpiochip_add_err:
-> +	release_region(gpio_ba, GPIO_IOSIZE);
-> +	gpio_ba = 0;
-> +	return rc;
-> +}
-> +
-> +static void __exit it87_gpio_exit(void)
-> +{
-> +	if (gpio_ba) {
-> +		int ret = gpiochip_remove(&it87_gpio_chip);
-> +
-> +		WARN(ret, "%s(): gpiochip_remove() failed, ret=%d\n",
-> +				__func__, ret);
-> +
-> +		release_region(gpio_ba, GPIO_IOSIZE);
-> +		gpio_ba = 0;
-> +	}
-> +}
-> +module_init(it87_gpio_init);
-> +module_exit(it87_gpio_exit);
-> +
-> +MODULE_AUTHOR("Diego Elio Pettenò <flameeyes@flameeyes.eu>");
-> +MODULE_DESCRIPTION("GPIO interface for IT87xx Super I/O chips");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.7.8.5
-> 
-> 
+>> > +       if (ti->len > i_size_read(v->data_dev->bdev->bd_inode) >> SECTOR_SHIFT) {
+>> > +               ti->error = "Data device si too small";
+>>
+>> s/si/is
+>>
+>> Should this also check ti->start + ti->len to ensure it isn't reading
+>> off the end or do you just rely on the requests failing?
+>
+> ti->start is the offset in the target table --- so it shouldn't be checked
+> here (for example, you can map a verity device having 1024 blocks to a
+> sector offset 1000000 in the table --- so ti->start == 1000000 and ti->len
+> == 1024 --- in this case, you have test that the underlying device has at
+> least 1024 blocks, but you shouldn't test it for 1000000 sectors ---
+> 1000000 is offset in the table, not required device size.
+>
+> But this reminds me that I had the size test wrong in verity_map ...
+> fixed.
+
+Well at least some good came of it!  I typed ti->start, but I had mean
+v->data_start.  However, I was misinterpreting the i_size_read as
+giving the last sector not the actual size, so my comment was still
+pointless.
+
+>> > +MODULE_AUTHOR("Mikulas Patocka <mpatocka@redhat.com>");
+>>
+>> As per linux/module.h, I'd welcome additional authors as per the
+>> lkml/patch lineage:
+>> MODULE_AUTHOR("Mandeep Baines <msb@chromium.org>");
+>> MODULE_AUTHOR("Will Drewry <wad@chromium.org>");
+>
+> OK, I added you there.
+
+Very much appreciated.
+
+>> Regardless, I'll just be happy to see this functionality merge.
+>>
+>> > +MODULE_DESCRIPTION(DM_NAME " target for transparent disk integrity checking");
+>> > +MODULE_LICENSE("GPL");
+>> > +
+>> > Index: linux-3.3-rc6-fast/drivers/md/dm-bufio.c
+>>
+>> This should be in a separate patch I think.
+>
+> Yes, it is a separate patch.
+>
+>> >                b->hold_count++;
+>>
+>> Are these hold_counts safe on architectures with weak memory models?
+>> Should they be atomic_ts?   I haven't looked at them in context, but
+>> based on what I see here they make me a bit nervous.
+>>
+>> Thanks for jumping in to the fray!  None of my comments are blocking,
+>> so I believe the following is appropriate (if not
+>> s/Signed-off/Reviewed-by/).
+>>
+>> Signed-off-by: Will Drewry <wad@chromium.org>
+>>
+>> cheers!
+>> will
+>
+> hold_count is read or changed only when we hold dm_bufio_client->lock, so
+> it doesn't have to be atomic.
+
+Ah nice!  The little snippet had me worried, but I should've looked at
+the full context first.
+
+Thanks!
+will
