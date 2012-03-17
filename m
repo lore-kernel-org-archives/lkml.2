@@ -1,31 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab2CQW4f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 18:56:35 -0400
-Received: from hubcas.tamug.edu ([165.95.48.117]:55360 "EHLO mail.tamug.edu"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751799Ab2CQW4c convert rfc822-to-8bit (ORCPT
+	id S1755559Ab2CQXBS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 19:01:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43266 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab2CQXBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 18:56:32 -0400
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Mar 2012 18:56:32 EDT
-From: William Pickavance <pickavance@tamug.edu>
-Date: Sat, 17 Mar 2012 17:52:00 -0500
-Subject: E-mail to (thomasedward16@ymail.com)
-Thread-Topic: E-mail to (thomasedward16@ymail.com)
-Thread-Index: AQHNBJCQVSGFdmxJjkCuNzb+S3Qvcg==
-Message-ID: <C33F5A2CF82D34429AC9156AD255C53A8213C3912D@MAILBOX.tamug.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sat, 17 Mar 2012 19:01:15 -0400
+Date: Sat, 17 Mar 2012 16:01:09 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] MFD: da9052-i2c - add some section annotations
+Message-ID: <20120317230108.GA19068@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+da9052_i2c_remove() can and should be marked as __devexit.
 
-You Have WON $500,000 USD in Coca Cola Company @West Africa yearly promo.To qualify; Email the correct answer to the question given below to Mr Thomas Edward via (thomasedward16@ymail.com<mailto:thomasedward16@ymail.com>) Question: Who won the 2010 FIFA World Cup in South Africa? (A)England(B)Spain (C)Germany (D)Brazil.
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+ drivers/mfd/da9052-i2c.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
+index 44b97c7..f99685a 100644
+--- a/drivers/mfd/da9052-i2c.c
++++ b/drivers/mfd/da9052-i2c.c
+@@ -87,7 +87,7 @@ err:
+ 	return ret;
+ }
+ 
+-static int da9052_i2c_remove(struct i2c_client *client)
++static int __devexit da9052_i2c_remove(struct i2c_client *client)
+ {
+ 	struct da9052 *da9052 = i2c_get_clientdata(client);
+ 
+@@ -107,7 +107,7 @@ static struct i2c_device_id da9052_i2c_id[] = {
+ 
+ static struct i2c_driver da9052_i2c_driver = {
+ 	.probe = da9052_i2c_probe,
+-	.remove = da9052_i2c_remove,
++	.remove = __devexit_p(da9052_i2c_remove),
+ 	.id_table = da9052_i2c_id,
+ 	.driver = {
+ 		.name = "da9052",
+
+-- 
+Dmitry
