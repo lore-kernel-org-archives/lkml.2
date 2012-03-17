@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab2CQFKo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 01:10:44 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42628 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab2CQFKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 01:10:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=WF75TCuuwrcwzYPZ0rflxsHWQQuKhyCXxnlfeqDxw2xfRFRYu3pWGBTB
-	lxndZ2FIAsoNcZHohZSC1En6s+8JhQf2nzcx5KQqNeAEKxIQIW4G+0pHoV7IGviO
-	yBvEaLfC1LjGjpy85SEG3j+A52xxFVJIysMRDafWvDWLRrPaNFA=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Please discuss: what "git push" should do when you do not say what
- to push?
-Mail-Followup-To: git@vger.kernel.org
-Date: Fri, 16 Mar 2012 22:10:39 -0700
-Message-ID: <7v7gyjersg.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 8AC6CE66-6FEF-11E1-AA84-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1030544Ab2CQFYD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 01:24:03 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39531 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030188Ab2CQFX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 01:23:58 -0400
+Date: Fri, 16 Mar 2012 22:23:52 -0700 (PDT)
+Message-Id: <20120316.222352.1067507516750800594.davem@davemloft.net>
+To: santoshprasadnayak@gmail.com
+Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 3/3 v3] netxen: qlogic ethernet : Fix endian bug.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1331629104-3283-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1331629104-3283-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 16 Mar 2012 22:23:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a proposal to change the default behaviour of 'git push' on the
-Git mailing list. The goal of this message is to encourage you to discuss
-it before it happens (or the change is aborted, depending on the outcome
-of the discussion).
+From: santosh nayak <santoshprasadnayak@gmail.com>
+Date: Tue, 13 Mar 2012 14:28:24 +0530
 
-In the current setting (i.e. push.default=matching), 'git push' without
-argument will push all branches that exist locally and remotely with the
-same name. This is usually appropriate when a developer pushes to his own
-public repository, but may be confusing if not dangerous when using a
-shared repository. The proposal is to change the default to 'upstream',
-i.e. push only the current branch, and push it to the branch 'git pull'
-would pull from. Another candidate is 'current'; this pushes only the
-current branch to the remote branch of the same name.
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> 
+> Change the datatype of "ip_addr" to __be32 as 'ip' should be in
+> big endian format.
+> 
+> Adapter needs "ip address" in big endian format stored at lower 32bit
+> of req.word[1]. netxen_config_ipaddr() now receives 'ip' in big endian
+> format. To satisfy adapter's need, use memcpy() to copy byte by byte
+> of 'ip' into lower 32bit of req.word[1].
+> 
+> Mac address and serial number of adapter need to be in little endian format.
+> Change the data type of the related  variables to __le32 / __le64 or cast it
+> explicitly to __le32 / __le64 depending upon the requirement.
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-For more details on the behavior of Git with these values, read the
-documentation about 'push.default' in 'man git-config'
-(http://schacon.github.com/git/git-config.html).
-
-You may be negatively affected when such a change happens if you do not
-see anything in the output from 'git config push.default' and if you rely
-on the default that pushes all your matching branches. On the other hand,
-you may want to see the default behaviour to change, especially if you are
-using shared repositories. In either case, please join the discussion to
-give us more data point and help us decide the future of Git. Also, if
-you think your friends and colleagues will be affected by this change,
-either positively or negatively, please tell them about this discussion.
-
-What has been discussed so far can be seen in this thread:
-
-    http://thread.gmane.org/gmane.comp.version-control.git/192547/focus=192694
-
-Previous relevant discussions include:
-
-    http://thread.gmane.org/gmane.comp.version-control.git/123350/focus=123541
-    http://thread.gmane.org/gmane.comp.version-control.git/166743
-
-To join the discussion, send your messages to:
-
-    git@vger.kernel.org
-
-The list accepts messages from non-subscribers, and you do not have to ask
-"please Cc me, I am not subscribed", as it's customary to Cc: posters when
-replying on this list.
+Applied.
