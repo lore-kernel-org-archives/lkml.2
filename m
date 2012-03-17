@@ -1,220 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab2CQDGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 23:06:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48145 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab2CQDGM convert rfc822-to-8bit (ORCPT
+	id S1753383Ab2CQDYL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 23:24:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:11226 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2CQDYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 23:06:12 -0400
+	Fri, 16 Mar 2012 23:24:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6651"; a="173319466"
+Message-ID: <4F6403CD.8020509@codeaurora.org>
+Date: Fri, 16 Mar 2012 20:23:57 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1203152149190.20644@file.rdu.redhat.com>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
-	<Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
-	<20120306215947.GB27051@google.com>
-	<Pine.LNX.4.64.1203131742230.24876@file.rdu.redhat.com>
-	<CABqD9hYUVpC-NQ_WQ5bH8ZxLein+zxHQHDGJzwyRWHokMiPSbg@mail.gmail.com>
-	<Pine.LNX.4.64.1203152149190.20644@file.rdu.redhat.com>
-Date: Fri, 16 Mar 2012 22:06:10 -0500
-Message-ID: <CABqD9hav7MCrCfJ-5k0duvitXh2AOSk2of1MFZZmyv=kmoXb8w@mail.gmail.com>
-Subject: Re: [PATCH] dm: remake of the verity target
-From: Will Drewry <wad@chromium.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
-        Elly Jones <ellyjones@chromium.org>, Milan Broz <mbroz@redhat.com>,
-        Olof Johansson <olofj@chromium.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Sascha Hauer <s.hauer@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org> <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120303133158.GA26882@pengutronix.de> <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com> <20120304115201.GB26882@pengutronix.de> <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com> <20120305073836.GU3852@pengutronix.de> <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com> <20120306190039.GJ3852@pengutronix.de> <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+In-Reply-To: <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 8:16 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> Hi Will
->
->
-> On Wed, 14 Mar 2012, Will Drewry wrote:
->
->> Hi Mikulas,
+On 03/07/2012 01:20 PM, Turquette, Mike wrote:
+> On Tue, Mar 6, 2012 at 11:00 AM, Sascha Hauer<s.hauer@pengutronix.de>  wrote:
+>> On Mon, Mar 05, 2012 at 12:03:15PM -0800, Turquette, Mike wrote:
+>>> On Sun, Mar 4, 2012 at 11:38 PM, Sascha Hauer<s.hauer@pengutronix.de>  wrote:
+>>>> On Sun, Mar 04, 2012 at 04:12:21PM -0800, Turquette, Mike wrote:
+>>>>>>>
+>>>>>>> I believe this patch already does what you suggest, but I might be
+>>>>>>> missing your point.
+>>>>>>
+>>>>>> In include/linux/clk-private.h you expose struct clk outside the core.
+>>>>>> This has to be done to make static initializers possible. There is a big
+>>>>>> warning in this file that it must not be included from files implementing
+>>>>>> struct clk_ops. You can simply avoid this warning by declaring struct clk
+>>>>>> with only a single member:
+>>>>>>
+>>>>>> include/linux/clk.h:
+>>>>>>
+>>>>>> struct clk {
+>>>>>>         struct clk_internal *internal;
+>>>>>> };
+>>>>>>
+>>>>>> This way everybody knows struct clk (thus can embed it in their static
+>>>>>> initializers), but doesn't know anything about the internal members. Now
+>>>>>> in drivers/clk/clk.c you declare struct clk_internal exactly like struct
+>>>>>> clk was declared before:
+>>>>>>
+>>>>>> struct clk_internal {
+>>>>>>         const char              *name;
+>>>>>>         const struct clk_ops    *ops;
+>>>>>>         struct clk_hw           *hw;
+>>>>>>         struct clk              *parent;
+>>>>>>         char                    **parent_names;
+>>>>>>         struct clk              **parents;
+>>>>>>         u8                      num_parents;
+>>>>>>         unsigned long           rate;
+>>>>>>         unsigned long           flags;
+>>>>>>         unsigned int            enable_count;
+>>>>>>         unsigned int            prepare_count;
+>>>>>>         struct hlist_head       children;
+>>>>>>         struct hlist_node       child_node;
+>>>>>>         unsigned int            notifier_count;
+>>>>>> #ifdef CONFIG_COMMON_CLK_DEBUG
+>>>>>>         struct dentry           *dentry;
+>>>>>> #endif
+>>>>>> };
+>>>>>>
+>>>>>> An instance of struct clk_internal will be allocated in
+>>>>>> __clk_init/clk_register. Now the private data stays completely inside
+>>>>>> the core and noone can abuse it.
+>>>>>
+>>>>> Hi Sascha,
+>>>>>
+>>>>> I see the disconnect here.  For OMAP (and possibly other platforms) at
+>>>>> least some clock data is necessary during early boot, before the
+>>>>> regular allocation methods are available (timers for instance).
+>>>>
+>>>> We had this problem on i.MX aswell. It turned out that the timer clock
+>>>> is the only clock that is needed so early. We solved this by moving the
+>>>> clock init to the system timer init function.
+>>>
+>>> When you say "mov[ed] the clock init to the system timer init
+>>> function" do you mean that you statically allocated struct clk and
+>>> used the clk framework api, or instead you just did some direct
+>>> register writes to initialize things properly?
 >>
->> This is a nice rewrite and takes advantage of your dm-bufio layer. I
->> wish it'd existed (and or we wrote it :) in 2009 when we started this
->> work!  Some comments below:
+>> I meant that on i.MX we do the clock tree initialization when kmalloc is
+>> available, see the attached patch for omap4 based on your branch which
+>> does the same for Omap. The first clock you need is the one for the
+>> timer, so you can initialize the clocktree at the beginning of
+>> time_init() and don't need statically initialized clocks anymore.
 >>
->> > ---
->> > +static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
->> > +{
->> > +       int i;
->> > +       for (i = v->levels - 2; i >= 0; i--) {
->> > +               sector_t hash_block_start;
->> > +               sector_t hash_block_end;
->> > +               verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
->> > +               verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
->> > +               if (!i) {
->> > +                       unsigned cluster = prefetch_cluster;
->> > +        /* barrier to stop GCC from re-reading prefetch_cluster again */
->> > +                       barrier();
->> > +                       cluster >>= v->data_dev_block_bits;
+>>>>
+>>>> Well, the file is work in progress, you probably fix this before sending
+>>>> it out, but I bet people will include clk-private.h and nobody else
+>>>> notices it.
+>>>
+>>> clock44xx_data.c does not violate that rule.  None of the logic that
+>>> implements ops for those clocks is present clock44xx_data.c.
 >>
->> Would:
->>   unsigned cluster = prefetch_cluster >> v->data_dev_block_bits;
->> not have similar behavior without a barrier?  (Yeah yeah I could
->> compile and see, but I was curious if you already had.)
+>> Indeed, I missed that. It only has the ops but not the individual
+>> functions.
 >>
->> Since the max iterations here is 61 in a worst-case, I don't think
->> it's a big deal to barrier() each time, just thought I'd ask.
+>>> All of
+>>> the code in that file is simply initialization and registration of
+>>> OMAP4 clocks.  Many of the clocks are basic clock types (divider,
+>>> multiplexer and fixed-rate are used in that file) with protected code
+>>> drivers/clk/clk-*.c and the remaining clocks are of the struct
+>>> clk_hw_omap variety, which has code spread across several files:
+>>>
+>>> arch/arm/mach-omap2/clock.c
+>>> arch/arm/mach-omap2/clock.h
+>>> arch/arm/mach-omap2/clkt_dpll.c
+>>> arch/arm/mach-omap2/clkt_clksel.c
+>>> arch/arm/mach-omap2/dpll3xxx.c
+>>> arch/arm/mach-omap2/dpll4xxx.c
+>>>
+>>> All of the above files include linux/clk-provider.h, not
+>>> linux/clk-private.h.  That code makes heavy use of the
+>>> __clk_get_whatever helpers and shows how a platform might honor the
+>>> layer of separation between struct clk and stuct clk_ops/struct
+>>> clk_foo.  You are correct that the code is a work-in-progress, but
+>>> there are no layering violations that I can see.
+>>>
+>>> I also think we are talking past each other to some degree.  One point
+>>> I would like to make (and maybe you already know this from code
+>>> review) is that it is unnecessary to have pointers to your parent
+>>> struct clk*'s when either initializing or registering your clocks.  In
+>>> fact the existing clk_register_foo functions don't even allow you to
+>>> pass in parent pointers and rely wholly on string name matching.  I
+>>> just wanted to point that out in case it went unnoticed, as it is a
+>>> new way of doing things from the previous series and was born out of
+>>> Thomas' review of V4 and multi-parent handling.  This also keeps
+>>> device-tree in mind where we might not know the struct clk *pointer at
+>>> compile time for "connecting" discrete devices.
 >>
->> > +                       if (unlikely(!cluster))
->> > +                               goto no_prefetch_cluster;
->> > +                       if (unlikely(cluster & (cluster - 1)))
->> > +                               cluster = 1 << (fls(cluster) - 1);
->> > +
->> > +                       hash_block_start &= ~(sector_t)(cluster - 1);
->> > +                       hash_block_end |= cluster - 1;
->> > +                       if (unlikely(hash_block_end >= v->hash_blocks))
->> > +                               hash_block_end = v->hash_blocks - 1;
->> > +               }
->> > +no_prefetch_cluster:
->> > +               dm_bufio_prefetch(v->bufio, hash_block_start,
->> > +                                       hash_block_end - hash_block_start + 1);
+>> Yes, I've seen this and I really like it. Also the change that
+>> multiplexers return an index to an array instead of the parent
+>> clock is very nice.
+>>
+>> Sascha
+>>
+>>
+>> 8<-----------------------------------------------------
+>>
+>> ARM omap4: move clocktree init to timer init time so we don't need static clocks
+>>
+>> Signed-off-by: Sascha Hauer<s.hauer@pengutronix.de>
 >
-> The problem here is this. If you look at the code, you think that after
-> the clause "if (unlikely(!cluster)) goto no_prefetch_cluster;", cluster
-> can't be zero. But this assumption is wrong. The C compiler is allowed to
-> transform the above code into:
->
-> unsigned cluster;
-> if (!(prefetch_cluster >> v->data_dev_block_bits))
->        goto no_prefetch_cluster;
-> cluster = prefetch_cluster >> v->data_dev_block_bits;
-> if (unlikely(cluster & (cluster - 1)))
->        cluster = 1 << (fls(cluster) - 1);
->
-> I know it's suboptimal, but the C compiler is just allowed to perform this
-> transformation. Now, if you know that "prefetch_cluster" can change
-> asynchronously by another thread running simultaneously, the condition "if
-> (!(prefetch_cluster >> v->data_dev_block_bits))" is useless ---
-> prefetch_cluster may change just after this condition and we won't catch
-> the zero value. (if the cluster value is zero in the above code, it ends
-> up in hash_block_end being ORed with -1 and the prefetch goes wild over
-> the whole hash device).
->
-> That's why I put that "barrier()" there. It would be better to declare
-> "prefetch_cluster" as volatile, but the module param macros issue warnings
-> if the variable is volatile.
->
-> Or maybe I can change it this way:
-> "unsigned cluster = *(volatile unsigned *)&prefetch_cluster", it could be
-> better than the "barrier()".
 
-I think that'd read a little bit more clearly, and I think the C
-standard supports that approach. If it doesn't work in practice, the
-barrier isn't the worst.
+Hi Mike,
 
->> > +       case STATUSTYPE_TABLE:
->> > +               DMEMIT("%u %s %s %llu %u %s ",
->> > +                       0,
->> > +                       v->data_dev->name,
->> > +                       v->hash_dev->name,
->>
->> I understand the new approach is to use major:minor instead of the
->> device name.  I don't care which, but I believe agk@ requested that.
->
-> All the device mappers report dm_dev->name in their status routine, so I
-> do it this way too.
->
->> > +static int verity_ioctl(struct dm_target *ti, unsigned cmd,
->> > +                       unsigned long arg)
->> > +{
->> > +       struct dm_verity *v = ti->private;
->> > +       int r = 0;
->> > +
->> > +       if (v->data_start ||
->> > +           ti->len != i_size_read(v->data_dev->bdev->bd_inode) >> SECTOR_SHIFT)
->> > +               r = scsi_verify_blk_ioctl(NULL, cmd);
->> > +
->>
->> Is it worth supporting ioctl at all given these hoops?  Nothing stops
->> a privileged user from directly running the ioctl on the underlying
->> device/devices, it's just very inconvenient :)
->
-> I don't know. The other dm targets attempt to pass-thru ioctls too.
->
-> You need ioctl pass-thru if you want to run it over a cd-rom because
-> the iso9660 filesystem needs to send an ioctl to find its superblock.
-> Other than that I don't know if other filesystems need ioctls.
+I already took a quick look at the v7 series, but I thought this thread 
+has more relevant context for my response. So, responding here.
 
-Makes sense. I just think the passthrough condition is ugly, but at
-least it provides some support.
+I'm with Sascha on creating a clk_internal/clk_initializer and removing 
+clk_hw. You had asked about the benefits of his suggestion in one of the 
+earlier threads. I'm sure I have told some of these reasons I don't like 
+clk_hw, but repeating my points here for others to chime in.
 
->> > +       if (ti->len > i_size_read(v->data_dev->bdev->bd_inode) >> SECTOR_SHIFT) {
->> > +               ti->error = "Data device si too small";
->>
->> s/si/is
->>
->> Should this also check ti->start + ti->len to ensure it isn't reading
->> off the end or do you just rely on the requests failing?
+I used to be a huge proponent for using macros for clocks in our 
+internal tree. All the clocks were constructed using macros (you will 
+see it in the history of tree we publish in CAF). They quickly became 
+unreadable when you have several hundreds of clocks. The biggest problem 
+is that you can't quickly look at a clock's macro and figure out what 
+the register offset or bit mask or shift value is. Our eyes/brains 
+aren't meant for quickly parsing the commas and finding the n-th field 
+or even remembering what the n-th field of each macro corresponds to. If 
+it's actually broken out as fields in a struct, it's much easier to 
+read. So, long story short, I think the well-intentioned helper macros 
+will make code quite unreadable.
+
+I also don't want to maintain such helper macros for the platform 
+specific clock types that I will have to create for MSM if I were to go 
+with macros.
+
+If I choose not to use the helper macros, then I need to define three 
+separate declarations for each clock. That looks messy when you have 
+100s of clocks.
+
+With clk_initializer, we also don't have to keep changing the 
+clk_init/clk_register APIs whenever we add any other optional fields in 
+the future. You just add it to clk_initializer and if people care for 
+those fields, they can add it to the static/dynamic clocks.
+
+Whether we use a macro or not, the current approach also adds twice the 
+the no. of symbols in the debug info and increases the size of the 
+kernel. When we go for a single ARM kernel, this is going to be 
+noticeable. I agree that the point about debuginfo size increase might 
+not matter to most.
+
+> Hi Sascha,
 >
-> ti->start is the offset in the target table --- so it shouldn't be checked
-> here (for example, you can map a verity device having 1024 blocks to a
-> sector offset 1000000 in the table --- so ti->start == 1000000 and ti->len
-> == 1024 --- in this case, you have test that the underlying device has at
-> least 1024 blocks, but you shouldn't test it for 1000000 sectors ---
-> 1000000 is offset in the table, not required device size.
+> Thanks for the example code.  This is in fact something I had
+> considered doing before, but it is a bit complicated for my platform.
 >
-> But this reminds me that I had the size test wrong in verity_map ...
-> fixed.
+> We set up all of the OMAP clocks with __clk_init because this is a
+> dependency of OMAP's hwmod code which models and interacts with
+> specific resources for hardware modules, such as clocks.  There are
+> other dependencies such as our clockdomain code, which needs the
+> clocks to be fully initialized.  Some aspects of these layers get
+> init'd before we can allocate memory.
 
-Well at least some good came of it!  I typed ti->start, but I had mean
-v->data_start.  However, I was misinterpreting the i_size_read as
-giving the last sector not the actual size, so my comment was still
-pointless.
+I know there is a version of OMAP hwmod in upstream, but is this 
+dependency of fully initialized clock struct a requirement for the 
+upstream version of hwmod or an internal OMAP tree? I will explain the 
+reason for this question further down.
 
->> > +MODULE_AUTHOR("Mikulas Patocka <mpatocka@redhat.com>");
->>
->> As per linux/module.h, I'd welcome additional authors as per the
->> lkml/patch lineage:
->> MODULE_AUTHOR("Mandeep Baines <msb@chromium.org>");
->> MODULE_AUTHOR("Will Drewry <wad@chromium.org>");
->
-> OK, I added you there.
+> Admittedly I think that the OMAP code could migrate some of these bits
+> to a lazy-registration model, specifically the hwmod object instances,
+> but that requires an awful lot of refactoring for a fairly large stack
+> of platform code.  This might be something to achieve in the future
+> but for now we *need* initialisation to be fully static.
 
-Very much appreciated.
+When we work on moving clocks to device tree, wouldn't you face the same 
+problem? You will have to dynamically create most of the clocks in that 
+case too.
 
->> Regardless, I'll just be happy to see this functionality merge.
->>
->> > +MODULE_DESCRIPTION(DM_NAME " target for transparent disk integrity checking");
->> > +MODULE_LICENSE("GPL");
->> > +
->> > Index: linux-3.3-rc6-fast/drivers/md/dm-bufio.c
->>
->> This should be in a separate patch I think.
->
-> Yes, it is a separate patch.
->
->> >                b->hold_count++;
->>
->> Are these hold_counts safe on architectures with weak memory models?
->> Should they be atomic_ts?   I haven't looked at them in context, but
->> based on what I see here they make me a bit nervous.
->>
->> Thanks for jumping in to the fray!  None of my comments are blocking,
->> so I believe the following is appropriate (if not
->> s/Signed-off/Reviewed-by/).
->>
->> Signed-off-by: Will Drewry <wad@chromium.org>
->>
->> cheers!
->> will
->
-> hold_count is read or changed only when we hold dm_bufio_client->lock, so
-> it doesn't have to be atomic.
+> Assuming that some day OMAP code can be refactored to allow for lazy
+> (or at least initcall-based) registration of clocks then perhaps your
+> suggestion can take root.  Which leads me to this question: are there
+> any other platforms out there that require the level of expose to
+> struct clk present in this patchset?  OMAP does, for now, but if that
+> changes then I need to know if others require this as well.
 
-Ah nice!  The little snippet had me worried, but I should've looked at
-the full context first.
+MSM platform doesn't need exposure to clk_internal or the corresponding 
+fields in clk. We too have the timer issue, but I would rather deal with 
+the timer separately (using register writes from the timer code) than 
+ugly up the 200+ clocks we have on each SoC.
 
-Thanks!
-will
+Getting to suggesting a solution, how about we go with something similar 
+to Sasha's suggestion:
+* Put clk_inititalizer in clk-provider.h
+* clk-provider.h has a forward declaration to clk (struct clk;)
+* Put struct clk and struct clk_internal in a clk-private.h or whatever.
+* Add a struct *clk field to struct clk_initializer (this is temporary).
+
+
+For platforms that don't have the static init limitations you mention, 
+they can do something like this:
+
+#include <linux/clk-provider.h>
+
+struct clk_complex {
+	struct clk_initializer i;
+	u32 foo;
+	u32 bar;
+	u8 baz;
+};
+
+struct clk_complex mmc1_clk {
+	foo = 5,
+	bar = 10,
+	baz = 3,
+	. i = {
+		.name = mmc,
+		.ops = &complex_ops,
+	}
+};
+
+clk_register(NULL, &mmc1_clk.i);
+
+But platforms that have the limitations you mention can do something like:
+
+#include <clk-provider.h>
+#include <clk-private.h>
+
+struct clk __mmc1_clk;
+
+struct clk_complex mmc1_clk {
+	foo = 5,
+	bar = 10,
+	baz = 3,
+	. i = {
+		.name = mmc,
+		.ops = &complex_ops,
+		.clk = &__mmc1_clk;
+	}
+};
+
+clk_init(NULL, &mmc1_clk.i);
+
+I guess another way to look at this is: move all the inputs params in 
+clk_register() to clk_hw and rename clk_hw to clk_initializer.
+
+With the above solutions, those that don't have the OMAP-like 
+limitations can have their code look much cleaner, and OMAP can still 
+continue to work. After the initial conversion of all platform to the 
+common clock framework, we don't allow anyone to ever include 
+clk-private.h. We could even add it to check_patch.pl. Then once 
+everyone fixes their static initialization limitations, we can delete 
+the clk field from clk_initializer and move struct clk to clk.c.
+
+Thoughts?
+
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
