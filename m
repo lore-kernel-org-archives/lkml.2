@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab2CQGNk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 02:13:40 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40130 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703Ab2CQGNf (ORCPT
+	id S1030591Ab2CQGOd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 02:14:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49930 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754703Ab2CQGOa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 02:13:35 -0400
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kay.sievers@vrfy.org, rdunlap@xenotime.net, perex@perex.cz, tiwai@suse.de,
-        davem@davemloft.net, Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: [PATCHES v2 1/2] Documentation: replace install commands with softdeps
-Date: Sat, 17 Mar 2012 03:13:23 -0300
-Message-Id: <1331964803-25570-1-git-send-email-lucas.demarchi@profusion.mobi>
-X-Mailer: git-send-email 1.7.9.4
+	Sat, 17 Mar 2012 02:14:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120317023740.GH12704@decadent.org.uk>
+References: <20120316233829.GA14022@kroah.com>
+	<20120316233811.484341257@linuxfoundation.org>
+	<20120317023740.GH12704@decadent.org.uk>
+Date: Sat, 17 Mar 2012 10:14:29 +0400
+X-Google-Sender-Auth: _YkWLNpaw-EZxFBbRNnf1lX3-HI
+Message-ID: <CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
+Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Install commands should not be used to specify soft dependencies among
-modules. When loading modules it's much better to have a softdep that
-modprobe knows what's being done than having to fork/exec another
-instance of modprobe to load the other module.
+17 Õ¡“‘¡ 2012ö«. 6:37 –œÃÿ⁄œ◊¡‘≈Ãÿ Ben Hutchings <ben@decadent.org.uk> Œ¡–…”¡Ã:
+> On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
+>> 3.2-stable review patch. öIf anyone has any objections, please let me know.
+>>
+>> ------------------
+>>
+>> From: Pavel Shilovsky <piastry@etersoft.ru>
+>>
+>> commit d5751469f210d2149cc2159ffff66cbeef6da3f2 upstream.
+>>
+>> Reorganize the code to make the memory already allocated before
+>> spinlock'ed loop.
+>>
+>> Reviewed-by: Jeff Layton <jlayton@redhat.com>
+>> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+>> Signed-off-by: Steve French <sfrench@us.ibm.com>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>
+>> ---
+>> öfs/cifs/file.c | ö 69 ++++++++++++++++++++++++++++++++++++++++++++++-----------
+>> ö1 file changed, 56 insertions(+), 13 deletions(-)
+>>
+>> --- a/fs/cifs/file.c
+>> +++ b/fs/cifs/file.c
+> [....]
+>> @@ -940,29 +950,55 @@ cifs_push_posix_locks(struct cifsFileInf
+>> ö ö ö ö ö ö ö return rc;
+>> ö ö ö }
+>>
+>> + ö ö lock_flocks();
+>> + ö ö cifs_for_each_lock(cfile->dentry->d_inode, before) {
+>> + ö ö ö ö ö ö if ((*before)->fl_flags & FL_POSIX)
+>> + ö ö ö ö ö ö ö ö ö ö count++;
+>> + ö ö }
+>> + ö ö unlock_flocks();
+>> +
+>> ö ö ö INIT_LIST_HEAD(&locks_to_send);
+>>
+>> + ö ö /*
+>> + ö ö ö* Allocating count locks is enough because no locks can be added to
+>> + ö ö ö* the list while we are holding cinode->lock_mutex that protects
+>> + ö ö ö* locking operations of this inode.
+>> + ö ö ö*/
+>> + ö ö for (; i < count; i++) {
+>> + ö ö ö ö ö ö lck = kmalloc(sizeof(struct lock_to_push), GFP_KERNEL);
+>> + ö ö ö ö ö ö if (!lck) {
+>> + ö ö ö ö ö ö ö ö ö ö rc = -ENOMEM;
+>> + ö ö ö ö ö ö ö ö ö ö goto err_out;
+>> + ö ö ö ö ö ö }
+>> + ö ö ö ö ö ö list_add_tail(&lck->llist, &locks_to_send);
+>> + ö ö }
+>> +
+>> + ö ö i = 0;
+>> + ö ö el = locks_to_send.next;
+>> ö ö ö lock_flocks();
+>> ö ö ö cifs_for_each_lock(cfile->dentry->d_inode, before) {
+>> + ö ö ö ö ö ö if (el == &locks_to_send) {
+>> + ö ö ö ö ö ö ö ö ö ö /* something is really wrong */
+>> + ö ö ö ö ö ö ö ö ö ö cERROR(1, "Can't push all brlocks!");
+>> + ö ö ö ö ö ö ö ö ö ö break;
+>> + ö ö ö ö ö ö }
+>> ö ö ö ö ö ö ö flock = *before;
+>> + ö ö ö ö ö ö if ((flock->fl_flags & FL_POSIX) == 0)
+>> + ö ö ö ö ö ö ö ö ö ö continue;
+> [...]
+>
+> If I understand the logic correctly, el == &locks_to_send means we
+> already used all the lock_to_push structures. ö(It should also be
+> equivalent to testing i == count. öWhy is i incremented but not
+> otherwise used in the loop?)
+>
+> But we test this before flock->fl_flags & FL_POSIX, which means we
+> don't know whether this lock actually needs to be assigned one of
+> those structures. öSo it appears that we might report a spurious error
+> if the lock list ends with a mandatory lock. öIf so, this is
+> relatively harmless but does need to be fixed.
+>
 
-By using a softdep user has also an option to remove the dependencies
-when removing the module (and if its refcount dropped to 0)
+You are right here, thanks for the catch! I will repost the patch asap.
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
----
-
-v2: addressed comments from Takashi Iwai and split the patch in two. There were
-some changes to install commands that are better placed in a separate patch
-
-
- Documentation/networking/bonding.txt    |    3 +--
- Documentation/sound/oss/AudioExcelDSP16 |    4 ++--
- Documentation/sound/oss/README.modules  |    2 +-
- 3 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/networking/bonding.txt b/Documentation/networking/bonding.txt
-index 080ad26..2d38eee 100644
---- a/Documentation/networking/bonding.txt
-+++ b/Documentation/networking/bonding.txt
-@@ -1826,8 +1826,7 @@ an equivalent problem can occur.  In this case, the following can be
- added to modprobe.conf (or modprobe.conf.local, as appropriate), as
- follows (all on one line; it has been split here for clarity):
- 
--install bonding /sbin/modprobe tg3; /sbin/modprobe e1000;
--	/sbin/modprobe --ignore-install bonding
-+softdep bonding pre: tg3 e1000
- 
- 	This will, when loading the bonding module, rather than
- performing the normal action, instead execute the provided command.
-diff --git a/Documentation/sound/oss/AudioExcelDSP16 b/Documentation/sound/oss/AudioExcelDSP16
-index e0dc064..30cfccc 100644
---- a/Documentation/sound/oss/AudioExcelDSP16
-+++ b/Documentation/sound/oss/AudioExcelDSP16
-@@ -54,8 +54,8 @@ Loading MSS and OPL3 needs to pre load the aedsp16 module to set up correctly
- the sound card. Installation dependencies must be written in the modprobe.conf
- file:
- 
--install ad1848 /sbin/modprobe aedsp16 && /sbin/modprobe -i ad1848
--install opl3 /sbin/modprobe aedsp16 && /sbin/modprobe -i opl3
-+softdep ad1848 pre: aedsp16
-+softdep opl3 pre: aedsp16
- 
- Then you must load the sound modules stack in this order:
- sound -> aedsp16 -> [ ad1848, opl3 ]
-diff --git a/Documentation/sound/oss/README.modules b/Documentation/sound/oss/README.modules
-index e691d74..716615a 100644
---- a/Documentation/sound/oss/README.modules
-+++ b/Documentation/sound/oss/README.modules
-@@ -36,7 +36,7 @@ options adlib_card io=0x388     # FM synthesizer
-  Alternatively, if you have compiled in kernel level ISAPnP support:
- 
- alias char-major-14 sb
--post-install sb /sbin/modprobe "-k" "adlib_card"
-+softdep sb post: adlib_card
- options adlib_card io=0x388
- 
-   The effect of this is that the sound driver and all necessary bits and
 -- 
-1.7.9.4
-
+Best regards,
+Pavel Shilovsky.
