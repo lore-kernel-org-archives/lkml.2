@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946198Ab2CQAeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Mar 2012 20:34:10 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37131 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031537Ab2CQAeI (ORCPT
+	id S1946563Ab2CQArb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Mar 2012 20:47:31 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33516 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946041Ab2CQAr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Mar 2012 20:34:08 -0400
+	Fri, 16 Mar 2012 20:47:26 -0400
+Message-ID: <4F63DF17.3070603@linaro.org>
+Date: Fri, 16 Mar 2012 17:47:19 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <201203170123.10599.rjw@sisk.pl>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203162357.10770.rjw@sisk.pl>
- <CA+55aFwTZjLHvZLBuNG-aO-+ex_yTYfaqOGqQ+6Krx9Z7EUNQQ@mail.gmail.com> <201203170123.10599.rjw@sisk.pl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 16 Mar 2012 17:33:45 -0700
-X-Google-Sender-Auth: o-wjCDgYhzNxaTECnYNeSn9Pl_A
-Message-ID: <CA+55aFxiJABjKJz4J6Dwk8Jy4=Vds2P15XTVtX8_j6TDkTwXEg@mail.gmail.com>
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is
- not yet available
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Christian Lamparter <chunkeey@googlemail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: John Stultz <john.stultz@linaro.org>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] fadvise volatile fixes from Dmitry
+References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org> <1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031700-4242-0000-0000-00000112EDF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 5:23 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> OK, but that asynchronous thread needs to know whether or not the system is up.
+On 03/16/2012 03:51 PM, John Stultz wrote:
+> This patch provides new fadvise flags that can be used to mark
+> file pages as volatile, which will allow it to be discarded if the
+> kernel wants to reclaim memory.
+Right after sending this I realized I had forgotten to include
+some fixes for issues Dmitry pointed out. So I've included them
+here.
 
-Sure.
+Signed-off-by: John Stultz<john.stultz@linaro.org>
+---
+  mm/volatile.c |    5 +++--
+  1 files changed, 3 insertions(+), 2 deletions(-)
 
-> It can use the usermodehelper_is_disabled() check, but that needs to be done
-> under read_lock_usermodehelper() and it can't release the lock before
-> calling _request_firmware(), or all that thing would be racy.
+diff --git a/mm/volatile.c b/mm/volatile.c
+index e412a8b..f40c02e 100644
+--- a/mm/volatile.c
++++ b/mm/volatile.c
+@@ -220,11 +220,12 @@ long mapping_range_nonvolatile(struct address_space *mapping,
+  			new->mapping = mapping;
+  			new->range_node.start = end + 1;
+  			new->range_node.end = node->end;
+-			volatile_range_resize(vrange, node->start, start-1);
++			new->purged = vrange->purged;
+  			range_tree_add(&mapping->volatile_root,
+  						&new->range_node);
+  			if (range_on_lru(new))
+  				lru_add(new);
++			volatile_range_resize(vrange, node->start, start-1);
 
-Well, I think that it would actually be a good idea to perhaps split
-up that existing _request_firmware() a bit. In fact, it might be good
-to split up that whole "fw_create_instance()" too - and re-organize
-the code a bit so that you end up creating the "firmware_priv" thing
-first.
+  			break;
+  		}
+@@ -263,7 +264,7 @@ void mapping_clear_volatile_ranges(struct address_space *mapping)
+  static int volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
+  {
+  	struct volatile_range *range, *next;
+-	unsigned long nr_to_scan = sc->nr_to_scan;
++	s64 nr_to_scan = sc->nr_to_scan;
+  	const gfp_t gfp_mask = sc->gfp_mask;
 
-So maybe we could have a helper function that does that first part of
-fw_create_instance() (the part that allocates it and does the
-__module_get() part and other really basic initialization), and that
-can be called unconditionally by the request_firmware_nowait() code
-early.
+  	if (nr_to_scan&&  !(gfp_mask&  __GFP_FS))
+-- 
+1.7.3.2.146.gca209
 
-That early part probably should *not* create the device attribute
-files etc (although who knows - maybe sysfs is ok at this point).
 
-So I think we really could re-organize the code to do a sane job - and
-move just the actual udev setup etc to the final part that needs to be
-delayed.
 
-Hmm?
-
-I haven't looked very deeply into it, but my *gut* feel is that it
-should be doable pretty cleanly.
-
-But yeah, it would be more than a little one-liner. I think it might
-be worth it, though. Clearly separating out the three stages: "setup"
--> "wait for system to be ready" -> "do the actual load".
-
-Then, the regular request_firmware() function would do exactly the
-same things, except it would never do the "wait for system to be
-ready" part: it would just fail with the warning if it wasn't already
-ready. So they'd still share all the basic core code, it would just be
-a slightly different organization from what it is now.
-
-                 Linus
