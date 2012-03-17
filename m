@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031425Ab2CQR5M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 13:57:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48219 "EHLO mgw2.diku.dk"
+	id S1161023Ab2CQSA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 14:00:29 -0400
+Received: from vm1.a6n.de ([78.46.59.250]:36248 "EHLO vm1.a6n.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756881Ab2CQR5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 13:57:09 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: David Airlie <airlied@linux.ie>
-Cc: kernel-janitors@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/gpu/drm/savage/savage_state.c: add missing kfree
-Date: Sat, 17 Mar 2012 18:57:02 +0100
-Message-Id: <1332007022-28014-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1756881Ab2CQSA2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 14:00:28 -0400
+Subject: Re: Faulty has_zero()? (was: .. anybody know of any filesystems that depend on the exact VFS 'namehash' implementation?)
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=US-ASCII
+From: Sven Anderson <sven@anderson.de>
+In-Reply-To: <CA+55aFzg7Wm6hNyFLrtPB5HOdu0SSkZrbLXFJrgreEN+LYEsdg@mail.gmail.com>
+Date: Sat, 17 Mar 2012 19:00:20 +0100
+Cc: Chris Mason <chris.mason@oracle.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <F2F3AB09-6F88-446D-BA53-7CFF5292E1CD@anderson.de>
+References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com> <20120301165726.GF23916@ZenIV.linux.org.uk> <CA+55aFzxWifxyFSpQfuztmOiyBQpYfiM560DWXoooZ8j8p3fYw@mail.gmail.com> <20120301183403.GF5054@shiny> <CA+55aFwHN_4=WOOYVC60kdSfwYautigNwTwUnjQDRa-oTanVog@mail.gmail.com> <FA611BE7-A574-444D-9C1E-7E32CB3BD659@anderson.de> <CA+55aFzg7Wm6hNyFLrtPB5HOdu0SSkZrbLXFJrgreEN+LYEsdg@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Most of the error handling code in this function frees the buffers
-kcmd_addr, kvb_addr, and kbox_addr allocated at the beginning of this
-function.  These two branches are changed to do the same.
+Am 17.03.2012 um 17:53 schrieb Linus Torvalds:
+> This is why the algorithm is fundamentally little-endian only. You may
+> have confused your test-case on a big-endian machine. On big-endian,
+> you would need to do a byte-switching load.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Alright, I ignorantly assumed big-endian by interpreting the "first" as coming from the left side in the integer literals. *D'oh*
+Sorry, and thanks for taking the time to explain it to me.
 
----
- drivers/gpu/drm/savage/savage_state.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/savage/savage_state.c b/drivers/gpu/drm/savage/savage_state.c
-index 8a3e315..031aaaf 100644
---- a/drivers/gpu/drm/savage/savage_state.c
-+++ b/drivers/gpu/drm/savage/savage_state.c
-@@ -1057,7 +1057,8 @@ int savage_bci_cmdbuf(struct drm_device *dev, void *data, struct drm_file *file_
- 				DRM_ERROR("indexed drawing command extends "
- 					  "beyond end of command buffer\n");
- 				DMA_FLUSH();
--				return -EINVAL;
-+				ret = -EINVAL;
-+				goto done;
- 			}
- 			/* fall through */
- 		case SAVAGE_CMD_DMA_PRIM:
-@@ -1076,7 +1077,7 @@ int savage_bci_cmdbuf(struct drm_device *dev, void *data, struct drm_file *file_
- 				      cmdbuf->vb_stride,
- 				      cmdbuf->nbox, cmdbuf->box_addr);
- 				if (ret != 0)
--					return ret;
-+					goto done;
- 				first_draw_cmd = NULL;
- 			}
- 		}
+Best regards,
+
+Sven
 
