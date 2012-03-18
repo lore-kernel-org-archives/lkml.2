@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2CRN3E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 09:29:04 -0400
-Received: from 1wt.eu ([62.212.114.60]:63428 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab2CRN3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 09:29:03 -0400
-Date: Sun, 18 Mar 2012 14:28:55 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Linux 2.6.32.59
-Message-ID: <20120318132855.GK17033@1wt.eu>
-References: <20120317130953.GA16926@1wt.eu> <4F65E1A6.3020302@arndnet.de>
-Mime-Version: 1.0
+	id S1755305Ab2CRNbF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 09:31:05 -0400
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:44367 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab2CRNbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 09:31:02 -0400
+Date: Sun, 18 Mar 2012 09:30:59 -0400
+From: Wakko Warner <wakko@animx.eu.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: Burning multiple DVDs at one time
+Message-ID: <20120318133059.GB10172@animx.eu.org>
+Mail-Followup-To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <20120315225310.GB3152@animx.eu.org>
+ <20120317095644.145d0588@stein>
+ <20120317142255.GB26403@animx.eu.org>
+ <20120317162853.13afa28b@stein>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F65E1A6.3020302@arndnet.de>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20120317162853.13afa28b@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On Sun, Mar 18, 2012 at 02:22:46PM +0100, Arnd Hannemann wrote:
-> Hi,
+Stefan Richter wrote:
+> On Mar 17 Wakko Warner wrote:
+> > Thanks.  I looked at the patch.  I would just like to confirm that I can
+> > patch my 3.0.0 vanilla kernel, compile the sr module, unload the current and
+> > load the patched one without the need to reboot.
 > 
-> Am 17.03.2012 14:09, schrieb Willy Tarreau:
+> Yes, this should be possible.
 > 
-> > The updated 2.6.32.y git tree can be found at:
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-> >   http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-> > 
-> > The tree can be browsed on the gitweb interface:
-> >   http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.32.y
+> Oh, I only noticed just know that you also wrote:
 > 
-> Neither any commit after 2.6.32.58 nor the tag v2.6.32.59 seems to be available in the public git tree, yet.
-> Forgot to push?
+> > > > The kernel is a vanilla kernel v3.0.0.  (This also happened with 2.6.35)
+> 
+> In 2.6.35, the Big Kernel Lock was still in place there.  That lock
+> behaved differently from a plain mutex --- notably it was released when a
+> thread went to sleep --- so maybe there is more to your problem than just
+> sr_mutex blocking unrelated sr accesses.
 
-Greg was not available for the final push when I sent the announce yesterday
-and I made a mistake in the pull request I sent him, further delaying the
-update. This will be sorted out soon, don't worry.
+There is a good possibility that I was mistaken on the 2.6.35.
 
-Just for those who can't wait, I'm generally pushing there though it is
-not official at all and may be removed or forced-updated without prior
-notice (so don't track it) :
+I manually applied your patch to 3.0.0, compiled, removed sr-mod module and
+inserted the newly compiled one.
 
-   http://git.kernel.org/?p=linux/kernel/git/wtarreau/for-greg.git;a=shortlog;h=refs/heads/linux-2.6.32.y
+With the vanilla one, I would see the buf % in wodim drop while the fifo was
+full.  With the patch (removing the mutex), buf stayed above 98% and the
+burn speed was 16x at the end (10x avg).
 
-Regards,
-Willy
+Seems to have fixed my problem.
 
+Thanks.
+
+-- 
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
