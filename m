@@ -1,87 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab2CRAxU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Mar 2012 20:53:20 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46297 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab2CRAxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Mar 2012 20:53:17 -0400
-Date: Sat, 17 Mar 2012 17:53:04 -0700 (PDT)
-Message-Id: <20120317.175304.364418700190702312.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 17 Mar 2012 17:53:15 -0700 (PDT)
+	id S1757161Ab2CRBk5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Mar 2012 21:40:57 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:47656
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756732Ab2CRBk4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Mar 2012 21:40:56 -0400
+X-SpamScore: -19
+X-BigFish: VS-19(zzbb2dI9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        Jeff Garzik <jeff@garzik.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 2/2] Drivers: scsi: storvsc: Don't pass ATA_16 command
+ to the host
+Thread-Topic: [PATCH 2/2] Drivers: scsi: storvsc: Don't pass ATA_16 command
+ to the host
+Thread-Index: AQHNA7a50NyOpWfJEkyddxfm+pj8DJZulyQAgABAhgCAAHDRQA==
+Date: Sun, 18 Mar 2012 01:40:51 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B767B28@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1331929448-6838-1-git-send-email-kys@microsoft.com>
+ <1331929472-6877-1-git-send-email-kys@microsoft.com>
+ <1331929472-6877-2-git-send-email-kys@microsoft.com>
+ <4F64A80C.6040206@garzik.org> <4F64DE2C.1030809@interlog.com>
+In-Reply-To: <4F64DE2C.1030809@interlog.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-1) icmp6_dst_alloc() returns NULL instead of ERR_PTR() leading to
-   crashes, particularly during shutdown.  Reported by Dave
-   Jones and fixed by Eric Dumazet.
 
-2) hyperv and wimax/i2400m return NETDEV_TX_BUSY when they have
-   already freed the SKB, which causes crashes as to the caller
-   this means requeue the packet.  Fixes from Eric Dumazet.
+> -----Original Message-----
+> From: Douglas Gilbert [mailto:dgilbert@interlog.com]
+> Sent: Saturday, March 17, 2012 2:56 PM
+> To: Jeff Garzik
+> Cc: KY Srinivasan; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org
+> Subject: Re: [PATCH 2/2] Drivers: scsi: storvsc: Don't pass ATA_16 command to
+> the host
+> 
+> On 12-03-17 04:04 PM, Jeff Garzik wrote:
+> > On 03/16/2012 04:24 PM, K. Y. Srinivasan wrote:
+> >> The current Windows hosts don't handle the ATA_16 command and
+> furthermore
+> >> return a generic error code after filtering the command on the host side.
+> >> For now filter the command on the guest side until the host is modified to
+> >> properly handle unsupported commands.
+> >>
+> >> Signed-off-by: K. Y. Srinivasan<kys@microsoft.com>
+> >> Reviewed-by: Haiyang Zhang<haiyangz@microsoft.com>
+> >> ---
+> >> drivers/scsi/storvsc_drv.c | 9 +++++++++
+> >> 1 files changed, 9 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> >> index 8b967c9..783bab8 100644
+> >> --- a/drivers/scsi/storvsc_drv.c
+> >> +++ b/drivers/scsi/storvsc_drv.c
+> >> @@ -1229,8 +1229,17 @@ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd
+> *scmnd)
+> >> /*
+> >> * smartd sends this command and the host does not handle
+> >> * this. So, don't send it.
+> >> + * The current Windows hosts implement a subset of scsi commands
+> >> + * and for the commands that are not implemented, the host filters
+> >> + * them and returns a generic failure SRB status. I have been in
+> >> + * discussions with the Windows team to return the appropriate SRB
+> >> + * status code for unsupported scsi commands and while they have
+> >> + * agreed to implement this, it is not clear when this change will be
+> >> + * available. Consequently, filtering the command before submitting it
+> >> + * to the host is a resonable interim solution.
+> >> */
+> >> case SET_WINDOW:
+> >> + case ATA_16:
+> >> scmnd->result = ILLEGAL_REQUEST<< 16;
+> >> allowed = false;
+> >
+> > It would be even nicer to fill out a nice SCSI status for this. For an illegal
+> > request such as this, the libata SCSI simulator (drivers/ata/libata-scsi.c) uses
+> > a more complete sense buffer setup,
+> >
+> > static void ata_scsi_set_sense(struct scsi_cmnd *cmd, u8 sk,
+> > u8 asc, u8 ascq)
+> > {
+> > cmd->result = (DRIVER_SENSE << 24) | SAM_STAT_CHECK_CONDITION;
+> >
+> > scsi_build_sense_buffer(0, cmd->sense_buffer, sk, asc, ascq);
+> > }
+> >
+> > and calls this function for invalid/unknown/unsupported command ops thusly,
+> >
+> > ata_scsi_set_sense(cmd, ILLEGAL_REQUEST, 0x20, 0x0);
+> > /* "Invalid command operation code" */
+> >
+> > Supplying asc/ascq provides additional information that may be useful in
+> > determining whether or not to retry, provide better error diagnostics, etc.
+> >
+> > The asc/ascq values are found in the SCSI standards documents.
+> 
+> Jeff,
+> I agree with your suggestion and would point out that the
+> originally proposed:
+>      scmnd->result = ILLEGAL_REQUEST<<  16;
+> 
+> is just plain wrong. result[23:16] is a Linux invented host byte
+> code (they typically start with "DID_") while ILLEGAL_REQUEST is
+> a SCSI sense key.
+> 
+> Doug Gilbert
+> 
+Jeff, Doug,
 
-3) usbnet driver doesn't allocate the right amount of headroom
-   on fresh RX SKBs, fix from Eric Dumazet.
+Thank you. I will make the suggested changes.
 
-4) Fix regression in ip6_mc_find_dev_rcu(), as an RCU lookup it
-   abolutely should not take a reference to 'dev', this leads
-   to leaks.  Fix from RonQing Li.
+Regards,
 
-5) Fix netfilter ctnetlink race between delete and timeout
-   expiration.  From Pablo Neira Ayuso.
+K. Y
 
-6) Revert SFQ change which causes regressions, specifically queueing
-   to tail can lead to unavoidable flow starvation.  From Eric
-   Dumazet.
-
-7) Fix a memory leak and a crash on corrupt firmware files in bnx2x,
-   from Michal Schmidt.
-
-Please pull, thanks a lot!
-
-The following changes since commit cb1ecf25a84aec8c9d1fc6ad0c78adf4fd8335de:
-
-  Merge branch 'akpm' (more patches from Andrew) (2012-03-16 17:14:55 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Eric Dumazet (5):
-      ipv6: fix icmp6_dst_alloc()
-      sch_sfq: revert dont put new flow at the end of flows
-      net/usbnet: reserve headroom on rx skbs
-      net/hyperv: fix erroneous NETDEV_TX_BUSY use
-      wimax/i2400m: fix erroneous NETDEV_TX_BUSY use
-
-Michal Schmidt (2):
-      bnx2x: fix a crash on corrupt firmware file
-      bnx2x: fix memory leak in bnx2x_init_firmware()
-
-Pablo Neira Ayuso (1):
-      netfilter: ctnetlink: fix race between delete and timeout expiration
-
-RongQing.Li (1):
-      ipv6: Don't dev_hold(dev) in ip6_mc_find_dev_rcu.
-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   51 +++++++++++-----------
- drivers/net/hyperv/netvsc_drv.c                  |    4 +-
- drivers/net/usb/usbnet.c                         |    4 +-
- drivers/net/wimax/i2400m/netdev.c                |   30 ++++--------
- net/ipv6/mcast.c                                 |    1 -
- net/ipv6/route.c                                 |    2 +-
- net/netfilter/nf_conntrack_netlink.c             |   23 +++++-----
- net/sched/sch_sfq.c                              |    6 ++-
- 8 files changed, 57 insertions(+), 64 deletions(-)
