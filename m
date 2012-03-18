@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab2CRK4h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 06:56:37 -0400
-Received: from mail.gw90.de ([188.40.100.199]:40775 "EHLO mail.gw90.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265Ab2CRK4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 06:56:36 -0400
-Message-ID: <1332068192.7678.25.camel@mattotaupa>
-Subject: Re: Using quilt to send patches (was: [V2 PATCH 1/2]
- drivers-gpu-drm-allow-to-load-edid-firmware.patch)
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>, Carsten Emde <C.Emde@osadl.org>,
-        Matthew Barnes <mbarnes@redhat.com>
-Date: Sun, 18 Mar 2012 11:56:32 +0100
-In-Reply-To: <1332068075.7678.23.camel@mattotaupa>
-References: <20120314233544.629616190@osadl.org>
-	 <20120314234829.759638810@osadl.org> <1331795634.3718.5.camel@mattotaupa>
-	 <alpine.LFD.2.02.1203151104450.2466@ionos>
-	 <1332068075.7678.23.camel@mattotaupa>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-1tuEeatxtA37Zyy8vi+A"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	id S1754580Ab2CRLF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 07:05:58 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:45976 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752674Ab2CRLF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 07:05:57 -0400
+Message-ID: <4F65C1AA.40102@metafoo.de>
+Date: Sun, 18 Mar 2012 12:06:18 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v2 1/2] regulator: pcf50633: Don't write to reserved bits
+ of AUTO output voltage select register
+References: <1331942824.6622.1.camel@phoenix>
+In-Reply-To: <1331942824.6622.1.camel@phoenix>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/17/2012 01:07 AM, Axel Lin wrote:
+> The datasheet says 00000000 to 00101110 are reserved, and the min value of the
+> voltage setting is 1.8 V.
+> Thus don't write 0 to AUTO output voltage select register (address 1Ah).
+> 
+> Table 50. AUTOOUT - AUTO output voltage select register (address 1Ah) bit description[1]
+> Bit Symbol Access Description
+> 7:0 auto_out R/W VO(prog) = 0.625 + auto_out × 0.025 V
+> eg. 00000000 to 00101110: reserved
+> 00101111: 1.8 V (min)
+> 01010011: 2.7 V
+> 01101010: 3.275 V
+> 01101011: 3.300 V
+> 01101100: 3.325 V
+> 01111111 : 3.800 V (max)
+> ..... .....
+> 11111110 : 3.800 V
+> 11111111 : 3.800 V
+> 
+> This patch also fixes a bug in pcf50633_regulator_list_voltage.
+> It is wrong to do "index += 0x2f" for PCF50633_REGULATOR_AUTO in
+> pcf50633_regulator_list_voltage. The purpose of adding 0x2f to index is because
+> current code return 0 in auto_voltage_bits when millivolts < 1800.
+> For millivolts > 1800, adding 0x2f to index is wrong.
+> 
 
---=-1tuEeatxtA37Zyy8vi+A
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I think you misunderstood what the current code does. The first usable voltage
+is 1.8V which is equal to a index of of 0x2f. So the driver adds 0x2f to the
+index so that there is not a headroom of 0x2f unusable voltages. So a selector
+of 0 translates to 1.8V, a selector of 1 translates to 1.825V and so on.
 
-Am Sonntag, den 18.03.2012, 11:54 +0100 schrieb Paul Menzel:
-> Am Donnerstag, den 15.03.2012, 11:08 +0100 schrieb Thomas Gleixner:
-> > On Thu, 15 Mar 2012, Paul Menzel wrote:
->=20
-> > > Am Donnerstag, den 15.03.2012, 00:35 +0100 schrieb Carsten Emde:
-> > > > Einfaches Textdokument-Anlage
-> > > > (drivers-gpu-drm-allow-to-load-edid-firmware.patch)
-> > >=20
-> > > somehow your message was send as an attachment. Could you configure y=
-our
-> > > mailer (quilt) that it is send inline?
-> >=20
-> > quilt sends the patches inline. From Carstens original mail:
-> >=20
-> >   Content-Disposition: inline; filename=3Ddrivers-gpu-drm-allow-to-load=
--edid-firmware.patch
-> > =20
-> > Could you use a sane mail client or teach Devolution to stop being
-> > silly?
->=20
-> Actually Evolution displayed the message inline. Only when replying the
-> attachment message was added to the top.
-
-I reported this to GNOME=E2=80=99s Bugzilla as #672129 [1].
-
-> Still that leaves the ugly subject line in my opinion, where quilt only
-> seems to use the file name.
-
-
-Thanks,
-
-Paul
-
-
-[1] https://bugzilla.gnome.org/show_bug.cgi?id=3D672129
-
---=-1tuEeatxtA37Zyy8vi+A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAk9lv2AACgkQPX1aK2wOHViI7wCfUjFu0Kr3gQ2BoV9fQeQt2LNd
-v54An3tDIObCwfseaZACYTQqZEQdZn1E
-=Xcvq
------END PGP SIGNATURE-----
-
---=-1tuEeatxtA37Zyy8vi+A--
-
+I can see why you'd want to change it to simplify the code, but you also have
+to change the number of voltages for the AUTO regulator to 128.
