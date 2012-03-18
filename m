@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964773Ab2CRXRf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 19:17:35 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51286 "EHLO ogre.sisk.pl"
+	id S1756969Ab2CRXRe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 19:17:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51293 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756874Ab2CRXRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 19:17:31 -0400
+	id S1756880Ab2CRXRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 19:17:32 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Christian Lamparter <chunkeey@googlemail.com>
-Subject: [PATCH 3/3] firmware_class: Do not warn that system is not ready for async loads
-Date: Mon, 19 Mar 2012 00:21:06 +0100
+Subject: [PATCH 2/3] firmware_class: Split _request_firmware() into three functions
+Date: Mon, 19 Mar 2012 00:18:19 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
@@ -22,245 +22,142 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203190021.06329.rjw@sisk.pl>
+Message-Id: <201203190018.19922.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-If firmware is requested asynchronously, by calling
-request_firmware_nowait(), there is no reason to fail the request
-(and warn the user) when the system is (presumably temporarily)
-unready for handling it (because user space is not available yet or
-frozen).  For this reason, introduce an alternative routine for
-read-locking umhelper_sem, usermodehelper_read_lock_wait(), that
-will wait for usermodehelper_disabled to be unset (possibly with
-a timeout) and make request_firmware_work_func() use it instead of
-usermodehelper_read_trylock().
+Split _request_firmware() into three functions,
+_request_firmware_prepare() doing preparatory work that need not be
+done under umhelper_sem, _request_firmware_cleanup() doing the
+post-error cleanup and _request_firmware() carrying out the remaining
+operations.
 
-Accordingly, modify request_firmware() so that it uses
-usermodehelper_read_trylock() to acquire umhelper_sem and remove
-the code related to that lock from _request_firmware().
+This change is requisite for moving the acquisition of umhelper_sem
+from _request_firmware() to the callers, which is going to be done
+subsequently.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/firmware_class.c |   51 +++++++++++++++++++++---------------
- include/linux/kmod.h          |    1 
- kernel/kmod.c                 |   59 ++++++++++++++++++++++++++++++++----------
- 3 files changed, 77 insertions(+), 34 deletions(-)
+ drivers/base/firmware_class.c |   57 +++++++++++++++++++++++++++++-------------
+ 1 file changed, 40 insertions(+), 17 deletions(-)
 
-Index: linux/include/linux/kmod.h
-===================================================================
---- linux.orig/include/linux/kmod.h
-+++ linux/include/linux/kmod.h
-@@ -117,6 +117,7 @@ extern void usermodehelper_init(void);
- extern int usermodehelper_disable(void);
- extern void usermodehelper_enable(void);
- extern int usermodehelper_read_trylock(void);
-+extern long usermodehelper_read_lock_wait(long timeout);
- extern void usermodehelper_read_unlock(void);
- 
- #endif /* __LINUX_KMOD_H__ */
-Index: linux/kernel/kmod.c
-===================================================================
---- linux.orig/kernel/kmod.c
-+++ linux/kernel/kmod.c
-@@ -291,6 +291,12 @@ static atomic_t running_helpers = ATOMIC
- static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
- 
- /*
-+ * Used by usermodehelper_read_lock_wait() to wait for usermodehelper_disabled
-+ * to become 'false'.
-+ */
-+static DECLARE_WAIT_QUEUE_HEAD(usermodehelper_disabled_waitq);
-+
-+/*
-  * Time to wait for running_helpers to become zero before the setting of
-  * usermodehelper_disabled in usermodehelper_disable() fails
-  */
-@@ -309,6 +315,34 @@ int usermodehelper_read_trylock(void)
- }
- EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
- 
-+long usermodehelper_read_lock_wait(long timeout)
-+{
-+	DEFINE_WAIT(wait);
-+	long ret = timeout;
-+
-+	if (timeout < 0)
-+		return -EINVAL;
-+
-+	down_read(&umhelper_sem);
-+	for (;;) {
-+		prepare_to_wait(&usermodehelper_disabled_waitq, &wait,
-+				TASK_UNINTERRUPTIBLE);
-+		if (!usermodehelper_disabled)
-+			break;
-+
-+		up_read(&umhelper_sem);
-+
-+		ret = schedule_timeout(timeout);
-+		if (!ret)
-+			break;
-+
-+		down_read(&umhelper_sem);
-+	}
-+	finish_wait(&usermodehelper_disabled_waitq, &wait);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(usermodehelper_read_lock_wait);
-+
- void usermodehelper_read_unlock(void)
- {
- 	up_read(&umhelper_sem);
-@@ -316,6 +350,17 @@ void usermodehelper_read_unlock(void)
- EXPORT_SYMBOL_GPL(usermodehelper_read_unlock);
- 
- /**
-+ * usermodehelper_enable - allow new helpers to be started again
-+ */
-+void usermodehelper_enable(void)
-+{
-+	down_write(&umhelper_sem);
-+	usermodehelper_disabled = 0;
-+	wake_up(&usermodehelper_disabled_waitq);
-+	up_write(&umhelper_sem);
-+}
-+
-+/**
-  * usermodehelper_disable - prevent new helpers from being started
-  */
- int usermodehelper_disable(void)
-@@ -338,22 +383,10 @@ int usermodehelper_disable(void)
- 	if (retval)
- 		return 0;
- 
--	down_write(&umhelper_sem);
--	usermodehelper_disabled = 0;
--	up_write(&umhelper_sem);
-+	usermodehelper_enable();
- 	return -EAGAIN;
- }
- 
--/**
-- * usermodehelper_enable - allow new helpers to be started again
-- */
--void usermodehelper_enable(void)
--{
--	down_write(&umhelper_sem);
--	usermodehelper_disabled = 0;
--	up_write(&umhelper_sem);
--}
--
- static void helper_lock(void)
- {
- 	atomic_inc(&running_helpers);
 Index: linux/drivers/base/firmware_class.c
 ===================================================================
 --- linux.orig/drivers/base/firmware_class.c
 +++ linux/drivers/base/firmware_class.c
-@@ -81,6 +81,11 @@ enum {
+@@ -435,7 +435,7 @@ static void firmware_class_timeout(u_lon
+ }
  
- static int loading_timeout = 60;	/* In seconds */
- 
-+static inline long firmware_loading_timeout(void)
-+{
-+	return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
-+}
-+
- /* fw_lock could be moved to 'struct firmware_priv' but since it is just
-  * guarding for corner cases a global lock should be OK */
- static DEFINE_MUTEX(fw_lock);
-@@ -541,31 +546,22 @@ static void _request_firmware_cleanup(co
- 
- static int _request_firmware(const struct firmware *firmware,
- 			     const char *name, struct device *device,
--			     bool uevent, bool nowait)
-+			     bool uevent, bool nowait, long timeout)
+ static struct firmware_priv *
+-fw_create_instance(struct firmware *firmware, const char *fw_name,
++fw_create_instance(const struct firmware *firmware, const char *fw_name,
+ 		   struct device *device, bool uevent, bool nowait)
  {
  	struct firmware_priv *fw_priv;
--	int retval;
--
--	retval = usermodehelper_read_trylock();
--	if (WARN_ON(retval)) {
--		dev_err(device, "firmware: %s will not be loaded\n", name);
--		return retval;
--	}
-+	int retval = 0;
+@@ -449,7 +449,7 @@ fw_create_instance(struct firmware *firm
+ 		goto err_out;
+ 	}
+ 
+-	fw_priv->fw = firmware;
++	fw_priv->fw = (struct firmware *)firmware;
+ 	fw_priv->nowait = nowait;
+ 	strcpy(fw_priv->fw_id, fw_name);
+ 	init_completion(&fw_priv->completion);
+@@ -510,13 +510,10 @@ static void fw_destroy_instance(struct f
+ 	device_unregister(f_dev);
+ }
+ 
+-static int _request_firmware(const struct firmware **firmware_p,
+-			     const char *name, struct device *device,
+-			     bool uevent, bool nowait)
++static int _request_firmware_prepare(const struct firmware **firmware_p,
++				     const char *name, struct device *device)
+ {
+-	struct firmware_priv *fw_priv;
+ 	struct firmware *firmware;
+-	int retval = 0;
+ 
+ 	if (!firmware_p)
+ 		return -EINVAL;
+@@ -533,10 +530,26 @@ static int _request_firmware(const struc
+ 		return 0;
+ 	}
+ 
++	return 1;
++}
++
++static void _request_firmware_cleanup(const struct firmware **firmware_p)
++{
++	release_firmware(*firmware_p);
++	*firmware_p = NULL;
++}
++
++static int _request_firmware(const struct firmware *firmware,
++			     const char *name, struct device *device,
++			     bool uevent, bool nowait)
++{
++	struct firmware_priv *fw_priv;
++	int retval;
++
+ 	retval = usermodehelper_read_trylock();
+ 	if (WARN_ON(retval)) {
+ 		dev_err(device, "firmware: %s will not be loaded\n", name);
+-		goto out_nolock;
++		return retval;
+ 	}
  
  	if (uevent)
- 		dev_dbg(device, "firmware: requesting %s\n", name);
+@@ -572,13 +585,6 @@ static int _request_firmware(const struc
  
- 	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
--	if (IS_ERR(fw_priv)) {
--		retval = PTR_ERR(fw_priv);
--		goto out;
--	}
-+	if (IS_ERR(fw_priv))
-+		return PTR_ERR(fw_priv);
- 
- 	if (uevent) {
--		if (loading_timeout > 0)
-+		if (timeout != MAX_SCHEDULE_TIMEOUT)
- 			mod_timer(&fw_priv->timeout,
--				  round_jiffies_up(jiffies +
--						   loading_timeout * HZ));
-+				  round_jiffies_up(jiffies + timeout));
- 
- 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
- 	}
-@@ -582,9 +578,6 @@ static int _request_firmware(const struc
- 	mutex_unlock(&fw_lock);
- 
- 	fw_destroy_instance(fw_priv);
+ out:
+ 	usermodehelper_read_unlock();
 -
--out:
--	usermodehelper_read_unlock();
+-out_nolock:
+-	if (retval) {
+-		release_firmware(firmware);
+-		*firmware_p = NULL;
+-	}
+-
  	return retval;
  }
  
-@@ -613,7 +606,14 @@ request_firmware(const struct firmware *
- 	if (ret <= 0)
- 		return ret;
- 
--	ret = _request_firmware(*firmware_p, name, device, true, false);
-+	ret = usermodehelper_read_trylock();
-+	if (WARN_ON(ret)) {
-+		dev_err(device, "firmware: %s will not be loaded\n", name);
-+	} else {
-+		ret = _request_firmware(*firmware_p, name, device, true, false,
-+					firmware_loading_timeout());
-+		usermodehelper_read_unlock();
-+	}
- 	if (ret)
- 		_request_firmware_cleanup(firmware_p);
- 
-@@ -648,6 +648,7 @@ static int request_firmware_work_func(vo
+@@ -601,7 +607,17 @@ int
+ request_firmware(const struct firmware **firmware_p, const char *name,
+                  struct device *device)
  {
- 	struct firmware_work *fw_work = arg;
- 	const struct firmware *fw;
-+	long timeout;
- 	int ret;
+-        return _request_firmware(firmware_p, name, device, true, false);
++	int ret;
++
++	ret = _request_firmware_prepare(firmware_p, name, device);
++	if (ret <= 0)
++		return ret;
++
++	ret = _request_firmware(*firmware_p, name, device, true, false);
++	if (ret)
++		_request_firmware_cleanup(firmware_p);
++
++	return ret;
+ }
  
- 	if (!arg) {
-@@ -659,8 +660,16 @@ static int request_firmware_work_func(vo
- 	if (ret <= 0)
- 		return ret;
+ /**
+@@ -639,8 +655,15 @@ static int request_firmware_work_func(vo
+ 		return 0;
+ 	}
  
--	ret = _request_firmware(fw, fw_work->name, fw_work->device,
--				fw_work->uevent, true);
-+	timeout = usermodehelper_read_lock_wait(firmware_loading_timeout());
-+	if (timeout) {
-+		ret = _request_firmware(fw, fw_work->name, fw_work->device,
-+					fw_work->uevent, true, timeout);
-+		usermodehelper_read_unlock();
-+	} else {
-+		dev_dbg(fw_work->device, "firmware: %s loading timed out\n",
-+			fw_work->name);
-+		ret = -EAGAIN;
-+	}
- 	if (ret)
- 		_request_firmware_cleanup(&fw);
+-	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
++	ret = _request_firmware_prepare(&fw, fw_work->name, fw_work->device);
++	if (ret <= 0)
++		return ret;
++
++	ret = _request_firmware(fw, fw_work->name, fw_work->device,
+ 				fw_work->uevent, true);
++	if (ret)
++		_request_firmware_cleanup(&fw);
++
+ 	fw_work->cont(fw, fw_work->context);
  
+ 	module_put(fw_work->module);
 
