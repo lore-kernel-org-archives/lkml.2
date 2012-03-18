@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab2CRWXd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 18:23:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56481 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756035Ab2CRWXX (ORCPT
+	id S1756639Ab2CRWZq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 18:25:46 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60241 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab2CRWZo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 18:23:23 -0400
-Date: Sun, 18 Mar 2012 22:23:21 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [rfc][patches] fix for munmap/truncate races
-Message-ID: <20120318222321.GE6589@ZenIV.linux.org.uk>
-References: <20120318190744.GA6589@ZenIV.linux.org.uk>
+	Sun, 18 Mar 2012 18:25:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120318190744.GA6589@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1203181611020.23082-100000@netrider.rowland.org>
+References: <20120318034412.GA22531@thunk.org>
+	<Pine.LNX.4.44L0.1203181611020.23082-100000@netrider.rowland.org>
+Date: Sun, 18 Mar 2012 15:25:43 -0700
+X-Google-Sender-Auth: Eb0y42Sngb6prfkHCt-4C__Y98w
+Message-ID: <CACBanvpzOdC4ns-pg1f92ptxrCJ2O=_oJhpKFD4NOB0hyF_+aA@mail.gmail.com>
+Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Theodore Tso <tytso@google.com>,
+        Greg KH <greg@kroah.com>, Paul Taysom <taysom@google.com>,
+        Paul Taysom <taysom@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 07:07:45PM +0000, Al Viro wrote:
-> 	Background: truncate() ends up going through the shared mappings
-> of file being truncated (under ->i_mmap_mutex, to protect them from
-> getting removed while we do that) and calling unmap_vmas() on them,
-> with range passed to unmap_vmas() sitting entirely within the vma
-> being passed to it.  The trouble is, unmap_vmas() expects a chain of
-> vmas.  It will look into the next vma, see that it's beyond the range
-> we'd been given and do nothing to it.  Fine, except that there's nothing
-> to protect that next vma from being removed just as we do that - we do
-> *not* hold ->i_mmap and ->i_mmap_mutex held on our file won't do anything
-> to mappings that have nothing to do with the file in question.
-> 
-> 	There's an obvious way to deal with that - introducing a variant
-> of unmap_vmas() that would handle a single vma and switch these callers
-> of unmap_vmas() to using it.  It requires some preparations; below is
-> the combined diff, for those who prefer to review the splitup, it is in
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git #vm
+On Sun, Mar 18, 2012 at 1:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sat, 17 Mar 2012, Ted Ts'o wrote:
+>
+>> I can't help thinking that the fact that we're constantly playing
+>> whack-a-mole trying to fix various random crashes when devices
+>> disappear that perhaps we should consider if there's a better way to
+>> do things.
+>
+> Indeed, as Jens's patch mentions, proper reference counting for the BDI
+> stuff hasn't been implemented yet.  Obviously it will require somebody
+> who really does know the code (i.e., not me).
+>
+> For example, when Paul's patch assigns &default_backing_dev_info, is
+> the assignment synchronized by any sort of lock?  I can't tell -- but
+> if it isn't then the possibility of a race will still exist.
+>
 
-BTW, the missing part of pull request:
+I think its safe without a lock (assuming the assignment is atomic) but it
+wouldn't hurt to add an i_lock. That would also give you a barrier which
+is needed to propagate the assignment to other CPUs.
 
-Shortlog:
-Al Viro (6):
-      VM: unmap_page_range() can return void
-      VM: can't go through the inner loop in unmap_vmas() more than once...
-      VM: make zap_page_range() return void
-      VM: don't bother with feeding upper limit to tlb_finish_mmu() in exit_mmap()
-      VM: make unmap_vmas() return void
-      VM: make zap_page_range() callers that act on a single VMA use separate helper
+This is not a perfect fix but its pretty safe and is nice in that it works
+independent of filesystem or bus-type.
 
-Diffstat:
- include/linux/mm.h |    4 +-
- mm/memory.c        |  133 +++++++++++++++++++++++++++++++---------------------
- mm/mmap.c          |    5 +-
- 3 files changed, 84 insertions(+), 58 deletions(-)
+Regards,
+Mandeep
+
+>> The fact that at the file system layer I have **no** idea that a
+>> device has disappeared, and just blindly going on trying to write to a
+>> device which is gone just seems a little crazy to me...  why shouldn't
+>> block layer inform the upper layers about something as fundamental as,
+>> "the device is gone and is never coming back"?
+>
+> Playing devil's advocate...  What would you do differently if you did
+> know the device was gone?  All I/O operations will fail regardless, and
+> presumably with an error code like -ENODEV.  Pretty much all you could
+> do would be to fail them a little earlier.
+>
+>> > I suspect Paul's patch is the right thing to do.  It might even make
+>> > the ext4 fix unnecessary, although I don't understand the details well
+>> > enough to verify it.  Maybe Paul can check -- the commit I'm referring
+>> > to is 7c2e70879fc0949b4220ee61b7c4553f6976a94d (ext4: add ext4-specific
+>> > kludge to avoid an oops after the disk disappears).
+>>
+>> I have no idea either, because it's not obvious to me what data
+>> structures can be relied upon, and what can't, and when things are
+>> supposed to get freed on sudden device disconnects.  The fact that
+>> none of us are sure is part of what makes me think that the current
+>> scheme is, perhaps, non-optimal...
+>
+> That's why someone like Jens or Al needs to take a close look at this
+> (hint, hint).
+>
+> Alan Stern
+>
