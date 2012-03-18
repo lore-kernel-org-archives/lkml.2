@@ -1,64 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab2CRI42 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 04:56:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56558 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab2CRI4Y convert rfc822-to-8bit (ORCPT
+	id S1754397Ab2CRJNQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 05:13:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64317 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab2CRJNK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 04:56:24 -0400
+	Sun, 18 Mar 2012 05:13:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
-References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
-Date: Sun, 18 Mar 2012 09:56:23 +0100
-X-Google-Sender-Auth: 7k2CEr-agSavIKE1wRnxqjzamLM
-Message-ID: <CAMuHMdWwqPSarZi5kDMaM8KOjm9m+KFyv_OG=dVfP5FxEgEoZA@mail.gmail.com>
-Subject: Re: [PATCH 00/68] TTY buffer in tty_port -- prep no. 1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAO6Zf6D4bgQrpLhT3nzwim_PFzhiB0wzH77Coj04APgHfkSMCQ@mail.gmail.com>
+References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
+	<1331938267-13583-3-git-send-email-john.stultz@linaro.org>
+	<CAO6Zf6D4bgQrpLhT3nzwim_PFzhiB0wzH77Coj04APgHfkSMCQ@mail.gmail.com>
+Date: Sun, 18 Mar 2012 10:13:10 +0100
+Message-ID: <CAO6Zf6CtufdNuS5Fk1qomQLBMM9s2qeCKCxYT4O8nHtYc4+oJA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Mon, Mar 5, 2012 at 14:51, Jiri Slaby <jslaby@suse.cz> wrote:
-> this is the first series of patches which allow tty buffers to be
-> moved from tty_struct (present from open to close/hangup) to tty_port
-> (present as long as the device). This will allow us to get rid of the
-> tty refcounting in the interrupt service routines and other hot paths
-> after we are done. This is because we won't need to handle races among
-> ISRs, timers, hangups and others, because tty_port lives as long as an
-> interrupt/timer tick may occur. Unlike tty_struct.
+On 17 March 2012 17:21, Dmitry Adamushko <dmitry.adamushko@gmail.com> wrote:
+> Hi John,
 >
-> In this series, only first few drivers are converted to use
-> tty_port. The rest is to come later.
+> [ ... ]
 >
-> The first few patches are simple fixes/cleanups which emerged during
-> the code investigation here and there. Further serialP header removal
-> happens there. Finally, some drivers are forced to use tty_port, which
-> will become a necessity in the future.
+>> +/*
+>> + * Mark a region as volatile, allowing dirty pages to be purged
+>> + * under memory pressure
+>> + */
+>> +long mapping_range_volatile(struct address_space *mapping,
+>> +                               pgoff_t start_index, pgoff_t end_index)
+>> +{
+>> +       struct volatile_range *new;
+>> +       struct range_tree_node *node;
+>> +
+>> +       u64 start, end;
+>> +       int purged = 0;
+>> +       start = (u64)start_index;
+>> +       end = (u64)end_index;
+>> +
+>> +       new = vrange_alloc();
+>> +       if (!new)
+>> +               return -ENOMEM;
+>> +
+>> +       mutex_lock(&volatile_mutex);
+>> +
+>> +       node = range_tree_in_range_adjacent(&mapping->volatile_root,
+>> +                                               start, end);
+>> +       while (node) {
+>> +               struct volatile_range *vrange;
+>> +
+>> +               /* Already entirely marked volatile, so we're done */
+>> +               if (node->start < start && node->end > end) {
+>> +                       /* don't need the allocated value */
+>> +                       kfree(new);
+>> +                       goto out;
+>> +               }
+>> +
+>> +               /* Grab containing volatile range */
+>> +               vrange = container_of(node, struct volatile_range, range_node);
+>> +
+>> +               /* resize range */
+>> +               start = min_t(u64, start, node->start);
+>> +               end = max_t(u64, end, node->end);
+>> +               purged |= vrange->purged;
+>> +
+>> +
+>> +               vrange_del(vrange);
+>> +
+>> +               /* get the next possible overlap */
+>> +               node = range_tree_in_range(&mapping->volatile_root, start, end);
 >
-> Simserial (ia64) and standard x86 stuff were runtime-tested. The rest
-> is only checked to be compilation-errors free.
+> I guess range_tree_in_range_adjacent() should be used here again.
+> There can be 2 adjacent regions (left and right), and we'll miss one
+> of them with range_tree_in_range().
+>
+> Also (as I had already mentioned before), I think that new ranges must
+> not be merged with the existing "vrange->purged == 1" ranges.
+> Otherwise, for some use cases, the whole idea of 'volatility' gets
+> broken. For example, when an application is processing a big buffer in
+> small consequent chunks (marking a chunk as volatile when done with
+> it), and the range gets 'purged' by the kernel early in this process
+> (when it's still small).
 
-I had a look at all 19 patches touching amiserial, and they look fine. So
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Alternatively, we could immediately truncate purged==0 ranges
+(including the one for which mapping_range_volatile() is called) when
+merging them with purged==1 ranges. This would result in a more
+consistent, but perhaps too aggressive behavior.
 
-Thanks for the cleanup!
+Let's consider the following use case:
 
-Gr{oetje,eeting}s,
+[1, 10] is an existing purged==1 volatile region, and an application
+declares [11, 12] as volatile.
 
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+1) current approach: [1, 12] a single purged==1 region, where [11, 12]
+was not really truncated (and it could have been [11, 100]);
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+2) aggressive purge-it-all approach: a single [1, 12] purged==1 region.
+The newly added region gets truncated even when there is no shortage
+of memory at the moment of addition.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+3) do-not-merge approach: [1, 10] purged==1 and [11, 12] purged==0
+regions; the later is on the lru list.
+it adds extra complexities though (e.g. the need to merge purged
+ranges in the shrinker code).
+
+But what's more important, do we have a model of application behavior
+that is expected to be observed in, say, 90+% of cases? What patterns
+are more common?
+
+For example,
+
+1) make_volatile [1, 10] ; ... ; make_volatile [5, 15]   //
+overlapping volatile regions
+2) make_volatile [1, 10] ; ... ; make_volatile [1, 15]   // explicit merge
+3) make_volatile [1, 10] ; ... ; make_volatile [11, 15] // adjacent
+volatile regions
+
+I guess (2) and (3) would be more common, and (3) even more so with
+independently used regions (say, by different threads). For (3), do we
+really want to merge purged==0 regions when they are adjacent? What if
+they are used independently? Let's consider this case:
+
+(a) make_volatile [1, 100] ; ... ; (z) make_volatile [101, 102]
+
+(z) region is used much more frequently by the application [
+make_nonvolatile -> do-smth -> make_volatile ], and (a) is not used
+often - it's volatile most of the time. If we merge both regions when
+they are still purged==0, the whole [1, 102] will tend to be at the
+end of the LRU list =>
+- we miss an opportunity to truncate (a);
+- other regions that are more frequently used than (a) get truncated.
+
+In this light, (3) would be better off behaving as if (a) and (z) were
+not adjacent, i.e. no merge...
+
+-- Dmitry
