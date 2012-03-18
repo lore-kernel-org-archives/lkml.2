@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab2CRXOr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 19:14:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33172 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab2CRXOq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 19:14:46 -0400
+	id S1756860Ab2CRXRa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 19:17:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51269 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756086Ab2CRXR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 19:17:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Subject: [PATCH 0/3] firmware_class: Fix problem with async requests (was: Re: [RFC] firmware loader: retry ...)
+Date: Mon, 19 Mar 2012 00:15:42 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203180129.38469.rjw@sisk.pl> <201203181343.40760.chunkeey@googlemail.com>
+In-Reply-To: <201203181343.40760.chunkeey@googlemail.com>
 MIME-Version: 1.0
-In-Reply-To: <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
-	<20120317123151.AAF9A3E0952@localhost>
-	<1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-Date: Mon, 19 Mar 2012 00:14:45 +0100
-Message-ID: <CACRpkdb4PbZWm8vCaC0MO0a=K+0ZBDhmvoRrTtKXqEy-Jz-VWQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Diego_Elio_Petten=F2?= <flameeyes@flameeyes.eu>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Denis Turischev <denis@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203190015.42495.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 17, 2012 at 7:53 PM, Diego Elio Pettenò
-<flameeyes@flameeyes.eu> wrote:
+On Sunday, March 18, 2012, Christian Lamparter wrote:
+> On Sunday 18 March 2012 01:29:38 Rafael J. Wysocki wrote:
+> > The patch below (untested) goes slightly into that direction, although not as
+> > far as to modify fw_create_instance().  It does, however, split
+> > _request_firmware() into "prepare", "load" and "cleanup" parts and moves
+> > the usermodehelper check along with the read-locking of umhelper_sem down
+> > to the callers, ie. request_firmware() and request_firmware_work_func().
+> > 
+> > The difference between them is that request_firmware() fails immediately
+> > with a WARN_ON() if it sees usermodehelper_disabled set after acquiring
+> > umhelper_sem, while request_firmware_work_func() waits for
+> > usermodehelper_disabled to be unset, with a timeout (the wait time is
+> > subtracted from the _request_firmware() timeout).  The reason why
+> > request_firmware_work_func() does it this way is that it can't wait for
+> > usermodehelper_disabled to be unset with umhelper_sem held and it has to
+> > call _request_firmware() under umhelper_sem (otherwise user space might be
+> > frozen out from under it).
+> > 
+> > I'm falling asleep now, but hopefully the patch isn't totally busted. :-)
+> > It should be split into a series of patches, though.
+> I'm happy to report that my test system [with the patch applied] suspended
+> and resumed without any incidents.
 
-> Another reason to have a MFD driver would be to allow tweaking the few
-> more knobs that (at least IT8728F) expose, such as the ability to switch
-> a few pre-defined inputs and outputs to GPIO instead, and so on...
+Thanks for testing!
 
-Hm that sounds an awful lot like pin multiplexing. Is that the case?
+The following three patches should result in analogous code, although slightly
+cleaned up.
 
-Yours,
-Linus Walleij
+Thanks,
+Rafael
+
