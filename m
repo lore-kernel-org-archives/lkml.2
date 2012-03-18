@@ -1,124 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2CRMk6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 08:40:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37118 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab2CRMkz (ORCPT
+	id S1754113Ab2CRMns (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 08:43:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57622 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab2CRMnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 08:40:55 -0400
-Message-ID: <1332074448.3722.25.camel@edumazet-laptop>
-Subject: [PATCH] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Indan Zupancic <indan@nul.nu>, David Miller <davem@davemloft.net>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Matt Evans <matt@ozlabs.org>
-Date: Sun, 18 Mar 2012 05:40:48 -0700
-In-Reply-To: <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
-	 <1331658828.4449.16.camel@edumazet-glaptop>
-	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-	 <1331704535.2456.37.camel@edumazet-laptop>
-	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
-	 <1331712357.2456.58.camel@edumazet-laptop>
-	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
-	 <1331992184.2466.45.camel@edumazet-laptop>
-	 <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sun, 18 Mar 2012 08:43:47 -0400
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
+Date: Sun, 18 Mar 2012 13:43:40 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc7-wl+; KDE/4.7.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <CA+55aFxiJABjKJz4J6Dwk8Jy4=Vds2P15XTVtX8_j6TDkTwXEg@mail.gmail.com> <201203180129.38469.rjw@sisk.pl>
+In-Reply-To: <201203180129.38469.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203181343.40760.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 18 mars 2012 à 19:35 +1100, Indan Zupancic a écrit :
+On Sunday 18 March 2012 01:29:38 Rafael J. Wysocki wrote:
+> The patch below (untested) goes slightly into that direction, although not as
+> far as to modify fw_create_instance().  It does, however, split
+> _request_firmware() into "prepare", "load" and "cleanup" parts and moves
+> the usermodehelper check along with the read-locking of umhelper_sem down
+> to the callers, ie. request_firmware() and request_firmware_work_func().
+> 
+> The difference between them is that request_firmware() fails immediately
+> with a WARN_ON() if it sees usermodehelper_disabled set after acquiring
+> umhelper_sem, while request_firmware_work_func() waits for
+> usermodehelper_disabled to be unset, with a timeout (the wait time is
+> subtracted from the _request_firmware() timeout).  The reason why
+> request_firmware_work_func() does it this way is that it can't wait for
+> usermodehelper_disabled to be unset with umhelper_sem held and it has to
+> call _request_firmware() under umhelper_sem (otherwise user space might be
+> frozen out from under it).
+> 
+> I'm falling asleep now, but hopefully the patch isn't totally busted. :-)
+> It should be split into a series of patches, though.
+I'm happy to report that my test system [with the patch applied] suspended
+and resumed without any incidents.
 
-> And in the 00.00001% case that the filter uses a computed negative
-> offset the BPF JIT fails at runtime. So to not be buggy you need at
-> least a call to __load_pointer() for the negative case.
-
-Please show me how and why a real (I mean useful one...) filter could
-generate a dynamic negative value, and I'll change the code.
-
-Negative values are there to allow access to network/mac header
-components. I cant see how a BPF code could have a valid use of dynamic
-indexes in these headers.
-
-Right now we consider such code is evil and filter does "return 0"
-saying so.
-
-If I remember well, a more practical issue was mentioned by Matt Evans
-and I forgot about it.
-
-Its even _documented_ in his code.
-
-Thanks
-
-[PATCH] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
-
-Matt Evans spotted that x86 bpf_jit was incorrectly handling negative
-constant offsets in BPF_S_LDX_B_MSH instruction.
-
-We need to abort JIT compilation like we do in common_load so that
-filter uses the interpreter code and can call __load_pointer()
-
-Reference: http://lists.openwall.net/netdev/2011/07/19/11
-
-Thanks to Indan Zupancic to bring back this issue.
-
-Reported-by: Matt Evans <matt@ozlabs.org>
-Reported-by: Indan Zupancic <indan@nul.nu>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
-David, libpcap doesnt generate such pattern, so feel to add this patch
-to net-next. Thanks !
-
- arch/x86/net/bpf_jit_comp.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index 7c1b765..5671752 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -475,8 +475,10 @@ void bpf_jit_compile(struct sk_filter *fp)
- 			case BPF_S_LD_W_ABS:
- 				func = sk_load_word;
- common_load:			seen |= SEEN_DATAREF;
--				if ((int)K < 0)
-+				if ((int)K < 0) {
-+					/* Abort the JIT because __load_pointer() is needed. */
- 					goto out;
-+				}
- 				t_offset = func - (image + addrs[i]);
- 				EMIT1_off32(0xbe, K); /* mov imm32,%esi */
- 				EMIT1_off32(0xe8, t_offset); /* call */
-@@ -489,14 +491,8 @@ common_load:			seen |= SEEN_DATAREF;
- 				goto common_load;
- 			case BPF_S_LDX_B_MSH:
- 				if ((int)K < 0) {
--					if (pc_ret0 > 0) {
--						/* addrs[pc_ret0 - 1] is the start address */
--						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
--						break;
--					}
--					CLEAR_A();
--					EMIT_JMP(cleanup_addr - addrs[i]);
--					break;
-+					/* Abort the JIT because __load_pointer() is needed. */
-+					goto out;
- 				}
- 				seen |= SEEN_DATAREF | SEEN_XREG;
- 				t_offset = sk_load_byte_msh - (image + addrs[i]);
-
-
+Regards,
+	Christian
