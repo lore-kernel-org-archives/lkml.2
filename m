@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2CRVYt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 17:24:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433Ab2CRVYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 17:24:48 -0400
-Date: Sun, 18 Mar 2012 17:24:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [3.3-rc7] sys_poll use after free (hibernate)
-Message-ID: <20120318212443.GA7312@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20120313005855.GA24639@redhat.com>
- <CAFLxGvxXBp1+D3Az7onYYvvi9S=_pPLSFpHqOCurjYwTpxbB6w@mail.gmail.com>
+	id S1756363Ab2CRVks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 17:40:48 -0400
+Received: from cet.com.ru ([195.178.208.66]:52101 "EHLO tservice.net.ru"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752433Ab2CRVkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 17:40:47 -0400
+Date: Mon, 19 Mar 2012 01:40:41 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] w1: Add 1-wire slave device driver for DS28E04-100
+Message-ID: <20120318214041.GA20521@ioremap.net>
+References: <4F63AF9E.2090000@hrz.tu-chemnitz.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvxXBp1+D3Az7onYYvvi9S=_pPLSFpHqOCurjYwTpxbB6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F63AF9E.2090000@hrz.tu-chemnitz.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 08:47:19PM +0100, richard -rw- weinberger wrote:
- > On Tue, Mar 13, 2012 at 1:58 AM, Dave Jones <davej@redhat.com> wrote:
- > > While trying to reproduce the i915 memory corruption problem with hibernate,
- > 
- > If you cannot reproduce the problem you can send me debug/test-patches.
- > I have two machines where I can reproduce the issue within an hour.
+Hi
 
-At the time I was hoping to bisect it. But it looks like it only happens on
-ironlake era graphics and newer, which I don't have.
+On Fri, Mar 16, 2012 at 10:24:46PM +0100, Markus Franke (markus.franke@s2002.tu-chemnitz.de) wrote:
+> This patch adds a 1-wire slave device driver for the DS28E04-100.
+> 
+> It applies to the current linux kernel git tree.
 
-With that info, I'm not sure it's really bisectable. The bug has probably
-been there since day 1 when ironlake support was added.
-See the thread 'Subject: Re: inode->i_wb_list corruption.' for some further
-thoughts, where it's theorised that the GTT contains stale entries after
-when we thaw.  I wouldn't be surprised if no-one had even tried hibernate
-(or at least noticed the memory corruption immediately) before that was merged.
+As discussed with Markus already - looks very good
+Greg, please pull it into your tree
 
-My thinking is that some kind of GTT teardown in the ->hibernate routine is
-probably what's needed.
+> Signed-off-by: Markus Franke <franm@hrz.tu-chemnitz.de>
 
-	Dave
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
+-- 
+	Evgeniy Polyakov
