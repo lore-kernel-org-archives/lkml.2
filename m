@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab2CRU60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 16:58:26 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62503 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab2CRU6Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 16:58:25 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: drop unneeded devm cleanup functions
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Jeff Garzik <jgarzik@pobox.com>
-Cc: kernel-janitors@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, w.sang@pengutronix.de
-In-Reply-To: <1331415352-10260-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1331415352-10260-1-git-send-email-Julia.Lawall@lip6.fr>
-Date: Sun, 18 Mar 2012 20:58:19 +0000
-Message-Id: <20120318205820.013643E07BF@localhost>
+	id S1756813Ab2CRVCK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 17:02:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18478 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415Ab2CRVCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 17:02:07 -0400
+Date: Sun, 18 Mar 2012 21:53:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [PATCH 1/1] CLONE_PARENT shouldn't allow to set ->exit_signal
+Message-ID: <20120318205342.GA14383@redhat.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <20120311172512.GA2729@redhat.com> <20120311174953.GB2729@redhat.com> <CA+55aFx43nZmhRg5Qv5x-4BdgcM-y80ECrgC8mCWc0RqU+_8rQ@mail.gmail.com> <20120314185510.GA14172@redhat.com> <20120314185538.GB14172@redhat.com> <CA+55aFzKc578eWYaq4+OaOM6hFjW+ePYCeC++_1p8f09YWV_hA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzKc578eWYaq4+OaOM6hFjW+ePYCeC++_1p8f09YWV_hA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Mar 2012 22:35:52 +0100, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> There is no need to call the devm cleanup functions on failure of a probe
-> or remove function.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+On 03/18, Linus Torvalds wrote:
+>
+> On Wed, Mar 14, 2012 at 11:55 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > +       if (clone_flags & CLONE_THREAD)
+> > +               p->exit_signal = -1;
+> > +       else if (clone_flags & CLONE_PARENT)
+> > +               p->exit_signal = current->group_leader->exit_signal;
+> > +       else
+> > +               p->exit_signal = (clone_flags & CSIGNAL);
+>
+> So why is it "current->group_leader->exit_signal" rather than the much
+> more logical (imho) and simpler "current->exit_signal"?
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+This would be wrong if current is not the main thread. In this
+case current->exit_signal = -1. Only group_leader has the "real"
+exit_signal used for notification.
 
-> 
-> ---
-> Changed subject.  Included Wolfram's ACK.
-> 
->  drivers/ata/pata_mpc52xx.c |   11 -----------
->  1 file changed, 11 deletions(-)
-> 
-> diff --git a/drivers/ata/pata_mpc52xx.c b/drivers/ata/pata_mpc52xx.c
-> index 00748ae..1f02008 100644
-> --- a/drivers/ata/pata_mpc52xx.c
-> +++ b/drivers/ata/pata_mpc52xx.c
-> @@ -806,17 +806,12 @@ mpc52xx_ata_probe(struct platform_device *op)
->  	return 0;
->  
->   err:
-> -	devm_release_mem_region(&op->dev, res_mem.start, sizeof(*ata_regs));
->  	if (ata_irq)
->  		irq_dispose_mapping(ata_irq);
->  	if (task_irq)
->  		irq_dispose_mapping(task_irq);
->  	if (dmatsk)
->  		bcom_ata_release(dmatsk);
-> -	if (ata_regs)
-> -		devm_iounmap(&op->dev, ata_regs);
-> -	if (priv)
-> -		devm_kfree(&op->dev, priv);
->  	return rv;
->  }
->  
-> @@ -835,12 +830,6 @@ mpc52xx_ata_remove(struct platform_device *op)
->  	bcom_ata_release(priv->dmatsk);
->  	irq_dispose_mapping(priv->ata_irq);
->  
-> -	/* Clear up IO allocations */
-> -	devm_iounmap(&op->dev, priv->ata_regs);
-> -	devm_release_mem_region(&op->dev, priv->ata_regs_pa,
-> -				sizeof(*priv->ata_regs));
-> -	devm_kfree(&op->dev, priv);
-> -
->  	return 0;
->  }
->  
-> 
+Historically "exit_signal = -1" meant different things, currently
+it only means "I am not the leader", see thread_group_leader().
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+I'll write another email tomorrow. Yes, I do remember I promised
+the security fixes in this area, sorry for delay.
+
+Oleg.
+
