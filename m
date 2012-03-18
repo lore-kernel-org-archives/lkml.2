@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2CRPp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 11:45:27 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:34490 "EHLO
-	homiemail-a42.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755351Ab2CRPp0 (ORCPT
+	id S1755498Ab2CRPt1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 11:49:27 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:57753 "EHLO
+	homiemail-a46.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754849Ab2CRPt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 11:45:26 -0400
+	Sun, 18 Mar 2012 11:49:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:content-type:
-	content-transfer-encoding; q=dns; s=shealevy.com; b=OFtmxJH0prRz
-	8Cums1IH/XmnUPmkvgf/fe9J11kfRYVCTbO1wObG/nOyrIRXprOYALN70ZpbBc0P
-	A1Tjl3V3V8UljMWVZBsvUPULGUIbN3y3tImeh1pW0WlpypM48fEvSUtz6DlY6LT3
-	+UUtXXU1WRKy/TLpelzrzxbHAqnXSxM=
-Message-ID: <4F660313.1080301@shealevy.com>
-Date: Sun, 18 Mar 2012 11:45:23 -0400
+	:from:mime-version:to:cc:subject:references:in-reply-to:
+	content-type; q=dns; s=shealevy.com; b=gOuJNTWIgtkP0EUG1ptM7blFA
+	2TLiqw1YqBrS5UGvclw5lMtaxuRTNVtK0MN54dQ6YThIcqphYLVHgiFL6XpGStIJ
+	Xw6LX7rx3IGN5XPG2ACy4+FpBKpPBoglDrNOp0Glp/+TSQYWn78zmShw4CEzowVP
+	P74+u9WbjuM/N5XjVg=
+Message-ID: <4F660402.4040300@shealevy.com>
+Date: Sun, 18 Mar 2012 11:49:22 -0400
 From: Shea Levy <shea@shealevy.com>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
@@ -23,30 +23,281 @@ CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
         Matt Fleming <matt.fleming@intel.com>,
         Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Subject: [RFC][PATCH 1/1] x86, efi: EFI boot stub config file support
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC][PATCH 1/1] x86, efi: EFI boot stub config file support
+References: <4F660313.1080301@shealevy.com>
+In-Reply-To: <4F660313.1080301@shealevy.com>
+Content-Type: multipart/mixed;
+ boundary="------------030304090700030201070807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is a multi-part message in MIME format.
+--------------030304090700030201070807
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Inlined is a patch to have the kernel read its parameters from a config 
-file when booted via the EFI boot stub without any parameters passed. 
-This patch roughly follows the plan I discussed when proposing this 
-idea, except now the file is found relative to the location of the 
-bzImage and there is no additional check to see if image->parent_handle 
-is NULL (despite the spec saying it will be NULL when the image was 
-loaded by the firmware itself, it was never NULL on any of the systems I 
-tested).
+On 3/18/12 11:45 AM, Shea Levy wrote:
+> Hello,
+>
+> Inlined is a patch to have the kernel read its parameters from a 
+> config file when booted via the EFI boot stub without any parameters 
+> passed. This patch roughly follows the plan I discussed when proposing 
+> this idea, except now the file is found relative to the location of 
+> the bzImage and there is no additional check to see if 
+> image->parent_handle is NULL (despite the spec saying it will be NULL 
+> when the image was loaded by the firmware itself, it was never NULL on 
+> any of the systems I tested).
+>
+> Cheers,
+> Shea Levy
+>
+> ---
+>
+> From 2c12b0f49831d2d96b6bdcef931794178312c288 Mon Sep 17 00:00:00 2001
+> From: Shea Levy <shea@shealevy.com>
+> Date: Sun, 18 Mar 2012 16:17:04 +0100
+> Subject: [PATCH 1/1] x86, efi: EFI boot stub config file support
+>
+> When booting via the EFI boot stub, search for a file named 
+> 'linux.conf' in
+> the same directory as the bzImage and read the kernel command line 
+> from it
+> when no load options are passed.
+>
+> The file search should only be triggered when the bzImage is loaded 
+> from the
+> firmware's boot process. When loaded via an EFI shell, the load 
+> options always
+> contain at least one character, even if no parameters were passed at the
+> prompt.
+>
+> Signed-off-by: Shea Levy <shea@shealevy.com>
+> ---
+>  arch/x86/boot/compressed/eboot.c |  146 
+> ++++++++++++++++++++++++++++++++++++--
+>  arch/x86/boot/compressed/eboot.h |    2 +
+>  2 files changed, 143 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/boot/compressed/eboot.c 
+> b/arch/x86/boot/compressed/eboot.c
+> index fec216f..672ecfe 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -486,14 +486,14 @@ struct initrd {
+>   * kernel image.
+>   */
+>  static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+> -                    struct setup_header *hdr)
+> +                    struct setup_header *hdr,
+> +                    efi_file_handle_t *fh)
+>  {
+>      struct initrd *initrds;
+>      unsigned long initrd_addr;
+>      efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
+>      u64 initrd_total;
+>      efi_file_io_interface_t *io;
+> -    efi_file_handle_t *fh;
+>      efi_status_t status;
+>      int nr_initrds;
+>      char *str;
+> @@ -568,7 +568,7 @@ static efi_status_t 
+> handle_ramdisks(efi_loaded_image_t *image,
+>          *p = '\0';
+>
+>          /* Only open the volume once. */
+> -        if (!i) {
+> +        if (!fh) {
+>              efi_boot_services_t *boottime;
+>
+>              boottime = sys_table->boottime;
+> @@ -712,6 +712,7 @@ static efi_status_t make_boot_params(struct 
+> boot_params *boot_params,
+>      u16 *s2;
+>      u8 *s1;
+>      int i;
+> +    efi_file_handle_t *fh = NULL;
+>
+>      hdr->type_of_loader = 0x21;
+>
+> @@ -743,14 +744,149 @@ static efi_status_t make_boot_params(struct 
+> boot_params *boot_params,
+>
+>              *s1 = '\0';
+>          }
+> -    }
+> +    } else {
+> +        efi_char16_t config_file_name[
+> +            sizeof CONFIG_FILE_NAME * sizeof(efi_char16_t)];
+> +        u16 *file_path = (u16 *)image->file_path;
+> +        efi_char16_t config_path[256], *config_path_position;
+> +        efi_boot_services_t *boottime;
+> +        efi_file_info_t *info;
+> +        unsigned long info_sz = 0;
+> +        u64 file_sz;
+> +        efi_guid_t info_guid = EFI_FILE_INFO_ID;
+> +        efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
+> +        efi_file_io_interface_t *io;
+> +        efi_file_handle_t *h;
+> +
+> +        boottime = sys_table->boottime;
+> +
+> +        config_path_position = config_path;
+> +
+> +        for (i = 0; i < sizeof CONFIG_FILE_NAME; i++)
+> +            config_file_name[i] = CONFIG_FILE_NAME[i];
+> +
+> +        while (*file_path == 0x404) {
+> +            u16 node_size = *(file_path + 1)/sizeof *file_path;
+> +
+> +            if (config_path_position - config_path) {
+> +                if (*(file_path + 2) == '\\' &&
+> +                        *(file_path - 2) == '\\') {
+> +                    config_path_position--;
+> +                } else if (*(file_path + 2) != '\\' &&
+> +                        *(file_path - 2) != '\\') {
+> +                    *config_path_position++ = '\\';
+> +                }
+> +            }
+> +
+> +            if ((config_path_position - config_path) + node_size - 3
+> +                    + sizeof config_file_name
+> +                    / sizeof *config_file_name
+> + > sizeof config_path
+> +                    / sizeof *config_path)
+> +                goto end;
+> +
+> +            memcpy((void *)config_path_position, file_path + 2,
+> +                    (node_size - 3) * sizeof *config_path);
+>
+> +            config_path_position += node_size - 3;
+> +            file_path += node_size;
+> +        }
+> +
+> +        while (*config_path_position != '\\' && config_path_position !=
+> +                config_path)
+> +            config_path_position--;
+> +
+> +        *config_path_position = '\\';
+> +
+> +        memcpy((void *)(config_path_position + 1),
+> +                config_file_name,
+> +                sizeof config_file_name);
+> +
+> +        status = efi_call_phys3(boottime->handle_protocol,
+> +                image->device_handle, &fs_proto, &io);
+> +
+> +        if (status != EFI_SUCCESS)
+> +            goto end;
+> +
+> +        status = efi_call_phys2(io->open_volume, io, &fh);
+> +
+> +        if (status != EFI_SUCCESS) {
+> +            fh = NULL;
+> +            goto end;
+> +        }
+> +
+> +        status = efi_call_phys5(fh->open,
+> +                fh,
+> + &h,
+> +                config_path,
+> +                EFI_FILE_MODE_READ, (u64)0);
+> +
+> +        if (status != EFI_SUCCESS)
+> +            goto end;
+> +
+> +        status = efi_call_phys4(h->get_info, h, &info_guid,
+> + &info_sz, NULL);
+> +
+> +        if (status != EFI_BUFFER_TOO_SMALL)
+> +            goto close_config_file;
+> +
+> +        while (status == EFI_BUFFER_TOO_SMALL) {
+> +            status = efi_call_phys3(boottime->allocate_pool,
+> +                    EFI_LOADER_DATA, info_sz, &info);
+> +
+> +            if (status != EFI_SUCCESS)
+> +                goto close_config_file;
+> +
+> +            status = efi_call_phys4(h->get_info, h, &info_guid,
+> + &info_sz, info);
+> +
+> +            if (status == EFI_BUFFER_TOO_SMALL)
+> +                efi_call_phys1(boottime->free_pool, info);
+> +        }
+> +
+> +        if (status != EFI_SUCCESS)
+> +            goto free_config_file_info;
+> +
+> +        file_sz = info->file_size;
+> +
+> +        if (file_sz > hdr->cmdline_size)
+> +            file_sz = hdr->cmdline_size;
+> +
+> +        options_size = file_sz + 1;
+> +
+> +        status = low_alloc(options_size, 1, &cmdline);
+> +
+> +        if (status != EFI_SUCCESS)
+> +            goto free_config_file_info;
+> +
+> +        status = efi_call_phys3(h->read, h, &file_sz, cmdline);
+> +
+> +        if (status != EFI_SUCCESS)
+> +            goto free_config_file_cmdline;
+> +
+> +        *((u8 *)cmdline + file_sz) = 0;
+> +
+> +        goto free_config_file_info;
+> +free_config_file_cmdline:
+> +        low_free(options_size, cmdline);
+> +        cmdline = 0;
+> +        options_size = 0;
+> +free_config_file_info:
+> +        efi_call_phys1(boottime->free_pool, info);
+> +close_config_file:
+> +        efi_call_phys1(h->close, h);
+> +    }
+> +end:
+>      hdr->cmd_line_ptr = cmdline;
+>
+>      hdr->ramdisk_image = 0;
+>      hdr->ramdisk_size = 0;
+>
+> -    status = handle_ramdisks(image, hdr);
+> +    status = handle_ramdisks(image, hdr, fh);
+> +
+> +    if (fh)
+> +        efi_call_phys1(fh->close, fh);
+> +
+>      if (status != EFI_SUCCESS)
+>          goto free_cmdline;
+>
+> diff --git a/arch/x86/boot/compressed/eboot.h 
+> b/arch/x86/boot/compressed/eboot.h
+> index 3925166..186b4c6 100644
+> --- a/arch/x86/boot/compressed/eboot.h
+> +++ b/arch/x86/boot/compressed/eboot.h
+> @@ -20,6 +20,8 @@
+>  #define PIXEL_BLT_ONLY                    3
+>  #define PIXEL_FORMAT_MAX                4
+>
+> +#define CONFIG_FILE_NAME "linux.conf"
+> +
+>  struct efi_pixel_bitmask {
+>      u32 red_mask;
+>      u32 green_mask;
 
-Cheers,
-Shea Levy
+Hmm, my mail client seems to have mangled the patch. I've attached it here.
 
----
+--------------030304090700030201070807
+Content-Type: text/plain; x-mac-type="0"; x-mac-creator="0";
+ name="0001-x86-efi-EFI-boot-stub-config-file-support.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-x86-efi-EFI-boot-stub-config-file-support.patch"
 
- From 2c12b0f49831d2d96b6bdcef931794178312c288 Mon Sep 17 00:00:00 2001
+>From 2c12b0f49831d2d96b6bdcef931794178312c288 Mon Sep 17 00:00:00 2001
 From: Shea Levy <shea@shealevy.com>
 Date: Sun, 18 Mar 2012 16:17:04 +0100
 Subject: [PATCH 1/1] x86, efi: EFI boot stub config file support
@@ -56,227 +307,221 @@ the same directory as the bzImage and read the kernel command line from it
 when no load options are passed.
 
 The file search should only be triggered when the bzImage is loaded from the
-firmware's boot process. When loaded via an EFI shell, the load options 
-always
+firmware's boot process. When loaded via an EFI shell, the load options always
 contain at least one character, even if no parameters were passed at the
 prompt.
 
 Signed-off-by: Shea Levy <shea@shealevy.com>
 ---
-  arch/x86/boot/compressed/eboot.c |  146 
-++++++++++++++++++++++++++++++++++++--
-  arch/x86/boot/compressed/eboot.h |    2 +
-  2 files changed, 143 insertions(+), 5 deletions(-)
+ arch/x86/boot/compressed/eboot.c |  146 ++++++++++++++++++++++++++++++++++++--
+ arch/x86/boot/compressed/eboot.h |    2 +
+ 2 files changed, 143 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/eboot.c 
-b/arch/x86/boot/compressed/eboot.c
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
 index fec216f..672ecfe 100644
 --- a/arch/x86/boot/compressed/eboot.c
 +++ b/arch/x86/boot/compressed/eboot.c
 @@ -486,14 +486,14 @@ struct initrd {
-   * kernel image.
-   */
-  static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
--                    struct setup_header *hdr)
-+                    struct setup_header *hdr,
-+                    efi_file_handle_t *fh)
-  {
-      struct initrd *initrds;
-      unsigned long initrd_addr;
-      efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
-      u64 initrd_total;
-      efi_file_io_interface_t *io;
--    efi_file_handle_t *fh;
-      efi_status_t status;
-      int nr_initrds;
-      char *str;
-@@ -568,7 +568,7 @@ static efi_status_t 
-handle_ramdisks(efi_loaded_image_t *image,
-          *p = '\0';
-
-          /* Only open the volume once. */
--        if (!i) {
-+        if (!fh) {
-              efi_boot_services_t *boottime;
-
-              boottime = sys_table->boottime;
-@@ -712,6 +712,7 @@ static efi_status_t make_boot_params(struct 
-boot_params *boot_params,
-      u16 *s2;
-      u8 *s1;
-      int i;
-+    efi_file_handle_t *fh = NULL;
-
-      hdr->type_of_loader = 0x21;
-
-@@ -743,14 +744,149 @@ static efi_status_t make_boot_params(struct 
-boot_params *boot_params,
-
-              *s1 = '\0';
-          }
--    }
-+    } else {
-+        efi_char16_t config_file_name[
-+            sizeof CONFIG_FILE_NAME * sizeof(efi_char16_t)];
-+        u16 *file_path = (u16 *)image->file_path;
-+        efi_char16_t config_path[256], *config_path_position;
-+        efi_boot_services_t *boottime;
-+        efi_file_info_t *info;
-+        unsigned long info_sz = 0;
-+        u64 file_sz;
-+        efi_guid_t info_guid = EFI_FILE_INFO_ID;
-+        efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
-+        efi_file_io_interface_t *io;
-+        efi_file_handle_t *h;
+  * kernel image.
+  */
+ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+-				    struct setup_header *hdr)
++				    struct setup_header *hdr,
++				    efi_file_handle_t *fh)
+ {
+ 	struct initrd *initrds;
+ 	unsigned long initrd_addr;
+ 	efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
+ 	u64 initrd_total;
+ 	efi_file_io_interface_t *io;
+-	efi_file_handle_t *fh;
+ 	efi_status_t status;
+ 	int nr_initrds;
+ 	char *str;
+@@ -568,7 +568,7 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+ 		*p = '\0';
+ 
+ 		/* Only open the volume once. */
+-		if (!i) {
++		if (!fh) {
+ 			efi_boot_services_t *boottime;
+ 
+ 			boottime = sys_table->boottime;
+@@ -712,6 +712,7 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 	u16 *s2;
+ 	u8 *s1;
+ 	int i;
++	efi_file_handle_t *fh = NULL;
+ 
+ 	hdr->type_of_loader = 0x21;
+ 
+@@ -743,14 +744,149 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 
+ 			*s1 = '\0';
+ 		}
+-	}
++	} else {
++		efi_char16_t config_file_name[
++			sizeof CONFIG_FILE_NAME * sizeof(efi_char16_t)];
++		u16 *file_path = (u16 *)image->file_path;
++		efi_char16_t config_path[256], *config_path_position;
++		efi_boot_services_t *boottime;
++		efi_file_info_t *info;
++		unsigned long info_sz = 0;
++		u64 file_sz;
++		efi_guid_t info_guid = EFI_FILE_INFO_ID;
++		efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
++		efi_file_io_interface_t *io;
++		efi_file_handle_t *h;
 +
-+        boottime = sys_table->boottime;
++		boottime = sys_table->boottime;
 +
-+        config_path_position = config_path;
++		config_path_position = config_path;
 +
-+        for (i = 0; i < sizeof CONFIG_FILE_NAME; i++)
-+            config_file_name[i] = CONFIG_FILE_NAME[i];
++		for (i = 0; i < sizeof CONFIG_FILE_NAME; i++)
++			config_file_name[i] = CONFIG_FILE_NAME[i];
 +
-+        while (*file_path == 0x404) {
-+            u16 node_size = *(file_path + 1)/sizeof *file_path;
++		while (*file_path == 0x404) {
++			u16 node_size = *(file_path + 1)/sizeof *file_path;
 +
-+            if (config_path_position - config_path) {
-+                if (*(file_path + 2) == '\\' &&
-+                        *(file_path - 2) == '\\') {
-+                    config_path_position--;
-+                } else if (*(file_path + 2) != '\\' &&
-+                        *(file_path - 2) != '\\') {
-+                    *config_path_position++ = '\\';
-+                }
-+            }
++			if (config_path_position - config_path) {
++				if (*(file_path + 2) == '\\' &&
++						*(file_path - 2) == '\\') {
++					config_path_position--;
++				} else if (*(file_path + 2) != '\\' &&
++						*(file_path - 2) != '\\') {
++					*config_path_position++ = '\\';
++				}
++			}
 +
-+            if ((config_path_position - config_path) + node_size - 3
-+                    + sizeof config_file_name
-+                    / sizeof *config_file_name
-+ > sizeof config_path
-+                    / sizeof *config_path)
-+                goto end;
++			if ((config_path_position - config_path) + node_size - 3
++					+ sizeof config_file_name
++					/ sizeof *config_file_name
++					> sizeof config_path
++					/ sizeof *config_path)
++				goto end;
 +
-+            memcpy((void *)config_path_position, file_path + 2,
-+                    (node_size - 3) * sizeof *config_path);
-
-+            config_path_position += node_size - 3;
-+            file_path += node_size;
-+        }
++			memcpy((void *)config_path_position, file_path + 2,
++					(node_size - 3) * sizeof *config_path);
+ 
++			config_path_position += node_size - 3;
++			file_path += node_size;
++		}
 +
-+        while (*config_path_position != '\\' && config_path_position !=
-+                config_path)
-+            config_path_position--;
++		while (*config_path_position != '\\' && config_path_position !=
++				config_path)
++			config_path_position--;
 +
-+        *config_path_position = '\\';
++		*config_path_position = '\\';
 +
-+        memcpy((void *)(config_path_position + 1),
-+                config_file_name,
-+                sizeof config_file_name);
++		memcpy((void *)(config_path_position + 1),
++				config_file_name,
++				sizeof config_file_name);
 +
-+        status = efi_call_phys3(boottime->handle_protocol,
-+                image->device_handle, &fs_proto, &io);
++		status = efi_call_phys3(boottime->handle_protocol,
++				image->device_handle, &fs_proto, &io);
 +
-+        if (status != EFI_SUCCESS)
-+            goto end;
++		if (status != EFI_SUCCESS)
++			goto end;
 +
-+        status = efi_call_phys2(io->open_volume, io, &fh);
++		status = efi_call_phys2(io->open_volume, io, &fh);
 +
-+        if (status != EFI_SUCCESS) {
-+            fh = NULL;
-+            goto end;
-+        }
++		if (status != EFI_SUCCESS) {
++			fh = NULL;
++			goto end;
++		}
 +
-+        status = efi_call_phys5(fh->open,
-+                fh,
-+ &h,
-+                config_path,
-+                EFI_FILE_MODE_READ, (u64)0);
++		status = efi_call_phys5(fh->open,
++				fh,
++				&h,
++				config_path,
++				EFI_FILE_MODE_READ, (u64)0);
 +
-+        if (status != EFI_SUCCESS)
-+            goto end;
++		if (status != EFI_SUCCESS)
++			goto end;
 +
-+        status = efi_call_phys4(h->get_info, h, &info_guid,
-+ &info_sz, NULL);
++		status = efi_call_phys4(h->get_info, h, &info_guid,
++					&info_sz, NULL);
 +
-+        if (status != EFI_BUFFER_TOO_SMALL)
-+            goto close_config_file;
++		if (status != EFI_BUFFER_TOO_SMALL)
++			goto close_config_file;
 +
-+        while (status == EFI_BUFFER_TOO_SMALL) {
-+            status = efi_call_phys3(boottime->allocate_pool,
-+                    EFI_LOADER_DATA, info_sz, &info);
++		while (status == EFI_BUFFER_TOO_SMALL) {
++			status = efi_call_phys3(boottime->allocate_pool,
++					EFI_LOADER_DATA, info_sz, &info);
 +
-+            if (status != EFI_SUCCESS)
-+                goto close_config_file;
++			if (status != EFI_SUCCESS)
++				goto close_config_file;
 +
-+            status = efi_call_phys4(h->get_info, h, &info_guid,
-+ &info_sz, info);
++			status = efi_call_phys4(h->get_info, h, &info_guid,
++						&info_sz, info);
 +
-+            if (status == EFI_BUFFER_TOO_SMALL)
-+                efi_call_phys1(boottime->free_pool, info);
-+        }
++			if (status == EFI_BUFFER_TOO_SMALL)
++				efi_call_phys1(boottime->free_pool, info);
++		}
 +
-+        if (status != EFI_SUCCESS)
-+            goto free_config_file_info;
++		if (status != EFI_SUCCESS)
++			goto free_config_file_info;
 +
-+        file_sz = info->file_size;
++		file_sz = info->file_size;
 +
-+        if (file_sz > hdr->cmdline_size)
-+            file_sz = hdr->cmdline_size;
++		if (file_sz > hdr->cmdline_size)
++			file_sz = hdr->cmdline_size;
 +
-+        options_size = file_sz + 1;
++		options_size = file_sz + 1;
 +
-+        status = low_alloc(options_size, 1, &cmdline);
++		status = low_alloc(options_size, 1, &cmdline);
 +
-+        if (status != EFI_SUCCESS)
-+            goto free_config_file_info;
++		if (status != EFI_SUCCESS)
++			goto free_config_file_info;
 +
-+        status = efi_call_phys3(h->read, h, &file_sz, cmdline);
++		status = efi_call_phys3(h->read, h, &file_sz, cmdline);
 +
-+        if (status != EFI_SUCCESS)
-+            goto free_config_file_cmdline;
++		if (status != EFI_SUCCESS)
++			goto free_config_file_cmdline;
 +
-+        *((u8 *)cmdline + file_sz) = 0;
++		*((u8 *)cmdline + file_sz) = 0;
 +
-+        goto free_config_file_info;
++		goto free_config_file_info;
 +free_config_file_cmdline:
-+        low_free(options_size, cmdline);
-+        cmdline = 0;
-+        options_size = 0;
++		low_free(options_size, cmdline);
++		cmdline = 0;
++		options_size = 0;
 +free_config_file_info:
-+        efi_call_phys1(boottime->free_pool, info);
++		efi_call_phys1(boottime->free_pool, info);
 +close_config_file:
-+        efi_call_phys1(h->close, h);
-+    }
++		efi_call_phys1(h->close, h);
++	}
 +end:
-      hdr->cmd_line_ptr = cmdline;
-
-      hdr->ramdisk_image = 0;
-      hdr->ramdisk_size = 0;
-
--    status = handle_ramdisks(image, hdr);
-+    status = handle_ramdisks(image, hdr, fh);
+ 	hdr->cmd_line_ptr = cmdline;
+ 
+ 	hdr->ramdisk_image = 0;
+ 	hdr->ramdisk_size = 0;
+ 
+-	status = handle_ramdisks(image, hdr);
++	status = handle_ramdisks(image, hdr, fh);
 +
-+    if (fh)
-+        efi_call_phys1(fh->close, fh);
++	if (fh)
++		efi_call_phys1(fh->close, fh);
 +
-      if (status != EFI_SUCCESS)
-          goto free_cmdline;
-
-diff --git a/arch/x86/boot/compressed/eboot.h 
-b/arch/x86/boot/compressed/eboot.h
+ 	if (status != EFI_SUCCESS)
+ 		goto free_cmdline;
+ 
+diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
 index 3925166..186b4c6 100644
 --- a/arch/x86/boot/compressed/eboot.h
 +++ b/arch/x86/boot/compressed/eboot.h
 @@ -20,6 +20,8 @@
-  #define PIXEL_BLT_ONLY                    3
-  #define PIXEL_FORMAT_MAX                4
-
+ #define PIXEL_BLT_ONLY					3
+ #define PIXEL_FORMAT_MAX				4
+ 
 +#define CONFIG_FILE_NAME "linux.conf"
 +
-  struct efi_pixel_bitmask {
-      u32 red_mask;
-      u32 green_mask;
+ struct efi_pixel_bitmask {
+ 	u32 red_mask;
+ 	u32 green_mask;
 -- 
 1.7.9.4
 
 
+--------------030304090700030201070807--
