@@ -1,157 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab2CRQIy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 12:08:54 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:33520 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755386Ab2CRQIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 12:08:53 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] [resend] Add support for Rise mP6 CPUs
-Date: Sun, 18 Mar 2012 17:08:34 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-References: <201203171136.44415.linux@rainbow-software.org> <cca346f3-b150-441e-a89e-83abce037b31@email.android.com>
-In-Reply-To: <cca346f3-b150-441e-a89e-83abce037b31@email.android.com>
-X-KMail-QuotePrefix: > 
+	id S1755795Ab2CRQJE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 12:09:04 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:48455 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755743Ab2CRQJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 12:09:00 -0400
+Date: Sun, 18 Mar 2012 09:07:18 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Diego Elio =?iso-8859-1?Q?Petten=F2?= <flameeyes@flameeyes.eu>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Denis Turischev <denis@compulab.co.il>
+Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
+Message-ID: <20120318160718.GA26847@ericsson.com>
+References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
+ <20120317123151.AAF9A3E0952@localhost>
+ <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-Message-Id: <201203181708.34932.linux@rainbow-software.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 17 March 2012 18:16:53 H. Peter Anvin wrote:
-> Did Rise ever ship any production parts?
+On Sat, Mar 17, 2012 at 07:53:42PM +0100, Diego Elio Pettenò wrote:
+> Il giorno sab, 17/03/2012 alle 12.31 +0000, Grant Likely ha scritto:
+> > Really?  The config line above claims IT8761E support.  How similar are
+> > these devices?  Either this line needs to be more specifc, or the drivers
+> > need to be merged.
+> 
+> I'm not sure about IT8761E, and it seems it's only partially the case
+> from the code I read; it probably would be possible — Denis would you
+> mind taking a look?
+> 
+> It could possibly work to merge them. For what it's worth I've more or
+> less followed on the steps of the two watchdog timer drivers for IT87
+> series.
+> 
+I don't think that would make sense. IT8761E has a completely different set
+of registers. It is a "Legacy Low Pin Count I/O" only. The other chips are
+environmental control chips. I didn't follow the context of this discussion,
+but IT8761E does not support a watchdog. It also only supports 16 GPIO pins.
 
-AFAIK, the Kirin CPUs (PR166-PR266) were mass produced. You can get them on 
-eBay (mostly PR266).
-
-> Ondrej Zary <linux@rainbow-software.org> wrote:
-> >Add detection for Rise mP6 x86 CPUs and a quirk to mark CMPXCHG8B as
-> >present.
-> >
-> >Result:
-> >$ cat /proc/cpuinfo
-> >processor       : 0
-> >vendor_id       : RiseRiseRise
-> >cpu family      : 5
-> >model           : 0
-> >model name      : mP6 (Kirin)
-> >stepping        : 4
-> >cpu MHz         : 200.443
-> >cache size      : 16 KB
-> >fdiv_bug        : no
-> >hlt_bug         : no
-> >f00f_bug        : no
-> >coma_bug        : no
-> >fpu             : yes
-> >fpu_exception   : yes
-> >cpuid level     : 1
-> >wp              : yes
-> >flags           : fpu tsc cx8 mmx up
-> >bogomips        : 400.88
-> >clflush size    : 32
-> >cache_alignment : 32
-> >address sizes   : 32 bits physical, 32 bits virtual
-> >power management:
-> >
-> >Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> >
-> >diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-> >index 3c57033..5a356f3 100644
-> >--- a/arch/x86/Kconfig.cpu
-> >+++ b/arch/x86/Kconfig.cpu
-> >@@ -505,3 +505,12 @@ config CPU_SUP_UMC_32
-> > 	  CPU might render the kernel unbootable.
-> >
-> > 	  If unsure, say N.
-> >+
-> >+config CPU_SUP_RISE_32
-> >+	default y
-> >+	bool "Support Rise processors" if PROCESSOR_SELECT
-> >+	depends on !64BIT
-> >+	---help---
-> >+	  This enables detection, tunings and quirks for Rise processors
-> >+
-> >+	  If unsure, say N.
-> >diff --git a/arch/x86/include/asm/processor.h
-> >b/arch/x86/include/asm/processor.h
-> >index aa9088c..e3a4e7f 100644
-> >--- a/arch/x86/include/asm/processor.h
-> >+++ b/arch/x86/include/asm/processor.h
-> >@@ -119,7 +119,8 @@ struct cpuinfo_x86 {
-> > #define X86_VENDOR_CENTAUR	5
-> > #define X86_VENDOR_TRANSMETA	7
-> > #define X86_VENDOR_NSC		8
-> >-#define X86_VENDOR_NUM		9
-> >+#define X86_VENDOR_RISE		9
-> >+#define X86_VENDOR_NUM		10
-> >
-> > #define X86_VENDOR_UNKNOWN	0xff
-> >
-> >diff --git a/arch/x86/kernel/cpu/Makefile
-> >b/arch/x86/kernel/cpu/Makefile
-> >index 25f24dc..1013eb6 100644
-> >--- a/arch/x86/kernel/cpu/Makefile
-> >+++ b/arch/x86/kernel/cpu/Makefile
-> >@@ -26,6 +26,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
-> > obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
-> > obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
-> > obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
-> >+obj-$(CONFIG_CPU_SUP_RISE_32)		+= rise.o
-> >
-> > obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
-> >
-> >diff --git a/arch/x86/kernel/cpu/rise.c b/arch/x86/kernel/cpu/rise.c
-> >new file mode 100644
-> >index 0000000..2072a0f
-> >--- /dev/null
-> >+++ b/arch/x86/kernel/cpu/rise.c
-> >@@ -0,0 +1,34 @@
-> >+#include <linux/kernel.h>
-> >+#include <linux/init.h>
-> >+#include <asm/processor.h>
-> >+#include "cpu.h"
-> >+
-> >+static void __cpuinit init_rise(struct cpuinfo_x86 *c)
-> >+{
-> >+	/*
-> >+	 * Datasheet says:
-> >+	 * The CMPXCHG8B instruction is supported and always enabled on the
-> >+	 * Rise mP6 processor; however, the default CPUID function bit is set
-> >+	 * to 0 to circumvent a reported bug in Windows NT.
-> >+	 */
-> >+	set_cpu_cap(c, X86_FEATURE_CX8);
-> >+	/* cache is always 16KB (8KB code + 8KB data) */
-> >+	c->x86_cache_size = 16;
-> >+}
-> >+
-> >+static const struct cpu_dev __cpuinitconst rise_cpu_dev = {
-> >+	.c_vendor	= "Rise",
-> >+	.c_ident	= { "RiseRiseRise" },
-> >+	.c_models = {
-> >+		{ .vendor = X86_VENDOR_RISE, .family = 5, .model_names =
-> >+		  {
-> >+			  [0] = "mP6 (Kirin)",
-> >+			  [2] = "mP6 (Lynx)",
-> >+		  }
-> >+		},
-> >+	},
-> >+	.c_init		= init_rise,
-> >+	.c_x86_vendor	= X86_VENDOR_RISE,
-> >+};
-> >+
-> >+cpu_dev_register(rise_cpu_dev);
-> >
-> >--
-> >Ondrej Zary
-
-
--- 
-Ondrej Zary
+Guenter
