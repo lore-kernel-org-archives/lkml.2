@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab2CRVpc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 17:45:32 -0400
-Received: from intermatrixgroup.ru ([195.178.208.66]:39189 "EHLO
-	tservice.net.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751850Ab2CRVpb (ORCPT
+	id S1755624Ab2CRWBa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 18:01:30 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64504 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2CRWB3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 17:45:31 -0400
-Date: Mon, 19 Mar 2012 01:45:30 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Renata Sayakhova <rsayakhova@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH 1/2] power_supply: Fix a typo in BATTERY_DS2781 Kconfig
- entry
-Message-ID: <20120318214530.GC20521@ioremap.net>
-References: <1331969590.30866.0.camel@phoenix>
+	Sun, 18 Mar 2012 18:01:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331969590.30866.0.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120318190744.GA6589@ZenIV.linux.org.uk>
+References: <20120318190744.GA6589@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 18 Mar 2012 15:01:08 -0700
+X-Google-Sender-Auth: um4gyVVPYItTK98ZRa1STPRP6NY
+Message-ID: <CA+55aFwBEoD167oD=X9d6jR+wn6Tb-QFgZR+wGwdej4qakCMgg@mail.gmail.com>
+Subject: Re: [rfc][patches] fix for munmap/truncate races
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, Mar 18, 2012 at 12:07 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> -       tlb_finish_mmu(&tlb, 0, end);
+> +       tlb_finish_mmu(&tlb, 0, -1);
 
-both patches look good, thank you
-Greg, please pull it into your tree
+Hmm. The fact that you drop the end pointer means that some
+architectures that optimize the TLB flushing for ranges now
+effectively can't do it any more.
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Now, I think it's only ia64 that really is affected, but it *might* matter.
 
--- 
-	Evgeniy Polyakov
+In particular, ia64 has some logic for "if you only flush one single
+region, you can optimize it", and the region sizes are in the
+terabytes. And I'm pretty sure you broke that - I'm just not entirely
+sure how much we care.
+
+                 Linus
