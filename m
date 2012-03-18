@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab2CRQJE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 12:09:04 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:48455 "EHLO imr3.ericy.com"
+	id S1755668Ab2CRQaR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 12:30:17 -0400
+Received: from 1wt.eu ([62.212.114.60]:63433 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755743Ab2CRQJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 12:09:00 -0400
-Date: Sun, 18 Mar 2012 09:07:18 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Diego Elio =?iso-8859-1?Q?Petten=F2?= <flameeyes@flameeyes.eu>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Denis Turischev <denis@compulab.co.il>
-Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
-Message-ID: <20120318160718.GA26847@ericsson.com>
-References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
- <20120317123151.AAF9A3E0952@localhost>
- <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754508Ab2CRQaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 12:30:16 -0400
+Date: Sun, 18 Mar 2012 17:30:07 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <greg@kroah.com>
+Cc: Arnd Hannemann <arnd@arndnet.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.59
+Message-ID: <20120318163007.GM17033@1wt.eu>
+References: <20120317130953.GA16926@1wt.eu> <4F65E1A6.3020302@arndnet.de> <20120318132855.GK17033@1wt.eu> <20120318151753.GA26492@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120318151753.GA26492@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 17, 2012 at 07:53:42PM +0100, Diego Elio Pettenò wrote:
-> Il giorno sab, 17/03/2012 alle 12.31 +0000, Grant Likely ha scritto:
-> > Really?  The config line above claims IT8761E support.  How similar are
-> > these devices?  Either this line needs to be more specifc, or the drivers
-> > need to be merged.
+On Sun, Mar 18, 2012 at 08:17:53AM -0700, Greg KH wrote:
+> On Sun, Mar 18, 2012 at 02:28:55PM +0100, Willy Tarreau wrote:
+> > Hi Arnd,
+> > 
+> > On Sun, Mar 18, 2012 at 02:22:46PM +0100, Arnd Hannemann wrote:
+> > > Hi,
+> > > 
+> > > Am 17.03.2012 14:09, schrieb Willy Tarreau:
+> > > 
+> > > > The updated 2.6.32.y git tree can be found at:
+> > > >    git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+> > > >   http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+> > > > 
+> > > > The tree can be browsed on the gitweb interface:
+> > > >   http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.32.y
+> > > 
+> > > Neither any commit after 2.6.32.58 nor the tag v2.6.32.59 seems to be available in the public git tree, yet.
+> > > Forgot to push?
+> > 
+> > Greg was not available for the final push when I sent the announce yesterday
+> > and I made a mistake in the pull request I sent him, further delaying the
+> > update. This will be sorted out soon, don't worry.
 > 
-> I'm not sure about IT8761E, and it seems it's only partially the case
-> from the code I read; it probably would be possible — Denis would you
-> mind taking a look?
-> 
-> It could possibly work to merge them. For what it's worth I've more or
-> less followed on the steps of the two watchdog timer drivers for IT87
-> series.
-> 
-I don't think that would make sense. IT8761E has a completely different set
-of registers. It is a "Legacy Low Pin Count I/O" only. The other chips are
-environmental control chips. I didn't follow the context of this discussion,
-but IT8761E does not support a watchdog. It also only supports 16 GPIO pins.
+> Sorry for the delay, they are now pushed out and should show up on the
+> public mirrors within minutes now.
 
-Guenter
+They show up now, thank you Greg!
+Willy
+
