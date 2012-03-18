@@ -1,46 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab2CRMR2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 08:17:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50866 "EHLO ogre.sisk.pl"
+	id S1755204Ab2CRMWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 08:22:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28542 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab2CRMR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 08:17:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
-Date: Sun, 18 Mar 2012 13:21:38 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Christian Lamparter <chunkeey@googlemail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203180129.38469.rjw@sisk.pl> <CA+55aFzrj32d6ROrtSOBn_HgW5m8Nf5ZhF7H6fRfoPwkX=A8-w@mail.gmail.com>
-In-Reply-To: <CA+55aFzrj32d6ROrtSOBn_HgW5m8Nf5ZhF7H6fRfoPwkX=A8-w@mail.gmail.com>
+	id S1752744Ab2CRMWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 08:22:45 -0400
+Date: Sun, 18 Mar 2012 14:22:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: qemu-devel@nongnu.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-spec: split virtio-net device status filed into
+ ro and rw byte
+Message-ID: <20120318122252.GE29902@redhat.com>
+References: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203181321.38852.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 18, 2012, Linus Torvalds wrote:
-> On Sat, Mar 17, 2012 at 5:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> > The patch below (untested) goes slightly into that direction, although not as
-> > far as to modify fw_create_instance().  It does, however, split
-> > _request_firmware() into "prepare", "load" and "cleanup" parts and moves
-> > the usermodehelper check along with the read-locking of umhelper_sem down
-> > to the callers, ie. request_firmware() and request_firmware_work_func().
+On Fri, Mar 16, 2012 at 11:20:26PM +0800, Jason Wang wrote:
+> This patch splits the device status field of virtio-net into ro and rw
+> byte. This would simplify the implementation of both host and guest
+> and make the layout more clean. As VIRTIO_NET_S_ANNOUNCE is a rw bit,
+> it was moved to bit 8 (0x100).
 > 
-> Looks fairly reasonable to me from a quick read-through, and the code
-> seems to make sense.
+> btw. looks like there's no implementation that depends on
+> VIRTIO_NET_S_ANNOUNCE, so the move is safe.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Thanks!
+Hmm, I know I proposed this myself, and I thought it will
+prevent problems if we will add more rw bits,
+but I missed the following race:
 
-I'll split it into a series of patches, then, and post for testing.
+host writes VIRTIO_NET_S_ANNOUNCE = 1, interrupt
 
-Rafael
+				guest reads VIRTIO_NET_S_ANNOUNCE = 1
+
+host writes VIRTIO_NET_S_SOME_NEW_FIELD = 1, interrupt
+
+				guest writes VIRTIO_NET_S_ANNOUNCE = 0
+				VIRTIO_NET_S_SOME_NEW_FIELD is overwritten
+
+				guest reads VIRTIO_NET_S_SOME_NEW_FIELD = 0
+
+How about making the new bit write 1 to clear?
+If we do, we can keep it where it is currently ...
+
+
+
+> ---
+>  virtio-0.9.4.lyx |   20 +++++++++++++++++++-
+>  1 files changed, 19 insertions(+), 1 deletions(-)
+> 
+> diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
+> index 6c7bab1..ef3951c 100644
+> --- a/virtio-0.9.4.lyx
+> +++ b/virtio-0.9.4.lyx
+> @@ -58,6 +58,7 @@
+>  \html_be_strict false
+>  \author -608949062 "Rusty Russell,,," 
+>  \author 1531152142 "pbonzini" 
+> +\author 2090695081 "Jason" 
+>  \end_header
+>  
+>  \begin_body
+> @@ -4012,8 +4013,19 @@ configuration
+>  layout Two configuration fields are currently defined.
+>   The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
+>   is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
+> +
+> +\change_inserted 2090695081 1331907586
+> + The low byte of status field is read-only, guest write to this byte would
+> + be ignored.
+> + Currently only one bit is defined for this byte: VIRTIO_NET_S_LINK_UP.
+> + The high byte of status field is read-writable.
+> + Currently only one bit is defined for this byte: VIRTIO_NET_S_ANNOUNCE.
+> +
+> +\change_deleted 2090695081 1331907489
+>   Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
+>   and VIRTIO_NET_S_ANNOUNCE.
+> +
+> +\change_unchanged
+>   
+>  \begin_inset listings
+>  inline false
+> @@ -4026,7 +4038,13 @@ status open
+>  
+>  \begin_layout Plain Layout
+>  
+> -#define VIRTIO_NET_S_ANNOUNCE	2
+> +#define VIRTIO_NET_S_ANNOUNCE	
+> +\change_inserted 2090695081 1331907493
+> +0x100
+> +\change_deleted 2090695081 1331907491
+> +2
+> +\change_unchanged
+> +
+>  \end_layout
+>  
+>  \begin_layout Plain Layout
