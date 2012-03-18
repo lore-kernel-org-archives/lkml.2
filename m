@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab2CRMns (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 08:43:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57622 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab2CRMnr (ORCPT
+	id S1755219Ab2CRMwI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 08:52:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36708 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842Ab2CRMwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 08:43:47 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
-Date: Sun, 18 Mar 2012 13:43:40 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc7-wl+; KDE/4.7.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <CA+55aFxiJABjKJz4J6Dwk8Jy4=Vds2P15XTVtX8_j6TDkTwXEg@mail.gmail.com> <201203180129.38469.rjw@sisk.pl>
-In-Reply-To: <201203180129.38469.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203181343.40760.chunkeey@googlemail.com>
+	Sun, 18 Mar 2012 08:52:06 -0400
+Message-ID: <1332075121.3722.34.camel@edumazet-laptop>
+Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Date: Sun, 18 Mar 2012 05:52:01 -0700
+In-Reply-To: <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+	 <1331658828.4449.16.camel@edumazet-glaptop>
+	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+	 <1331704535.2456.37.camel@edumazet-laptop>
+	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
+	 <1331712357.2456.58.camel@edumazet-laptop>
+	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+	 <1331992184.2466.45.camel@edumazet-laptop>
+	 <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 18 March 2012 01:29:38 Rafael J. Wysocki wrote:
-> The patch below (untested) goes slightly into that direction, although not as
-> far as to modify fw_create_instance().  It does, however, split
-> _request_firmware() into "prepare", "load" and "cleanup" parts and moves
-> the usermodehelper check along with the read-locking of umhelper_sem down
-> to the callers, ie. request_firmware() and request_firmware_work_func().
-> 
-> The difference between them is that request_firmware() fails immediately
-> with a WARN_ON() if it sees usermodehelper_disabled set after acquiring
-> umhelper_sem, while request_firmware_work_func() waits for
-> usermodehelper_disabled to be unset, with a timeout (the wait time is
-> subtracted from the _request_firmware() timeout).  The reason why
-> request_firmware_work_func() does it this way is that it can't wait for
-> usermodehelper_disabled to be unset with umhelper_sem held and it has to
-> call _request_firmware() under umhelper_sem (otherwise user space might be
-> frozen out from under it).
-> 
-> I'm falling asleep now, but hopefully the patch isn't totally busted. :-)
-> It should be split into a series of patches, though.
-I'm happy to report that my test system [with the patch applied] suspended
-and resumed without any incidents.
+Le dimanche 18 mars 2012 à 19:35 +1100, Indan Zupancic a écrit :
 
-Regards,
-	Christian
+> Yes. The main difference would be that the JIT could always generate imm8
+> offsets, saving 4 bytes per long offset while also simplifying the compiler
+> code. The %rdi + 127 is 4 bytes, and if the rest become slightly faster
+> because they're imm8 then it's worth the extra instruction.
+> 
+
+Do you understand you try to save 3 bytes in the function prolog, but
+your single EMIT4(0x48, 0x83, 0xc7, 127); /* addq $127,%rdi */
+defeats this ?
+
+Ancillary instructions are rarely used, libpcap for example doesnt have
+support for them.
+
+> I first thought the +127 could be done in two bytes, but 4 bytes are
+> needed, so maybe it's not worth it.
+...
+> The add 127 would be at the start, the first instruction using it would
+> be a couple of instructions later, so I don't think the dependency is a
+> problem.
+> 
+> You're right about skb_copy_bits(), I did a quick search for rdi usage
+> but missed it was the first parameter too. It would need one extra
+> sub 127 or add -127 in the slow path, after the push. But it's the slow
+> path already, one extra instruction won't make much difference.
+
+It will, because new NIC drivers tend to provide skbs with fragments.
+
+Using libpcap filter like "udp[100]" calls the skb_copy_bits() helper in
+this case.
+
+There is no difference in instruction timing using offset32 or offset8,
+so the code you add will slow the filter anyway.
+
+Please dont obfuscate this code, I'd like to keep it maintainable.
+
+
