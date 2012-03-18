@@ -1,227 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab2CRSfn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 14:35:43 -0400
-Received: from mta103.odn.ne.jp ([143.90.14.143]:59572 "EHLO cmta103.odn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753049Ab2CRSfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 14:35:42 -0400
-Message-ID: <4F662AFB.9050106@yahoo.co.jp>
-Date: Mon, 19 Mar 2012 03:35:39 +0900
-From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1754397Ab2CRSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 14:41:09 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:47503 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab2CRSlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 14:41:07 -0400
+Date: Sun, 18 Mar 2012 14:41:05 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-next@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: linux-next: triage for March 18, 2012
+Message-ID: <20120318184105.GC2095@windriver.com>
 MIME-Version: 1.0
-To: IDE/ATA development list <linux-ide@vger.kernel.org>
-CC: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
- Sil3726
-References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com>
-In-Reply-To: <4F5F7C4C.7080800@teksavvy.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You may see these messages more easier when cold boot even if there are
-a few Sil3726 port multiplier:
-  :
-> [    0.000000] Linux version 3.2.10-3.fc16.i686.PAE (mockbuild@x86-02.phx2.fedoraproject.org) (gcc version 4.6.2 20111027 (Red Hat 4.6.2-1) (GCC) ) #1 SMP Thu Mar 15 20:37:01 UTC 2012
-  :
-> [    3.764070] ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [    3.764394] ata5.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
-> [    3.767216] ata5.00: hard resetting link
-> [    4.105264] ata5.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [    4.105300] ata5.01: hard resetting link
-> [    4.421064] ata5.01: softreset failed (SRST command error)
-> [    4.421078] ata5.01: failed to read SCR 0 (Emask=0x40)
-> [    4.421085] ata5.01: reset failed (errno=-85), retrying in 10 secs
-> [   14.105089] ata5.01: reset failed, giving up
-> [   14.105100] ata5.15: hard resetting link
-> [   16.226094] ata5.15: softreset failed (SRST command error)
-> [   16.226102] ata5.15: reset failed (errno=-5), retrying in 8 secs
-> [   24.105243] ata5.15: hard resetting link
-> [   26.226231] ata5.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   26.226242] ata5.15: PMP revalidation failed (errno=-19)
-> [   31.226079] ata5.15: hard resetting link
-> [   33.358086] ata5.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   33.358388] ata5.00: hard resetting link
-> [   33.696256] ata5.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [   33.696291] ata5.01: hard resetting link
-> [   34.034255] ata5.01: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   34.034292] ata5.02: hard resetting link
-> [   34.460042] ata5.02: softreset failed (SRST command error)
-> [   34.460064] ata5.02: failed to read SCR 0 (Emask=0x40)
-> [   34.460070] ata5.02: reset failed (errno=-85), retrying in 10 secs
-> [   44.034216] ata5.02: reset failed, giving up
-> [   44.034225] ata5.15: hard resetting link
-> [   44.034230] ata5: controller in dubious state, performing PORT_RST
-> [   46.188102] ata5.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   46.188403] ata5.00: hard resetting link
-> [   46.526267] ata5.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [   46.526301] ata5.01: hard resetting link
-> [   46.864262] ata5.01: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   46.864297] ata5.02: hard resetting link
-> [   47.202253] ata5.02: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   47.202288] ata5.03: hard resetting link
-> [   47.628038] ata5.03: softreset failed (SRST command error)
-> [   47.628052] ata5.03: failed to read SCR 0 (Emask=0x40)
-> [   47.628058] ata5.03: reset failed (errno=-85), retrying in 10 secs
-> [   57.202189] ata5.03: reset failed, giving up
-> [   57.202197] ata5.15: hard resetting link
-> [   57.202202] ata5: controller in dubious state, performing PORT_RST
-> [   59.356051] ata5.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   59.356397] ata5.00: hard resetting link
-> [   59.694252] ata5.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [   59.694287] ata5.01: hard resetting link
-> [   60.032253] ata5.01: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   60.032290] ata5.02: hard resetting link
-> [   60.370261] ata5.02: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   60.370296] ata5.03: hard resetting link
-> [   60.708269] ata5.03: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   60.708304] ata5.04: hard resetting link
-> [   61.013360] ata5.04: SATA link down (SStatus 0 SControl 320)
-> [   61.013422] ata5.05: hard resetting link
-  :
-> [   63.850067] ata6: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   63.850427] ata6.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
-> [   63.853419] ata6.00: hard resetting link
-> [   64.180241] ata6.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [   64.180280] ata6.01: hard resetting link
-> [   64.606036] ata6.01: softreset failed (SRST command error)
-> [   64.606054] ata6.01: failed to read SCR 0 (Emask=0x40)
-> [   64.606061] ata6.01: reset failed (errno=-85), retrying in 10 secs
-> [   74.180035] ata6.01: reset failed, giving up
-> [   74.180046] ata6.15: hard resetting link
-> [   74.180052] ata6: controller in dubious state, performing PORT_RST
-> [   76.334081] ata6.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   76.334404] ata6.00: hard resetting link
-> [   76.661266] ata6.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [   76.661305] ata6.01: hard resetting link
-> [   76.988320] ata6.01: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   76.988357] ata6.02: hard resetting link
-> [   77.414044] ata6.02: softreset failed (SRST command error)
-> [   77.414057] ata6.02: failed to read SCR 0 (Emask=0x40)
-> [   77.414065] ata6.02: reset failed (errno=-85), retrying in 10 secs
-> [   86.988104] ata6.02: reset failed, giving up
-> [   86.988114] ata6.15: hard resetting link
-> [   86.988120] ata6: controller in dubious state, performing PORT_RST
-> [   89.142149] ata6.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [   89.142465] ata6.00: hard resetting link
-> [   89.469329] ata6.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [   89.469367] ata6.01: hard resetting link
-> [   89.796252] ata6.01: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   89.796289] ata6.02: hard resetting link
-> [   90.123242] ata6.02: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [   90.123277] ata6.03: hard resetting link
-> [   90.549042] ata6.03: softreset failed (SRST command error)
-> [   90.549058] ata6.03: failed to read SCR 0 (Emask=0x40)
-> [   90.549065] ata6.03: reset failed (errno=-85), retrying in 10 secs
-> [  100.123063] ata6.03: reset failed, giving up
-> [  100.123072] ata6.15: hard resetting link
-> [  100.123078] ata6: controller in dubious state, performing PORT_RST
-> [  102.277076] ata6.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
-> [  102.277392] ata6.00: hard resetting link
-> [  102.604240] ata6.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-> [  102.604278] ata6.01: hard resetting link
-> [  102.931241] ata6.01: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [  102.931279] ata6.02: hard resetting link
-> [  103.258256] ata6.02: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [  103.258292] ata6.03: hard resetting link
-> [  103.585257] ata6.03: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [  103.585294] ata6.04: hard resetting link
-> [  103.890368] ata6.04: SATA link down (SStatus 0 SControl 320)
-> [  103.890433] ata6.05: hard resetting link
-> [  104.195336] ata6.05: SATA link up 1.5 Gbps (SStatus 113 SControl 320)
-  :
+This represents the state of things as of Friday since I didn't
+get a report out then.  Four new arches have been added but none
+of them yet build (top four below).
+
+New breakage since last report:
+	AM33:asb2303_defconfig,asb2364_defconfig (toolchain?)
+	frv:defconfig  (arch/frv/kernel/head.S operand out of range)
+	h8300:defconfig (time.c: implicit declaration 'get_irq_regs')
+	m32r:m32700ut.smp_defconfig (No rule to make vmlinux.bin)
+	m68k:allmodconfig (persistent_ram.c: implicit declaration 'memblock_reserve')
+	sparc[64]:allmodconfig (hda/patch_sigmatel.c: 'stac93xx_set_power_state' undeclared)
+	sparc/m68k:allmodconfig (implicit completion.h - already fixed)
+
+Randconfig fails that may or may not be new (by their very nature):
+	i386: samsung-laptop.c: implicit declaration of 'isalnum'
+		(http://kisskb.ellerman.id.au/kisskb/buildresult/5884289/)
+	powerpc: kernel/fadump.c:407:2: error: 'crashing_cpu' undeclared
+		(http://kisskb.ellerman.id.au/kisskb/buildresult/5884411/)
+	x86_64: No rule to make scsi/aic7xxx/aicasm/*.[chyl]
+		http://kisskb.ellerman.id.au/kisskb/buildresult/5884287/
+
+Builds that are fixed since last report:
+	ARM:orion5x_defconfig
+	powerpc:allmodconfig
 
 
-(2012/03/14 01:56), Mark Lord wrote:
-> Sounds like a regression from 3.1 to 3.2.
-> Copying linux-ide & Jeff.
-> 
-> -------- Original Message --------
-> Subject: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier Sil3726
-> Date: Tue, 13 Mar 2012 13:28:54 +0900
-> From: ANEZAKI, Akira <fireblade1230@yahoo.co.jp>
-> To: linux-kernel@vger.kernel.org
-> 
-> Hi!
-> 
-> I'm in trouble on a PC that has 6 eSATA port multiplier.
-> 
->>From kernel 3.2.x, kernel fails to boot when many HDDs are connected to
-> many eSATA port multiplier with Sil3726.
-> 
-> Kernel is repeating eSATA bus reset while booting and spend long time,
-> and result into fail to boot with timeout. It causes that some HDDs
-> cannot be seen from kernel on a PC that has 6 Sil3726 port multiplier.
-> dmesg contains many reset messages while booting like this:
->    :
->> [   48.060454] ata6: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
->> [   48.061150] ata6.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->> [   48.063158] ata6.00: hard resetting link
->> [   48.401020] ata6.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
->> [   48.401080] ata6.01: hard resetting link
->> [   48.825741] ata6.01: softreset failed (SRST command error)
->> [   48.935499] ata6.01: failed to read SCR 0 (Emask=0x1)
->> [   48.935505] ata6.01: reset failed (errno=-85), retrying in 10 secs
->    :
->> [  294.950152] ata9: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
->> [  294.950453] ata9.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->> [  294.953382] ata9.00: hard resetting link
->> [  304.937981] ata9.00: softreset failed (timeout)
->> [  307.931302] ata9.15: qc timeout (cmd 0xe4)
->> [  307.931318] ata9.00: failed to read SCR 0 (Emask=0x5)
->> [  307.931322] ata9.00: reset failed, giving up
->> [  307.931327] ata9.15: hard resetting link
->> [  310.058635] ata9.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
->> [  310.059016] ata9.00: hard resetting link
->> [  320.044490] ata9.00: softreset failed (timeout)
->> [  323.037851] ata9.15: qc timeout (cmd 0xe4)
->> [  323.037868] ata9.00: failed to read SCR 0 (Emask=0x5)
->> [  323.037872] ata9.00: reset failed, giving up
->    :
->> [  556.513676] systemd[1]: Job dev-disk-by\x2dlabel-WORK.device/start timed out.
->> [  556.513693] systemd[1]: Job fedora-autorelabel-mark.service/start failed with result 'dependency'.
->> [  556.513816] systemd[1]: Job fedora-autorelabel.service/start failed with result 'dependency'.
->> [  556.513833] systemd[1]: Job local-fs.target/start failed with result 'dependency'.
->> [  556.513846] systemd[1]: Triggering OnFailure= dependencies of local-fs.target.
->> [  556.515352] systemd[1]: Job mnt-work.mount/start failed with result 'dependency'.
->> [  556.515368] systemd[1]: Job dev-disk-by\x2dlabel-WORK.device/start failed with result 'timeout'.
->> [  556.851000] systemd[1]: Startup finished in 2s 212ms 906us (kernel) + 7min 44s 688ms 483us (initrd) + 1min 30s 977ms 147us (userspace) = 9min 17s 878ms 536us.
-> 
-> When only one sentence in drivers/ata/libata-pmp.c only for Sil3726 back
-> to that in kernel 3.1.x, this problem is not seen. I attached the patch
-> file.
-> 
-> This patch solves the problem on my PC but I can't understand ata
-> subsystem. So I'm afraid of side effect.
-> 
-> Can you consider this patch?
-> 
-> Best Regards,
-> ANEZAKI, Akira
-> 
-> -------- Original Message --------
-> Subject: [Bug 787468] boot fails by timeout while activating RAIDs with
-> many HDDs
-> Date: Mon, 12 Mar 2012 16:30:45 -0400
-> From: bugzilla@redhat.com
-> To: fireblade1230@yahoo.co.jp
-> 
-> Please do not reply directly to this email. All additional
-> comments should be made in the comments box of this bug.
-> 
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=787468
-> 
-> --- Comment #20 from Dave Jones <davej@redhat.com> 2012-03-12 16:30:43
-> EDT ---
-> can you post this patch upstream to linux-kernel@vger.kernel.org ?
-> if it is acceptable there, we will add it to the Fedora kernel.
-> 
+Note: The randconfig fails are only listed once and not tracked
+in the below listing.
+
+            ------------------------------------------------
+
+Latest results at:
+	http://kisskb.ellerman.id.au/kisskb/branch/9/
+
+Failures as of March 18th, 2012:
+===============================
+
+AM33:asb2303_defconfig,asb2364_defconfig
+	when:	Mar 15, 18:04
+	why:	cc1: error: unrecognized command line option '-mmem-funcs'
+	status:	incompatible toolchain?
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
+----------------
+
+ARM:u8500_defconfig
+	when:	Mar 14, 08:53
+	why:	mach-ux500/timer.c: 'IRQ_LOCALTIMER' undeclared
+	status:	fixed
+	fix:	http://marc.info/?l=linux-next&m=133193275811234&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884194/
+	
+ARM:mxs_defconfig
+	when:	Mar 14, 00:19
+	why:	Inconsistent kallsyms data This is a bug - please report
+	status: UFO bug keeps appearing at random
+	fix:	
+	ref:	https://lkml.org/lkml/2011/8/2/233
+	ref:	https://lkml.org/lkml/2011/10/8/70
+
+ARM:eseries_pxa_defconfig
+	when:	Mar 14, 05:15
+	why:	tmio_mmc_pio.c:: 'struct tmio_mmc_host' has no member named 'native_hotplug'
+	status:	bisected and reported (PaulG).
+	fix:	Apparently an ordering issue that should now be resolved.
+	ref:	http://permalink.gmane.org/gmane.linux.kernel.mmc/13491
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869552/
+
+ARM:netx_defconfig,pnx4008_defconfig 
+	when:	Mar 14, 02:43
+	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
+	ref:	https://lkml.org/lkml/2012/3/13/670
+
+ARM:cam60_defconfig
+	when:	Feb 23, 16:47
+	why:	trace_entries.h: 'perf_ftrace_event_register' undeclared
+	status:	S. Rostedt has a patch somewhere.
+	fix:	
+	ref:	irc (#linux-rt)
+
+ARM:collie_defconfig
+	when:	Feb 14, 19:10
+	why:	locomolcd.c: error: 'sa1100fb_lcd_power' undeclared
+	status:	fixed (PaulG) - pending integration
+	fix:	http://marc.info/?l=linux-next&m=133105157730749&w=2
+	ref:
+
+ARM:imx_v4_v5_defconfig
+	when:	Mar 9
+	why:	clkdev.c: undefined reference to `vb2_dma_contig_memops'
+	status:	
+	fix:	
+	ref:	
+
+ARM:iop32x_defconfig,iop33x_defconfig
+	when:	Nov 23, 13:42
+	why:	restart.c: implicit declaration of function 'soft_restart'
+	status:	fixed (PaulG) - pending integration
+	fix:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081461.html
+	fix:	https://lkml.org/lkml/2012/3/14/253
+	ref:
+
+ARM:ixp4xx_defconfig
+	when:	Oct 26, 01:40
+	why:	gpio.h: implicit declaration of function '__gpio_get_value'
+	status:	fixed (Imre Kaloz) - but possibly needs rework?
+	fix:	https://lkml.org/lkml/2012/2/8/288
+	ref:	https://lkml.org/lkml/2012/2/8/287
+
+ARM:magician_defconfig
+	when:	Feb 13, 19:10
+	why:	magician.c: unknown field 'dev' specified in initializer
+	status:	fixed (PaulG) - pending integration
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133106325903524&w=2
+
+ARM:em_x270_defconfig
+	when:	Feb 14, 01:15
+	why:	em-x270.c: unknown field 'dev' specified in initializer
+	status:	 fixed (PaulG) - pending integration
+	fix:	http://www.spinics.net/lists/arm-kernel/msg164012.html
+	ref:	http://www.spinics.net/lists/arm-kernel/msg163135.html
+
+ARM:raumfeld_defconfig
+	when:	Nov 23, 09:36
+	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
+	status:	perhaps broken since 2010?  See ref below.
+	fix:	
+	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
+
+ARM:omap2plus_defconfig
+	when:	Feb 16, 00:23
+	why:	control.c:238: error: 'OMAP343X_CTRL_BASE' undeclared
+	status:	PaulG did hack-n-slash, but at best a WIP, needs additonal reverts
+	fix:	http://www.spinics.net/lists/arm-kernel/msg163120.html
+	ref:	http://www.spinics.net/lists/arm-kernel/msg163262.html
+
+ARM:at91x40_defconfig
+	when:	Feb 28, 07:38 	
+	why:	super.c:(.text+0x3ffd8): undefined reference to `vm_is_stack'
+	status:	WIP, fix from PaulG + follow on from 
+	fix:	http://marc.info/?l=linux-next&m=133096554131691&w=2
+	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
+
+ARM:s3c2410_defconfig 
+	when:	Mar 7, 22:59
+	why:	s3c244x.c: expected declaration or statement at end of input
+	status:	bad commit introduces truncated file; pending integration.
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133123680904853&w=2
+
+ARM:arm-allnoconfig
+	when:	forever
+	why:	not supported
+	status:	nothing pending, but patches accepted
+	fix:	n/a
+	ref:	https://lkml.org/lkml/2009/4/30/105
+	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
+----------------
+
+AVR32:allnoconfig
+	when:	May 26 2010, 20:49
+	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
+	status:
+	fix:
+	ref:
+---------------
+
+bfin:***all-builds***
+	when:	Jan 20, 22:13
+	why:	undefined reference to `vm_is_stack'
+	status:	WIP, fix from PaulG + follow on from Siddhesh Poyarekar
+	fix:	http://marc.info/?l=linux-next&m=133096554131691&w=2
+	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
+---------------
+
+cris:***all-builds***
+	when:	Mar 25, 22:05
+	why:	include/linux/types.h:25: error expected ... before 'ino_t'
+	status:	
+	fix:	
+	ref:	
+----------------
+
+crisv32:***all-builds***
+	when:	Mar 25, 22:05
+	why:	include/linux/types.h:25: error expected ... before 'ino_t'
+	status:	
+	fix:	
+	ref:	
+----------------
+
+frv:defconfig
+	when:	Mar 15
+	why:	arch/frv/kernel/head.S operand out of range
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884666/
+----------------
+
+h8300:defconfig
+	when:	Mar 15
+	why:	time.c: implicit declaration of function 'get_irq_regs'
+	status:	
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
+----------------
+
+i386:allmodconfig
+	when:	Mar 8, 20:41
+	why:	ERROR: "pcibios_enabled" [drivers/video/uvesafb.ko] undefined!
+	why:	ERROR: "mdfld_set_brightness" [drivers/gpu/drm/gma500/gma500_gfx.ko] undefined!
+	status:	
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878506/
+----------------
+
+m32r:m32700ut.smp_defconfig
+	when:	Mar 15
+	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
+----------------
+
+m68k:allmodconfig
+	when:	Mar 16
+	why:	persistent_ram.c: implicit declaration of 'memblock_reserve'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
+	ref:	http://www.spinics.net/lists/linux-next/msg19343.html
+----------------
+
+mips:allmodconfig
+	when:
+	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
+----------------
+
+parisc:allmodconfig
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+
+parisc64:a500_defconfig 
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+powerpc:allyesconfig
+	when:	May 18 2009, 22:11
+	why:	fat ass kernel with everything simply won't link
+	status:	need to fix build config to ignore the final link
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
+
+powerpc:mpc885_ads_defconfig
+	when:	Mar 8, 19:45
+	why:	fs/nfs/inode.c:1063: undefined reference to `crc32_le'
+	status:	solved, NFS relies on CRC32 kconfig (PaulG)
+	fix:	
+	ref:	http://marc.info/?l=linux-nfs&r=1&b=201203&w=2
+	ref:	
+------------------
+
+sh4:***all-builds***
+	when:	Feb 24, 17:38
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+sparc[64]:allmodconfig
+	when:	Mar 16, 09:21
+	why:	patch_sigmatel.c: error: 'stac92xx_set_power_state' undeclared
+	status:	reported
+	fix:	
+	ref:	http://marc.info/?l=linux-next&m=133209522419563&w=2
+------------------
+
+sparc/m68k:allmodconfig
+	when:	Mar 14, 09:21
+	why:	linux/mmc/core.h: field 'completion' has incomplete type
+	status:	fixed Mar16th.
+	fix:	http://marc.info/?l=linux-next&m=133190925501052&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869834/
+------------------
+
+um:um-defconfig
+	when:	Sep 16 2010, 01:28
+	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
+	status:	clearly broken forever, so does anyone care?
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
 
