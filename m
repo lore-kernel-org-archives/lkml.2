@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab2CRXRe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 19:17:34 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51293 "EHLO ogre.sisk.pl"
+	id S932130Ab2CRXSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 19:18:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51278 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab2CRXRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 19:17:32 -0400
+	id S1756432Ab2CRXR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 19:17:29 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Christian Lamparter <chunkeey@googlemail.com>
-Subject: [PATCH 2/3] firmware_class: Split _request_firmware() into three functions
-Date: Mon, 19 Mar 2012 00:18:19 +0100
+Subject: [PATCH 1/3] firmware_class: Rework usermodehelper check
+Date: Mon, 19 Mar 2012 00:17:21 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
@@ -22,142 +22,123 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203190018.19922.rjw@sisk.pl>
+Message-Id: <201203190017.22048.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Split _request_firmware() into three functions,
-_request_firmware_prepare() doing preparatory work that need not be
-done under umhelper_sem, _request_firmware_cleanup() doing the
-post-error cleanup and _request_firmware() carrying out the remaining
-operations.
+Instead of two functions, read_lock_usermodehelper() and
+usermodehelper_is_disabled(), used in combination, introduce
+usermodehelper_read_trylock() that will only return with umhelper_sem
+held if usermodehelper_disabled is unset (and will return -EAGAIN
+otherwise) and make _request_firmware() use it.
 
-This change is requisite for moving the acquisition of umhelper_sem
-from _request_firmware() to the callers, which is going to be done
-subsequently.
+Rename read_unlock_usermodehelper() to
+usermodehelper_read_unlock() to follow the naming convention of the
+new function.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/firmware_class.c |   57 +++++++++++++++++++++++++++++-------------
- 1 file changed, 40 insertions(+), 17 deletions(-)
+ drivers/base/firmware_class.c |   11 +++++------
+ include/linux/kmod.h          |    5 ++---
+ kernel/kmod.c                 |   24 +++++++++++-------------
+ 3 files changed, 18 insertions(+), 22 deletions(-)
 
+Index: linux/include/linux/kmod.h
+===================================================================
+--- linux.orig/include/linux/kmod.h
++++ linux/include/linux/kmod.h
+@@ -116,8 +116,7 @@ extern void usermodehelper_init(void);
+ 
+ extern int usermodehelper_disable(void);
+ extern void usermodehelper_enable(void);
+-extern bool usermodehelper_is_disabled(void);
+-extern void read_lock_usermodehelper(void);
+-extern void read_unlock_usermodehelper(void);
++extern int usermodehelper_read_trylock(void);
++extern void usermodehelper_read_unlock(void);
+ 
+ #endif /* __LINUX_KMOD_H__ */
+Index: linux/kernel/kmod.c
+===================================================================
+--- linux.orig/kernel/kmod.c
++++ linux/kernel/kmod.c
+@@ -296,17 +296,24 @@ static DECLARE_WAIT_QUEUE_HEAD(running_h
+  */
+ #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
+ 
+-void read_lock_usermodehelper(void)
++int usermodehelper_read_trylock(void)
+ {
++	int ret = 0;
++
+ 	down_read(&umhelper_sem);
++	if (usermodehelper_disabled) {
++		up_read(&umhelper_sem);
++		ret = -EAGAIN;
++	}
++	return ret;
+ }
+-EXPORT_SYMBOL_GPL(read_lock_usermodehelper);
++EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
+ 
+-void read_unlock_usermodehelper(void)
++void usermodehelper_read_unlock(void)
+ {
+ 	up_read(&umhelper_sem);
+ }
+-EXPORT_SYMBOL_GPL(read_unlock_usermodehelper);
++EXPORT_SYMBOL_GPL(usermodehelper_read_unlock);
+ 
+ /**
+  * usermodehelper_disable - prevent new helpers from being started
+@@ -347,15 +354,6 @@ void usermodehelper_enable(void)
+ 	up_write(&umhelper_sem);
+ }
+ 
+-/**
+- * usermodehelper_is_disabled - check if new helpers are allowed to be started
+- */
+-bool usermodehelper_is_disabled(void)
+-{
+-	return usermodehelper_disabled;
+-}
+-EXPORT_SYMBOL_GPL(usermodehelper_is_disabled);
+-
+ static void helper_lock(void)
+ {
+ 	atomic_inc(&running_helpers);
 Index: linux/drivers/base/firmware_class.c
 ===================================================================
 --- linux.orig/drivers/base/firmware_class.c
 +++ linux/drivers/base/firmware_class.c
-@@ -435,7 +435,7 @@ static void firmware_class_timeout(u_lon
- }
- 
- static struct firmware_priv *
--fw_create_instance(struct firmware *firmware, const char *fw_name,
-+fw_create_instance(const struct firmware *firmware, const char *fw_name,
- 		   struct device *device, bool uevent, bool nowait)
- {
- 	struct firmware_priv *fw_priv;
-@@ -449,7 +449,7 @@ fw_create_instance(struct firmware *firm
- 		goto err_out;
- 	}
- 
--	fw_priv->fw = firmware;
-+	fw_priv->fw = (struct firmware *)firmware;
- 	fw_priv->nowait = nowait;
- 	strcpy(fw_priv->fw_id, fw_name);
- 	init_completion(&fw_priv->completion);
-@@ -510,13 +510,10 @@ static void fw_destroy_instance(struct f
- 	device_unregister(f_dev);
- }
- 
--static int _request_firmware(const struct firmware **firmware_p,
--			     const char *name, struct device *device,
--			     bool uevent, bool nowait)
-+static int _request_firmware_prepare(const struct firmware **firmware_p,
-+				     const char *name, struct device *device)
- {
--	struct firmware_priv *fw_priv;
- 	struct firmware *firmware;
--	int retval = 0;
- 
- 	if (!firmware_p)
- 		return -EINVAL;
-@@ -533,10 +530,26 @@ static int _request_firmware(const struc
+@@ -533,12 +533,10 @@ static int _request_firmware(const struc
  		return 0;
  	}
  
-+	return 1;
-+}
-+
-+static void _request_firmware_cleanup(const struct firmware **firmware_p)
-+{
-+	release_firmware(*firmware_p);
-+	*firmware_p = NULL;
-+}
-+
-+static int _request_firmware(const struct firmware *firmware,
-+			     const char *name, struct device *device,
-+			     bool uevent, bool nowait)
-+{
-+	struct firmware_priv *fw_priv;
-+	int retval;
-+
- 	retval = usermodehelper_read_trylock();
- 	if (WARN_ON(retval)) {
+-	read_lock_usermodehelper();
+-
+-	if (WARN_ON(usermodehelper_is_disabled())) {
++	retval = usermodehelper_read_trylock();
++	if (WARN_ON(retval)) {
  		dev_err(device, "firmware: %s will not be loaded\n", name);
--		goto out_nolock;
-+		return retval;
+-		retval = -EBUSY;
+-		goto out;
++		goto out_nolock;
  	}
  
  	if (uevent)
-@@ -572,13 +585,6 @@ static int _request_firmware(const struc
+@@ -573,8 +571,9 @@ static int _request_firmware(const struc
+ 	fw_destroy_instance(fw_priv);
  
  out:
- 	usermodehelper_read_unlock();
--
--out_nolock:
--	if (retval) {
--		release_firmware(firmware);
--		*firmware_p = NULL;
--	}
--
- 	return retval;
- }
+-	read_unlock_usermodehelper();
++	usermodehelper_read_unlock();
  
-@@ -601,7 +607,17 @@ int
- request_firmware(const struct firmware **firmware_p, const char *name,
-                  struct device *device)
- {
--        return _request_firmware(firmware_p, name, device, true, false);
-+	int ret;
-+
-+	ret = _request_firmware_prepare(firmware_p, name, device);
-+	if (ret <= 0)
-+		return ret;
-+
-+	ret = _request_firmware(*firmware_p, name, device, true, false);
-+	if (ret)
-+		_request_firmware_cleanup(firmware_p);
-+
-+	return ret;
- }
- 
- /**
-@@ -639,8 +655,15 @@ static int request_firmware_work_func(vo
- 		return 0;
- 	}
- 
--	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-+	ret = _request_firmware_prepare(&fw, fw_work->name, fw_work->device);
-+	if (ret <= 0)
-+		return ret;
-+
-+	ret = _request_firmware(fw, fw_work->name, fw_work->device,
- 				fw_work->uevent, true);
-+	if (ret)
-+		_request_firmware_cleanup(&fw);
-+
- 	fw_work->cont(fw, fw_work->context);
- 
- 	module_put(fw_work->module);
++out_nolock:
+ 	if (retval) {
+ 		release_firmware(firmware);
+ 		*firmware_p = NULL;
 
