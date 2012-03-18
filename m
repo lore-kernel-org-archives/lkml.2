@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab2CRU5B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 16:57:01 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:44842 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab2CRU47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 16:56:59 -0400
-Date: Sun, 18 Mar 2012 16:56:58 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jacek Luczak <difrost.kernel@gmail.com>
-Cc: Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120318205658.GB31682@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jacek Luczak <difrost.kernel@gmail.com>,
-	Andreas Dilger <adilger@whamcloud.com>,
-	Lukas Czerner <lczerner@redhat.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
- <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
- <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
- <20120310044804.GB5652@thunk.org>
- <9709DE62-CE25-41C4-A33C-63336B51DC5E@whamcloud.com>
- <20120311161320.GC1048@thunk.org>
- <CADDYkjRSd-Dv2jECwKt=3Q95hceVhiA+StZj1fvwywZHWaEgfw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADDYkjRSd-Dv2jECwKt=3Q95hceVhiA+StZj1fvwywZHWaEgfw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1756797Ab2CRU60 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 16:58:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62503 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab2CRU6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 16:58:25 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: drop unneeded devm cleanup functions
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Jeff Garzik <jgarzik@pobox.com>
+Cc: kernel-janitors@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, w.sang@pengutronix.de
+In-Reply-To: <1331415352-10260-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1331415352-10260-1-git-send-email-Julia.Lawall@lip6.fr>
+Date: Sun, 18 Mar 2012 20:58:19 +0000
+Message-Id: <20120318205820.013643E07BF@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 11:42:24AM +0100, Jacek Luczak wrote:
+On Sat, 10 Mar 2012 22:35:52 +0100, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> That was not a SVN server. It was a build host having checkouts of SVN
-> projects.
+> There is no need to call the devm cleanup functions on failure of a probe
+> or remove function.
 > 
-> The many files/dirs case is common for VCS and the SVN is not the only
-> that would be affected here. 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Well, with SVN it's 2x or 3x the number of files in the checked out
-source code directory, right?  So if a particular source tree has
-2,000 files in a source directory, then SVN might have at most 6,000
-files, and if you assume each directory entry is 64 bytes, we're still
-talking about 375k.  Do you have more files than that in a directory
-in practice with SVN?  And if so why?
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-> AFAIR git.kernel.org was also suffering from the getdents().
+> 
+> ---
+> Changed subject.  Included Wolfram's ACK.
+> 
+>  drivers/ata/pata_mpc52xx.c |   11 -----------
+>  1 file changed, 11 deletions(-)
+> 
+> diff --git a/drivers/ata/pata_mpc52xx.c b/drivers/ata/pata_mpc52xx.c
+> index 00748ae..1f02008 100644
+> --- a/drivers/ata/pata_mpc52xx.c
+> +++ b/drivers/ata/pata_mpc52xx.c
+> @@ -806,17 +806,12 @@ mpc52xx_ata_probe(struct platform_device *op)
+>  	return 0;
+>  
+>   err:
+> -	devm_release_mem_region(&op->dev, res_mem.start, sizeof(*ata_regs));
+>  	if (ata_irq)
+>  		irq_dispose_mapping(ata_irq);
+>  	if (task_irq)
+>  		irq_dispose_mapping(task_irq);
+>  	if (dmatsk)
+>  		bcom_ata_release(dmatsk);
+> -	if (ata_regs)
+> -		devm_iounmap(&op->dev, ata_regs);
+> -	if (priv)
+> -		devm_kfree(&op->dev, priv);
+>  	return rv;
+>  }
+>  
+> @@ -835,12 +830,6 @@ mpc52xx_ata_remove(struct platform_device *op)
+>  	bcom_ata_release(priv->dmatsk);
+>  	irq_dispose_mapping(priv->ata_irq);
+>  
+> -	/* Clear up IO allocations */
+> -	devm_iounmap(&op->dev, priv->ata_regs);
+> -	devm_release_mem_region(&op->dev, priv->ata_regs_pa,
+> -				sizeof(*priv->ata_regs));
+> -	devm_kfree(&op->dev, priv);
+> -
+>  	return 0;
+>  }
+>  
+> 
 
-git.kernel.org was suffering from a different problem, which was that
-the git.kernel.org administrators didn't feel like automatically doing
-a "git gc" on all of the repositories, and a lot of people were just
-doing "git pushes" and not bothering to gc their repositories.  Since
-git.kernel.org users don't have shell access any more, the
-git.kernel.org administrators have to be doing automatic git gc's.  By
-default git is supposed to automatically do a gc when there are more
-than 6700 loose object files (which are distributed across 256 1st
-level directories, so in practice a .git/objects/XX directory
-shouldn't have more than 30 objects in it, which each directory object
-taking 48 bytes).  The problem I believe is that "git push" commands
-weren't checking gc.auto limit, and so that's why git.kernel.org had
-in the past suffered from large directories.  This is arguably a git
-bug, though, and as I mentioned, since we all don't have shell access
-to git.kernel.org, this has to be handled automatically now....
-
-> Same applies to commercial products that are
-> heavily stuffed with many files/dirs, e.g. ClearCase or Synergy. 
-
-How many files in a dircectory do we commonly see with these systems?
-I'm not familiar with them, and so I don't have a good feel for what
-typical directory sizes tend to be.
-
-> A medium size you are referring would most probably fit into 256k and
-> this could be enough for 90% of cases. Large production system running
-> on ext4 need backups thus those would benefit the most here.
-
-Yeah, 256k or 512k is probably the best.  Alternatively, the backup
-programs could simply be taught to sort the directory entries by inode
-number, and if that's not enough, to grab the initial block numbers
-using FIEMAP and then sort by block number.  Of course, all of this
-optimization may or may not actually give us as much returns as we
-think, given that the disk is probably seeking from other workloads
-happening in parallel anyway (another reason why I am suspicious that
-timing the tar command may not be an accurate way of measuring actual
-performance when you have other tasks accessing the file system in
-parallel with the backup).
-
-    	    	  		     	      - Ted
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
