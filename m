@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab2CRUto (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 16:49:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52615 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab2CRUtl (ORCPT
+	id S1756786Ab2CRUxR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 16:53:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54388 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab2CRUxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 16:49:41 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] i2c-s3c2410: Drop unused define
-To: Karol Lewandowski <k.lewandowsk@samsung.com>, ben-linux@fluff.org
-Cc: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-In-Reply-To: <1331657679-31302-2-git-send-email-k.lewandowsk@samsung.com>
-References: <1331657679-31302-1-git-send-email-k.lewandowsk@samsung.com> <1331657679-31302-2-git-send-email-k.lewandowsk@samsung.com>
-Date: Sun, 18 Mar 2012 20:49:37 +0000
-Message-Id: <20120318204937.0F6AB3E07BF@localhost>
+	Sun, 18 Mar 2012 16:53:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120318141943.GA28850@1984>
+References: <CA+1xoqfCTXxXsbfUjttuOVutyD_FzYS8PoOoAOOtB72P8SwdVg@mail.gmail.com>
+ <20120318141943.GA28850@1984>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sun, 18 Mar 2012 22:52:55 +0200
+Message-ID: <CA+1xoqcQYqCgQb=1M5PVkm=6SBhV2oJxJ2CtBp=gAvZM36Kc2Q@mail.gmail.com>
+Subject: Re: netfilter: Hung task
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: kaber@trash.net, davem@davemloft.net, Dave Jones <davej@redhat.com>,
+        netfilter-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 17:54:37 +0100, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
-> Use standard of_match_ptr() to avoid defining variable unused
-> in non device tree builds.
-> 
-> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+On Sun, Mar 18, 2012 at 4:19 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Sun, Mar 18, 2012 at 12:55:13PM +0200, Sasha Levin wrote:
+>> Hi all,
+>>
+>> I got the following spew after fuzzing using trinity on a KVM tools
+>> guest, using the latest linux-next.
+>>
+>> It reminds me a lot of https://lkml.org/lkml/2012/3/14/375 and
+>> https://lkml.org/lkml/2012/1/14/45
+>
+> You mention neither Linux kernel version nor the way you trigger this.
+>
+> With that little information it's really hard to really know.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Hum? I've mentioned it happened with "the latest linux-next" (which is
+currently two days old), and using the trinity fuzzer - which means
+that I don't have a specific method to reproduce the problem.
 
-> ---
->  drivers/i2c/busses/i2c-s3c2410.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-> index 737f721..85e3664 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -1128,8 +1128,6 @@ static const struct of_device_id s3c24xx_i2c_match[] = {
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, s3c24xx_i2c_match);
-> -#else
-> -#define s3c24xx_i2c_match NULL
->  #endif
->  
->  static struct platform_driver s3c24xx_i2c_driver = {
-> @@ -1140,7 +1138,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
->  		.owner	= THIS_MODULE,
->  		.name	= "s3c-i2c",
->  		.pm	= S3C24XX_DEV_PM_OPS,
-> -		.of_match_table = s3c24xx_i2c_match,
-> +		.of_match_table = of_match_ptr(s3c24xx_i2c_match),
->  	},
->  };
->  
-> -- 
-> 1.7.9
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Time ago we applied this to Netfilter which is already in mainline:
+>
+> http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commit;h=70e9942f17a6193e9172a804e6569a8806633d6b
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+FWIW, that patch is part of linux-next.
