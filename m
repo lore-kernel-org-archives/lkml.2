@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab2CRSVY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 14:21:24 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53066 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab2CRSVX (ORCPT
+	id S1756165Ab2CRSYb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 14:24:31 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41475 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755288Ab2CRSYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 14:21:23 -0400
-Date: Sun, 18 Mar 2012 19:22:05 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>, Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH 00/10 v2] fix gmbus writes and related issues
-Message-ID: <20120318182204.GH4286@phenom.ffwll.local>
-Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
-	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Benson Leung <bleung@chromium.org>,
-	Yufeng Shen <miletus@chromium.org>,
-	Sameer Nanda <snanda@chromium.org>
-References: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 18 Mar 2012 14:24:30 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] s5p-tv: Add initial DT-support for TV mixer
+To: Karol Lewandowski <k.lewandowsk@samsung.com>, t.stanislaws@samsung.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        kyungmin.park@samsung.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+In-Reply-To: <1331912532-7798-2-git-send-email-k.lewandowsk@samsung.com>
+References: <1331912532-7798-1-git-send-email-k.lewandowsk@samsung.com> <1331912532-7798-2-git-send-email-k.lewandowsk@samsung.com>
+Date: Sun, 18 Mar 2012 18:24:25 +0000
+Message-Id: <20120318182425.517BF3E07BF@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 02:48:14AM +0800, Daniel Kurtz wrote:
-> This patchset addresses a couple of issues with the i915 gmbus implementation:
->  * fixes misassigned pin port pair for HDMI-D
->  * fixes write transactions when they are the only transaction requested
->    (including large >4-byte writes) by terminating every transaction with a
->    WAIT cycle.
->  * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
->    i2c transaction failures
->  * optimizes the typical read transaction case by using the INDEX cycle
->  * turns on the GMBUS interrupt whenever possible to dramatically improve
->    throughput by eliminating the very slow polling loop.
+On Fri, 16 Mar 2012 16:42:11 +0100, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
+> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/media/video/s5p-tv/mixer_drv.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
 > 
-> The patchset should apply cleanly onto linus/master.
-> It is inspired by, but completely supercedes, a similar patch submitted
-> recently by Benson Leung (bleung@chromium.org).
-> I'd be happy to rebase on a different tree if necessary.
+> diff --git a/drivers/media/video/s5p-tv/mixer_drv.c b/drivers/media/video/s5p-tv/mixer_drv.c
+> index 0064309..2eb48ea 100644
+> --- a/drivers/media/video/s5p-tv/mixer_drv.c
+> +++ b/drivers/media/video/s5p-tv/mixer_drv.c
+> @@ -448,6 +448,14 @@ static int __devexit mxr_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id mxr_dt_match[] = {
+> +	{ .compatible = "samsung,s5pv210-tvmixer" },
+
+Need to add this new compatible string to
+Documentation/devicetree/bindings.
+
+Otherwise looks good.
+
+g.
+
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, mxr_dt_match);
+> +#endif
+> +
+>  static struct platform_driver mxr_driver __refdata = {
+>  	.probe = mxr_probe,
+>  	.remove = __devexit_p(mxr_remove),
+> @@ -455,6 +463,7 @@ static struct platform_driver mxr_driver __refdata = {
+>  		.name = MXR_DRIVER_NAME,
+>  		.owner = THIS_MODULE,
+>  		.pm = &mxr_pm_ops,
+> +		.of_match_table = of_match_ptr(mxr_dt_match),
+>  	}
+>  };
+>  
+> -- 
+> 1.7.9
 > 
-> v2 of the patchset address review comments from Chris Wilson (thanks for the
-> review, Chris!), and adds the interrupt patch.  There weren't any review
-> comments for patches 5, 7, or 8 of the first set.  Hopefully they will get
-> more love the second time around :).
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Oops, still catching up - I've commented on the first thread. Please
-resubmit on top of drm-intel-next-queued and I'll have a look. Also,
-please cc me so I don't miss them.
-
-Thanks, Daniel
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
