@@ -1,28 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab2CRNTH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 09:19:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50336 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab2CRNTG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 09:19:06 -0400
-Message-ID: <4F65E0C5.5080004@gmail.com>
-Date: Sun, 18 Mar 2012 21:19:01 +0800
-From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1754303Ab2CRNWu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 09:22:50 -0400
+Received: from mail2.unitix.de ([176.9.2.175]:38042 "EHLO mail2.unitix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752794Ab2CRNWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 09:22:49 -0400
+Message-ID: <4F65E1A6.3020302@arndnet.de>
+Date: Sun, 18 Mar 2012 14:22:46 +0100
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120313 Thunderbird/11.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, ubuntu.fan.2012@gmail.com
-Subject: [YOUTUBE] Installing Windows 8 in Ubuntu 11.10 dom0 with Xen 4.2-unstable
- and Linux Kernel 3.3.0-rc7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Willy Tarreau <w@1wt.eu>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.59
+References: <20120317130953.GA16926@1wt.eu>
+In-Reply-To: <20120317130953.GA16926@1wt.eu>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.youtube.com/watch?v=WpibG1dqOq8&hd=1
+Hi,
 
-Yours sincerely,
+Am 17.03.2012 14:09, schrieb Willy Tarreau:
 
-Teo En Ming (Zhang Enming)
+> The updated 2.6.32.y git tree can be found at:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+>   http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+> 
+> The tree can be browsed on the gitweb interface:
+>   http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.32.y
+
+Neither any commit after 2.6.32.58 nor the tag v2.6.32.59 seems to be available in the public git tree, yet.
+Forgot to push?
+
+Best regards
+Arnd
