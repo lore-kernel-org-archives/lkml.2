@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab2CRN1s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 09:27:48 -0400
-Received: from 8bytes.org ([88.198.83.132]:49215 "EHLO 8bytes.org"
+	id S1755287Ab2CRN3E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 09:29:04 -0400
+Received: from 1wt.eu ([62.212.114.60]:63428 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752794Ab2CRN1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 09:27:47 -0400
-Date: Sun, 18 Mar 2012 14:27:46 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Subash Patel <subash.ramaswamy@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        iommu@lists.linux-foundation.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v12 2/3] ARM: EXYNOS: Change System MMU platform device
-	definitions
-Message-ID: <20120318132746.GL26973@8bytes.org>
-References: <000201cd0286$2e6fbb40$8b4f31c0$%cho@samsung.com> <20120315111227.GA2384@amd.com> <4F61FF1D.5000502@samsung.com> <4F630841.2070307@linaro.org> <4F63A6F6.9050506@samsung.com>
-MIME-Version: 1.0
+	id S1752991Ab2CRN3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 09:29:03 -0400
+Date: Sun, 18 Mar 2012 14:28:55 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Arnd Hannemann <arnd@arndnet.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.59
+Message-ID: <20120318132855.GK17033@1wt.eu>
+References: <20120317130953.GA16926@1wt.eu> <4F65E1A6.3020302@arndnet.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F63A6F6.9050506@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F65E1A6.3020302@arndnet.de>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 01:47:50PM -0700, Kukjin Kim wrote:
-> Anyway Joerg, how do you want to handle this? Do you want to pick up  
-> 1/2/3 all of them in your tree? If so, 2nd patch should be on top of  
-> some samsung topic stuff.
+Hi Arnd,
 
-Since patch 2 only applies to the Samsung tree, it is best to carry
-this in your tree for merging. Feel free to add my Acked-by to patch 3.
-But any further patches for the Exynos IOMMU drivers should go through
-my tree after it is merged.
+On Sun, Mar 18, 2012 at 02:22:46PM +0100, Arnd Hannemann wrote:
+> Hi,
+> 
+> Am 17.03.2012 14:09, schrieb Willy Tarreau:
+> 
+> > The updated 2.6.32.y git tree can be found at:
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+> >   http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+> > 
+> > The tree can be browsed on the gitweb interface:
+> >   http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.32.y
+> 
+> Neither any commit after 2.6.32.58 nor the tag v2.6.32.59 seems to be available in the public git tree, yet.
+> Forgot to push?
 
+Greg was not available for the final push when I sent the announce yesterday
+and I made a mistake in the pull request I sent him, further delaying the
+update. This will be sorted out soon, don't worry.
 
-Thanks,
+Just for those who can't wait, I'm generally pushing there though it is
+not official at all and may be removed or forced-updated without prior
+notice (so don't track it) :
 
-	Joerg
+   http://git.kernel.org/?p=linux/kernel/git/wtarreau/for-greg.git;a=shortlog;h=refs/heads/linux-2.6.32.y
+
+Regards,
+Willy
 
