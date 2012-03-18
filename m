@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab2CRMKH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 08:10:07 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:33907 "EHLO
-	homiemail-a50.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751581Ab2CRMKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 08:10:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=PLVGTBM2PYjFxkJxRkRfVkATcp9abxPMaJ1wxl4vRbJZTh62xdA6hUHX07Zrb
-	SIUN8B6oIwnAx+xB1x+MCO+ruWlF1Qvy5pA+8lb28D5rT0u/3LYkp2Gs8ST99p9b
-	n3EcRQcyC35YOmKL/w3dL12L294LMIH5ewmUV++2wiLbYQ=
-Message-ID: <4F65D09B.4050807@shealevy.com>
-Date: Sun, 18 Mar 2012 08:10:03 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1754996Ab2CRMR2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 08:17:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50866 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087Ab2CRMR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 08:17:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper is not yet available
+Date: Sun, 18 Mar 2012 13:21:38 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203180129.38469.rjw@sisk.pl> <CA+55aFzrj32d6ROrtSOBn_HgW5m8Nf5ZhF7H6fRfoPwkX=A8-w@mail.gmail.com>
+In-Reply-To: <CA+55aFzrj32d6ROrtSOBn_HgW5m8Nf5ZhF7H6fRfoPwkX=A8-w@mail.gmail.com>
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: EFI Boot Stub Early Console
-References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com>  <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com>  <4F5E775D.7080702@zytor.com>  <4F648DD3.3000405@shealevy.com> <1332069701.4041.42.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1332069701.4041.42.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203181321.38852.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+On Sunday, March 18, 2012, Linus Torvalds wrote:
+> On Sat, Mar 17, 2012 at 5:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > The patch below (untested) goes slightly into that direction, although not as
+> > far as to modify fw_create_instance().  It does, however, split
+> > _request_firmware() into "prepare", "load" and "cleanup" parts and moves
+> > the usermodehelper check along with the read-locking of umhelper_sem down
+> > to the callers, ie. request_firmware() and request_firmware_work_func().
+> 
+> Looks fairly reasonable to me from a quick read-through, and the code
+> seems to make sense.
 
-On 3/18/12 7:21 AM, Matt Fleming wrote:
-> I don't think you'll need to use the graphics protocols, you should 
-> just be able to put something together using the 'output_string' 
-> function from the EFI simple text output protocol, e.g. something like 
-> this, https://lkml.org/lkml/2012/3/16/193 
+Thanks!
 
- From the UEFI 2.3.1 spec:
+I'll split it into a series of patches, then, and post for testing.
 
-> Prior to a call to ExitBootServices(), all of the fields of the EFI 
-> System Table are valid. After an operating system has taken control of 
-> the platform with a call to ExitBootServices(), only the Hdr, 
-> FirmwareVendor, FirmwareRevision, RuntimeServices, 
-> NumberOfTableEntries, and ConfigurationTable fields are valid.
-
-Doesn't this mean that ConOut can't be used for the earlyprintk, since 
-any bootloader (including the bootstub) will call ExitBootServices() 
-before any printk'ing actually happens?? Or am I misunderstanding the 
-spec somehow? I suppose I could just try it and see what happens...
-
-Cheers,
-Shea
-
+Rafael
