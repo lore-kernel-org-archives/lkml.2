@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab2CRTi6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 15:38:58 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64650 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501Ab2CRTi5 (ORCPT
+	id S1756322Ab2CRTrV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 15:47:21 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41210 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab2CRTrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 15:38:57 -0400
-Date: Sun, 18 Mar 2012 20:39:39 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Joe Perches <joe@perches.com>
-Cc: Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 1/2] i915: Add and use pr_fmt and pr_<level>
-Message-ID: <20120318193939.GL4286@phenom.ffwll.local>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org
-References: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
+	Sun, 18 Mar 2012 15:47:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120313005855.GA24639@redhat.com>
+References: <20120313005855.GA24639@redhat.com>
+Date: Sun, 18 Mar 2012 20:47:19 +0100
+Message-ID: <CAFLxGvxXBp1+D3Az7onYYvvi9S=_pPLSFpHqOCurjYwTpxbB6w@mail.gmail.com>
+Subject: Re: [3.3-rc7] sys_poll use after free (hibernate)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 09:43:49PM -0700, Joe Perches wrote:
-> Use a more current logging style.  Ensure that appropriate
-> logging messages are prefixed with "i915: ".
-> 
-> Convert printks to pr_<level>.  Align arguments.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Tue, Mar 13, 2012 at 1:58 AM, Dave Jones <davej@redhat.com> wrote:
+> While trying to reproduce the i915 memory corruption problem with hibernate,
+> I've hit the following use-after-free quite a few times, by running my
+> syscall fuzzer and hibernating/resuming in a loop.
+>
 
-I've tried to apply this to my -next branch, but it failed. Can you please
-rebase this onto
+If you cannot reproduce the problem you can send me debug/test-patches.
+I have two machines where I can reproduce the issue within an hour.
 
-http://cgit.freedesktop.org/~danvet/drm-intel/log/?h=drm-intel-next-queued
-
-Thanks, Daniel
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Thanks,
+//richard
