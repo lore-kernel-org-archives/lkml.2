@@ -1,242 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab2CRUAP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 16:00:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:32925 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751968Ab2CRUAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 16:00:13 -0400
-Message-ID: <1332100811.23125.22.camel@joe2Laptop>
-Subject: [PATCH V2] i915: Add and use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Date: Sun, 18 Mar 2012 13:00:11 -0700
-In-Reply-To: <20120318193939.GL4286@phenom.ffwll.local>
-References: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
-	 <20120318193939.GL4286@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1756520Ab2CRUCX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 16:02:23 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40957 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab2CRUCU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 16:02:20 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Dave Jones <davej@redhat.com>
+Subject: Re: tun oops dereferencing garbage nsproxy-> address.
+Date: Sun, 18 Mar 2012 21:02:15 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.6.5; x86_64; ; )
+Cc: netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        serue@us.ibm.com, ebiederm@xmission.com
+References: <20120313034201.GA13156@redhat.com>
+In-Reply-To: <20120313034201.GA13156@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201203182102.15877.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a more current logging style.  Ensure that appropriate
-logging messages are prefixed with "i915: ".
+On wtorek, 13 marca 2012 o 04:42:02 Dave Jones wrote:
+> BUG: unable to handle kernel paging request at 0000000100000029
+> IP: [<ffffffffa06ec54f>] tun_chr_open+0x4f/0x80 [tun]
+> PGD 5ae4f067 PUD 0
+> Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> CPU 1
+> Modules linked in: tun binfmt_misc can_bcm cmtp kernelcapi nfnetlink bnep
+> can_raw af_802154 phonet bluetooth can pppoe pppox ppp_generic slhc irda
+> crc_ccitt rds af_key rose ax25 appletalk atm ipx p8022 psnap llc p8023
+> tcp_lp iwlwifi mac80211 cfg80211 nfs fscache auth_rpcgss nfs_acl fuse
+> lockd ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter
+> ip6_tables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xts
+> gf128mul dm_crypt dm_mirror dm_region_hash dm_log arc4 snd_hda_codec_hdmi
+> uvcvideo snd_hda_codec_idt videobuf2_core snd_usb_audio snd_hda_intel
+> videodev snd_hda_codec dell_wmi sparse_keymap media snd_usbmidi_lib
+> snd_hwdep v4l2_compat_ioctl32 snd_rawmidi cdc_ether videobuf2_vmalloc
+> videobuf2_memops snd_seq usbnet cdc_wdm mii cdc_acm snd_seq_device snd_pcm
+> dell_laptop dcdbas joydev microcode snd_timer tg3 snd pcspkr i2c_i801
+> iTCO_wdt iTCO_vendor_support soundcore snd_page_alloc rfkill wmi sunrpc
+> i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
+> cfg80211]
+> 
+> Pid: 15413, comm: trinity Not tainted 3.3.0-rc7+ #54 Dell Inc. Adamo 13  
+> /0N70T0 RIP: 0010:[<ffffffffa06ec54f>]  [<ffffffffa06ec54f>]
+> tun_chr_open+0x4f/0x80 [tun] RSP: 0018:ffff8800a5e29bc8  EFLAGS: 00010286
+> RAX: ffff88012036fd88 RBX: ffff8801084c4dc0 RCX: 0000000000000006
+> RDX: 0000000100000001 RSI: ffff88000fd9abc8 RDI: 0000000000000292
+> RBP: ffff8800a5e29bd8 R08: 0000000000000000 R09: 0000000000000001
+> R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801084c4dc0
+> R13: ffff88012eb10d20 R14: ffffffffa06f0000 R15: ffffffff81856ae0
+> FS:  00007f3ebcb1a700(0000) GS:ffff88013b400000(0000)
+> knlGS:0000000000000000 CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000100000029 CR3: 00000000032bb000 CR4: 00000000000406e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process trinity (pid: 15413, threadinfo ffff8800a5e28000, task
+> ffff88000fd9a4a0) Stack:
+>  00000000000000c8 0000000000000000 ffff8800a5e29c38 ffffffff813fcf38
+>  ffffffff81c54838 0000000000000001 ffff8800a5e29c18 ffffffff816a1afd
+>  ffff8801084c4dc0 ffff8801396bbab8 ffff88012eb10d20 0000000000000000
+> Call Trace:
+>  [<ffffffff813fcf38>] misc_open+0x1d8/0x670
+>  [<ffffffff816a1afd>] ? sub_preempt_count+0x9d/0xd0
+>  [<ffffffff811c2978>] chrdev_open+0x258/0x350
+>  [<ffffffff811baa04>] __dentry_open+0x384/0x550
+>  [<ffffffff816a1afd>] ? sub_preempt_count+0x9d/0xd0
+>  [<ffffffff811c2720>] ? cdev_put+0x30/0x30
+>  [<ffffffff811bc224>] nameidata_to_filp+0x74/0x80
+>  [<ffffffff811ce59c>] do_last+0x26c/0x930
+>  [<ffffffff811ced76>] path_openat+0xd6/0x3e0
+>  [<ffffffff810a6298>] ? sched_clock_cpu+0xb8/0x130
+>  [<ffffffff811cf1a2>] do_filp_open+0x42/0xa0
+>  [<ffffffff8169d845>] ? _raw_spin_unlock+0x35/0x60
+>  [<ffffffff811dd7cd>] ? alloc_fd+0x18d/0x210
+>  [<ffffffff811bc328>] do_sys_open+0xf8/0x1d0
+>  [<ffffffff810faadc>] ? __audit_syscall_entry+0xcc/0x310
+>  [<ffffffff811bc421>] sys_open+0x21/0x30
+>  [<ffffffff816a5a69>] system_call_fastpath+0x16/0x1b
+> Code: 00 00 00 e8 64 8d ab e0 48 85 c0 74 46 c7 00 00 00 00 00 48 c7 40 08
+> 00 00 00 00 65 48 8b 14 25 00 c9 00 00 48 8b 92 50 05 00 00 <48> 8b 52 28
+> f0 ff 42 04 48 89 50 10 48 89 83 28 01 00 00 31 c0 RIP 
+> [<ffffffffa06ec54f>] tun_chr_open+0x4f/0x80 [tun]
+>  RSP <ffff8800a5e29bc8>
+> CR2: 0000000100000029
+> Disabling lock debugging due to kernel taint
+> ---[ end trace 9e00e91b0629ad80 ]---
+> 
+> 
+> oops happened here..
+> 
+>         tfile->net = get_net(current->nsproxy->net_ns);
+>      548:       48 8b 92 50 05 00 00    mov    0x550(%rdx),%rdx
+>      54f:       48 8b 52 28             mov    0x28(%rdx),%rdx
+> 
+> My guess is the fuzzer called some syscall that set current->nsproxy
+> to garbage (0x0000000100000001), which later got dereferenced when it
+> subsequently randomly did an open() on tun.
+> 
+> Any thoughts ?
+> 
+> 	Dave
+> 
 
-Convert printks to pr_<level>.  Align arguments.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/gpu/drm/i915/i915_dma.c       |    6 ++-
- drivers/gpu/drm/i915/i915_irq.c       |   70 +++++++++++++--------------------
- drivers/gpu/drm/i915/intel_opregion.c |    4 +-
- drivers/gpu/drm/i915/intel_panel.c    |    4 +-
- 4 files changed, 37 insertions(+), 47 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index ee7775c..3c086d7 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -26,6 +26,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include "drmP.h"
- #include "drm.h"
- #include "drm_crtc_helper.h"
-@@ -1159,14 +1161,14 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 	pm_message_t pmm = { .event = PM_EVENT_SUSPEND };
- 	if (state == VGA_SWITCHEROO_ON) {
--		printk(KERN_INFO "i915: switched on\n");
-+		pr_info("switched on\n");
- 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
- 		/* i915 resume handler doesn't set to D0 */
- 		pci_set_power_state(dev->pdev, PCI_D0);
- 		i915_resume(dev);
- 		dev->switch_power_state = DRM_SWITCH_POWER_ON;
- 	} else {
--		printk(KERN_ERR "i915: switched off\n");
-+		pr_err("switched off\n");
- 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
- 		i915_suspend(dev, pmm);
- 		dev->switch_power_state = DRM_SWITCH_POWER_OFF;
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index afd4e03..4c89149 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -26,6 +26,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/sysrq.h>
- #include <linux/slab.h>
- #include "drmP.h"
-@@ -1103,33 +1105,26 @@ static void i915_report_and_clear_eir(struct drm_device *dev)
- 	if (!eir)
- 		return;
- 
--	printk(KERN_ERR "render error detected, EIR: 0x%08x\n",
--	       eir);
-+	pr_err("render error detected, EIR: 0x%08x\n", eir);
- 
- 	if (IS_G4X(dev)) {
- 		if (eir & (GM45_ERROR_MEM_PRIV | GM45_ERROR_CP_PRIV)) {
- 			u32 ipeir = I915_READ(IPEIR_I965);
- 
--			printk(KERN_ERR "  IPEIR: 0x%08x\n",
--			       I915_READ(IPEIR_I965));
--			printk(KERN_ERR "  IPEHR: 0x%08x\n",
--			       I915_READ(IPEHR_I965));
--			printk(KERN_ERR "  INSTDONE: 0x%08x\n",
-+			pr_err("  IPEIR: 0x%08x\n", I915_READ(IPEIR_I965));
-+			pr_err("  IPEHR: 0x%08x\n", I915_READ(IPEHR_I965));
-+			pr_err("  INSTDONE: 0x%08x\n",
- 			       I915_READ(INSTDONE_I965));
--			printk(KERN_ERR "  INSTPS: 0x%08x\n",
--			       I915_READ(INSTPS));
--			printk(KERN_ERR "  INSTDONE1: 0x%08x\n",
--			       I915_READ(INSTDONE1));
--			printk(KERN_ERR "  ACTHD: 0x%08x\n",
--			       I915_READ(ACTHD_I965));
-+			pr_err("  INSTPS: 0x%08x\n", I915_READ(INSTPS));
-+			pr_err("  INSTDONE1: 0x%08x\n", I915_READ(INSTDONE1));
-+			pr_err("  ACTHD: 0x%08x\n", I915_READ(ACTHD_I965));
- 			I915_WRITE(IPEIR_I965, ipeir);
- 			POSTING_READ(IPEIR_I965);
- 		}
- 		if (eir & GM45_ERROR_PAGE_TABLE) {
- 			u32 pgtbl_err = I915_READ(PGTBL_ER);
--			printk(KERN_ERR "page table error\n");
--			printk(KERN_ERR "  PGTBL_ER: 0x%08x\n",
--			       pgtbl_err);
-+			pr_err("page table error\n");
-+			pr_err("  PGTBL_ER: 0x%08x\n", pgtbl_err);
- 			I915_WRITE(PGTBL_ER, pgtbl_err);
- 			POSTING_READ(PGTBL_ER);
- 		}
-@@ -1138,53 +1133,42 @@ static void i915_report_and_clear_eir(struct drm_device *dev)
- 	if (!IS_GEN2(dev)) {
- 		if (eir & I915_ERROR_PAGE_TABLE) {
- 			u32 pgtbl_err = I915_READ(PGTBL_ER);
--			printk(KERN_ERR "page table error\n");
--			printk(KERN_ERR "  PGTBL_ER: 0x%08x\n",
--			       pgtbl_err);
-+			pr_err("page table error\n");
-+			pr_err("  PGTBL_ER: 0x%08x\n", pgtbl_err);
- 			I915_WRITE(PGTBL_ER, pgtbl_err);
- 			POSTING_READ(PGTBL_ER);
- 		}
- 	}
- 
- 	if (eir & I915_ERROR_MEMORY_REFRESH) {
--		printk(KERN_ERR "memory refresh error:\n");
-+		pr_err("memory refresh error:\n");
- 		for_each_pipe(pipe)
--			printk(KERN_ERR "pipe %c stat: 0x%08x\n",
-+			pr_err("pipe %c stat: 0x%08x\n",
- 			       pipe_name(pipe), I915_READ(PIPESTAT(pipe)));
- 		/* pipestat has already been acked */
- 	}
- 	if (eir & I915_ERROR_INSTRUCTION) {
--		printk(KERN_ERR "instruction error\n");
--		printk(KERN_ERR "  INSTPM: 0x%08x\n",
--		       I915_READ(INSTPM));
-+		pr_err("instruction error\n");
-+		pr_err("  INSTPM: 0x%08x\n", I915_READ(INSTPM));
- 		if (INTEL_INFO(dev)->gen < 4) {
- 			u32 ipeir = I915_READ(IPEIR);
- 
--			printk(KERN_ERR "  IPEIR: 0x%08x\n",
--			       I915_READ(IPEIR));
--			printk(KERN_ERR "  IPEHR: 0x%08x\n",
--			       I915_READ(IPEHR));
--			printk(KERN_ERR "  INSTDONE: 0x%08x\n",
--			       I915_READ(INSTDONE));
--			printk(KERN_ERR "  ACTHD: 0x%08x\n",
--			       I915_READ(ACTHD));
-+			pr_err("  IPEIR: 0x%08x\n", I915_READ(IPEIR));
-+			pr_err("  IPEHR: 0x%08x\n", I915_READ(IPEHR));
-+			pr_err("  INSTDONE: 0x%08x\n", I915_READ(INSTDONE));
-+			pr_err("  ACTHD: 0x%08x\n", I915_READ(ACTHD));
- 			I915_WRITE(IPEIR, ipeir);
- 			POSTING_READ(IPEIR);
- 		} else {
- 			u32 ipeir = I915_READ(IPEIR_I965);
- 
--			printk(KERN_ERR "  IPEIR: 0x%08x\n",
--			       I915_READ(IPEIR_I965));
--			printk(KERN_ERR "  IPEHR: 0x%08x\n",
--			       I915_READ(IPEHR_I965));
--			printk(KERN_ERR "  INSTDONE: 0x%08x\n",
-+			pr_err("  IPEIR: 0x%08x\n", I915_READ(IPEIR_I965));
-+			pr_err("  IPEHR: 0x%08x\n", I915_READ(IPEHR_I965));
-+			pr_err("  INSTDONE: 0x%08x\n",
- 			       I915_READ(INSTDONE_I965));
--			printk(KERN_ERR "  INSTPS: 0x%08x\n",
--			       I915_READ(INSTPS));
--			printk(KERN_ERR "  INSTDONE1: 0x%08x\n",
--			       I915_READ(INSTDONE1));
--			printk(KERN_ERR "  ACTHD: 0x%08x\n",
--			       I915_READ(ACTHD_I965));
-+			pr_err("  INSTPS: 0x%08x\n", I915_READ(INSTPS));
-+			pr_err("  INSTDONE1: 0x%08x\n", I915_READ(INSTDONE1));
-+			pr_err("  ACTHD: 0x%08x\n", I915_READ(ACTHD_I965));
- 			I915_WRITE(IPEIR_I965, ipeir);
- 			POSTING_READ(IPEIR_I965);
- 		}
-diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-index 289140b..34929ae 100644
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -25,6 +25,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/acpi.h>
- #include <linux/acpi_io.h>
- #include <acpi/video.h>
-@@ -355,7 +357,7 @@ static void intel_didl_outputs(struct drm_device *dev)
- 	}
- 
- 	if (!acpi_video_bus) {
--		printk(KERN_WARNING "No ACPI video bus found\n");
-+		pr_warn("No ACPI video bus found\n");
- 		return;
- 	}
- 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 7998ca6..cad45ff 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -28,6 +28,8 @@
-  *      Chris Wilson <chris@chris-wilson.co.uk>
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/moduleparam.h>
- #include "intel_drv.h"
- 
-@@ -172,7 +174,7 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
- 		/* XXX add code here to query mode clock or hardware clock
- 		 * and program max PWM appropriately.
- 		 */
--		printk_once(KERN_WARNING "fixme: max PWM is zero.\n");
-+		pr_warn_once("fixme: max PWM is zero\n");
- 		return 1;
- 	}
- 
-
-
-
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=42960
+for your bug/regression report, please add your address to the CC list in 
+there, thanks!
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
