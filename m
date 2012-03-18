@@ -1,208 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2CRRHG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 13:07:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63852 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab2CRRHD (ORCPT
+	id S1755857Ab2CRRRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 13:17:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53706 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab2CRRRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 13:07:03 -0400
-Date: Sun, 18 Mar 2012 10:06:59 -0700
-From: mark gross <markgross@thegnar.org>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, markgross@thegnar.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <mavej@redhat.com>,
-        linux-pm@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and
- DVFS-Latency
-Message-ID: <20120318170659.GC12163@envy17>
-Reply-To: markgross@thegnar.org
-References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06>
- <20120308034722.GA10286@envy17>
- <CAJ0PZbTfw1U8raiwiNX14x+jnaWa7ptAgpaaTJgCCZKZU24TDg@mail.gmail.com>
- <201203102353.24218.rjw@sisk.pl>
- <CAJ0PZbQ0itn68PCK9aYQZRT5VabvDChJm-+h1pDfkiO_afB1QA@mail.gmail.com>
+	Sun, 18 Mar 2012 13:17:53 -0400
+From: Uk Rolex Company <rolexcompany@royallambertg.co.uk>
+Date: Sun, 18 Mar 2012 17:35:40 +0100
+Subject: FINAL NOTIFICATION  (FOR RELEASE OF FUND)
+Thread-Topic: FINAL NOTIFICATION  (FOR RELEASE OF FUND)
+Thread-Index: AQHNBR0WTqEY6DM+bkKJxthxjZo/TZZwO4mw
+Message-ID: <900DBC2BD9E9484AA04FB8921EF362FA4694538F@winxbeuk06.exchange.xchg>
+References: <900DBC2BD9E9484AA04FB8921EF362FA46945342@winxbeuk06.exchange.xchg>
+In-Reply-To: <900DBC2BD9E9484AA04FB8921EF362FA46945342@winxbeuk06.exchange.xchg>
+Accept-Language: en-US, de-DE
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+X-Provags-ID: V02:K0:OYLzUOBpiYgWbse5wwMuOz/voPG8r/V6TKU17aUN2gp
+ 6oPqzt0FWOme06gmKmspuZFTbWjXvFu5d7HFNdRgaPdgPrEhRR
+ F/moVfRdb/XJIpMFj63a7LBJT16rck/MFUMpFfQLYsiG8HpNsd
+ ZhhB8Km5LZ9kp5YZgA8cGj1AkfBOi9otu8jKYj0bEBZ2JIMf4Y
+ +gJc0fkCAmfiCy7R03iimj/ZZar9Pw7AkI7vgzVEWq0J9wogf3
+ WnSXnl4VOtKP27qviFtfsPQXF5AqkmNqodPJbFY6YVkrIoFl2G
+ GilAs+80FJkqvTw+nwCQiLu1E6/tY7vOg+LT7SalcsrbHgbiwY
+ VSbiuhfhXWd7y8se51j7nxsRYwEVJNbMYzCoUUn4o+qyXorQd5
+ lywZ4INJePeEI73olDSv9YnWNgAx0BdBN4=
+Content-Type: multipart/mixed;
+	boundary="_002_900DBC2BD9E9484AA04FB8921EF362FA4694538Fwinxbeuk06excha_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ0PZbQ0itn68PCK9aYQZRT5VabvDChJm-+h1pDfkiO_afB1QA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 05:30:33PM +0900, MyungJoo Ham wrote:
-> On Sun, Mar 11, 2012 at 7:53 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, March 09, 2012, MyungJoo Ham wrote:
-> >> On Thu, Mar 8, 2012 at 12:47 PM, mark gross <markgross@thegnar.org> wrote:
-> >> > On Wed, Mar 07, 2012 at 02:02:01PM +0900, MyungJoo Ham wrote:
-> >> >> 1. CPU_DMA_THROUGHPUT
-> >> ...
-> >> >> 2. DVFS_LATENCY
-> >> >
-> >> > The cpu_dma_throughput looks ok to me.  I do however; wonder about the
-> >> > dvfs_lat_pm_qos.  Should that knob be exposed to user mode?  Does that
-> >> > matter so much?  why can't dvfs_lat use the cpu_dma_lat?
-> >> >
-> >> > BTW I'll be out of town for the next 10 days and probably will not get
-> >> > to this email account until I get home.
-> >> >
-> >> > --mark
-> >> >
-> >>
-> >> 1. Should DVFS Latency be exposed to user mode?
-> >>
-> >> It would depend on the policy of the given system; however, yes, there
-> >> are systems that require a user interface for DVFS Latency.
-> >> With the example of user input response (response to user click,
-> >> typing, touching, and etc), a user program (probably platform s/w or
-> >> middleware) may input QoS requests. Besides, when a new "application"
-> >> is starting, such "middleware" may want faster responses from DVFS
-> >> mechanisms.
-> >
-> > But this is a global knob, isn't it?  And it seems that a per-device one
-> > is needed rather than that?
-> >
-> > It also applies to your CPU_DMA_THROUGHPUT thing, doesn't it?
-> 
-> 
-> Yes, the two are global knobs. And both the two control multiple
-> devices simultaneously, not just a single device. I suppose per-device
-> QoS is appropriate for QoS requests directed to a single device. Am I
-> right about this one?
-> 
-> 
-> Let's assume that, in an example system, we have devfreq on GPU,
-> memory-Interface, and main bus and CPUfreq (Exynos5 will have them all
-> seperated).
-> 
-> If we use per-device QoS for DVFS LATENCY, in order to control the
-> DVFS response latency, we will need to make QoS requests to all the
-> four devices independently, not to the global DVFS LATENCY QOS CLASS.
-> There, we could have a shared single QoS request list for these four
-> DVFS devices, saying that the DVFS response should be done in "50ms"
-> after a sudden utilization increase.
-> 
-> We may be able to use "dev_pm_qos_add_notifier()" for a virtual device
-> representing "DVFS Latency" or "DMA Throughput" and let the GPU, CPU,
-> main-bus, and memory-interface listen to the events from the virtual
-> device. Hmm..., do you recommend this approach? creating a device
-> representing "DVFS" as a whole (both CPUFreq and device drivers of
-> devfreq).
-> 
-> CPU_DMA_THROUGHPUT is quite similar as CPU_DMA_LATENCY. However, we
-> think it is addtionally needed because many IPs (in-SoC devices) need
-> to specify its DMA usage in "kbytes/sec", not "usecs/ops". For
-> example, a video-decoding chip device driver may say it requires
-> "750000kbytes/sec" for 1080p60, "300000kbytes/sec" for 720p60, and so
-> on, which affects CPUfreq, memory-interface, and main-bus at the same
-> time.
-I have an example of a need for cpu_dma_throughput for x86 soc's as
-well.  Mostly my example comes down to on-demand thinking the work load
-is low (gpu is doing all the work) yet the work load needs a higher
-clock rates between frame times to avoid buffer under running the gfx
-pipe).
+--_002_900DBC2BD9E9484AA04FB8921EF362FA4694538Fwinxbeuk06excha_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-My version of the patch didn't fly too well because it failed to offer a
-scalable definition of the units of cpu_dma_throughput.  I tried using
-KHZ as the unit (the units used in cpufreq).  However; Applications
-written to assume HZ units on one system would need to re-written on the
-next.  Perhaps using bandwidth would be better than throughput?
+Rolex 2012 Award Winner: Please Open the ATTACHMENT=
 
+--_002_900DBC2BD9E9484AA04FB8921EF362FA4694538Fwinxbeuk06excha_
+Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document;
+	name="2011 ROLEX WINNING NOTIFCATION.docx"
+Content-Description: 2011 ROLEX WINNING NOTIFCATION.docx
+Content-Disposition: attachment;
+	filename="2011 ROLEX WINNING NOTIFCATION.docx"; size=17545;
+	creation-date="Sun, 18 Mar 2012 15:31:51 GMT";
+	modification-date="Sun, 18 Mar 2012 15:31:51 GMT"
+Content-Transfer-Encoding: base64
 
+UEsDBBQABgAIAAAAIQAeGe91cwEAAFQFAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAAC
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0
+VMlOwzAQvSPxD5GvKHHLASHUtAeWI1SifIBrT1KDN9nu9vdM0jYqJU0lSi+RnPFb5nnswWilVbIA
+H6Q1OelnPZKA4VZIU+bkY/KS3pMkRGYEU9ZATtYQyGh4fTWYrB2EBNEm5GQWo3ugNPAZaBYy68Bg
+pbBes4hLX1LH+Bcrgd72eneUWxPBxDRWHGQ4eIKCzVVMnlf4e+Pk00FJksfNxkorJ1JXBHWBtmI8
+qHCAYc4pyVnE7ujCiANn6dZVhsh6T5hJF27QOmlXqCo/Te0LbHFvGKeXApIx8/GVabROl9YLKiyf
+a+w766Zp8WmLQnJo8BWb85ZDCHhOWmVNRTNpdv6P+ghxrSD8v4sNb5c8+hx76wLF2M7Wh2paBIgU
+o3Dgo4Tm6I63DjFiZJdofsvc1X49BRHvCND62z87g5rmpGSB12jCpgrO1vs1eQ31SRNLmL5fLP09
+8i4jzfxx6/8Qxu65qNAtU0frN3H4DQAA//8DAFBLAwQUAAYACAAAACEAHpEat/MAAABOAgAACwAI
+Al9yZWxzLy5yZWxzIKIEAiigAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAIyS20oDQQyG7wXfYch9N9sKItLZ3kihdyLrA4SZ7AF3Dsyk2r69
+oyC6UNte5vTny0/Wm4Ob1DunPAavYVnVoNibYEffa3htt4sHUFnIW5qCZw1HzrBpbm/WLzyRlKE8
+jDGrouKzhkEkPiJmM7CjXIXIvlS6kBxJCVOPkcwb9Yyrur7H9FcDmpmm2lkNaWfvQLXHWDZf1g5d
+Nxp+Cmbv2MuJFcgHYW/ZLmIqbEnGco1qKfUsGmwwzyWdkWKsCjbgaaLV9UT/X4uOhSwJoQmJz/N8
+dZwDWl4PdNmiecevOx8hWSwWfXv7Q4OzL2g+AQAA//8DAFBLAwQUAAYACAAAACEALZ9lWhABAAC2
+AwAAHAAIAXdvcmQvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHMgogQBKKAAAQAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAACsk8tOwzAQRfdI/IM1e+KkQIVQnW4QUrcQPsBNJo4hfsgeHvl7TCTaVFRh
+k42luZbvPR6PN9sv07MPDFE7K6DIcmBoa9doqwS8VI9Xd8AiSdvI3lkUMGCEbXl5sXnCXlI6FDvt
+I0suNgroiPw957Hu0MiYOY827bQuGEmpDIp7Wb9JhXyV52seph5QnniyXSMg7JprYNXgU/L/3q5t
+dY0Prn43aOlMBP/E/TMSpcvFZCuDQhIwEbNEC/w8yGpJkPiH4leZQygWRaChT495aEMc67n49ZLx
+lEYEj+ljyce1mGO4XZKhdZYque8nHAdpDuJmSQht0n84NsJgoyUfxSJ79ah+5pGf/LbyGwAA//8D
+AFBLAwQUAAYACAAAACEAlebCDtARAAAUpQAAEQAAAHdvcmQvZG9jdW1lbnQueG1s7B3bcupG8n2r
+9h+meEpqbS4+to9NBWdlEOdQBwMFOM7Zt7E0GMW6UCNhDnnKb+xbnvZD8in5ku2ekWSEASMhG5TI
+dRLQSDOavkxPd09388OP3yyTPDHuGo5dK1SK5QJhtubohv1QK9wOm8cXBeJ61Nap6disVpgzt/Dj
+1T//8cOsqjva1GK2R2AI260+wd2x502qpZKrjZlF3aIzYTbcHDncoh5c8oeSRfnjdHKsOdaEesa9
+YRrevHRSLp8X/GGcWmHK7ao/xLFlaNxxnZGHXarOaGRozP8IevBt3it7NvwpizeWODNhDo7tjo2J
+G4xmJR0NQBwHgzxtAuLJMoPnZpNt3qZzOgN6WKac9szh+oQ7GnNdaG3Im+GIlfKmd/sIxCHCHttM
+IfrOYCYWNexwGOSOJfqHxCsC8Ury3SUc6hkQwMUV8NI91R4fuDO1dTKrao7pAFFVpVlpNAolcd/R
+5/g5gdvAq3q/Vij7f4WgqcFGdGp6eEctn56enQV3egtNYpAeFx8Db24y6P1EzVqBad8s17GRVU35
+zl+04B43HsaebOSyL4/0HXjcsR/kA4aYr1F3xacAJRim2cQpy8fcX4PW07Cl7kbbSgArvg4+J/5r
+4QEBfg/wE4KJwLw6L950bA9fQF3NMGoFBZf0FNh+Vh0rthtt0dznB17CoX44r5cV7OnBOmd1SS6q
+aSAMYB37zYMx1YElrpvLAF+eBy3PAMu2AGAY4Wr4WSX9blv9mdS7Nz2l85X02nVEhScQIigo//ca
+RXaDXNIzFTri3P/4fRMMSzQa0rFj0QUSPTcghfwrINAz4u65fymYYivOSAs2FOBVd0I1oPqEM5fx
+J1a4Ist/m+Bfu6rSmiO93xt68ldXt1uvOa0LSXcKkDA5m+VsVl2vnuSLK19c1TjK599bpAD0m9Sa
+RLpMyhrlxTm5ptxkc3LjzEiPui59YEcbZobvX6kwQuNEGEagwodGVtSU6h+SkZWKLEOgfQtiK205
+Zeq1HVt3bHJ3Sk57n5MQDUi1h3mvWxQbIFi/J6WL0gQKUD6BHAM5BnIM5BjIMZBjIMfAXxED6Hy+
+tQ2P6eQLHBvpjrVBV0MErDQRDkrb3ABArmzmGMgxkGMgx0COgRwDOQZyDOQYeFcMrD84UCFqyqyS
+ZeU18LlvF9nzeT5h3DTsRxlKg1ENs6o0W2Ie7lxxx2TfNJMalvvvWVGzIxN7iyOBQ4yriuFCTzW0
+C62yIQN2kH//Oj39WK6Uy2eVDxcfckIsxue9cYwdEkJg/0Plolw5r5y8jn0Zf4jRWS9D8oLGuMdl
+77Q2PqwIwZNtgdWf7Fgs9bWBJIlQApAd4HY7SbkT37yOJ+SbMvDMycn5eSUy05Wi8y14BkPuwKMD
+aKEjj0Fg6MmFH1KajJuW4yU/Ge54MQgxvMYYRHkhtp/IcawPqLjxvCO9js+A71LEHsp2/4h3Egkw
+fBnyGzuKNsSFH0MbXue48VkD2PI9cbOTfNgr56MkUYZDtTNsdTvkrtXpqP1oGMde10T2FvFSMHW4
+NA+NHfc5T2C61aEcw7HhEs3hEMc9gRAVyAliRCRwGNQ053DHHhnccok3ph6ZO1NO1GM0bEirQcYU
+8gwgqIXCvxnlOplw41fsHt/oSYgbaQ+lsiHhsqwcwXaG/xXLZfLpuke+63ZUctNqt3GpfuqrypBc
+91vD1uAz6XVvO43B9xFVYBuhlBDStGBczQXEsIHCjJyUKxXSR0Px3Uj4toD16WgEuT+YPIVsbutT
+DU/GANzbL0VyZ3hjgBtWwIxh9hv3yP2cuHSOahY8/cCpN/Vzx4pRjOxVRu91/wo0twww+1WLzECp
+JZ6zSE2Gcow4KOnoA2S2wVdyz8bUHKHowmUgV0AdcxftOena4IBhpMcdy8E0QgJ5jtCB2cRlJhP8
+BIIQsiaxO0pIc6o9zuHNts04Do5tYmUpvpR0gLEst0i+CnkaiNMZjMLpX0OgQLCjBdvHM4IgqxQs
+F1xvDmAYdhEf6j9/+69LRoBaQolOIauBuhKPkKtKzgJ5HD7uEkySBBJgDyTVXbffbhzftRrq8Z16
+XSQK8QztkXnEnlr3MAQilXoehUxVHfmAwbdwNNi5dH9TWySCRx8e4OldKVGn1j03Fi2qhZYlu2HF
+RrY6N+R1ywo3smGr/kUdks7tzbXaf084ItJ8Fwiqu876XdXAterVuzJRasi/rFwcn5Uvz84r4KM8
+Lp+X4xIjMpOkLoIDRGrqoAiJGBe7y9v/gljxbZ6FlrcVNH21qfbVTl0lne57gvG2DJbg1GZJrV8g
+wKskicCyi8y8/VK6PD0p/3xSOr/46xBDbNLvCU7Ke/E19UDlSGcrTrSp7cBSq63FKil/PC2Vz0r/
++frh/HJ/W1zq0lg4OSwoZ7CkFHakLgk1EDgqhr6qj+qnVPJB+5eGw65sui19V7DoDsjY2e+RG8M5
+BrLgDoja9bDv+ub7SzvTN0lNUxiZ0lhVdB28pC5zic08qG7zCOYtf4I6RS76k6j5Xos/oi/ssuxN
+4qCVrbgGtY+IOuVQx+mIKCNuaFTsugoIPPyuQcEejxsAKBrMopM3gyIwc2IZpokukcCc981ul0zA
+mWZoBhR/ku424WULvMSBIwVHc9kTeFImzJlgjR7G2R+/G7ZmTnVpr98zm40MLzD4wVUHJZF8Pwx2
+FyIbjfwxJMWiX2eFkB4EbhqIpYHSP8J/g8LbyxrFVm/HnNruCOj49/W759I3C9J3qSRSTrRtiBYJ
+ZFiMcVl2AmyrOkZ2jx1Mg6vebb/XHaik2e0TLOLV6Ct3g6jbLifxNiRech0kIuQuaoA4Al7emmGj
+BW/5mJkTUG5048nQp9T0PfXP6sBIRiRBNBJ3uOF60tX+eERsODjj1CS64VIXbh8R5mlF0oSTE9x5
+4UwZHvYMa/msRWea4e/8nMFxNJdT8MZQMzBru/XVQ3DSAIeK8kwoUJPEqccvU8SBQ7g4k0C04EOg
+ZXkLKEfVUhiaDjf1IumZDA9IbMcD9QWP5FHPktYnUGyEdRXdsTM1dTigIlNX6lCCijjIxAH8g/UK
+epyswSgO9ClMgMzgUEYejMEbnlgxguzsr+Okgg4h37Yk477XsQLWSsBgz8zxqhKOOjdo+L4tFKF7
+BqTXapVYmguGDZIHbDVxsEjEySIYDyDKpLIMAS7P+ApNOTQqwN4Y0wkUtZVoFKskxCwaGwseoPCI
+UxoybXH2Kx6W1tI9M8EygTUmfUroMMLoApiE7RlQ5VZUpg3NptnYAGchBtaAYIAl/MgmHphIGgco
+PLC15CBSWItYfgLLnjPL8NDOgj5oAhnR2P7sUlEgXu428yOiOyj3cEvRTAeEoLi7Gp8QZ78XRk4q
+ZqAwLvdTsUVC9svyTP4GvzImOmh8GYSeICQ2oRRLEjaYgDHjnKtIJ2mcieHR+b5OtOLOswoRTGuO
+ezK5XceBf4dd+e0ZaB/nPXGQh0wePcGJiMqDYp441IqDg4NmoL0F78TBoOCiCOMkkObbmroxJ7ZG
+J9x1tm/FjIjKzRE3B7UmtyVaxNGU1D8RLNT9YmCtEy4CY1LlL4BxmwW0diZ7dwf+pPZbzVZdEVkt
+4BO8CR2DfbWtKgOVdJskRoB97NW6FjWpEAkWaVpiZe1E905DP6fhgJy4EdplW4gkNKxSDPWII2j2
+P1vcFpu37TbpKDfqoAh/sUXCYQCBU9/1L5OgC59GSEal0eirg8Gfv/0v8b9sY+FGgdQxpU0GQ2V4
+Kxh6B67INioQBeoO0C92zSQmvKtFEKKSbb+67v5lZva2qXpr+DVCz/QuItydc8abn8alqG7hzqd8
+SkvMvWCpCGdsYzvuf2X7xxyImIH68wuItmvIJNxL8n4lpJkELNTxsJBFq/OJ3HSvW21IB8LUw5Vg
+bmqMoCCXdpmTdu2h2u+Aahfhgv7Wum6E/JkTaT21P+h2QMFXb5RWexObb3Mv27ioQ3WMYf9rJoHY
+RlZvQ8HgmUwiIZTr3Xr9tie8ugE8O35G0JHL+MzJePid3t5XdOZDBaBev9ttJnDn5DzgR/tgbGH2
+7N08kh+Uk7ikO+Bjn0BxUepi3yYNdQgaTB7Mf3BUTnoChhb3NbUfSYda7JX9O/uyOdVDw23MkLdd
+2rsQXdFE+OxmuucUPzBhngrFRc2ClWv9gOi9duXECfmKo0CtfWEqwRe7EK4HZTT9QhPGiChPUGST
+3psorbNAr72iL2CAvVqT2eTYpEFroFGsjofqdIdqNchTcyGHT6Sv1cXvTpTIT1BQIEx6gTqKUMTP
+kQ/IYosiMY75xfhKshdpMMxysyBhJn5Wx9r1HlESdsDC1XeR5RlbXVj6hY84XIRa3cZf9Yg9mcUE
+49QQ9D0UXNgNR28yLZmJGolI7EGdCz1IveJQNQJyLXVR88LziyyUdGYaUDQjTLaKALZX+XMQEngb
+jkt4Dhnhx1022tx7AVSK673YN9Hq0WrMWFZ3U81ezOIceFD82S/WiymX3SknMj3zTpTmDat2LVS9
+XqwXfUh61z7RH2hXWVjbffYAhejdQ17iCtQENvHXhPzCkOE1VuqUF6t/ZqXZLGz9MyuzqjvW4R1P
+1KwVNNjIOL5RiNBagU49By9HkFBcK9TFnxzapFilWfZi9nGrg81A/13FRQjjKzDbDlTZdkZ7gj8A
+dFbFItMgMiB9dlI1ZPlvSDv2hrVCuYAJyN51+K0dfuvjN9GFffNQWdW+1QqVk5PLy8uzAtHmcHFx
+enr+8UzgelJloxFUD1fls0CIymX5DIb3xIDw8z4XJ2fQ7x4vESGTqu5oPQ6Z4/BoASpsWKxW6Bka
+FNpgBBp05mr/BwAA///sV22P4jYQ/itWvi8JLCwQbajQstDrHpTbVe/UfjkZx0msOnZqG8Ler++M
+k7CsetJWvbaqKiIRZsb2vHk8fmKSoHCuisPQDXq5ddQJ1mO6DEVJc26/+y1xOxXPN+l0xT5cjR6G
+ox8W4pM5RMf6Q/bLuB7/OJh86n+ub3Zydz0xjteb6n7z8TB+ulq7z9cP658f+t/fB+Hstq5itjms
+DK0KwZaGlnxrZrc0zs8k7zX71ZJjKZWN6ckzywpeUtvTFVcwlmlTUgesycPU0FqovJThIIpuwpIK
+FRCl7wqqcj63FWcuCfpoPnzD/rdaPQtlQR0leyP+QgCVYG5veDC7BSqGX+sWUN+sTR22gmHOUTVs
+xdYQkSZBBAmDzUgCGEXbpB+QlFv271VG50/jHcWwm0L440a+7K0xui44TW23v6+1hMi+ingnRbUU
+UuJGIU1MzMsdhwyYd+kQS4TG1rBHKJmGdoY7VqA4g2WtPIRJ3YC38aIWLdoKsrqr1zqFhNK907CT
+ND5mpsR/nWXk6DP+jG9vhh8dYSDsDwbT6XQUEAZj/clweDMe+bp9WV4Z61ZclwQJcBs89erp4b1F
+n8G3bgpaUxrD9UakInUSTEeDkV9wNlIKxw2RokyCSYRP4xVm9l6lfrGjQjY0GJAK7HSRtiSw3nh7
+krH8z3mg4ewJJYXiSMftofU0lCNIKmgPcUXq2FiRPkJu2ifoRFuoxii6j4bDEaSonbfgGd1LyMRp
+xKvBEgdtT+5Zcph6oDIJODuWVivsHBIjBA3NNLPUylmYRi0TcGLnRsAM4Iu5suc8g0JrBv3ynX8L
+/2ZaatNZQs+Xy8aG/dJJr286yR0a8z6dZEXaiZjk1KB1r7KtIGCxAJPgzj+NIgkNrlvF1dW7DYoh
+kz4szGgbHszxOX2VwP97/HXsZmvTI3OVGl6TLYcat5gdd6m5tg4vNdednr/pzGFx3UkqSkvmOVcu
+JAuBHVqbS+FB77o0u3/q4GHhPWrJj2QQ9fvkkWYZ3HsLAMb/4Za3EragZ9fsicdrtmHevmYbsFLH
+f+aavVyNHeJxs58UgL6UPMCHU6rL3lf7k4XWBVC2RQ9vITIPuPInhDuAMwHKDuGrAjAU0KMJ0H4v
+q3xNUaPTFciHzRQj8gIQXB/AJ67Yaec0YNFuWPLsbBRRKQckOB74yZnWcLGf2HzvPNuaAwiFUMtW
+lAEWxyXei1SzlRGIuBCPbgVAfOxOfhSKpInbw4SdTp89AUv2JbT02e8AAAD//wMAUEsDBAoAAAAA
+AAAAIQDeOmCU/AoAAPwKAAAWAAAAd29yZC9tZWRpYS9pbWFnZTEuanBlZ//Y/+AAEEpGSUYAAQEA
+AAEAAQAA/9sAQwAJBgcIBwYJCAcICgoJCw0WDw0MDA0bFBUQFiAdIiIgHR8fJCg0LCQmMScfHy09
+LTE1Nzo6OiMrP0Q/OEM0OTo3/9sAQwEKCgoNDA0aDw8aNyUfJTc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3
+Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3/8AAEQgAqwByAwEiAAIRAQMRAf/EABwAAAEF
+AQEBAAAAAAAAAAAAAAABAgMEBQYHCP/EADUQAAEDAgUBBQUIAwEAAAAAAAEAAgMEEQUSITFBUQYT
+ImGBBxQycZEVM1KhscHR4SNCYnP/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIEAwX/xAAgEQACAgIC
+AwEBAAAAAAAAAAAAAQIRAyESMQQiQVFh/9oADAMBAAIRAxEAPwDfATgEoCVMBEqEIGCEWKRzg1pc
+4gAclAkrBFj0VV+JUrDYyB1ugUYxWkJ1c5volaHxf4XkKOKeKYXika/5FSpioRCChMQiCEqQoAbZ
+CchADkWS2QkUJZG26VZ+MVxpYgyP76QeHyHVS3SscVydC1uJMgeY4xnk5F9As2V0tR4ppCfIaAKK
+mp8rc7iS86knlTlcHks9DFgSWyrJHYWaqzozyVeeContCFIuUFRBGSw3YbHqNCtKmxeSJwE7c7LW
+zDcfysw3CdGQ7Qhd4sxzgdVBIyeISxOzNdsQnrmaGqdh1S0ZiYJTZw/D5rpiANlRnapghCEyRLIS
+oQA9IhCkoDrouXlea3EXS3JYHEMPkujrHmOlleNCGG30XPYYzLG0newXLK6NPjQt2WxsBbZKGXTt
+naKZg0Kynpqio5umyge3orclhdQOAGoVxIkU3xpkYIJVmQ2ULHDMVpgZMiHTRGSntbW62sHmdNRN
+Dz44zkPpt+SoQkOYPNWsLBjq52cOYHft+67UYZPZp2QhBSJBCEIAchCCbC/RSUVcUNqGUfiAH5rL
+pmhrBYcK7W1LZoHsDTa4s4G6q0zQW6X0NtSs2WV9HoePjceyQa6pSeOU17mxXL9lSnxSKK5yZQOX
+LijU5Jdlp7DZQm97EqgzH4ny5BkI5F7lXoZm1GZ0fT91a0RyUuhkjCW3VcMAdpdFbWiniJfwedLL
+Khx6mmcWPmaHXsBfdaIJozZJo6SkaLb3Vyk0rz/4/us7DJWStuxwPqr8c0UFaHSmwMdhvvfyWn4Y
+ZbejSQUC1hbZBUEghCEAOTZReJ4Bscp19E5BFxY7KH0XF00zn8IcyHDGPlOS8j/UAlTUTQzvA3UF
+5sVUxCnkZkjZcxxyODgPwk3v+auwWZLJGNg7QeSwvTZ7bppMdUQOezwmy5/EMCppInFz5pJiD4zr
+bfYcLqDqFQqGm54Tj2Q4KSOQhwjuDHGIyWtPLbX4XYUwZDTuawGxG3moY4ze5sfMqVxs3wm58lTl
+ykEcfFHPdpKd9SISHEAbWbfVZ2FUDIap07zI150IG3P8rpnlk0TmPNiPhuFnCKzzlddbekjzpRuT
+RfooYoZg+kzNaQLtPKu4y9zKGV8Jyyd2S13TUKvQt1aFcq4jLUQQn4CCHDreypdEUoyRqU2b3aLO
+buyC/wBFKkAsA0aAJVJxl2CEITEKlSI33UlFWpja17i4aPbZ11lg5p+9iN2k2+nRbr2te0te0OHQ
+i6zKlobO5oAAAFgNgOizZMdbN+DNySj9QjakRWvqVSxGuytuALnbzU0rQcpPyVWqEbGh7tmjfouK
+ezZehtI2ctM0uh4Yn++uaH3py1vDiQfyUUOI0Mjf8dUxwH4Tf6qCsqKaQWbM2xVJWx8lRPBWM1cI
+A4kgWJ2B3Kz6wPjldLCPCTqE2OWBpu2a55tspX1dCLQiqY6oOoiB19QtyXqebPUzRwqbMwP003Wz
+DGH1Oc65BosDDoyyGcj4X5bDpqulpgBFfklUtI4TlsmQkQkcRUJEIGOui6RHyUlBdZdectUfMAo7
+R4zFgeGPq5G53E5Y2X+I/wBKw+mmruzlDiVmmYwiSVrNgHC+ny2XPKvU74HU9ma6QWI9E2UNkYGu
+1CryvAdrcNOt1IzYXKx/09Ii+y44pDUUbhBIfiytFnfMKnUNrY4jGainkbYgF8IJAuT+62mu8ABO
+io1kJccwNh5LpF7HSoyMlbUPYz3xkLGkeGOIA6Hr6K7FhVNBeRjS6V5u+R2pJTGsAfqNVpUru+s0
+AXG63Q2jzs2nZNTNDImstre5C2oWlsbQd+Vm0sBknzm+Vu9uq1eE2ZW7BCEKRAhCExAgnTXZIue7
+bY0/B8JvTub7xMcjCDq3qbKCzi/aFjIrsVNNG7/BS3ZcHQu5/haXs47c/ZL2YVjEhNA82ZI7Xuie
+D1b+i4CWQk6klx1JO6j3HKpqxp1s9+xzBmgGqo7S0rxm8Bvl8/MLmu8dTvLHbcLB9n3b2XBHsw7F
+S6TDXaNduYPl/wA+S9Kxbs/T4lT+94Y9g7xuZuX4XX5BGyyzxbtG3HntUzm46hpAu5JNMCwi4sq7
+6OaMviqGOhmYfECLX8x1Cquppj/slCG9naWTitErnNJ31WrhcIc5oHJ3WVR0LnztbKSWnoVqV9U3
+DO47kAXfa1twt0I0jz8uRydG+1rWBrWiwAQmQytmibJH8DhcFPUs4AgIQgBUJEIA5Ttj2rZhI9zo
+u7fWObdxdq2IHr1PlwvLsRrZ66oM9TK+WQ/7ON0yV7nOLnOzE7k8qByKKEJSXSX1SJjHBxB0K7b2
+e9t5MAmbQ1znSYc86ZjcwnqPLqFw6L+p4CKA+nZIaPF6Rr/BNE8XY8cX5B4XLYvgdZQO72naaqDl
+oHjb6crlvZV2sNPMMJrZCYnfdFx2PRewkB7d99QlxX0pZJLo86o54nDvQSB0I1WJjdUanE44WEER
+t115P9LvsdwmmkIkaO5ldcl7efMjlebihqKPGqinqTmkBzBzdnNOoI9P0XVppEqak9m1UV9bQYA+
+pocpdTPDnRuFw5h3/YowXt5h9blirAaWY8uN2H14WxhdNBLRTQ1GkEkZY8+Tha68axKjkw6uqKST
+7yCQxnzsbf2m4WrOXKpHvEcjJGB8cjXsOzmm4KcvE8H7Q4lg7x7tNePmN2rSvQMC7cUGIFkFWBTT
+nS5+EnyKhwa6GpHWITBK0i4LCOqFNSHyPn8lNOqCUl0FDXJEPTQ4cpgOKRFwdilRQh8Er4JmSxOy
+vYQ4HoQvfvZ/2iZjWFMY5w71oAyngjj+F8+rpOw2NyYPjMXjywyua119mngppXoTdbPbcblLai41
+DRa36rkvd3VeNVdfPI1lNHFE0kjRtgf5W/Xz94x0huSbn6/0snAXGTEMVpnkmM08LrHg3cP0K1cd
+JHBS9my/DU080GSkJdGdTIRbNboF5R25DR2nrMv/ABf55G3XomBsLHS0p3ZIWet15f2kn95x3EJr
+3D6iQj5ZiB+SUlSJi7lbMy99kocbEdUjeUmxUHQ0G4lVtaGirmAAsBmOiFRuhADCUiRC4HcQphA5
+TymlOhDDp8OikbpumFSn4ER7Exp3RfZA+EJE3oS2ep9jcfGJ4MaKZ96qmHJ1e3grq8Ho+7p3Vjm5
+XVLmtv1a1eMdl5XxY3T924tzPDDbkHcL6ExBrWUMQYAA0MAA4uFpg7OE1TOWrR9nYlV1TtInU5qM
+3m1tj+g+q8XkcZHl7r3Oq9p9oD3RdiquWM5X5cmYb5SRcLxMaaDawKJ/gRWrAaJCdboKThQykGZC
+RCko/9lQSwMEFAAGAAgAAAAhAJa1reKWBgAAUBsAABUAAAB3b3JkL3RoZW1lL3RoZW1lMS54bWzs
+WU9v2zYUvw/YdyB0b2MndhoHdYrYsZstTRvEboceaYmW2FCiQNJJfRva44ABw7phhxXYbYdhW4EW
+2KX7NNk6bB3Qr7BHUpLFWF6SNtiKrT4kEvnj+/8eH6mr1+7HDB0SISlP2l79cs1DJPF5QJOw7d0e
+9i+teUgqnASY8YS0vSmR3rWN99+7itdVRGKCYH0i13Hbi5RK15eWpA/DWF7mKUlgbsxFjBW8inAp
+EPgI6MZsablWW12KMU08lOAYyN4aj6lP0FCT9DZy4j0Gr4mSesBnYqBJE2eFwQYHdY2QU9llAh1i
+1vaAT8CPhuS+8hDDUsFE26uZn7e0cXUJr2eLmFqwtrSub37ZumxBcLBseIpwVDCt9xutK1sFfQNg
+ah7X6/W6vXpBzwCw74OmVpYyzUZ/rd7JaZZA9nGedrfWrDVcfIn+ypzMrU6n02xlsliiBmQfG3P4
+tdpqY3PZwRuQxTfn8I3OZre76uANyOJX5/D9K63Vhos3oIjR5GAOrR3a72fUC8iYs+1K+BrA12oZ
+fIaCaCiiS7MY80QtirUY3+OiDwANZFjRBKlpSsbYhyju4ngkKNYM8DrBpRk75Mu5Ic0LSV/QVLW9
+D1MMGTGj9+r596+eP0XHD54dP/jp+OHD4wc/WkLOqm2chOVVL7/97M/HH6M/nn7z8tEX1XhZxv/6
+wye//Px5NRDSZybOiy+f/PbsyYuvPv39u0cV8E2BR2X4kMZEopvkCO3zGBQzVnElJyNxvhXDCNPy
+is0klDjBmksF/Z6KHPTNKWaZdxw5OsS14B0B5aMKeH1yzxF4EImJohWcd6LYAe5yzjpcVFphR/Mq
+mXk4ScJq5mJSxu1jfFjFu4sTx7+9SQp1Mw9LR/FuRBwx9xhOFA5JQhTSc/yAkArt7lLq2HWX+oJL
+PlboLkUdTCtNMqQjJ5pmi7ZpDH6ZVukM/nZss3sHdTir0nqLHLpIyArMKoQfEuaY8TqeKBxXkRzi
+mJUNfgOrqErIwVT4ZVxPKvB0SBhHvYBIWbXmlgB9S07fwVCxKt2+y6axixSKHlTRvIE5LyO3+EE3
+wnFahR3QJCpjP5AHEKIY7XFVBd/lbobod/ADTha6+w4ljrtPrwa3aeiINAsQPTMR2pdQqp0KHNPk
+78oxo1CPbQxcXDmGAvji68cVkfW2FuJN2JOqMmH7RPldhDtZdLtcBPTtr7lbeJLsEQjz+Y3nXcl9
+V3K9/3zJXZTPZy20s9oKZVf3DbYpNi1yvLBDHlPGBmrKyA1pmmQJ+0TQh0G9zpwOSXFiSiN4zOq6
+gwsFNmuQ4OojqqJBhFNosOueJhLKjHQoUcolHOzMcCVtjYcmXdljYVMfGGw9kFjt8sAOr+jh/FxQ
+kDG7TWgOnzmjFU3grMxWrmREQe3XYVbXQp2ZW92IZkqdw61QGXw4rxoMFtaEBgRB2wJWXoXzuWYN
+BxPMSKDtbvfe3C3GCxfpIhnhgGQ+0nrP+6hunJTHirkJgNip8JE+5J1itRK3lib7BtzO4qQyu8YC
+drn33sRLeQTPvKTz9kQ6sqScnCxBR22v1VxuesjHadsbw5kWHuMUvC51z4dZCBdDvhI27E9NZpPl
+M2+2csXcJKjDNYW1+5zCTh1IhVRbWEY2NMxUFgIs0Zys/MtNMOtFKWAj/TWkWFmDYPjXpAA7uq4l
+4zHxVdnZpRFtO/ualVI+UUQMouAIjdhE7GNwvw5V0CegEq4mTEXQL3CPpq1tptzinCVd+fbK4Ow4
+ZmmEs3KrUzTPZAs3eVzIYN5K4oFulbIb5c6vikn5C1KlHMb/M1X0fgI3BSuB9oAP17gCI52vbY8L
+FXGoQmlE/b6AxsHUDogWuIuFaQgquEw2/wU51P9tzlkaJq3hwKf2aYgEhf1IRYKQPShLJvpOIVbP
+9i5LkmWETESVxJWpFXtEDgkb6hq4qvd2D0UQ6qaaZGXA4E7Gn/ueZdAo1E1OOd+cGlLsvTYH/unO
+xyYzKOXWYdPQ5PYvRKzYVe16szzfe8uK6IlZm9XIswKYlbaCVpb2rynCObdaW7HmNF5u5sKBF+c1
+hsGiIUrhvgfpP7D/UeEz+2VCb6hDvg+1FcGHBk0Mwgai+pJtPJAukHZwBI2THbTBpElZ02atk7Za
+vllfcKdb8D1hbC3ZWfx9TmMXzZnLzsnFizR2ZmHH1nZsoanBsydTFIbG+UHGOMZ80ip/deKje+Do
+LbjfnzAlTTDBNyWBofUcmDyA5LcczdKNvwAAAP//AwBQSwMEFAAGAAgAAAAhAD+b4VzLAAAAOAEA
+ABwAAAB3b3JkL19yZWxzL3NldHRpbmdzLnhtbC5yZWxzhI/LagMxDEX3hfyD0b7xJItSyniyaQNZ
+JIsy/QBhax5kLBtbLcnfR10UGih0eSV07lG7u8TFfFGpc2IHm3UDhtinMPPo4KPfPz6DqYIccElM
+Dq5UYdetHtp3WlD0qE5zrkYpXB1MIvnF2uoniljXKRPrZkglomgso83ozziS3TbNky2/GdDdMc0h
+OCiHsAHTX7M2/89OwzB7ek3+MxLLHxUWRVDdQk8xqz4pG8tI4uD07bj85GMK2vh2ESqsU9u19u7f
+7gYAAP//AwBQSwMEFAAGAAgAAAAhAFIGyVYRAwAArQYAABEAAAB3b3JkL3NldHRpbmdzLnhtbJxV
+TW/bOBC9L7D/QdB5Hcuu4xRClQKbbnazSHaLKj0VPYzIkU2EXyApK95fv0NRjJO2KIqeTL0384Yc
+vqHfvH1Usjig88LoplydVWWBmhku9K4pP95fL16XhQ+gOUijsSmP6Mu3l7/+8masPYZAYb4gCe1r
+05SD07Vne1TgF0owZ7zpw4IZVZu+Fwznn3LOcE25D8HWy+WcdGYsalLrjVMQ/Jlxu2XKfGfYoFCH
+5bqqtkuHEgJt2O+F9VlN/awaldpnkcP3DnFQMseNq+p7kfNxR+P4U8aPbC8mWGcYek+dVTIdV4HQ
+WcbLH9FJ/bwVnQN3fCZySdd2EDgW9AOkNGJXLiP4nzGKQIuOUZeb8qJKOG3G9G2AgMR6i1JOxmAS
+gbY01jsHSgFdZEImLQgByAT8HpWle8LC1YI3pbvhqyTKsYdBhnvo2mBs3svFeq7J9uCABXStBUbl
+rowOzsgcx80/JlwZZR11KQmSwyyEqTgZmft4orj4YEzIaVX1R7XZnJ+njMh+i1mmRFJQdfTFe5dX
+17SLQqW2XYHqnIDiLjqHyqq6cw+/C535DsnB+Jxphy6Ti0UivAIpr+mkmSDTJIYLb99hPwnLO3C7
+k/LUIlW7b6LU17+f1OI9ovvTmcEm1dGBvdGc4FxwtdnMekKHW6Ey7oeuzVmaDPSMGjT/9+Ci4PLU
+oLEONPMYO3QLepf7inrxsY2hY82ka+O7gHdgLV0phXS7VVNKsduHVTRSoC8O7mH66HbrmVtPHH1F
+bvoAFk9G0fMiBqQlRc2LE/YqY69O2CZjmxN2nrHzE7bN2DZi+yMNB7n/geYvLyPeGynNiPyvDDbl
+V1BqwmTcG83kwJH8wA3zNzrOlp965Pdgka49jgb5z9QTMM+KLw41PtJgIheBXmQruIJHerCr9UUZ
+g5mR9GiiHl4G9kLKiWpKTe938Wm7XX+eru8L/aeCEo5mCC9UIhfr2RdowSEA7eC5Wkomc9Bj8fI4
+Y82RCbJ8e1TdaZjPUmuk8KFFS3MfjKOmTo/Tb5Py6X/m8n8AAAD//wMAUEsDBBQABgAIAAAAIQBt
+s2zSygAAACIBAAAUAAAAd29yZC93ZWJTZXR0aW5ncy54bWyMj0FOAzEMRfdI3CHyvs2UBUKjZioh
+1AsUDhAyno6lJI7stAFOTxCwYMfS/l9P7+8PbymaK4oSZwe77QAGc+CZ8tnBy/Nx8wBGq8+zj5zR
+wTsqHKbbm30bG76esNbeVNMpWUdxsNZaRms1rJi8brlg7tnCknztp5wtLwsFfOJwSZirvRuGeysY
+fe0GulJR+KG1/9Aay1yEA6p2kRS/eclThqk7/m4xbbz66OCiG6+BCOxXyqVSog88sjwKN0Xpb/tn
+2fQJAAD//wMAUEsDBBQABgAIAAAAIQB1npXFewEAAMkCAAAQAAgBZG9jUHJvcHMvYXBwLnhtbCCi
+BAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJxSy07DMBC8I/EPUe7UfUEBbY1QEeLA
+S2qAs+VsEgvHtmy3av+eNaFpEDd82p21xzNjw82u1dkWfVDWLPPJaJxnaKQtlamX+Vtxf3aZZyEK
+UwptDS7zPYb8hp+ewKu3Dn1UGDKiMGGZNzG6a8aCbLAVYURjQ5PK+lZEan3NbFUpiXdWblo0kU3H
+4wuGu4imxPLM9YR5x3i9jf8lLa1M+sJ7sXckmEOBrdMiIn9OcjSwHoDCRqEL1SKfE9w38CpqDHwK
+rCvgw/oy8PliAqwrYdUIL2Sk8PjsfDIDNgDg1jmtpIiUK39S0ttgq5i9fCeQJQJgwy1AqaxRbryK
++yRk2MKjMknKFbCuIm1e1F64JvBFEth3sJZC44q880rogMCOAKxs64TZcxJ6qIjvM7y5wt6lcH6O
+/AYHNj9UbNZOSBIzu1rQzUfDgxGsKRcsycGB8AjAAz2I1+lWOmtqLA97/g5ShO/dz+ST6WhM6zuz
+A0bG+y/DvwAAAP//AwBQSwMEFAAGAAgAAAAhAOeNeQ9JAQAAdwIAABEACAFkb2NQcm9wcy9jb3Jl
+LnhtbCCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJySX0vDMBTF3wW/Q8l7m7bD
+IaXNQGVPDgQnyt5CcrcFmz8m2bp9e5N2qxv6JOQlOSe/e+5N6tlBtskerBNaNajIcpSAYpoLtWnQ
+23Ke3qPEeao4bbWCBh3BoRm5vamZqZi28GK1AesFuCSQlKuYadDWe1Nh7NgWJHVZcKggrrWV1Iet
+3WBD2SfdAC7zfIoleMqppzgCUzMS0QnJ2Yg0O9v2AM4wtCBBeYeLrMA/Xg9Wuj8v9MqFUwp/NKGn
+U9xLNmeDOLoPTozGruuybtLHCPkL/LF4fu1bTYWKs2KASM1ZxSxQry3ZObA1vjiIw2up84sw57UA
+/nAkTEtDv2r8W4lmC3sRX4iUvWPchip9U0Mp4EmIWQ1NnZX3yePTco5ImRdFGlZZLsuyuptWeb6K
+oa7ux9jDgTxF+zfxDCB94uuvQr4BAAD//wMAUEsDBBQABgAIAAAAIQBljdzQHwIAACoIAAASAAAA
+d29yZC9mb250VGFibGUueG1svJXfbtowFMbvJ+0dIt+vcUJKKWqoKIPd7WLqHsAEh1iK7cgnkPXt
+d/wHVsEykouOCAEnzuHk5+/78vT8S9bRkRsQWuUkuaMk4qrQO6H2Ofn5uvkyIxG0TO1YrRXPyRsH
+8rz4/Ompm5datRDh9QrmJidV2zbzOIai4pLBnW64wnOlNpK1+NPsY12WouBfdXGQXLVxSuk0Nrxm
+Lf43VKIBErp1Q7p12uwaowsOgMPK2veTTCiyCNNF3VwxiVO/Cskh+s676IeWzC9omNLAE1xzZHVO
+aIrHlE7oPc3wneK3jMS2U1ExA7w9L6S+XDIp6rdT1bi+bn0j2qI61Y/MCLatub8GxB5PHGBLc7Km
+lKbLzYb4SpKTFVYeZlkSKikO5V+PoTI5V3CbcDDXxy1JfB+sYJ9wlZsz9vt0TYRVOLEjdQ3iBUFk
+AUWGKMaAgE4A+LsdCiJBEOtLEFN6/3IJIr0FIqGjQSyttA/QQ+L/SsJuHLpiEu4bt3IW9vKSBEVb
+OiH1S4J6IQ2XxDcBVb8irCWcFvATzTHCGuMV4e56Rh/+cMgchyy94uCMgIb6B4fUGWo4hxWTWzRt
+jyJsOPiQsGExzhvjQ2LpJLF+FxKBxJU36G0SyaPrM5zEEjHUPRx8Rlgt+OODM8I6429hefLKh4bl
+itUCJdFDYuMeF5aCzcxxihjvjTWmJU3fp6VVxHJ1rowicVMR4fkBi98AAAD//wMAUEsDBBQABgAI
+AAAAIQCLOngWHAcAAGssAAAPAAAAd29yZC9zdHlsZXMueG1szJrfc5s4EMffb+b+B4b31j+Sxmmm
+bidNm2tm2jStk7lnGeTABJAPyU3Sv76rBWSZBRmlzczlxTGwH61W+10w2jfvHvIs+MFLmYpiHk5e
+jsOAF5GI0+J2Ht5cn784DgOpWBGzTBR8Hj5yGb57+/dfb+5PpHrMuAwAUMiTch4mSq1PRiMZJTxn
+8qVY8wLOrUSZMwVfy9uRWK3SiH8Q0SbnhRpNx+OjUckzpmBwmaRrGda0+yG0e1HG61JEXErwNs8q
+Xs7SInwL7sUi+sBXbJMpqb+WV2X9tf6GH+eiUDK4P2EyStN5eJ3mMKNLfh98FzkrQjjDmVSnMmWd
+J5PTQnabRZIajPSQGStuAfuDZfOQFy9uFruDmEPLNAYyK18sTkMwHOEMmk9rJmszr+qq1rQhuBDq
+RbVUEBS++iyiOx4vFJyYh7DcePDm4qpMRZmqx+2xBc/TT2kcc0gMc12RpDH/N+HFjeTx9vi3c1zm
++kAkNoWah9OjGa5EJuOPDxFf62WG4QqWw8iX2iDTw//X2E70RCFCXZcnnOmcDCbeFlNtIa25IGLT
+mog/9+CZuIfPxH31TNyjZ+LOnokLBe1Z8uH1H+ZGDAXzh6nXqcq4Zg5S3WKzVH4GqhTF7WD+x3yd
+MJlC3R/o0FXGIp6ILOZlcM0fVHd00m0xe/3aUVQuRbBYswjqiuZsLLPh5eBzepuoYJFgeWpjjsaO
+0SvLz6nEWdijH7kqYWX2T5nGZLSpY7QvPE43eeNoVUd3xjwYbowldcf4cL+xnmjHsK8GWtIxj/Zb
+6ih1jDkbaEnHPB5oiTeHnQi58vADK++CrkSYufLnTGSiXG2yZk3b6TBzZZEx7hzWlUjGsisFZ64s
+2pFKcBpF8GTSsTquOW8102/vmvZWPP32rsm3VdRPcQWiRZn2Uwbrqh/hEth3/iPVT/46degjklUP
+nWUUlX3FSnZbsnXSTsMDfKAZdLv5thEKb062cqZ4Yx1kf1HAw67kQSfnAJ9hB3Hq9cF5ORZncAHq
+X5zBlagfMbgk9SMG1aZec68i1U9xydbUHFySvsoxcynXIPCe0ItwybazftF7hF/9ovauQND6Re1d
+UWhVnkmzHJTiCkSLYiRCKd71iyJc9atTqBThLVSK8BYqRXgLlSK8hErMnyRUSnHlp1GZLVSKcKWo
+QdhCpQhXfnYKlT6S+QmV2rsCQYVK7V1RaEnMCJVSXIFoUYxQKcVbqBThLVSK8BYqRXgLlSK8hUoR
+XkIl5k8SKqW48tOozBYqRbhS1CBsoVKEKz87hYrPi/YT4MBf0c29jNq7AkGFSu1dUWhJzAiVUlyB
+aFGMUCnFW6gU4S1UivAWKkV4C5UivIVKEV5CJeZPEiqluPLTqMwWKkW4UtQgbKFShCs/O4WKb5R/
+Q6jU3hUIKlRq74pCS2JGqJTiCkSLYoRKKd5CpQhvoVKEt1ApwluoFOEtVIrwEioxf5JQKcWVn0Zl
+tlApwpWiBmELlSJc+dkpVNyi+Q2hUntXIKhQqb0rCi2JGaFSiisQLYoRKqV4C5UivIVKEd5CpQhv
+oVKEt1ApwkuoxPxJQqUUV34aldlCpQhXihqELVSKcOWn3lrLeGDvgNkKnfi/9exDTYdvZtVOfecr
+XkIbCCfvcoejmnex/Sz8TT/ofex7Ie4Cs3Nph+kAf28Mg6TLLBX4ivpx7/vuA9x9pk0C/Q0K11/P
+gk9Vk8J+Oi4upZNdUOj6sBs4dHcEdt3AhepxDV0Ua/utOzR36HYXaONBD3TPxwX0aNSdFtpYt16A
+LTaf1IdxRnUA8X9olMFxfjYXTusCKX+e6VYZNK6OWU0p6Bb1L0rAwUjxUnvU41/dzGI2EHRPDvaN
+2N7WFwXmqgAvQ4+3CdG4V8t/u6VRXbfT8wGHwP8evxVbVtvkPT5f6/POwAZ4SbVdSB1s9lP2eWi2
+xXECaplViwP/XBQxzBYapXBbo8qG+IFVA8L5M55lXxgupRLr/kszvlLV2ckYWyNaqKVQSuT99iXu
+f6MnXQAIse1M9VVPoj/2xSZf8rLelO+J/6XQxZtkCWzo4/GetBga9X7fdvIZc0cr7BNosczS4o44
+tD2DLi0ZdE191U1QqKLOzMcLaxFGeou3uXoMf+fndUY1B3XrG2QqGIHTaOXr/LnIMnHP462r7UpB
+r/j9yRzDZI6r1IV2QY431Hm4Ir7gSJunzHanNEYbCVm80CWxXR559JBLUVTtaO2p75zsmvW2ivrG
+fVG1yrRHrA93jdWfLh31e1kRziR87k+NnWCZvH7PIDVEgY02bT/rc1UXTpe328jATQy00ayhBT2D
+u0OVz9B/qssZqmI8/jg+PHxVP1PXSijbnZosgQ5NfVdpejDNAWy9rL6hX9LcySb1Q7Z9J6uO7Y/Q
+jvId6dSenituwTYAgytDTyj/r2FsVCHf/gIAAP//AwBQSwECLQAUAAYACAAAACEAHhnvdXMBAABU
+BQAAEwAAAAAAAAAAAAAAAAAAAAAAW0NvbnRlbnRfVHlwZXNdLnhtbFBLAQItABQABgAIAAAAIQAe
+kRq38wAAAE4CAAALAAAAAAAAAAAAAAAAAKwDAABfcmVscy8ucmVsc1BLAQItABQABgAIAAAAIQAt
+n2VaEAEAALYDAAAcAAAAAAAAAAAAAAAAANAGAAB3b3JkL19yZWxzL2RvY3VtZW50LnhtbC5yZWxz
+UEsBAi0AFAAGAAgAAAAhAJXmwg7QEQAAFKUAABEAAAAAAAAAAAAAAAAAIgkAAHdvcmQvZG9jdW1l
+bnQueG1sUEsBAi0ACgAAAAAAAAAhAN46YJT8CgAA/AoAABYAAAAAAAAAAAAAAAAAIRsAAHdvcmQv
+bWVkaWEvaW1hZ2UxLmpwZWdQSwECLQAUAAYACAAAACEAlrWt4pYGAABQGwAAFQAAAAAAAAAAAAAA
+AABRJgAAd29yZC90aGVtZS90aGVtZTEueG1sUEsBAi0AFAAGAAgAAAAhAD+b4VzLAAAAOAEAABwA
+AAAAAAAAAAAAAAAAGi0AAHdvcmQvX3JlbHMvc2V0dGluZ3MueG1sLnJlbHNQSwECLQAUAAYACAAA
+ACEAUgbJVhEDAACtBgAAEQAAAAAAAAAAAAAAAAAfLgAAd29yZC9zZXR0aW5ncy54bWxQSwECLQAU
+AAYACAAAACEAbbNs0soAAAAiAQAAFAAAAAAAAAAAAAAAAABfMQAAd29yZC93ZWJTZXR0aW5ncy54
+bWxQSwECLQAUAAYACAAAACEAdZ6VxXsBAADJAgAAEAAAAAAAAAAAAAAAAABbMgAAZG9jUHJvcHMv
+YXBwLnhtbFBLAQItABQABgAIAAAAIQDnjXkPSQEAAHcCAAARAAAAAAAAAAAAAAAAAAw1AABkb2NQ
+cm9wcy9jb3JlLnhtbFBLAQItABQABgAIAAAAIQBljdzQHwIAACoIAAASAAAAAAAAAAAAAAAAAIw3
+AAB3b3JkL2ZvbnRUYWJsZS54bWxQSwECLQAUAAYACAAAACEAizp4FhwHAABrLAAADwAAAAAAAAAA
+AAAAAADbOQAAd29yZC9zdHlsZXMueG1sUEsFBgAAAAANAA0ATwMAACRBAAAAAA==
 
-> >
-> >> 2. Does DVFS Latency matter?
-> >>
-> >> Yes, in our experimental sets w/ Exynos4210 (those slapped in Galaxy
-> >> S2 equivalent; not exactly as I'm not conducted in Android systems,
-> >> but Tizen), we could see noticable difference w/ bare eyes for
-> >> user-input responses. When we shortened DVFS polling interval with
-> >> touches, the touch responses were greatly improved; e.g., losing 10
-> >> frames into losing 0 or 1 frame for a sudden input rush.
-> >
-> > Well, this basically means PM QoS matters, which is kind of obvious.
-> > It doesn't mean that it can't be implemented in a better way, though.
-> 
-> For DVFS-Latency and DMA-Throughput, I think a normal pm-qos-dev (one
-> device per one qos knob) isn't appropriate because there are multiple
-> devices that are required to react simultaneously.
-> 
-> It is possible to let multiple devices react by adding notifiers with
-> dev_pm_qos_add_notifier(). However, I felt that it wasn't the purpose
-> of this one and it might get things ugly. Anyway, was allowing
-> multiple devices to change their frequencies/voltages for a single
-> per-device QoS list the purpose of dev_pm_qos_add_notifier()?
-> 
-> 
-> Just throwing an idea and suggestion if it was the purpose,
-> I speculate that If we are going to do this (supporting multiple
-> devices per one qos knob without adding QoS class), we'd better create
-> "qos class device" in /drivers/qos/ and let those qos class handle
-> multiple devices depending on a single "qos class". Probably, this
-> will transform "global PM-QoS class" that notifies related devices
-> into "QoS class device" that notifies related devices.
-> 
-> >
-> >> 3. Why not replace DVFS Latency w/ CPU-DMA-Latency/Throughput?
-> >>
-> >> When we implement the user-input response enhancement with CPU-DMA QoS
-> >> requests, the PM-QoS will unconditionally increase CPU and BUS
-> >> frequencies/voltages with user inputs. However, with many cases it is
-> >> unnecessary; i.e., a user input means that there will be unexpected
-> >> changes soon; however, the change does not mean that the load will
-> >> increase. Thus, allowing DVFS mechanism to evolve faster was enough to
-> >> shorten the response time and not to increase frequencies and voltages
-> >> when not needed. There were significant difference in power
-> >> consumption with this changes if the user inputs were not involving
-> >> drastic graphics jobs; e.g., typing a text message.
-> >
-> > Again, you're arguing for having PM QoS rather than not having it.  You don't
-> > have to do that. :-)
-> >
-> > Generally speaking, I don't think we should add any more PM QoS "classes"
-> > as defined in pm_qos.h, since they are global and there's only one
-> > list of requests per class.  While that may be good for CPU power
-> > management (in an SMP system all CPUs are identical, so the same list of
-> > requests may be applied to all of them), it generally isn't for I/O
-> > devices (some of them work in different time scales, for example).
-> >
-> > So, for example, most likely, a list of PM QoS requests for storage devices
-> > shouldn't be applied to input devices (keyboards and mice to be precise) and
-> > vice versa.
-> >
-> > On the other hand, I don't think that applications should access PM QoS
-> > interfaces associated with individual devices directly, because they may
-> > not have enough information about the relationships between devices in the
-> > system.  So, perhaps, there needs to be an interface allowing applications
-> > to specify their PM QoS expectations in a general way (e.g. "I want <number>
-> > disk I/O throughput") and a code layer between that interface and device
-> > drivers translating those expecataions into PM QoS requests for specific
-> > devices.
-> 
-> With DVFS Latency PM QoS Class, we can say "I want the system to react
-> in 50ms for any sudden utilization increases.". Without it, we should
-> say, for example, "CPUFreq/Ondemand should set interval at 25ms,
-> Devfreq/Bus should set interval at 25ms, and Devfreq/GPU should set
-> interval at 10ms."
-> 
-> And with CPU Throughput PM QoS Class, we can say "I want 1000000
-> kbytes/sec DMA transfer". Without it, we should say "Memory-Interface
-> at 1000000 kbytes/sec, Exynos4412 core should be at least 500MHz, and
-> Bus should be at least 166MHz".
-> 
-
-What things are coming down to is we need to see if we can identify good
-abstractions that can be portable / scalable across ISA's and boards,
-such that applications would not need to be changed to work correctly
-across all of them.
-
-One issue I have with adding a single DVFS latency and throughput pm-qos
-parameter is that what Device the DVFS *really* means changes from one
-board to the next.  Thus making it impossible to abstract to user mode.
-
---mark
+--_002_900DBC2BD9E9484AA04FB8921EF362FA4694538Fwinxbeuk06excha_--
