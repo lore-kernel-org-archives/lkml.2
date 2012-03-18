@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab2CRUxx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 16:53:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:57061 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639Ab2CRUxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 16:53:51 -0400
-Date: Sun, 18 Mar 2012 21:54:28 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Joe Perches <joe@perches.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH V2] i915: Add and use pr_fmt and pr_<level>
-Message-ID: <20120318205428.GA22726@phenom.ffwll.local>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org
-References: <7abee2f1eaa52183aad01bacc8179b29ace7f173.1331959343.git.joe@perches.com>
- <20120318193939.GL4286@phenom.ffwll.local>
- <1332100811.23125.22.camel@joe2Laptop>
+	id S1756742Ab2CRU5B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 16:57:01 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:44842 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752471Ab2CRU47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 16:56:59 -0400
+Date: Sun, 18 Mar 2012 16:56:58 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jacek Luczak <difrost.kernel@gmail.com>
+Cc: Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120318205658.GB31682@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Lukas Czerner <lczerner@redhat.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+ <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+ <20120310044804.GB5652@thunk.org>
+ <9709DE62-CE25-41C4-A33C-63336B51DC5E@whamcloud.com>
+ <20120311161320.GC1048@thunk.org>
+ <CADDYkjRSd-Dv2jECwKt=3Q95hceVhiA+StZj1fvwywZHWaEgfw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332100811.23125.22.camel@joe2Laptop>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADDYkjRSd-Dv2jECwKt=3Q95hceVhiA+StZj1fvwywZHWaEgfw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 01:00:11PM -0700, Joe Perches wrote:
-> Use a more current logging style.  Ensure that appropriate
-> logging messages are prefixed with "i915: ".
+On Thu, Mar 15, 2012 at 11:42:24AM +0100, Jacek Luczak wrote:
 > 
-> Convert printks to pr_<level>.  Align arguments.
+> That was not a SVN server. It was a build host having checkouts of SVN
+> projects.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> The many files/dirs case is common for VCS and the SVN is not the only
+> that would be affected here. 
 
-Queued for -next, thanks for the patch.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Well, with SVN it's 2x or 3x the number of files in the checked out
+source code directory, right?  So if a particular source tree has
+2,000 files in a source directory, then SVN might have at most 6,000
+files, and if you assume each directory entry is 64 bytes, we're still
+talking about 375k.  Do you have more files than that in a directory
+in practice with SVN?  And if so why?
+
+> AFAIR git.kernel.org was also suffering from the getdents().
+
+git.kernel.org was suffering from a different problem, which was that
+the git.kernel.org administrators didn't feel like automatically doing
+a "git gc" on all of the repositories, and a lot of people were just
+doing "git pushes" and not bothering to gc their repositories.  Since
+git.kernel.org users don't have shell access any more, the
+git.kernel.org administrators have to be doing automatic git gc's.  By
+default git is supposed to automatically do a gc when there are more
+than 6700 loose object files (which are distributed across 256 1st
+level directories, so in practice a .git/objects/XX directory
+shouldn't have more than 30 objects in it, which each directory object
+taking 48 bytes).  The problem I believe is that "git push" commands
+weren't checking gc.auto limit, and so that's why git.kernel.org had
+in the past suffered from large directories.  This is arguably a git
+bug, though, and as I mentioned, since we all don't have shell access
+to git.kernel.org, this has to be handled automatically now....
+
+> Same applies to commercial products that are
+> heavily stuffed with many files/dirs, e.g. ClearCase or Synergy. 
+
+How many files in a dircectory do we commonly see with these systems?
+I'm not familiar with them, and so I don't have a good feel for what
+typical directory sizes tend to be.
+
+> A medium size you are referring would most probably fit into 256k and
+> this could be enough for 90% of cases. Large production system running
+> on ext4 need backups thus those would benefit the most here.
+
+Yeah, 256k or 512k is probably the best.  Alternatively, the backup
+programs could simply be taught to sort the directory entries by inode
+number, and if that's not enough, to grab the initial block numbers
+using FIEMAP and then sort by block number.  Of course, all of this
+optimization may or may not actually give us as much returns as we
+think, given that the disk is probably seeking from other workloads
+happening in parallel anyway (another reason why I am suspicious that
+timing the tar command may not be an accurate way of measuring actual
+performance when you have other tasks accessing the file system in
+parallel with the backup).
+
+    	    	  		     	      - Ted
