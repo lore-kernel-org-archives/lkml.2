@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab2CRNjB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 09:39:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59288 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752991Ab2CRNi7 (ORCPT
+	id S1753560Ab2CRNpx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 09:45:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34272 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab2CRNpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 09:38:59 -0400
-X-Sasl-enc: zWFmmVTvkavJknYA9vMtyosQYzVQ0PAyWjbBmnj2N1ox 1332077938
-Date: Sun, 18 Mar 2012 10:38:54 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shuox.liu@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+	Sun, 18 Mar 2012 09:45:52 -0400
+Date: Sun, 18 Mar 2012 21:46:26 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        andi.kleen@intel.com, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH v4] cpuidle: Add a sysfs entry to disable
- specific C state for debug purpose.
-Message-ID: <20120318133854.GA27981@khazad-dum.debian.net>
-References: <1331013078.1916.103.camel@ymzhang>
- <20120306143935.GA23346@kroah.com>
- <20120312181151.GE14020@sirena.org.uk>
- <20120312192936.GC24873@kroah.com>
- <1331602594.1916.155.camel@ymzhang>
- <20120313192949.GA8568@kroah.com>
- <1331686500.1916.172.camel@ymzhang>
- <20120314024619.GC22955@kroah.com>
- <4F600F78.2060902@intel.com>
- <20120316143355.f2dddbbd.akpm@linux-foundation.org>
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>, linaro-dev@lists.linaro.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
+Message-ID: <20120318134623.GB29638@S2101-09.ap.freescale.net>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
+ <1331878280-2758-3-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120316143355.f2dddbbd.akpm@linux-foundation.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1331878280-2758-3-git-send-email-mturquette@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Mar 2012, Andrew Morton wrote:
-> > +#define define_store_state_function(_name) \
-> > +static ssize_t store_state_##_name(struct cpuidle_state *state, \
-> > +		const char *buf, size_t size) \
-> > +{ \
-> > +	long value; \
-> > +	if (!capable(CAP_SYS_ADMIN)) \
-> > +		return -EPERM; \
-> 
-> Is the capability check required?  The 0644 permissions aren't sufficient?
+Reading the documentation of function clk_set_rate(), I'm not sure
+it exactly matches what the code does.
 
-That depends.  Without capable(), restricted root (one which had its
-capabilities dropped) can disable idle states.
+If there is mismatch, it might be worth sending an incremental patch
+to update the documentation and avoid the confusion?
 
-If you want to restrict something to "root only", IMHO it should be
-using capable(), as restricted root really doesn't qualify for "root
-only" things.
+On Thu, Mar 15, 2012 at 11:11:19PM -0700, Mike Turquette wrote:
+> +/**
+> + * clk_set_rate - specify a new rate for clk
+> + * @clk: the clk whose rate is being changed
+> + * @rate: the new rate for clk
+> + *
+> + * In the simplest case clk_set_rate will only change the rate of clk.
+> + *
+> + * If clk has the CLK_SET_RATE_GATE flag set and it is enabled this call
+> + * will fail; only when the clk is disabled will it be able to change
+> + * its rate.
+> + *
+> + * Setting the CLK_SET_RATE_PARENT flag allows clk_set_rate to
+> + * recursively propagate up to clk's parent; whether or not this happens
+> + * depends on the outcome of clk's .round_rate implementation.  If
+> + * *parent_rate is 0 after calling .round_rate then upstream parent
 
-If you wanted to restrict it to "owner only" OTOH, then yes, the
-capable() check (especially with the very coarse set of capabilities we
-currently have) might not be desireable.
+Might "*parent_rate is not changed" be more accurate?
 
-However, if we had a power-management capability, it would be best to
-use that one instead of CAP_SYS_ADMIN (aka "the new root" as LWN called
-it).
+> + * propagation is ignored.  If *parent_rate comes back with a new rate
+> + * for clk's parent then we propagate up to clk's parent and set it's
+> + * rate.  Upward propagation will continue until either a clk does not
+> + * support the CLK_SET_RATE_PARENT flag or .round_rate stops requesting
+> + * changes to clk's parent_rate.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> + * If there is a failure during upstream
+> + * propagation then clk_set_rate will unwind and restore each clk's rate
+> + * that had been successfully changed.  Afterwards a rate change abort
+> + * notification will be propagated downstream, starting from the clk
+> + * that failed.
+
+I'm not sure this part still matches the code.
+
+> + *
+> + * At the end of all of the rate setting, clk_set_rate internally calls
+> + * __clk_recalc_rates and propagates the rate changes downstream,
+
+I do not see __clk_recalc_rates is called by clk_set_rate in any way.
+
+Regards,
+Shawn
+
+> + * starting from the highest clk whose rate was changed.  This has the
+> + * added benefit of propagating post-rate change notifiers.
+> + *
+> + * Note that while post-rate change and rate change abort notifications
+> + * are guaranteed to be sent to a clk only once per call to
+> + * clk_set_rate, pre-change notifications will be sent for every clk
+> + * whose rate is changed.  Stacking pre-change notifications is noisy
+> + * for the drivers subscribed to them, but this allows drivers to react
+> + * to intermediate clk rate changes up until the point where the final
+> + * rate is achieved at the end of upstream propagation.
+> + *
+> + * Returns 0 on success, -EERROR otherwise.
+> + */
