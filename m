@@ -1,133 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab2CREgb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 00:36:31 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:35262 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2CREga (ORCPT
+	id S1753494Ab2CRFMr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 01:12:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38287 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab2CRFMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 00:36:30 -0400
-Message-ID: <1332045388.2091.9.camel@shrek.rexursive.com>
-Subject: [PATCH v2]: Hibernation: lower/better control the amount of pages
- used for buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 18 Mar 2012 15:36:28 +1100
+	Sun, 18 Mar 2012 01:12:45 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1331798740.10557.245.camel@linux-s257.site>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+Date: Sun, 18 Mar 2012 10:40:32 +0530
+Message-ID: <1332047432.6304.13.camel@debian.Gayathri>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On Thu, 2012-03-15 at 16:05 +0800, joeyli wrote:
+> Hi Pradeep, 
+> 
+> 於 三，2012-03-14 於 11:47 +0530，Pradeep Subrahmanion 提到：
+> > On Wed, Mar 14, 2012 at 11:21 AM, joeyli <jlee@suse.com> wrote:
+> > > 於 三，2012-03-14 於 08:13 +0530，Pradeep Subrahmanion 提到：
+> > >> Hi Joey ,
+> > >>
+> > >> > Per my understood, EC firmware should change brightness but didn't do
+> > >> > that, another
+> > >> > way is touch i915 register in _BCM.
+> > >>
+> > >>   how do we do this ? you mean change the _BCM implementation ?
+> > >
+> > > "BIOS guy" should do something like this:
+> > >
+> > >  Method (AINT, 2, NotSerialized)
+> > > {
+> > > ...
+> > >        If (LEqual (Arg0, One))
+> > >        {
+> > >            Store (Divide (Multiply (Arg1, 0xFF), 0x64, ), BCLP)
+> > >            Or (BCLP, 0x80000000, BCLP)         <=== touch BCLP register
+> > >            Store (0x02, ASLC)
+> > >        }
+> > >
+> > >    Method (_BCM, 1, NotSerialized)
+> > >    {
+> > >        If (LAnd (LGreaterEqual (Arg0, Zero), LLessEqual (Arg0, 0x64)))
+> > >        {
+> > >            AINT (One, Arg0)     <=== call AINT method
+> > >            Store (Arg0, BRTL)
+> > >        }
+> > >    }
+> > >
+> > >
+> > > Just for reference, they should do that when EC didn't wire to
+> > > backlight.
+> > >
+> > >> >
+> > >> > Acer machine provide a broken _BCM implementation and they didn't test
+> > >> > it.
+> > >> >
+> > >> > > > > By ' ACPI interface' , I mean 'acpi_video0' inside the
+> > >> > > > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
+> > >> > > > > directly . I will try that also.
+> > >> > > >
+> > >> > > > So writing values into /sys/class/backlight/acpi_video0/brightness does
+> > >> > > > nothing?
+> > >> > >
+> > >> > >
+> > >> > > No change in value when writing
+> > >> > > to /sys/class/backlight/acpi_video0/brightness.
+> > >> > >
+> > >> > > Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
+> > >> > > in new kernel (3.3.0-rc7) , it shows following messages ,
+> > >> > >
+> > >> > > [    8.350825] wmi: Mapper loaded
+> > >> > > [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
+> > >> > > [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
+> > >> > > [   10.396385] acer_wmi: Brightness must be controlled by generic video
+> > >> > > driver
+> > >> > >
+> > >> > > Also there was no interface inside /sys/class/backlight for acer_wmi.
+> > >> > >
+> > >> >
+> > >> > Yes, acer_wmi support backlight control with AMW0 interface, your
+> > >> > machine didn't have AMW0 interface.
+> > >> >
+> > >> > Normally, backlight should control by standard acpi interface.
+> > >> >
+> > >> > > I also tried writing directly to Embedded controller register .But no
+> > >> > > change.
+> > >> >
+> > >> > The machine has broken _BCM method, because EC should do something after
+> > >> > _BCM changed EC register.
+> > >>
+> > >> Thanks ,
+> > >>
+> > >> Pradeep Subrahmanion
+> > >
+> > > Why they didn't find _BCM not work?
+> > >
+> > > My guess is:
+> > >
+> > > Because the backlight control is through WDDM driver on Windows platform
+> > > but not through standard ACPI method _BCM. They only test Windows
+> > > platform, so, they didn't find _BCM broken.
+> > >
+> > > And, they also didn't really follow Microsoft WDDM spec:
+> > >
+> > >  http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
+> > >
+> > > Per spec,
+> > > ODM should keep _BCM works fine for any other OS didn't support WDDM
+> > > driver, but they didn't.
+> > >
+> > > At last year, I told Acer PM one time for this issue, they said will
+> > > check but finally didn't response me.
+> > >
+> > 
+> > >
+> > > Thanks
+> > > Joey Lee
+> > >
+> > 
+> > So touching the PCI LBB register is the only feasible solution now
+> > (even though it may not be a clean  method) ?
+> > 
+> > Thanks,
+> > Pradeep Subrahmanion
+> 
+> That will be better leave LBB register only touched by i915 driver.
+> 
+> If 'acpi_backlight=vendor' works to you, maybe we can add a quirk to
+> video_detect.c. 
+> You can try the following patch.
 
-Here is a hopefully better version of the patch.
+Thanks . I tried your patch .acpi_backlight=vendor allows me to control
+brightness with hot key.But there are problems with it like increasing
+brightness after  maximum level causes blank screen.So I am trying it
+sort it out.
+ 
+Thank you , 
 
----------------------------------------
-Hibernation/thaw improvements:
+Pradeep Subrahmanion
 
-1. Set maximum number of pages for read buffering consistently, instead
-of inadvertently depending on the size of the sector type.
+> 
+> 
+> Thanks a lot!
+> Joey Lee
+> 
+> 
+> >From 038bd3c4e53b7195f34e9d46c999b8dcb279da5e Mon Sep 17 00:00:00 2001
+> From: "Lee, Chun-Yi" <jlee@suse.com>
+> Date: Thu, 15 Mar 2012 16:03:45 +0800
+> Subject: [PATCH] acer-wmi: Add quirk table for video backlight vendor mode
+> 
+> Add quirk table for video backlight vendor mode
+> 
+> Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+> ---
+>  drivers/acpi/video_detect.c |   27 +++++++++++++++++++++++++++
+>  1 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+> index f3f0fe7..acb15d6 100644
+> --- a/drivers/acpi/video_detect.c
+> +++ b/drivers/acpi/video_detect.c
+> @@ -132,6 +132,32 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
+>  	return AE_OK;
+>  }
+>  
+> +static int video_set_backlight_vendor(const struct dmi_system_id *d)
+> +{
+> +	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+> +	return 0;
+> +}
+> +
+> +static const struct dmi_system_id video_vendor_dmi_table[] = {
+> +	{
+> +	 .callback = video_set_backlight_vendor,
+> +	 .ident = "Acer Aspire 4736",
+> +	 .matches = {
+> +		DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
+> +		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 4736"),
+> +		},
+> +	},
+> +	{
+> +	 .callback = video_set_backlight_vendor,
+> +	 .ident = "Acer TravelMate 4750",
+> +	 .matches = {
+> +		DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
+> +		DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 4750"),
+> +		},
+> +	},
+> +	{}
+> +};
+> +
+>  /*
+>   * Returns the video capabilities of a specific ACPI graphics device
+>   *
+> @@ -164,6 +190,7 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
+>  		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+>  		 *}
+>  		 */
+> +		dmi_check_system(video_vendor_dmi_table);
+>  	} else {
+>  		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
+>  		if (ACPI_FAILURE(status)) {
 
-2. Use at most one quarter of free pages for read buffering.
-
-3. Require that number of free pages when writing the image never falls
-below half of total free pages available.
-
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
----
- kernel/power/swap.c |   26 +++++++++++++++-----------
- 1 files changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 8742fd0..ede7a83 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -6,7 +6,7 @@
-  *
-  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
-  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
-+ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  *
-@@ -72,7 +72,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -316,8 +316,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = nr_free_pages() >> 1;
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -352,11 +351,15 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		handle->cur_swap = offset;
- 		handle->k = 0;
- 	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-+	if (bio_chain && nr_free_pages() < handle->reqd_free_pages) {
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		handle->written = 0;
-+		/*
-+		 * Recalculate the number of required free pages, to make sure
-+		 * we never take more than half.
-+		 */
-+		handle->reqd_free_pages = nr_free_pages() >> 1;
- 	}
-  out:
- 	return error;
-@@ -404,7 +407,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
- #define LZO_THREADS	3
- 
- /* Maximum number of pages for read buffering. */
--#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
-+#define LZO_READ_PAGES	(1 << 12)
- 
- 
- /**
-@@ -615,10 +618,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 	}
- 
- 	/*
--	 * Adjust number of free pages after all allocations have been done.
--	 * We don't want to run out of pages when writing.
-+	 * Adjust the number of required free pages after all allocations have
-+	 * been done. We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = nr_free_pages() >> 1;
- 
- 	/*
- 	 * Start the CRC32 thread.
-@@ -1129,8 +1132,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 
- 	/*
- 	 * Adjust number of pages for read buffering, in case we are short.
-+	 * Never take more than a quarter of all available pages.
- 	 */
--	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
-+	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 2;
- 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
- 
- 	for (i = 0; i < read_pages; i++) {
----------------------------------------
-
--- 
-Bojan
 
