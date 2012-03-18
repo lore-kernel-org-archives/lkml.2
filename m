@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab2CRHTb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 03:19:31 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39206 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753006Ab2CRHTa (ORCPT
+	id S1753403Ab2CRHZO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 03:25:14 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:38146 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751890Ab2CRHZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 03:19:30 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19+H8AgX35+96CF57BcWMK8dEOFGUfvG9YSqOyTW2
-	uR05wgcWy/f0WN
-Message-ID: <1332055160.7291.7.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] rcu: Permit limiting of force_quiescent_state()
- latency
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sivanich@sgi.com
-Date: Sun, 18 Mar 2012 08:19:20 +0100
-In-Reply-To: <1332003451.8147.77.camel@marge.simpson.net>
-References: <20120316160328.GA7207@linux.vnet.ibm.com>
-	 <1332003451.8147.77.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sun, 18 Mar 2012 03:25:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMbhsRQDdXcKVp-_RNe-0i7YYLr4vKDDXqVw_eP4VsmfbFNtYg@mail.gmail.com>
+References: <1331749794-8056-1-git-send-email-ccross@android.com>
+ <1331749794-8056-4-git-send-email-ccross@android.com> <4F6483BA.8050103@ti.com>
+ <CAMbhsRQDdXcKVp-_RNe-0i7YYLr4vKDDXqVw_eP4VsmfbFNtYg@mail.gmail.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Sun, 18 Mar 2012 12:48:22 +0530
+Message-ID: <CAMQu2gz11nwDy2nzFDTL7XaLcf4ULqUDWVOEzAQLD9JJ8Y=JYA@mail.gmail.com>
+Subject: Re: [PATCHv2 3/5] cpuidle: add support for states that affect
+ multiple cpus
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-17 at 17:57 +0100, Mike Galbraith wrote:
+On Sun, Mar 18, 2012 at 12:51 AM, Colin Cross <ccross@android.com> wrote:
+> On Sat, Mar 17, 2012 at 5:29 AM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>
+> <snip>
+>
+>> While playing around with this version, I noticed that the
+>> 'alive_count' is ever incrementing which will lead to
+>> coupled idle state not being attempted after one CPU offline
+>> attempt.
+>>
+>> Fix in end of the email for the same. With it, coupled states
+>> continue to work with CPU online/offline transitions.
+>>
+>> Feel free to fold it into original patch. Attached
+>> the same in case mailer eat tabs.
+>
+> <snip>
+>
+> Thanks, Kevin reported this issue and I'll fix it in the next version.
+ Ahh... I see comments from Kevin now. Some how I missed it
+otherwise would have saved me few minutes of debug.
 
-> So I bent it up a little, see below.
-
-s/bent/busted.  FQS_MAX_CPU_VISIT < CPUs == deadlock.  Poo.
-
--Mike
-
+Regards
+Santosh
