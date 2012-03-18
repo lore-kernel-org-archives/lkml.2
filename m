@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2CRMWq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 08:22:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744Ab2CRMWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 08:22:45 -0400
-Date: Sun, 18 Mar 2012 14:22:54 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: qemu-devel@nongnu.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-spec: split virtio-net device status filed into
- ro and rw byte
-Message-ID: <20120318122252.GE29902@redhat.com>
-References: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753675Ab2CRMk6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 08:40:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37118 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab2CRMkz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 08:40:55 -0400
+Message-ID: <1332074448.3722.25.camel@edumazet-laptop>
+Subject: [PATCH] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Indan Zupancic <indan@nul.nu>, David Miller <davem@davemloft.net>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        Matt Evans <matt@ozlabs.org>
+Date: Sun, 18 Mar 2012 05:40:48 -0700
+In-Reply-To: <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+	 <1331658828.4449.16.camel@edumazet-glaptop>
+	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+	 <1331704535.2456.37.camel@edumazet-laptop>
+	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
+	 <1331712357.2456.58.camel@edumazet-laptop>
+	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+	 <1331992184.2466.45.camel@edumazet-laptop>
+	 <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 11:20:26PM +0800, Jason Wang wrote:
-> This patch splits the device status field of virtio-net into ro and rw
-> byte. This would simplify the implementation of both host and guest
-> and make the layout more clean. As VIRTIO_NET_S_ANNOUNCE is a rw bit,
-> it was moved to bit 8 (0x100).
-> 
-> btw. looks like there's no implementation that depends on
-> VIRTIO_NET_S_ANNOUNCE, so the move is safe.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Le dimanche 18 mars 2012 à 19:35 +1100, Indan Zupancic a écrit :
 
-Hmm, I know I proposed this myself, and I thought it will
-prevent problems if we will add more rw bits,
-but I missed the following race:
+> And in the 00.00001% case that the filter uses a computed negative
+> offset the BPF JIT fails at runtime. So to not be buggy you need at
+> least a call to __load_pointer() for the negative case.
 
-host writes VIRTIO_NET_S_ANNOUNCE = 1, interrupt
+Please show me how and why a real (I mean useful one...) filter could
+generate a dynamic negative value, and I'll change the code.
 
-				guest reads VIRTIO_NET_S_ANNOUNCE = 1
+Negative values are there to allow access to network/mac header
+components. I cant see how a BPF code could have a valid use of dynamic
+indexes in these headers.
 
-host writes VIRTIO_NET_S_SOME_NEW_FIELD = 1, interrupt
+Right now we consider such code is evil and filter does "return 0"
+saying so.
 
-				guest writes VIRTIO_NET_S_ANNOUNCE = 0
-				VIRTIO_NET_S_SOME_NEW_FIELD is overwritten
+If I remember well, a more practical issue was mentioned by Matt Evans
+and I forgot about it.
 
-				guest reads VIRTIO_NET_S_SOME_NEW_FIELD = 0
+Its even _documented_ in his code.
 
-How about making the new bit write 1 to clear?
-If we do, we can keep it where it is currently ...
+Thanks
+
+[PATCH] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
+
+Matt Evans spotted that x86 bpf_jit was incorrectly handling negative
+constant offsets in BPF_S_LDX_B_MSH instruction.
+
+We need to abort JIT compilation like we do in common_load so that
+filter uses the interpreter code and can call __load_pointer()
+
+Reference: http://lists.openwall.net/netdev/2011/07/19/11
+
+Thanks to Indan Zupancic to bring back this issue.
+
+Reported-by: Matt Evans <matt@ozlabs.org>
+Reported-by: Indan Zupancic <indan@nul.nu>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+David, libpcap doesnt generate such pattern, so feel to add this patch
+to net-next. Thanks !
+
+ arch/x86/net/bpf_jit_comp.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 7c1b765..5671752 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -475,8 +475,10 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 			case BPF_S_LD_W_ABS:
+ 				func = sk_load_word;
+ common_load:			seen |= SEEN_DATAREF;
+-				if ((int)K < 0)
++				if ((int)K < 0) {
++					/* Abort the JIT because __load_pointer() is needed. */
+ 					goto out;
++				}
+ 				t_offset = func - (image + addrs[i]);
+ 				EMIT1_off32(0xbe, K); /* mov imm32,%esi */
+ 				EMIT1_off32(0xe8, t_offset); /* call */
+@@ -489,14 +491,8 @@ common_load:			seen |= SEEN_DATAREF;
+ 				goto common_load;
+ 			case BPF_S_LDX_B_MSH:
+ 				if ((int)K < 0) {
+-					if (pc_ret0 > 0) {
+-						/* addrs[pc_ret0 - 1] is the start address */
+-						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
+-						break;
+-					}
+-					CLEAR_A();
+-					EMIT_JMP(cleanup_addr - addrs[i]);
+-					break;
++					/* Abort the JIT because __load_pointer() is needed. */
++					goto out;
+ 				}
+ 				seen |= SEEN_DATAREF | SEEN_XREG;
+ 				t_offset = sk_load_byte_msh - (image + addrs[i]);
 
 
-
-> ---
->  virtio-0.9.4.lyx |   20 +++++++++++++++++++-
->  1 files changed, 19 insertions(+), 1 deletions(-)
-> 
-> diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
-> index 6c7bab1..ef3951c 100644
-> --- a/virtio-0.9.4.lyx
-> +++ b/virtio-0.9.4.lyx
-> @@ -58,6 +58,7 @@
->  \html_be_strict false
->  \author -608949062 "Rusty Russell,,," 
->  \author 1531152142 "pbonzini" 
-> +\author 2090695081 "Jason" 
->  \end_header
->  
->  \begin_body
-> @@ -4012,8 +4013,19 @@ configuration
->  layout Two configuration fields are currently defined.
->   The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
->   is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
-> +
-> +\change_inserted 2090695081 1331907586
-> + The low byte of status field is read-only, guest write to this byte would
-> + be ignored.
-> + Currently only one bit is defined for this byte: VIRTIO_NET_S_LINK_UP.
-> + The high byte of status field is read-writable.
-> + Currently only one bit is defined for this byte: VIRTIO_NET_S_ANNOUNCE.
-> +
-> +\change_deleted 2090695081 1331907489
->   Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
->   and VIRTIO_NET_S_ANNOUNCE.
-> +
-> +\change_unchanged
->   
->  \begin_inset listings
->  inline false
-> @@ -4026,7 +4038,13 @@ status open
->  
->  \begin_layout Plain Layout
->  
-> -#define VIRTIO_NET_S_ANNOUNCE	2
-> +#define VIRTIO_NET_S_ANNOUNCE	
-> +\change_inserted 2090695081 1331907493
-> +0x100
-> +\change_deleted 2090695081 1331907491
-> +2
-> +\change_unchanged
-> +
->  \end_layout
->  
->  \begin_layout Plain Layout
