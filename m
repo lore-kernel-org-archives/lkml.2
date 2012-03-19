@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030215Ab2CSAcB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 20:32:01 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47539 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964775Ab2CSAb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 20:31:58 -0400
-From: Joe Perches <joe@perches.com>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S964843Ab2CSAfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 20:35:09 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52068 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756009Ab2CSAfH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 20:35:07 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F667ED4.60204@jp.fujitsu.com>
+Date: Mon, 19 Mar 2012 09:33:24 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Kautuk Consul <consul.kautuk@gmail.com>
+CC: Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH wireless-next 3/3] ath6kl: Add __printf verification to ath6kl_printk
-Date: Sun, 18 Mar 2012 17:30:54 -0700
-Message-Id: <a27a7b0fcddc2f2366ff5ab0968ca0ff78d420c5.1332116921.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1332116921.git.joe@perches.com>
-References: <cover.1332116921.git.joe@perches.com>
+Subject: Re: [PATCH 1/1] TRIVIAL: mmap.c: fix comment for __insert_vm_struct()
+References: <1331918590-2786-1-git-send-email-consul.kautuk@gmail.com>
+In-Reply-To: <1331918590-2786-1-git-send-email-consul.kautuk@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure printf formats and arguments match.
+(2012/03/17 2:23), Kautuk Consul wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/ath/ath6kl/common.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> The comment above __insert_vm_struct seems to suggest that this
+> function is also going to link the VMA with the anon_vma, but
+> this is not true.
+> This function only links the VMA to the mm->mm_rb tree and the mm->mmap linked
+> list.
+> 
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> ---
+>  mm/mmap.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index da15a79..6328a36 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -452,8 +452,8 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+>  
+>  /*
+>   * Helper for vma_adjust in the split_vma insert case:
+> - * insert vm structure into list and rbtree and anon_vma,
+> - * but it has already been inserted into prio_tree earlier.
+> + * insert vm structure into list and rbtree, but it has
+> + * already been inserted into prio_tree earlier.
+>   */
+>  static void __insert_vm_struct(struct mm_struct *mm, struct vm_area_struct *vma)
+>  {
 
-diff --git a/drivers/net/wireless/ath/ath6kl/common.h b/drivers/net/wireless/ath/ath6kl/common.h
-index a60e78c..71f5450 100644
---- a/drivers/net/wireless/ath/ath6kl/common.h
-+++ b/drivers/net/wireless/ath/ath6kl/common.h
-@@ -22,7 +22,8 @@
- 
- #define ATH6KL_MAX_IE			256
- 
--extern int ath6kl_printk(const char *level, const char *fmt, ...);
-+extern __printf(2, 3)
-+int ath6kl_printk(const char *level, const char *fmt, ...);
- 
- /*
-  * Reflects the version of binary interface exposed by ATH6KL target
--- 
-1.7.8.111.gad25c.dirty
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
 
