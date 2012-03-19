@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2CSK0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 06:26:46 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50883 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010Ab2CSK0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 06:26:45 -0400
-Message-ID: <4F67098C.4050902@parallels.com>
-Date: Mon, 19 Mar 2012 14:25:16 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1756556Ab2CSK1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 06:27:18 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51839 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab2CSK1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 06:27:16 -0400
+Date: Mon, 19 Mar 2012 11:27:13 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lkml <linux-kernel@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM/Hibernate: use rb_entry
+Message-ID: <20120319102712.GA4532@elf.ucw.cz>
+References: <1332114885.2632.1.camel@offbook>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
-Subject: Re: [PATCH 01/10] cgroup: move cgroup_clear_directory() call out
- of cgroup_populate_dir()
-References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1331940963-15756-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332114885.2632.1.camel@offbook>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2012 03:35 AM, Tejun Heo wrote:
-> cgroup_populate_dir() currently clears all files and then repopulate
-> the directory; however, the clearing part is only useful when it's
-> called from cgroup_remount().  Relocate the invocation to
-> cgroup_remount().
->
-> This is to prepare for further cgroup file handling updates.
->
-> Signed-off-by: Tejun Heo<tj@kernel.org>
+On Mon 2012-03-19 00:54:45, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> Since the software suspend extents are organized in an rbtree, use rb_entry
+> instead of container_of, as it is semantically more appropriate in order to
+> get a node as it is iterated.
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-Acked-by: Glauber Costa <glommer@parallels.com>
-
+ACK.
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
