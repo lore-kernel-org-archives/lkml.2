@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030593Ab2CSMvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:51:43 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49133 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab2CSMvm convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Mon, 19 Mar 2012 08:51:42 -0400
-Message-Id: <4F6739E702000078000794DD@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 19 Mar 2012 12:51:35 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Lasse Collin" <lasse.collin@tukaani.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xz: make use of BCJ filter also for 32-bit x86
- kernel
-References: <4F621C930200007800078B9E@nat28.tlf.novell.com>
- <20120316204737.23aacd2b@tukaani.org>
- <4F66F6A302000078000792FF@nat28.tlf.novell.com>
- <20120319143647.3cf46ed2@tukaani.org>
-In-Reply-To: <20120319143647.3cf46ed2@tukaani.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758886Ab2CSMxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:53:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41200 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850Ab2CSMxS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 08:53:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F667DF1.3090109@jp.fujitsu.com>
+References: <CACVxJT_UWzpVo1Jfbf5Z2A-s16QjEv05MiNSY_EGihKTPuMyxg@mail.gmail.com>
+	<20120314093156.2bc3d3c5.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120314110844.d1654724.kamezawa.hiroyu@jp.fujitsu.com>
+	<CACVxJT9mkX+7+hFrbt2rNCjUH9Y=t2AtGaXqcGfMh6x5WwMjmw@mail.gmail.com>
+	<4F667DF1.3090109@jp.fujitsu.com>
+Date: Mon, 19 Mar 2012 14:53:17 +0200
+Message-ID: <CACVxJT9t7iNnUfVcDf=vyO7Nzhey0QaDgjpqkPBFYmc7FCPZyQ@mail.gmail.com>
+Subject: Re: seq_put_decimal_ull() et al
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.03.12 at 13:36, Lasse Collin <lasse.collin@tukaani.org> wrote:
-> On 2012-03-19 Jan Beulich wrote:
->> >>> On 16.03.12 at 19:47, Lasse Collin <lasse.collin@tukaani.org>
->> >>> wrote:
->> > On 2012-03-15 Jan Beulich wrote:
->> >> The ARCH value for 32-bit x86 is not x86, but i?86.
->> > 
->> > Thanks for noticing this. Is ARCH even the correct variable to use?
->> > Maybe SRCARCH would be better. Then it would be enough to test for
->> > x86, if I understand the toplevel Makefile correctly.
->> 
->> Yes, that might be even better (albeit requiring adjustment of the
->> script should the naming in the source tree ever change again,
->> whereas the ARCH values are supposedly stable).
-> 
-> I think I will go with SRCARCH then. The directory names don't change so
-> often.
-> 
-> Could you quickly check if the following is OK? It works on x86-64.
+On Mon, Mar 19, 2012 at 3:29 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/03/16 20:16), Alexey Dobriyan wrote:
+>
+>> On Wed, Mar 14, 2012 at 5:08 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>> On Wed, 14 Mar 2012 09:31:56 +0900
+>>> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>>
+>>>> On Tue, 13 Mar 2012 15:35:54 +0200
+>>>> Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>>>>
+>>>>>> Subject:    + procfs-add-num_to_str-to-speed-up-proc-stat-fix-2.patch added to -mm tree
+>>>>>
+>>>>> I think the fix is to create proper binary interface for exporting
+>>>>> interrupt counts.
+>>>>> Programs can parse raw data equally well if programming language is
+>>>>> even minimally reasonable
+>>>>> (POSIX shell may not qualify, though).
+>>>>
+>>>> Ok, please try with all tool-chain updates.
+>>>> procps, top, sar, and more ?
+>>>>
+>>
+>> Well, why not?
+>> We can tune print code or we can create maximally fast interface and forget.
+>>
+>
+> Do you have an idea where to place it ?
+> /proc/stat_binary ?
+> /proc/binary/stat ?
+>
+> Hm, to parse /proc/stat binary format, the user has to know the format of the
+> kernel version.
+>
+> Do we show a format file as
+> /proc/binary/stat_format and show
+> # cat /proc/binary/stat_format
+>  =IHHHIHIQQQIHQQ...
+>
+> as python's pack/unpack ? or
+> export the format via /usr/include/linux/proc_format.h ? as a structure ?
+>
+> any better idea ?
 
-Yes, it is.
-
-Acked-by: Jan Beulich <jbeulich@suse.com>
-
-> diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
-> --- a/scripts/xz_wrap.sh
-> +++ b/scripts/xz_wrap.sh
-> @@ -12,8 +12,8 @@
->  BCJ=
->  LZMA2OPTS=
->  
-> -case $ARCH in
-> -	x86|x86_64)     BCJ=--x86 ;;
-> +case $SRCARCH in
-> +	x86)            BCJ=--x86 ;;
->  	powerpc)        BCJ=--powerpc ;;
->  	ia64)           BCJ=--ia64; LZMA2OPTS=pb=4 ;;
->  	arm)            BCJ=--arm ;;
-> 
->> Will you get a patch to Linus then to fix all of these in 3.4?
-> 
-> I will. Should the fix be included in the stable trees too? I'm not sure
-> if this is acceptable under the stable kernel rules.
-
-Neither am I. It's not really critical to get this right, so I'd personally
-not consider it a stable candidate.
-
-> At least someone should test it on SPARC first.
-
-Yes.
-
-Thanks, Jan
-
+I'm thinking of separate file with interrupts statistics. Let's not
+mix everything.
+Hmm, let me see how top(1) parses /proc/interrupts.
