@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162291Ab2CSUBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:01:12 -0400
-Received: from mail-out.apple.com ([17.151.62.49]:60172 "EHLO
-	mail-out.apple.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162173Ab2CSUBH (ORCPT
+	id S1162322Ab2CSUBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:01:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39922 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162300Ab2CSUBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:01:07 -0400
-X-Greylist: delayed 3830 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 16:01:07 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-X-AuditID: 11807136-b7bd3ae000002dbb-e2-4f678188fffb
-Subject: Re: Please discuss: what "git push" should do when you do not say what
- to push?
-From: Kevin Ballard <kevin@sb.org>
-In-reply-to: <7v7gyjersg.fsf@alter.siamese.dyndns.org>
-Date: Mon, 19 Mar 2012 11:57:16 -0700
-Cc: git@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <87BE88BA-2827-4EDC-99BF-94026E604AB0@sb.org>
-References: <7v7gyjersg.fsf@alter.siamese.dyndns.org>
-To: Junio C Hamano <gitster@pobox.com>
-X-Mailer: Apple Mail (2.1257)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsUiON1OTbezMd3f4PM5ZouuK91MFpd3zWFz
-	YPL4vEkugDGKyyYlNSezLLVI3y6BK2PH209sBdMlKo40pTUwbhPuYuTkkBAwkdh36ggThC0m
-	ceHeerYuRi4OIYF2Jokdfb+ZIZzlTBKLPp0HqxIWiJKYcnAlC4jNK2Aose/3f7A4s4CWxPqd
-	x8FsNgEliXsTloDZnAJmEquWTGQDsVkEVCV2NX1jh6g3lWie+B2qV1viybsLrBAzLSW+bjrB
-	DGILAdXsvX8BzBYRUJOY2HaIBeJSWYnbB/czTWAUmIXkjFlIzpiFZOwCRuZVjIJFqTmJlYam
-	eokFBTmpesn5uZsYQSHYUGi2g3HHX7lDjAIcjEo8vBtj0v2FWBPLiitzDzFKcDArifA6XU/z
-	F+JNSaysSi3Kjy8qzUktPsQozcGiJM57Lg+oWiA9sSQ1OzW1ILUIJsvEwSnVwOibdyYw+uDv
-	w/+PfYjPVF3mfav0ZAXXW9bD2/qdr8SV9EwoVk6etfbDk555ena+KvcnZNyymtrQWdPwkdvC
-	rz4pUS1hwubyR+cP6pZ8ncSdsXr1T6d3p1+t/eLQeGC56sUnfTbT1fZv23plm9iTg1rXlzxa
-	YsejlfiK+/Ce29X66hlzU7lESlmUWIozEg21mIuKEwH3Pg27PQIAAA==
+	Mon, 19 Mar 2012 16:01:16 -0400
+Date: Mon, 19 Mar 2012 13:00:49 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-4c19ea453d81cf8bd9bd446e6b129998f79997e7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
+        mingo@elte.hu
+In-Reply-To: <1331887340-32448-1-git-send-email-namhyung.kim@lge.com>
+References: <1331887340-32448-1-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf stat: Fix event grouping on forked task
+Git-Commit-ID: 4c19ea453d81cf8bd9bd446e6b129998f79997e7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Mar 2012 13:00:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would love to see the default changed to 'upstream'. I've wanted this ever
-since the push.default=tracking value was introduced. When introducing new
-users to git, one of the first things I always tell them is to run
+Commit-ID:  4c19ea453d81cf8bd9bd446e6b129998f79997e7
+Gitweb:     http://git.kernel.org/tip/4c19ea453d81cf8bd9bd446e6b129998f79997e7
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 16 Mar 2012 17:42:19 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 16 Mar 2012 16:13:45 -0300
 
-    git config --global push.default tracking
+perf stat: Fix event grouping on forked task
 
-because it's far easier to explain how that behavior works than it is to
-explain how the 'matching' behavior works, and it more closely aligns with
-the way people (in my experience) typically use git.
+When event group is enabled for forked task (i.e. no target task was
+specified) all events were disabled and marked ->enable_on_exec.
+However they are not counted at all since only group leader will be
+enabled on exec actually. So the result looked like below:
 
--Kevin
+ $ ./perf stat --group -- sleep 1
 
-On Mar 16, 2012, at 10:10 PM, Junio C Hamano wrote:
+ Performance counter stats for 'sleep 1':
 
-> There is a proposal to change the default behaviour of 'git push' on the
-> Git mailing list. The goal of this message is to encourage you to discuss
-> it before it happens (or the change is aborted, depending on the outcome
-> of the discussion).
-> 
-> In the current setting (i.e. push.default=matching), 'git push' without
-> argument will push all branches that exist locally and remotely with the
-> same name. This is usually appropriate when a developer pushes to his own
-> public repository, but may be confusing if not dangerous when using a
-> shared repository. The proposal is to change the default to 'upstream',
-> i.e. push only the current branch, and push it to the branch 'git pull'
-> would pull from. Another candidate is 'current'; this pushes only the
-> current branch to the remote branch of the same name.
-> 
-> For more details on the behavior of Git with these values, read the
-> documentation about 'push.default' in 'man git-config'
-> (http://schacon.github.com/git/git-config.html).
-> 
-> You may be negatively affected when such a change happens if you do not
-> see anything in the output from 'git config push.default' and if you rely
-> on the default that pushes all your matching branches. On the other hand,
-> you may want to see the default behaviour to change, especially if you are
-> using shared repositories. In either case, please join the discussion to
-> give us more data point and help us decide the future of Git. Also, if
-> you think your friends and colleagues will be affected by this change,
-> either positively or negatively, please tell them about this discussion.
-> 
-> What has been discussed so far can be seen in this thread:
-> 
->    http://thread.gmane.org/gmane.comp.version-control.git/192547/focus=192694
-> 
-> Previous relevant discussions include:
-> 
->    http://thread.gmane.org/gmane.comp.version-control.git/123350/focus=123541
->    http://thread.gmane.org/gmane.comp.version-control.git/166743
-> 
-> To join the discussion, send your messages to:
-> 
->    git@vger.kernel.org
-> 
-> The list accepts messages from non-subscribers, and you do not have to ask
-> "please Cc me, I am not subscribed", as it's customary to Cc: posters when
-> replying on this list.
-> --
-> To unsubscribe from this list: send the line "unsubscribe git" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+          0.554926 task-clock                #    0.001 CPUs utilized
+     <not counted> context-switches
+     <not counted> CPU-migrations
+     <not counted> page-faults
+     <not counted> cycles
+   <not supported> stalled-cycles-frontend
+   <not supported> stalled-cycles-backend
+     <not counted> instructions
+     <not counted> branches
+     <not counted> branch-misses
 
+       1.001228093 seconds time elapsed
+
+Fix it by disabling group leader only.
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1331887340-32448-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-stat.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index ea40e4e..c941bb6 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -296,7 +296,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 	if (system_wide)
+ 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+ 						group, group_fd);
+-	if (!target_pid && !target_tid) {
++	if (!target_pid && !target_tid && (!group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
