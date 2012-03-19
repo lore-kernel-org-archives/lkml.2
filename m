@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030689Ab2CSGvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:51:51 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:58455 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030209Ab2CSGvu convert rfc822-to-8bit (ORCPT
+	id S1030672Ab2CSGxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:53:49 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:40313 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964923Ab2CSGxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:51:50 -0400
-X-Greylist: delayed 1016 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 02:51:50 EDT
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=windows-1252
-From: Jon Masters <jonathan@jonmasters.org>
-In-Reply-To: <CAKaWdxaaKMiwnhP7R786mqHTPs+o=izerZDbUgPBaxyU+XL-2g@mail.gmail.com>
-Date: Mon, 19 Mar 2012 02:34:48 -0400
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C141162D-9164-43D3-9A1F-93156DC7409B@jonmasters.org>
-References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com> <m1ehtd8qez.fsf@fess.ebiederm.org> <CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com> <87obshxt4w.fsf@xmission.com> <CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com> <87zkc1w6wp.fsf@xmission.com> <CAKaWdxa8yJJhnPj1th6GdYvn9+Lu7GUV1e=960gMQOdc8W47dQ@mail.gmail.com> <CAKaWdxaaKMiwnhP7R786mqHTPs+o=izerZDbUgPBaxyU+XL-2g@mail.gmail.com>
-To: Keith Chew <keith.chew@gmail.com>
-X-Mailer: Apple Mail (2.1257)
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+	Mon, 19 Mar 2012 02:53:47 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 04/10] memcg: Add HugeTLB extension
+In-Reply-To: <4F669C2E.1010502@jp.fujitsu.com>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F669C2E.1010502@jp.fujitsu.com>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 19 Mar 2012 12:22:53 +0530
+Message-ID: <874ntlkrp6.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12031906-8878-0000-0000-000001B7B31F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keith,
+On Mon, 19 Mar 2012 11:38:38 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/03/17 2:39), Aneesh Kumar K.V wrote:
+> 
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > This patch implements a memcg extension that allows us to control
+> > HugeTLB allocations via memory controller.
+> > 
+> 
+> 
+> If you write some details here, it will be helpful for review and
+> seeing log after merge.
 
-I've just been reviewing LKML for the past month…was there ever any followup?
-Perhaps it's worth discussing a patch to change the below delay?
+Will add more info.
 
-Jon.
+> 
+> 
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > ---
+> >  include/linux/hugetlb.h    |    1 +
+> >  include/linux/memcontrol.h |   42 +++++++++++++
+> >  init/Kconfig               |    8 +++
+> >  mm/hugetlb.c               |    2 +-
+> >  mm/memcontrol.c            |  138 ++++++++++++++++++++++++++++++++++++++++++++
+> >  5 files changed, 190 insertions(+), 1 deletions(-)
 
-On Mar 10, 2012, at 6:45 PM, Keith Chew wrote:
+....
 
-> Hi Eric
+> > +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> > +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+> > +{
+> > +	int idx;
+> > +	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+> > +		if (memcg->hugepage[idx].usage > 0)
+> > +			return 1;
+> > +	}
+> > +	return 0;
+> > +}
 > 
-> Keep a quick update...
 > 
->>> I would check with your BIOS folks and perhaps play with the kernel
->>> option.  The most reliable way to peform a reset is to trigger a board
->>> reset by writing to 0xcf9 or a similar register.  I expect your BIOS
->>> does that and you can probably get the kernel to do that.  I would
->>> definitely test to see if you can write to the mostly standard
->>> 0xcf9 register directly from the kernel and trigger a reset directly.
->>> 
+> Please use res_counter_read_u64() rather than reading the value directly.
 > 
-> Thank you very much for this. We have tried with reboot=p, which is
-> writing to the 0xCF9 register directly, and the test has been running
-> good for the past 9 days. Will keep monitoring it.
+
+The open-coded variant is mostly derived from mem_cgroup_force_empty. I
+have updated the patch to use res_counter_read_u64. 
+
 > 
-> Also, I have also added a delay in the KBD reboot, which appears to
-> have made the reboot reliable (running good for past 8 days, before it
-> would hang after 2 days):
-> -----------------------
-> kb_wait();
-> udelay(150); <------ Increased from 50
-> outb(0xfe, 0x64); /* pulse reset low */
-> udelay(50);
-> -----------------------
+> > +
+> > +int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
+> > +				   struct mem_cgroup **ptr)
+> > +{
+> > +	int ret = 0;
+> > +	struct mem_cgroup *memcg;
+> > +	struct res_counter *fail_res;
+> > +	unsigned long csize = nr_pages * PAGE_SIZE;
+> > +
+> > +	if (mem_cgroup_disabled())
+> > +		return 0;
+> > +again:
+> > +	rcu_read_lock();
+> > +	memcg = mem_cgroup_from_task(current);
+> > +	if (!memcg)
+> > +		memcg = root_mem_cgroup;
+> > +	if (mem_cgroup_is_root(memcg)) {
+> > +		rcu_read_unlock();
+> > +		goto done;
+> > +	}
 > 
-> Looks like the code may be issuing the reboot a bit too early after
-> returning from kb_wait().
 > 
-> Regards
-> Keith
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> One concern is.... Now, yes, memory cgroup doesn't account root cgroup
+> and doesn't update res->usage to avoid updating shared counter overheads
+> when memcg is not mounted. But memory.usage_in_bytes files works
+> for root memcg with reading percpu statistics.
 > 
+> So, how about counting usage for root cgroup even if it cannot be limited ?
+> Considering hugetlb fs usage, updating res_counter here doesn't have
+> performance problem of false sharing..
+> Then, you can remove root_mem_cgroup() checks inserted several places.
+> 
+
+Yes. That is a good idea. Will update the patch.
+
+
+> <snip>
+> 
+> >  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> > +	/*
+> > +	 * Don't allow memcg removal if we have HugeTLB resource
+> > +	 * usage.
+> > +	 */
+> > +	if (mem_cgroup_have_hugetlb_usage(memcg))
+> > +		return -EBUSY;
+> >  
+> >  	return mem_cgroup_force_empty(memcg, false);
+> >  }
+> 
+> 
+> Is this fixed by patch 8+9 ?
+
+Yes. 
+
+-aneesh
 
