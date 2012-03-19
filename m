@@ -1,142 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab2CSC5M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 22:57:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44839 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab2CSC5L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 22:57:11 -0400
-Message-ID: <1332125826.17246.3.camel@phoenix>
-Subject: [PATCH v3 2/2] regulator: Convert pcf50633 to get_voltage_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 19 Mar 2012 10:57:06 +0800
-In-Reply-To: <1332125724.17246.1.camel@phoenix>
-References: <1332125724.17246.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757839Ab2CSC61 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 22:58:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:59492 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab2CSC6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 22:58:24 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V4 PATCH] virtio-net: send gratuitous packet when needed
+In-Reply-To: <20120313143331.GE14931@redhat.com>
+References: <20120313090841.11110.82654.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120313143331.GE14931@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 19 Mar 2012 12:46:29 +1030
+Message-ID: <877gyhxrlu.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert pcf50633 to get_voltage_sel and then we can remove
-pcf50633_regulator_voltage_value function and move its implementation
-to pcf50633_regulator_list_voltage.
+On Tue, 13 Mar 2012 16:33:31 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
+> > index 970d5a2..44a38d6 100644
+> > --- a/include/linux/virtio_net.h
+> > +++ b/include/linux/virtio_net.h
+> > @@ -49,8 +49,10 @@
+> >  #define VIRTIO_NET_F_CTRL_RX	18	/* Control channel RX mode support */
+> >  #define VIRTIO_NET_F_CTRL_VLAN	19	/* Control channel VLAN filtering */
+> >  #define VIRTIO_NET_F_CTRL_RX_EXTRA 20	/* Extra RX mode control support */
+> > +#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can send gratituous packet */
+> >  
+> >  #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
+> > +#define VIRTIO_NET_S_ANNOUNCE   2       /* Announcement is needed */
+> 
+> I would put this in bit 8 (0x100), this way low status byte
+> is RO, high byte is RW.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/pcf50633-regulator.c |   62 ++++++++++++++------------------
- 1 files changed, 27 insertions(+), 35 deletions(-)
+The whole idea of acking by clearing the bit is unreliable, moving to a
+separate byte just controls the damage.
 
-diff --git a/drivers/regulator/pcf50633-regulator.c b/drivers/regulator/pcf50633-regulator.c
-index c05b5d1..b62f4c8 100644
---- a/drivers/regulator/pcf50633-regulator.c
-+++ b/drivers/regulator/pcf50633-regulator.c
-@@ -157,20 +157,39 @@ static int pcf50633_regulator_set_voltage(struct regulator_dev *rdev,
- 	return pcf50633_reg_write(pcf, regnr, volt_bits);
- }
- 
--static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
--						u8 bits)
-+static int pcf50633_regulator_get_voltage_sel(struct regulator_dev *rdev)
- {
-+	struct pcf50633 *pcf;
-+	int regulator_id;
-+	u8 regnr;
-+
-+	pcf = rdev_get_drvdata(rdev);
-+
-+	regulator_id = rdev_get_id(rdev);
-+	if (regulator_id >= PCF50633_NUM_REGULATORS)
-+		return -EINVAL;
-+
-+	regnr = pcf50633_regulator_registers[regulator_id];
-+
-+	return pcf50633_reg_read(pcf, regnr);
-+}
-+
-+static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
-+						unsigned int index)
-+{
-+	int regulator_id = rdev_get_id(rdev);
-+
- 	int millivolts;
- 
--	switch (id) {
-+	switch (regulator_id) {
- 	case PCF50633_REGULATOR_AUTO:
--		millivolts = auto_voltage_value(bits);
-+		millivolts = auto_voltage_value(index);
- 		break;
- 	case PCF50633_REGULATOR_DOWN1:
--		millivolts = down_voltage_value(bits);
-+		millivolts = down_voltage_value(index);
- 		break;
- 	case PCF50633_REGULATOR_DOWN2:
--		millivolts = down_voltage_value(bits);
-+		millivolts = down_voltage_value(index);
- 		break;
- 	case PCF50633_REGULATOR_LDO1:
- 	case PCF50633_REGULATOR_LDO2:
-@@ -180,7 +199,7 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
- 	case PCF50633_REGULATOR_LDO6:
- 	case PCF50633_REGULATOR_HCLDO:
- 	case PCF50633_REGULATOR_MEMLDO:
--		millivolts = ldo_voltage_value(bits);
-+		millivolts = ldo_voltage_value(index);
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -189,33 +208,6 @@ static int pcf50633_regulator_voltage_value(enum pcf50633_regulator_id id,
- 	return millivolts * 1000;
- }
- 
--static int pcf50633_regulator_get_voltage(struct regulator_dev *rdev)
--{
--	struct pcf50633 *pcf;
--	int regulator_id;
--	u8 volt_bits, regnr;
--
--	pcf = rdev_get_drvdata(rdev);
--
--	regulator_id = rdev_get_id(rdev);
--	if (regulator_id >= PCF50633_NUM_REGULATORS)
--		return -EINVAL;
--
--	regnr = pcf50633_regulator_registers[regulator_id];
--
--	volt_bits = pcf50633_reg_read(pcf, regnr);
--
--	return pcf50633_regulator_voltage_value(regulator_id, volt_bits);
--}
--
--static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
--						unsigned int index)
--{
--	int regulator_id = rdev_get_id(rdev);
--
--	return pcf50633_regulator_voltage_value(regulator_id, index);
--}
--
- static int pcf50633_regulator_enable(struct regulator_dev *rdev)
- {
- 	struct pcf50633 *pcf = rdev_get_drvdata(rdev);
-@@ -268,7 +260,7 @@ static int pcf50633_regulator_is_enabled(struct regulator_dev *rdev)
- 
- static struct regulator_ops pcf50633_regulator_ops = {
- 	.set_voltage = pcf50633_regulator_set_voltage,
--	.get_voltage = pcf50633_regulator_get_voltage,
-+	.get_voltage_sel = pcf50633_regulator_get_voltage_sel,
- 	.list_voltage = pcf50633_regulator_list_voltage,
- 	.enable = pcf50633_regulator_enable,
- 	.disable = pcf50633_regulator_disable,
+How about you use bits 8-15 as a counter?  It's still theoretically
+unreliable if 256 notifications pass before the guest notices, but it's
+probably better and clearer than this.
+
+I leave the final call to MST though.
+
+Thanks,
+Rusty.
 -- 
-1.7.5.4
-
-
-
+  How could I marry someone with more hair than me?  http://baldalex.org
