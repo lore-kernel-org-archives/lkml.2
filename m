@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965138Ab2CSWrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:47:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45300 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964799Ab2CSWrv (ORCPT
+	id S1030184Ab2CSWsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:48:00 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:55905 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965149Ab2CSWr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:47:51 -0400
-Date: Tue, 20 Mar 2012 02:47:46 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [patch 1/2] c/r: prctl: Add ability to set new
- mm_struct::exe_file
-Message-ID: <20120319224746.GK19594@moon>
-References: <20120316205556.595309230@openvz.org>
- <20120316210343.925446961@openvz.org>
- <20120319151507.93bab32a.akpm@linux-foundation.org>
- <20120319223941.GJ19594@moon>
- <CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
+	Mon, 19 Mar 2012 18:47:57 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EALi2Z095LOjd/2dsb2JhbABBtlaBCIIJAQEFJxMcIxAIAxUDLhQlAyETiAm3GxOPb2MElWeQKYJ6
+Date: Tue, 20 Mar 2012 09:47:53 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        xfs-masters@oss.sgi.com
+Subject: Re: [PATCH 05/11] XFS: Fix lock ASSERT on UP
+Message-ID: <20120319224753.GC3592@dastard>
+References: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
+ <1331924464-18023-6-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
+In-Reply-To: <1331924464-18023-6-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 11:41:36PM +0100, richard -rw- weinberger wrote:
-> >
-> > Actually I liked multi-shot version more but Matt arguments convinced
-> > me that one-short fashion is more "secure" in terms of overall kernel
-> > state and potential transitions/changes of this /proc/pid/exe symlink.
-> >
-> > At least with one-shot version the admin may be sure that the symlink
-> > is never changed more than once, ever.
-> >
+On Fri, Mar 16, 2012 at 12:00:58PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> And changing it once does not harm security?
-> I'm sure that rootkit writers will like this feature...
+> ASSERT(!spin_is_locked()) doesn't work on UP builds. Replace with a standard
+> lockdep_assert_held()
+> 
+> Cc: xfs-masters@oss.sgi.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  fs/xfs/xfs_iget.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
+> index 8c3e463..8654d78 100644
+> --- a/fs/xfs/xfs_iget.c
+> +++ b/fs/xfs/xfs_iget.c
+> @@ -76,7 +76,7 @@ xfs_inode_alloc(
+>  	}
+>  
+>  	ASSERT(atomic_read(&ip->i_pincount) == 0);
+> -	ASSERT(!spin_is_locked(&ip->i_flags_lock));
+> +	lockdep_assert_held(&ip->i_flags_lock);
+>  	ASSERT(!xfs_isiflocked(ip));
+>  	ASSERT(ip->i_ino == 0);
+>  
+> @@ -147,7 +147,7 @@ xfs_inode_free(
+>  
+>  	/* asserts to verify all state is correct here */
+>  	ASSERT(atomic_read(&ip->i_pincount) == 0);
+> -	ASSERT(!spin_is_locked(&ip->i_flags_lock));
+> +	lockdep_assert_held(&ip->i_flags_lock);
+>  	ASSERT(!xfs_isiflocked(ip));
 
-The one-shot limits the amount of transitions, but you still
-have to obtain CAP_SYS_RESOURCE before you'll be able to change
-this symlink (ie it's not 'anyone-can-change-it' feature).
+So this means we only ever check that the spinlock is held when
+lockdep is turned on instead of whenever CONFIG_XFS_DEBUG is set?
+That means it will rarely get checked during development instead of
+all the time. That's not an improvement IMO....
 
-	Cyrill
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
