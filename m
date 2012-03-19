@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030734Ab2CSQE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:04:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49331 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756327Ab2CSQE0 (ORCPT
+	id S1030835Ab2CSQFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:05:40 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37392 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018Ab2CSQFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:04:26 -0400
-Date: Mon, 19 Mar 2012 11:04:16 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, romain@orebokech.com,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [ 05/38] PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
-Message-ID: <20120319160415.GE11180@burratino>
-References: <20120316233447.747702375@linuxfoundation.org>
- <4F670872.2090700@suse.cz>
- <20120319154633.GA8176@kroah.com>
+	Mon, 19 Mar 2012 12:05:38 -0400
+Date: Mon, 19 Mar 2012 09:05:32 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rni@google.com, ctalbott@google.com
+Subject: Re: [PATCHSET] cgroup: cftype based file interface
+Message-ID: <20120319160532.GB11069@google.com>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+ <4F6708F4.4000604@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120319154633.GA8176@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F6708F4.4000604@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Mon, Mar 19, 2012 at 11:20:34AM +0100, Jiri Slaby wrote:
+Hello, Glauber.
 
->> The commit below is reported to crash the machine in the early init. See
->> the first reply to this message (lkml.org seems to be down right now):
->> lkml.org/lkml/2012/3/18/132
->
-> Yes, but this patch fixes machines that others have been reporting
-> problems with, so, what am I supposed to do?
->
-> I'll stick with this patch for now, and hope that Matthew fixes this up
-> in Linus's tree and I'll suck that fix in when it gets there.  Is that
-> ok?
+On Mon, Mar 19, 2012 at 02:22:44PM +0400, Glauber Costa wrote:
+> >Glauber, can you please try to move net kmem stuff out of
+> >->populate().  If ->create() doesn't work for whatever reason, can you
+> >please explain it to me so that we can find a proper solution?
+> 
+> The main reason is twofold:
+> 
+> It first had to do with the order in which registerings take place
+> at the kernel. But this matter most for the root cgroup. For the
+> children, it should be all initialized anyway. So we can special
+> case whatever is needed.
 
-Just one data point from a distro perspective: regressions are way
-more painful than problems that already existed.  So it seems worth
-considering dropping the patch for now and grabbing the patch and fix
-when ready.
+I see.
+
+> Another point was not to bloat the socket structures with more
+> function calls, for populate and create. But we can possibly be able
+> to store some data ourselves, and figure it out.
+>
+> How should I do it? Do you want me to provide a patch ontop of your tree ?
+
+Yeah, that would be great.
+
+Thanks.
+
+-- 
+tejun
