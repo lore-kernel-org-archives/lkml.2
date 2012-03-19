@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab2CSLcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 07:32:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43708 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143Ab2CSLcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 07:32:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="130485199"
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
- __dma_request_channel()
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
-	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
-	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-	 <1331188201.4657.51.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
-	 <1331204128.4657.54.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
-	 <1331206459.4657.59.camel@vkoul-udesk3>
-	 <1331211513.4657.67.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
-	 <1331284918.4657.69.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
-	 <1331285959.4657.76.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
-	 <1331520476.4657.79.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Mar 2012 17:07:01 +0530
-Message-ID: <1332157021.7180.5.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758155Ab2CSLc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 07:32:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53338
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756939Ab2CSLcz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 07:32:55 -0400
+Date: Mon, 19 Mar 2012 07:32:41 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ulrich Drepper <drepper@akkadia.org>, arnd@arndb.de,
+        davem@davemloft.net, hverkuil@xs4all.nl,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        mchehab@redhat.com
+Subject: Re: [PATCH] Install kernel-page-flags.h
+Message-ID: <20120319113241.GA13991@infradead.org>
+References: <201203140726.q2E7Q73i021607@drepperk.user.openhosting.com>
+ <20120314075842.GA337@infradead.org>
+ <CACVxJT-73diTvBhDxZ=7VUz2BqaRetdnCUGk3hh+_7gyWXB6Dw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVxJT-73diTvBhDxZ=7VUz2BqaRetdnCUGk3hh+_7gyWXB6Dw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-16 at 10:36 +0100, Guennadi Liakhovetski wrote:
-> On Mon, 12 Mar 2012, Vinod Koul wrote:
+On Wed, Mar 14, 2012 at 12:40:36PM +0200, Alexey Dobriyan wrote:
+> >> Programs using /proc/kpageflags need to know about the various flags. ??The
+> >> <linux/kernel-page-flags.h> provides them and the comments in the file
+> >> indicate that it is supposed to be used by user-level code. ??But the file
+> >> is not installed.
+> >>
+> >> The patch below installs the headers and marks the unstable flags as
+> >> out-of-bounds.
+> >
+> > I don't think this is a good idea at all. ??Let's shoot the person who
+> > added that braindead interface ASAP, and replace it with one printing
+> > the flags in ASCII format.
 > 
-> > On Fri, 2012-03-09 at 13:20 +0100, Guennadi Liakhovetski wrote:
-> > > It can be made to work as long as there's only one DMAC group with 
-> > > configurable channels and all other DMACs are dedicated to specific 
-> > > peripherals, yes. I don't know whether there are already now or are 
-> > > approaching any platforms with multiple reconfigurable groups. 
-> > And that is what I am talking about.
-> > 
-> > Having specific channel mapping given by platform for all channels which
-> > are to be used dedicated. And a pool of channels which can be used by
-> > anyone (if they can be) on a platform.
-> > 
-> > Does this proposal sound good for others as well. I think we can target
-> > this for next merge cycle, we are too late for the current one.
-> 
-> Ok, let me try to summarise, what this would mean for sh-mobile:
-> 
-> 1. this proposal introduces a new special case: with or without a mapping, 
-> that will have to be handled in affected client and DMA controller 
-> drivers. E.g., on sh-mobile some devices might on some systems use 
-> channels from "general purpose" DMA controllers (no mapping), on other 
-> systems it will be a dedicated controller (fixed mapping).
-that should work. The mapping is platform specific, so I expect the
-board handling code for that one to tell dmaengine the mapping.
-On device A: controller P can be generic but on some other device it can
-be dedicated.
-> 
-> 2. this will break, if we get more than 1 "general purpose" type with 
-> different supported client sets. So, we develop a new API with a 
-> pre-programmed limitation.
-No, see above
-> 
-> 3. this will mean a substantial driver and platform code modification. 
-> Nothing super-complex, but still some.
-Again No to driver, Yes to platform mapping part, which is again device
-specfic
-> 
-> 4. we'll need a 3-stage channel allocation / configuration: request, 
-> filter, config. Whereas with my configuration-parameter proposal it's just 
-> one stage: allocate-and-configure.
-Its not about stages, it about doing the right thing. Which happens to
-make dmaengine aware of the mapping which exists for a certain device
-and give you the channels based on how hardware is mapped.
+> ASCII sucks.
+> This interface is not for humans.
 
-If we get this right then we dont need to worry about filtering as well,
-that can go away. With Russell's approach it just request_config one
-single step to get channel and get it configured for slave.
-> 
-> So, yes, this would be doable, but it doesn't look like a very good 
-> solution to me.
+But we still can't lock down the page flags for a user interface - they
+are a very scare resource and we can't afford to keep them stable due
+to userspace poking into internals.
 
-
--- 
-~Vinod
-
+I guess the best we can do is to have a translation table for kernel
+internal to external documented flags.  Once you export the header with
+the meanings it's time to add that table, even if it starts out as a 1:1
+mapping.
