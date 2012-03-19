@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162107Ab2CSGB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:01:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30717 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161298Ab2CSFr5 (ORCPT
+	id S1161310Ab2CSFru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:47:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:29353 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031220Ab2CSFrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:47:57 -0400
+	Mon, 19 Mar 2012 01:47:45 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,83 +15,89 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 24/47] PCI: Add pci_stop_and_remove_bus()
-Date: Sun, 18 Mar 2012 22:46:13 -0700
-Message-Id: <1332135996-13860-25-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v3 16/47] x86, PCI: Separate pcibios_allocate_bridge_resources()
+Date: Sun, 18 Mar 2012 22:46:05 -0700
+Message-Id: <1332135996-13860-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
 References: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090202.4F66C88A.0067,ss=1,re=0.000,fgs=0
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F66C87E.00AE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It supports both pci root bus and pci bus under pci bridge.
-
--v2: clear pci_bridge's subordinate.
+Thus pcibios_allocate_bus_resources() could more simple and clean
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/remove.c |   32 ++++++++++++++++++++++++++++++++
- include/linux/pci.h  |    1 +
- 2 files changed, 33 insertions(+), 0 deletions(-)
+ arch/x86/pci/i386.c |   46 ++++++++++++++++++++++++----------------------
+ 1 files changed, 24 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 64ba5b1..75b0092 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -169,6 +169,38 @@ void pci_stop_bus_device(struct pci_dev *dev)
- 	pci_stop_dev(dev);
- }
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 831971e..c06f60f 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -193,34 +193,36 @@ EXPORT_SYMBOL(pcibios_align_resource);
+  *	    as well.
+  */
  
-+static void pci_stop_host_bridge(struct pci_host_bridge *bridge)
-+{
-+	device_unregister(&bridge->dev);
-+}
-+/*
-+ * it will support pci root bus too, in that case we need
-+ *  stop and remove host bridge
-+ */
-+void pci_stop_and_remove_bus(struct pci_bus *bus)
-+{
-+	struct pci_host_bridge *host_bridge = NULL;
-+	struct pci_dev *pci_bridge = NULL;
-+
-+	pci_stop_bus_devices(bus);
-+
-+	if (pci_is_root_bus(bus)) {
-+		host_bridge = to_pci_host_bridge(bus->bridge);
-+		pci_stop_host_bridge(host_bridge);
-+	} else
-+		pci_bridge = bus->self;
-+
-+	__pci_remove_bus_devices(bus);
-+
-+	pci_remove_bus(bus);
-+
-+	if (host_bridge)
-+		host_bridge->bus = NULL;
-+
-+	if (pci_bridge)
-+		pci_bridge->subordinate = NULL;
+-static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
++static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
+ {
+-	struct pci_bus *bus;
+-	struct pci_dev *dev;
+ 	int idx;
+ 	struct resource *r;
+ 
++	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
++		r = &dev->resource[idx];
++		if (!r->flags)
++			continue;
++		if (!r->start || pci_claim_resource(dev, idx) < 0) {
++			/*
++			 * Something is wrong with the region.
++			 * Invalidate the resource to prevent
++			 * child resource allocations in this
++			 * range.
++			 */
++			r->start = r->end = 0;
++			r->flags = 0;
++		}
++	}
 +}
 +
- EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
- EXPORT_SYMBOL(pci_stop_and_remove_behind_bridge);
- EXPORT_SYMBOL_GPL(pci_stop_bus_device);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index b434401..aec945d 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -703,6 +703,7 @@ extern void pci_dev_put(struct pci_dev *dev);
- extern void pci_remove_bus(struct pci_bus *b);
- extern void __pci_remove_bus_device(struct pci_dev *dev);
- extern void pci_stop_and_remove_bus_device(struct pci_dev *dev);
-+void pci_stop_and_remove_bus(struct pci_bus *bus);
- extern void pci_stop_bus_device(struct pci_dev *dev);
- void pci_setup_cardbus(struct pci_bus *bus);
- extern void pci_sort_breadthfirst(void);
++static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
++{
++	struct pci_bus *bus;
++
+ 	/* Depth-First Search on bus tree */
+ 	list_for_each_entry(bus, bus_list, node) {
+-		if ((dev = bus->self)) {
+-			for (idx = PCI_BRIDGE_RESOURCES;
+-			    idx < PCI_NUM_RESOURCES; idx++) {
+-				r = &dev->resource[idx];
+-				if (!r->flags)
+-					continue;
+-				if (!r->start ||
+-				    pci_claim_resource(dev, idx) < 0) {
+-					/*
+-					 * Something is wrong with the region.
+-					 * Invalidate the resource to prevent
+-					 * child resource allocations in this
+-					 * range.
+-					 */
+-					r->start = r->end = 0;
+-					r->flags = 0;
+-				}
+-			}
+-		}
++		if (bus->self)
++			pcibios_allocate_bridge_resources(bus->self);
+ 		pcibios_allocate_bus_resources(&bus->children);
+ 	}
+ }
 -- 
 1.7.7
 
