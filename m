@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab2CSQl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:41:26 -0400
-Received: from mail-wg0-f66.google.com ([74.125.82.66]:64421 "EHLO
-	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291Ab2CSQlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:41:24 -0400
-Date: Mon, 19 Mar 2012 17:41:20 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpufeature change for v3.4
-Message-ID: <20120319164120.GA11153@gmail.com>
+	id S932422Ab2CSQlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:41:35 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:41378 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756048Ab2CSQlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:41:32 -0400
+Message-ID: <1332175190.32717.151.camel@groeck-laptop>
+Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Diego Elio =?ISO-8859-1?Q?Petten=F2?= <flameeyes@flameeyes.eu>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Denis Turischev <denis@compulab.co.il>
+Date: Mon, 19 Mar 2012 09:39:50 -0700
+In-Reply-To: <CACRpkdYTPc9b0ys-rMJ6VJSxVX9uubq6r1QFk4bQN5rMiqQPMQ@mail.gmail.com>
+References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
+	 <20120317123151.AAF9A3E0952@localhost>
+	 <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
+	 <CACRpkdb4PbZWm8vCaC0MO0a=K+0ZBDhmvoRrTtKXqEy-Jz-VWQ@mail.gmail.com>
+	 <20120319005406.GA28497@ericsson.com>
+	 <CACRpkdbZJR7NObUQCkjCEu3KedS5bfD4TuMGakL_N7BxKNUJnA@mail.gmail.com>
+	 <20120319135636.GA30456@ericsson.com>
+	 <CACRpkdYTPc9b0ys-rMJ6VJSxVX9uubq6r1QFk4bQN5rMiqQPMQ@mail.gmail.com>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 2012-03-19 at 10:05 -0400, Linus Walleij wrote:
+> On Mon, Mar 19, 2012 at 2:56 PM, Guenter Roeck
+> <guenter.roeck@ericsson.com> wrote:
+> > On Mon, Mar 19, 2012 at 04:26:44AM -0400, Linus Walleij wrote:
+> 
+> >> OK that is pinmuxing, if that is to be software-controlled the place to do
+> >> it is in drivers/pinctrl. (Documentation/pinctrl.txt gives the backrgound.)
+> (...)
+> >>
+> > Personally I would not dare touch those pins. If a pin is configured as UART pin
+> > (or whatever), it is quite unlikely that it is exposed as GPIO pin. Worst case,
+> > changing the configuration may result in broken hardware. Not sure what is supposed
+> > to be gained by enabling the user to do that.
+> 
+> Define "user", pinctrl does not have userspace interfaces if that's
+> what you mean.
+> 
+> If you mean "kernel programmer", these creatures seem to not respect what
+> they should and shouldn't poke at ;-)
+> 
+> The usecase is typically if the hardware is used in two different systems
+> where the ROM/bootcode/etc does not set up muxing correctly, or are setup
+> in a sub-optimal way (e.g. working but consuming too much power) and the
+> kernel needs to get involved. Unless you have any scenario like that, no
+> need to worry about it.
+> 
+Ok, guess that makes sense.
 
-Please pull the latest x86-cpufeature-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpufeature-for-linus
-
-   HEAD: 513c4ec6e4759aa33c90af0658b82eb4d2027871 x86, cpufeature: Add CPU features from Intel document 319433-012A
-
- Thanks,
-
-	Ingo
-
------------------->
-H. Peter Anvin (1):
-      x86, cpufeature: Add CPU features from Intel document 319433-012A
+Thanks,
+Guenter
 
 
- arch/x86/include/asm/cpufeature.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 8d67d42..0d3dcc9 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -199,10 +199,13 @@
- /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
- #define X86_FEATURE_FSGSBASE	(9*32+ 0) /* {RD/WR}{FS/GS}BASE instructions*/
- #define X86_FEATURE_BMI1	(9*32+ 3) /* 1st group bit manipulation extensions */
-+#define X86_FEATURE_HLE		(9*32+ 4) /* Hardware Lock Elision */
- #define X86_FEATURE_AVX2	(9*32+ 5) /* AVX2 instructions */
- #define X86_FEATURE_SMEP	(9*32+ 7) /* Supervisor Mode Execution Protection */
- #define X86_FEATURE_BMI2	(9*32+ 8) /* 2nd group bit manipulation extensions */
- #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
-+#define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
-+#define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
- 
- #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
- 
