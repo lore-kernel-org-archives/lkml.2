@@ -1,147 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032900Ab2CSUCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:02:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39964 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031285Ab2CSUCp (ORCPT
+	id S1162303Ab2CSUDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:03:22 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:22683 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1032891Ab2CSUDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:02:45 -0400
-Date: Mon, 19 Mar 2012 13:02:24 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-e94d53ebec2fb4795c18ad2e76ec633390b1e794@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1331887855-874-1-git-send-email-namhyung.kim@lge.com>
-References: <1331887855-874-1-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists: Add hists__filter_by_symbol
-Git-Commit-ID: e94d53ebec2fb4795c18ad2e76ec633390b1e794
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 19 Mar 2012 16:03:18 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Ey_w0kgVM1l87BqLlHwxtKijLYhGMvR.bGPhiIs3ssz0bNr
+ UQdLWpU8I.wW.sSNtKo6h6zkEZpbl9HvZ19NaBbk75sf3FK5ePtoPWhsbdNb
+ 1Yl3_ImEMEO6muYT3OP0Aree37KO4N6HGkev.CL.vbr0t2ucrvaEZh9NSPyz
+ G.BwyPvy7XRq_HXGZO_4dW9ILliuY5mIMygG93md2tBkqxOVeigDleYdZ8Mh
+ mBxTnB.Y6URZEiE6oX41DhAPH8C4CVKpTqEN0G6DSNfeffFdhOvhGuCRAPtR
+ DWLTW2FH.3LR41.tEYApM9BBf.4Qsr4p.xLGjAKFOdaX2W5Dpm0G39YhYKO.
+ E18C7pCY49.4LNFZzpikVCA_g6dPgElA171dBx5NLiH.TOOr8UMxQXtXXH.j
+ 6376h5LJF546i4UwzXtJOhYV0I314BnTewxlzhvD9cqrnQnUCh0d2MJEUw9E
+ Dj8J2HPHf1yfXUNbnISA0.urW9QNGD0qzQfM_1FQjMEgC68Wd
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 19 Mar 2012 15:03:14 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: Pablo Neira Ayuso <pablo@netfilter.org>, kaber@trash.net,
+        davem@davemloft.net, Dave Jones <davej@redhat.com>,
+        netfilter-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: netfilter: Hung task
+In-Reply-To: <CA+1xoqeinbEVMUGu=zx8nDbdDFx30RiTS=qiSgFKZnSYYPDZ+Q@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1203191501140.23632@router.home>
+References: <CA+1xoqfCTXxXsbfUjttuOVutyD_FzYS8PoOoAOOtB72P8SwdVg@mail.gmail.com> <20120318141943.GA28850@1984> <CA+1xoqcQYqCgQb=1M5PVkm=6SBhV2oJxJ2CtBp=gAvZM36Kc2Q@mail.gmail.com> <20120319002811.GA30408@1984> <alpine.DEB.2.00.1203190854560.16879@router.home>
+ <CA+1xoqdo5zvUe+=BYr42iEEq9mU=kd1zVxrGhQc0sNYqbpBkNQ@mail.gmail.com> <alpine.DEB.2.00.1203191129440.20196@router.home> <CA+1xoqeinbEVMUGu=zx8nDbdDFx30RiTS=qiSgFKZnSYYPDZ+Q@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Mar 2012 13:02:30 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e94d53ebec2fb4795c18ad2e76ec633390b1e794
-Gitweb:     http://git.kernel.org/tip/e94d53ebec2fb4795c18ad2e76ec633390b1e794
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 16 Mar 2012 17:50:51 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 16 Mar 2012 16:31:09 -0300
+On Mon, 19 Mar 2012, Sasha Levin wrote:
 
-perf hists: Add hists__filter_by_symbol
+> lockdep listed all the held locks there.
 
-This function will be used for simple (sub-)string matching filter based
-on user input.
+None of the locks listed are slub locks.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1331887855-874-1-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/hist.c |   35 +++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h |    2 ++
- 2 files changed, 37 insertions(+), 0 deletions(-)
+> I've mentioned that it looks very similar to
+> https://lkml.org/lkml/2012/1/14/45 where the userspace helper tried to
+> read from the sysfs files, but got into a deadlock since the kernel
+> side held them before it called the usermode helper.
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 8380c3d..2c624ad 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -10,11 +10,14 @@ static bool hists__filter_entry_by_dso(struct hists *hists,
- 				       struct hist_entry *he);
- static bool hists__filter_entry_by_thread(struct hists *hists,
- 					  struct hist_entry *he);
-+static bool hists__filter_entry_by_symbol(struct hists *hists,
-+					  struct hist_entry *he);
- 
- enum hist_filter {
- 	HIST_FILTER__DSO,
- 	HIST_FILTER__THREAD,
- 	HIST_FILTER__PARENT,
-+	HIST_FILTER__SYMBOL,
- };
- 
- struct callchain_param	callchain_param = {
-@@ -420,6 +423,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
- {
- 	hists__filter_entry_by_dso(hists, he);
- 	hists__filter_entry_by_thread(hists, he);
-+	hists__filter_entry_by_symbol(hists, he);
- }
- 
- static void __hists__collapse_resort(struct hists *hists, bool threaded)
-@@ -1247,6 +1251,37 @@ void hists__filter_by_thread(struct hists *hists)
- 	}
- }
- 
-+static bool hists__filter_entry_by_symbol(struct hists *hists,
-+					  struct hist_entry *he)
-+{
-+	if (hists->symbol_filter_str != NULL &&
-+	    (!he->ms.sym || strstr(he->ms.sym->name,
-+				   hists->symbol_filter_str) == NULL)) {
-+		he->filtered |= (1 << HIST_FILTER__SYMBOL);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+void hists__filter_by_symbol(struct hists *hists)
-+{
-+	struct rb_node *nd;
-+
-+	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
-+	hists__reset_col_len(hists);
-+
-+	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-+		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+
-+		if (hists__filter_entry_by_symbol(hists, h))
-+			continue;
-+
-+		hists__remove_entry_filter(hists, h, HIST_FILTER__SYMBOL);
-+	}
-+}
-+
- int hist_entry__inc_addr_samples(struct hist_entry *he, int evidx, u64 ip)
- {
- 	return symbol__inc_addr_samples(he->ms.sym, he->ms.map, evidx, ip);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 9413f3e..10343c0 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -62,6 +62,7 @@ struct hists {
- 	const struct thread	*thread_filter;
- 	const struct dso	*dso_filter;
- 	const char		*uid_filter_str;
-+	const char		*symbol_filter_str;
- 	pthread_mutex_t		lock;
- 	struct events_stats	stats;
- 	u64			event_stream;
-@@ -107,6 +108,7 @@ int hist_entry__annotate(struct hist_entry *self, size_t privsize);
- 
- void hists__filter_by_dso(struct hists *hists);
- void hists__filter_by_thread(struct hists *hists);
-+void hists__filter_by_symbol(struct hists *hists);
- 
- u16 hists__col_len(struct hists *self, enum hist_column col);
- void hists__set_col_len(struct hists *self, enum hist_column col, u16 len);
+Ah yes. In that case slub held a semaphore. Code was changed since then to
+no longer hold a semaphore when calling into sysfs.
+
+The uevent handler can execute arbitrary user space code. Do you have to
+hold locks while calling kmem_cache_destroy?
+
+
