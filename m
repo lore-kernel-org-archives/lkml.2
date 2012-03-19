@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758903Ab2CSM4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:56:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758513Ab2CSM4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:56:47 -0400
-Message-ID: <4F67217B.40205@redhat.com>
-Date: Mon, 19 Mar 2012 14:07:23 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1758920Ab2CSM6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:58:54 -0400
+Received: from mailout02.t-online.de ([194.25.134.17]:46862 "EHLO
+	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab2CSM6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 08:58:53 -0400
+Message-ID: <4F672D84.2080504@t-online.de>
+Date: Mon, 19 Mar 2012 13:58:44 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-References: <20120316144028.036474157@chello.nl>   <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>  <4F671B90.3010209@redhat.com> <1332158367.18960.308.camel@twins>
-In-Reply-To: <1332158367.18960.308.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+CC: linux-media@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Greg KH <greg@kroah.com>
+Subject: [REGRESSION][PATCH] Fix kernel 3.3 DVB-S support
+Content-Type: multipart/mixed;
+ boundary="------------040009030709080501070204"
+X-ID: SsXfcGZa8ha+4aXW0dMruMoO6qbuJAIdxd6isqcZhl8Lmw8i-ayp9npFNiywBO+Zso
+X-TOI-MSGID: d8e20483-c3a5-445b-b5a6-0bf86bc7fa13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 01:59 PM, Peter Zijlstra wrote:
-> On Mon, 2012-03-19 at 13:42 +0200, Avi Kivity wrote:
-> > > Now if you want to be able to scan per-thread, you need per-thread
-> > > page-tables and I really don't want to ever see that. That will blow
-> > > memory overhead and context switch times.
-> > 
-> > I thought of only duplicating down to the PDE level, that gets rid of
-> > almost all of the overhead. 
->
-> You still get the significant CR3 cost for thread switches. 
+This is a multi-part message in MIME format.
+--------------040009030709080501070204
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 
-True.  Not so much for virt, which has one thread per cpu generally.
+Kernel 3.3 breaks DVB-S reception on the
+Hauppauge WinTV Nova HD-S2 and similar
+cards.
 
-> [ /me grabs the SDM to find that PDE is what we in Linux call the pmd ]
+The attached patch fixes this problem.
 
-Yes, sorry.
+cu,
+  knut
 
-> That'll cut the memory overhead down but also the severely impact the
-> accuracy.
->
-> Also, I still don't see how such a scheme would correctly identify
-> per-cpu memory in guest kernels. While less frequent its still very
-> common to do remote access to per-cpu data. So even if you did page
-> granularity you'd get a fair amount of pages that are accesses by all
-> threads (vcpus) in the scan interval, even thought they're primarily
-> accesses by just one.
->
-> If you go to pmd level you get even less information.
+--------------040009030709080501070204
+Content-Type: text/x-patch;
+ name="0001-Fix-DVB-S-regression-caused-by-a-missing-initializat.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-Fix-DVB-S-regression-caused-by-a-missing-initializat.pa";
+ filename*1="tch"
 
-That is true.  Which is why I like the explicit vnode thing.  The guest
-kernel already knows how to affine vcpus to memory, we don't need to
-scan to see if it's actually doing what we told it to do.  Scanning is
-good for unmodified non-virt applications, or to prioritize the migration.
+>From 10934b412eb30fa815bad392b120eb9b83fe4ab5 Mon Sep 17 00:00:00 2001
+From: Knut Petersen <Knut_Petersen@t-online.de>
+Date: Mon, 19 Mar 2012 13:31:24 +0100
+Subject: [PATCH] Fix DVB-S regression caused by a missing initialization
 
+commit 7e0722215a510921cbb73ab4c37477d4dcb91bf8 killed
+struct dvb_frontend_parameters and introduced bool re_tune
+instead, but the patch missed that re_tune needs an
+initialization here (previously the same effect was
+reached by the params = NULL).
+
+This patch fixes broken DVB-S support for the Hauppauge
+WinTV Nova HD-S2 and similar hardware in kernel 3.3.
+
+Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
+---
+ drivers/media/dvb/dvb-core/dvb_frontend.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/dvb/dvb-core/dvb_frontend.c b/drivers/media/dvb/dvb-core/dvb_frontend.c
+index fbbe545..a9602e0 100644
+--- a/drivers/media/dvb/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb/dvb-core/dvb_frontend.c
+@@ -650,6 +650,7 @@ restart:
+ 			switch (algo) {
+ 			case DVBFE_ALGO_HW:
+ 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_HW\n", __func__);
++				re_tune = false;
+ 
+ 				if (fepriv->state & FESTATE_RETUNE) {
+ 					dprintk("%s: Retune requested, FESTATE_RETUNE\n", __func__);
 -- 
-error compiling committee.c: too many arguments to function
+1.7.9.2
 
+
+--------------040009030709080501070204--
