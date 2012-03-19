@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab2CSLUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 07:20:48 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52353 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752075Ab2CSLUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 07:20:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
-Date: Mon, 19 Mar 2012 12:24:59 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203181301.19048.rjw@sisk.pl> <4F66D2E8.2090906@codeaurora.org>
-In-Reply-To: <4F66D2E8.2090906@codeaurora.org>
+	id S1758014Ab2CSLVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 07:21:24 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:58208 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab2CSLVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 07:21:22 -0400
+Message-ID: <4F6716AD.5070804@gmail.com>
+Date: Mon, 19 Mar 2012 19:21:17 +0800
+From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org, ubuntu.fan.2012@gmail.com
+Subject: Linux Kernel 3.3.0 Binary .deb Installation Files for Ubuntu and
+ Debian Linux
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203191225.00199.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 19, 2012, Stephen Boyd wrote:
-> On 3/18/2012 5:01 AM, Rafael J. Wysocki wrote:
-> > On Sunday, March 18, 2012, Stephen Boyd wrote:
-> >
-> >> Ok. I like where nowait() is going in the other part of the thread but
-> >> I'm still confused about when request_firmware() is correct to use. It
-> >> seems that the function is inherently racy with freezing. Does every
-> >> user of request_firmware() need to synchronize with freezing?
-> >>
-> >> For example, if one CPU is in the middle of a driver probe that makes a
-> >> request_firmware() call and another CPU is starting to suspend we will
-> >> have a race between usermodehelpers being disabled and the
-> >> request_firmware() call acquiring the usermodehelper rwsem. If the
-> >> suspending CPU wins the race it will disable usermodehelpers and the
-> >> request_firmware() call will return -EBUSY and warn.
-> > Yes, it will.
-> 
-> That sounds wrong then, no? Why don't we have request_firmware() do a
-> read_lock on the usermodehelpers sem and then have suspend do a write
-> lock, disable usermodehelpers, wait for any users  to finish, freeze
-> processes and then unlock the write lock? That way we don't hit a case
-> where request_firmware() races with suspend, and we don't have to change
-> the warning or conditional.
+Download links for compiled Linux Kernel 3.3.0 Final, whose source code 
+was released on 18 Mar 2012:-
 
-So, you're postulating that the freezing of tasks be done under
-umhelper_sem write-locked, right?
+(1) linux-image-3.3.0-xen-teo.en.ming-sgp_19.mar.2012_amd64.deb
 
-That would lead to freezing failures if a user space task waited in
-request_firmware() for umhelper_sem to become available for read-locking
-and unfortunately we don't have an interruptible variant of down_read().
+Link: 
+http://www.sgvideoman.com/xen/kernels/linux-image-3.3.0-xen-teo.en.ming-sgp_19.mar.2012_amd64.deb
 
-However, we may catch request_firmware() and try to freeze the task
-calling it instead.  I'll try to prototype something along these lines later
-today (on top of the three "firmware_class" patches I posted yesterday).
+(2) linux-headers-3.3.0-xen-teo.en.ming-sgp_19.mar.2012_amd64.deb
 
-Thanks,
-Rafael
+Link: 
+http://www.sgvideoman.com/xen/kernels/linux-headers-3.3.0-xen-teo.en.ming-sgp_19.mar.2012_amd64.deb
+
+Also attached Linux kernel configuration file 
+config-3.3.0-xen-teo.en.ming-sgp with Xen virtualization support.
+
+Please test and report bugs. Guaranteed safe and no rootkits.
+
+Yours sincerely,
+
+Teo En Ming (Zhang Enming)
+
