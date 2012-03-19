@@ -1,78 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964948Ab2CSWlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:41:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52731 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab2CSWlh convert rfc822-to-8bit (ORCPT
+	id S965047Ab2CSWmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:42:05 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50699 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932168Ab2CSWmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:41:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120319223941.GJ19594@moon>
-References: <20120316205556.595309230@openvz.org>
-	<20120316210343.925446961@openvz.org>
-	<20120319151507.93bab32a.akpm@linux-foundation.org>
-	<20120319223941.GJ19594@moon>
-Date: Mon, 19 Mar 2012 23:41:36 +0100
-Message-ID: <CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
-Subject: Re: [patch 1/2] c/r: prctl: Add ability to set new mm_struct::exe_file
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Mar 2012 18:42:02 -0400
+Message-ID: <1332196918.3152.78.camel@dabdike>
+Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
+ correctly when SRB status is INVALID
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Mon, 19 Mar 2012 22:41:58 +0000
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
+	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
+	 <1332173560.3152.65.camel@dabdike>
+	 <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 11:39 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On Mon, Mar 19, 2012 at 03:15:07PM -0700, Andrew Morton wrote:
-> ...
->> >
->> > Also this action is one-shot only. For security reason
->> > we don't allow to change the symlink several times.
->>
->> What is this mysterious "security reason"?
->>
->
-> Oh, sorry I should have included Matt's comment here
->
->        | Before this patch that state was rather ephemeral and almost entirely
->        | under the control of the kernel. The only way userspace could change it
->        | was by unmapping the region(s) mapped during exec*(). At that point it
->        | could not "lie" and insert some other symlink there and the admin would
->        | be better able to determine what had happened.
->        |
->        | With this patch -- especially the multi-shot form -- the symlink will
->        | be entirely under the control of (potentially untrusted) userspace code
->        | and the admin is totally at the mercy of the userspace code. In
->        | single-shot form programs could use the prctl() to ensure the symlink
->        | could not be changed later -- the restart tool would be the only program
->        | that would need to ensure that prctl() had not been used since the last
->        | exec*().
-> ...
->>
->> It should be explained here also.  The comment is pretty useless - if
->> we don't tell people what this "security reason" is, how can future
->> developers be sure that they aren't violating it?
->>
->
-> Actually I liked multi-shot version more but Matt arguments convinced
-> me that one-short fashion is more "secure" in terms of overall kernel
-> state and potential transitions/changes of this /proc/pid/exe symlink.
->
-> At least with one-shot version the admin may be sure that the symlink
-> is never changed more than once, ever.
->
+On Mon, 2012-03-19 at 16:50 +0000, KY Srinivasan wrote:
+> 
+> > -----Original Message-----
+> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > Sent: Monday, March 19, 2012 12:13 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> > scsi@vger.kernel.org
+> > Subject: Re: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result correctly
+> > when SRB status is INVALID
+> > 
+> > On Sun, 2012-03-18 at 17:12 -0700, K. Y. Srinivasan wrote:
+> > > Currently Windows hosts only support a subset of scsi commands and for
+> > commands
+> > > that are not supported, the host returns a generic SRB failure status.
+> > > However, they have agreed to change the return value to indicate that
+> > > the command is not supported. In preparation for that, handle the
+> > > SRB_STATUS_INVALID_REQUEST return value correctly.
+> > >
+> > > I would like to thank Jeff Garzik <jgpobox@gmail.com> and
+> > > Douglas Gilbert <dgilbert@interlog.com> for suggesting the correct approach
+> > > here.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > ---
+> > >  drivers/scsi/storvsc_drv.c |   12 ++++++++++++
+> > >  1 files changed, 12 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> > > index 44c7a48..018c363 100644
+> > > --- a/drivers/scsi/storvsc_drv.c
+> > > +++ b/drivers/scsi/storvsc_drv.c
+> > > @@ -202,6 +202,7 @@ enum storvsc_request_type {
+> > >  #define SRB_STATUS_INVALID_LUN	0x20
+> > >  #define SRB_STATUS_SUCCESS	0x01
+> > >  #define SRB_STATUS_ERROR	0x04
+> > > +#define SRB_STATUS_INVALID_REQUEST 0x06
+> > 
+> > I don't really think this is the correct approach.  We already have a
+> > SCSI error return for this, which you're now translating in the driver
+> > and hypervisor.  Rather than have a special byte return of
+> > SRB_STATUS_INVALID_REQUEST, why not have the hypervisor do the right
+> > thing and fill in the ILLEGAL_REQUEST sense return.  That way you don't
+> > need a special error code and you don't need to construct the sense
+> > buffer in the driver.  Now HyperV will be correctly set up for both pass
+> > through and emulated responses.  It's surely not much work and you
+> > already process sense data correctly in storvsc_command_completion(), so
+> > you wouldn't need any patches to the driver for this approach.
+> 
+> James, the issue here is that currently shipping Windows hosts don't even do
+> what I am handling here.
 
-And changing it once does not harm security?
-I'm sure that rootkit writers will like this feature...
+Right, I understand that.
 
--- 
-Thanks,
-//richard
+>  Based on the input I got from you and Christoph,
+> I convinced the windows team to at least return the SRB status that indicates
+> an illegal request. I will suggest to them that perhaps they should also set the
+> correct sense code and so I would not need this patch.
+
+Not also; instead of.  There's no need for an extra SRB status.  Just
+return the standard check condition sense data.
+
+>  However, keep in mind
+> that there is no current ETA on when Windows will ship with these changes - Windows 8
+> may ship with code where they would return an invalid SRB status, but they are not 
+> setting the sense code, hence this patch. When the Window host does the "right thing"
+> I will clean this up, but I don't know when that will be.
+
+I thought you just said you'd only just asked them if they could
+implemented it, in which case no version of windows currently ships with
+this, correct?
+
+> More importantly, the second patch  in this series where I filter out
+> the ATA_16 command
+> on the guest is really important for us. Without that patch on a range
+> on windows hosts
+> including the current beta version of windows8 where the host is
+> returning a generic 
+> error in response to ATA_16 command, we cannot boot many Linux
+> distros. If you
+> prefer, I can drop the first patch and re-submit the second patch for
+> consideration now.
+
+I'm not sure about that either.  You presumably translate
+SRB_STATUS_ERROR into DID_TARGET_FAILURE.  That should cause the
+termination of the command with prejudice in exactly the same way as an
+ILLEGAL_REQUEST sense code would (minus the useful error information),
+so what's causing the boot failure?
+
+James
+
+
