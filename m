@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162006Ab2CSQgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:36:15 -0400
-Received: from mail-wg0-f66.google.com ([74.125.82.66]:48570 "EHLO
-	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab2CSQgO (ORCPT
+	id S1162165Ab2CSQgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:36:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52959 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755910Ab2CSQgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:36:14 -0400
-Date: Mon, 19 Mar 2012 17:36:10 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpu change for v3.4
-Message-ID: <20120319163610.GA11094@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Mar 2012 12:36:42 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: Mark all get and enable calls as __must_check
+Date: Mon, 19 Mar 2012 16:36:35 +0000
+Message-Id: <1332174995-9915-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+It's generally important that devices have power when they expect it so
+drivers really ought to be checking for errors on the power up paths.
 
-Please pull the latest x86-cpu-for-linus git tree from:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/linux/regulator/consumer.h |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
-
-   HEAD: 140f190bc3a3b6f200548d204befd998eadd63fd x86: Remove some noise from boot log when starting cpus
-
- Thanks,
-
-	Ingo
-
------------------->
-Tony Luck (1):
-      x86: Remove some noise from boot log when starting cpus
-
-
- arch/x86/kernel/smpboot.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 66d250c..6835752 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -740,8 +740,6 @@ do_rest:
- 	 * the targeted processor.
- 	 */
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index 4ed1b30..ed05443 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -141,18 +141,18 @@ void regulator_put(struct regulator *regulator);
+ void devm_regulator_put(struct regulator *regulator);
  
--	printk(KERN_DEBUG "smpboot cpu %d: start_ip = %lx\n", cpu, start_ip);
--
- 	atomic_set(&init_deasserted, 0);
+ /* regulator output control and status */
+-int regulator_enable(struct regulator *regulator);
++int __must_check regulator_enable(struct regulator *regulator);
+ int regulator_disable(struct regulator *regulator);
+ int regulator_force_disable(struct regulator *regulator);
+ int regulator_is_enabled(struct regulator *regulator);
+ int regulator_disable_deferred(struct regulator *regulator, int ms);
  
- 	if (get_uv_system_type() != UV_NON_UNIQUE_APIC) {
+-int regulator_bulk_get(struct device *dev, int num_consumers,
+-		       struct regulator_bulk_data *consumers);
+-int devm_regulator_bulk_get(struct device *dev, int num_consumers,
+-			    struct regulator_bulk_data *consumers);
+-int regulator_bulk_enable(int num_consumers,
+-			  struct regulator_bulk_data *consumers);
++int __must_check regulator_bulk_get(struct device *dev, int num_consumers,
++				    struct regulator_bulk_data *consumers);
++int __must_check devm_regulator_bulk_get(struct device *dev, int num_consumers,
++					 struct regulator_bulk_data *consumers);
++int __must_check regulator_bulk_enable(int num_consumers,
++				       struct regulator_bulk_data *consumers);
+ int regulator_bulk_disable(int num_consumers,
+ 			   struct regulator_bulk_data *consumers);
+ int regulator_bulk_force_disable(int num_consumers,
+-- 
+1.7.9.1
+
