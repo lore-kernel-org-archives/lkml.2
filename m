@@ -1,136 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab2CSQAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:00:42 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:37868 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145Ab2CSQAj (ORCPT
+	id S1758006Ab2CSQCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:02:25 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:53527 "EHLO
+	homiemail-a55.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755194Ab2CSQCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:00:39 -0400
-Date: Mon, 19 Mar 2012 11:27:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (xen) git pull stable/for-linus-3.4-tag for 3.4-rc0
-Message-ID: <20120319152709.GA3649@phenom.dumpdata.com>
+	Mon, 19 Mar 2012 12:02:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=D3SvZFHShsGlrC2fy2Fcm4cnVSg0ozSxUCjB2IcwUS8pkkBomlwK8RE9KgDYd
+	KqK0T40qkaOvk2RnDxbLdgaUpslyvIhsBXZiS2fQUuy4nTyQT7QrFgqx3cVfIgYD
+	qzp5DruXazWVx0WQJD5yh42fP4k/LYKD+ZssFg3NVn1e84=
+Message-ID: <4F67588D.3080704@shealevy.com>
+Date: Mon, 19 Mar 2012 12:02:21 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4F675826.009D,ss=1,re=0.000,fgs=0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: EFI Boot Stub Early Console
+References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com> <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com> <4F5E775D.7080702@zytor.com> <4F648DD3.3000405@shealevy.com> <1332069701.4041.42.camel@mfleming-mobl1.ger.corp.intel.com> <4F65D09B.4050807@shealevy.com> <1332146834.4041.46.camel@mfleming-mobl1.ger.corp.intel.com> <20120319155639.7cff5df6@pyx>
+In-Reply-To: <20120319155639.7cff5df6@pyx>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3/19/12 11:56 AM, Alan Cox wrote:
+>>> any bootloader (including the bootstub) will call ExitBootServices()
+>>> before any printk'ing actually happens?? Or am I misunderstanding the
+>>> spec somehow? I suppose I could just try it and see what happens...
+>> Oops. Good point, that isn't going to work.
+> Surely it works fine if you are using bootstub directly from EFI ?
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ConOut will work before the call to ExitBootServices(), but any 
+bootloader (including the boot stub) calls that before starting the 
+normal kernel boot process. I'm working on a generic earlyprintk that 
+provides the same functionality as the existing earlyprintks that will 
+work for any EFI boot. Matt already submitted a patch for an efi_printk 
+that will be sufficient for the boot stub itself before the call to 
+ExitBootServices().
 
-Hey Linus,
-
-Please git pull this tag for your v3.4-rc0 branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.4-tag
-
-which has three neat features:
- - PV multiconsole support, so that there can be hvc1, hvc2, etc; This can
-   be used in HVM and in PV mode.
-
- - P-state and C-state power management driver that uploads said
-   power management data to the hypervisor. It also inhibits cpufreq
-   scaling drivers to load so that only the hypervisor can make power
-   management decisions - fixing a weird perf bug. There is one thing
-   in the Kconfig that you won't like: "default y if (X86_ACPI_CPUFREQ = y ||
-   X86_POWERNOW_K8 = y)" (note, that it all depends on CONFIG_XEN which depends
-   on CONFIG_PARAVIRT which by default is off). I've a fix to convert that
-   boolean expression into "default m" which I am going to post after the
-   cpufreq git pull - as the two patches to make this work depend on a fix in
-   Dave Jones's tree.
-
- - Function Level Reset (FLR) support in the Xen PCI backend.
-
-Fixes:
- - Kconfig dependencies for Xen PV keyboard and video
- - Compile warnings and constify fixes
- - Change over to use percpu_xxx instead of this_cpu_xxx
-
-That is it! Please pull!
-
-Alex Shi (1):
-      xen: use this_cpu_xxx replace percpu_xxx funcs
-
-Andrew Jones (1):
-      xen kconfig: relax INPUT_XEN_KBDDEV_FRONTEND deps
-
-Jan Beulich (3):
-      xenbus: address compiler warnings
-      xenbus: don't free other end details too early
-      xen: constify all instances of "struct attribute_group"
-
-Konrad Rzeszutek Wilk (6):
-      pci: Introduce __pci_reset_function_locked to be used when holding device_lock.
-      xen/pciback: Support pci_reset_function, aka FLR or D3 support.
-      xen/setup/pm/acpi: Remove the call to boot_option_idle_override.
-      xen/enlighten: Expose MWAIT and MWAIT_LEAF if hypervisor OKs it.
-      xen/acpi-processor: C and P-state driver that uploads said data to hypervisor.
-      Merge commit 'stable/for-linus-3.4-tag' into HEAD
-
-Stefano Stabellini (4):
-      hvc_xen: support PV on HVM consoles
-      hvc_xen: implement multiconsole support
-      hvc_xen: introduce HVC_XEN_FRONTEND
-      xen/xenbus: ignore console/0
-
-Tang Liang (1):
-      xen: Utilize the restore_msi_irqs hook.
-
- arch/ia64/include/asm/xen/interface.h      |    1 +
- arch/x86/include/asm/xen/interface.h       |    1 +
- arch/x86/pci/xen.c                         |   27 ++
- arch/x86/xen/enlighten.c                   |   99 +++++-
- arch/x86/xen/irq.c                         |    8 +-
- arch/x86/xen/mmu.c                         |   20 +-
- arch/x86/xen/multicalls.h                  |    2 +-
- arch/x86/xen/setup.c                       |    1 -
- arch/x86/xen/smp.c                         |    2 +-
- drivers/input/misc/Kconfig                 |    2 +-
- drivers/pci/pci.c                          |   25 ++
- drivers/tty/hvc/Kconfig                    |    8 +
- drivers/tty/hvc/hvc_xen.c                  |  465 +++++++++++++++++++++---
- drivers/video/Kconfig                      |    1 +
- drivers/xen/Kconfig                        |   17 +
- drivers/xen/Makefile                       |    2 +-
- drivers/xen/sys-hypervisor.c               |    6 +-
- drivers/xen/xen-acpi-processor.c           |  562 ++++++++++++++++++++++++++++
- drivers/xen/xen-balloon.c                  |    2 +-
- drivers/xen/xen-pciback/pci_stub.c         |   41 ++-
- drivers/xen/xen-pciback/pciback.h          |    1 +
- drivers/xen/xen-selfballoon.c              |    2 +-
- drivers/xen/xenbus/xenbus_client.c         |    6 +-
- drivers/xen/xenbus/xenbus_probe.c          |    3 +-
- drivers/xen/xenbus/xenbus_probe_frontend.c |    6 +
- include/linux/pci.h                        |    1 +
- include/xen/interface/hvm/params.h         |    6 +-
- include/xen/interface/physdev.h            |    7 +
- include/xen/interface/platform.h           |   20 +-
- 29 files changed, 1264 insertions(+), 80 deletions(-)
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPZ1BHAAoJEFjIrFwIi8fJecEIALs+EUd2KlgzEwQ2l9lpk1kv
-cDYt/CFUbMMX/Cm08JDDRqrSEDRoAgkFZhB3swzS7anUW8z+IVL5nmwdUSGqap98
-a59P56Ev5Ev4xtLTGoi5q8FLxuFeXDxvnd9bxy4tPZfETY1vgPlKzSdKfJFmCYIQ
-6gHAs1svsRVEDJbftx7t8mXzRrRDPjaV1ThqbWs1i6jbcWkYtS66lJBL7zQAMuJN
-x/kDvF/0y/6kSHdgHlb1XtfSmjLVdWEEPbtOAcAIMQgMGyRaf9RupPX7RnJ0lVyR
-wgbnQl9AnqF31Z2uNHluq0xPFIVIZcnKuBpdkCA5dXDpSuk7r+oI77WYDxut5DM=
-=J7fU
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
+~Shea
