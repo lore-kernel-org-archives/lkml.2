@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031098Ab2CSM1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:27:42 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:32982 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758334Ab2CSM1l (ORCPT
+	id S1753081Ab2CSMhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:37:05 -0400
+Received: from mailfw02.zoner.fi ([84.34.147.249]:23910 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2CSMhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:27:41 -0400
-Message-ID: <4F672629.60606@linux.vnet.ibm.com>
-Date: Mon, 19 Mar 2012 17:57:22 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 15/26] sched, numa: Implement hotplug hooks
-References: <20120316144028.036474157@chello.nl> <20120316144241.074193109@chello.nl> <4F672384.7030500@linux.vnet.ibm.com> <1332159598.18960.320.camel@twins>
-In-Reply-To: <1332159598.18960.320.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Mar 2012 08:37:03 -0400
+Date: Mon, 19 Mar 2012 14:36:47 +0200
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: "Jan Beulich" <JBeulich@suse.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xz: make use of BCJ filter also for 32-bit x86 kernel
+Message-ID: <20120319143647.3cf46ed2@tukaani.org>
+In-Reply-To: <4F66F6A302000078000792FF@nat28.tlf.novell.com>
+References: <4F621C930200007800078B9E@nat28.tlf.novell.com>
+	<20120316204737.23aacd2b@tukaani.org>
+	<4F66F6A302000078000792FF@nat28.tlf.novell.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12031902-1396-0000-0000-000000D5FE7F
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 05:49 PM, Peter Zijlstra wrote:
-
-> On Mon, 2012-03-19 at 17:46 +0530, Srivatsa S. Bhat wrote:
->>> +     get_online_cpus();
->>> +     cpu_notifier(numa_hotplug, 0);
->>
->>
->> ABBA deadlock!
->>
-> Yeah, I know.. luckily it can't actually happen since early_initcalls
-> are pre-smp. I could just leave out the get_online_cpus() thing.
+On 2012-03-19 Jan Beulich wrote:
+> >>> On 16.03.12 at 19:47, Lasse Collin <lasse.collin@tukaani.org>
+> >>> wrote:
+> > On 2012-03-15 Jan Beulich wrote:
+> >> The ARCH value for 32-bit x86 is not x86, but i?86.
+> > 
+> > Thanks for noticing this. Is ARCH even the correct variable to use?
+> > Maybe SRCARCH would be better. Then it would be enough to test for
+> > x86, if I understand the toplevel Makefile correctly.
 > 
+> Yes, that might be even better (albeit requiring adjustment of the
+> script should the naming in the source tree ever change again,
+> whereas the ARCH values are supposedly stable).
 
+I think I will go with SRCARCH then. The directory names don't change so
+often.
 
-Oh numa_init() is an early_initcall? Ok, I didn't observe.
-In that case, its fine either way, with or without get_online_cpus()
-stuff.
+Could you quickly check if the following is OK? It works on x86-64.
 
-Regards,
-Srivatsa S. Bhat
+diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
+--- a/scripts/xz_wrap.sh
++++ b/scripts/xz_wrap.sh
+@@ -12,8 +12,8 @@
+ BCJ=
+ LZMA2OPTS=
+ 
+-case $ARCH in
+-	x86|x86_64)     BCJ=--x86 ;;
++case $SRCARCH in
++	x86)            BCJ=--x86 ;;
+ 	powerpc)        BCJ=--powerpc ;;
+ 	ia64)           BCJ=--ia64; LZMA2OPTS=pb=4 ;;
+ 	arm)            BCJ=--arm ;;
 
+> Will you get a patch to Linus then to fix all of these in 3.4?
+
+I will. Should the fix be included in the stable trees too? I'm not sure
+if this is acceptable under the stable kernel rules. At least someone
+should test it on SPARC first.
+
+-- 
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
