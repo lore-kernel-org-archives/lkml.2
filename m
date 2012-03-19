@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2CSDJh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 23:09:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab2CSDJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 23:09:35 -0400
-Message-ID: <4F66A364.2080600@redhat.com>
-Date: Mon, 19 Mar 2012 11:09:24 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S932238Ab2CSD0X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 23:26:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45478 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab2CSD0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 23:26:21 -0400
+Message-ID: <4F66A753.4000004@oracle.com>
+Date: Mon, 19 Mar 2012 11:26:11 +0800
+From: qing gu <qing.gu@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: qemu-devel@nongnu.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-spec: split virtio-net device status filed into
- ro and rw byte
-References: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400> <20120318122252.GE29902@redhat.com>
-In-Reply-To: <20120318122252.GE29902@redhat.com>
+To: NeilBrown <neilb@suse.de>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH]: md: Initialize ctl_name field of table raid_root_table/raid_dir_table
+ to avoid dump_trace info in debug kernel
+References: <4F5D747D.9060508@oracle.com> <20120314125720.1bb87546@notabene.brown> <m14ntsc4k2.fsf@fess.ebiederm.org> <20120314133501.14c6f7e9@notabene.brown>
+In-Reply-To: <20120314133501.14c6f7e9@notabene.brown>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4F66A758.0085,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2012 08:22 PM, Michael S. Tsirkin wrote:
-> On Fri, Mar 16, 2012 at 11:20:26PM +0800, Jason Wang wrote:
->> This patch splits the device status field of virtio-net into ro and rw
->> byte. This would simplify the implementation of both host and guest
->> and make the layout more clean. As VIRTIO_NET_S_ANNOUNCE is a rw bit,
->> it was moved to bit 8 (0x100).
->>
->> btw. looks like there's no implementation that depends on
->> VIRTIO_NET_S_ANNOUNCE, so the move is safe.
->>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
-> Hmm, I know I proposed this myself, and I thought it will
-> prevent problems if we will add more rw bits,
-> but I missed the following race:
->
-> host writes VIRTIO_NET_S_ANNOUNCE = 1, interrupt
->
-> 				guest reads VIRTIO_NET_S_ANNOUNCE = 1
->
-> host writes VIRTIO_NET_S_SOME_NEW_FIELD = 1, interrupt
->
-> 				guest writes VIRTIO_NET_S_ANNOUNCE = 0
-> 				VIRTIO_NET_S_SOME_NEW_FIELD is overwritten
->
-> 				guest reads VIRTIO_NET_S_SOME_NEW_FIELD = 0
->
-> How about making the new bit write 1 to clear?
-> If we do, we can keep it where it is currently ...
->
+Very thanks for the reply.
 
-Didn't follow, do you mean to make VIRITO_NET_S_ANNOUNCE bit clear on 
-read? Looks like this can prevent the race and keep what currently we have.
+Neil
 
+On 2012/3/14 10:35, NeilBrown wrote:
+> On Tue, 13 Mar 2012 19:14:05 -0700 ebiederm@xmission.com (Eric W. Biederman)
+> wrote:
 >
->> ---
->>   virtio-0.9.4.lyx |   20 +++++++++++++++++++-
->>   1 files changed, 19 insertions(+), 1 deletions(-)
+>> NeilBrown<neilb@suse.de>  writes:
 >>
->> diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
->> index 6c7bab1..ef3951c 100644
->> --- a/virtio-0.9.4.lyx
->> +++ b/virtio-0.9.4.lyx
->> @@ -58,6 +58,7 @@
->>   \html_be_strict false
->>   \author -608949062 "Rusty Russell,,,"
->>   \author 1531152142 "pbonzini"
->> +\author 2090695081 "Jason"
->>   \end_header
+>>> On Mon, 12 Mar 2012 11:58:53 +0800 qing gu<qing.gu@oracle.com>  wrote:
+>>>
+>>>> This patch is used to dispense trace info when system boots with debug
+>>>> kernel. I have verified it on RHEL6.2&  SLES11.2. Both work fine.
+>>>> In the failure case, system logs that:
+>>>>
+>>>>      /Feb 21 19:33:55 nsgbj-216-137 kernel: sysctl_check_dir: failed: /dev  ref: /dev .7
+> .....
+>
+>>> These lines were removed in November 2009 by Eric Biederman in
+>>> commit 894d2491153a9f8270dbed21175d06fde4eba6c7
+>>>
+>>> So I'm not keen on adding them back without understanding the history.
+>>>
+>>> Eric:  Do we need these after all?
+>> For the main trunk no.  The .ctl_name field no longer exists.
 >>
->>   \begin_body
->> @@ -4012,8 +4013,19 @@ configuration
->>   layout Two configuration fields are currently defined.
->>    The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
->>    is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
->> +
->> +\change_inserted 2090695081 1331907586
->> + The low byte of status field is read-only, guest write to this byte would
->> + be ignored.
->> + Currently only one bit is defined for this byte: VIRTIO_NET_S_LINK_UP.
->> + The high byte of status field is read-writable.
->> + Currently only one bit is defined for this byte: VIRTIO_NET_S_ANNOUNCE.
->> +
->> +\change_deleted 2090695081 1331907489
->>    Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
->>    and VIRTIO_NET_S_ANNOUNCE.
->> +
->> +\change_unchanged
+>> kernel/binary_sysctl.c is used to provide backwards compatibility with
+>> the old binary names.
 >>
->>   \begin_inset listings
->>   inline false
->> @@ -4026,7 +4038,13 @@ status open
+>> There might be a point for doing something in -stable or someone's
+>> enterprise kernel if some messed up set of backports were merged.
 >>
->>   \begin_layout Plain Layout
->>
->> -#define VIRTIO_NET_S_ANNOUNCE	2
->> +#define VIRTIO_NET_S_ANNOUNCE	
->> +\change_inserted 2090695081 1331907493
->> +0x100
->> +\change_deleted 2090695081 1331907491
->> +2
->> +\change_unchanged
->> +
->>   \end_layout
->>
->>   \begin_layout Plain Layout
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+>> Eric
+> Thanks for the quick response Eric!!
+>
+> Qing: It looks like this is not an issue in mainline.
+>    If you want to get something fixed in SLES or RHEL, I suggest you log an
+>    issue in the relevant bugzillas (though I just checked SLES11-SP2, and
+>    it doesn't mention sysctl_check_dir at all).
+>
+> NeilBrown
