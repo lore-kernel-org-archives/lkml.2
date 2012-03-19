@@ -1,264 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab2CSMB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:01:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63872 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab2CSMB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:01:56 -0400
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        lars@metafoo.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH v7] sound/soc/lapis: add machine driver for ML7213 Carrier Board
-Date: Mon, 19 Mar 2012 21:02:05 +0900
-Message-Id: <1332158525-14968-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <CANKRQni1k4hv40j0hTzVMdS9aFccM7xRrHis0-cFuBvSZe+9CA@mail.gmail.com>
-References: <CANKRQni1k4hv40j0hTzVMdS9aFccM7xRrHis0-cFuBvSZe+9CA@mail.gmail.com>
+	id S1758805Ab2CSMGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:06:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755877Ab2CSMGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 08:06:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1332156798.2068.11.camel@jerome.southpole.se>
+References: <1332156798.2068.11.camel@jerome.southpole.se> <1331746607.5104.93.camel@jerome.southpole.se> <1331738610.5104.84.camel@jerome.southpole.se> <1331736182.5104.74.camel@jerome.southpole.se> <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233858.13888.34822.stgit@warthog.procyon.org.uk> <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com> <18016.1331738258@redhat.com> <21309.1331744879@redhat.com> <4913.1332154287@redhat.com> 
+To: Jonas Bonn <jonas@southpole.se>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        hpa@zytor.com, torvalds@linux-foundation.org
+Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h [ver #2]
+Date: Mon, 19 Mar 2012 12:05:44 +0000
+Message-ID: <10472.1332158744@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This machine driver is for
-LAPIS Semiconductor ML7213 Carrier Board + ML26124 Reference Board
+Jonas Bonn <jonas@southpole.se> wrote:
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
-v7
- - Modify codec master/slave setting
- - Add MICBIAS setting
- - Add some snd_soc_dapm_enable_pin settings
----
- sound/soc/lapis/Kconfig             |    7 ++
- sound/soc/lapis/Makefile            |    2 +
- sound/soc/lapis/ml7213ioh-machine.c |  186 +++++++++++++++++++++++++++++++++++
- 3 files changed, 195 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/lapis/ml7213ioh-machine.c
+> I could certainly put together such patches for you.  What upstream
+> versions are you using?
 
-diff --git a/sound/soc/lapis/Kconfig b/sound/soc/lapis/Kconfig
-index 551e385..9bc1b4d 100644
---- a/sound/soc/lapis/Kconfig
-+++ b/sound/soc/lapis/Kconfig
-@@ -2,3 +2,10 @@ config SND_SOC_ML7213_PLATFORM
- 	tristate "ML7213 IOH ASoC platform driver"
- 	help
- 	  This option enables support for the AC Link Controllers in ML7213 IOH SoC.
-+
-+config SND_SOC_ML7213_MACHINE
-+	tristate "ML7213 IOH ASoC machine driver"
-+	select SND_SOC_ML7213_PLATFORM
-+	select SND_SOC_ML26124
-+	help
-+	  This is ASoC machine driver for ML7213 IOH
-diff --git a/sound/soc/lapis/Makefile b/sound/soc/lapis/Makefile
-index aba1630..7ec4bea 100644
---- a/sound/soc/lapis/Makefile
-+++ b/sound/soc/lapis/Makefile
-@@ -1,4 +1,6 @@
- # Platform
-+snd-soc-ml7213-machine-objs := ml7213ioh-machine.o
- snd-soc-ml7213-plat-objs := ml7213ioh-plat.o
- 
- obj-$(CONFIG_SND_SOC_ML7213_PLATFORM) += snd-soc-ml7213-plat.o
-+obj-$(CONFIG_SND_SOC_ML7213_MACHINE) += snd-soc-ml7213-machine.o
-diff --git a/sound/soc/lapis/ml7213ioh-machine.c b/sound/soc/lapis/ml7213ioh-machine.c
-new file mode 100644
-index 0000000..e51b1de
---- /dev/null
-+++ b/sound/soc/lapis/ml7213ioh-machine.c
-@@ -0,0 +1,186 @@
-+/*
-+ * ml7213ioh-machine.c -- SoC Audio for LAPIS Semiconductor ML7213 IOH CRB
-+ *
-+ * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/soc.h>
-+#include <sound/pcm_params.h>
-+#include <linux/i2c.h>
-+#include "../codecs/ml26124.h"
-+#include "ioh_i2s.h"
-+
-+static const struct snd_soc_dapm_widget ml7213_dapm_widgets[] = {
-+	SND_SOC_DAPM_SPK("Speaker", NULL),
-+	SND_SOC_DAPM_LINE("LINEOUT", NULL),
-+	SND_SOC_DAPM_LINE("LINEIN", NULL),
-+	SND_SOC_DAPM_MIC("AnalogMIC", NULL),
-+	SND_SOC_DAPM_MIC("DigitalMIC", NULL),
-+};
-+
-+static const struct snd_soc_dapm_route ml7213_routes[] = {
-+	{"Speaker", NULL, "SPOUT"},
-+	{"LINEOUT", NULL, "LOUT"},
-+	{"AnalogMIC", NULL, "MICBIAS"},
-+	{"MIN", NULL, "AnalogMIC"},
-+	{"MDIN", NULL, "DigitalMIC"},
-+	{"MIN", NULL, "LINEIN"},
-+};
-+
-+static int ml7213_hw_params(struct snd_pcm_substream *substream,
-+			    struct snd_pcm_hw_params *hw_params)
-+{
-+	int bclkfs;
-+	int mclkfs;
-+	unsigned int clk;
-+	int ret;
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-+	unsigned int channel_map[] = {5, 0, 1, 2, 3, 4};
-+	struct snd_soc_codec *codec = rtd->codec;
-+	struct snd_soc_dapm_context *dapm = &codec->dapm;
-+
-+	/* set cpu DAI channel mapping */
-+	ret = snd_soc_dai_set_channel_map(cpu_dai, ARRAY_SIZE(channel_map),
-+		channel_map, ARRAY_SIZE(channel_map), channel_map);
-+	if (ret < 0)
-+		return ret;
-+
-+	switch (params_rate(hw_params)) {
-+	case 16000:
-+	case 32000:
-+	case 48000:
-+		clk = 12288000;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	mclkfs = clk / params_rate(hw_params);
-+
-+	switch (params_format(hw_params)) {
-+	case SNDRV_PCM_FORMAT_U8:
-+	case SNDRV_PCM_FORMAT_S16_LE:
-+		bclkfs = 32;
-+		break;
-+	case SNDRV_PCM_FORMAT_S32_LE:
-+		bclkfs = 64;
-+		break;
-+	default:
-+		pr_err("%s: Failed not support format\n", __func__);
-+		return -EINVAL;
-+		break;
-+	}
-+
-+	/* set the codec system clock for DAC and ADC */
-+	ret = snd_soc_dai_set_sysclk(codec_dai, ML26124_USE_PLLOUT, clk,
-+				     SND_SOC_CLOCK_IN);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set codec DAI configuration */
-+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
-+				 SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set cpu DAI configuration */
-+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
-+				 SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
-+	if (ret < 0)
-+		return ret;
-+
-+	snd_soc_dapm_enable_pin(dapm, "Speaker");
-+	snd_soc_dapm_enable_pin(dapm, "AnalogMIC");
-+	snd_soc_dapm_enable_pin(dapm, "MICBIAS");
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_ops ml7213_ops = {
-+	.hw_params = ml7213_hw_params,
-+};
-+
-+static struct snd_soc_dai_link ml7213crb_dai = {
-+	.name = "ml26124",
-+	.stream_name = "ML26124",
-+	.cpu_dai_name = "ml7213ioh",
-+	.codec_dai_name = "ml26124-hifi",
-+	.platform_name	= "ml7213-i2s-audio",
-+	.codec_name	= "ml26124.1-001a",
-+	.ops = &ml7213_ops,
-+};
-+
-+static struct snd_soc_card ml7213crb_card = {
-+	.name		= "LAPIS Semiconductor ML7213CRB",
-+	.dai_link	= &ml7213crb_dai,
-+	.num_links	= 1,
-+	.dapm_widgets	= ml7213_dapm_widgets,
-+	.num_dapm_widgets	= ARRAY_SIZE(ml7213_dapm_widgets),
-+	.dapm_routes	= ml7213_routes,
-+	.num_dapm_routes	= ARRAY_SIZE(ml7213_routes),
-+};
-+
-+static int __devinit lapis_ml7213_ml26124_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+
-+	ml7213crb_card.dev = &pdev->dev;
-+	ret = snd_soc_register_card(&ml7213crb_card);
-+	if (ret) {
-+		dev_err(&pdev->dev, "snd_soc_register_card failed %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devexit lapis_ml7213_ml26124_remove(struct platform_device *pdev)
-+{
-+	snd_soc_unregister_card(&ml7213crb_card);
-+	platform_set_drvdata(pdev, NULL);
-+	return 0;
-+}
-+
-+static struct platform_driver snd_ml7213crb_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "lapis-ml7213ioh-CRB",
-+	},
-+	.probe = lapis_ml7213_ml26124_probe,
-+	.remove = __devexit_p(lapis_ml7213_ml26124_remove),
-+};
-+
-+static int __init lapis_ml7213_ml26124_init(void)
-+{
-+	return platform_driver_register(&snd_ml7213crb_driver);
-+}
-+module_init(lapis_ml7213_ml26124_init);
-+
-+static void __exit lapis_ml7213_ml26124_exit(void)
-+{
-+	platform_driver_unregister(&snd_ml7213crb_driver);
-+}
-+module_exit(lapis_ml7213_ml26124_exit);
-+
-+MODULE_AUTHOR("Tomoya MORINAGA <tomoya.rohm@gmail.com>");
-+MODULE_DESCRIPTION("LAPIS Semiconductor ML7213 IOH ALSA SoC machine driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform: lapis-ml7213ioh-CRB");
--- 
-1.7.7.6
+gcc-4.7 and binutils-2.22.52.0.1.
 
+My SRPMs and specfiles can be found here:
+
+	http://people.redhat.com/~dhowells/cross/
+
+David
