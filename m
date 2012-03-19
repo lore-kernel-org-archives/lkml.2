@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab2CSN7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:59:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37480 "EHLO mx1.redhat.com"
+	id S1757796Ab2CSN7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:59:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:43534 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab2CSN66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 09:58:58 -0400
-Date: Mon, 19 Mar 2012 14:57:45 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-Message-ID: <20120319135745.GL24602@redhat.com>
-References: <20120316144028.036474157@chello.nl>
- <4F670325.7080700@redhat.com>
- <1332155527.18960.292.camel@twins>
- <20120319130401.GI24602@redhat.com>
- <1332163591.18960.334.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332163591.18960.334.camel@twins>
+	id S1755613Ab2CSN7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 09:59:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="79151820"
+From: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] e1000: Silence sparse warnings by correcting type
+Date: Mon, 19 Mar 2012 16:00:03 +0200
+Message-Id: <1332165603-20322-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 02:26:31PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-03-19 at 14:04 +0100, Andrea Arcangeli wrote:
-> > If you boot with memcg compiled in, that's taking an equivalent amount
-> > of memory per-page.
-> > 
-> > If you can bear the memory loss when memcg is compiled in even when
-> > not enabled, you sure can bear it on NUMA systems that have lots of
-> > memory, so it's perfectly ok to sacrifice a bit of it so that it
-> > performs like not-NUMA but you still have more memory than not-NUMA.
-> > 
-> I think the overhead of memcg is quite insane as well. And no I cannot
-> bear that and have it disabled in all my kernels.
-> 
-> NUMA systems having lots of memory is a false argument, that doesn't
-> mean we can just waste tons of it, people pay good money for that
-> memory, they want to use it.
-> 
-> I fact, I know that HPC people want things like swap-over-nfs so they
-> can push infrequently running system crap out into swap so they can get
-> these few extra megabytes of memory. And you're proposing they give up
-> ~100M just like that?
+From: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
 
-With your code they will get -ENOMEM from split_vma and a slowdown in
-all regular page faults and vma mangling operations, before they run
-out of memory...
+Silence sparse warnings shown below:
+...
+drivers/net/ethernet/intel/e1000/e1000_main.c:3435:17: warning:
+	cast to restricted __le64
+drivers/net/ethernet/intel/e1000/e1000_main.c:3435:17: warning:
+	cast to restricted __le64
+...
 
-The per-page memory loss is 24bytes, AutoNUMA in page terms costs 0.5%
-of ram (and only if booted on NUMA hardware, unless noautonuma is
-passed as parameter), and I can't imagine that to be a problem on a
-system where hardware vendor took shortcuts to install massive amounts
-of RAM that is fast to access only locally. If you buy that kind of
-hardware losing the cost of 0.5% of RAM of it, is ridiculous compared
-to the programmer cost of patching all apps.
+Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+---
+ drivers/net/ethernet/intel/e1000/e1000_main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 6419a88..1bf73cf 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -3377,7 +3377,7 @@ static void e1000_dump(struct e1000_adapter *adapter)
+ 	for (i = 0; tx_ring->desc && (i < tx_ring->count); i++) {
+ 		struct e1000_tx_desc *tx_desc = E1000_TX_DESC(*tx_ring, i);
+ 		struct e1000_buffer *buffer_info = &tx_ring->buffer_info[i];
+-		struct my_u { u64 a; u64 b; };
++		struct my_u { __le64 a; __le64 b; };
+ 		struct my_u *u = (struct my_u *)tx_desc;
+ 		const char *type;
+ 
+@@ -3421,7 +3421,7 @@ rx_ring_summary:
+ 	for (i = 0; rx_ring->desc && (i < rx_ring->count); i++) {
+ 		struct e1000_rx_desc *rx_desc = E1000_RX_DESC(*rx_ring, i);
+ 		struct e1000_buffer *buffer_info = &rx_ring->buffer_info[i];
+-		struct my_u { u64 a; u64 b; };
++		struct my_u { __le64 a; __le64 b; };
+ 		struct my_u *u = (struct my_u *)rx_desc;
+ 		const char *type;
+ 
+-- 
+1.7.9.1
+
