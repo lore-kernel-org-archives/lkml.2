@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab2CSKjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 06:39:33 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:47675 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2CSKjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 06:39:31 -0400
-Date: Mon, 19 Mar 2012 11:37:44 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "beattiem@uk.ibm.com" <beattiem@uk.ibm.com>,
-        "holzheu@de.ibm.com" <holzheu@de.ibm.com>,
-        "munzert@de.ibm.com" <munzert@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
-Message-ID: <20120319113744.5992d48f@de.ibm.com>
-In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE04304FF5A@SCYBEXDAG04.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE0430495F2@SCYBEXDAG04.amd.com>
-	<491D6B4EAD0A714894D8AD22F4BDE04304FF5A@SCYBEXDAG04.amd.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S964877Ab2CSKo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 06:44:58 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40627 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753832Ab2CSKo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 06:44:56 -0400
+Message-ID: <4F670DC2.1030904@parallels.com>
+Date: Mon, 19 Mar 2012 14:43:14 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Tejun Heo <tj@kernel.org>, <lizf@cn.fujitsu.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <fweisbec@gmail.com>, <rni@google.com>,
+        <ctalbott@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH 06/10] cgroup: convert memcg controller to the new cftype
+ interface
+References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-7-git-send-email-tj@kernel.org> <4F66B55A.8020307@jp.fujitsu.com>
+In-Reply-To: <4F66B55A.8020307@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12031910-8372-0000-0000-00000206A619
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012 01:55:40 +0000
-"Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com> wrote:
-
-> CC'ing maintainer: Martin Schwidefsky &  Heiko Carstens...
+On 03/19/2012 08:26 AM, KAMEZAWA Hiroyuki wrote:
+>> ->populate() is preserved for register_kmem_files() invocation but I
+>> >  strongly urge moving the initialization to the tail of ->create().  If
+>> >  there's something which can't be done from ->create(), which isn't
+>> >  clear from the comment, please let me know.
+>> >  
+> Okay, then, cgroup files are created in kernel/cgroup.c and memcg just
+> registers entries.
 > 
-> -----Original Message-----
-> From: Chen, Dennis (SRDC SW) 
-> Sent: Sunday, March 18, 2012 3:41 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: beattiem@uk.ibm.com; holzheu@de.ibm.com; munzert@de.ibm.com; linux390@de.ibm.com; linux-s390@vger.kernel.org; Chen, Dennis (SRDC SW)
-> Subject: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
 > 
-> This patch is used to fix a memory leak issue in s390/char/vmur.c: a character device instance is 
-> allocated by cdev_alloc, the cdev_del will not free that space if cdev_init is applied before. 
 > 
-> Signed-off-by: dennis1.chen@amd.com
-> --- a/s390/char/vmur.c  2012-03-18 02:50:47.950963949 +0800
-> +++ b/s390/char/vmur.c  2012-03-18 03:12:04.790936740 +0800
-> @@ -903,7 +903,7 @@ static int ur_set_online(struct ccw_devi
->                 goto fail_urdev_put;
->         }
-> 
-> -       cdev_init(urd->char_device, &ur_fops);
-> +       urd->char_device->ops = &ur_fops;
->         urd->char_device->dev = MKDEV(major, minor);
->         urd->char_device->owner = ur_fops.owner;
-> 
+I am still in the middle of the review. Is it possible to dynamically
+register entries? (right now, I mean)
 
-How does that fix anything? My copy of cdev_init looks like this:
+If yes - which seems to be a bit of the point of the exercise, so it
+should be totally okay from my PoV. I have that call in populate because
+which files will be created depends on which protocols you have registered.
 
-void cdev_init(struct cdev *cdev, const struct file_operations *fops)
-{
-        memset(cdev, 0, sizeof *cdev);
-        INIT_LIST_HEAD(&cdev->list);
-        kobject_init(&cdev->kobj, &ktype_cdev_default);
-        cdev->ops = fops;
-}
-
-It does not allocate anything but it initializes some more fields.
-The new code would only initialize the ops field. In addition
-cdev_del does a kobject_put and the release function of the object
-will call cdev_dynamic_release as far as I can tell. That code
-should be fine as it is.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+The trick here, is that doesn't need to happen at all cgroup creations.
+But it can't happen at root's either, because this is quite fragile:
+some protocols may only be registered after root memcg is created.
