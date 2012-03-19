@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162124Ab2CSQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:28:05 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22615 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161566Ab2CSQ2B (ORCPT
+	id S1162143Ab2CSQ3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:29:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28362 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161679Ab2CSQ3L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:28:01 -0400
-Date: Mon, 19 Mar 2012 12:23:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, dan.magenheimer@oracle.com
-Subject: [GIT PULL] (cleancache) stable/for-linus-3.4
-Message-ID: <20120319162345.GA24647@phenom.dumpdata.com>
+	Mon, 19 Mar 2012 12:29:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="79209761"
+From: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+To: Nix <nix@esperi.org.uk>
+CC: Chris Boot <bootc@bootc.net>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] e1000e interface hang on 82574L
+Thread-Topic: [E1000-devel] e1000e interface hang on 82574L
+Thread-Index: AQHNBewRGQ5ZRlcGs0Cvqye8ikiYb5ZxzUdw
+Date: Mon, 19 Mar 2012 16:29:03 +0000
+Message-ID: <9BBC4E0CF881AA4299206E2E1412B6260E512FB9@ORSMSX102.amr.corp.intel.com>
+References: <4EFA4024.5000909@bootc.net>
+	<FCF3184D-CE4F-471C-B66C-0F671795FD3C@bootc.net>
+	<9BBC4E0CF881AA4299206E2E1412B626017762@ORSMSX102.amr.corp.intel.com>
+	<4F048861.8070501@bootc.net> <4F12B42C.9030803@bootc.net>
+	<9BBC4E0CF881AA4299206E2E1412B62621F0B1@ORSMSX102.amr.corp.intel.com>
+	<4F144A76.3050703@bootc.net> <4F64B4E2.20208@bootc.net>
+	<4F64CFCB.7060702@bootc.net>
+	<9BBC4E0CF881AA4299206E2E1412B6260E512E0C@ORSMSX102.amr.corp.intel.com>
+ <87r4wova0b.fsf@spindle.srvr.nix>
+In-Reply-To: <87r4wova0b.fsf@spindle.srvr.nix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4F675E90.0031,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>-----Original Message-----
+>From: Nix [mailto:nix@esperi.org.uk]
+>Sent: Monday, March 19, 2012 9:20 AM
+>To: Wyborny, Carolyn
+>Cc: Chris Boot; e1000-devel@lists.sourceforge.net; netdev; lkml
+>Subject: Re: [E1000-devel] e1000e interface hang on 82574L
+>
+[...]
 
-Hey Linus,
+>you'll see that I tested that, and it doesn't work :( even if it did
+>work, it shouldn't be needed: the driver attempts to turn off PCIe ASPM
+>on affected NICs, and fails, apparently because *something* turns it
+>back on again.
+>
+>--
+>NULL && (void)
 
-Please git pull the following tag:
+The driver attempts to disable L0s state, not the entire feature.  It is also required that the device upstream on the bus from the 82574L have this disabled.  Yes, I agree there appears to be something in the os that either ren-enables or fails to disable the feature on the upstream device, as desired.  Platforms/systems also appear to vary in this regard, so the solutions may vary a bit as well.  
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/mm.git stable/for-linus-3.4
+Its worth trying your solution as well if what I suggested doesn't work, but there is not one solution that fits all, unfortunately.
 
-which has some patches for the cleancache API that should have been
-submitted a _long_ time ago. They are basically cleanups:
- - rename of flush to invalidate
- - moving reporting of statistics into debugfs
- - use __read_mostly as necessary.
+Thanks,
 
-Oh, and also the MAINTAINERS file change. The files (except the
-MAINTAINERS file) have been in #linux-next for months now. The late
-addition of MAINTAINERS file is a brain-fart on my side - didn't realize
-I needed that just until I was typing this up - and I based that patch
-on v3.3 - so the tree is on top of v3.3.
+Carolyn
 
-Please pull!
-
-
- .../ABI/testing/sysfs-kernel-mm-cleancache         |   11 --
- Documentation/vm/cleancache.txt                    |   41 ++++----
- MAINTAINERS                                        |    7 ++
- drivers/staging/zcache/zcache-main.c               |   10 +-
- drivers/xen/tmem.c                                 |   10 +-
- fs/block_dev.c                                     |    2 +-
- fs/super.c                                         |    2 +-
- include/linux/cleancache.h                         |   24 +++---
- mm/cleancache.c                                    |   98 ++++++++------------
- mm/filemap.c                                       |    2 +-
- mm/truncate.c                                      |   10 +-
- 11 files changed, 96 insertions(+), 121 deletions(-)
-
-Dan Magenheimer (4):
-      mm: cleancache: s/flush/invalidate/
-      mm: zcache/tmem/cleancache: s/flush/invalidate/
-      mm: cleancache: report statistics via debugfs instead of sysfs.
-      mm: cleancache: Use __read_mostly as appropiate.
-
-Konrad Rzeszutek Wilk (2):
-      MAINTAINERS: Adding cleancache API to the list.
-      Merge branch 'stable/cleancache.v13' into linux-next
+Carolyn Wyborny
+Linux Development
+LAN Access Division
+Intel Corporation
 
 
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPZ12NAAoJEFjIrFwIi8fJYQwIALW/8Q8lOUYi5MPMjKhNYUAa
-JDOgX3aO3Ngi7ixwW0EqemSdS3zhu6AEkFcSUE9WCd1n38U4uez/CoQRxmKON3n8
-L5iQY17a4RPahM8LgirkZUwySBl+plEgUGZV769vaK9F6YUwnpTIo5EALimUtZHS
-L3191NBduegLbJVcOZgEliI0zmsGhClF/dhpQxCbkYnexyPEYNDyowNmrRe4GpMM
-cig75XORQuVZzlxQsQ0faLB3FJOots0a6eSSnGaz8h06rNndx1fYeO/tEY/58bwq
-o1pf5U3LzR7CRTF0QffOrz23+FBlyftmzOH7MhNGHuU5hiqbW/sMggJoADOrWgg=
-=zlGh
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
