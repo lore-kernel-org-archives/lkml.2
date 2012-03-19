@@ -1,310 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2CSCAb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 22:00:31 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50684 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755733Ab2CSCA3 convert rfc822-to-8bit (ORCPT
+	id S1757546Ab2CSCDo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 22:03:44 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:13045 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab2CSCDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 22:00:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332113668-4364-2-git-send-email-daniel.vetter@ffwll.ch>
-References: <1332113668-4364-1-git-send-email-daniel.vetter@ffwll.ch>
-	<1332113668-4364-2-git-send-email-daniel.vetter@ffwll.ch>
-Date: Sun, 18 Mar 2012 21:00:28 -0500
-X-Google-Sender-Auth: JCWIgG73RmpUYy-kkDc_YxC4MCk
-Message-ID: <CAF6AEGsXiJadKVeU+2z3zC8qLp+hmmY_6YYOL0XXYWV+p+h-+A@mail.gmail.com>
-Subject: Re: [PATCH 2/4] dma-buf: add support for kernel cpu access
-From: Rob Clark <rob.clark@linaro.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 18 Mar 2012 22:03:42 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: joeyli <jlee@suse.com>
+To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1332047432.6304.13.camel@debian.Gayathri>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 10:01:54 +0800
+Message-ID: <1332122514.10557.270.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 6:34 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> Big differences to other contenders in the field (like ion) is
-> that this also supports highmem, so we have to split up the cpu
-> access from the kernel side into a prepare and a kmap step.
->
-> Prepare is allowed to fail and should do everything required so that
-> the kmap calls can succeed (like swapin/backing storage allocation,
-> flushing, ...).
->
-> More in-depth explanations will follow in the follow-up documentation
-> patch.
->
-> Changes in v2:
->
-> - Clear up begin_cpu_access confusion noticed by Sumit Semwal.
-> - Don't automatically fallback from the _atomic variants to the
->  non-atomic variants. The _atomic callbacks are not allowed to
->  sleep, so we want exporters to make this decision explicit. The
->  function signatures are explicit, so simpler exporters can still
->  use the same function for both.
-> - Make the unmap functions optional. Simpler exporters with permanent
->  mappings don't need to do anything at unmap time.
->
-> Changes in v3:
->
-> - Adjust the WARN_ON checks for the new ->ops functions as suggested
->  by Rob Clark and Sumit Semwal.
-> - Rebased on top of latest dma-buf-next git.
->
-> Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+æ–¼ æ—¥ï¼Œ2012-03-18 æ–¼ 10:40 +0530ï¼ŒPradeep Subrahmanion æåˆ°ï¼š
+> On Thu, 2012-03-15 at 16:05 +0800, joeyli wrote:
+> > Hi Pradeep, 
+> > 
+> > æ–¼ ä¸‰ï¼Œ2012-03-14 æ–¼ 11:47 +0530ï¼ŒPradeep Subrahmanion æåˆ°ï¼š
+> > > On Wed, Mar 14, 2012 at 11:21 AM, joeyli <jlee@suse.com> wrote:
+> > > > æ–¼ ä¸‰ï¼Œ2012-03-14 æ–¼ 08:13 +0530ï¼ŒPradeep Subrahmanion æåˆ°ï¼š
+> > > >> Hi Joey ,
+> > > >>
+> > > >> > Per my understood, EC firmware should change brightness but didn't do
+> > > >> > that, another
+> > > >> > way is touch i915 register in _BCM.
+> > > >>
+> > > >>   how do we do this ? you mean change the _BCM implementation ?
+> > > >
+> > > > "BIOS guy" should do something like this:
+> > > >
+> > > >  Method (AINT, 2, NotSerialized)
+> > > > {
+> > > > ...
+> > > >        If (LEqual (Arg0, One))
+> > > >        {
+> > > >            Store (Divide (Multiply (Arg1, 0xFF), 0x64, ), BCLP)
+> > > >            Or (BCLP, 0x80000000, BCLP)         <=== touch BCLP register
+> > > >            Store (0x02, ASLC)
+> > > >        }
+> > > >
+> > > >    Method (_BCM, 1, NotSerialized)
+> > > >    {
+> > > >        If (LAnd (LGreaterEqual (Arg0, Zero), LLessEqual (Arg0, 0x64)))
+> > > >        {
+> > > >            AINT (One, Arg0)     <=== call AINT method
+> > > >            Store (Arg0, BRTL)
+> > > >        }
+> > > >    }
+> > > >
+> > > >
+> > > > Just for reference, they should do that when EC didn't wire to
+> > > > backlight.
+> > > >
+> > > >> >
+> > > >> > Acer machine provide a broken _BCM implementation and they didn't test
+> > > >> > it.
+> > > >> >
+> > > >> > > > > By ' ACPI interface' , I mean 'acpi_video0' inside the
+> > > >> > > > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
+> > > >> > > > > directly . I will try that also.
+> > > >> > > >
+> > > >> > > > So writing values into /sys/class/backlight/acpi_video0/brightness does
+> > > >> > > > nothing?
+> > > >> > >
+> > > >> > >
+> > > >> > > No change in value when writing
+> > > >> > > to /sys/class/backlight/acpi_video0/brightness.
+> > > >> > >
+> > > >> > > Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
+> > > >> > > in new kernel (3.3.0-rc7) , it shows following messages ,
+> > > >> > >
+> > > >> > > [    8.350825] wmi: Mapper loaded
+> > > >> > > [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
+> > > >> > > [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
+> > > >> > > [   10.396385] acer_wmi: Brightness must be controlled by generic video
+> > > >> > > driver
+> > > >> > >
+> > > >> > > Also there was no interface inside /sys/class/backlight for acer_wmi.
+> > > >> > >
+> > > >> >
+> > > >> > Yes, acer_wmi support backlight control with AMW0 interface, your
+> > > >> > machine didn't have AMW0 interface.
+> > > >> >
+> > > >> > Normally, backlight should control by standard acpi interface.
+> > > >> >
+> > > >> > > I also tried writing directly to Embedded controller register .But no
+> > > >> > > change.
+> > > >> >
+> > > >> > The machine has broken _BCM method, because EC should do something after
+> > > >> > _BCM changed EC register.
+> > > >>
+> > > >> Thanks ,
+> > > >>
+> > > >> Pradeep Subrahmanion
+> > > >
+> > > > Why they didn't find _BCM not work?
+> > > >
+> > > > My guess is:
+> > > >
+> > > > Because the backlight control is through WDDM driver on Windows platform
+> > > > but not through standard ACPI method _BCM. They only test Windows
+> > > > platform, so, they didn't find _BCM broken.
+> > > >
+> > > > And, they also didn't really follow Microsoft WDDM spec:
+> > > >
+> > > >  http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
+> > > >
+> > > > Per spec,
+> > > > ODM should keep _BCM works fine for any other OS didn't support WDDM
+> > > > driver, but they didn't.
+> > > >
+> > > > At last year, I told Acer PM one time for this issue, they said will
+> > > > check but finally didn't response me.
+> > > >
+> > > 
+> > > >
+> > > > Thanks
+> > > > Joey Lee
+> > > >
+> > > 
+> > > So touching the PCI LBB register is the only feasible solution now
+> > > (even though it may not be a clean  method) ?
+> > > 
+> > > Thanks,
+> > > Pradeep Subrahmanion
+> > 
+> > That will be better leave LBB register only touched by i915 driver.
+> > 
+> > If 'acpi_backlight=vendor' works to you, maybe we can add a quirk to
+> > video_detect.c. 
+> > You can try the following patch.
+> 
+> Thanks . I tried your patch .acpi_backlight=vendor allows me to control
+> brightness with hot key.But there are problems with it like increasing
 
-Signed-off-by: Rob Clark <rob@ti.com>
+OK, thanks for your testing, I will send out patch and add Cc. to you.
 
-note: we should start updating the individual driver support for drm
-drivers for this (since Dave has prime working now), although this
-should not block the drm-core support for prime/dmabuf
+> brightness after  maximum level causes blank screen.So I am trying it
+> sort it out.
+>  
+> Thank you , 
+> 
+> Pradeep Subrahmanion
+> 
 
-BR,
--R
+For the maximum level causes blank screen...
 
-> ---
->  drivers/base/dma-buf.c  |  124 ++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/dma-buf.h |   59 ++++++++++++++++++++++
->  2 files changed, 182 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index 5641b9c..2226511 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
-> @@ -80,7 +80,9 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
->        if (WARN_ON(!priv || !ops
->                          || !ops->map_dma_buf
->                          || !ops->unmap_dma_buf
-> -                         || !ops->release)) {
-> +                         || !ops->release
-> +                         || !ops->kmap_atomic
-> +                         || !ops->kmap)) {
->                return ERR_PTR(-EINVAL);
->        }
->
-> @@ -284,3 +286,123 @@ void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
->                                                direction);
->  }
->  EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);
-> +
-> +
-> +/**
-> + * dma_buf_begin_cpu_access - Must be called before accessing a dma_buf from the
-> + * cpu in the kernel context. Calls begin_cpu_access to allow exporter-specific
-> + * preparations. Coherency is only guaranteed in the specified range for the
-> + * specified access direction.
-> + * @dma_buf:   [in]    buffer to prepare cpu access for.
-> + * @start:     [in]    start of range for cpu access.
-> + * @len:       [in]    length of range for cpu access.
-> + * @direction: [in]    length of range for cpu access.
-> + *
-> + * Can return negative error values, returns 0 on success.
-> + */
-> +int dma_buf_begin_cpu_access(struct dma_buf *dmabuf, size_t start, size_t len,
-> +                            enum dma_data_direction direction)
-> +{
-> +       int ret = 0;
-> +
-> +       if (WARN_ON(!dmabuf))
-> +               return EINVAL;
-> +
-> +       if (dmabuf->ops->begin_cpu_access)
-> +               ret = dmabuf->ops->begin_cpu_access(dmabuf, start, len, direction);
-> +
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(dma_buf_begin_cpu_access);
-> +
-> +/**
-> + * dma_buf_end_cpu_access - Must be called after accessing a dma_buf from the
-> + * cpu in the kernel context. Calls end_cpu_access to allow exporter-specific
-> + * actions. Coherency is only guaranteed in the specified range for the
-> + * specified access direction.
-> + * @dma_buf:   [in]    buffer to complete cpu access for.
-> + * @start:     [in]    start of range for cpu access.
-> + * @len:       [in]    length of range for cpu access.
-> + * @direction: [in]    length of range for cpu access.
-> + *
-> + * This call must always succeed.
-> + */
-> +void dma_buf_end_cpu_access(struct dma_buf *dmabuf, size_t start, size_t len,
-> +                           enum dma_data_direction direction)
-> +{
-> +       WARN_ON(!dmabuf);
-> +
-> +       if (dmabuf->ops->end_cpu_access)
-> +               dmabuf->ops->end_cpu_access(dmabuf, start, len, direction);
-> +}
-> +EXPORT_SYMBOL_GPL(dma_buf_end_cpu_access);
-> +
-> +/**
-> + * dma_buf_kmap_atomic - Map a page of the buffer object into kernel address
-> + * space. The same restrictions as for kmap_atomic and friends apply.
-> + * @dma_buf:   [in]    buffer to map page from.
-> + * @page_num:  [in]    page in PAGE_SIZE units to map.
-> + *
-> + * This call must always succeed, any necessary preparations that might fail
-> + * need to be done in begin_cpu_access.
-> + */
-> +void *dma_buf_kmap_atomic(struct dma_buf *dmabuf, unsigned long page_num)
-> +{
-> +       WARN_ON(!dmabuf);
-> +
-> +       return dmabuf->ops->kmap_atomic(dmabuf, page_num);
-> +}
-> +EXPORT_SYMBOL_GPL(dma_buf_kmap_atomic);
-> +
-> +/**
-> + * dma_buf_kunmap_atomic - Unmap a page obtained by dma_buf_kmap_atomic.
-> + * @dma_buf:   [in]    buffer to unmap page from.
-> + * @page_num:  [in]    page in PAGE_SIZE units to unmap.
-> + * @vaddr:     [in]    kernel space pointer obtained from dma_buf_kmap_atomic.
-> + *
-> + * This call must always succeed.
-> + */
-> +void dma_buf_kunmap_atomic(struct dma_buf *dmabuf, unsigned long page_num,
-> +                          void *vaddr)
-> +{
-> +       WARN_ON(!dmabuf);
-> +
-> +       if (dmabuf->ops->kunmap_atomic)
-> +               dmabuf->ops->kunmap_atomic(dmabuf, page_num, vaddr);
-> +}
-> +EXPORT_SYMBOL_GPL(dma_buf_kunmap_atomic);
-> +
-> +/**
-> + * dma_buf_kmap - Map a page of the buffer object into kernel address space. The
-> + * same restrictions as for kmap and friends apply.
-> + * @dma_buf:   [in]    buffer to map page from.
-> + * @page_num:  [in]    page in PAGE_SIZE units to map.
-> + *
-> + * This call must always succeed, any necessary preparations that might fail
-> + * need to be done in begin_cpu_access.
-> + */
-> +void *dma_buf_kmap(struct dma_buf *dmabuf, unsigned long page_num)
-> +{
-> +       WARN_ON(!dmabuf);
-> +
-> +       return dmabuf->ops->kmap(dmabuf, page_num);
-> +}
-> +EXPORT_SYMBOL_GPL(dma_buf_kmap);
-> +
-> +/**
-> + * dma_buf_kunmap - Unmap a page obtained by dma_buf_kmap.
-> + * @dma_buf:   [in]    buffer to unmap page from.
-> + * @page_num:  [in]    page in PAGE_SIZE units to unmap.
-> + * @vaddr:     [in]    kernel space pointer obtained from dma_buf_kmap.
-> + *
-> + * This call must always succeed.
-> + */
-> +void dma_buf_kunmap(struct dma_buf *dmabuf, unsigned long page_num,
-> +                   void *vaddr)
-> +{
-> +       WARN_ON(!dmabuf);
-> +
-> +       if (dmabuf->ops->kunmap)
-> +               dmabuf->ops->kunmap(dmabuf, page_num, vaddr);
-> +}
-> +EXPORT_SYMBOL_GPL(dma_buf_kunmap);
-> diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
-> index 24e0f48..ee7ef99 100644
-> --- a/include/linux/dma-buf.h
-> +++ b/include/linux/dma-buf.h
-> @@ -50,6 +50,17 @@ struct dma_buf_attachment;
->  * @unmap_dma_buf: decreases usecount of buffer, might deallocate scatter
->  *                pages.
->  * @release: release this buffer; to be called after the last dma_buf_put.
-> + * @begin_cpu_access: [optional] called before cpu access to invalidate cpu
-> + *                   caches and allocate backing storage (if not yet done)
-> + *                   respectively pin the objet into memory.
-> + * @end_cpu_access: [optional] called after cpu access to flush cashes.
-> + * @kmap_atomic: maps a page from the buffer into kernel address
-> + *              space, users may not block until the subsequent unmap call.
-> + *              This callback must not sleep.
-> + * @kunmap_atomic: [optional] unmaps a atomically mapped page from the buffer.
-> + *                This Callback must not sleep.
-> + * @kmap: maps a page from the buffer into kernel address space.
-> + * @kunmap: [optional] unmaps a page from the buffer.
->  */
->  struct dma_buf_ops {
->        int (*attach)(struct dma_buf *, struct device *,
-> @@ -73,6 +84,14 @@ struct dma_buf_ops {
->        /* after final dma_buf_put() */
->        void (*release)(struct dma_buf *);
->
-> +       int (*begin_cpu_access)(struct dma_buf *, size_t, size_t,
-> +                               enum dma_data_direction);
-> +       void (*end_cpu_access)(struct dma_buf *, size_t, size_t,
-> +                              enum dma_data_direction);
-> +       void *(*kmap_atomic)(struct dma_buf *, unsigned long);
-> +       void (*kunmap_atomic)(struct dma_buf *, unsigned long, void *);
-> +       void *(*kmap)(struct dma_buf *, unsigned long);
-> +       void (*kunmap)(struct dma_buf *, unsigned long, void *);
->  };
->
->  /**
-> @@ -140,6 +159,14 @@ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *,
->                                        enum dma_data_direction);
->  void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *,
->                                enum dma_data_direction);
-> +int dma_buf_begin_cpu_access(struct dma_buf *dma_buf, size_t start, size_t len,
-> +                            enum dma_data_direction dir);
-> +void dma_buf_end_cpu_access(struct dma_buf *dma_buf, size_t start, size_t len,
-> +                           enum dma_data_direction dir);
-> +void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
-> +void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
-> +void *dma_buf_kmap(struct dma_buf *, unsigned long);
-> +void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
->  #else
->
->  static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
-> @@ -188,6 +215,38 @@ static inline void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
->        return;
->  }
->
-> +static inline int dma_buf_begin_cpu_access(struct dma_buf *,
-> +                                          size_t, size_t,
-> +                                          enum dma_data_direction)
-> +{
-> +       return -ENODEV;
-> +}
-> +
-> +static inline void dma_buf_end_cpu_access(struct dma_buf *,
-> +                                         size_t, size_t,
-> +                                         enum dma_data_direction)
-> +{
-> +}
-> +
-> +static inline void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long)
-> +{
-> +       return NULL;
-> +}
-> +
-> +static inline void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long,
-> +                                        void *)
-> +{
-> +}
-> +
-> +static inline void *dma_buf_kmap(struct dma_buf *, unsigned long)
-> +{
-> +       return NULL;
-> +}
-> +
-> +static inline void dma_buf_kunmap(struct dma_buf *, unsigned long,
-> +                                 void *)
-> +{
-> +}
->  #endif /* CONFIG_DMA_SHARED_BUFFER */
->
->  #endif /* __DMA_BUF_H__ */
-> --
-> 1.7.7.5
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Please kindly help to identify which driver handle the brightness
+change, run the following 2 commands:
+
+# echo 5 > /sys/class/backlight/acer-wmi/brightness 
+# echo 5 > /sys/class/backlight/intel_backlight/brightness 
+
+Which one works to change brightness on your machine?
+
+
+Thanks a lot!
+Joey Lee
+
