@@ -1,135 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030343Ab2CSNzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:55:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37529 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754892Ab2CSNzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 09:55:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141194971"
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
- __dma_request_channel()
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1203191436030.11516@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
-	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
-	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-	 <1331188201.4657.51.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
-	 <1331204128.4657.54.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
-	 <1331206459.4657.59.camel@vkoul-udesk3>
-	 <1331211513.4657.67.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
-	 <1331284918.4657.69.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
-	 <1331285959.4657.76.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
-	 <1331520476.4657.79.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
-	 <1332157021.7180.5.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203191244240.11516@axis700.grange>
-	 <1332164062.7180.19.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203191436030.11516@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Mar 2012 19:30:04 +0530
-Message-ID: <1332165604.7180.24.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1030758Ab2CSN4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:56:10 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:26276 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756748Ab2CSN4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 09:56:08 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: _nihuGgVM1ncoHg8nPWtp_83mBWMklKgMEqUMUAVu5TzHn0
+ y1PgQ7johovi1A3_u5c8mEtV62JpOop6Vbq9XWDrKF7jSp1K3YL5SmXDZ71m
+ Wa2NFN_t98tZiJdLZB0r.50daOrjh4lATX39F7Aw1GHo8HZXhexaRRD_aKwG
+ wCRyg8taC0zqmYmEmPTFKHrU8gMbcWdBCx8k1PFbAMi6vZBgnbI69EWuFfEi
+ 2gNk.cyGJe0OPGl5dy7ZRgXeuk.tdfkPGUmqc4pQdOqpwLCLrR6WpQfrYJVZ
+ oyIR_4isNNDaFIh05di7WVV6pLF0FDzgRNfiAWn6eKCY5miWrcWVfRObqkQI
+ wuNShn7fIsuFB3PesmyllwbWgPRf8rjpu5JDc9A3nQ_cS1TsLpUVwwG3JveZ
+ 8jizBmQ2qwAeBEvOAgQPL9LHQLtl4Q_Ndj.wtE8kiGYkEK0qWPisbQi6f6gs
+ cDPXE6n7XTGlf
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 19 Mar 2012 08:56:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+cc: Sasha Levin <levinsasha928@gmail.com>, kaber@trash.net,
+        davem@davemloft.net, Dave Jones <davej@redhat.com>,
+        netfilter-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: netfilter: Hung task
+In-Reply-To: <20120319002811.GA30408@1984>
+Message-ID: <alpine.DEB.2.00.1203190854560.16879@router.home>
+References: <CA+1xoqfCTXxXsbfUjttuOVutyD_FzYS8PoOoAOOtB72P8SwdVg@mail.gmail.com> <20120318141943.GA28850@1984> <CA+1xoqcQYqCgQb=1M5PVkm=6SBhV2oJxJ2CtBp=gAvZM36Kc2Q@mail.gmail.com> <20120319002811.GA30408@1984>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 14:38 +0100, Guennadi Liakhovetski wrote:
-> On Mon, 19 Mar 2012, Vinod Koul wrote:
-> 
-> > On Mon, 2012-03-19 at 12:47 +0100, Guennadi Liakhovetski wrote:
-> > > As I wrote in a reply to Linus W - you need to pass information about the 
-> > > requesting client to the dmaengine core to let it match it against mapping 
-> > > tables. 
-> > NO. 
-> > The client only needs to say that he needs a channel for DMA_SLAVE
-> 
-> How?
-Did you miss our earlier discussion on 
-https://lkml.org/lkml/2012/3/8/26
+On Mon, 19 Mar 2012, Pablo Neira Ayuso wrote:
 
-Perhaps, I can enlighten you will below excerpt where we proposed to
-add:
-
-int dmaengine_add_channel_map(struct dmaengine_map *map, unsigned int num_entries)
-{
-	/* store this map into dmaengine and use for channle allocation */
-}
-
-So dmaengine knows client A can use DMAC P, channel 2 and 3.
-So first request will receive ch 2 for A and second one will yield 3.
-
-> 
-> 	dma_request_channel(mask, filter_fn, filter_arg)
-> 
-> Where shall the client pass to dmaengine its identity info?
-Only change I see for above to tell which client is requesting, so we
-may have to add device pointer of client while requesting.
-> 
-> > DMAengine will know for this client, the platform channel map (already
-> > given to it by platform) says that we can give it DMAC X, channel 4
-> > only.
-> 
-> Some clients need multiple channels - Tx, Rx,...
-> 
-> Thanks
-> Guennadi
-> 
-> > So see if it free, if so allocate it and give to client (while
-> > doing usual stuff)
-> > > You have to pass this information with the dma_request_channel() 
-> > > function. So, either you need to add a parameter or you have to reuse one 
-> > > of existing ones, e.g., deprecate the filter and use its argument for this 
-> > > purpose. If you do this and as long as you pass that parameter further on 
-> > > to the dmaengine device (controller) driver after whatever matching you 
-> > > like to do in the core - I'm fine with that, that fits well with my 
-> > > initial proposal.
-> > I don't care about filter, it can go away if it is not required.
-> > 
-> > Passing slave_config is *enhancement* so for (hopefully) last time
-> >  a) it has *nothing* to do with getting a channel, no role to play in
-> > generic scheme of things
-> >  b) it allows client to call one api for get+configure thats all! 
-> > 
-> > -- 
-> > ~Vinod
-> > 
-> 
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> On Sun, Mar 18, 2012 at 10:52:55PM +0200, Sasha Levin wrote:
+> > On Sun, Mar 18, 2012 at 4:19 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > > On Sun, Mar 18, 2012 at 12:55:13PM +0200, Sasha Levin wrote:
+> > >> Hi all,
+> > >>
+> > >> I got the following spew after fuzzing using trinity on a KVM tools
+> > >> guest, using the latest linux-next.
+> > >>
+> > >> It reminds me a lot of https://lkml.org/lkml/2012/3/14/375 and
+> > >> https://lkml.org/lkml/2012/1/14/45
+> > >
+> > > You mention neither Linux kernel version nor the way you trigger this.
+> > >
+> > > With that little information it's really hard to really know.
+> >
+> > Hum? I've mentioned it happened with "the latest linux-next" (which is
+> > currently two days old), and using the trinity fuzzer - which means
+> > that I don't have a specific method to reproduce the problem.
+>
+> Sorry, I should not read my email diagonally, really.
+>
+> Looking at the trace, I'd point to some problem in the slub memory
+> allocator. Please, correct me if I'm wrong.
+>
+> Christoph?
 
 
--- 
-~Vinod
-
+This is sually something causing memory corruption. Please enable
+debugging to get backtrace that help to debutg this. CONFIG_SLUB_DEBUG_ON
+will do the trick or passing "slub_debug" on the kernel command line.
