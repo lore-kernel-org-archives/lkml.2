@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759039Ab2CSNa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24423 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758949Ab2CSNa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 09:30:57 -0400
-Date: Mon, 19 Mar 2012 09:30:46 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org, midgoon@gmail.com,
-        konrad.wilk@oracle.com
-Subject: Re: 3.2.1 Unable to reset IRR messages on boot
-Message-ID: <20120319133046.GB13093@zod.bos.redhat.com>
-References: <20120125000434.GC13655@zod.bos.redhat.com>
- <1327454651.27983.7.camel@sbsiddha-desk.sc.intel.com>
- <20120125134947.GF13655@zod.bos.redhat.com>
- <1327529048.2327.17.camel@sbsiddha-mobl2>
- <20120125231534.GL13655@zod.bos.redhat.com>
- <20120131142621.GA2136@zod.bos.redhat.com>
- <1328083230.3638.2.camel@sbsiddha-mobl2>
- <20120312132448.GA20204@zod.bos.redhat.com>
- <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
+	id S1030794Ab2CSNiL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:38:11 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51065 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab2CSNiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 09:38:10 -0400
+Message-ID: <4F6736B9.4070307@monstr.eu>
+Date: Mon, 19 Mar 2012 14:38:01 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        John Williams <john.williams@petalogix.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: remoteproc: Resource table for IRQs
+References: <4F5F1657.9090200@monstr.eu> <CAK=WgbamnCRrEGM-xRZGie+ZoiyZx3uudXb-_dopEj7yMQYuUA@mail.gmail.com>
+In-Reply-To: <CAK=WgbamnCRrEGM-xRZGie+ZoiyZx3uudXb-_dopEj7yMQYuUA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 11:36:33AM -0700, Suresh Siddha wrote:
-> On Mon, 2012-03-12 at 09:24 -0400, Josh Boyer wrote:
-> > On Wed, Feb 01, 2012 at 12:00:30AM -0800, Suresh Siddha wrote:
-> > > Yes, it was helpful. Something like the appended patch should ignore the
-> > > bogus io-apic entry all together. As I can't test this, can you or the
-> > > reporter give the appended patch a try and ack please?
-> > 
-> > Hi Suresh,
-> > 
-> > Apologies for the delay.  The original reporter had to return the
-> > machine he was using.  We've since had another report where this
-> > happened and your patch below does indeed fix the issue.
-> > 
-> > I'd suggest pushing this soon.
-> > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=801501
-> > 
+Hi Ohad,
+
+Ohad Ben-Cohen wrote:
+> Hi Michal,
 > 
-> Thanks Josh. Peter/Ingo, please queue the appended patch for -tip.
+> On Tue, Mar 13, 2012 at 11:41 AM, Michal Simek <monstr@monstr.eu> wrote:
+>> What do you think?
+> 
+> I'd really prefer to see some code to make sure I understand exactly
+> what you mean.
+> 
+> Any change you can post something ?
+> 
+> Maybe even just the hard coded forwarding implementation you have today.
 
-Hi Suresh,
+In system I run, cpu0 runs Linux and the second cpu runs any RTOS(let's call it firmware)
+ From Linux point of view in ideal case all information which Linux work with
+comes from resource table.
+An expectation is that firmware will want to use IRQs. For default case all IRQs are forwarded
+to cpu0 which runs Linux. That's why currently I have to forward IRQs requested by firmware to cpu1.
+(It is done through new private gic function called gic_set_cpu). It is hardcoded in Linux code
+that's why I am losing flezibility and I will have to explicitly say before firmware is loaded
+which IRQs will be used.
 
-Seems this patch and Xen don't get along very well.  See the bug link
-below.  I've CC'd Konrad and hopefully he'll have some insight as to why
-that might be.
+For example:
+Linux starts at cpu0
+I know that firmware 1 requires IRQs 23.25
+that's why I call git_set_cpu(1,23) and git_set_cpu(1,25) to forward IRQs to cpu1.
+Then remoteproc is loaded/probed.
+Firmware announces services
+any work
+Remove module and load firmware 2 which requires IRQs (26.28)
+then I am stuck because they are not forwarded yet.
 
-josh
 
-https://bugzilla.redhat.com/show_bug.cgi?id=804347
+There are several solutions which can solve it:
+0. Hardcoded all IRQs for all firmware which could run on zynq
+con: loosing flezibility
+
+1. Firmware can change gic and forward IRQ to itself
+con: Completely out of Linux control - any linux driver can use that IRQ
+
+2. Forward IRQs in module which will target firmware file.
+con: Firmware file name could be the same and maybe make sense to be the same because that differences
+can be done based on announcement services
+con: less error prone because of different firmware versions
+
+3. Do it explicitly based on resource_table which exactly describe what firmware needs
+con: Maybe can be useful just for my case
+
+Option 2 is possible to use but seems to me that using resource_table would be better.
+
+
+We have played with idea that it could be also possible to run Linux in SMP mode
+and then when it is request to use firmware switch cpu1 to run firmware and after
+that move back SMP mode.
+
+Maybe I am trying to do things more complicated than they are but
+I still see that make sense to do it.
+What do you think?
+
+Thanks,
+Michal
+
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
