@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759333Ab2CSTiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:38:14 -0400
-Received: from dwdmx5.dwd.de ([141.38.3.242]:39758 "EHLO dwdmx5.dwd.de"
+	id S1759368Ab2CSTly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:41:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64630 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab2CSTiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:38:13 -0400
-Date: Mon, 19 Mar 2012 19:38:04 +0000 (GMT)
-From: Holger Kiehl <Holger.Kiehl@dwd.de>
-X-X-Sender: kiehl@diagnostix.dwd.de
-To: Shaohua Li <shli@fusionio.com>
-cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
-        axboe@kernel.dk, vgoyal@redhat.com, martin.petersen@oracle.com
-Subject: Re: [patch v2 0/6] Add TRIM support for raid linear/0/1/10
-In-Reply-To: <20120316073213.656519005@fusionio.com>
-Message-ID: <alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de>
-References: <20120316073213.656519005@fusionio.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1759297Ab2CSTlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 15:41:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <161084.1332177826@turing-police.cc.vt.edu>
+References: <161084.1332177826@turing-police.cc.vt.edu> <1121.1332169437@redhat.com> <20120318235114.GA30497@thor.bakeyournoodle.com> <20120318184105.GC2095@windriver.com> <9942.1332170491@redhat.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: dhowells@redhat.com, Tony Breeds <tony@bakeyournoodle.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: triage for March 18, 2012
+Date: Mon, 19 Mar 2012 19:41:44 +0000
+Message-ID: <8010.1332186104@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Valdis.Kletnieks@vt.edu wrote:
 
-On Fri, 16 Mar 2012, Shaohua Li wrote:
+> Umm.. it's not clear to *me* that it's intended to be a negative 16 bit?  Or
+> am I just missing context not present in the patch?
+> 
+> (I have no idea if the rest of the patch is OK or not, but that comment
+> didn't give me warm fuzzies....)
 
-> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM support for
-> raid 4/5/6 later. The implementation is pretty straightforward and
-> self-explained.
->
-> v1->v2:
-> 1. fixed a checking issue
-> 2. dropped discard request plug and replace it with no discard merege, because
-> current SCSI layer can't handle discard request merge.
->
-Have tested TRIM patches on three different systems with the following
-hardware/ setup:
+Sorry, I haven't explained it well.
 
-    1) root mounted on a raid1 over two SAS SSD's (200GB) and /home partition
-       on a raid0 over a fusionio ioDrive Duo. Is very new and seen very
-       little usage.
+The patch permits a 64-bit hosted assembler to represent a large 32-bit
+unsigned integer (such as 0xfffffff1) as a negative integer where the
+instruction being assembled has a signed immediate operand.
 
-    2) root and /home mounted on a raid0 over two Intel X25 Postville
-       (160GB) connected to a Intel P55 Express chipset. Has seen very
-       heavy usage for approx. 2 years.
+For instance, the ANDI instruction on FRV takes a small signed integer (10
+bits IIRC) that it sign-extends to 32-bits before using - so to clear a single
+low-order bit, I pass in, say, ~0x2 and the assembler represents this as a
+negative value.
 
-    3) root and /home mounted on a raid0 over three OCZ-VERTEX2 (120GB)
-       connected via ICH7 south bridge. Has seen mild usage for approx.
-       1.5 years.
+The problem was that in a 64-bit hosted assembler, the unsigned 32-bit integer
+gets converted to an unsigned 64-bit integer - which doesn't then appear
+negative (whereas in a 32-bit hosted assembler it does).
 
-Made the following observations when running my own benchmark which
-copies around a lot of small files and deletes them. The benchmark on
-all systems was always run only on the /home partition ie. on a raid0.
-
-For system 1) there is hardly any measurable differnce whether discard
-is enabled or not (~29000 files per second).
-
-On system 2) the performance drops from 6500->3700 files per second,
-but under normal usage one does not notice any difference.
-
-System 3) has problems during boot, it is so slow that some operations
-receive a timeout during boot:
-
-   udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
-   udevd[474]: timeout: killing '/sbin/blkid -o udev -p /dev/md0' [866]
-   systemd[1]: dev-md3.swap activation timed out. Stopping.
-
-Even removing discard does not help and the above errors happen during
-boot and booting takes a long time.
-
-The performance in the benchmark drops from 4000->600 files per second.
-
-Regards,
-Holger
+David
