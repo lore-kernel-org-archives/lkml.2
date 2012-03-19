@@ -1,73 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab2CSTNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:13:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40446 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759274Ab2CSTND (ORCPT
+	id S1759290Ab2CSTNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:13:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65495 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756752Ab2CSTNA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:13:03 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Colin Walters <walters@verbum.org>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/3] perf/core fixes and improvements
-Date: Mon, 19 Mar 2012 16:12:45 -0300
-Message-Id: <1332184368-1655-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 19 Mar 2012 15:13:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="130655008"
+From: "Cihula, Joseph" <joseph.cihula@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+CC: "rjw@sisk.pl" <rjw@sisk.pl>, Tang Liang <liang.tang@oracle.com>,
+        "Brown, Len" <len.brown@intel.com>
+Subject: RE: [PATCH 1/2] x86, acpi, tboot: Have a ACPI os prepare sleep
+ instead of calling tboot_sleep.
+Thread-Topic: [PATCH 1/2] x86, acpi, tboot: Have a ACPI os prepare sleep
+ instead of calling tboot_sleep.
+Thread-Index: AQHM/u9yz/YBihAhRUWqE4wrSLZyDZZyCpZQ
+Date: Mon, 19 Mar 2012 19:12:58 +0000
+Message-ID: <9F57BF860713DF4BA3EFA4F8C6DFEDAC46026AE9@ORSMSX101.amr.corp.intel.com>
+References: <1331405526-25952-1-git-send-email-konrad.wilk@oracle.com>
+ <1331405526-25952-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1331405526-25952-2-git-send-email-konrad.wilk@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+ACKed-by:  Joseph Cihula <joseph.cihula@intel.com>
 
-	Please consider pulling, now there are two pull request worth of
-changesets in my perf/core branch,
+> -----Original Message-----
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Saturday, March 10, 2012 10:52 AM
+> To: linux-kernel@vger.kernel.org; x86@kernel.org; tglx@linutronix.de; mingo@redhat.com;
+> hpa@zytor.com; linux-acpi@vger.kernel.org; lenb@kernel.org
+> Cc: rjw@sisk.pl; Cihula, Joseph; Tang Liang; Brown, Len; Konrad Rzeszutek Wilk
+> Subject: [PATCH 1/2] x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling
+> tboot_sleep.
+> 
+> From: Tang Liang <liang.tang@oracle.com>
+> 
+> The ACPI suspend path makes a call to tboot_sleep right before it writes the PM1A, PM1B values. We
+> replace the direct call to tboot via an registration callback similar to __acpi_register_gsi.
+> 
+> CC: Len Brown <len.brown@intel.com>
+> Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+> [v1: Added __attribute__ ((unused))]
+> [v2: Introduced a wrapper instead of changing tboot_sleep return values]
+> [v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+> Signed-off-by: Tang Liang <liang.tang@oracle.com>
+> [v1: Fix compile issues on IA64 and PPC64]
+> [v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep properly]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/kernel/tboot.c       |    8 ++++++++
+>  drivers/acpi/acpica/hwsleep.c |   10 +++++++---
+>  drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
+>  include/acpi/acexcep.h        |    1 +
+>  include/linux/acpi.h          |   10 ++++++++++
+>  include/linux/tboot.h         |    1 -
+>  6 files changed, 50 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c index e2410e2..1a4ab7d 100644
+> --- a/arch/x86/kernel/tboot.c
+> +++ b/arch/x86/kernel/tboot.c
+> @@ -297,6 +297,12 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+> 
+>  	tboot_shutdown(acpi_shutdown_map[sleep_state]);
+>  }
+> +static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
+> +			       u32 pm1b_control)
+> +{
+> +	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+> +	return 0;
+> +}
+> 
+>  static atomic_t ap_wfs_count;
+> 
+> @@ -345,6 +351,8 @@ static __init int tboot_late_init(void)
+> 
+>  	atomic_set(&ap_wfs_count, 0);
+>  	register_hotcpu_notifier(&tboot_cpu_notifier);
+> +
+> +	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
+>  	return 0;
+>  }
+> 
+> diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c index d52da30..992359a
+> 100644
+> --- a/drivers/acpi/acpica/hwsleep.c
+> +++ b/drivers/acpi/acpica/hwsleep.c
+> @@ -43,9 +43,9 @@
+>   */
+> 
+>  #include <acpi/acpi.h>
+> +#include <linux/acpi.h>
+>  #include "accommon.h"
+>  #include "actables.h"
+> -#include <linux/tboot.h>
+>  #include <linux/module.h>
+> 
+>  #define _COMPONENT          ACPI_HARDWARE
+> @@ -344,8 +344,12 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
+> 
+>  	ACPI_FLUSH_CPU_CACHE();
+> 
+> -	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+> -
+> +	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+> +				       pm1b_control);
+> +	if (ACPI_SKIP(status))
+> +		return_ACPI_STATUS(AE_OK);
+> +	if (ACPI_FAILURE(status))
+> +		return_ACPI_STATUS(status);
+>  	/* Write #2: Write both SLP_TYP + SLP_EN */
+> 
+>  	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control); diff --git
+> a/drivers/acpi/osl.c b/drivers/acpi/osl.c index f31c5c5..f3aae4b 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -76,6 +76,9 @@ EXPORT_SYMBOL(acpi_in_debugger);  extern char line_buf[80];
+>  #endif				/*ENABLE_DEBUGGER */
+> 
+> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+> +				      u32 pm1b_ctrl);
+> +
+>  static acpi_osd_handler acpi_irq_handler;  static void *acpi_irq_context;  static struct
+> workqueue_struct *kacpid_wq; @@ -1659,3 +1662,24 @@ acpi_status acpi_os_terminate(void)
+> 
+>  	return AE_OK;
+>  }
+> +
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+> +				  u32 pm1b_control)
+> +{
+> +	int rc = 0;
+> +	if (__acpi_os_prepare_sleep)
+> +		rc = __acpi_os_prepare_sleep(sleep_state,
+> +					     pm1a_control, pm1b_control);
+> +	if (rc < 0)
+> +		return AE_ERROR;
+> +	else if (rc > 0)
+> +		return AE_CTRL_SKIP;
+> +
+> +	return AE_OK;
+> +}
+> +
+> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> +			       u32 pm1a_ctrl, u32 pm1b_ctrl)) {
+> +	__acpi_os_prepare_sleep = func;
+> +}
+> diff --git a/include/acpi/acexcep.h b/include/acpi/acexcep.h index 5b6c391..fa0d22c 100644
+> --- a/include/acpi/acexcep.h
+> +++ b/include/acpi/acexcep.h
+> @@ -57,6 +57,7 @@
+>  #define ACPI_SUCCESS(a)                 (!(a))
+>  #define ACPI_FAILURE(a)                 (a)
+> 
+> +#define ACPI_SKIP(a)                    (a == AE_CTRL_SKIP)
+>  #define AE_OK                           (acpi_status) 0x0000
+> 
+>  /*
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index 6001b4da..fccd017 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -359,4 +359,14 @@ static inline int suspend_nvs_register(unsigned long a, unsigned long b)  }
+> #endif
+> 
+> +#ifdef CONFIG_ACPI
+> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> +			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> +
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> +				  u32 pm1a_control, u32 pm1b_control); #else #define
+> +acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
+> +#endif
+> +
+>  #endif	/*_LINUX_ACPI_H*/
+> diff --git a/include/linux/tboot.h b/include/linux/tboot.h index 1dba6ee..c75128b 100644
+> --- a/include/linux/tboot.h
+> +++ b/include/linux/tboot.h
+> @@ -143,7 +143,6 @@ static inline int tboot_enabled(void)
+> 
+>  extern void tboot_probe(void);
+>  extern void tboot_shutdown(u32 shutdown_type); -extern void tboot_sleep(u8 sleep_state, u32
+> pm1a_control, u32 pm1b_control);  extern struct acpi_table_header *tboot_get_dmar_table(
+>  				      struct acpi_table_header *dmar_tbl);  extern int
+> tboot_force_iommu(void);
+> --
+> 1.7.7.5
 
-- Arnaldo
-
-The following changes since commit 6db6127c4dad634ab98709b81e2f2770890b0d53:
-
-  perf report: Treat an argument as a symbol filter (2012-03-16 16:44:36 -0300)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to c31a94570552dcaa517c4f7a043ffd28835016be:
-
-  perf report: Add a simple GTK2-based 'perf report' browser (2012-03-19 15:13:29 -0300)
-
-----------------------------------------------------------------
-Fixes for the last batch from Namhyung and the initial GTK report browser
-from Pekka.
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Namhyung Kim (2):
-      perf ui browser: Clean lines inside of the input window
-      perf report: Document --symbol-filter option
-
-Pekka Enberg (1):
-      perf report: Add a simple GTK2-based 'perf report' browser
-
- tools/perf/Documentation/perf-report.txt |    5 +
- tools/perf/Makefile                      |   14 +++
- tools/perf/builtin-report.c              |   19 ++-
- tools/perf/config/feature-tests.mak      |   15 +++
- tools/perf/util/cache.h                  |   12 ++
- tools/perf/util/gtk/browser.c            |  189 ++++++++++++++++++++++++++++++
- tools/perf/util/gtk/gtk.h                |    8 ++
- tools/perf/util/hist.h                   |   17 +++
- tools/perf/util/ui/util.c                |   10 +-
- 9 files changed, 282 insertions(+), 7 deletions(-)
- create mode 100644 tools/perf/util/gtk/browser.c
- create mode 100644 tools/perf/util/gtk/gtk.h
