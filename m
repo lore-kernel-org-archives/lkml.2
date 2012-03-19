@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161440Ab2CSP3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:29:54 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47279 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030563Ab2CSP3w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:29:52 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux Kernel 3.3.0 Binary .deb Installation Files for Ubuntu and Debian Linux
-In-Reply-To: Your message of "Mon, 19 Mar 2012 19:21:17 +0800."
-             <4F6716AD.5070804@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <4F6716AD.5070804@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1332170990_2016P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 19 Mar 2012 11:29:50 -0400
-Message-ID: <144319.1332170990@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4F6750EF.0049,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1759074Ab2CSPbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:31:37 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57857 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753309Ab2CSPbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 11:31:36 -0400
+Date: Mon, 19 Mar 2012 11:31:34 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+Message-ID: <20120319153133.GA2502@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	David Miller <davem@davemloft.net>, joe@perches.com,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120319040950.GG31682@thunk.org>
+ <20120319.001430.1735750114727679638.davem@davemloft.net>
+ <20120319043420.GL31682@thunk.org>
+ <20120319.011211.89954160788757412.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120319.011211.89954160788757412.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1332170990_2016P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Mar 19, 2012 at 01:12:11AM -0400, David Miller wrote:
+> 
+> It also allows you to modify pr_fmt at the top of the file or
+> elsewhere and have it influence the output, as just one example
+> of how it's better.
+> 
+> As a maintainer you can only take one of two positions:
+> 
+> 1) Accept all properly written patches that convert code over to use
+>    the new and recommended way of doing things, such as pr_info() et
+>    al.
 
-On Mon, 19 Mar 2012 19:21:17 +0800, "Teo En Ming (Zhang Enming)" said:
+Recommended by *who*?!?  Who dictated that this is the best way to go?
 
-> Please test and report bugs. Guaranteed safe and no rootkits.
+And in the past we've always allowed for local variations of style;
+it's never been a strict style nazism.  Linus has always given
+maintainers latitude and has frowned on patch churn for churn's sake.
 
-Wouldn't somebody trying to distribute a rootkit say the same thing?
+For goodness sake we still have get_fs() and set_fs() in the kernel
+code even though we haven't used the actual fs segment register in
+over a decade.
 
-Phrased differently - if I have a Ubuntu or Debian system, and desperately need
-some 3.3 feature, why should I trust these .deb files rather than building my
-own kernel from a known-good .tar.gz from kernel.org?
+And we're arguing over "there must be only one true logging
+interface?!?".  This isn't Highlander.
 
-
---==_Exmh_1332170990_2016P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT2dQ7QdmEQWDXROgAQIvgA/7BlGz+8TSiWKXy4egLoio1Crkjt3uy1kY
-d3htdjGKnCrtnLV6R5pHcWUbggtuEIRQKhMzTvuakZVha5gLYd7WXPVB9kx4M+Ik
-fu5aIXOYyp+u45xOhyh7k7UlwyLS00AQZwQjmAqsUM5tbH5bOcUI58zDohTbQlZq
-dxI2+SMUYrtoWI4dvsMWianCUJh1jSAaXXaNbaYu1D1Sj1d68Hg+kVS1tHpOqp9G
-PxlHN8fyoU45RN6RA5JYJYD8QMThqdeARt8q0oaaCunKHwX7Duwwn3xru1QdyjV5
-HMcnF2awoTQY2hFQKcKXlY+MZRnEmIcQskZ9o1tzFBG7GADbf2Vz/G4hZgZ7Uz1D
-BuqS/3IOro+ePs6Nb4AYY/f+p83bJ3zX+NaM6FOZ8fcwBJlM3lhnlmjmn393R32+
-3FWEEpyXrJtX5eDf2PWss4pxzkIXVqpLlMi1bfl7hSHHJnTB6DSmW33dMFaCbuso
-JSBhZ1KVGJCsdTDOQTn+zJ20mKKPqaykX67aGQ1xviIQ5t+6hrk6EhgOR5UilQOr
-W9OUowHdaOO63KeoOK0DmLVnKmxxfsuxa60wHrG0AFmvprS4/99Gt6NCbwshU84Q
-a+owwP3rvX9MpLMOcHm3q5uddOLLRpbH6VRDjxkOYB8k0WOTdrq0zYpgAzlNyutX
-yiu4dLt+2x8=
-=CHyE
------END PGP SIGNATURE-----
-
---==_Exmh_1332170990_2016P--
-
+						- Ted
