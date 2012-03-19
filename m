@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2CSK1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 06:27:18 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51839 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab2CSK1Q (ORCPT
+	id S1756388Ab2CSKb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 06:31:59 -0400
+Received: from 85.52.197.2.static.abi.uni2.es ([85.52.197.2]:42003 "EHLO
+	www.manty.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab2CSKb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 06:27:16 -0400
-Date: Mon, 19 Mar 2012 11:27:13 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lkml <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] PM/Hibernate: use rb_entry
-Message-ID: <20120319102712.GA4532@elf.ucw.cz>
-References: <1332114885.2632.1.camel@offbook>
+	Mon, 19 Mar 2012 06:31:58 -0400
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 06:31:57 EDT
+Date: Mon, 19 Mar 2012 11:21:54 +0100
+From: Santiago Garcia Mantinan <manty@debian.org>
+To: linux-kernel@vger.kernel.org
+Cc: 664605@bugs.debian.org
+Subject: readd back NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option.c
+ [patch]
+Message-ID: <20120319102154.GA16536@www.manty.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332114885.2632.1.camel@offbook>
-X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2012-03-19 00:54:45, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <dave@gnu.org>
-> 
-> Since the software suspend extents are organized in an rbtree, use rb_entry
-> instead of container_of, as it is semantically more appropriate in order to
-> get a node as it is iterated.
-> 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Hi!
 
-ACK.
+It looks like there was a mistake on Dirk De Schepper's patch commited by
+gregkh on 4 Sep 2010 00:33:40 +0000 which can be seen here:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=c7aa8f44b4d1dc73591894a2dd6909213612d299
+
+He removed NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED from the scruct while
+moving things around, it was a bit difficult to see as the defines and the
+struct are not on the same order.  We've carried this for a year and a half
+and for what I've seen there have been some reports about this like:
+https://bugs.launchpad.net/ubuntu/+source/usb-modeswitch/+bug/750362
+but unfortunately it didn't get much attention.
+
+I've looked at the strings and the only one missing was
+NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED, so here is the patch for it.
+
+--- option.c.old	2012-03-19 10:16:31.046565765 +0100
++++ option.c	2012-03-19 10:55:34.348846327 +0100
+@@ -538,6 +538,7 @@
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_FULLSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_HIGHSPEED) },
++	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED3) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED4) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED5) },
+
+Regards.
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Manty/BestiaTester -> http://manty.net
