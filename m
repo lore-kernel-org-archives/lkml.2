@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab2CSF60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:58:26 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30865 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161518Ab2CSFsS (ORCPT
+	id S1161612Ab2CSFsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:48:17 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:29541 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161518Ab2CSFsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:48:18 -0400
+	Mon, 19 Mar 2012 01:48:14 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,68 +15,81 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 37/47] PCI: Kill pci_is_reassignedev()
-Date: Sun, 18 Mar 2012 22:46:26 -0700
-Message-Id: <1332135996-13860-38-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v3 35/47] PCI, cphi_hotplug: Simplify configure_slot
+Date: Sun, 18 Mar 2012 22:46:24 -0700
+Message-Id: <1332135996-13860-36-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
 References: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F66C89F.003D,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F66C89B.011A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only one user. Just use pci_specified_resource_alignement() directly.
-So could only get get align one time for the dev that in the list
+For child p2p bridge hotplug support should use pci_scan_bridge instead.
+
+Make it more simillar to pciehp, just use pci_hp_add_bridge()
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/pci.c |   17 +++--------------
- 1 files changed, 3 insertions(+), 14 deletions(-)
+ drivers/pci/hotplug/cpci_hotplug_pci.c |   35 +++++--------------------------
+ 1 files changed, 6 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8156744..82ed56a 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3685,18 +3685,6 @@ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev)
- 	return align;
- }
+diff --git a/drivers/pci/hotplug/cpci_hotplug_pci.c b/drivers/pci/hotplug/cpci_hotplug_pci.c
+index 4ef80ad..dcc75c7 100644
+--- a/drivers/pci/hotplug/cpci_hotplug_pci.c
++++ b/drivers/pci/hotplug/cpci_hotplug_pci.c
+@@ -285,42 +285,19 @@ int __ref cpci_configure_slot(struct slot *slot)
+ 	for (fn = 0; fn < 8; fn++) {
+ 		struct pci_dev *dev;
  
--/**
-- * pci_is_reassigndev - check if specified PCI is target device to reassign
-- * @dev: the PCI device to check
-- *
-- * RETURNS: non-zero for PCI device is a target device to reassign,
-- *          or zero is not.
-- */
--int pci_is_reassigndev(struct pci_dev *dev)
--{
--	return (pci_specified_resource_alignment(dev) != 0);
--}
+-		dev = pci_get_slot(parent, PCI_DEVFN(PCI_SLOT(slot->devfn), fn));
++		dev = pci_get_slot(parent,
++				   PCI_DEVFN(PCI_SLOT(slot->devfn), fn));
+ 		if (!dev)
+ 			continue;
+ 		if ((dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
+-		    (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)) {
+-			/* Find an unused bus number for the new bridge */
+-			struct pci_bus *child;
+-			unsigned char busnr, start = parent->secondary;
+-			unsigned char end = parent->subordinate;
 -
- /*
-  * This function disables memory decoding and releases memory resources
-  * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
-@@ -3711,7 +3699,9 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
- 	resource_size_t align, size;
- 	u16 command;
+-			for (busnr = start; busnr <= end; busnr++) {
+-				if (!pci_find_bus(pci_domain_nr(parent),
+-						  busnr))
+-					break;
+-			}
+-			if (busnr >= end) {
+-				err("No free bus for hot-added bridge\n");
+-				pci_dev_put(dev);
+-				continue;
+-			}
+-			child = pci_add_new_bus(parent, dev, busnr);
+-			if (!child) {
+-				err("Cannot add new bus for %s\n",
+-				    pci_name(dev));
+-				pci_dev_put(dev);
+-				continue;
+-			}
+-			child->subordinate = pci_do_scan_bus(child);
+-			pci_bus_size_bridges_with_self(child);
+-		}
++		    (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS))
++			pci_hp_add_bridge(dev);
+ 		pci_dev_put(dev);
+ 	}
  
--	if (!pci_is_reassigndev(dev))
-+	/* check if specified PCI is target device to reassign */
-+	align = pci_specified_resource_alignment(dev);
-+	if (!align)
- 		return;
+-	pci_bus_assign_resources(parent);
++	pci_assign_unassigned_bridge_resources(parent->self);
++
+ 	pci_bus_add_devices(parent);
+-	pci_enable_bridges(parent);
  
- 	if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL &&
-@@ -3727,7 +3717,6 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
- 	command &= ~PCI_COMMAND_MEMORY;
- 	pci_write_config_word(dev, PCI_COMMAND, command);
- 
--	align = pci_specified_resource_alignment(dev);
- 	for (i = 0; i < PCI_BRIDGE_RESOURCES; i++) {
- 		r = &dev->resource[i];
- 		if (!(r->flags & IORESOURCE_MEM))
+ 	dbg("%s - exit", __func__);
+ 	return 0;
 -- 
 1.7.7
 
