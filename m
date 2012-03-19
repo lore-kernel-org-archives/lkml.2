@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030835Ab2CSQFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:05:40 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37392 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756018Ab2CSQFi (ORCPT
+	id S1161083Ab2CSQJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:09:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45407 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab2CSQJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:05:38 -0400
-Date: Mon, 19 Mar 2012 09:05:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rni@google.com, ctalbott@google.com
-Subject: Re: [PATCHSET] cgroup: cftype based file interface
-Message-ID: <20120319160532.GB11069@google.com>
-References: <1331940963-15756-1-git-send-email-tj@kernel.org>
- <4F6708F4.4000604@parallels.com>
+	Mon, 19 Mar 2012 12:09:40 -0400
+Message-ID: <4F675A3E.1070507@gmail.com>
+Date: Mon, 19 Mar 2012 09:09:34 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6708F4.4000604@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Felix Fietkau <nbd@openwrt.org>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        Linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org>
+In-Reply-To: <4F6751B2.1030809@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
-
-On Mon, Mar 19, 2012 at 02:22:44PM +0400, Glauber Costa wrote:
-> >Glauber, can you please try to move net kmem stuff out of
-> >->populate().  If ->create() doesn't work for whatever reason, can you
-> >please explain it to me so that we can find a proper solution?
-> 
-> The main reason is twofold:
-> 
-> It first had to do with the order in which registerings take place
-> at the kernel. But this matter most for the root cgroup. For the
-> children, it should be all initialized anyway. So we can special
-> case whatever is needed.
-
-I see.
-
-> Another point was not to bloat the socket structures with more
-> function calls, for populate and create. But we can possibly be able
-> to store some data ourselves, and figure it out.
+On 03/19/2012 08:33 AM, Felix Fietkau wrote:
+> On 2012-03-19 4:25 PM, Justin P. Mattock wrote:
+>> On 03/19/2012 08:20 AM, Mohammed Shafi wrote:
+>>> Hi Justin,
+>>>
+>>>> seems I got this when waking up from suspend, was trying to connect with NM
+>>>> then all of a sudden Xorg shut off and this appeared on the screen(image
+>>>> links below I could not save dmesg only pic)
+>>>> http://flic.kr/p/bEhf2K
+>>>> http://flic.kr/p/bEhf2x
+>>>> http://flic.kr/p/bEhf2n
+>>>> http://flic.kr/p/bEhf26
+>>>>
+>>>> I see ath9k in the image, but am unsure if its related.
+>>>> kernel is: 3.3.0-rc7-next-20120316
+>>>
+>>> this looks like some new issue  in ath9k, lets try to recreate it here
+>>>
+>>>>
+>>>> Justin P. Mattock
+>>>>
+>>>>
+>>>>
+>>>
+>>>
+>>>
+>>
+>> would be nice to recreate, then bisecting will be more accurate to do..
+>> I am trying userspace tweaks here and there but no luck(hostapd etc..)
+>> keep in mind this is for the RX DMA, the above just occured..
+>> as for writing a small app I still need to try, but my C skills only go
+>> so far(anything to trigger!).
+> Was your kernel compiled with debug info? If so, please run gdb on the
+> ath9k.ko module and enter this:
+> l *ath9k_tx+start+0x284
+> Then send me the output of that.
 >
-> How should I do it? Do you want me to provide a patch ontop of your tree ?
+> - Felix
+>
 
-Yeah, that would be great.
+sure! I will do this as soon as I get to a stable connection(am remote 
+now)so I can install gdb to gather the info for you.
 
-Thanks.
-
--- 
-tejun
+Justin P. Mattock
