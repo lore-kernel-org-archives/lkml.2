@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162295Ab2CSRMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:12:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55734 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758113Ab2CSRMO (ORCPT
+	id S1162309Ab2CSRMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:12:34 -0400
+Received: from mail-we0-f194.google.com ([74.125.82.194]:33411 "EHLO
+	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162298Ab2CSRMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:12:14 -0400
-Subject: Re: [PATCH 1/1] net/hyperv: Fix the code handling tx busy
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: kys@microsoft.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-In-Reply-To: <1332176549-30960-2-git-send-email-haiyangz@microsoft.com>
-References: <1332176549-30960-1-git-send-email-haiyangz@microsoft.com>
-	 <1332176549-30960-2-git-send-email-haiyangz@microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Mar 2012 10:11:58 -0700
-Message-ID: <1332177118.9397.32.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Mar 2012 13:12:33 -0400
+Date: Mon, 19 Mar 2012 18:12:29 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/process change for v3.4
+Message-ID: <20120319171229.GA14978@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 10:02 -0700, Haiyang Zhang wrote:
-> Instead of dropping the packet, we keep the skb buffer, and return
-> NETDEV_TX_BUSY to let upper layer retry send. This will not cause
-> endless loop, because the host is taking data away from ring buffer.
-> 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/net/hyperv/netvsc_drv.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index 2517d20..dd29478 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -223,13 +223,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
->  		net->stats.tx_bytes += skb->len;
->  		net->stats.tx_packets++;
->  	} else {
-> -		/* we are shutting down or bus overloaded, just drop packet */
-> -		net->stats.tx_dropped++;
->  		kfree(packet);
-> -		dev_kfree_skb_any(skb);
->  	}
->  
-> -	return NETDEV_TX_OK;
-> +	return ret ? NETDEV_TX_BUSY : NETDEV_TX_OK;
->  }
->  
->  /*
+Linus,
 
-Thats simply not true at all.
+Please pull the latest x86-process-for-linus git tree from:
 
-A start_xmit() cannot do that.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-process-for-linus
 
-TX_BUSY should never be returned at all, its a deprecated code, for
-pretty good reasons. (assuming queue is not stopped)
+   HEAD: 42dfc43ee5999ac64284476ea0ac6c937587cf2b x86_64: Record stack pointer before task execution begins
 
-Try this on a machine with one CPU, I am pretty sure this can trigger
-complete freezes.
+ Thanks,
 
-Once softirq loops in your start_xmit(), how do you think one process
-can help you now ?
+	Ingo
+
+------------------>
+Siddhesh Poyarekar (1):
+      x86_64: Record stack pointer before task execution begins
 
 
+ arch/x86/kernel/process_64.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 1fd94bc..eb54dd0 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -341,6 +341,7 @@ start_thread_common(struct pt_regs *regs, unsigned long new_ip,
+ 	loadsegment(es, _ds);
+ 	loadsegment(ds, _ds);
+ 	load_gs_index(0);
++	current->thread.usersp	= new_sp;
+ 	regs->ip		= new_ip;
+ 	regs->sp		= new_sp;
+ 	percpu_write(old_rsp, new_sp);
