@@ -1,166 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab2CSHOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 03:14:03 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52175
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755380Ab2CSHOA (ORCPT
+	id S1758167Ab2CSHOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 03:14:24 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:53631 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758051Ab2CSHOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 03:14:00 -0400
-Date: Mon, 19 Mar 2012 03:13:58 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/4] writeback: Refactor writeback_single_inode()
-Message-ID: <20120319071358.GC11113@infradead.org>
-References: <1331283748-12959-1-git-send-email-jack@suse.cz>
- <1331283748-12959-4-git-send-email-jack@suse.cz>
+	Mon, 19 Mar 2012 03:14:22 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 07/10] hugetlbfs: Add memcg control files for hugetlbfs
+In-Reply-To: <4F66A059.20801@jp.fujitsu.com>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F66A059.20801@jp.fujitsu.com>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 19 Mar 2012 12:44:11 +0530
+Message-ID: <87wr6hjc58.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331283748-12959-4-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+x-cbid: 12031821-1618-0000-0000-00000118E3F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 10:02:27AM +0100, Jan Kara wrote:
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/fs-writeback.c                |  264 +++++++++++++++++++++-----------------
->  include/trace/events/writeback.h |   36 ++++-
->  2 files changed, 174 insertions(+), 126 deletions(-)
-
-Can you split this into a more gradual patch series?  This a a huge
-change of lots of little bits in a very sensitive area.
-
->
+On Mon, 19 Mar 2012 11:56:25 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/03/17 2:39), Aneesh Kumar K.V wrote:
 > 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index be84e28..1e8bf44 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -231,11 +231,7 @@ static void requeue_io(struct inode *inode, struct bdi_writeback *wb)
->  
->  static void inode_sync_complete(struct inode *inode)
->  {
-> -	/*
-> -	 * Prevent speculative execution through
-> -	 * spin_unlock(&wb->list_lock);
-> -	 */
-> -
-> +	inode->i_state &= ~I_SYNC;
->  	smp_mb();
->  	wake_up_bit(&inode->i_state, __I_SYNC);
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > This add control files for hugetlbfs in memcg
+> > 
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> 
+> I have a question. When a user does
+> 
+> 	1. create memory cgroup as
+> 		/cgroup/A
+> 	2. insmod hugetlb.ko
+> 	3. ls /cgroup/A
+> 
+> and then, files can be shown ? Don't we have any problem at rmdir A ?
+> 
+> I'm sorry if hugetlb never be used as module.
 
-E.g. Moving the I_SYNC clearing later should be a small patch of it's
-own with a changelog describing why it is safe.
+HUGETLBFS cannot be build as kernel module
 
-> -static void inode_wait_for_writeback(struct inode *inode,
-> -				     struct bdi_writeback *wb)
-> +static void inode_wait_for_writeback(struct inode *inode)
->  {
->  	DEFINE_WAIT_BIT(wq, &inode->i_state, __I_SYNC);
->  	wait_queue_head_t *wqh;
-> @@ -340,70 +335,34 @@ static void inode_wait_for_writeback(struct inode *inode,
->  	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
->  	while (inode->i_state & I_SYNC) {
->  		spin_unlock(&inode->i_lock);
-> -		spin_unlock(&wb->list_lock);
->  		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
-> -		spin_lock(&wb->list_lock);
->  		spin_lock(&inode->i_lock);
->  	}
->  }
 
-Ditto for why calling inode_wait_for_writeback without the list_lock
-is fine now.
+> 
+> a comment below.
+> 
+> > ---
+> >  include/linux/hugetlb.h    |   17 +++++++++++++++
+> >  include/linux/memcontrol.h |    7 ++++++
+> >  mm/hugetlb.c               |   25 ++++++++++++++++++++++-
+> >  mm/memcontrol.c            |   48 ++++++++++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 96 insertions(+), 1 deletions(-)
 
->  
->  /*
-> + * Do real work connected with writing out inode and its dirty pages.
 
-    * Write out an inode and its dirty pages, but do not update the
-      writeback list linkage, which is left to the caller.
+......
 
-> + * The function must be called with i_lock held and drops it.
+> > 
+> > +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> > +static char *mem_fmt(char *buf, unsigned long n)
+> > +{
+> > +	if (n >= (1UL << 30))
+> > +		sprintf(buf, "%luGB", n >> 30);
+> > +	else if (n >= (1UL << 20))
+> > +		sprintf(buf, "%luMB", n >> 20);
+> > +	else
+> > +		sprintf(buf, "%luKB", n >> 10);
+> > +	return buf;
+> > +}
+> > +
+> > +int mem_cgroup_hugetlb_file_init(int idx)
+> > +{
+> 
+> 
+> __init ? 
 
-Can we avoid these assymetric calling conventions if possible?  If not
-pleae add least add the sparse locking context annotations.
+Added .
 
-> + * I_SYNC flag of the inode must be clear on entry and the function returns
-> + * with I_SYNC set. Caller must call inode_sync_complete() when it is done
-> + * with postprocessing of the inode.
+>And... do we have guarantee that this function is called before
+> creating root mem cgroup even if CONFIG_HUGETLBFS=y ?
+> 
 
-Ewww..
+Yes. This should be called before creating root mem cgroup.
 
->  
->  	ret = do_writepages(mapping, wbc);
->  
-> @@ -424,6 +383,9 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
->  	 * write_inode()
->  	 */
->  	spin_lock(&inode->i_lock);
-> +	/* Didn't write out all pages or some became dirty? */
-> +	if (mapping_tagged(inode->i_mapping, PAGECACHE_TAG_DIRTY))
-> +		inode->i_state |= I_DIRTY_PAGES;
+-aneesh
 
-Where did this hunk come from?
-
-> +	if (inode->i_state & I_FREEING)
-> +		goto out_unlock;
-
-> +	if (inode->i_state & I_DIRTY)
-> +		redirty_tail(inode, wb);
-> +	else
-> +		list_del_init(&inode->i_wb_list);
-
-These lines should be factored into a small helper shared with the
-writeback thread code, which would also avoid the out_unlock goto.
-
-> @@ -580,24 +587,51 @@ static long writeback_sb_inodes(struct super_block *sb,
->  			redirty_tail(inode, wb);
->  			continue;
->  		}
-> +		if (inode->i_state & I_SYNC && work->sync_mode != WB_SYNC_ALL) {
-
-Please add braces around the inode->i_state & I_SYNC.
-
-> +		if (inode->i_state & I_FREEING)
-> +			goto continue_unlock;
-> +		/*
-> +		 * Sync livelock prevention. Each inode is tagged and synced in
-> +		 * one shot. If still dirty, it will be redirty_tail()'ed in
-> +		 * inode_wb_requeue(). We update the dirty time to prevent
-> +		 * queueing and syncing it again.
-> +		 */
-> +		if ((inode->i_state & I_DIRTY) &&
-> +		    (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages))
-> +			inode->dirtied_when = jiffies;
-> +		inode_wb_requeue(inode, wb, &wbc);
-> +continue_unlock:
-
-I'd rather have the non-freeing code indentented one more level than the
-goto magic here.  What's the problem with moving the dirtied_when update
-into inode_wb_requeue, which would make the whole thing a lot more
-readable?
-
-(Also factoring out inode_wb_requeue would be another good split patch)
-
-> +		inode_sync_complete(inode);
->  		spin_unlock(&inode->i_lock);
->  		spin_unlock(&wb->list_lock);
->  		iput(inode);
-> @@ -796,8 +830,10 @@ static long wb_writeback(struct bdi_writeback *wb,
->  			trace_writeback_wait(wb->bdi, work);
->  			inode = wb_inode(wb->b_more_io.prev);
->  			spin_lock(&inode->i_lock);
-> +			spin_unlock(&wb->list_lock);
-> +			inode_wait_for_writeback(inode);
->  			spin_unlock(&inode->i_lock);
-> +			spin_lock(&wb->list_lock);
->  		}
