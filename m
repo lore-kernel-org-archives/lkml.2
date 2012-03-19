@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab2CSNAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:00:01 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58296 "EHLO
+	id S1031140Ab2CSNBr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:01:47 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53199 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758520Ab2CSM77 (ORCPT
+	with ESMTP id S1758728Ab2CSNBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:59:59 -0400
+	Mon, 19 Mar 2012 09:01:46 -0400
 MIME-Version: 1.0
-Date: Mon, 19 Mar 2012 20:59:59 +0800
-Message-ID: <CAJd=RBAYQYCaUFUY1xNOFhjLyvoYWUAKJy5Xgk197Z1VH5Q8Tg@mail.gmail.com>
-Subject: [PATCH 2/2] autonuma: fix typo in blind balance
-From: Hillf Danton <dhillf@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Date: Mon, 19 Mar 2012 18:31:44 +0530
+Message-ID: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
+Subject: Not able to use HIGH_RES_TIMERS on ARM
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since it is certain that nid is not online in each round of for-loop,
-it is replaced with given node id.
+Hi John, refering to you patch:
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+ARM: remove 'select GENERIC_TIME'
+GENERIC_TIME is now enabled by default, so 'select GENERIC_TIME' is
+redundant.  Remove them.
 
---- a/kernel/sched/numa.c	Sat Mar 17 11:01:40 2012
-+++ b/kernel/sched/numa.c	Mon Mar 19 20:04:00 2012
-@@ -34,7 +34,7 @@ static int autonuma_balance_blind(struct
- 		selected_nid = cpu_nid;
+The following config's are not selectable:
+config NO_HZ, config HIGH_RES_TIMERS, config IRQSOFF_TRACER, config
+PREEMPT_TRACER
 
- 		nr_mm_max = 0;
--		for_each_cpu_and(cpu, cpumask_of_node(nid), allowed) {
-+		for_each_cpu_and(cpu, cpumask_of_node(cpu_nid), allowed) {
- 			struct rq *rq = cpu_rq(cpu);
- 			if (rq->curr->mm == mm)
- 				nr_mm_max++;
---
+As far as I know, ARM now uses GENERIC_TIME via the arch_getoffset()
+infrastructure, i.e ARCH_USES_GETTIMEOFFSET=y
+
+diff -Naurp -X linux-3.0.20/Documentation/dontdiff
+linux-3.0.20/kernel/time/Kconfig
+linux-3.0.20-dirty/kernel/time/Kconfig
+--- linux-3.0.20/kernel/time/Kconfig    2012-02-06 23:01:45.000000000 +0530
++++ linux-3.0.20-dirty/kernel/time/Kconfig      2012-03-19
+18:22:32.000000000 +0530
+@@ -6,7 +6,7 @@ config TICK_ONESHOT
+
+ config NO_HZ
+        bool "Tickless System (Dynamic Ticks)"
+-       depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
++       depends on GENERIC_CLOCKEVENTS
+        select TICK_ONESHOT
+        help
+          This option enables a tickless system: timer interrupts will
+@@ -15,7 +15,7 @@ config NO_HZ
+
+ config HIGH_RES_TIMERS
+        bool "High Resolution Timer Support"
+-       depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
++       depends on GENERIC_CLOCKEVENTS
+        select TICK_ONESHOT
+        help
+          This option enables high resolution timer support. If your
+diff -Naurp -X linux-3.0.20/Documentation/dontdiff
+linux-3.0.20/kernel/trace/Kconfig
+linux-3.0.20-dirty/kernel/trace/Kconfig
+--- linux-3.0.20/kernel/trace/Kconfig   2012-02-06 23:01:45.000000000 +0530
++++ linux-3.0.20-dirty/kernel/trace/Kconfig     2012-03-19
+18:21:41.000000000 +0530
+@@ -173,7 +173,6 @@ config IRQSOFF_TRACER
+        bool "Interrupts-off Latency Tracer"
+        default n
+        depends on TRACE_IRQFLAGS_SUPPORT
+-       depends on !ARCH_USES_GETTIMEOFFSET
+        select TRACE_IRQFLAGS
+        select GENERIC_TRACER
+        select TRACER_MAX_TRACE
+@@ -195,7 +194,6 @@ config IRQSOFF_TRACER
+ config PREEMPT_TRACER
+        bool "Preemption-off Latency Tracer"
+        default n
+-       depends on !ARCH_USES_GETTIMEOFFSET
+        depends on PREEMPT
+        select GENERIC_TRACER
+        select TRACER_MAX_TRACE
