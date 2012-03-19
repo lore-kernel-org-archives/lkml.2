@@ -1,58 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab2CSLdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 07:33:45 -0400
-Received: from mail.southpole.se ([193.12.106.18]:40194 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab2CSLdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 07:33:43 -0400
-Message-ID: <1332156798.2068.11.camel@jerome.southpole.se>
-Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include
- asm-generic/cmpxchg-local.h [ver #2]
-From: Jonas Bonn <jonas@southpole.se>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux@openrisc.net, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, hpa@zytor.com,
-        torvalds@linux-foundation.org
-Date: Mon, 19 Mar 2012 12:33:18 +0100
-In-Reply-To: <4913.1332154287@redhat.com>
-References: <1331746607.5104.93.camel@jerome.southpole.se>
-	 <1331738610.5104.84.camel@jerome.southpole.se>
-	 <1331736182.5104.74.camel@jerome.southpole.se>
-	 <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com>
-	 <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
-	 <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
-	 <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com>
-	 <18016.1331738258@redhat.com> <21309.1331744879@redhat.com>
-	  <4913.1332154287@redhat.com>
+	id S1757572Ab2CSLeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 07:34:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47302 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752350Ab2CSLen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 07:34:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120579251"
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+ __dma_request_channel()
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Jassi Brar <jassisinghbrar@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com>
+References: <1331101687.24656.319.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	 <1331188201.4657.51.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+	 <1331204128.4657.54.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	 <1331206459.4657.59.camel@vkoul-udesk3>
+	 <1331211513.4657.67.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
+	 <1331284918.4657.69.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
+	 <1331285959.4657.76.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
+	 <1331520476.4657.79.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
+	 <CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 7bit
+Date: Mon, 19 Mar 2012 17:09:04 +0530
+Message-ID: <1332157144.7180.7.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 56801-00431
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mon, 2012-03-19 at 10:51 +0000, David Howells wrote:
-> Jonas Bonn <jonas@southpole.se> wrote:
+On Fri, 2012-03-16 at 11:16 +0100, Linus Walleij wrote:
+> On Fri, Mar 16, 2012 at 10:36 AM, Guennadi Liakhovetski
+> <g.liakhovetski@gmx.de> wrote:
 > 
-> > or32-linux is supported in the toolchain from openrisc.net.  Likewise
-> > or32-elf... follow the instructions (the easy ones should work) on the
-> > link I sent you -- the submodules in the "toolchain" repo are from the
-> > openrisc git repo and contain everything that is needed.
+> > Ok, let me try to summarise, what this would mean for sh-mobile:
+> >
+> > 1. this proposal introduces a new special case: with or without a mapping,
+> > that will have to be handled in affected client and DMA controller
+> > drivers. E.g., on sh-mobile some devices might on some systems use
+> > channels from "general purpose" DMA controllers (no mapping), on other
+> > systems it will be a dedicated controller (fixed mapping).
+> >
+> > 2. this will break, if we get more than 1 "general purpose" type with
+> > different supported client sets. So, we develop a new API with a
+> > pre-programmed limitation.
 > 
-> I would like to include support as part of my mass-build cross-compiler RPMs.
-> Do you have patches anywhere against upstream binutils and gcc that I might
-> apply to mine?
+> I fail to see why this would not be solved by a one-to-many mapping?
+> 
+> Flag for each device which channels it may use in a mapping
+> table in platform data or device tree, I don't see the problem.
+> 
+> You don't even have to specify that on a per-channel basis if
+> you can come up with something more clever in the mapping
+> table, such as "this device can use any channel on this DMAC,
+> and channels 1-7 on that DMAC" - no problem?
+Thats why added channel number to your proposal :)
+> 
+> > 3. this will mean a substantial driver and platform code modification.
+> > Nothing super-complex, but still some.
+> 
+> Big deal. Refactoring is fun... ;-)
+> 
+> > 4. we'll need a 3-stage channel allocation / configuration: request,
+> > filter, config.
+> 
+> In my world: channel request with *NO* filter function.
+> 
+> Filter functions are part of the problem. So we refactor these
+> away as part of this change. That's the whole point...
+> 
+> The core gathers information from the platform and the
+> DMAC driver(s) to build up the constraints necessary to
+> hand out workling channels to each device that request
+> one.
+> 
+> And Russell IIRC already suggested a request-and-config
+> channel inline for the simple cases, and if you still need to
+> explicitly runtime-reconfigure then that's for a good
+> reason.
+> 
+> > Whereas with my configuration-parameter proposal it's just
+> > one stage: allocate-and-configure.
+> 
+> For one specific hardware, yes. For DMAengine at large
+> and the majority of the drivers, no.
+right, and that is my main concern.
+> 
+> Yours,
+> Linus Walleij
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I could certainly put together such patches for you.  What upstream
-versions are you using?
 
-/Jonas
+-- 
+~Vinod
 
