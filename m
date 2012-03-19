@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030528Ab2CSGgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:36:07 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:56890
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030324Ab2CSGgB (ORCPT
+	id S932314Ab2CSGiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:38:17 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42338 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805Ab2CSGiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:36:01 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zcb8kz1503M936eK1dbaL1432N98dK4015I1381ozz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M14CZT-02-2E5-02
-X-M-MSG: 
-Date: Mon, 19 Mar 2012 14:35:45 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 5/8] libata-acpi: add ata port runtime D3Cold
- support
-Message-ID: <20120319063544.GA2707@localhost.amd.com>
-References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
- <1330592577-16546-6-git-send-email-ming.m.lin@intel.com>
- <20120319033616.GA32695@localhost.amd.com>
- <1332134820.17875.17.camel@minggr>
+	Mon, 19 Mar 2012 02:38:15 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 02/10] hugetlbfs: don't use ERR_PTR with VM_FAULT* values
+In-Reply-To: <4F6695EC.2060208@jp.fujitsu.com>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F6695EC.2060208@jp.fujitsu.com>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 19 Mar 2012 12:07:47 +0530
+Message-ID: <877gyhksec.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1332134820.17875.17.camel@minggr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 19 Mar 2012 06:35:45.0862 (UTC) FILETIME=[83D6FE60:01CD059A]
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12031821-3568-0000-0000-00000161AF27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Mar 19, 2012 at 01:27:00PM +0800, Lin Ming wrote:
-> On Mon, 2012-03-19 at 11:36 +0800, Aaron Lu wrote:
-> > Hi,
+On Mon, 19 Mar 2012 11:11:56 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/03/17 2:39), Aneesh Kumar K.V wrote:
+> 
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > > 
-> > On Thu, Mar 01, 2012 at 05:02:54PM +0800, Lin Ming wrote:
-> > > ATA port may support runtime D3Cold state, for example, Zero-power ODD case.
-> > > This patch adds wakeup notifier and enable/disable run_wake during
-> > > supend/resume.
+> > Using VM_FAULT_* codes with ERR_PTR will require us to make sure
+> > VM_FAULT_* values will not exceed MAX_ERRNO value.
 > > 
-> > I've been thinking this for some time and realized that it would be
-> > impossible for AMD's platform to work with this patch, the reason:
-> > There is no _PRW in AMD's acpi implementation. And no _PRW would mean
-> > the device is not wake up capable in current Linux ACPI implementation.
-> > 
-> > I've checked the ACPI spec and it said: 'the _PRW is only required for
-> > devices that have the ability to wake the system from a system sleeping
-> > state.'
-> > So I'm not sure if _PRW fits here, since the most common use case for
-> > zpodd would be: odd put to D3 cold and system is at S0, and odd is back
-> > to D0 when necessary without affecting the system sleep state.
-> > 
-> > I suggest we install the acpi pm notifier on the handle based on the
-> > following two criteria:
-> > 1 This ata device is DA capable;
-> > 2 Its acpi device indicates it is able to wake up itself in S0(_S0W
-> > evaluates 4).
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 > 
-> OK, reasonable to me.
 > 
-> > 
-> > Does this make sense and will this work for your platform?
+> Is this a bug fix ?
+
+No. Currently the values of VM_FAULT_* codes are all below MAX_ERRNO. The
+changes in the patch are done based on the suggestion from Andrew. 
+
+http://article.gmane.org/gmane.linux.kernel.cgroups/1160
+
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> Yes.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-
-Great ;-)
-
-> > 
-> > Another problem is how to place this ODD device into D3 cold state,
-> > since our platform uses _PS3 control method to power off it. Do you have
-> > any suggestions?
-> 
-> acpi_bus_set_power will execute _PS3 too.
-> 
-> So I think no problem for AMD's platform.
-> 
-
-Sorry I didn't make it clear.
-The problem here is, we are going to set the device power state to D3
-cold, and current OSPM has no support for it.
-
-Another patch of yours solved this problem by defining:
-1 Device supports D3 cold if it has _PR3;
-2 For a device to be put to D3 cold, power off all the power resources
-referenced in its _PR3.
-
-Since this can't work for AMD's platform(there is no _PR3 for the sata
-acpi device), I would like to change this a little bit:
-1 Device supports D3 cold if it has _PR3 or _PS3;
-2 For a device to be put to D3 cold, execute _PS3 first if available and
-then deal with _PR3 as above.
-
-What do you think of this?
-If you are OK to the above idea, I can change the corresponding patch for
-you to review.
-
-Thanks,
-Aaron
-
 
