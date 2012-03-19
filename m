@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab2CSFWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:22:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22320 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754917Ab2CSFWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:22:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120484118"
-Date: Mon, 19 Mar 2012 13:16:36 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/4] Get rid of iput() from flusher thread
-Message-ID: <20120319051636.GB5191@localhost>
-References: <1331283748-12959-1-git-send-email-jack@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331283748-12959-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755683Ab2CSFZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:25:15 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:62807 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab2CSFZN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 01:25:13 -0400
+From: hamo.by@gmail.com
+To: mmarek@suse.cz, rostedt@goodmis.org, sboyd@codeaurora.org,
+        adobriyan@gmail.com, imunsie@au1.ibm.com
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Yang Bai <hamo.by@gmail.com>
+Subject: [PATCH][RESEND] scripts: refactor remove structure forward declarations
+Date: Mon, 19 Mar 2012 13:24:24 +0800
+Message-Id: <4f66c337.473f440a.7ece.2904@mx.google.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 10:02:24AM +0100, Jan Kara wrote:
-> 
->   Hi,
-> 
->   this patch set changes writeback_sb_inodes() to avoid iput() which might
-> be problematic (see patch 4 which tries to summarize our email discussions)
-> for some filesystems.
-> 
->   Patches 1 and 2 are trivial mostly unrelated fixes (Fengguang, can you can
-> take these and merge them right away please?).
+From: Yang Bai <hamo.by@gmail.com>
 
-Sure, they have been tested in linux-next for some days.
+Since now it has some problems when generate TAGS,
+refactor this code. Now it will not show the error
+message and will remove declarations using emacs etags.
 
-> Patch 3 is a preparatory code
-> reshuffle and patch 4 removes the __iget() / iput() from flusher thread.
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ scripts/tags.sh |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-These are pretty sane changes towards the right direction (in despite
-of the complexities involved).
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 833813a..2b377fc 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -166,9 +166,6 @@ exuberant()
+ 	all_defconfigs | xargs -r $1 -a                         \
+ 	--langdef=dotconfig --language-force=dotconfig          \
+ 	--regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
+-
+-	# Remove structure forward declarations.
+-	LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
+ }
+ 
+ emacs()
+@@ -233,6 +230,7 @@ if [ "${ARCH}" = "um" ]; then
+ 	fi
+ fi
+ 
++remove_structs=
+ case "$1" in
+ 	"cscope")
+ 		docscope
+@@ -245,10 +243,17 @@ case "$1" in
+ 	"tags")
+ 		rm -f tags
+ 		xtags ctags
++		remove_structs=y
+ 		;;
+ 
+ 	"TAGS")
+ 		rm -f TAGS
+ 		xtags etags
++		remove_structs=y
+ 		;;
+ esac
++
++# Remove structure forward declarations.
++if [ -n $remove_structs ]; then
++    LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' $1
++fi
+-- 
+1.7.9.1
 
->   As a side note, your patches to offload writeback from kswapd to flusher
-> thread then won't need iget/iput either if we pass page references as we talked
-> so that should resolve most of the concerns.
-> 
->   What do you think guys?
-
-I appreciate the work a lot. Thank you for removing the major problem
-with the patches on pageout writeback work :-)
-
-Regards,
-Fengguang
