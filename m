@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab2CSTly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:41:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759297Ab2CSTlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:41:52 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <161084.1332177826@turing-police.cc.vt.edu>
-References: <161084.1332177826@turing-police.cc.vt.edu> <1121.1332169437@redhat.com> <20120318235114.GA30497@thor.bakeyournoodle.com> <20120318184105.GC2095@windriver.com> <9942.1332170491@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: dhowells@redhat.com, Tony Breeds <tony@bakeyournoodle.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: triage for March 18, 2012
-Date: Mon, 19 Mar 2012 19:41:44 +0000
-Message-ID: <8010.1332186104@redhat.com>
+	id S1759378Ab2CSTnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:43:13 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33075 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759297Ab2CSTnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 15:43:11 -0400
+Date: Mon, 19 Mar 2012 15:38:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
+        midgoon@gmail.com
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot
+Message-ID: <20120319193842.GA8123@phenom.dumpdata.com>
+References: <20120125000434.GC13655@zod.bos.redhat.com>
+ <1327454651.27983.7.camel@sbsiddha-desk.sc.intel.com>
+ <20120125134947.GF13655@zod.bos.redhat.com>
+ <1327529048.2327.17.camel@sbsiddha-mobl2>
+ <20120125231534.GL13655@zod.bos.redhat.com>
+ <20120131142621.GA2136@zod.bos.redhat.com>
+ <1328083230.3638.2.camel@sbsiddha-mobl2>
+ <20120312132448.GA20204@zod.bos.redhat.com>
+ <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
+ <20120319133046.GB13093@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120319133046.GB13093@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4F678C43.00AC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu wrote:
-
-> Umm.. it's not clear to *me* that it's intended to be a negative 16 bit?  Or
-> am I just missing context not present in the patch?
+On Mon, Mar 19, 2012 at 09:30:46AM -0400, Josh Boyer wrote:
+> On Mon, Mar 12, 2012 at 11:36:33AM -0700, Suresh Siddha wrote:
+> > On Mon, 2012-03-12 at 09:24 -0400, Josh Boyer wrote:
+> > > On Wed, Feb 01, 2012 at 12:00:30AM -0800, Suresh Siddha wrote:
+> > > > Yes, it was helpful. Something like the appended patch should ignore the
+> > > > bogus io-apic entry all together. As I can't test this, can you or the
+> > > > reporter give the appended patch a try and ack please?
+> > > 
+> > > Hi Suresh,
+> > > 
+> > > Apologies for the delay.  The original reporter had to return the
+> > > machine he was using.  We've since had another report where this
+> > > happened and your patch below does indeed fix the issue.
+> > > 
+> > > I'd suggest pushing this soon.
+> > > 
+> > > https://bugzilla.redhat.com/show_bug.cgi?id=801501
+> > > 
+> > 
+> > Thanks Josh. Peter/Ingo, please queue the appended patch for -tip.
 > 
-> (I have no idea if the rest of the patch is OK or not, but that comment
-> didn't give me warm fuzzies....)
+> Hi Suresh,
+> 
+> Seems this patch and Xen don't get along very well.  See the bug link
+> below.  I've CC'd Konrad and hopefully he'll have some insight as to why
+> that might be.
 
-Sorry, I haven't explained it well.
+Quick glance at the code tells me that the 'mp_register_ioapic' with the
+patch won't increment the gsi_top. That value (gsi_top) is used in
+'get_nr_irqs_gsi()'.  And that function is used:
 
-The patch permits a 64-bit hosted assembler to represent a large 32-bit
-unsigned integer (such as 0xfffffff1) as a negative integer where the
-instruction being assembled has a signed immediate operand.
+#ifdef CONFIG_X86_IO_APIC
+        /*   
+         * For an HVM guest or domain 0 which see "real" (emulated or
+         * actual respectively) GSIs we allocate dynamic IRQs
+         * e.g. those corresponding to event channels or MSIs
+         * etc. from the range above those "real" GSIs to avoid
+         * collisions.
+         */
+        if (xen_initial_domain() || xen_hvm_domain())
+                first = get_nr_irqs_gsi();
+#endif
 
-For instance, the ANDI instruction on FRV takes a small signed integer (10
-bits IIRC) that it sign-extends to 32-bits before using - so to clear a single
-low-order bit, I pass in, say, ~0x2 and the assembler represents this as a
-negative value.
+So we get 'first' to be 16 instead of the proper GSI number.. Or perhaps
+it is some other bizzare number. Would need to instrument this.
 
-The problem was that in a 64-bit hosted assembler, the unsigned 32-bit integer
-gets converted to an unsigned 64-bit integer - which doesn't then appear
-negative (whereas in a 32-bit hosted assembler it does).
 
-David
+Now, the reason that read to the IOAPIC:
+[    0.000000] I/O APIC 0xfec00000 regs return all ones, skipping!
+
+is b/c we aren't suppose to read the APIC entries at all. There was
+some discussion between Ingo (or Peter?) and Jeremy years ago about a pvops call
+to do a hypercall to read said entries but it was established that the
+initial domain should have no such business. As such it does this:
+
+2066         memset(dummy_mapping, 0xff, PAGE_SIZE);
+
+and :
+1899                  * We just don't map the IO APIC - all access is via
+1900                  * hypercalls.  Keep the address in the pte for reference.
+1901                  */
+1902                 pte = pfn_pte(PFN_DOWN(__pa(dummy_mapping)), PAGE_KERNEL);
+1903                 break;
+
+[ignore that comment, there are no hypercalls for it]. This is in arch/x86/xen/mmu.c
+So the IO_APIC is all 0xfff.. 
+
+
