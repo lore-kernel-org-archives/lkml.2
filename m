@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab2CSH36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 03:29:58 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18111 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab2CSH3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 03:29:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 19 Mar 2012 00:29:44 -0700
-Message-ID: <4F66DF25.9000909@nvidia.com>
-Date: Mon, 19 Mar 2012 12:54:21 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1758088Ab2CSHbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 03:31:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35848 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752001Ab2CSHbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 03:31:36 -0400
+X-IronPort-AV: E=Sophos;i="4.73,611,1325433600"; 
+   d="scan'208";a="4566744"
+Message-ID: <4F66E14F.3040809@cn.fujitsu.com>
+Date: Mon, 19 Mar 2012 15:33:35 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "david@protonic.nl" <david@protonic.nl>,
-        "tklauser@distanz.ch" <tklauser@distanz.ch>,
-        "alexander.stein@informatik.tu-chemnitz.de" 
-	<alexander.stein@informatik.tu-chemnitz.de>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1] input: keyboard: gpio: Support for interrupt only
- key
-References: <1331715123-15099-1-git-send-email-ldewangan@nvidia.com> <20120314160011.GA12987@core.coreip.homeip.net> <20120319060610.GA8835@core.coreip.homeip.net>
-In-Reply-To: <20120319060610.GA8835@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F58664D.1070800@cn.fujitsu.com>
+In-Reply-To: <4F58664D.1070800@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-19 15:29:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-19 15:29:27,
+	Serialize complete at 2012-03-19 15:29:27
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-On Monday 19 March 2012 11:36 AM, Dmitry Torokhov wrote:
->
-> OK, so I am generally happy with the patch; the only issue is that in
-> interrupt mode the only event type that makes sense is EV_KEY so we need
-> to make sure we do not accept anything else.
->
-
-Thanks for taking care of patch. I am ok with this policy.
-
-> Also, I do not think that having button_irq() that is called all the
-> time is the best solution; I;d rather pulled RQ number up into button
-> data.
->
-
-Yes, this is nice cleanups.
-
-> I tried doing the above in the patch below. Please let me know if it
-> still works for you. Note that it depends on some other patches for
-> gpio_keys that I have; I am attaching them for your reference.
->
-
-This works fine with one small change.
-The function gpio_keys_report_event() is gettign called from probe for 
-initialing the key state. This function should bypass if it is not the 
-gpio based otherwise system crash.
-I made following change and after that it works fine.
-
-static void gpio_keys_report_event(struct gpio_button_data *bdata)
-{
-     const struct gpio_keys_button *button = bdata->button;
-     struct input_dev *input = bdata->input;
-     unsigned int type = button->type ?: EV_KEY;
-     int state;
-
-     if (!gpio_is_valid(button->gpio))
-         return;
-
-     state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ 
-button->active_low;
+At 03/08/2012 03:57 PM, Wen Congyang Wrote:
+> We can know the guest is paniced when the guest runs on xen.
+> But we do not have such feature on kvm.
+> 
+> Another purpose of this feature is: management app(for example:
+> libvirt) can do auto dump when the guest is crashed. If management
+> app does not do auto dump, the guest's user can do dump by hand if
+> he sees the guest is paniced.
+> 
+> I touch the hypervisor instead of using virtio-serial, because
+> 1. it is simple
+> 2. the virtio-serial is an optional device, and the guest may
+>    not have such device.
+> 
+> Changes from v2 to v3:
+> 1. correct spelling
+> 
+> Changes from v1 to v2:
+> 1. split up host and guest-side changes
+> 2. introduce new request flag to avoid changing return values.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
+Hi all:
+
+we neet this feature, but we don't decide how to implement it.
+We have two solution:
+1. use vmcall
+2. use virtio-serial.
+
+I will not change this patch set before we decide how to do it.
+Can we make a decision recent days?
+
+Thanks
+Wen Congyang
