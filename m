@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030292Ab2CSNwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:52:43 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:15861 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab2CSNwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 09:52:42 -0400
-Message-ID: <4F673A20.9020505@siemens.com>
-Date: Mon, 19 Mar 2012 14:52:32 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1030473Ab2CSNyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:54:06 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25956 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754090Ab2CSNyE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 09:54:04 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: IbGsImMVM1lfEkDimj.2BnXR1mH9oiPl1XBtbiV1lALYFlj
+ uKbrB7ZViKxil4vLnD4Z2IsmBkG3cmQsNlOz1zL7npEFW7hShdy_IidX78hZ
+ jvEGCgf4y32PJuvF3YjwBPce8JUJXWSeTIEbjfwt3K5wGBpKo4ZIaG_XBoF.
+ dzWF9z2cfQsl65mnWYErMLgRc6q4.8KlzjVmQatKWmjfpF5zoOWSGhREnJml
+ Ni4fqb2g1fgAoByYuoetSs8Dy4k4eZwbJSVFuxKseoi2dCuHmmDryGB8buBE
+ 7AZRgx9NCJNZABmTjaQfijAfih0wglnTSpxGzna6G0f6M2GHj56cAoieu_x6
+ gioRh6n0TUMBR0ld1XVuOZziz7GKl1f.sQ93xMES.g7yoS4i3QN8DN2jLuJt
+ A08S_X3fR6.nGp4sgdH.Kw80UPN2nQzCI7yvS
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 19 Mar 2012 08:53:57 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
+In-Reply-To: <1331932375.18960.237.camel@twins>
+Message-ID: <alpine.DEB.2.00.1203190852380.16879@router.home>
+References: <20120316144028.036474157@chello.nl> <20120316144240.763518310@chello.nl> <alpine.DEB.2.00.1203161333370.10211@router.home> <1331932375.18960.237.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgdb-bugreport@lists.sourceforge.net" 
-	<kgdb-bugreport@lists.sourceforge.net>
-Subject: Re: [PATCH 1/4] kgdb: x86: Return all segment registers also in 64-bit
- mode
-References: <cover.1331900215.git.jan.kiszka@siemens.com> <04b93bdc9d3d8ea89dc42adf055ce1c0787bb91f.1331900215.git.jan.kiszka@siemens.com> <4F636307.1050404@windriver.com>
-In-Reply-To: <4F636307.1050404@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-16 16:57, Jason Wessel wrote:
-> On 03/16/2012 07:17 AM, Jan Kiszka wrote:
->> Even if the content is always 0, gdb expects us to return also ds,
->> es, fs, and gs while in x86-64 mode. Do this to avoid ugly errors on
->> "info registers".
->>
->> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
->> ---
->>  arch/x86/include/asm/kgdb.h |    6 +++++-
->>  arch/x86/kernel/kgdb.c      |    6 ++++--
->>  2 files changed, 9 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/kgdb.h b/arch/x86/include/asm/kgdb.h
->> index 77e95f5..e857f1a 100644
->> --- a/arch/x86/include/asm/kgdb.h
->> +++ b/arch/x86/include/asm/kgdb.h
->> @@ -64,9 +64,13 @@ enum regnames {
->>  	GDB_PS,			/* 17 */
->>  	GDB_CS,			/* 18 */
->>  	GDB_SS,			/* 19 */
->> +	GDB_DS,			/* 20 */
->> +	GDB_ES,			/* 21 */
->> +	GDB_FS,			/* 22 */
->> +	GDB_GS,			/* 23 */
->>  };
->>  #define GDB_ORIG_AX		57
->> -#define DBG_MAX_REG_NUM		20
->> +#define DBG_MAX_REG_NUM		24
->>  /* 17 64 bit regs and 3 32 bit regs */
->>  #define NUMREGBYTES		((17 * 8) + (3 * 4))
-> 
-> You bumped the register numbers correctly, but you also need to add the correct padding to the NUMREGBYTES or you might not get a large enough memory block for the register struct.
-> 
-> You added 2 32 bit regs, so it should change to:
-> 
-> /* 17 64 bit regs and 5 32 bit regs */
-> #define NUMREGBYTES        ((17 * 8) + (5 * 4))
-> 
+On Fri, 16 Mar 2012, Peter Zijlstra wrote:
 
-Oops. Most probably explains the random gs content I saw these days in a
-64-bit debugging session.
+> > > Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+> > > facilitate efficient on-demand memory migration.
+> >
+> > The numa hierachy is already complex. Could we avoid adding another layer
+> > by adding a MPOL_HOME_NODE and make that the default?
+>
+> Not sure that's really a win, the behaviour would be the same we just
+> have to implement another policy, which is likely more code.
 
-> 
-> The rest should be fine.   I can test this and add it to the merge queue with the NUMREGBYTES change, unless you disagree.
+A HOME_NODE policy would also help to ensure that existing applications
+continue to work as expected. Given that people in the HPC industry and
+elsewhere have been fine tuning around the scheduler for years this is a
+desirable goal and ensures backward compatibility.
 
-I don't disagree. :)
 
-Thanks,
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
