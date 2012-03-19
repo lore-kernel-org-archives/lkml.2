@@ -1,167 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965198Ab2CSWxn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:53:43 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:58064
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965087Ab2CSWxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:53:41 -0400
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
- correctly when SRB status is INVALID
-Thread-Topic: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
- correctly when SRB status is INVALID
-Thread-Index: AQHNBWQK0XOEnDzC00OM+NEv/bIVW5Zxy24AgAAHRECAAGULgIAAANyw
-Date: Mon, 19 Mar 2012 22:52:01 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B76A16D@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
-	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
-	 <1332173560.3152.65.camel@dabdike>
-	 <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <1332196819.3152.77.camel@dabdike>
-In-Reply-To: <1332196819.3152.77.camel@dabdike>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.70]
-Content-Type: text/plain; charset="utf-8"
+	id S1758326Ab2CSW4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:56:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53634 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131Ab2CSW4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 18:56:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
+Date: Tue, 20 Mar 2012 00:00:43 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <4F66D2E8.2090906@codeaurora.org> <201203191225.00199.rjw@sisk.pl>
+In-Reply-To: <201203191225.00199.rjw@sisk.pl>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203200000.43316.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2JMrpNN030694
 
-
-
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Monday, March 19, 2012 6:40 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result correctly
-> when SRB status is INVALID
-> 
-> On Mon, 2012-03-19 at 16:50 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > > Sent: Monday, March 19, 2012 12:13 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> > > scsi@vger.kernel.org
-> > > Subject: Re: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
-> correctly
-> > > when SRB status is INVALID
+On Monday, March 19, 2012, Rafael J. Wysocki wrote:
+> On Monday, March 19, 2012, Stephen Boyd wrote:
+> > On 3/18/2012 5:01 AM, Rafael J. Wysocki wrote:
+> > > On Sunday, March 18, 2012, Stephen Boyd wrote:
 > > >
-> > > On Sun, 2012-03-18 at 17:12 -0700, K. Y. Srinivasan wrote:
-> > > > Currently Windows hosts only support a subset of scsi commands and for
-> > > commands
-> > > > that are not supported, the host returns a generic SRB failure status.
-> > > > However, they have agreed to change the return value to indicate that
-> > > > the command is not supported. In preparation for that, handle the
-> > > > SRB_STATUS_INVALID_REQUEST return value correctly.
-> > > >
-> > > > I would like to thank Jeff Garzik <jgpobox@gmail.com> and
-> > > > Douglas Gilbert <dgilbert@interlog.com> for suggesting the correct
-> approach
-> > > > here.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > ---
-> > > >  drivers/scsi/storvsc_drv.c |   12 ++++++++++++
-> > > >  1 files changed, 12 insertions(+), 0 deletions(-)
-> > > >
-> > > > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> > > > index 44c7a48..018c363 100644
-> > > > --- a/drivers/scsi/storvsc_drv.c
-> > > > +++ b/drivers/scsi/storvsc_drv.c
-> > > > @@ -202,6 +202,7 @@ enum storvsc_request_type {
-> > > >  #define SRB_STATUS_INVALID_LUN	0x20
-> > > >  #define SRB_STATUS_SUCCESS	0x01
-> > > >  #define SRB_STATUS_ERROR	0x04
-> > > > +#define SRB_STATUS_INVALID_REQUEST 0x06
-> > >
-> > > I don't really think this is the correct approach.  We already have a
-> > > SCSI error return for this, which you're now translating in the driver
-> > > and hypervisor.  Rather than have a special byte return of
-> > > SRB_STATUS_INVALID_REQUEST, why not have the hypervisor do the right
-> > > thing and fill in the ILLEGAL_REQUEST sense return.  That way you don't
-> > > need a special error code and you don't need to construct the sense
-> > > buffer in the driver.  Now HyperV will be correctly set up for both pass
-> > > through and emulated responses.  It's surely not much work and you
-> > > already process sense data correctly in storvsc_command_completion(), so
-> > > you wouldn't need any patches to the driver for this approach.
-> >
-> > James, the issue here is that currently shipping Windows hosts don't even do
-> > what I am handling here.
+> > >> Ok. I like where nowait() is going in the other part of the thread but
+> > >> I'm still confused about when request_firmware() is correct to use. It
+> > >> seems that the function is inherently racy with freezing. Does every
+> > >> user of request_firmware() need to synchronize with freezing?
+> > >>
+> > >> For example, if one CPU is in the middle of a driver probe that makes a
+> > >> request_firmware() call and another CPU is starting to suspend we will
+> > >> have a race between usermodehelpers being disabled and the
+> > >> request_firmware() call acquiring the usermodehelper rwsem. If the
+> > >> suspending CPU wins the race it will disable usermodehelpers and the
+> > >> request_firmware() call will return -EBUSY and warn.
+> > > Yes, it will.
+> > 
+> > That sounds wrong then, no? Why don't we have request_firmware() do a
+> > read_lock on the usermodehelpers sem and then have suspend do a write
+> > lock, disable usermodehelpers, wait for any users  to finish, freeze
+> > processes and then unlock the write lock? That way we don't hit a case
+> > where request_firmware() races with suspend, and we don't have to change
+> > the warning or conditional.
 > 
-> Right, I understand that.
+> So, you're postulating that the freezing of tasks be done under
+> umhelper_sem write-locked, right?
 > 
-> >  Based on the input I got from you and Christoph,
-> > I convinced the windows team to at least return the SRB status that indicates
-> > an illegal request. I will suggest to them that perhaps they should also set the
-> > correct sense code and so I would not need this patch.
+> That would lead to freezing failures if a user space task waited in
+> request_firmware() for umhelper_sem to become available for read-locking
+> and unfortunately we don't have an interruptible variant of down_read().
 > 
-> Not also; instead of.  There's no need for an extra SRB status.  Just
-> return the standard check condition sense data.
-> 
-> >  However, keep in mind
-> > that there is no current ETA on when Windows will ship with these changes -
-> Windows 8
-> > may ship with code where they would return an invalid SRB status, but they are
-> not
-> > setting the sense code, hence this patch. When the Window host does the
-> "right thing"
-> > I will clean this up, but I don't know when that will be.
-> 
-> I thought you just said you'd only just asked them if they could
-> implemented it, in which case no version of windows currently ships with
-> this, correct?
+> However, we may catch request_firmware() and try to freeze the task
+> calling it instead.  I'll try to prototype something along these lines later
+> today (on top of the three "firmware_class" patches I posted yesterday).
 
-There are some private builds of windows 8 floating around with this change, where
-they are returning ILLEGAL_REQUEST SRB status  without any sense data.
+Well, that's going to take some more time, as it's more complicated than
+I thought initially.  Please, stay tuned.
 
-> 
-> > More importantly, the second patch  in this series where I filter out
-> > the ATA_16 command
-> > on the guest is really important for us. Without that patch on a range
-> > on windows hosts
-> > including the current beta version of windows8 where the host is
-> > returning a generic
-> > error in response to ATA_16 command, we cannot boot many Linux
-> > distros. If you
-> > prefer, I can drop the first patch and re-submit the second patch for
-> > consideration now.
-> 
-> I'm not sure about that either.  You presumably translate
-> SRB_STATUS_ERROR into DID_TARGET_FAILURE.  That should cause the
-> termination of the command with prejudice in exactly the same way as an
-> ILLEGAL_REQUEST sense code would (minus the useful error information),
-> so what's causing the boot failure?
+Thanks,
+Rafael
 
-You are right, currently without a proper SRB code, I do a DID_TARGET_FAILURE and
-this results in the device being offlined and if the device happens to be the root device,
-we obviously cannot boot. I have seen this problem with sles11 sp2 on a win8 box.
-
-Regards,
-
-K. Y
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
