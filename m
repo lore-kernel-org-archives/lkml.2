@@ -1,116 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964945Ab2CSGSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:18:07 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42090 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2CSGSB convert rfc822-to-8bit (ORCPT
+	id S1756498Ab2CSGSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:18:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35151 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118Ab2CSGSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:18:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <87aa3dxs6m.fsf@rustcorp.com.au>
-References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com> <87aa3dxs6m.fsf@rustcorp.com.au>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Mon, 19 Mar 2012 00:17:29 -0600
-Message-ID: <CAJfuBxxPY_25P70qzmEw0JgoxyCpKDuzB1vKsJR6R-GxS+NGCA@mail.gmail.com>
-Subject: Re: [00/11] pr_debug during module initialization
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, pawel.moll@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Mar 2012 02:18:10 -0400
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, lm-sensors@lm-sensors.org,
+        amit.kachhap@linaro.org, patches@linaro.org, eduardo.valentin@ti.com,
+        durgadoss.r@intel.com
+Subject: [PATCH V2 1/6] thermal: Add a new trip type to use cooling device instance number
+Date: Mon, 19 Mar 2012 11:47:39 +0530
+Message-Id: <1332137864-12943-2-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1332137864-12943-1-git-send-email-amit.kachhap@linaro.org>
+References: <1332137864-12943-1-git-send-email-amit.kachhap@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 8:04 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Wed, 14 Mar 2012 17:01:55 -0600, jim.cromie@gmail.com wrote:
->>
->> This is 3rd revision of the dyndbg modinit patches, previously sent
->> Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
->> this set reworks the remainder.
->>
->> It implements the "fake" module param approach proposed by
->> Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
->>
->> This set is on top of linux-next, since that includes Pawel Moll's
->> initcall-level params patch.  Im not using this feature, but I didnt
->> know that when I started.
->>
->> Rusty Russell did a partial review of 2nd rev (sent off-list), here:
->> http://thread.gmane.org/gmane.linux.kernel/1262934
->> This revision incorporates my understanding of his feedback.
->
-> The module parts seem fine.  The re-parsing of the commandline seems
-> weird:  I'd really rather see something in unknown_bootoption(), like:
->
->        /* Unused module parameter. */
->        if (strchr(param, '.') && (!val || strchr(param, '.') < val)) {
-> +               /* Check for <module>.dyndebug fake param */
-> +               dyndebug_parse(param, val);
->                return 0;
->        }
->
-> (Note that param will be the whole line here, eg "foo.dyndebug=+p", with
->  val pointing just past the "=" (if any)).
->
-> Of course, that means the parsing happens at that "parse_args("Booting
-> kernel"...)" point in init/main.c, which may not suit.
->
+This patch adds a new trip type THERMAL_TRIP_STATE_INSTANCE. This
+trip behaves same as THERMAL_TRIP_ACTIVE but also passes the cooling
+device instance number. This helps the cooling device registered as
+different instances to perform appropriate cooling action decision in
+the set_cur_state call back function.
 
-That is too early - the dyndbg rules cant be activated
-until dynamic_debug_init() runs, which is currently an
-arch_initcall(dynamic_debug_init);
+Also since the trip temperature's are in ascending order so some logic
+is put in place to skip the un-necessary checks.
 
-Patch 11 makes it core-initcall, (which Im not sure is ok
-for all cases, but works for me), I also tried it with
-early_initcall (and that worked too)
-but I think thats still after the Booting kernel parse.
+Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+---
+ Documentation/thermal/sysfs-api.txt |    4 +-
+ drivers/thermal/thermal_sys.c       |   45 ++++++++++++++++++++++++++++++++--
+ include/linux/thermal.h             |    1 +
+ 3 files changed, 45 insertions(+), 5 deletions(-)
 
-I *could* capture the dyndbg options during Booting kernel
-parse, and activate them once the tables are loaded,
-but this seems convoluted.
+diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+index 1733ab9..9a7c69c 100644
+--- a/Documentation/thermal/sysfs-api.txt
++++ b/Documentation/thermal/sysfs-api.txt
+@@ -184,8 +184,8 @@ trip_point_[0-*]_temp
+ 
+ trip_point_[0-*]_type
+ 	Strings which indicate the type of the trip point.
+-	E.g. it can be one of critical, hot, passive, active[0-*] for ACPI
+-	thermal zone.
++	E.g. it can be one of critical, hot, passive, active[0-1],
++	state-instance[0-*] for ACPI thermal zone.
+ 	RO, Optional
+ 
+ cdev[0-*]
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 220ce7e..9fc2150 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -192,6 +192,8 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
+ 		return sprintf(buf, "passive\n");
+ 	case THERMAL_TRIP_ACTIVE:
+ 		return sprintf(buf, "active\n");
++	case THERMAL_TRIP_STATE_INSTANCE:
++		return sprintf(buf, "state-instance\n");
+ 	default:
+ 		return sprintf(buf, "unknown\n");
+ 	}
+@@ -1034,10 +1036,10 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
+ 
+ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ {
+-	int count, ret = 0;
+-	long temp, trip_temp;
++	int count, ret = 0, inst_id;
++	long temp, trip_temp, max_state, last_trip_change = 0;
+ 	enum thermal_trip_type trip_type;
+-	struct thermal_cooling_device_instance *instance;
++	struct thermal_cooling_device_instance *instance, *state_instance;
+ 	struct thermal_cooling_device *cdev;
+ 
+ 	mutex_lock(&tz->lock);
+@@ -1086,6 +1088,43 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ 					cdev->ops->set_cur_state(cdev, 0);
+ 			}
+ 			break;
++		case THERMAL_TRIP_STATE_INSTANCE:
++			list_for_each_entry(instance, &tz->cooling_devices,
++					    node) {
++				if (instance->trip != count)
++					continue;
++
++				if (temp <= last_trip_change)
++					continue;
++
++				inst_id = 0;
++				/*
++				*For this instance how many instance of same
++				*cooling device occured before
++				*/
++
++				list_for_each_entry(state_instance,
++						&tz->cooling_devices, node) {
++					if (instance->cdev ==
++							state_instance->cdev)
++						inst_id++;
++					if (state_instance->trip == count)
++						break;
++				}
++
++				cdev = instance->cdev;
++				cdev->ops->get_max_state(cdev, &max_state);
++
++				if ((temp >= trip_temp) &&
++						(inst_id <= max_state))
++					cdev->ops->set_cur_state(cdev, inst_id);
++				else if ((temp < trip_temp) &&
++						(--inst_id <= max_state))
++					cdev->ops->set_cur_state(cdev, inst_id);
++
++				last_trip_change = trip_temp;
++			}
++			break;
+ 		case THERMAL_TRIP_PASSIVE:
+ 			if (temp >= trip_temp || tz->passive)
+ 				thermal_zone_device_passive(tz, temp,
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 796f1ff..583fbda 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -42,6 +42,7 @@ enum thermal_trip_type {
+ 	THERMAL_TRIP_PASSIVE,
+ 	THERMAL_TRIP_HOT,
+ 	THERMAL_TRIP_CRITICAL,
++	THERMAL_TRIP_STATE_INSTANCE,
+ };
+ 
+ struct thermal_zone_device_ops {
+-- 
+1.7.1
 
-Thomas' original approach (iirc, Id have to dig for the patches)
-was to reuse parse_one after filtering for dyndbg params in
-a "private" parse-args. After your earlier suggestion to use a
-callback, it occurred to me that just reusing parse_args would
-work, be fairly minimal (only 2 lines in dynamic_debug_init())
-and its already called a bunch of times; Booting kernel,
-module-load, and do-initcall-level (in Pawel's patch).
-Pawels patch doesnt do anything to avoid reparsing
-boot-time params.
-
-Does this change your weirdness assessment ?
-
-BTW, I think I can now drop ddebug_setup_string, ddebug_setup_query,
-and __setup("ddebug_query="...)
-
-
-
-Lastly, my earlier rev handled  foo.dyndbg params
-for loadable modules.  I took that out cuz
-Documentation/kernel-parameters.txt says thats
-for builtins (only, as I read it), and treating foo.dyndbg
-differently should be done w/o discussion.
-
-Is there a reason why foo.knownparam=val is not handled ?
-When I had it in, it was processed before modprobe args
-IIRC, it was /etc/modprobe.d/*, foo.dyndbg in boot-args,
-then modprobe args, which seemed correct - it let each override the
-previous settings.
-
-
-> Otherwise, all looks good!
->
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-
-thanks.  I guess the Ack (vs SOB) means that Jason should
-forward it on to Greg as a single set ?
-(subject to his Ack of course)
-
->
-> Cheers,
-> Rusty.
-> --
->  How could I marry someone with more hair than me?  http://baldalex.org
