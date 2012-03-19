@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030809Ab2CSGXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:23:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59646 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030276Ab2CSGXJ (ORCPT
+	id S1756760Ab2CSGZA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:25:00 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12312 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756207Ab2CSGY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:23:09 -0400
-Date: Mon, 19 Mar 2012 17:22:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mircea Gherzan <mgherzan@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: linux-next: manual merge of the irqdomain tree with the arm tree
-Message-Id: <20120319172254.78e16fcb56fef216cc8fafac@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Mar_2012_17_22_54_+1100_EYGk=V_rYVU.VXSu"
+	Mon, 19 Mar 2012 02:24:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 18 Mar 2012 23:24:58 -0700
+Message-ID: <4F66CFF9.3010305@nvidia.com>
+Date: Mon, 19 Mar 2012 11:49:37 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the mfd tree
+References: <20120319131345.a2f5b9983538d25c2974d344@canb.auug.org.au>
+In-Reply-To: <20120319131345.a2f5b9983538d25c2974d344@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Mar_2012_17_22_54_+1100_EYGk=V_rYVU.VXSu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-Hi Grant,
+On Monday 19 March 2012 07:43 AM, Stephen Rothwell wrote:
+> * PGP Signed by an unknown key
+>
+> Hi Samuel,
+>
+> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>
+> drivers/built-in.o: In function `rc5t583_i2c_init':
+> rc5t583.c:(.init.text+0xb3db): undefined reference to `i2c_register_driver'
+> drivers/built-in.o: In function `rc5t583_i2c_probe':
+> rc5t583.c:(.devinit.text+0x8fa0): undefined reference to `regmap_init_i2c'
+> drivers/built-in.o: In function `rc5t583_i2c_exit':
+> rc5t583.c:(.exit.text+0x708): undefined reference to `i2c_del_driver'
+>
+> Caused by commit 1b1247dd75aa ("mfd: Add support for RICOH PMIC
+> RC5T583"). Presumably some missing Kconfig dependency.
+>
+> I have ued the version of the mfd tree from next-20120316 for today.
 
-Today's linux-next merge of the irqdomain tree got a conflict in
-arch/arm/Kconfig between commit 4755ccad6d53 ("ARM: 7259/3: net: JIT
-compiler for packet filters") from the arm tree and commit 2378b56c3747
-("ARM: kconfig: always select IRQ_DOMAIN") from the irqdomain tree.
+Sorry for inconvenience.
+I sent the patch for fixing the issue as
+[PATCH V1] mfd: rc5t583: Build only if I2C config is selected to y.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The issue which I saw is that if CONFIG_I2C=m then also rx5t583.c is 
+gettign compiled and so generating the linking error.
+With fix, compiling only if the CONFIG_i2C=y.
 
-diff --cc arch/arm/Kconfig
-index 3795400,c857283..0000000
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@@ -33,7 -31,8 +33,8 @@@ config AR
-  	select GENERIC_IRQ_SHOW
-  	select CPU_PM if (SUSPEND || CPU_IDLE)
-  	select GENERIC_PCI_IOMAP
- +	select HAVE_BPF_JIT
-+ 	select IRQ_DOMAIN
-  	help
-  	  The ARM series is a line of low-power-consumption RISC chip designs
-  	  licensed by ARM Ltd and targeted at embedded applications and
+The change is  as follows:
 
---Signature=_Mon__19_Mar_2012_17_22_54_+1100_EYGk=V_rYVU.VXSu
-Content-Type: application/pgp-signature
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -849,7 +849,7 @@ config MFD_INTEL_MSIC
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  config MFD_RC5T583
+         bool "Ricoh RC5T583 Power Management system device"
+-       depends on I2C && GENERIC_HARDIRQS
++       depends on I2C=y && GENERIC_HARDIRQS
+         select MFD_CORE
+         select REGMAP_I2C
+         help
 
-iQIcBAEBCAAGBQJPZtC+AAoJEECxmPOUX5FEEUgP/RI8UH3postxR5m8zciiBcgJ
-TkdezqSvXjxYaKPJ0Z30q3kXp0NiTBGtGMRG5q5N9tKQ5ywFEtVhoCZOw2o4cLYt
-3jGUksx9dvgjWHdkT+Whsd/uDTY95Ux77kmcheuQNyju+YmeIetP7tJXWEtKPoKw
-wzXaKjOJQoS4IyxIoLaNCTkA3eBH0s0xv6EZM8NSCOtcBODKOiAJ66y7t+SNQrOO
-oMw0DJNAIKac7AbUZh4odaEUysZAO0nh2MdYeg7oQW25hdKOHxTUhPxmHNZ+PdN9
-XHYoSulJdzIrQsvnk0TnweRvBClnIIcfSUdQhN/oFI++AW4YFTEXDJFeJqnipjHY
-GyrhwBdKtP9FQJFdS3Da9hJ4AuR0+kO/GVG0rn/RuH0SC4OzBRR4vjFPKy3X5xId
-MB2csBrvzBGOlgK8keu2rIKoqCCHUyvG7EW/Da5ulTjNGtDzBh097C7gHnr6KmYb
-fbNkhWi+rXXwOIlwbIkODfLOlLiXSTEm2F1wc8wWVVsT39MxssaVhtP7ZOY/jFyl
-KcFBsV4obq7+AzwTSsBBI3qLFshH6MsTRCRk16Q1l4SF33Ab730G2W+bMQaibCe1
-4xg+UEYfekzEFxCBETWTH7axyvZyedKpjcFp1R6CRRytZ6PdppfG6hGjFmqUNz3Y
-iYMcenDXWAZNUFWkSvcA
-=Azt/
------END PGP SIGNATURE-----
 
---Signature=_Mon__19_Mar_2012_17_22_54_+1100_EYGk=V_rYVU.VXSu--
