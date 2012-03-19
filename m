@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030223Ab2CSDiT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 23:38:19 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54369 "EHLO
+	id S1030263Ab2CSDia (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 23:38:30 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40917 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932332Ab2CSDiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 23:38:17 -0400
+	id S1030229Ab2CSDi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 23:38:27 -0400
 From: Joe Perches <joe@perches.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] if_vlan: Remove VLAN_ETH_ALEN define and the 1 use of it
-Date: Sun, 18 Mar 2012 20:37:56 -0700
-Message-Id: <89fdd9882355bacb4771a0c6c1f7a6ed43ab3f8b.1332128181.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH 2/4] atlx: Use ETH_ALEN
+Date: Sun, 18 Mar 2012 20:37:57 -0700
+Message-Id: <1670f6450b7624f8aa92ef2c08c6aa0d0e5d5ef9.1332128181.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1332128181.git.joe@perches.com>
 References: <cover.1332128181.git.joe@perches.com>
@@ -19,39 +20,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just use ETH_ALEN.
+No need for yet another #define for this.
+
+Convert NODE_ADDRESS_SIZE use to ETH_ALEN and remove #define.
+Use memcpy instead of a loop to copy an address.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/if_vlan.h |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/atheros/atlx/atl2.c |   13 +++++--------
+ drivers/net/ethernet/atheros/atlx/atl2.h |    5 ++---
+ drivers/net/ethernet/atheros/atlx/atlx.h |    1 -
+ 3 files changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-index 13aff1e..33a6e19 100644
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -18,10 +18,9 @@
- #include <linux/etherdevice.h>
- #include <linux/rtnetlink.h>
+diff --git a/drivers/net/ethernet/atheros/atlx/atl2.c b/drivers/net/ethernet/atheros/atlx/atl2.c
+index 071f4c8..6762dc4 100644
+--- a/drivers/net/ethernet/atheros/atlx/atl2.c
++++ b/drivers/net/ethernet/atheros/atlx/atl2.c
+@@ -2258,7 +2258,7 @@ static int get_permanent_address(struct atl2_hw *hw)
+ 	u32 Addr[2];
+ 	u32 i, Control;
+ 	u16 Register;
+-	u8  EthAddr[NODE_ADDRESS_SIZE];
++	u8  EthAddr[ETH_ALEN];
+ 	bool KeyValid;
  
--#define VLAN_HLEN	4		/* The additional bytes (on top of the Ethernet header)
--					 * that VLAN requires.
-+#define VLAN_HLEN	4		/* The additional bytes required by VLAN
-+					 * (in addition to the Ethernet header)
- 					 */
--#define VLAN_ETH_ALEN	6		/* Octets in one ethernet addr	 */
- #define VLAN_ETH_HLEN	18		/* Total octets in header.	 */
- #define VLAN_ETH_ZLEN	64		/* Min. octets in frame sans FCS */
+ 	if (is_valid_ether_addr(hw->perm_mac_addr))
+@@ -2299,7 +2299,7 @@ static int get_permanent_address(struct atl2_hw *hw)
+ 		*(u16 *) &EthAddr[0] = SHORTSWAP(*(u16 *) &Addr[1]);
  
-@@ -177,7 +176,7 @@ static inline struct sk_buff *vlan_insert_tag(struct sk_buff *skb, u16 vlan_tci)
- 	veth = (struct vlan_ethhdr *)skb_push(skb, VLAN_HLEN);
+ 		if (is_valid_ether_addr(EthAddr)) {
+-			memcpy(hw->perm_mac_addr, EthAddr, NODE_ADDRESS_SIZE);
++			memcpy(hw->perm_mac_addr, EthAddr, ETH_ALEN);
+ 			return 0;
+ 		}
+ 		return 1;
+@@ -2334,7 +2334,7 @@ static int get_permanent_address(struct atl2_hw *hw)
+ 	*(u32 *) &EthAddr[2] = LONGSWAP(Addr[0]);
+ 	*(u16 *) &EthAddr[0] = SHORTSWAP(*(u16 *)&Addr[1]);
+ 	if (is_valid_ether_addr(EthAddr)) {
+-		memcpy(hw->perm_mac_addr, EthAddr, NODE_ADDRESS_SIZE);
++		memcpy(hw->perm_mac_addr, EthAddr, ETH_ALEN);
+ 		return 0;
+ 	}
+ 	/* maybe MAC-address is from BIOS */
+@@ -2344,7 +2344,7 @@ static int get_permanent_address(struct atl2_hw *hw)
+ 	*(u16 *) &EthAddr[0] = SHORTSWAP(*(u16 *) &Addr[1]);
  
- 	/* Move the mac addresses to the beginning of the new header. */
--	memmove(skb->data, skb->data + VLAN_HLEN, 2 * VLAN_ETH_ALEN);
-+	memmove(skb->data, skb->data + VLAN_HLEN, 2 * ETH_ALEN);
- 	skb->mac_header -= VLAN_HLEN;
+ 	if (is_valid_ether_addr(EthAddr)) {
+-		memcpy(hw->perm_mac_addr, EthAddr, NODE_ADDRESS_SIZE);
++		memcpy(hw->perm_mac_addr, EthAddr, ETH_ALEN);
+ 		return 0;
+ 	}
  
- 	/* first, the ethernet type */
+@@ -2358,8 +2358,6 @@ static int get_permanent_address(struct atl2_hw *hw)
+  */
+ static s32 atl2_read_mac_addr(struct atl2_hw *hw)
+ {
+-	u16 i;
+-
+ 	if (get_permanent_address(hw)) {
+ 		/* for test */
+ 		/* FIXME: shouldn't we use random_ether_addr() here? */
+@@ -2371,8 +2369,7 @@ static s32 atl2_read_mac_addr(struct atl2_hw *hw)
+ 		hw->perm_mac_addr[5] = 0x38;
+ 	}
+ 
+-	for (i = 0; i < NODE_ADDRESS_SIZE; i++)
+-		hw->mac_addr[i] = hw->perm_mac_addr[i];
++	memcpy(hw->mac_addr, hw->perm_mac_addr, ETH_ALEN);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/atheros/atlx/atl2.h b/drivers/net/ethernet/atheros/atlx/atl2.h
+index bf9016e..3ebe19f 100644
+--- a/drivers/net/ethernet/atheros/atlx/atl2.h
++++ b/drivers/net/ethernet/atheros/atlx/atl2.h
+@@ -47,7 +47,6 @@ extern int ethtool_ioctl(struct ifreq *ifr);
+ 
+ #define PCI_COMMAND_REGISTER	PCI_COMMAND
+ #define CMD_MEM_WRT_INVALIDATE	PCI_COMMAND_INVALIDATE
+-#define ETH_ADDR_LEN		ETH_ALEN
+ 
+ #define ATL2_WRITE_REG(a, reg, value) (iowrite32((value), \
+ 	((a)->hw_addr + (reg))))
+@@ -429,8 +428,8 @@ struct atl2_hw {
+ 	u8 flash_vendor;
+ 
+ 	u8 dma_fairness;
+-	u8 mac_addr[NODE_ADDRESS_SIZE];
+-	u8 perm_mac_addr[NODE_ADDRESS_SIZE];
++	u8 mac_addr[ETH_ALEN];
++	u8 perm_mac_addr[ETH_ALEN];
+ 
+ 	/* FIXME */
+ 	/* bool phy_preamble_sup; */
+diff --git a/drivers/net/ethernet/atheros/atlx/atlx.h b/drivers/net/ethernet/atheros/atlx/atlx.h
+index 14054b7..448f5dc 100644
+--- a/drivers/net/ethernet/atheros/atlx/atlx.h
++++ b/drivers/net/ethernet/atheros/atlx/atlx.h
+@@ -484,7 +484,6 @@
+ 
+ /* For checksumming, the sum of all words in the EEPROM should equal 0xBABA */
+ #define EEPROM_SUM			0xBABA
+-#define NODE_ADDRESS_SIZE		6
+ 
+ struct atlx_spi_flash_dev {
+ 	const char *manu_name;	/* manufacturer id */
 -- 
 1.7.8.111.gad25c.dirty
 
