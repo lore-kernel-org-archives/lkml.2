@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab2CSHhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 03:37:38 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59613 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab2CSHhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 03:37:36 -0400
-Date: Mon, 19 Mar 2012 08:37:13 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: use global_dirty_limit in throttle_vm_writeout()
-Message-ID: <20120319073713.GC1841@cmpxchg.org>
-References: <20120302061451.GA6468@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120302061451.GA6468@localhost>
+	id S1755962Ab2CSHjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 03:39:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60210 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2CSHjT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 03:39:19 -0400
+Date: Mon, 19 Mar 2012 18:39:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the arm-soc tree
+Message-Id: <20120319183911.0cd46df560c714ee71184242@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 02:14:51PM +0800, Fengguang Wu wrote:
-> When starting a memory hog task, a desktop box w/o swap is found to go
-> unresponsive for a long time. It's solely caused by lots of congestion
-> waits in throttle_vm_writeout():
-> 
->  gnome-system-mo-4201 553.073384: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
->  gnome-system-mo-4201 553.073386: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
->            gtali-4237 553.080377: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
->            gtali-4237 553.080378: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
->             Xorg-3483 553.103375: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
->             Xorg-3483 553.103377: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
-> 
-> The root cause is, the dirty threshold is knocked down a lot by the
-> memory hog task. Fixed by using global_dirty_limit which decreases
-> gradually on such events and can guarantee we stay above (the also
-> decreasing) nr_dirty in the progress of following down to the new
-> dirty threshold.
-> 
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+--Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi all,
+
+After merging the arm-soc tree, today's linux-next build (all)
+produced this warning:
+
+drivers/clk/Kconfig:22: warning: menuconfig statement without prompt
+
+Introduced by commit c173033d154e ("clk: make CONFIG_COMMON_CLK invisible").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPZuKfAAoJEECxmPOUX5FEiEwP/1gU/qpGpgQTEwA2dOX0nLob
+d25bJxWe47v4FZBwDneGmymyULfWxE9K64sDGig9yNbNfrpB+/Fo9zjS2gbA2gI1
+j2DT9tqeT71d53fRAlI7mwFPylxUUzg6G1TUhs+3htIniTkzEwp73m4+1zX9oRNZ
+mT0dcItKcI+2jRkq4N0pxeFkbrx/Rcf1yokkLsX/V4zYGZqQLvlvqD7BGPn655eP
+ON7R5vzPyoj1kpaQobbg7Qi70J0Q3cWH++IlYAUvBWmMQ4SLktPcCxn/a/qO4PZe
+1PgsxXSmvPPp9lvuOy9/M+CQmnHg2bLvPvRQyHawH0YHtbEWhsx2g7i+JaMvZXqO
+MLpAzXHya86qOxMoQK2fi00EuiZGSzgpvc/Nqxg7XBd6HcA/4Qy8BCNVSXJB+eFH
+udIKpeDM59p8Oe+cZh4UopmkxAPIFhu7bLxmNZiFOAv1t9um3O7I6T/l2aS0POoy
+Y1T7A37Vs632EyAyz9tNL5fF5ACsV4zZ2h9gqwHCqtWiLC9IrBLWdnVDzbjPHIW7
+6rIa1IaP7OjY7TnK2M5IgVrCTVkkWKgMG3bl+WZFh+xvmYbI5R1UMk7oX4k87cmn
+rxVN2mYrq/LPb5GmFNTpuR9CKUTb4HSpxpACV3RPUz8N/kOh+IuElpOghD/HLzLd
+6VhfOmSTe8o9QQzABmeK
+=lynW
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6--
