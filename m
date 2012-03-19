@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab2CSD0X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 23:26:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45478 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab2CSD0V (ORCPT
+	id S932269Ab2CSDdt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 23:33:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40058 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab2CSDds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 23:26:21 -0400
-Message-ID: <4F66A753.4000004@oracle.com>
-Date: Mon, 19 Mar 2012 11:26:11 +0800
-From: qing gu <qing.gu@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH]: md: Initialize ctl_name field of table raid_root_table/raid_dir_table
- to avoid dump_trace info in debug kernel
-References: <4F5D747D.9060508@oracle.com> <20120314125720.1bb87546@notabene.brown> <m14ntsc4k2.fsf@fess.ebiederm.org> <20120314133501.14c6f7e9@notabene.brown>
-In-Reply-To: <20120314133501.14c6f7e9@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090204.4F66A758.0085,ss=1,re=0.000,fgs=0
+	Sun, 18 Mar 2012 23:33:48 -0400
+Date: Mon, 19 Mar 2012 14:33:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Ball <cjb@laptop.org>
+Subject: linux-next: manual merge of the pm tree with the mmc tree
+Message-Id: <20120319143335.8b31091f03de60e41987efde@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__19_Mar_2012_14_33_35_+1100_0dpypry1YMU0rzV8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very thanks for the reply.
+--Signature=_Mon__19_Mar_2012_14_33_35_+1100_0dpypry1YMU0rzV8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Neil
+Hi Rafael,
 
-On 2012/3/14 10:35, NeilBrown wrote:
-> On Tue, 13 Mar 2012 19:14:05 -0700 ebiederm@xmission.com (Eric W. Biederman)
-> wrote:
->
->> NeilBrown<neilb@suse.de>  writes:
->>
->>> On Mon, 12 Mar 2012 11:58:53 +0800 qing gu<qing.gu@oracle.com>  wrote:
->>>
->>>> This patch is used to dispense trace info when system boots with debug
->>>> kernel. I have verified it on RHEL6.2&  SLES11.2. Both work fine.
->>>> In the failure case, system logs that:
->>>>
->>>>      /Feb 21 19:33:55 nsgbj-216-137 kernel: sysctl_check_dir: failed: /dev  ref: /dev .7
-> .....
->
->>> These lines were removed in November 2009 by Eric Biederman in
->>> commit 894d2491153a9f8270dbed21175d06fde4eba6c7
->>>
->>> So I'm not keen on adding them back without understanding the history.
->>>
->>> Eric:  Do we need these after all?
->> For the main trunk no.  The .ctl_name field no longer exists.
->>
->> kernel/binary_sysctl.c is used to provide backwards compatibility with
->> the old binary names.
->>
->> There might be a point for doing something in -stable or someone's
->> enterprise kernel if some messed up set of backports were merged.
->>
->> Eric
-> Thanks for the quick response Eric!!
->
-> Qing: It looks like this is not an issue in mainline.
->    If you want to get something fixed in SLES or RHEL, I suggest you log an
->    issue in the relevant bugzillas (though I just checked SLES11-SP2, and
->    it doesn't mention sysctl_check_dir at all).
->
-> NeilBrown
+Today's linux-next merge of the pm tree got a conflict in
+drivers/mmc/host/tmio_mmc_pio.c between commit 4d741159c282 ("mmc:
+tmio_mmc: support the generic MMC GPIO card hotplug helper") from the mmc
+tree and commit c419e611c3c5 ("tmio_mmc / PM: Use PM QoS latency
+constraint") from the pm tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/mmc/host/tmio_mmc_pio.c
+index e476baf1,e219889..0000000
+--- a/drivers/mmc/host/tmio_mmc_pio.c
++++ b/drivers/mmc/host/tmio_mmc_pio.c
+@@@ -996,20 -983,22 +999,22 @@@ EXPORT_SYMBOL(tmio_mmc_host_probe)
+  void tmio_mmc_host_remove(struct tmio_mmc_host *host)
+  {
+  	struct platform_device *pdev =3D host->pdev;
+ +	struct tmio_mmc_data *pdata =3D host->pdata;
+ +	struct mmc_host *mmc =3D host->mmc;
+ =20
+ -	/*
+ -	 * We don't have to manipulate pdata->power here: if there is a card in
+ -	 * the slot, the runtime PM is active and our .runtime_resume() will not
+ -	 * be run. If there is no card in the slot and the platform can suspend
+ -	 * the controller, the runtime PM is suspended and pdata->power =3D=3D f=
+alse,
+ -	 * so, our .runtime_resume() will not try to detect a card in the slot.
+ -	 */
+ -	if (host->pdata->flags & TMIO_MMC_HAS_COLD_CD
+ -		|| host->mmc->caps & MMC_CAP_NEEDS_POLL
+ -		|| host->mmc->caps & MMC_CAP_NONREMOVABLE)
+ +	if (pdata->flags & TMIO_MMC_USE_GPIO_CD)
+ +		/*
+ +		 * This means we can miss a card-eject, but this is anyway
+ +		 * possible, because of delayed processing of hotplug events.
+ +		 */
+ +		mmc_cd_gpio_free(mmc);
+ +
+ +	if (!host->native_hotplug)
+  		pm_runtime_get_sync(&pdev->dev);
+ =20
++ 	dev_pm_qos_hide_latency_limit(&pdev->dev);
++=20
+ -	mmc_remove_host(host->mmc);
+ +	mmc_remove_host(mmc);
+  	cancel_work_sync(&host->done);
+  	cancel_delayed_work_sync(&host->delayed_reset_work);
+  	tmio_mmc_release_dma(host);
+
+--Signature=_Mon__19_Mar_2012_14_33_35_+1100_0dpypry1YMU0rzV8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPZqkPAAoJEECxmPOUX5FElskP/R1h9PSl/b9g+FZkKci5tscJ
+ojnuvdTmuORZ0dV9SPVPT7JZLjCdGwT9bzpe+fce5zMN+STXZiGRc83/UuZu/NLX
++zRkCpM64plGFquHKBixOhVgyG3rps1VcnCrR0ZPDUHukCZqLpgmUqZ0BJCMrTiF
+7px6bc+B/YvsDExwF3yzUkn/jiYLnbY5N7QLvtAcIM+AG7yTLY561D5IKqWgUcjH
+axpLab9YxRHDo4bsfDfROC9dz12FbcbgqV4Alo94/CLj3r1EMkfLhW+ua2UGGdn/
+UeasFY6WHHn1yWYn0AAi9pFwNbBCuDJ/4vpKFYlhDshFWsS2j9du++Np726m2oef
+sdUOtI5/5z5tKGOfwo7Cbwls4YTuICbLz0mnZWj1zplhHH4vdMVhTTJqUQvDLWv1
+CJroDxSz9NykKGDBu1asHzxhy0kcEtJRZGTWaqqWQh1C25eD5rQd0Vjpo7A9aApb
+k1MXUeqphXMj0uHDmjhlzWXgXoW85IneCroWmX2R3ytS9/W48/dloHji4sDJmbEJ
+qGhU8SVnTDgoSOHfnX+rse1+vJuVG7rf99r77wxFv2HnAh4eK+aL6dKDUerst/d5
+QDlUpnFGvKwbCv8ruWzNQXC1Xj62twNlrQLb+D9oUS4MyFg5dGhALokQVNS8R41J
+FYjg8M061RDmxwuy2SfI
+=IKg+
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__19_Mar_2012_14_33_35_+1100_0dpypry1YMU0rzV8--
