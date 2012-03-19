@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161651Ab2CSFsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:48:19 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:29531 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161566Ab2CSFsN (ORCPT
+	id S1757179Ab2CSF60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:58:26 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30865 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161518Ab2CSFsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:48:13 -0400
+	Mon, 19 Mar 2012 01:48:18 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,100 +15,68 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 34/47] PCI, pciehp: Separate pci_hp_add_bridge()
-Date: Sun, 18 Mar 2012 22:46:23 -0700
-Message-Id: <1332135996-13860-35-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v3 37/47] PCI: Kill pci_is_reassignedev()
+Date: Sun, 18 Mar 2012 22:46:26 -0700
+Message-Id: <1332135996-13860-38-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
 References: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4F66C89A.00B3,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F66C89F.003D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will use it for other pci hp hotplug support
+Only one user. Just use pci_specified_resource_alignement() directly.
+So could only get get align one time for the dev that in the list
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/hotplug-pci.c        |   13 +++++++++++++
- drivers/pci/hotplug/pciehp_pci.c |   18 ++----------------
- drivers/pci/pci.h                |    1 +
- 3 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/pci/pci.c |   17 +++--------------
+ 1 files changed, 3 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/pci/hotplug-pci.c b/drivers/pci/hotplug-pci.c
-index d3509cd..24de840 100644
---- a/drivers/pci/hotplug-pci.c
-+++ b/drivers/pci/hotplug-pci.c
-@@ -4,6 +4,19 @@
- #include <linux/export.h>
- #include "pci.h"
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 8156744..82ed56a 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3685,18 +3685,6 @@ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev)
+ 	return align;
+ }
  
-+int __ref pci_hp_add_bridge(struct pci_dev *dev)
-+{
-+	struct pci_bus *parent = dev->bus;
-+	int pass, busnr = parent->secondary;
-+
-+	for (pass = 0; pass < 2; pass++)
-+		busnr = pci_scan_bridge(parent, dev, busnr, pass);
-+	if (!dev->subordinate)
-+		return -1;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pci_hp_add_bridge);
- 
- unsigned int __devinit pci_do_scan_bus(struct pci_bus *bus)
- {
-diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-index e21171c..b9a9fce 100644
---- a/drivers/pci/hotplug/pciehp_pci.c
-+++ b/drivers/pci/hotplug/pciehp_pci.c
-@@ -34,19 +34,6 @@
- #include "../pci.h"
- #include "pciehp.h"
- 
--static int __ref pciehp_add_bridge(struct pci_dev *dev)
+-/**
+- * pci_is_reassigndev - check if specified PCI is target device to reassign
+- * @dev: the PCI device to check
+- *
+- * RETURNS: non-zero for PCI device is a target device to reassign,
+- *          or zero is not.
+- */
+-int pci_is_reassigndev(struct pci_dev *dev)
 -{
--	struct pci_bus *parent = dev->bus;
--	int pass, busnr = parent->secondary;
--
--	for (pass = 0; pass < 2; pass++)
--		busnr = pci_scan_bridge(parent, dev, busnr, pass);
--	if (!dev->subordinate)
--		return -1;
--
--	return 0;
+-	return (pci_specified_resource_alignment(dev) != 0);
 -}
 -
- int pciehp_configure_device(struct slot *p_slot)
- {
- 	struct pci_dev *dev;
-@@ -75,9 +62,8 @@ int pciehp_configure_device(struct slot *p_slot)
- 		if (!dev)
- 			continue;
- 		if ((dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
--				(dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)) {
--			pciehp_add_bridge(dev);
--		}
-+		    (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS))
-+			pci_hp_add_bridge(dev);
- 		pci_dev_put(dev);
- 	}
+ /*
+  * This function disables memory decoding and releases memory resources
+  * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
+@@ -3711,7 +3699,9 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
+ 	resource_size_t align, size;
+ 	u16 command;
  
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 13b1159..9378d81 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -124,6 +124,7 @@ static inline int pci_proc_detach_bus(struct pci_bus *bus) { return 0; }
- #endif
+-	if (!pci_is_reassigndev(dev))
++	/* check if specified PCI is target device to reassign */
++	align = pci_specified_resource_alignment(dev);
++	if (!align)
+ 		return;
  
- /* Functions for PCI Hotplug drivers to use */
-+int pci_hp_add_bridge(struct pci_dev *dev);
- extern unsigned int pci_do_scan_bus(struct pci_bus *bus);
+ 	if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL &&
+@@ -3727,7 +3717,6 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
+ 	command &= ~PCI_COMMAND_MEMORY;
+ 	pci_write_config_word(dev, PCI_COMMAND, command);
  
- #ifdef HAVE_PCI_LEGACY
+-	align = pci_specified_resource_alignment(dev);
+ 	for (i = 0; i < PCI_BRIDGE_RESOURCES; i++) {
+ 		r = &dev->resource[i];
+ 		if (!(r->flags & IORESOURCE_MEM))
 -- 
 1.7.7
 
