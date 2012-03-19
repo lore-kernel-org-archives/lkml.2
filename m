@@ -1,112 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032719Ab2CSTTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:19:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8225 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759275Ab2CSTTc convert rfc822-to-8bit (ORCPT
+	id S1759323Ab2CSTVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:21:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55384 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756065Ab2CSTVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:19:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="130657059"
-From: "Cihula, Joseph" <joseph.cihula@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-CC: "rjw@sisk.pl" <rjw@sisk.pl>
-Subject: RE: [PATCH 2/2] tboot: Add return values for tboot_sleep
-Thread-Topic: [PATCH 2/2] tboot: Add return values for tboot_sleep
-Thread-Index: AQHM/u+iuJVs8cIq8U2CVrRM2wJEkpZyDIDQ
-Date: Mon, 19 Mar 2012 19:19:31 +0000
-Message-ID: <9F57BF860713DF4BA3EFA4F8C6DFEDAC46026B2F@ORSMSX101.amr.corp.intel.com>
-References: <1331405526-25952-1-git-send-email-konrad.wilk@oracle.com>
- <1331405526-25952-3-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1331405526-25952-3-git-send-email-konrad.wilk@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Mar 2012 15:21:03 -0400
+Date: Mon, 19 Mar 2012 19:21:01 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, lars@metafoo.de,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH v7] sound/soc/lapis: add machine driver for ML7213
+ Carrier Board
+Message-ID: <20120319192101.GG12384@opensource.wolfsonmicro.com>
+References: <CANKRQni1k4hv40j0hTzVMdS9aFccM7xRrHis0-cFuBvSZe+9CA@mail.gmail.com>
+ <1332158525-14968-1-git-send-email-tomoya.rohm@gmail.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WlEyl6ow+jlIgNUh"
+Content-Disposition: inline
+In-Reply-To: <1332158525-14968-1-git-send-email-tomoya.rohm@gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Joseph Cihula <joseph.cihula@intel.com>
 
-> -----Original Message-----
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> Sent: Saturday, March 10, 2012 10:52 AM
-> To: linux-kernel@vger.kernel.org; x86@kernel.org; tglx@linutronix.de; mingo@redhat.com;
-> hpa@zytor.com; linux-acpi@vger.kernel.org; lenb@kernel.org
-> Cc: rjw@sisk.pl; Cihula, Joseph; Konrad Rzeszutek Wilk
-> Subject: [PATCH 2/2] tboot: Add return values for tboot_sleep
-> 
-> . as appropiately. As tboot_sleep now returns values.
-> remove tboot_sleep_wrapper.
-> 
-> Suggested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Acked-by: Joseph Cihula <joseph.cihula@intel.com>
-> [v1: Return -1/0/+1 instead of ACPI_xx values]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/kernel/tboot.c |   13 ++++---------
->  1 files changed, 4 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c index 1a4ab7d..6410744 100644
-> --- a/arch/x86/kernel/tboot.c
-> +++ b/arch/x86/kernel/tboot.c
-> @@ -272,7 +272,7 @@ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
->  		offsetof(struct acpi_table_facs, firmware_waking_vector);  }
-> 
-> -void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
-> +static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32
-> +pm1b_control)
->  {
->  	static u32 acpi_shutdown_map[ACPI_S_STATE_COUNT] = {
->  		/* S0,1,2: */ -1, -1, -1,
-> @@ -281,7 +281,7 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
->  		/* S5: */ TB_SHUTDOWN_S5 };
-> 
->  	if (!tboot_enabled())
-> -		return;
-> +		return 0;
-> 
->  	tboot_copy_fadt(&acpi_gbl_FADT);
->  	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control; @@ -292,15 +292,10 @@ void tboot_sleep(u8
-> sleep_state, u32 pm1a_control, u32 pm1b_control)
->  	if (sleep_state >= ACPI_S_STATE_COUNT ||
->  	    acpi_shutdown_map[sleep_state] == -1) {
->  		pr_warning("unsupported sleep state 0x%x\n", sleep_state);
-> -		return;
-> +		return -1;
->  	}
-> 
->  	tboot_shutdown(acpi_shutdown_map[sleep_state]);
-> -}
-> -static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
-> -			       u32 pm1b_control)
-> -{
-> -	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
->  	return 0;
->  }
-> 
-> @@ -352,7 +347,7 @@ static __init int tboot_late_init(void)
->  	atomic_set(&ap_wfs_count, 0);
->  	register_hotcpu_notifier(&tboot_cpu_notifier);
-> 
-> -	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
-> +	acpi_os_set_prepare_sleep(&tboot_sleep);
->  	return 0;
->  }
-> 
-> --
-> 1.7.7.5
+--WlEyl6ow+jlIgNUh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Mon, Mar 19, 2012 at 09:02:05PM +0900, Tomoya MORINAGA wrote:
+
+> +static int ml7213_hw_params(struct snd_pcm_substream *substream,
+> +			    struct snd_pcm_hw_params *hw_params)
+> +{
+
+> +	default:
+> +		pr_err("%s: Failed not support format\n", __func__);
+> +		return -EINVAL;
+> +		break;
+
+No need for the break.
+
+> +	snd_soc_dapm_enable_pin(dapm, "Speaker");
+> +	snd_soc_dapm_enable_pin(dapm, "AnalogMIC");
+> +	snd_soc_dapm_enable_pin(dapm, "MICBIAS");
+
+Why are you doing thiS?  You never disable these things so if this were
+needed you may as well do it on init, but since the default state is
+enabled anyway this shouldn't be doing anytihng.
+
+> +static int __init lapis_ml7213_ml26124_init(void)
+> +{
+> +	return platform_driver_register(&snd_ml7213crb_driver);
+> +}
+> +module_init(lapis_ml7213_ml26124_init);
+
+module_platform_driver().
+
+> +MODULE_ALIAS("platform: lapis-ml7213ioh-CRB");
+
+No space after the colon.
+
+--WlEyl6ow+jlIgNUh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPZ4b5AAoJEBus8iNuMP3d9TAP/3tTjXTNH3mm2E+4SE/KKIKd
+A8QZJ0BzlW/uXFbxzgaYyn45dOsS+pY6T6lUFrfdZSXjJDzsC9h39eBCoMKSK4XS
+Jrp5xf73cbJYOkQAm47nSC4K0pIoaNZwrmXfdKGtjzb+024MOPniQBAqF3z9LZyN
+XhXWSu9zYAx9sNdMg0FGmPAbP1VVeVoLbxJ9BD9UXYYyAzKEsJhyO/M3opcp4iyw
+5YOGfbJWK5O52TAPLBnVGSKQwfhF+mhawebYkO1jrGXYLI/mTF0UepI6hzwqvW5g
+1tDUP2b6Q6S1YLVxMpxrmB6NTq4mrHjOkHLUHO6+BBs7/fqrITQhtO9O1vEWlzgE
+XwhTXFQwugkbRBKjN9souV6s/zxE+3JbDNrMpZDGmZs22+lehY8ganmc2QjzijuI
+PPcDYYM72bOYyKDMG3uB/UgApDZ08UBS1KcWh4xV0tHqp34LmTojfwj7ZnVofGmk
+gZHrwcJF1j5/0coXVc8zF2VPs8lbTNt/nb7WqakzOgb+VhMPzmulcgv8lZJy6Mn7
+GSnh60Vbl77ge/jcYSdDmnofidNLbvo107Zn/24W9VpzZdjKTazE5aI3kJBaB04j
+ZclqPeEAam0RZFoluAybyDtIewxXb6EBfKIRmgaYNCdQQid7BmLNsTspv8EEQDOB
+p5LHth+5/iJiu6WFVp0O
+=APYd
+-----END PGP SIGNATURE-----
+
+--WlEyl6ow+jlIgNUh--
