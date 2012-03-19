@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161839Ab2CSFtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:49:22 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30980 "EHLO
+	id S1161906Ab2CSFtf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:49:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31192 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161752Ab2CSFsf (ORCPT
+	with ESMTP id S1161752Ab2CSFta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:48:35 -0400
+	Mon, 19 Mar 2012 01:49:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -14,83 +14,79 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org
-Subject: [PATCH -v3 47/47] PCI: Add /sys/bus/pci/rescan_root
-Date: Sun, 18 Mar 2012 22:46:36 -0700
-Message-Id: <1332135996-13860-48-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v2 00/26] PCI, x86: Add for_each_res and addon resource support
+Date: Sun, 18 Mar 2012 22:48:23 -0700
+Message-Id: <1332136129-14010-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
-References: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090202.4F66C8AF.00C3,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F66C8E6.009A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used to rediscover removed pci root buses.
+Make device resource loop easier and readable.
+Also add addon_resource support about non-stanard resources.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-doc@vger.kernel.org
----
- Documentation/ABI/testing/sysfs-bus-pci |    9 +++++++++
- drivers/pci/pci-sysfs.c                 |   19 +++++++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+The patches need to apply to pci/for-linus and pci/linux-next
+        [PATCH -v3] PCI: pci_host_bridge related cleanup
+        [PATCH -v11] PCI: allocate pci bus num range for unassigned bridge busn
+	[PATCH -v3] PCI, x86: pci root bus hotplug support
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-index 22392de..eb826bd 100644
---- a/Documentation/ABI/testing/sysfs-bus-pci
-+++ b/Documentation/ABI/testing/sysfs-bus-pci
-@@ -66,6 +66,15 @@ Description:
- 		re-discover previously removed devices.
- 		Depends on CONFIG_HOTPLUG.
- 
-+What:		/sys/bus/pci/rescan_root
-+Date:		March 2012
-+Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
-+Description:
-+		Writing a non-zero value to this attribute will
-+		cause a rescan of all PCI root buses in the system, and
-+		re-discover previously removed PCI root buses.
-+		Depends on CONFIG_HOTPLUG.
-+
- What:		/sys/bus/pci/devices/.../msi_irqs/
- Date:		September, 2011
- Contact:	Neil Horman <nhorman@tuxdriver.com>
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index afba77b..c348048 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -302,8 +302,27 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
- 	return count;
- }
- 
-+void __weak arch_pci_root_rescan(void) { }
-+
-+static ssize_t bus_rescan_root_store(struct bus_type *bus, const char *buf,
-+				size_t count)
-+{
-+	unsigned long val;
-+
-+	if (kstrtoul(buf, 0, &val) < 0)
-+		return -EINVAL;
-+
-+	if (val) {
-+		mutex_lock(&pci_remove_rescan_mutex);
-+		arch_pci_root_rescan();
-+		mutex_unlock(&pci_remove_rescan_mutex);
-+	}
-+	return count;
-+}
-+
- struct bus_attribute pci_bus_attrs[] = {
- 	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, bus_rescan_store),
-+	__ATTR(rescan_root, (S_IWUSR|S_IWGRP), NULL, bus_rescan_root_store),
- 	__ATTR_NULL
- };
- 
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon
+
+-v2: Split to small patches.
+
+Thanks
+
+Yinghai
+
+Yinghai Lu (26):
+  PCI: Add pci_dev_resource_n()
+  PCI: Add for_each_resource helpers to make resource loop easier.
+  PCI: Add pci_dev_resource_idx()
+  PCI: Update pci_resource_start to use pci_dev_resource_n()
+  x86, PCI: Use for_each_res with pci_allocate_bridge_resources
+  x86, PCI: Use for_each_res with pci_allocate_dev_resources
+  PCI: Use for_each_res with IOV releated funcs
+  PCI, acpiphp: Use for_each_pci_dev_resource helper
+  PCI, pciehp: Use for_each_pci_dev_resource helper
+  PCI: Use for_each_pci_dev_resource pci_enable_dev
+  PCI: Use for_each_pci_dev_resource pci_reassigndev
+  PCI: Use for_each_res with pci bar reassign funcs
+  PCI: Use for_each_res pci_assign_resource
+  PCI: Use for_each_res with noassign_bars
+  PCI: Use for_each_res pci bases pci_dev_driver()
+  PCI: Use for_each_res pci release release
+  PCI: Use for_each_res pci bases reading
+  PCI: Use for_each_res with mrs
+  PCI: Use for_each_res with xen pci
+  PCI: Add addon_resource support for pci_dev
+  PCI: Add helpers for add addon_resource
+  PCI: Update pci_resource_bar() to support addon_resource
+  PCI: Make assign/update resource to support addon_res
+  PCI: Make piix4 quirk to use addon_resource support
+  PCI: Make quirk_io_region to use addon_resource support
+  PCI: Use addon_fixed_resource with ati fixed resource
+
+ arch/x86/pci/common.c              |    3 +-
+ arch/x86/pci/i386.c                |   57 +++-----
+ arch/x86/pci/mrst.c                |    7 +-
+ drivers/pci/hotplug/acpiphp_glue.c |    4 +-
+ drivers/pci/hotplug/pciehp_hpc.c   |    5 +-
+ drivers/pci/iov.c                  |   31 ++---
+ drivers/pci/pci-driver.c           |    6 +-
+ drivers/pci/pci.c                  |   28 +++--
+ drivers/pci/probe.c                |  114 ++++++++++++++++-
+ drivers/pci/quirks.c               |  256 +++++++++++++++++++++---------------
+ drivers/pci/remove.c               |    5 +-
+ drivers/pci/setup-bus.c            |   28 ++---
+ drivers/pci/setup-res.c            |   38 ++++--
+ drivers/pci/xen-pcifront.c         |    4 +-
+ include/linux/pci.h                |   79 +++++++++++-
+ 15 files changed, 446 insertions(+), 219 deletions(-)
+
 -- 
 1.7.7
 
