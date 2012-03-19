@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab2CSF7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:59:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:29505 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161370Ab2CSFsK (ORCPT
+	id S1161724Ab2CSGAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:00:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:32884 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161506Ab2CSGAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:48:10 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH -v3 31/47] PCI, pci_root_hp: Use acpi_hp_work
-Date: Sun, 18 Mar 2012 22:46:20 -0700
-Message-Id: <1332135996-13860-32-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
-References: <1332135996-13860-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F66C897.004E,ss=1,re=0.000,fgs=0
+	Mon, 19 Mar 2012 02:00:00 -0400
+Date: Mon, 19 Mar 2012 16:59:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: linux-next: manual merge of the moduleh tree with the vfs tree
+Message-Id: <20120319165951.947778b342e1ff5c56bee151@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__19_Mar_2012_16_59_51_+1100_KEvQYDolWSltT4gy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove local copy: acpi_root_hp_work
+--Signature=_Mon__19_Mar_2012_16_59_51_+1100_KEvQYDolWSltT4gy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org
+Hi Paul,
+
+Today's linux-next merge of the moduleh tree got a conflict in
+include/linux/reiserfs_fs.h between commit e9876523cf40 ("move private
+bits of reiserfs_fs.h to fs/reiserfs/reiserfs.h") from the vfs tree and
+commit 187f1882b5b0 ("BUG: headers with BUG/BUG_ON etc. need
+linux/bug.h") from the moduleh tree.
+
+The former commit gutted this file so that the latter patch is no longer
+needed.   I also added the following patch as a merge fix.
+
+Al: this could be added to your tree.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 19 Mar 2012 16:43:56 +1100
+Subject: [PATCH] reiserfs: reiserfs.h uses BUG so should include bug.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/acpi/pci_root_hp.c |   34 +++-------------------------------
- 1 files changed, 3 insertions(+), 31 deletions(-)
+ fs/reiserfs/reiserfs.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
-index 214adcb..d2ace81 100644
---- a/drivers/acpi/pci_root_hp.c
-+++ b/drivers/acpi/pci_root_hp.c
-@@ -79,34 +79,6 @@ static void remove_acpi_root_bridge(struct acpi_root_bridge *bridge)
- 	kfree(bridge);
- }
- 
--struct acpi_root_hp_work {
--	struct work_struct work;
--	acpi_handle handle;
--	u32 type;
--	void *context;
--};
--
--static void alloc_acpi_root_hp_work(acpi_handle handle, u32 type,
--					void *context,
--					void (*func)(struct work_struct *work))
--{
--	struct acpi_root_hp_work *hp_work;
--	int ret;
--
--	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
--	if (!hp_work)
--		return;
--
--	hp_work->handle = handle;
--	hp_work->type = type;
--	hp_work->context = context;
--
--	INIT_WORK(&hp_work->work, func);
--	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
--	if (!ret)
--		kfree(hp_work);
--}
--
- /* Program resources in newly inserted bridge */
- static void acpi_root_configure_bridge(acpi_handle handle)
- {
-@@ -204,11 +176,11 @@ static void _handle_hotplug_event_root(struct work_struct *work)
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
--	struct acpi_root_hp_work *hp_work;
-+	struct acpi_hp_work *hp_work;
- 	acpi_handle handle;
- 	u32 type;
- 
--	hp_work = container_of(work, struct acpi_root_hp_work, work);
-+	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
- 
-@@ -256,7 +228,7 @@ static void _handle_hotplug_event_root(struct work_struct *work)
- static void handle_hotplug_event_root(acpi_handle handle, u32 type,
- 					void *context)
- {
--	alloc_acpi_root_hp_work(handle, type, context,
-+	alloc_acpi_hp_work(handle, type, context,
- 				_handle_hotplug_event_root);
- }
- 
--- 
-1.7.7
+diff --git a/fs/reiserfs/reiserfs.h b/fs/reiserfs/reiserfs.h
+index 445d768..a59d271 100644
+--- a/fs/reiserfs/reiserfs.h
++++ b/fs/reiserfs/reiserfs.h
+@@ -7,6 +7,7 @@
+ #include <linux/slab.h>
+ #include <linux/interrupt.h>
+ #include <linux/sched.h>
++#include <linux/bug.h>
+ #include <linux/workqueue.h>
+ #include <asm/unaligned.h>
+ #include <linux/bitops.h>
+--=20
+1.7.9.1
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__19_Mar_2012_16_59_51_+1100_KEvQYDolWSltT4gy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPZstXAAoJEECxmPOUX5FERzkP/jhMeDmDPMvE2F/Xl+DLeU1Q
+7MWrW54S2RMYnt9InzwWDXYKRk+gtjaT4jhK06sW5KO6FUL74jKLT8/EAPd0ojuF
+VJ5mTIPLqOhP8WX4temgUOJjDJrqNaMjrEDedwldpGxYpt9ArqLvqzq5f/gDoEd/
+dhixDqM1OWVYM7K2O5bvYFWAZ4A0AOGmTEI/V2Ob3BBmZj9jNorUu5WaoE1wqsEU
+R8XVMO/GsG34dSVHZIsnirHUw9/2dlEJ1OHO3qwNKKZvEeReDbwAS8qbOy5vY7oK
+V2hbUTGapq1WGoeSaWVi97ueAjmgxmf0nqXcfNn7ACyjWVieH62kzxfQ+wnW96m5
+TyqtYOA1a/ahgHlK469DP4YGxP1QqVkBJY66pD1vdbtV/o0U/pfOPRAd3Ok9PtCe
+kaoCgtFuFMOtwce12x/mqEpRsFvG1iSAzvxzj7AwPzD3l8DBgAKnABeDqMdE2MtK
+7Lwa5AKa/0qoYV3Kb17GBgDJcEoeLHZ2v/dVTIeM4PEpcc2H2cfIxrJH5TFBQhNA
+yJR39My4jVolX1uXXOm6AhAUgZaiVaVkp/j/wQaqSLm8TpytkJhqFWhXcSoEMICu
+v9k8tFO2kj6PpzFfbe1qiNpM7lSC1mrnjL6pLkEolJQtjb+l+B+4soQBU0HqsO71
+6JDKGbNkDpIr6ehbvnht
+=xhJc
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__19_Mar_2012_16_59_51_+1100_KEvQYDolWSltT4gy--
