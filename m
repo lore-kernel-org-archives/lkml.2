@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162282Ab2CSRB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:01:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45647 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964905Ab2CSRB2 (ORCPT
+	id S1758836Ab2CSRDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:03:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37553 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab2CSRDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:01:28 -0400
-Date: Mon, 19 Mar 2012 10:01:22 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: INFO: suspicious RCU usage. on 3.3.0-rc7-next-20120316
-Message-ID: <20120319170122.GG11069@google.com>
-References: <4F6600FA.7050005@gmail.com>
- <20120318155401.GA8045@dhcp-172-17-108-109.mtv.corp.google.com>
- <4F661E89.5050000@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F661E89.5050000@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 19 Mar 2012 13:03:31 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1332122514.10557.270.camel@linux-s257.site>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+	 <1332122514.10557.270.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 17:03:13 +0530
+Message-ID: <1332156793.2964.3.camel@debian.Gayathri>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 10:42:33AM -0700, Justin P. Mattock wrote:
-> >Known problem.  The following pending patchset should fix the problem.
-> >
-> >   http://thread.gmane.org/gmane.linux.kernel/1263989
-> >
-> >Jens?
-> >
-> >Thakns.
-> >
+
+> For the maximum level causes blank screen...
 > 
-> cool thanks for the info..
-> I went and applied your patches(all 5) and there is fuzz, and some
-> errors with linux-next.
-> seems the suspicious message is still there, but the system boots up
-> just fine with the patches in.
->  maybe manually applying them by hand is what I need to do for -next
-> so I dont miss anything important with the patch that takes care of
-> the suspicious message.
+> Please kindly help to identify which driver handle the brightness
+> change, run the following 2 commands:
+> 
+> # echo 5 > /sys/class/backlight/acer-wmi/brightness 
+> # echo 5 > /sys/class/backlight/intel_backlight/brightness 
+> 
+> Which one works to change brightness on your machine?
 
-Hmm... weird.  I just double check and the patch series makes the
-warning go away.  Can you please try the following git branch instead?
+	Both  of them do not work for me.Only hot keys are working. 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-stats
+Writing to /sys/class/backlight/acer-wmi/brightness 
 
-Thanks.
+and /sys/class/backlight/intel_backlight/brightness do not cause any 
 
--- 
-tejun
+change in brightness.
+
+
+Regards , 
+
+Pradeep Subrahmanion
+
+> 
+> 
+> Thanks a lot!
+> Joey Lee
+
+
+
+
