@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab2CSMpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:45:39 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39811 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab2CSMph convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:45:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120319113241.GA13991@infradead.org>
-References: <201203140726.q2E7Q73i021607@drepperk.user.openhosting.com>
-	<20120314075842.GA337@infradead.org>
-	<CACVxJT-73diTvBhDxZ=7VUz2BqaRetdnCUGk3hh+_7gyWXB6Dw@mail.gmail.com>
-	<20120319113241.GA13991@infradead.org>
-Date: Mon, 19 Mar 2012 14:45:36 +0200
-Message-ID: <CACVxJT_4Lp3FYjsE_-pW_E3pT-hd5ARF0_2qMMJo5ooT3Y_WfA@mail.gmail.com>
-Subject: Re: [PATCH] Install kernel-page-flags.h
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Ulrich Drepper <drepper@akkadia.org>, arnd@arndb.de, davem@davemloft.net,
-        hverkuil@xs4all.nl, laurent.pinchart@ideasonboard.com,
-        linux-kernel@vger.kernel.org, mchehab@redhat.com
-Content-Type: text/plain; charset=UTF-8
+	id S1030593Ab2CSMvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:51:43 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49133 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850Ab2CSMvm convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Mon, 19 Mar 2012 08:51:42 -0400
+Message-Id: <4F6739E702000078000794DD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 19 Mar 2012 12:51:35 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Lasse Collin" <lasse.collin@tukaani.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xz: make use of BCJ filter also for 32-bit x86
+ kernel
+References: <4F621C930200007800078B9E@nat28.tlf.novell.com>
+ <20120316204737.23aacd2b@tukaani.org>
+ <4F66F6A302000078000792FF@nat28.tlf.novell.com>
+ <20120319143647.3cf46ed2@tukaani.org>
+In-Reply-To: <20120319143647.3cf46ed2@tukaani.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 2:32 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Mar 14, 2012 at 12:40:36PM +0200, Alexey Dobriyan wrote:
->> >> Programs using /proc/kpageflags need to know about the various flags. ??The
->> >> <linux/kernel-page-flags.h> provides them and the comments in the file
->> >> indicate that it is supposed to be used by user-level code. ??But the file
->> >> is not installed.
->> >>
->> >> The patch below installs the headers and marks the unstable flags as
->> >> out-of-bounds.
->> >
->> > I don't think this is a good idea at all. ??Let's shoot the person who
->> > added that braindead interface ASAP, and replace it with one printing
->> > the flags in ASCII format.
->>
->> ASCII sucks.
->> This interface is not for humans.
->
-> But we still can't lock down the page flags for a user interface - they
-> are a very scare resource and we can't afford to keep them stable due
-> to userspace poking into internals.
->
-> I guess the best we can do is to have a translation table for kernel
-> internal to external documented flags.  Once you export the header with
-> the meanings it's time to add that table, even if it starts out as a 1:1
-> mapping.
+>>> On 19.03.12 at 13:36, Lasse Collin <lasse.collin@tukaani.org> wrote:
+> On 2012-03-19 Jan Beulich wrote:
+>> >>> On 16.03.12 at 19:47, Lasse Collin <lasse.collin@tukaani.org>
+>> >>> wrote:
+>> > On 2012-03-15 Jan Beulich wrote:
+>> >> The ARCH value for 32-bit x86 is not x86, but i?86.
+>> > 
+>> > Thanks for noticing this. Is ARCH even the correct variable to use?
+>> > Maybe SRCARCH would be better. Then it would be enough to test for
+>> > x86, if I understand the toplevel Makefile correctly.
+>> 
+>> Yes, that might be even better (albeit requiring adjustment of the
+>> script should the naming in the source tree ever change again,
+>> whereas the ARCH values are supposedly stable).
+> 
+> I think I will go with SRCARCH then. The directory names don't change so
+> often.
+> 
+> Could you quickly check if the following is OK? It works on x86-64.
 
-Well, this is totally different issue.
-Translation is already there, see stable_page_flags().
+Yes, it is.
+
+Acked-by: Jan Beulich <jbeulich@suse.com>
+
+> diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
+> --- a/scripts/xz_wrap.sh
+> +++ b/scripts/xz_wrap.sh
+> @@ -12,8 +12,8 @@
+>  BCJ=
+>  LZMA2OPTS=
+>  
+> -case $ARCH in
+> -	x86|x86_64)     BCJ=--x86 ;;
+> +case $SRCARCH in
+> +	x86)            BCJ=--x86 ;;
+>  	powerpc)        BCJ=--powerpc ;;
+>  	ia64)           BCJ=--ia64; LZMA2OPTS=pb=4 ;;
+>  	arm)            BCJ=--arm ;;
+> 
+>> Will you get a patch to Linus then to fix all of these in 3.4?
+> 
+> I will. Should the fix be included in the stable trees too? I'm not sure
+> if this is acceptable under the stable kernel rules.
+
+Neither am I. It's not really critical to get this right, so I'd personally
+not consider it a stable candidate.
+
+> At least someone should test it on SPARC first.
+
+Yes.
+
+Thanks, Jan
+
