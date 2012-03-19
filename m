@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab2CSU2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:28:47 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:59656 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab2CSU2q (ORCPT
+	id S1032999Ab2CSU25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:28:57 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:55645 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759381Ab2CSU2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:28:46 -0400
+	Mon, 19 Mar 2012 16:28:48 -0400
 From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org,
         Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 1/2] Revert "trace-cmd: Add function declaration to fix compile warning"
-Date: Mon, 19 Mar 2012 13:28:42 -0700
-Message-Id: <1332188923-13375-1-git-send-email-vnagarnaik@google.com>
+Subject: [PATCH 2/2] trace-cmd: Close the trace file descriptor
+Date: Mon, 19 Mar 2012 13:28:43 -0700
+Message-Id: <1332188923-13375-2-git-send-email-vnagarnaik@google.com>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1332188923-13375-1-git-send-email-vnagarnaik@google.com>
+References: <1332188923-13375-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 1fc4fb039bfa3f0358d7e9810de71c58a7b32b64.
+trace-cmd opens "trace_raw" file descriptor to splice data continuously
+through it to the CPU files. This causes a lot of pages being allocated
+for the splice interface in the kernel. After the recorder instance is
+destroyed, it doesn't close the file descriptor causing many of the
+pages to remain in the cache. This gives an invalid view of memory lying
+around in cache.
 
-Steven added commit ba911ea7fc1fdd13e3bce1b2001f5b432df8edae which does
-exactly the same thing. Now we end up with a duplicate declaration of
-the function trace_util_ftrace_options(). Reverting the commit gets rid
-of the warning.
+In any case, it is a good practice for the applications to close all the
+descriptors that are opened.
+
+This patch closes the open file descriptor which is used in the splice()
+call and updates the check for disk file descriptor when closing it.
 
 Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 ---
- trace-cmd.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ trace-recorder.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/trace-cmd.h b/trace-cmd.h
-index 3f522ee..f904dc5 100644
---- a/trace-cmd.h
-+++ b/trace-cmd.h
-@@ -218,7 +218,6 @@ long tracecmd_flush_recording(struct tracecmd_recorder *recorder);
- /* --- Plugin handling --- */
- extern struct plugin_option trace_ftrace_options[];
+diff --git a/trace-recorder.c b/trace-recorder.c
+index 4a01fb9..215affc 100644
+--- a/trace-recorder.c
++++ b/trace-recorder.c
+@@ -50,7 +50,10 @@ void tracecmd_free_recorder(struct tracecmd_recorder *recorder)
+ 	if (!recorder)
+ 		return;
  
--void trace_util_ftrace_options(void);
- void trace_util_add_option(const char *name, const char *val);
- void trace_util_load_plugins(struct pevent *pevent, const char *suffix,
- 			     void (*load_plugin)(struct pevent *pevent,
+-	if (recorder->fd)
++	if (recorder->trace_fd >= 0)
++		close(recorder->trace_fd);
++
++	if (recorder->fd >= 0)
+ 		close(recorder->fd);
+ 
+ 	free(recorder);
 -- 
 1.7.7.3
 
