@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030957Ab2CSMYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:24:48 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60034 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab2CSMYr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:24:47 -0400
+	id S1031031Ab2CSMZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:25:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755877Ab2CSMZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 08:25:31 -0400
+Message-ID: <4F67257F.4030803@redhat.com>
+Date: Mon, 19 Mar 2012 14:24:31 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1332156983-9844-1-git-send-email-laura@rosedu.org>
-References: <1332156983-9844-1-git-send-email-laura@rosedu.org>
-Date: Mon, 19 Mar 2012 14:24:46 +0200
-Message-ID: <CAEnQRZC_M_c-TaCGrcG-QQHi3cSosoX336M4LDovG6=EQfUD_g@mail.gmail.com>
-Subject: Re: [PATCH] Spell fix in fs/proc/kcore.c
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Laura Vasilescu <laura@rosedu.org>
-Cc: linux-kernel@vger.kernel.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+References: <20120316144028.036474157@chello.nl>   <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>  <4F671B90.3010209@redhat.com> <1332159657.18960.321.camel@twins>
+In-Reply-To: <1332159657.18960.321.camel@twins>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 1:36 PM, Laura Vasilescu <laura@rosedu.org> wrote:
-> ---
->  fs/proc/kcore.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On 03/19/2012 02:20 PM, Peter Zijlstra wrote:
+> On Mon, 2012-03-19 at 13:42 +0200, Avi Kivity wrote:
+> > It's the standard space/time tradeoff.  Once solution wants more
+> > storage, the other wants more faults.
+> > 
+> > Note scanners can use A/D bits which are cheaper than faults.
 >
-> diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
-> index d245cb2..e5e69af 100644
-> --- a/fs/proc/kcore.c
-> +++ b/fs/proc/kcore.c
-> @@ -513,7 +513,7 @@ read_kcore(struct file *file, char __user *buffer, size_t buflen, loff_t *fpos)
+> I'm not convinced.. the scanner will still consume time even if the
+> system is perfectly balanced -- it has to in order to determine this.
 >
->                                n = copy_to_user(buffer, (char *)start, tsz);
->                                /*
-> -                                * We cannot distingush between fault on source
-> +                                * We cannot distinguish between fault on source
->                                 * and fault on destination. When this happens
->                                 * we clear too and hope it will trigger the
->                                 * EFAULT again.
-> --
-> 1.7.2.5
+> So sure, A/D/other page table magic can make scanners faster than faults
+> however you only need faults when you're actually going to migrate a
+> task. Whereas you always need to scan, even in the stable state.
+>
+> So while the per-instance times might be in favour of scanning, I'm
+> thinking the accumulated time is in favour of faults.
 
-That's nice. Thanks for your contribution.
+When you migrate a vnode, you don't need the faults at all.  You know
+exactly which pages need to be migrated, you can just queue them
+immediately when you make that decision.
 
-Anyhow, please review this:
-* add a Signed-off-by line
-* add a proper prefix to Subject (e.g: kcore: spell fix in ... )
-* don't forget to Cc the maintainers (run ./scripts/get_maintainer.pl
-<your_patch>)
+The scanning therefore only needs to pick up the stragglers and can be
+set to a very low frequency.
 
-Daniel.
+-- 
+error compiling committee.c: too many arguments to function
+
