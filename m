@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab2CSKb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 06:31:59 -0400
-Received: from 85.52.197.2.static.abi.uni2.es ([85.52.197.2]:42003 "EHLO
-	www.manty.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2CSKb6 (ORCPT
+	id S1757044Ab2CSKjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 06:39:33 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:47675 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab2CSKjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 06:31:58 -0400
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 06:31:57 EDT
-Date: Mon, 19 Mar 2012 11:21:54 +0100
-From: Santiago Garcia Mantinan <manty@debian.org>
-To: linux-kernel@vger.kernel.org
-Cc: 664605@bugs.debian.org
-Subject: readd back NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option.c
- [patch]
-Message-ID: <20120319102154.GA16536@www.manty.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 19 Mar 2012 06:39:31 -0400
+Date: Mon, 19 Mar 2012 11:37:44 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "beattiem@uk.ibm.com" <beattiem@uk.ibm.com>,
+        "holzheu@de.ibm.com" <holzheu@de.ibm.com>,
+        "munzert@de.ibm.com" <munzert@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
+Message-ID: <20120319113744.5992d48f@de.ibm.com>
+In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE04304FF5A@SCYBEXDAG04.amd.com>
+References: <491D6B4EAD0A714894D8AD22F4BDE0430495F2@SCYBEXDAG04.amd.com>
+	<491D6B4EAD0A714894D8AD22F4BDE04304FF5A@SCYBEXDAG04.amd.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12031910-8372-0000-0000-00000206A619
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, 19 Mar 2012 01:55:40 +0000
+"Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com> wrote:
 
-It looks like there was a mistake on Dirk De Schepper's patch commited by
-gregkh on 4 Sep 2010 00:33:40 +0000 which can be seen here:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=c7aa8f44b4d1dc73591894a2dd6909213612d299
+> CC'ing maintainer: Martin Schwidefsky &  Heiko Carstens...
+> 
+> -----Original Message-----
+> From: Chen, Dennis (SRDC SW) 
+> Sent: Sunday, March 18, 2012 3:41 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: beattiem@uk.ibm.com; holzheu@de.ibm.com; munzert@de.ibm.com; linux390@de.ibm.com; linux-s390@vger.kernel.org; Chen, Dennis (SRDC SW)
+> Subject: [PATCH]s390/char/vmur.c: memory leak Fix in the driver
+> 
+> This patch is used to fix a memory leak issue in s390/char/vmur.c: a character device instance is 
+> allocated by cdev_alloc, the cdev_del will not free that space if cdev_init is applied before. 
+> 
+> Signed-off-by: dennis1.chen@amd.com
+> --- a/s390/char/vmur.c  2012-03-18 02:50:47.950963949 +0800
+> +++ b/s390/char/vmur.c  2012-03-18 03:12:04.790936740 +0800
+> @@ -903,7 +903,7 @@ static int ur_set_online(struct ccw_devi
+>                 goto fail_urdev_put;
+>         }
+> 
+> -       cdev_init(urd->char_device, &ur_fops);
+> +       urd->char_device->ops = &ur_fops;
+>         urd->char_device->dev = MKDEV(major, minor);
+>         urd->char_device->owner = ur_fops.owner;
+> 
 
-He removed NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED from the scruct while
-moving things around, it was a bit difficult to see as the defines and the
-struct are not on the same order.  We've carried this for a year and a half
-and for what I've seen there have been some reports about this like:
-https://bugs.launchpad.net/ubuntu/+source/usb-modeswitch/+bug/750362
-but unfortunately it didn't get much attention.
+How does that fix anything? My copy of cdev_init looks like this:
 
-I've looked at the strings and the only one missing was
-NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED, so here is the patch for it.
+void cdev_init(struct cdev *cdev, const struct file_operations *fops)
+{
+        memset(cdev, 0, sizeof *cdev);
+        INIT_LIST_HEAD(&cdev->list);
+        kobject_init(&cdev->kobj, &ktype_cdev_default);
+        cdev->ops = fops;
+}
 
---- option.c.old	2012-03-19 10:16:31.046565765 +0100
-+++ option.c	2012-03-19 10:55:34.348846327 +0100
-@@ -538,6 +538,7 @@
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_FULLSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_HIGHSPEED) },
-+	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED3) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED4) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED5) },
+It does not allocate anything but it initializes some more fields.
+The new code would only initialize the ops field. In addition
+cdev_del does a kobject_put and the release function of the object
+will call cdev_dynamic_release as far as I can tell. That code
+should be fine as it is.
 
-Regards.
 -- 
-Manty/BestiaTester -> http://manty.net
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
