@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab2CSEgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 00:36:51 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:48440 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab2CSEgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 00:36:49 -0400
+	id S1753392Ab2CSEji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 00:39:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48454 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab2CSEjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 00:39:37 -0400
+Date: Mon, 19 Mar 2012 00:39:37 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: David Daney <david.daney@cavium.com>
+Cc: Joe Perches <joe@perches.com>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] ext4: Add -DDEBUG to Makefile
+Message-ID: <20120319043937.GN31682@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	David Daney <david.daney@cavium.com>, Joe Perches <joe@perches.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <cover.1331856299.git.joe@perches.com>
+ <7ee60f3b750f4500f9bdcb64f358acbf17987036.1331856300.git.joe@perches.com>
+ <4F63646D.1040700@cavium.com>
 MIME-Version: 1.0
-In-Reply-To: <b157e2d1a746733d1814b9726f326d52d36da2fc.1332116921.git.joe@perches.com>
-References: <cover.1332116921.git.joe@perches.com>
-	<b157e2d1a746733d1814b9726f326d52d36da2fc.1332116921.git.joe@perches.com>
-Date: Sun, 18 Mar 2012 21:36:49 -0700
-X-Google-Sender-Auth: 4-HOnSQ0LBYXwXsI77Izxeji1_o
-Message-ID: <CAJ-Vmo=ceSV38vQGfs8cKJScWjYF4kbQdK3+JJvQLCmnURaEwA@mail.gmail.com>
-Subject: Re: [PATCH wireless-next 2/3] ath5k: Introduce _ath5k_printk to
- reduce code/text
-From: Adrian Chadd <adrian@freebsd.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Bob Copeland <me@bobcopeland.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F63646D.1040700@cavium.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Mar 16, 2012 at 09:03:57AM -0700, David Daney wrote:
+> 
+> In many other susbsystems/drivers, the definition of DEBUG is gated
+> by a separate Kconfig symbol used to select debugging just for that
+> susbsystem/driver (see CONFIG_MMC_DEBUG for example).
 
-So the reason this is a macro in the FreeBSD HAL is so that the args
-aren't evaluated unless the level (or debug bitmap in my case) fires
-off.
+In ext4 we have many different debugging patches, and in general you'd
+never want to enable them all at once (you'd get way too much noise).
+The debugging statements are there when a developer is debugging very
+specific section of code (i.e., the directory index, or the extent
+tree, or the block allocator, etc.).  It's really only ext4 developers
+who need to use those debugging statements, and even for them it's
+quite rare.
 
-Otherwise compiling in debugging will cause a _lot_ of spurious
-register reads to occur that are then tossed. This was one of the big
-reasons for instability and slow performance when AH_DEBUG was
-enabled.
+So I've never considered it worthwhile to enable them via a CONFIG_*
+menu item; developers who are debugging a specific problem will
+generally just drop in the specific #define on an ad hoc basis, and
+that works fine.
 
-
-
-Adrian
+					- Ted
