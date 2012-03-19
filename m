@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032991Ab2CSUHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:07:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49396 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032761Ab2CSUHa convert rfc822-to-8bit (ORCPT
+	id S1032961Ab2CSUHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:07:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40074 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032835Ab2CSUHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Mar 2012 16:07:30 -0400
-Message-ID: <1332187616.18960.391.camel@twins>
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Mon, 19 Mar 2012 21:06:56 +0100
-In-Reply-To: <20120319134029.GK24602@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	 <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>
-	 <4F671B90.3010209@redhat.com> <20120319134029.GK24602@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+Date: Mon, 19 Mar 2012 13:07:07 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-fde0eeaba7fe18dfd2ee6142fb562123e510ef84@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1332125628-23088-1-git-send-email-namhyung.kim@lge.com>
+References: <1332125628-23088-1-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf report: Document --symbol-filter option
+Git-Commit-ID: fde0eeaba7fe18dfd2ee6142fb562123e510ef84
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Mar 2012 13:07:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 14:40 +0100, Andrea Arcangeli wrote:
-> > I agree with this, but it's really widespread throughout the kernel,
-> > from interrupts to work items to background threads.  It needs to be
-> > solved generically (IIRC vhost has some accouting fix for a similar issue).
-> 
-> Exactly. 
+Commit-ID:  fde0eeaba7fe18dfd2ee6142fb562123e510ef84
+Gitweb:     http://git.kernel.org/tip/fde0eeaba7fe18dfd2ee6142fb562123e510ef84
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 19 Mar 2012 11:53:48 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 19 Mar 2012 12:13:56 -0300
 
-The fact that we all agree its a problem and that nobody has a sane idea
-on how to solve it might argue against this.
+perf report: Document --symbol-filter option
 
-Also, the fact that there's existing ugly isn't excuse to stop worrying
-about it and add more.
+Add missing description of --symbol-filter in Documentation/perf-report.txt.
+
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1332125628-23088-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-report.txt |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 87feeee..68bbf9c 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -48,6 +48,9 @@ OPTIONS
+ 	Only consider these symbols. CSV that understands
+ 	file://filename entries.
+ 
++--symbol-filter=::
++	Only show symbols that match (partially) with this filter.
++
+ -U::
+ --hide-unresolved::
+         Only display entries resolved to a symbol.
