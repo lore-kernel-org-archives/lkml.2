@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030879Ab2CSOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 10:05:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49493 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964845Ab2CSOF4 (ORCPT
+	id S1031025Ab2CSOGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 10:06:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43128 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964937Ab2CSOGt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 10:05:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120319135636.GA30456@ericsson.com>
-References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
-	<20120317123151.AAF9A3E0952@localhost>
-	<1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-	<CACRpkdb4PbZWm8vCaC0MO0a=K+0ZBDhmvoRrTtKXqEy-Jz-VWQ@mail.gmail.com>
-	<20120319005406.GA28497@ericsson.com>
-	<CACRpkdbZJR7NObUQCkjCEu3KedS5bfD4TuMGakL_N7BxKNUJnA@mail.gmail.com>
-	<20120319135636.GA30456@ericsson.com>
-Date: Mon, 19 Mar 2012 15:05:55 +0100
-Message-ID: <CACRpkdYTPc9b0ys-rMJ6VJSxVX9uubq6r1QFk4bQN5rMiqQPMQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: =?ISO-8859-1?Q?Diego_Elio_Petten=F2?= <flameeyes@flameeyes.eu>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Denis Turischev <denis@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Mar 2012 10:06:49 -0400
+Message-ID: <1332165959.18960.340.camel@twins>
+Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Mon, 19 Mar 2012 15:05:59 +0100
+In-Reply-To: <alpine.DEB.2.00.1203190852380.16879@router.home>
+References: <20120316144028.036474157@chello.nl>
+	 <20120316144240.763518310@chello.nl>
+	 <alpine.DEB.2.00.1203161333370.10211@router.home>
+	 <1331932375.18960.237.camel@twins>
+	 <alpine.DEB.2.00.1203190852380.16879@router.home>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 2:56 PM, Guenter Roeck
-<guenter.roeck@ericsson.com> wrote:
-> On Mon, Mar 19, 2012 at 04:26:44AM -0400, Linus Walleij wrote:
+On Mon, 2012-03-19 at 08:53 -0500, Christoph Lameter wrote:
+> On Fri, 16 Mar 2012, Peter Zijlstra wrote:
+> 
+> > > > Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+> > > > facilitate efficient on-demand memory migration.
+> > >
+> > > The numa hierachy is already complex. Could we avoid adding another layer
+> > > by adding a MPOL_HOME_NODE and make that the default?
+> >
+> > Not sure that's really a win, the behaviour would be the same we just
+> > have to implement another policy, which is likely more code.
+> 
+> A HOME_NODE policy would also help to ensure that existing applications
+> continue to work as expected. Given that people in the HPC industry and
+> elsewhere have been fine tuning around the scheduler for years this is a
+> desirable goal and ensures backward compatibility.
 
->> OK that is pinmuxing, if that is to be software-controlled the place to do
->> it is in drivers/pinctrl. (Documentation/pinctrl.txt gives the backrgound.)
-(...)
->>
-> Personally I would not dare touch those pins. If a pin is configured as UART pin
-> (or whatever), it is quite unlikely that it is exposed as GPIO pin. Worst case,
-> changing the configuration may result in broken hardware. Not sure what is supposed
-> to be gained by enabling the user to do that.
+I really have no idea what you're saying. Existing applications that use
+mbind/set_mempolicy already continue to function exactly like before,
+see how the new layer is below all that.
 
-Define "user", pinctrl does not have userspace interfaces if that's
-what you mean.
 
-If you mean "kernel programmer", these creatures seem to not respect what
-they should and shouldn't poke at ;-)
-
-The usecase is typically if the hardware is used in two different systems
-where the ROM/bootcode/etc does not set up muxing correctly, or are setup
-in a sub-optimal way (e.g. working but consuming too much power) and the
-kernel needs to get involved. Unless you have any scenario like that, no
-need to worry about it.
-
-Yours,
-Linus Walleij
