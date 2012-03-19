@@ -1,196 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030178Ab2CSC6f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 22:58:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56530 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab2CSC6c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 22:58:32 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F66A059.20801@jp.fujitsu.com>
-Date: Mon, 19 Mar 2012 11:56:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1757811Ab2CSC60 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 22:58:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:39830 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754031Ab2CSC6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 22:58:24 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: jim.cromie@gmail.com, jbaron@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [00/11] pr_debug during module initialization
+In-Reply-To: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 19 Mar 2012 12:34:01 +1030
+Message-ID: <87aa3dxs6m.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 07/10] hugetlbfs: Add memcg control files for hugetlbfs
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1331919570-2264-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/17 2:39), Aneesh Kumar K.V wrote:
-
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On Wed, 14 Mar 2012 17:01:55 -0600, jim.cromie@gmail.com wrote:
 > 
-> This add control files for hugetlbfs in memcg
+> This is 3rd revision of the dyndbg modinit patches, previously sent
+> Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
+> this set reworks the remainder.
 > 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-
-I have a question. When a user does
-
-	1. create memory cgroup as
-		/cgroup/A
-	2. insmod hugetlb.ko
-	3. ls /cgroup/A
-
-and then, files can be shown ? Don't we have any problem at rmdir A ?
-
-I'm sorry if hugetlb never be used as module.
-
-a comment below.
-
-> ---
->  include/linux/hugetlb.h    |   17 +++++++++++++++
->  include/linux/memcontrol.h |    7 ++++++
->  mm/hugetlb.c               |   25 ++++++++++++++++++++++-
->  mm/memcontrol.c            |   48 ++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 96 insertions(+), 1 deletions(-)
+> It implements the "fake" module param approach proposed by
+> Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
 > 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 1f70068..cbd8dc5 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -4,6 +4,7 @@
->  #include <linux/mm_types.h>
->  #include <linux/fs.h>
->  #include <linux/hugetlb_inline.h>
-> +#include <linux/cgroup.h>
->  
->  struct ctl_table;
->  struct user_struct;
-> @@ -220,6 +221,12 @@ struct hstate {
->  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
->  	unsigned int free_huge_pages_node[MAX_NUMNODES];
->  	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
-> +	/* mem cgroup control files */
-> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> +	struct cftype cgroup_limit_file;
-> +	struct cftype cgroup_usage_file;
-> +	struct cftype cgroup_max_usage_file;
-> +#endif
->  	char name[HSTATE_NAME_LEN];
->  };
->  
-> @@ -338,4 +345,14 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
->  #define hstate_index(h) 0
->  #endif
->  
-> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> +extern int register_hugetlb_memcg_files(struct cgroup *cgroup,
-> +					struct cgroup_subsys *ss);
-> +#else
-> +static inline int register_hugetlb_memcg_files(struct cgroup *cgroup,
-> +					       struct cgroup_subsys *ss)
-> +{
-> +	return 0;
-> +}
-> +#endif
->  #endif /* _LINUX_HUGETLB_H */
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 320dbad..73900b9 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -440,6 +440,7 @@ extern void mem_cgroup_hugetlb_uncharge_page(int idx, unsigned long nr_pages,
->  					     struct page *page);
->  extern void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
->  					      struct mem_cgroup *memcg);
-> +extern int mem_cgroup_hugetlb_file_init(int idx);
->  
->  #else
->  static inline int
-> @@ -470,6 +471,12 @@ mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
->  {
->  	return;
->  }
-> +
-> +static inline int mem_cgroup_hugetlb_file_init(int idx)
-> +{
-> +	return 0;
-> +}
-> +
->  #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
->  #endif /* _LINUX_MEMCONTROL_H */
->  
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 91361a0..684849a 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1819,6 +1819,29 @@ static int __init hugetlb_init(void)
->  }
->  module_init(hugetlb_init);
->  
-> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> +int register_hugetlb_memcg_files(struct cgroup *cgroup,
-> +				 struct cgroup_subsys *ss)
-> +{
+> This set is on top of linux-next, since that includes Pawel Moll's
+> initcall-level params patch.  Im not using this feature, but I didnt
+> know that when I started.
+> 
+> Rusty Russell did a partial review of 2nd rev (sent off-list), here:
+> http://thread.gmane.org/gmane.linux.kernel/1262934
+> This revision incorporates my understanding of his feedback.
 
-> +	int ret = 0;
-> +	struct hstate *h;
-> +
-> +	for_each_hstate(h) {
-> +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
-> +		if (ret)
-> +			return ret;
-> +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
-> +		if (ret)
-> +			return ret;
-> +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
-> +		if (ret)
-> +			return ret;
-> +
-> +	}
-> +	return ret;
-> +}
-> +#endif
-> +
->  /* Should be called on processing a hugepagesz=... option */
->  void __init hugetlb_add_hstate(unsigned order)
->  {
-> @@ -1842,7 +1865,7 @@ void __init hugetlb_add_hstate(unsigned order)
->  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
->  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
->  					huge_page_size(h)/1024);
-> -
-> +	mem_cgroup_hugetlb_file_init(hugetlb_max_hstate - 1);
->  	parsed_hstate = h;
->  }
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d8b3513..4900b72 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -5123,6 +5123,51 @@ static void mem_cgroup_destroy(struct cgroup_subsys *ss,
->  	mem_cgroup_put(memcg);
->  }
->  
-> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> +static char *mem_fmt(char *buf, unsigned long n)
-> +{
-> +	if (n >= (1UL << 30))
-> +		sprintf(buf, "%luGB", n >> 30);
-> +	else if (n >= (1UL << 20))
-> +		sprintf(buf, "%luMB", n >> 20);
-> +	else
-> +		sprintf(buf, "%luKB", n >> 10);
-> +	return buf;
-> +}
-> +
-> +int mem_cgroup_hugetlb_file_init(int idx)
-> +{
+The module parts seem fine.  The re-parsing of the commandline seems
+weird:  I'd really rather see something in unknown_bootoption(), like:
 
+	/* Unused module parameter. */
+	if (strchr(param, '.') && (!val || strchr(param, '.') < val)) {
++               /* Check for <module>.dyndebug fake param */
++               dyndebug_parse(param, val);
+		return 0;
+        }
 
-__init ? And... do we have guarantee that this function is called before
-creating root mem cgroup even if CONFIG_HUGETLBFS=y ?
+(Note that param will be the whole line here, eg "foo.dyndebug=+p", with
+ val pointing just past the "=" (if any)).
 
-Thanks,
--Kame
+Of course, that means the parsing happens at that "parse_args("Booting
+kernel"...)" point in init/main.c, which may not suit.
 
+Otherwise, all looks good!
+
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+Cheers,
+Rusty.
+-- 
+  How could I marry someone with more hair than me?  http://baldalex.org
