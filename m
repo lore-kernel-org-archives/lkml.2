@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab2CSBcL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 21:32:11 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51580 "EHLO
+	id S1757488Ab2CSBeM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 21:34:12 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56710 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab2CSBcI convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757366Ab2CSBeJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 21:32:08 -0400
+	Sun, 18 Mar 2012 21:34:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <1330592577-16546-3-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <1330592577-16546-8-git-send-email-ming.m.lin@intel.com>
 References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
-	<1330592577-16546-3-git-send-email-ming.m.lin@intel.com>
-Date: Mon, 19 Mar 2012 09:32:07 +0800
-X-Google-Sender-Auth: 2dWThq5RaGE3JiYFxIQTntTvJ4E
-Message-ID: <CAF1ivSa00P8Yx1vhAf3MV56zSLbZVmjWEnhigvJdwfkzcJUNog@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 2/8] ACPI: Add interface to register/unregister
- device to/from power resources
+	<1330592577-16546-8-git-send-email-ming.m.lin@intel.com>
+Date: Mon, 19 Mar 2012 09:34:08 +0800
+X-Google-Sender-Auth: 4C3h7HxD-oESAvAsjxIe1VMvUZ0
+Message-ID: <CAF1ivSbJi6rOYJ0wm7mPj2GtRG=UDHkm5TrbCHcSpup6H5EQjQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 7/8] PM / Runtime: Add can_power_off flag to subsys data
 From: Lin Ming <ming.m.lin@intel.com>
 To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
         Alan Stern <stern@rowland.harvard.edu>,
@@ -31,289 +30,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Mar 1, 2012 at 5:02 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> Devices may share same list of power resources in _PR0, for example
->
-> Device(Dev0)
-> {
->        Name (_PR0, Package (0x01)
->        {
->                P0PR,
->                P1PR
->        })
-> }
->
-> Device(Dev1)
-> {
->        Name (_PR0, Package (0x01)
->        {
->                P0PR,
->                P1PR
->        }
-> }
->
-> Assume Dev0 and Dev1 were runtime suspended.
-> Then Dev0 is resumed first and it goes into D0 state.
-> But Dev1 is left in D0_Uninitialised state.
->
-> This is wrong. In this case, Dev1 must be resumed too.
->
-> In order to hand this case, each power resource maintains a list of
-> devices which relies on it.
->
-> When power resource is ON, it will check if the devices on its list
-> can be resumed. The device can only be resumed when all the power
-> resouces of its _PR0 are ON.
+> Parent device will check child's can_power_off flag to see if child device can
+> be powered off.
 >
 > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  include/linux/pm.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/pm.h b/include/linux/pm.h
+> index e4982ac..2e74531 100644
+> --- a/include/linux/pm.h
+> +++ b/include/linux/pm.h
+> @@ -465,6 +465,7 @@ struct pm_subsys_data {
+>  #ifdef CONFIG_PM_GENERIC_DOMAINS
+>        struct pm_domain_data *domain_data;
+>  #endif
+> +       bool can_power_off;
 
 Hi Rafael,
 
-This version addressed your comment at:
-https://lkml.org/lkml/2012/2/13/355
+I moved can_power_off flag to pm_subsys_daa.
+SCSI/SATA will use it.
 
-Now we support all combinations of device/power resource.
-
-Do you like it?
+Is it OK to you?
 
 Thanks,
 Lin Ming
 
-> ---
->  drivers/acpi/power.c    |  162 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h |    2 +
->  2 files changed, 164 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 0d681fb..7049a7d 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -40,9 +40,11 @@
->  #include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/slab.h>
-> +#include <linux/pm_runtime.h>
->  #include <acpi/acpi_bus.h>
->  #include <acpi/acpi_drivers.h>
->  #include "sleep.h"
-> +#include "internal.h"
->
->  #define PREFIX "ACPI: "
->
-> @@ -77,6 +79,20 @@ static struct acpi_driver acpi_power_driver = {
->                },
 >  };
 >
-> +/*
-> + * A power managed device
-> + * A device may rely on multiple power resources.
-> + * */
-> +struct acpi_power_managed_device {
-> +       struct device *dev; /* The physical device */
-> +       acpi_handle *handle;
-> +};
-> +
-> +struct acpi_power_resource_device {
-> +       struct acpi_power_managed_device *device;
-> +       struct acpi_power_resource_device *next;
-> +};
-> +
->  struct acpi_power_resource {
->        struct acpi_device * device;
->        acpi_bus_id name;
-> @@ -84,6 +100,9 @@ struct acpi_power_resource {
->        u32 order;
->        unsigned int ref_count;
->        struct mutex resource_lock;
-> +
-> +       /* List of devices relying on this power resource */
-> +       struct acpi_power_resource_device *devices;
->  };
->
->  static struct list_head acpi_power_resource_list;
-> @@ -183,8 +202,26 @@ static int acpi_power_get_list_state(struct acpi_handle_list *list, int *state)
->        return 0;
->  }
->
-> +/* Resume the device when all power resources in _PR0 are on */
-> +static void acpi_power_on_device(struct acpi_power_managed_device *device)
-> +{
-> +       struct acpi_device *acpi_dev;
-> +       acpi_handle handle = device->handle;
-> +       int state;
-> +
-> +       if (acpi_bus_get_device(handle, &acpi_dev))
-> +               return;
-> +
-> +       if(acpi_power_get_inferred_state(acpi_dev, &state))
-> +               return;
-> +
-> +       if (state == ACPI_STATE_D0 && pm_runtime_suspended(device->dev))
-> +               pm_request_resume(device->dev);
-> +}
-> +
->  static int __acpi_power_on(struct acpi_power_resource *resource)
->  {
-> +       struct acpi_power_resource_device *device_list = resource->devices;
->        acpi_status status = AE_OK;
->
->        status = acpi_evaluate_object(resource->device->handle, "_ON", NULL, NULL);
-> @@ -197,6 +234,12 @@ static int __acpi_power_on(struct acpi_power_resource *resource)
->        ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Power resource [%s] turned on\n",
->                          resource->name));
->
-> +       while (device_list) {
-> +               acpi_power_on_device(device_list->device);
-> +
-> +               device_list = device_list->next;
-> +       }
-> +
->        return 0;
->  }
->
-> @@ -299,6 +342,125 @@ static int acpi_power_on_list(struct acpi_handle_list *list)
->        return result;
->  }
->
-> +static void __acpi_power_resource_unregister_device(struct device *dev,
-> +               acpi_handle res_handle)
-> +{
-> +       struct acpi_power_resource *resource = NULL;
-> +       struct acpi_power_resource_device *prev, *curr;
-> +
-> +       if (acpi_power_get_context(res_handle, &resource))
-> +               return;
-> +
-> +       mutex_lock(&resource->resource_lock);
-> +       prev = NULL;
-> +       curr = resource->devices;
-> +       while (curr) {
-> +               if (curr->device->dev == dev) {
-> +                       if (!prev)
-> +                               resource->devices = curr->next;
-> +                       else
-> +                               prev->next = curr->next;
-> +
-> +                       kfree(curr);
-> +                       break;
-> +               }
-> +
-> +               prev = curr;
-> +               curr = curr->next;
-> +       }
-> +       mutex_unlock(&resource->resource_lock);
-> +}
-> +
-> +/* Unlink dev from all power resources in _PR0 */
-> +void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle)
-> +{
-> +       struct acpi_device *acpi_dev;
-> +       struct acpi_handle_list *list;
-> +       int i;
-> +
-> +       if (!dev || !handle)
-> +               return;
-> +
-> +       if (acpi_bus_get_device(handle, &acpi_dev))
-> +               return;
-> +
-> +       list = &acpi_dev->power.states[ACPI_STATE_D0].resources;
-> +
-> +       for (i = 0; i < list->count; i++)
-> +               __acpi_power_resource_unregister_device(dev,
-> +                       list->handles[i]);
-> +}
-> +
-> +static int __acpi_power_resource_register_device(
-> +       struct acpi_power_managed_device *powered_device, acpi_handle handle)
-> +{
-> +       struct acpi_power_resource *resource = NULL;
-> +       struct acpi_power_resource_device *power_resource_device;
-> +       int result;
-> +
-> +       result = acpi_power_get_context(handle, &resource);
-> +       if (result)
-> +               return result;
-> +
-> +       power_resource_device = kzalloc(
-> +               sizeof(*power_resource_device), GFP_KERNEL);
-> +       if (!power_resource_device)
-> +               return -ENOMEM;
-> +
-> +       power_resource_device->device = powered_device;
-> +
-> +       mutex_lock(&resource->resource_lock);
-> +       power_resource_device->next = resource->devices;
-> +       resource->devices = power_resource_device;
-> +       mutex_unlock(&resource->resource_lock);
-> +
-> +       return 0;
-> +}
-> +
-> +/* Link dev to all power resources in _PR0 */
-> +int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
-> +{
-> +       struct acpi_device *acpi_dev;
-> +       struct acpi_handle_list *list;
-> +       struct acpi_power_managed_device *powered_device;
-> +       int i, ret;
-> +
-> +       if (!dev || !handle)
-> +               return -ENODEV;
-> +
-> +       ret = acpi_bus_get_device(handle, &acpi_dev);
-> +       if (ret)
-> +               goto no_power_resource;
-> +
-> +       if (!acpi_dev->power.flags.power_resources)
-> +               goto no_power_resource;
-> +
-> +       powered_device = kzalloc(sizeof(*powered_device), GFP_KERNEL);
-> +       if (!powered_device)
-> +               return -ENOMEM;
-> +
-> +       powered_device->dev = dev;
-> +       powered_device->handle = handle;
-> +
-> +       list = &acpi_dev->power.states[ACPI_STATE_D0].resources;
-> +
-> +       for (i = 0; i < list->count; i++) {
-> +               ret = __acpi_power_resource_register_device(powered_device,
-> +                       list->handles[i]);
-> +
-> +               if (ret) {
-> +                       acpi_power_resource_unregister_device(dev, handle);
-> +                       break;
-> +               }
-> +       }
-> +
-> +       return ret;
-> +
-> +no_power_resource:
-> +       printk(KERN_WARNING PREFIX "Invalid Power Resource to register!");
-> +       return -ENODEV;
-> +}
-> +
->  /**
->  * acpi_device_sleep_wake - execute _DSW (Device Sleep Wake) or (deprecated in
->  *                          ACPI 3.0) _PSW (Power State Wake)
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 6cd5b64..e168fff 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -323,6 +323,8 @@ int acpi_bus_set_power(acpi_handle handle, int state);
->  int acpi_bus_update_power(acpi_handle handle, int *state_p);
->  bool acpi_bus_power_manageable(acpi_handle handle);
->  bool acpi_bus_can_wakeup(acpi_handle handle);
-> +int acpi_power_resource_register_device(struct device *dev, acpi_handle handle);
-> +void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle);
->  #ifdef CONFIG_ACPI_PROC_EVENT
->  int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
->  int acpi_bus_generate_proc_event4(const char *class, const char *bid, u8 type, int data);
+>  struct dev_pm_info {
 > --
 > 1.7.2.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
