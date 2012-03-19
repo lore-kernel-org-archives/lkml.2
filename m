@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759204Ab2CSSqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 14:46:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40433 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756688Ab2CSSqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 14:46:14 -0400
-Message-ID: <1332182773.3908.11.camel@joe2Laptop>
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: David Miller <davem@davemloft.net>, anca.emanuel@gmail.com,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 19 Mar 2012 11:46:13 -0700
-In-Reply-To: <20120319183126.GA6031@thunk.org>
-References: <20120319153133.GA2502@thunk.org>
-	 <CAJL_dMtC9fnOsY=4uDVJD=-h5u-qW=xjaf64gtDcgnKX2brhPw@mail.gmail.com>
-	 <20120319161425.GB2502@thunk.org>
-	 <20120319.141402.934377752041508724.davem@davemloft.net>
-	 <20120319183126.GA6031@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1759248Ab2CSSrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 14:47:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33789 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757896Ab2CSSro convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 14:47:44 -0400
+Message-ID: <1332182842.18960.376.camel@twins>
+Subject: Re: [RFC] AutoNUMA alpha6
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Mon, 19 Mar 2012 19:47:22 +0100
+In-Reply-To: <20120316182511.GJ24602@redhat.com>
+References: <20120316144028.036474157@chello.nl>
+	 <20120316182511.GJ24602@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 14:31 -0400, Ted Ts'o wrote:
-> On Mon, Mar 19, 2012 at 02:14:02PM -0400, David Miller wrote:
-> I've *already* gone far beyond the pr_fmt standardization, with the
-> ext4_msg() and ext4_error() system
+On Fri, 2012-03-16 at 19:25 +0100, Andrea Arcangeli wrote:
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=patch;h=30ed50adf6cfe85f7feb12c4279359ec52f5f2cd;hp=c03cf0621ed5941f7a9c1e0a343d4df30dbfb7a1
+> 
+> It's a big monlithic patch, but I'll split it.
 
-Please note the defects that were recently corrected there
-which occurred because of a lack of standardization both
-in prefix and termination style.
+I applied this big patch to a fairly recent tree from Linus but it
+failed to boot. It got stuck somewhere in SMP bringup.
 
-> One of the other reasons why I don't like the pr_* system because it
-> doesn't go far enough for the pain that's involved with making such a
-> change pervasively across the entire kernel.
+I waited for several seconds but pressed the remote power switch when
+nothing more came out..
 
-Any logging system, with or without an external notification
-mechanism, will be painful.  pr_<foo> is at least a small
-start.  I'd like to see a notification mechanism, perhaps ala
-netlink/ethtool to extend pr_<foo> or another call.  A lot of
-these printk/pr_<level> uses really could generate notifications.
+The last bit out of my serial console looked like:
 
-> What I'd really like to
-> see is a system that allows for semi-structured logging --- where
-> structured data such as the block device involved, whether it's at a
-> device driver driver, block layer, cfq or proportional I/O layer, or
-> file system layer, was consistently named, and squirted out a high
-> efficiency interface such as netlink or an ftrace ring buffer.
+---
 
-Yay, we agree.
-
-cheers, Joe
-
+Booting Node   0, Processors  #1
+smpboot cpu 1: start_ip = 98000
+cpu 1 node 0
+cpu 1 apicid 2 node 0
+Pid: 0, comm: swapper/1 Not tainted 3.3.0-rc7-00048-g762ad8a-dirty #32
+Call Trace:
+ [<ffffffff81942a37>] numa_set_node+0x50/0x6a
+ [<ffffffff8193f0b4>] init_intel+0x13c/0x232
+ [<ffffffff8193e50a>] ? get_cpu_cap+0xa3/0xa7
+ [<ffffffff8193e74e>] identify_cpu+0x240/0x347
+ [<ffffffff8193e869>] identify_secondary_cpu+0x14/0x1b
+ [<ffffffff8194131b>] smp_store_cpu_info+0x3c/0x3e
+ [<ffffffff8194176a>] start_secondary+0x109/0x21e
+numa cpu 1 node 0
+NMI watchdog enabled, takes one hw-pmu counter.
+ #2
+smpboot cpu 2: start_ip = 98000
+cpu 2 node 0
+cpu 2 apicid 4 node 0
+Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc7-00048-g762ad8a-dirty #32
+Call Trace:
+ [<ffffffff81942a37>] numa_set_node+0x50/0x6a
+ [<ffffffff8193f0b4>] init_intel+0x13c/0x232
+ [<ffffffff8193e50a>] ? get_cpu_cap+0xa3/0xa7
+ [<ffffffff8193e74e>] identify_cpu+0x240/0x347
+ [<ffffffff8193e869>] identify_secondary_cpu+0x14/0x1b
+ [<ffffffff8194131b>] smp_store_cpu_info+0x3c/0x3e
+ [<ffffffff8194176a>] start_secondary+0x109/0x21e
+numa cpu 2 node 0
+NMI
