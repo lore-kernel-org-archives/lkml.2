@@ -1,53 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758467Ab2CSLqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 07:46:25 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42908 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab2CSLqX (ORCPT
+	id S1758569Ab2CSLsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 07:48:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62416 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756005Ab2CSLsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 07:46:23 -0400
+	Mon, 19 Mar 2012 07:48:05 -0400
+Date: Mon, 19 Mar 2012 12:47:45 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@intel.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
+In-Reply-To: <1332157021.7180.5.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1203191244240.11516@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3> 
+ <Pine.LNX.4.64.1203070917380.19595@axis700.grange> 
+ <20120307093026.GM17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+  <20120307103112.GP17370@n2100.arm.linux.org.uk> 
+ <Pine.LNX.4.64.1203071149190.19595@axis700.grange> 
+ <20120307124620.GT17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+  <20120307142634.GA18787@n2100.arm.linux.org.uk> 
+ <Pine.LNX.4.64.1203071602330.19595@axis700.grange> 
+ <20120307162755.GB18787@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+  <1331188201.4657.51.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+  <1331204128.4657.54.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+  <1331206459.4657.59.camel@vkoul-udesk3>  <1331211513.4657.67.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203081412550.29847@axis700.grange>  <1331284918.4657.69.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203091022200.7852@axis700.grange>  <1331285959.4657.76.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203091049060.7852@axis700.grange>  <1331520476.4657.79.camel@vkoul-udesk3>
+  <Pine.LNX.4.64.1203161029490.13465@axis700.grange> <1332157021.7180.5.camel@vkoul-udesk3>
 MIME-Version: 1.0
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Mon, 19 Mar 2012 08:46:01 -0300
-Message-ID: <CAMOw1v6N4xpwnB7yRCUtw=AdyjYk9DYwh07HdtOaWU0smRX1Cw@mail.gmail.com>
-Subject: [ANNOUNCE] kmod 7
-To: linux-modules <linux-modules@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:xjcaYbJCtGNEnaB8MUOR6IKkgxAcUqlSLfjZNdBBWMs
+ AcP89P4gQ0poQt2TNs3PwhMH/pP9KIrnIVAdi3KgUYnEMFXV+j
+ yd80f9KVfLK83Qwvz+ceEWmtiywwb/8FIG3AVm+OJH1HE4qEq9
+ wW4y6zkRCyovp+Xr7fxrGJKYjL/4tTVFTweWZIYIJxOs/bUBho
+ XxTFfweQl1DUavf1cMIFq5Lo04xycS9HshEIQNIZHFCyJzYXqi
+ F+19JPicxW28v2ZrmtQdZcM7K6gDUBlsglRzttr1p2lyhePEut
+ r1nuwlFwyFv3PbI0Zs9zNbifSV6PfZOUenEFrkmyCgvDW1D6Et
+ MzFyKT29iJ4N0kmQCJtrNXBh9MS+IobNAiXxHVNx+ySH4CsoUC
+ EgFSLcKcXdcKg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmod 7 is out:
+On Mon, 19 Mar 2012, Vinod Koul wrote:
 
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-7.tar.xz
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-7.tar.sign
+> On Fri, 2012-03-16 at 10:36 +0100, Guennadi Liakhovetski wrote:
+> > On Mon, 12 Mar 2012, Vinod Koul wrote:
+> > 
+> > > On Fri, 2012-03-09 at 13:20 +0100, Guennadi Liakhovetski wrote:
+> > > > It can be made to work as long as there's only one DMAC group with 
+> > > > configurable channels and all other DMACs are dedicated to specific 
+> > > > peripherals, yes. I don't know whether there are already now or are 
+> > > > approaching any platforms with multiple reconfigurable groups. 
+> > > And that is what I am talking about.
+> > > 
+> > > Having specific channel mapping given by platform for all channels which
+> > > are to be used dedicated. And a pool of channels which can be used by
+> > > anyone (if they can be) on a platform.
+> > > 
+> > > Does this proposal sound good for others as well. I think we can target
+> > > this for next merge cycle, we are too late for the current one.
+> > 
+> > Ok, let me try to summarise, what this would mean for sh-mobile:
+> > 
+> > 1. this proposal introduces a new special case: with or without a mapping, 
+> > that will have to be handled in affected client and DMA controller 
+> > drivers. E.g., on sh-mobile some devices might on some systems use 
+> > channels from "general purpose" DMA controllers (no mapping), on other 
+> > systems it will be a dedicated controller (fixed mapping).
+> that should work. The mapping is platform specific, so I expect the
+> board handling code for that one to tell dmaengine the mapping.
+> On device A: controller P can be generic but on some other device it can
+> be dedicated.
 
-Just a bug-fix release with some bugs found mainly by Debian guys.
-Check the NEWS file for more information.
+As I wrote in a reply to Linus W - you need to pass information about the 
+requesting client to the dmaengine core to let it match it against mapping 
+tables. You have to pass this information with the dma_request_channel() 
+function. So, either you need to add a parameter or you have to reuse one 
+of existing ones, e.g., deprecate the filter and use its argument for this 
+purpose. If you do this and as long as you pass that parameter further on 
+to the dmaengine device (controller) driver after whatever matching you 
+like to do in the core - I'm fine with that, that fits well with my 
+initial proposal.
 
-Thanks a lot for all of you helping with debugging, testing and patches.
+Thanks
+Guennadi
 
-Shortlog is below.
+> > 
+> > 2. this will break, if we get more than 1 "general purpose" type with 
+> > different supported client sets. So, we develop a new API with a 
+> > pre-programmed limitation.
+> No, see above
+> > 
+> > 3. this will mean a substantial driver and platform code modification. 
+> > Nothing super-complex, but still some.
+> Again No to driver, Yes to platform mapping part, which is again device
+> specfic
+> > 
+> > 4. we'll need a 3-stage channel allocation / configuration: request, 
+> > filter, config. Whereas with my configuration-parameter proposal it's just 
+> > one stage: allocate-and-configure.
+> Its not about stages, it about doing the right thing. Which happens to
+> make dmaengine aware of the mapping which exists for a certain device
+> and give you the channels based on how hardware is mapped.
+> 
+> If we get this right then we dont need to worry about filtering as well,
+> that can go away. With Russell's approach it just request_config one
+> single step to get channel and get it configured for slave.
+> > 
+> > So, yes, this would be doable, but it doesn't look like a very good 
+> > solution to me.
+> 
+> 
+> -- 
+> ~Vinod
+> 
 
-Lucas De Marchi
-
---
-
-Dave Reisner (1):
-      modprobe: fix error path in removing modules
-
-Lucas De Marchi (7):
-      modprobe: don't check if module builtin to decide if it's builtin
-      modprobe: always try to remove all modules in command line
-      modprobe: set log prio to 0 if user passed -q arg
-      config: use order /etc, /run, /lib
-      build-sys: re-organize configure.ac
-      build-sys: don't set CFLAGS and LDFLAGS
-      kmod 7
-
-Randy Witt (2):
-      Add CC_CHECK_LDFLAGS_APPEND m4 macro.
-      configure.ac: Move link only flags out of CFLAGS and into LDFLAGS.
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
