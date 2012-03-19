@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab2CSSrp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 14:47:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33789 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757896Ab2CSSro convert rfc822-to-8bit (ORCPT
+	id S1759259Ab2CSSsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 14:48:17 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55431 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757896Ab2CSSsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 14:47:44 -0400
-Message-ID: <1332182842.18960.376.camel@twins>
-Subject: Re: [RFC] AutoNUMA alpha6
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Mon, 19 Mar 2012 19:47:22 +0100
-In-Reply-To: <20120316182511.GJ24602@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	 <20120316182511.GJ24602@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 19 Mar 2012 14:48:15 -0400
+Message-ID: <4F677F6C.8030902@gmail.com>
+Date: Mon, 19 Mar 2012 11:48:12 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, David Daney <david.daney@cavium.com>,
+        Joe Perches <joe@perches.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] ext4: Add -DDEBUG to Makefile
+References: <cover.1331856299.git.joe@perches.com> <7ee60f3b750f4500f9bdcb64f358acbf17987036.1331856300.git.joe@perches.com> <4F63646D.1040700@cavium.com> <20120319043937.GN31682@thunk.org>
+In-Reply-To: <20120319043937.GN31682@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-16 at 19:25 +0100, Andrea Arcangeli wrote:
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=patch;h=30ed50adf6cfe85f7feb12c4279359ec52f5f2cd;hp=c03cf0621ed5941f7a9c1e0a343d4df30dbfb7a1
-> 
-> It's a big monlithic patch, but I'll split it.
+On 03/18/2012 09:39 PM, Ted Ts'o wrote:
+> On Fri, Mar 16, 2012 at 09:03:57AM -0700, David Daney wrote:
+>>
+>> In many other susbsystems/drivers, the definition of DEBUG is gated
+>> by a separate Kconfig symbol used to select debugging just for that
+>> susbsystem/driver (see CONFIG_MMC_DEBUG for example).
+>
+> In ext4 we have many different debugging patches, and in general you'd
+> never want to enable them all at once (you'd get way too much noise).
+> The debugging statements are there when a developer is debugging very
+> specific section of code (i.e., the directory index, or the extent
+> tree, or the block allocator, etc.).  It's really only ext4 developers
+> who need to use those debugging statements, and even for them it's
+> quite rare.
+>
+> So I've never considered it worthwhile to enable them via a CONFIG_*
+> menu item; developers who are debugging a specific problem will
+> generally just drop in the specific #define on an ad hoc basis, and
+> that works fine.
+>
 
-I applied this big patch to a fairly recent tree from Linus but it
-failed to boot. It got stuck somewhere in SMP bringup.
+If you want to unconditionally define DEBUG for all of ext4, that is 
+fine with me.
 
-I waited for several seconds but pressed the remote power switch when
-nothing more came out..
+I was just noting that it seemed a little odd to me, and different from 
+what is done elsewhere.
 
-The last bit out of my serial console looked like:
-
----
-
-Booting Node   0, Processors  #1
-smpboot cpu 1: start_ip = 98000
-cpu 1 node 0
-cpu 1 apicid 2 node 0
-Pid: 0, comm: swapper/1 Not tainted 3.3.0-rc7-00048-g762ad8a-dirty #32
-Call Trace:
- [<ffffffff81942a37>] numa_set_node+0x50/0x6a
- [<ffffffff8193f0b4>] init_intel+0x13c/0x232
- [<ffffffff8193e50a>] ? get_cpu_cap+0xa3/0xa7
- [<ffffffff8193e74e>] identify_cpu+0x240/0x347
- [<ffffffff8193e869>] identify_secondary_cpu+0x14/0x1b
- [<ffffffff8194131b>] smp_store_cpu_info+0x3c/0x3e
- [<ffffffff8194176a>] start_secondary+0x109/0x21e
-numa cpu 1 node 0
-NMI watchdog enabled, takes one hw-pmu counter.
- #2
-smpboot cpu 2: start_ip = 98000
-cpu 2 node 0
-cpu 2 apicid 4 node 0
-Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc7-00048-g762ad8a-dirty #32
-Call Trace:
- [<ffffffff81942a37>] numa_set_node+0x50/0x6a
- [<ffffffff8193f0b4>] init_intel+0x13c/0x232
- [<ffffffff8193e50a>] ? get_cpu_cap+0xa3/0xa7
- [<ffffffff8193e74e>] identify_cpu+0x240/0x347
- [<ffffffff8193e869>] identify_secondary_cpu+0x14/0x1b
- [<ffffffff8194131b>] smp_store_cpu_info+0x3c/0x3e
- [<ffffffff8194176a>] start_secondary+0x109/0x21e
-numa cpu 2 node 0
-NMI
+Thanks,
+David Daney
