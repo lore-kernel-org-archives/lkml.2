@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab2CSHbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 03:31:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:35848 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab2CSHbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 03:31:36 -0400
-X-IronPort-AV: E=Sophos;i="4.73,611,1325433600"; 
-   d="scan'208";a="4566744"
-Message-ID: <4F66E14F.3040809@cn.fujitsu.com>
-Date: Mon, 19 Mar 2012 15:33:35 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758138Ab2CSHf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 03:35:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36543 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab2CSHf5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 03:35:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F66E169.5000909@jp.fujitsu.com>
+Date: Mon, 19 Mar 2012 16:34:01 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com>
-In-Reply-To: <4F58664D.1070800@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-19 15:29:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-19 15:29:27,
-	Serialize complete at 2012-03-19 15:29:27
-Content-Transfer-Encoding: 7bit
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH -V4 07/10] hugetlbfs: Add memcg control files for hugetlbfs
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F66A059.20801@jp.fujitsu.com> <87wr6hjc58.fsf@linux.vnet.ibm.com>
+In-Reply-To: <87wr6hjc58.fsf@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/08/2012 03:57 PM, Wen Congyang Wrote:
-> We can know the guest is paniced when the guest runs on xen.
-> But we do not have such feature on kvm.
+(2012/03/19 16:14), Aneesh Kumar K.V wrote:
+
+> On Mon, 19 Mar 2012 11:56:25 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> (2012/03/17 2:39), Aneesh Kumar K.V wrote:
+>>
+>>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>>>
+>>> This add control files for hugetlbfs in memcg
+>>>
+>>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>>
+>>
+>> I have a question. When a user does
+>>
+>> 	1. create memory cgroup as
+>> 		/cgroup/A
+>> 	2. insmod hugetlb.ko
+>> 	3. ls /cgroup/A
+>>
+>> and then, files can be shown ? Don't we have any problem at rmdir A ?
+>>
+>> I'm sorry if hugetlb never be used as module.
 > 
-> Another purpose of this feature is: management app(for example:
-> libvirt) can do auto dump when the guest is crashed. If management
-> app does not do auto dump, the guest's user can do dump by hand if
-> he sees the guest is paniced.
+> HUGETLBFS cannot be build as kernel module
 > 
-> I touch the hypervisor instead of using virtio-serial, because
-> 1. it is simple
-> 2. the virtio-serial is an optional device, and the guest may
->    not have such device.
 > 
-> Changes from v2 to v3:
-> 1. correct spelling
+>>
+>> a comment below.
+>>
+>>> ---
+>>>  include/linux/hugetlb.h    |   17 +++++++++++++++
+>>>  include/linux/memcontrol.h |    7 ++++++
+>>>  mm/hugetlb.c               |   25 ++++++++++++++++++++++-
+>>>  mm/memcontrol.c            |   48 ++++++++++++++++++++++++++++++++++++++++++++
+>>>  4 files changed, 96 insertions(+), 1 deletions(-)
 > 
-> Changes from v1 to v2:
-> 1. split up host and guest-side changes
-> 2. introduce new request flag to avoid changing return values.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> ......
+> 
+>>>
+>>> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+>>> +static char *mem_fmt(char *buf, unsigned long n)
+>>> +{
+>>> +	if (n >= (1UL << 30))
+>>> +		sprintf(buf, "%luGB", n >> 30);
+>>> +	else if (n >= (1UL << 20))
+>>> +		sprintf(buf, "%luMB", n >> 20);
+>>> +	else
+>>> +		sprintf(buf, "%luKB", n >> 10);
+>>> +	return buf;
+>>> +}
+>>> +
+>>> +int mem_cgroup_hugetlb_file_init(int idx)
+>>> +{
+>>
+>>
+>> __init ? 
+> 
+> Added .
+> 
+>> And... do we have guarantee that this function is called before
+>> creating root mem cgroup even if CONFIG_HUGETLBFS=y ?
+>>
+> 
+> Yes. This should be called before creating root mem cgroup.
 > 
 
 
-Hi all:
+O.K. BTW, please read Tejun's recent post..
+ 
+https://lkml.org/lkml/2012/3/16/522
 
-we neet this feature, but we don't decide how to implement it.
-We have two solution:
-1. use vmcall
-2. use virtio-serial.
+Can you use his methods ?
 
-I will not change this patch set before we decide how to do it.
-Can we make a decision recent days?
+I guess you can write...
 
-Thanks
-Wen Congyang
+CGROUP_SUBSYS_CFTYLES_COND(mem_cgroup_subsys,
+			hugetlb_cgroup_files,
+			if XXXXMB hugetlb is allowed);
+
+Hmm.
+
+Thanks,
+-Kame
+
+
