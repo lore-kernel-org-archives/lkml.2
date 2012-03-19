@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab2CSVWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 17:22:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33553 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab2CSVWL convert rfc822-to-8bit (ORCPT
+	id S1756001Ab2CSVXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 17:23:21 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38273 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851Ab2CSVXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 17:22:11 -0400
-Message-ID: <1332192095.18960.394.camel@twins>
-Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 19 Mar 2012 22:21:35 +0100
-In-Reply-To: <1332188909.143015.46.camel@zaphod.localdomain>
-References: <20120316144028.036474157@chello.nl>
-	 <20120316144240.763518310@chello.nl>
-	 <alpine.DEB.2.00.1203161333370.10211@router.home>
-	 <1331932375.18960.237.camel@twins>
-	 <alpine.DEB.2.00.1203190852380.16879@router.home>
-	 <1332165959.18960.340.camel@twins>
-	 <alpine.DEB.2.00.1203191012530.17008@router.home>
-	 <1332170628.18960.349.camel@twins>
-	 <alpine.DEB.2.00.1203191029090.19189@router.home>
-	 <1332176969.18960.351.camel@twins>
-	 <1332188909.143015.46.camel@zaphod.localdomain>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Mon, 19 Mar 2012 17:23:14 -0400
+Subject: Re: [PATCH v2,1/1] net/hyperv: Fix the code handling tx busy
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: kys@microsoft.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+In-Reply-To: <1332192233-32305-2-git-send-email-haiyangz@microsoft.com>
+References: <1332192233-32305-1-git-send-email-haiyangz@microsoft.com>
+	 <1332192233-32305-2-git-send-email-haiyangz@microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 14:23:11 -0700
+Message-ID: <1332192191.9397.62.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 16:28 -0400, Lee Schermerhorn wrote:
-> Because default behavior for task policy is local allocation,
-> MPOL_DEFAULT does sometimes get confused with local allocation. 
+On Mon, 2012-03-19 at 14:23 -0700, Haiyang Zhang wrote:
+> Instead of dropping the packet, we keep the skb buffer, and return
+> NETDEV_TX_BUSY to let upper layer retry send. This will not cause
+> endless loop, because the host is taking data away from ring buffer,
+> and we have called the stop_queue before returning NETDEV_TX_BUSY.
+> 
+> The stop_queue was called in the function netvsc_send() in file 
+> netvsc.c, then it returns to rndis_filter_send(), which returns to
+> netvsc_start_xmit() in file netvsc_drv.c. So the NETDEV_TX_BUSY is
+> indeed returned AFTER queue is stopped.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
 
-Right, its this confusion I wanted to avoid.
+Thanks 
+
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+
 
