@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162165Ab2CSQgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:36:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52959 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755910Ab2CSQgm (ORCPT
+	id S1162176Ab2CSQhE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:37:04 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28239 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031218Ab2CSQhB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:36:42 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Mark all get and enable calls as __must_check
-Date: Mon, 19 Mar 2012 16:36:35 +0000
-Message-Id: <1332174995-9915-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	Mon, 19 Mar 2012 12:37:01 -0400
+MIME-Version: 1.0
+Message-ID: <6a7183b7-0fa1-4ae0-ba49-273f253496af@default>
+Date: Mon, 19 Mar 2012 09:06:26 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@ORACLE.COM>
+To: Konrad Rzeszutek Wilk <konrad.wilk@ORACLE.COM>, dan.magenheimer@ORACLE.COM,
+        linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] MAINTAINERS: Adding cleancache API to the list.
+References: <<1332172165-4362-1-git-send-email-konrad.wilk@oracle.com>>
+ <<1332172165-4362-2-git-send-email-konrad.wilk@oracle.com>>
+In-Reply-To: <<1332172165-4362-2-git-send-email-konrad.wilk@oracle.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F6760AC.011A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's generally important that devices have power when they expect it so
-drivers really ought to be checking for errors on the power up paths.
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Monday, March 19, 2012 9:49 AM
+> To: dan.magenheimer@oracle.com; linux-kernel@vger.kernel.org
+> Cc: Konrad Rzeszutek Wilk
+> Subject: [PATCH] MAINTAINERS: Adding cleancache API to the list.
+> 
+> .. and electing myself as the maintainer.
+> 
+> CC: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- include/linux/regulator/consumer.h |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index 4ed1b30..ed05443 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -141,18 +141,18 @@ void regulator_put(struct regulator *regulator);
- void devm_regulator_put(struct regulator *regulator);
- 
- /* regulator output control and status */
--int regulator_enable(struct regulator *regulator);
-+int __must_check regulator_enable(struct regulator *regulator);
- int regulator_disable(struct regulator *regulator);
- int regulator_force_disable(struct regulator *regulator);
- int regulator_is_enabled(struct regulator *regulator);
- int regulator_disable_deferred(struct regulator *regulator, int ms);
- 
--int regulator_bulk_get(struct device *dev, int num_consumers,
--		       struct regulator_bulk_data *consumers);
--int devm_regulator_bulk_get(struct device *dev, int num_consumers,
--			    struct regulator_bulk_data *consumers);
--int regulator_bulk_enable(int num_consumers,
--			  struct regulator_bulk_data *consumers);
-+int __must_check regulator_bulk_get(struct device *dev, int num_consumers,
-+				    struct regulator_bulk_data *consumers);
-+int __must_check devm_regulator_bulk_get(struct device *dev, int num_consumers,
-+					 struct regulator_bulk_data *consumers);
-+int __must_check regulator_bulk_enable(int num_consumers,
-+				       struct regulator_bulk_data *consumers);
- int regulator_bulk_disable(int num_consumers,
- 			   struct regulator_bulk_data *consumers);
- int regulator_bulk_force_disable(int num_consumers,
--- 
-1.7.9.1
-
+> ---
+>  MAINTAINERS |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 9c63a43..e1a70cb 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1831,6 +1831,13 @@ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+>  S:	Supported
+>  F:	sound/soc/codecs/cs4270*
+> 
+> +CLEANCACHE API
+> +M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> +L:	linux-kernel@vger.kernel.org
+> +S:	Maintained
+> +F:	mm/cleancache.c
+> +F:	include/linux/cleancache.h
+> +
+>  CLK API
+>  M:	Russell King <linux@arm.linux.org.uk>
+>  F:	include/linux/clk.h
+> --
+> 1.7.7.5
