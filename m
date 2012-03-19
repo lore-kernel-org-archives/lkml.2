@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab2CSUnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:43:18 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:30930 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751541Ab2CSUnQ (ORCPT
+	id S1752752Ab2CSUrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:47:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59812 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab2CSUrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:43:16 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 46NkssQVM1mq8oCBSumQ4JqNXT0gIjx4rW.qVUNg2YR6bZj
- Nc2bJdpDFRvdSB8X7rZrOqrXFLKSg_xp0J854bwVU1lYk9mct_JEhqwcLz8t
- EeURYxyAEic7Fai3Xxa4V1Oj7vsAPq8LWBHCL.ucI1rgHojYWddvwifzoOT7
- .tcmERxjvc3V_yNuHeJHDr0JsbQ4wp9AvPxaYy1Lv9xXDmbKTWS45E8gL8i_
- oE9udK.YDGrVO13YbEQsn6SfO0yFYR.IDPnKGS_aFazTvxyrlSKjwcw_usTk
- 1hbnhkNDKz3dQ_OGvTlQFT_y5gmc_I.lniHwuGDv.nRDiTJcxFwBAttsOmOu
- G1YOkhrvJvi_d.4B6DfTXbRe95RhFqqxbPThrHDDRTUQn31fZcRbzVYMjLIs
- J
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 19 Mar 2012 15:43:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ingo Molnar <mingo@kernel.org>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-In-Reply-To: <20120319202846.GA26555@gmail.com>
-Message-ID: <alpine.DEB.2.00.1203191536390.23632@router.home>
-References: <20120316144028.036474157@chello.nl> <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins> <20120319130401.GI24602@redhat.com> <1332164371.18960.339.camel@twins> <20120319142046.GP24602@redhat.com> <alpine.DEB.2.00.1203191513110.23632@router.home>
- <20120319202846.GA26555@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 Mar 2012 16:47:01 -0400
+Subject: RE: [PATCH 1/1] net/hyperv: Fix the code handling tx busy
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC0DCEA930@TK5EX14MBXC223.redmond.corp.microsoft.com>
+References: <1332176549-30960-1-git-send-email-haiyangz@microsoft.com>
+	 <1332176549-30960-2-git-send-email-haiyangz@microsoft.com>
+	 <1332177118.9397.32.camel@edumazet-glaptop>
+	 <20120319104847.3a4c5fc0@nehalam.linuxnetplumber.net>
+	 <A1F3067C9B68744AA19F6802BAB8FFDC0DCEA873@TK5EX14MBXC223.redmond.corp.microsoft.com>
+	 <1332181858.9397.49.camel@edumazet-glaptop>
+	 <A1F3067C9B68744AA19F6802BAB8FFDC0DCEA930@TK5EX14MBXC223.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 13:46:58 -0700
+Message-ID: <1332190018.9397.61.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012, Ingo Molnar wrote:
+On Mon, 2012-03-19 at 19:17 +0000, Haiyang Zhang wrote:
 
-> > I wonder how we can verify that the automatic migration
-> > schemes are a real benefit to the application? We have a
-> > history of developing a kernel that decreases in performance
-> > as development proceeds. How can we make sure that these
-> > schemes are actually beneficial overall for all loads and do
-> > not cause regressions elsewhere? [...]
->
-> The usual way?
+> Yes, we called the stop_queue before returning NETDEV_TX_BUSY.
+> 
+> The stop_queue was called in the function netvsc_send() in file
+> netvsc.c, then it returns to rndis_filter_send(), which returns to
+> netvsc_start_xmit() in file netvsc_drv.c. So the NETDEV_TX_BUSY is
+> indeed returned AFTER queue is stopped.
+> 
 
-Which is merge after a couple of benchmarks and then deal with the
-regressions for a couple of years?
+Thats should be in your changelog, so that next time, reviewers dont
+have to spend their time to check you did it right, especially when
+start_xmit() code is not self contained or at least in a single file.
 
-Patch verification occurs in an artificial bubble of software run/known by
-kernel developers. It can take years before the code is exposed to
-real life situations.
+Each time we see a NETDEV_TX_BUSY in a patch, this is a sign of a
+possible problem.
+
+Your initial changelog was :
+
+Instead of dropping the packet, we keep the skb buffer, and return
+NETDEV_TX_BUSY to let upper layer retry send. This will not cause
+endless loop, because the host is taking data away from ring buffer.
+
+And this is the typical message that doesnt explain why its safe.
+
+
+
