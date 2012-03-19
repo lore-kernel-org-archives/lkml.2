@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab2CSW01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:26:27 -0400
-Received: from antcom.de ([188.40.178.216]:32943 "EHLO chuck.antcom.de"
+	id S1757956Ab2CSW0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:26:35 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2651 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757760Ab2CSW0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:26:25 -0400
-Message-ID: <4F67B28D.3060500@antcom.de>
-Date: Mon, 19 Mar 2012 23:26:21 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	id S1757916Ab2CSW0c convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 18:26:32 -0400
+X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
+From: "Michael J. Wang" <mjwang@broadcom.com>
+To: "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>
+cc: "Michael J. Wang" <mjwang@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "yong.zhang0@gmail.com" <yong.zhang0@gmail.com>
+Subject: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Thread-Topic: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Thread-Index: Ac0GHwijHkYM9zt3RLiiFsMKptWd3Q==
+Date: Mon, 19 Mar 2012 22:26:19 +0000
+Message-ID: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.161.125]
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH] USB: gadget driver for LPC32xx
-References: <1332191930-2433-1-git-send-email-stigge@antcom.de> <201203192130.13583.arnd@arndb.de>
-In-Reply-To: <201203192130.13583.arnd@arndb.de>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 63796B574GW6716511-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+From: Michael J Wang <mjwang@broadcom.com>
 
-On 19/03/12 22:30, Arnd Bergmann wrote:
-> There is already a driver for the isp1301 otg part in the kernel, I don't
-> think we want to add another one.
-> 
-> From what I can tell, this shares a common ancestry with the omap version
-> but has diverged quite a bit. The best solution would really be to
-> bring the two back together and let them share a common base driver,
-> with the lpc32xx and omap specific bits in another file.
+Avoid extra work by continuing on to the next rt_rq if the highest prio task in current rt_rq is the same priority as our candidate task.
 
-Yes, it's a good idea to share code where possible and consolidate into
-one driver.
+Signed-off-by: Michael J Wang <mjwang@broadcom.com>
 
-Please consider:
+---
 
-The LPC32xx driver is actually using only 3 functions via isp1301:
+More detailed explanation:  if next is not NULL, then we have found a candidate task, and its priority is next->prio.  Now we are looking for an even higher priority task in the other rt_rq's.  idx is the highest priority in the current candidate rt_rq.  In the current 3.3 code, if idx is equal to next->prio, we would start scanning the tasks in that rt_rq and replace the current candidate task with a task from that rt_rq.  But the new task would only have a priority that is equal to our previous candidate task, so we have not advanced our goal of finding a higher prio task.  So we should avoid the extra work by continuing on to the next rt_rq if idx is equal to next->prio.
 
-isp1301_udc_configure()
-isp1301_set_powerstate()
-isp1301_pullup_set()
+--- linux-3.3/kernel/sched/rt.c.orig	2012-03-18 16:15:34.000000000 -0700
++++ linux-3.3/kernel/sched/rt.c	2012-03-19 14:52:54.585391702 -0700
+@@ -1403,7 +1403,7 @@ static struct task_struct *pick_next_hig
+ next_idx:
+ 		if (idx >= MAX_RT_PRIO)
+ 			continue;
+-		if (next && next->prio < idx)
++		if (next && next->prio <= idx)
+ 			continue;
+ 		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+ 			struct task_struct *p;
 
-The first of those is LPC32xx specific. The power setting function is
-also done differently in isp1301_omap's power_up()/power_down() ("board
-specific"). For the pullups, there is not (yet?) a dedicated API in the
-OMAP driver, but it's really only two small I2C commands.
 
-Are you still sure it's worth it to use a common driver when there is
-hardly shared code?
 
-Maybe the right thing is a common low-level isp1301 interface defining
-all the registers and providing low-level (I2C) access functions,
-leaving all the "higher level"/"board specific" functions up to the
-existing drivers?
 
-(I guess you meant drivers/usb/otg/isp1301_omap.c ?)
 
-Thanks in advance,
 
-Roland
