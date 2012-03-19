@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759323Ab2CSTVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:21:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55384 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756065Ab2CSTVD (ORCPT
+	id S1161961Ab2CSTYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:24:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49034 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab2CSTYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:21:03 -0400
-Date: Mon, 19 Mar 2012 19:21:01 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, lars@metafoo.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH v7] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120319192101.GG12384@opensource.wolfsonmicro.com>
-References: <CANKRQni1k4hv40j0hTzVMdS9aFccM7xRrHis0-cFuBvSZe+9CA@mail.gmail.com>
- <1332158525-14968-1-git-send-email-tomoya.rohm@gmail.com>
+	Mon, 19 Mar 2012 15:24:20 -0400
+Date: Mon, 19 Mar 2012 12:24:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+Message-ID: <20120319192416.GE6339@kroah.com>
+References: <20120316233829.GA14022@kroah.com>
+ <20120316233811.484341257@linuxfoundation.org>
+ <20120317023740.GH12704@decadent.org.uk>
+ <CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
+ <1331969567.3022.233.camel@deadeye>
+ <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
+ <20120319155022.GC8176@kroah.com>
+ <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WlEyl6ow+jlIgNUh"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1332158525-14968-1-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: You are always busy.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 19, 2012 at 11:11:35PM +0400, Pavel Shilovsky wrote:
+> 19 марта 2012 г. 19:50 пользователь Greg KH
+> <gregkh@linuxfoundation.org> написал:
+> > On Sat, Mar 17, 2012 at 11:52:24AM +0400, Pavel Shilovsky wrote:
+> >> 17 марта 2012 г. 11:32 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> >> > On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
+> >> >> 17 марта 2012 г. 6:37 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> >> >> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
+> >> >> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> >> > [...]
+> >> >> > But we test this before flock->fl_flags & FL_POSIX, which means we
+> >> >> > don't know whether this lock actually needs to be assigned one of
+> >> >> > those structures.  So it appears that we might report a spurious error
+> >> >> > if the lock list ends with a mandatory lock.  If so, this is
+> >> >> > relatively harmless but does need to be fixed.
+> >> >> >
+> >> >>
+> >> >> You are right here, thanks for the catch! I will repost the patch asap.
+> >> >
+> >> > This has already been merged into Linus's tree, so you need to submit a
+> >> > patch to apply on top of it.
+> >> >
+> >>
+> >> I posted two patches:
+> >> 1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
+> >> kmalloc under the flocks spinlock
+> >
+> > What do you mean by "fixed version"?
+> >
+> >> 2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
+> >> cifs_push_posix_locks
+> >
+> > What do you mean by this?
+> 
+> Ok, seems I didn't understand this process correctly. I reposted the
+> new "fixed" version of this patch, because I thought it is more
+> suitable for stale to merge one correct patch rather than one
+> incorrect + follow-on fixup. Sorry if I was wrong.
 
---WlEyl6ow+jlIgNUh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I need to stay identical with Linus's tree as much as possible, it's
+easier for everyone in the end that way for tracking exactly what
+happens.
 
-On Mon, Mar 19, 2012 at 09:02:05PM +0900, Tomoya MORINAGA wrote:
+> > If there was a follow-on patch in Linus's tree that fixes a problem, I
+> > need that git commit id, not a "fixed" patch that does not match up with
+> > what is in Linus's tree right now.
+> >
+> > So, if that's the case, please let me know what the git commit id of
+> > that patch is please.
+> 
+> Steve has just merged the follow-on patch:
+> http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=ce85852b90a214cf577fc1b4f49d99fd7e98784a
+> 
+> but seems hasn't sent a merge request to Linus yet - will let you know
+> when the patch comes to Linus's tree.
 
-> +static int ml7213_hw_params(struct snd_pcm_substream *substream,
-> +			    struct snd_pcm_hw_params *hw_params)
-> +{
+Ok, please let me know when this goes into Linus's tree and I will
+queue it up for the next releases.
 
-> +	default:
-> +		pr_err("%s: Failed not support format\n", __func__);
-> +		return -EINVAL;
-> +		break;
+thanks,
 
-No need for the break.
-
-> +	snd_soc_dapm_enable_pin(dapm, "Speaker");
-> +	snd_soc_dapm_enable_pin(dapm, "AnalogMIC");
-> +	snd_soc_dapm_enable_pin(dapm, "MICBIAS");
-
-Why are you doing thiS?  You never disable these things so if this were
-needed you may as well do it on init, but since the default state is
-enabled anyway this shouldn't be doing anytihng.
-
-> +static int __init lapis_ml7213_ml26124_init(void)
-> +{
-> +	return platform_driver_register(&snd_ml7213crb_driver);
-> +}
-> +module_init(lapis_ml7213_ml26124_init);
-
-module_platform_driver().
-
-> +MODULE_ALIAS("platform: lapis-ml7213ioh-CRB");
-
-No space after the colon.
-
---WlEyl6ow+jlIgNUh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPZ4b5AAoJEBus8iNuMP3d9TAP/3tTjXTNH3mm2E+4SE/KKIKd
-A8QZJ0BzlW/uXFbxzgaYyn45dOsS+pY6T6lUFrfdZSXjJDzsC9h39eBCoMKSK4XS
-Jrp5xf73cbJYOkQAm47nSC4K0pIoaNZwrmXfdKGtjzb+024MOPniQBAqF3z9LZyN
-XhXWSu9zYAx9sNdMg0FGmPAbP1VVeVoLbxJ9BD9UXYYyAzKEsJhyO/M3opcp4iyw
-5YOGfbJWK5O52TAPLBnVGSKQwfhF+mhawebYkO1jrGXYLI/mTF0UepI6hzwqvW5g
-1tDUP2b6Q6S1YLVxMpxrmB6NTq4mrHjOkHLUHO6+BBs7/fqrITQhtO9O1vEWlzgE
-XwhTXFQwugkbRBKjN9souV6s/zxE+3JbDNrMpZDGmZs22+lehY8ganmc2QjzijuI
-PPcDYYM72bOYyKDMG3uB/UgApDZ08UBS1KcWh4xV0tHqp34LmTojfwj7ZnVofGmk
-gZHrwcJF1j5/0coXVc8zF2VPs8lbTNt/nb7WqakzOgb+VhMPzmulcgv8lZJy6Mn7
-GSnh60Vbl77ge/jcYSdDmnofidNLbvo107Zn/24W9VpzZdjKTazE5aI3kJBaB04j
-ZclqPeEAam0RZFoluAybyDtIewxXb6EBfKIRmgaYNCdQQid7BmLNsTspv8EEQDOB
-p5LHth+5/iJiu6WFVp0O
-=APYd
------END PGP SIGNATURE-----
-
---WlEyl6ow+jlIgNUh--
+greg k-h
