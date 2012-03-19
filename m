@@ -1,139 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200Ab2CSEBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 00:01:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38421 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab2CSEBD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 00:01:03 -0400
+	id S1751171Ab2CSEJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 00:09:52 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47643 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754Ab2CSEJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 00:09:50 -0400
+Date: Mon, 19 Mar 2012 00:09:50 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Joe Perches <joe@perches.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+Message-ID: <20120319040950.GG31682@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Joe Perches <joe@perches.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <cover.1331856299.git.joe@perches.com>
+ <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <20120205145913.194746473361e324bda1eb4a@gmail.com>
-References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
-	<4F2F0065.9040909@lwfinger.net>
-	<20120205222141.GA26223@electric-eye.fr.zoreil.com>
-	<20120205145913.194746473361e324bda1eb4a@gmail.com>
-Date: Sun, 18 Mar 2012 21:01:01 -0700
-Message-ID: <CAKFRV=NghW3kokuD-VBAzVJf09r-9ePMG+L7qDYfqmuHwWo4mg@mail.gmail.com>
-Subject: Re: WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
-From: Justin Mattock <justinmattock@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 5, 2012 at 2:59 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On Sun, 5 Feb 2012 23:21:41 +0100
-> Francois Romieu <romieu@fr.zoreil.com> wrote:
->
->> Larry Finger <Larry.Finger@lwfinger.net> :
->> > On 02/05/2012 03:40 PM, Justin P. Mattock wrote:
->> > >
->> > >this showed up as I woke the machine up from suspend. machine is connected
->> > >I just see networkmanager constantly spinning trying to connect then telling me
->> > >the wired network is not connected(even though its just wireless that I have).
->>
->> [ 1273.447349] r8169 0000:06:00.0: Refused to change power state, currently in D3
->> [ 1273.571024] psmouse serio1: elantech: retrying ps2 command 0xf8 (2).
->> [ 1273.656709] r8169 0000:06:00.0: eth0: link up
->>                                          ^^^^^^^
->>
->> Justin, you did not ever connect a cable, did you ?
->
-> nope! was using wireless the whole time.
->
->>
->> [...]
->> > The error clearly comes from r8169, not from ath9k. If you unload
->> > r8169 before suspending, does this still happen? My suspicion is
->> > that NM is getting confused.
->>
->> It could hide the problem but the D3 + link up messages are nonetheless
->> a bit unexpected.
->>
->> > P.S. Unless it happens with just the ath9k active, this ML is likely
->> > not the correct one.
->>
->> Yes, please Cc: netdev@vger.kernel.org + me instead.
->>
->> Thanks.
->>
->> --
->> Ueimor
->
-> removed linux-wireless and added netdev to the cc's
-> will monitor this and report anything that shows up.
->
-> --
-> Justin P. Mattock <justinmattock@gmail.com>
+On Thu, Mar 15, 2012 at 05:07:30PM -0700, Joe Perches wrote:
+> Use a more current logging style.
+> 
+> Add pr_fmt to consistently prefix with "EXT4-fs: "
+> Convert printks with KERN_<LEVEL> to pr_<level>.
+> Convert bare printks to pr_info and pr_cont where appropriate.
+> Remove embedded function names from formats, use "%s: ", __func__.
+> Coalesce formats.
+> Neaten macros that contain printks/pr_<level>.
+> Use ##__VA_ARGS__ in those macros.
 
-seems I see this with the latest linux-next:
+Still too much in a single patch.
 
-[21731.149774] wlan0: associate with 00:1e:2a:62:6b:1e (try 1/3)
-[21731.152858] wlan0: RX AssocResp from 00:1e:2a:62:6b:1e (capab=0x31
-status=0 aid=7)
-[21731.152867] wlan0: associated
-[21740.306348] ------------[ cut here ]------------
-[21740.306363] WARNING: at net/sched/sch_generic.c:256
-dev_watchdog+0x1f2/0x200()
-[21740.306367] Hardware name: 0914
-[21740.306370] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-[21740.306374] Modules linked in: dm_crypt xt_limit xt_tcpudp
-xt_addrtype snd_hda_codec_hdmi xt_state joydev arc4
-snd_hda_codec_conexant ath9k nf_conntrack_netbios_ns
-nf_conntrack_broadcast snd_hda_intel snd_hda_codec mac80211 nf_nat_ftp
-nf_nat snd_hwdep nf_conntrack_ipv4 nf_defrag_ipv4 snd_pcm
-nf_conntrack_ftp snd_seq_midi ath9k_common ath9k_hw nf_conntrack
-iptable_filter snd_rawmidi snd_seq_midi_event uvcvideo ath ip_tables
-videobuf2_core videodev psmouse x_tables ideapad_laptop serio_raw
-snd_seq cfg80211 lp snd_timer snd_seq_device snd videobuf2_vmalloc
-videobuf2_memops soundcore parport sparse_keymap intel_ips
-snd_page_alloc usb_storage uas i915 drm_kms_helper drm i2c_algo_bit
-r8169 intel_agp intel_gtt agpgart video
-[21740.306469] Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc7-next-20120316 #1
-[21740.306473] Call Trace:
-[21740.306483]  [<c1049072>] warn_slowpath_common+0x72/0xa0
-[21740.306489]  [<c14e00a2>] ? dev_watchdog+0x1f2/0x200
-[21740.306493]  [<c14e00a2>] ? dev_watchdog+0x1f2/0x200
-[21740.306498]  [<c1049143>] warn_slowpath_fmt+0x33/0x40
-[21740.306503]  [<c14e00a2>] dev_watchdog+0x1f2/0x200
-[21740.306520]  [<c1059c12>] run_timer_softirq+0x132/0x540
-[21740.306525]  [<c1059b98>] ? run_timer_softirq+0xb8/0x540
-[21740.306529]  [<c14dfeb0>] ? pfifo_fast_init+0x60/0x60
-[21740.306534]  [<c1050e67>] __do_softirq+0x97/0x360
-[21740.306539]  [<c1050dd0>] ? local_bh_enable+0xd0/0xd0
-[21740.306542]  <IRQ>  [<c10513d6>] ? irq_exit+0x86/0xb0
-[21740.306552]  [<c159f179>] ? smp_apic_timer_interrupt+0x59/0x88
-[21740.306559]  [<c12cf1a8>] ? trace_hardirqs_off_thunk+0xc/0x14
-[21740.306565]  [<c1597682>] ? apic_timer_interrupt+0x36/0x3c
-[21740.306572]  [<c10a007b>] ? clocks_calc_mult_shift+0xfb/0x100
-[21740.306580]  [<c1319fd9>] ? intel_idle+0xc9/0x130
-[21740.306588]  [<c1495655>] ? cpuidle_enter+0x15/0x20
-[21740.306592]  [<c1495b5a>] ? cpuidle_idle_call+0x8a/0x320
-[21740.306600]  [<c10152c5>] ? cpu_idle+0xa5/0xf0
-[21740.306607]  [<c1585d2d>] ? start_secondary+0x209/0x20f
-[21740.306611] ---[ end trace 9a4d94a7e2dfb4d0 ]---
-[21740.318685] r8169 0000:06:00.0: eth0: link up
-[21752.292679] r8169 0000:06:00.0: eth0: link up
-[21764.268569] r8169 0000:06:00.0: eth0: link up
-[21776.254393] r8169 0000:06:00.0: eth0: link up
-[21788.235797] r8169 0000:06:00.0: eth0: link up
-[21800.196524] r8169 0000:06:00.0: eth0: link up
-[21812.172497] r8169 0000:06:00.0: eth0: link up
+Changing printk's to pr_info and pr_cont is patch noise as far as I'm
+concerned.  Adds no value, and just breaks other patches.  Ditto using
+__func__ and and coalesing formats (much of which was broekn up back
+when checkpatch flamed developers about 80 column lines, and I patch
+noises from trivial patch monkeys offering to fix it, sigh).
 
-one thing I have noticed these few weeks is once I wake the machine
-up, wireless connects, but Networkmanager keeps trying to connect
-ethernet(switching ethernet off in preferences or waiting a while
-resolves this issue from the daemon), so I think there must be some
-strange thing with NM
-causing this(disabling "auto connect" gets rid of this issue)
-the system is ubuntu(oneiric)
+And I really don't care about adding EXT4-fs to debugging messages,
+especially messages which can't be enabled except when developers have
+to explicitly add #define's...
 
+One evidence that this patch is noise is that it doesn't apply cleanly
+just on top of my current patch set that I plan to send to Linus.  And
+I consider it a waste of time to sort through and figure out what if
+any of this 1200 line patch is really worthwhile.  (A quick scan
+didn't find anything, although if there are some places where I'm
+missing a pr_cont / KERN_CONT in a commonly used --- non debug ---
+codepath I'd be willing to fix it.)
 
--- 
-Justin P. Mattock
+						- Ted
+
