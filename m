@@ -1,141 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030998Ab2CSLWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 07:22:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63280 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030907Ab2CSLWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 07:22:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120576578"
-Date: Mon, 19 Mar 2012 19:17:30 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4] writeback: Avoid iput() from flusher thread
-Message-ID: <20120319111730.GA23688@localhost>
-References: <1331283748-12959-1-git-send-email-jack@suse.cz>
- <1331283748-12959-5-git-send-email-jack@suse.cz>
- <20120319085515.GA25478@infradead.org>
- <20120319104659.GH4359@quack.suse.cz>
+	id S1757936Ab2CSLXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 07:23:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53990 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab2CSLXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 07:23:08 -0400
+Date: Mon, 19 Mar 2012 12:22:52 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: "Turquette, Mike" <mturquette@ti.com>, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+Message-ID: <20120319112252.GW3852@pengutronix.de>
+References: <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
+ <20120305073836.GU3852@pengutronix.de>
+ <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com>
+ <20120306190039.GJ3852@pengutronix.de>
+ <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+ <20120308062739.GE18513@lunn.ch>
+ <20120308232549.GU3852@pengutronix.de>
+ <20120309075720.GC16608@lunn.ch>
+ <CAJOA=zPztBfTY_WDwZ5iFEa94eCtHyrzN422RTACMQXs625gRA@mail.gmail.com>
+ <20120319070115.GC31410@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120319104659.GH4359@quack.suse.cz>
+In-Reply-To: <20120319070115.GC31410@S2101-09.ap.freescale.net>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:06:11 up 127 days, 18:53, 98 users,  load average: 0.05, 0.12,
+ 0.56
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 11:46:59AM +0100, Jan Kara wrote:
-> On Mon 19-03-12 04:55:15, Christoph Hellwig wrote:
-> > On Fri, Mar 09, 2012 at 10:02:28AM +0100, Jan Kara wrote:
-> > > Doing iput() from flusher thread (writeback_sb_inodes()) can create problems
-> > > because iput() can do a lot of work - for example truncate the inode if it's
-> > > the last iput on unlinked file. Some filesystems (e.g. ubifs) may need to
-> > > allocate blocks during truncate (due to their COW nature) and in some cases
-> > > they thus need to flush dirty data from truncate to reduce uncertainty in the
-> > > amount of free space. This effectively creates a deadlock.
-> > > 
-> > > We get rid of iput() in flusher thread by using the fact that I_SYNC inode
-> > > flag effectively pins the inode in memory. So if we take care to either hold
-> > > i_lock or have I_SYNC set, we can get away without taking inode reference
-> > > in writeback_sb_inodes().
-> > > 
-> > > As a side effect, we also fix possible use-after-free in wb_writeback() because
-> > > inode_wait_for_writeback() call could try to reacquire i_lock on the inode that
-> > > was already free.
-> > > 
-> > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > > ---
-> > >  fs/fs-writeback.c         |   38 ++++++++++++++++++++++++--------------
-> > >  fs/inode.c                |   11 ++++++++++-
-> > >  include/linux/fs.h        |    7 ++++---
-> > >  include/linux/writeback.h |    7 +------
-> > >  4 files changed, 39 insertions(+), 24 deletions(-)
-> > > 
-> > > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> > > index 1e8bf44..f9f9b61 100644
-> > > --- a/fs/fs-writeback.c
-> > > +++ b/fs/fs-writeback.c
-> > > @@ -325,19 +325,21 @@ static int write_inode(struct inode *inode, struct writeback_control *wbc)
-> > >  }
-> > >  
-> > >  /*
-> > > - * Wait for writeback on an inode to complete.
-> > > + * Wait for writeback on an inode to complete. Called with i_lock held.
-> > > + * Return 1 if we dropped i_lock and waited, 0 is returned otherwise.
-> > >   */
-> > > -static void inode_wait_for_writeback(struct inode *inode)
-> > > +int __must_check inode_wait_for_writeback(struct inode *inode)
-> > >  {
-> > >  	DEFINE_WAIT_BIT(wq, &inode->i_state, __I_SYNC);
-> > >  	wait_queue_head_t *wqh;
-> > >  
-> > >  	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
-> > > +	if (inode->i_state & I_SYNC) {
-> > >  		spin_unlock(&inode->i_lock);
-> > >  		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
-> > > +		return 1;
-> > >  	}
-> > > +	return 0;
+On Mon, Mar 19, 2012 at 03:01:17PM +0800, Shawn Guo wrote:
+> On Fri, Mar 09, 2012 at 10:25:00AM -0800, Turquette, Mike wrote:
+> ...
+> > However if you have the ability to use the clk_foo_register functions
+> > please do use them in place of static initialization.  The static init
+> > stuff is only for folks backed into a corner and forced to use it...
+> > for now.  I'm looking at ways to allow for kmalloc'ing in early boot,
+> > as well as reducing the number of clocks that my platform registers
+> > during early boot drastically.
 > > 
-> > This is a horribly ugl primitive.
-> > 
-> > I'd rather add a
-> > 
-> > void inode_wait_for_writeback(struct inode *inode)
-> > {
-> >  	DEFINE_WAIT_BIT(wq, &inode->i_state, __I_SYNC);
-> >  	wait_queue_head_t *wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
-> > 
-> > 	__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
-> > }
-> > 
-> > and opencode all the locking ad I_SYNC checking logic in the callers.
->   I agree the primitive is ugly. And actually it is buggy the way I wrote
-> it. It should have been:
->   __wait_on_bit(wqh, &wq, isync_wait, TASK_UNINTERRUPTIBLE);
+> While I agree using registration functions rather than static
+> initialization will help make "struct clk" an opaque cookie, I also
+> see some benefit with using static initialization over registration
+> functions.  That is we will be able to initialize parents statically
+> rather than calling expensive __clk_lookup() to find them when using
+> registration functions.
 > 
-> where isync_wait is:
-> 
-> int isync_wait(void *word)
-> {
-> 	struct inode *inode = container_of(word, struct inode, i_state);
-> 
-> 	spin_unlock(&inode->i_lock);
-> 	schedule();
-> 	return 1;
-> }
-> 
->   The problem is i_lock pins the inode for us in some cases. So once we
-> drop i_lock, inode can go away so we cannot test the bit anymore.
+> I'm not sure if this will be a concern with the platforms that have
+> hundreds of clocks.  Keep it in mind, when we say one clock, there
+> are generally 3 clks behind it, clk_gate, clk_divider and clk_mux.
 
-Good point, it may not be valid to test &inode->i_state any more...
+On an i.MX51 with a fully dynamically allocated clock tree it takes
+about 10ms to initialize the tree which I think is acceptable. The
+clock tree is not complete, but I would think that about 70% of the
+clocks are there.
+Normally less performant platforms will have less clocks, so I assume
+the times will be comparable.
 
-Given that __wait_on_bit() is
+Sascha
 
-        do {    
-                prepare_to_wait(wq, &q->wait, mode);
-                if (test_bit(q->key.bit_nr, q->key.flags))
-                        ret = (*action)(q->key.flags);
-        } while (test_bit(q->key.bit_nr, q->key.flags) && !ret);
-
-The isync_wait() will do good for the first test_bit, however still
-cannot avoid invalid access for the second test_bit.
-
-The fix could be
-
--        } while (test_bit(q->key.bit_nr, q->key.flags) && !ret);
-+        } while (!ret && test_bit(q->key.bit_nr, q->key.flags));
-
-> But there are just two places where we really need this. So maybe I can
-> just opencode it there and for others use normal obvious variant.
-
-OK.
-
-Thanks,
-Fengguang
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
