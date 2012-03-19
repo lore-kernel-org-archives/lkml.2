@@ -1,313 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab2CSRfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:35:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385Ab2CSRfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:35:51 -0400
-Message-ID: <4F676E55.1060003@redhat.com>
-Date: Mon, 19 Mar 2012 14:35:17 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Patrick Boettcher <Patrick.Boettcher@dibcom.fr>,
-        Olivier Grenie <olivier.grenie@dibcom.fr>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: Re: [PATCH 2/2] [media] dib9000: implement error handling for DibAcquireLock
-References: <1331068109-11613-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1331068109-11613-1-git-send-email-khoroshilov@ispras.ru>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932515Ab2CSRg0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:36:26 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55701 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab2CSRgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 13:36:24 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+In-Reply-To: Your message of "Mon, 19 Mar 2012 10:09:03 PDT."
+             <1332176943.1983.28.camel@joe2Laptop>
+From: Valdis.Kletnieks@vt.edu
+References: <cover.1331856299.git.joe@perches.com> <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com> <20120319040950.GG31682@thunk.org> <1332131137.23125.44.camel@joe2Laptop> <4F6762F1.7050902@gmail.com>
+            <1332176943.1983.28.camel@joe2Laptop>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332178579_2016P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Mon, 19 Mar 2012 13:36:19 -0400
+Message-ID: <171703.1332178579@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4F676E95.0084,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 06-03-2012 18:08, Alexey Khoroshilov escreveu:
-> DibAcquireLock() is implemented as mutex_lock_interruptible() 
-> but the driver does not handle unsuccessful locking.
-> As a result it may lead to unlock of an unheld mutex.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/media/dvb/frontends/dib9000.c |  115 ++++++++++++++++++++++++++-------
->  1 files changed, 91 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/media/dvb/frontends/dib9000.c b/drivers/media/dvb/frontends/dib9000.c
-> index d96b6a1..80848b4 100644
-> --- a/drivers/media/dvb/frontends/dib9000.c
-> +++ b/drivers/media/dvb/frontends/dib9000.c
-> @@ -33,7 +33,7 @@ struct i2c_device {
->  
->  /* lock */
->  #define DIB_LOCK struct mutex
-> -#define DibAcquireLock(lock) do { if (mutex_lock_interruptible(lock) < 0) dprintk("could not get the lock"); } while (0)
-> +#define DibAcquireLock(lock) mutex_lock_interruptible(lock)
->  #define DibReleaseLock(lock) mutex_unlock(lock)
->  #define DibInitLock(lock) mutex_init(lock)
->  #define DibFreeLock(lock)
+--==_Exmh_1332178579_2016P
+Content-Type: text/plain; charset=us-ascii
 
+On Mon, 19 Mar 2012 10:09:03 PDT, Joe Perches said:
+> On Mon, 2012-03-19 at 17:46 +0100, Jiri Slaby wrote:
 
-It will likely be better to remove all those macros, as they just make the
-driver code harder to review.
+> > Please stop repeating that shit. I already explained you the reasons. A
+> > couple of weeks ago.
 
-I'll apply this patch, as it fixes a bug, but it would be great if you
-could send us a patch to get rid of those macros.
+> I don't quite understand your comment on this
+> subject as git log -i --grep=slaby fs/ext4
+> doesn't show your name.
 
-Thanks,
-Mauro
+> do that currently.  There are no patches from
+> you for ext4 between the patch I sent and now.
 
-> @@ -446,7 +446,10 @@ static int dib9000_risc_mem_read(struct dib9000_state *state, u8 cmd, u8 * b, u1
->  	if (!state->platform.risc.fw_is_running)
->  		return -EIO;
->  
-> -	DibAcquireLock(&state->platform.risc.mem_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mem_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	dib9000_risc_mem_setup(state, cmd | 0x80);
->  	dib9000_risc_mem_read_chunks(state, b, len);
->  	DibReleaseLock(&state->platform.risc.mem_lock);
-> @@ -459,7 +462,10 @@ static int dib9000_risc_mem_write(struct dib9000_state *state, u8 cmd, const u8
->  	if (!state->platform.risc.fw_is_running)
->  		return -EIO;
->  
-> -	DibAcquireLock(&state->platform.risc.mem_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mem_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	dib9000_risc_mem_setup(state, cmd);
->  	dib9000_risc_mem_write_chunks(state, b, m->size);
->  	DibReleaseLock(&state->platform.risc.mem_lock);
-> @@ -531,7 +537,10 @@ static int dib9000_mbx_send_attr(struct dib9000_state *state, u8 id, u16 * data,
->  	if (!state->platform.risc.fw_is_running)
->  		return -EINVAL;
->  
-> -	DibAcquireLock(&state->platform.risc.mbx_if_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mbx_if_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	tmp = MAX_MAILBOX_TRY;
->  	do {
->  		size = dib9000_read_word_attr(state, 1043, attr) & 0xff;
-> @@ -593,7 +602,10 @@ static u8 dib9000_mbx_read(struct dib9000_state *state, u16 * data, u8 risc_id,
->  	if (!state->platform.risc.fw_is_running)
->  		return 0;
->  
-> -	DibAcquireLock(&state->platform.risc.mbx_if_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mbx_if_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return 0;
-> +	}
->  	if (risc_id == 1)
->  		mc_base = 16;
->  	else
-> @@ -701,7 +713,10 @@ static int dib9000_mbx_process(struct dib9000_state *state, u16 attr)
->  	if (!state->platform.risc.fw_is_running)
->  		return -1;
->  
-> -	DibAcquireLock(&state->platform.risc.mbx_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -1;
-> +	}
->  
->  	if (dib9000_mbx_count(state, 1, attr))	/* 1=RiscB */
->  		ret = dib9000_mbx_fetch_to_cache(state, attr);
-> @@ -1178,7 +1193,10 @@ static int dib9000_fw_get_channel(struct dvb_frontend *fe)
->  	struct dibDVBTChannel *ch;
->  	int ret = 0;
->  
-> -	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
->  		ret = -EIO;
->  		goto error;
-> @@ -1660,7 +1678,10 @@ static int dib9000_fw_component_bus_xfer(struct i2c_adapter *i2c_adap, struct i2
->  		p[12] = 0;
->  	}
->  
-> -	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return 0;
-> +	}
->  
->  	dib9000_risc_mem_write(state, FE_MM_W_COMPONENT_ACCESS, p);
->  
-> @@ -1768,7 +1789,10 @@ int dib9000_fw_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
->  		return 0;
->  	}
->  
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  
->  	val = dib9000_read_word(state, 294 + 1) & 0xffef;
->  	val |= (onoff & 0x1) << 4;
-> @@ -1800,7 +1824,10 @@ int dib9000_fw_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
->  		return 0;
->  	}
->  
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	dprintk("Index %x, PID %d, OnOff %d", id, pid, onoff);
->  	ret = dib9000_write_word(state, 300 + 1 + id,
->  			onoff ? (1 << 13) | pid : 0);
-> @@ -1848,7 +1875,10 @@ static int dib9000_sleep(struct dvb_frontend *fe)
->  	u8 index_frontend;
->  	int ret = 0;
->  
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++) {
->  		ret = state->fe[index_frontend]->ops.sleep(state->fe[index_frontend]);
->  		if (ret < 0)
-> @@ -1874,8 +1904,12 @@ static int dib9000_get_frontend(struct dvb_frontend *fe)
->  	fe_status_t stat;
->  	int ret = 0;
->  
-> -	if (state->get_frontend_internal == 0)
-> -		DibAcquireLock(&state->demod_lock);
-> +	if (state->get_frontend_internal == 0) {
-> +		if (DibAcquireLock(&state->demod_lock) < 0) {
-> +			dprintk("could not get the lock");
-> +			return -EINTR;
-> +		}
-> +	}
->  
->  	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++) {
->  		state->fe[index_frontend]->ops.read_status(state->fe[index_frontend], &stat);
-> @@ -1978,7 +2012,10 @@ static int dib9000_set_frontend(struct dvb_frontend *fe)
->  	}
->  
->  	state->pid_ctrl_index = -1; /* postpone the pid filtering cmd */
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return 0;
-> +	}
->  
->  	fe->dtv_property_cache.delivery_system = SYS_DVBT;
->  
-> @@ -2138,7 +2175,10 @@ static int dib9000_read_status(struct dvb_frontend *fe, fe_status_t * stat)
->  	u8 index_frontend;
->  	u16 lock = 0, lock_slave = 0;
->  
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++)
->  		lock_slave |= dib9000_read_lock(state->fe[index_frontend]);
->  
-> @@ -2168,8 +2208,15 @@ static int dib9000_read_ber(struct dvb_frontend *fe, u32 * ber)
->  	u16 *c;
->  	int ret = 0;
->  
-> -	DibAcquireLock(&state->demod_lock);
-> -	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
-> +	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		ret = -EINTR;
-> +		goto error;
-> +	}
->  	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
->  		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
->  		ret = -EIO;
-> @@ -2196,7 +2243,10 @@ static int dib9000_read_signal_strength(struct dvb_frontend *fe, u16 * strength)
->  	u16 val;
->  	int ret = 0;
->  
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	*strength = 0;
->  	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++) {
->  		state->fe[index_frontend]->ops.read_signal_strength(state->fe[index_frontend], &val);
-> @@ -2206,7 +2256,11 @@ static int dib9000_read_signal_strength(struct dvb_frontend *fe, u16 * strength)
->  			*strength += val;
->  	}
->  
-> -	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		ret = -EINTR;
-> +		goto error;
-> +	}
->  	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
->  		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
->  		ret = -EIO;
-> @@ -2233,10 +2287,13 @@ static u32 dib9000_get_snr(struct dvb_frontend *fe)
->  	u32 n, s, exp;
->  	u16 val;
->  
-> -	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
-> +	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return 0;
-> +	}
->  	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
->  		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
-> -		return -EIO;
-> +		return 0;
->  	}
->  	dib9000_risc_mem_read(state, FE_MM_R_FE_MONITOR, (u8 *) c, 16 * 2);
->  	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
-> @@ -2269,7 +2326,10 @@ static int dib9000_read_snr(struct dvb_frontend *fe, u16 * snr)
->  	u8 index_frontend;
->  	u32 snr_master;
->  
-> -	DibAcquireLock(&state->demod_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
->  	snr_master = dib9000_get_snr(fe);
->  	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++)
->  		snr_master += dib9000_get_snr(state->fe[index_frontend]);
-> @@ -2291,8 +2351,15 @@ static int dib9000_read_unc_blocks(struct dvb_frontend *fe, u32 * unc)
->  	u16 *c = (u16 *)state->i2c_read_buffer;
->  	int ret = 0;
->  
-> -	DibAcquireLock(&state->demod_lock);
-> -	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
-> +	if (DibAcquireLock(&state->demod_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		return -EINTR;
-> +	}
-> +	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
-> +		dprintk("could not get the lock");
-> +		ret = -EINTR;
-> +		goto error;
-> +	}
->  	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
->  		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
->  		ret = -EIO;
+Oh, give us a *break* Joe.  JIri's not allowed to comment on the situation merely
+because he doesn't have an in-flight patch at the moment?
+
+--==_Exmh_1332178579_2016P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT2dukwdmEQWDXROgAQJZeQ/+KWhFFzYAdhnZTcouE4UM5CVDQCL7JN+m
+Ga86ni6GDQ50Lv22Wid8vHTvEUQeSGcz/RbnXdHdMfk5k8CLPNR/eYW9M9pUUNoR
+fhxvYKpH+38WA4FceRuk1NXse7N0sGmdWuJ64j7t/5Xd+k4mCrkNFUloSCxEsoC0
+QxA1GRNurNTc7HbEbeZ0PvIF6CWEW/id+zpP8WuP8fyRhicmr6Rd40G1deue9Trm
+1Kmd8+5cwkWIyV1EVREm4HV17FiRwcDkbAwOldAfXa4xOZ11uDJhk+WohsTyxtLS
+GkEpSbjDqdeZoxsnnPGM8iEkZKTNwrAV4/EDLbjLUmcFBZ3+k0vU2+lSyfkfypzz
+CWSfQp4y8ShALojyj2PJJ0t9QtlnCJ7hUIzqW6ukYc9x2UjTl7n55rVa0itGAKi+
+MYWbv8cY4u91zS8c38Inue0fdojuRksY55jKkC8okV7eXWQKS+wyTYd1slyj2bFl
+iHTYVAunZ6PfRlnMv3Wxw/a3UCyHGaIQe95+ab+m/JSE5L5zRFsZVsblNAVh/SZv
+/mhY474DgWkrvis7h8YfTYxxbZwTIVABBKWOIYQ4zgDHotnDRjoHnXcsy+uXjM6e
+0qSmoYCWsw7rvsrCwV0b/9+97niJJjCvuZSmoikTLkFC0XwURHnSvU79UKsFtKD5
+liMDfM+c/vg=
+=9twp
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1332178579_2016P--
 
