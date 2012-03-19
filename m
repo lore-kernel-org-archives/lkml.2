@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032234Ab2CSRKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:10:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51080 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030261Ab2CSRKE convert rfc822-to-8bit (ORCPT
+	id S1032264Ab2CSRL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:11:29 -0400
+Received: from na3sys010aog106.obsmtp.com ([74.125.245.80]:34978 "HELO
+	na3sys010aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758278Ab2CSRL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:10:04 -0400
-Message-ID: <1332176969.18960.351.camel@twins>
-Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 19 Mar 2012 18:09:29 +0100
-In-Reply-To: <alpine.DEB.2.00.1203191029090.19189@router.home>
-References: <20120316144028.036474157@chello.nl>
-	 <20120316144240.763518310@chello.nl>
-	 <alpine.DEB.2.00.1203161333370.10211@router.home>
-	 <1331932375.18960.237.camel@twins>
-	 <alpine.DEB.2.00.1203190852380.16879@router.home>
-	 <1332165959.18960.340.camel@twins>
-	 <alpine.DEB.2.00.1203191012530.17008@router.home>
-	 <1332170628.18960.349.camel@twins>
-	 <alpine.DEB.2.00.1203191029090.19189@router.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 19 Mar 2012 13:11:27 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Mon, 19 Mar 2012 10:11:19 -0700
+Message-Id: <1332177079-14339-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 10:31 -0500, Christoph Lameter wrote:
+Hi Linus,
 
-> MPOL_DEFAULT is a certain type of behavior right now that applications
-> rely on. If you change that then these applications will no longer work as
-> expected.
-> 
-> MPOL_DEFAULT is currently set to be the default policy on bootup. You can
-> change that of course and allow setting MPOL_DEFAULT manually for
-> applications that rely on old behavor. Instead set the default behavior on
-> bootup for MPOL_HOME_NODE.
-> 
-> So the default system behavior would be MPOL_HOME_NODE but it could be
-> overriding by numactl to allow old apps to run as they are used to run.
+Please pull from
 
-Ah, OK. Although that's a mightily confusing usage of the word DEFAULT.
-How about instead we make MPOL_LOCAL a real policy and allow explicitly
-setting that?
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git rdma-for-linus
+
+----------------------------------------------------------------
+
+InfiniBand/RDMA changes for the 3.4 merge window.  Nothing big really
+stands out; by patch count lots of fixes to the mlx4 driver plus some
+cleanups and fixes to the core and other drivers.
+
+----------------------------------------------------------------
+Bart Van Assche (2):
+      IB/srp: Use pr_fmt() and pr_err()/pr_warn()
+      IB/srp: Consolidate repetitive sysfs code
+
+Doug Ledford (1):
+      IB/iser: Free IB connection resources in the proper place
+
+Eli Cohen (3):
+      IB/mlx4: Set bad_wr for invalid send opcode
+      mlx4: Enforce device max FMR maps in FMR alloc
+      IB/mlx4: Fix possible missed completion event
+
+Eric Dumazet (1):
+      IB/ehca: Use kthread_create_on_node()
+
+Hefty, Sean (1):
+      RDMA/ucma: Fix AB-BA deadlock
+
+Jack Morgenstein (1):
+      mlx4_core: Report thermal error events
+
+Kumar Sanghvi (1):
+      RDMA/cxgb4: Add missing peer2peer check in MPAv2 code
+
+Kyle McMartin (1):
+      IB/ehca: Fix ilog2() compile failure
+
+Masanari Iida (1):
+      IB/srpt: Fix typo "alocate" -> "allocate"
+
+Mike Marciniszyn (2):
+      IB/qib: Add logic for affinity hint
+      IB/qib: Avoid filtering LID on SMA portinfo
+
+Or Gerlitz (6):
+      IB/iser: Post initial receive buffers before sending the final login request
+      IB: Use central enum for speed instead of hard-coded values
+      mlx4_core: Get rid of redundant ext_port_cap flags
+      IB: Change CQE "csum_ok" field to a bit flag
+      IB/mlx4: Fix info returned when querying IBoE ports
+      mlx4_core: Allow dynamic MTU configuration for IB ports
+
+Roland Dreier (5):
+      IB/core: Fix SDR rates in sysfs
+      mlx4_core: Fix one more static exported function
+      mlx4_core: Scale size of MTT table with system RAM
+      Merge branches 'misc' and 'mlx4' into for-next
+      Merge branches 'cma', 'cxgb3', 'cxgb4', 'ehca', 'iser', 'mad', 'nes', 'qib', 'srp' and 'srpt' into for-next
+
+Steve Wise (2):
+      RDMA/cxgb3: Don't pass irq flags to flush_qp()
+      RDMA/iwcm: Reject connect requests if cmid is not in LISTEN state
+
+Swapna Thete (2):
+      IB/mad: Add MAD error codes from IBA spec
+      IB/mad: Return error response for unsupported MADs
+
+Tatyana Nikolova (1):
+      RDMA/nes: Fixes for sparse endianness warnings
+
+ drivers/infiniband/core/iwcm.c               |   24 +++--
+ drivers/infiniband/core/mad.c                |   21 ++++
+ drivers/infiniband/core/sysfs.c              |   27 +++---
+ drivers/infiniband/core/ucma.c               |   37 ++++----
+ drivers/infiniband/hw/amso1100/c2_provider.c |    2 +-
+ drivers/infiniband/hw/cxgb3/iwch_provider.c  |    2 +-
+ drivers/infiniband/hw/cxgb3/iwch_qp.c        |   40 ++++----
+ drivers/infiniband/hw/cxgb4/cm.c             |    2 +-
+ drivers/infiniband/hw/cxgb4/provider.c       |    2 +-
+ drivers/infiniband/hw/ehca/ehca_hca.c        |    2 +-
+ drivers/infiniband/hw/ehca/ehca_irq.c        |    3 +-
+ drivers/infiniband/hw/ehca/ehca_mrmw.c       |    2 +-
+ drivers/infiniband/hw/mlx4/cq.c              |    6 +-
+ drivers/infiniband/hw/mlx4/main.c            |  130 +++++++++++++------------
+ drivers/infiniband/hw/mlx4/qp.c              |    1 +
+ drivers/infiniband/hw/mthca/mthca_cq.c       |    3 +-
+ drivers/infiniband/hw/nes/nes_cm.c           |   39 +++++----
+ drivers/infiniband/hw/nes/nes_verbs.c        |    2 +-
+ drivers/infiniband/hw/qib/qib.h              |   10 ++-
+ drivers/infiniband/hw/qib/qib_iba7322.c      |  107 +++++++++++++++------
+ drivers/infiniband/hw/qib/qib_mad.c          |    4 +-
+ drivers/infiniband/hw/qib/qib_pcie.c         |   21 ++++-
+ drivers/infiniband/hw/qib/qib_rc.c           |    1 -
+ drivers/infiniband/hw/qib/qib_uc.c           |    1 -
+ drivers/infiniband/ulp/ipoib/ipoib_ib.c      |    3 +-
+ drivers/infiniband/ulp/iser/iscsi_iser.c     |   18 +---
+ drivers/infiniband/ulp/iser/iscsi_iser.h     |    1 +
+ drivers/infiniband/ulp/iser/iser_initiator.c |   42 ++++-----
+ drivers/infiniband/ulp/iser/iser_verbs.c     |   12 +++
+ drivers/infiniband/ulp/srp/ib_srp.c          |  103 +++++++++-----------
+ drivers/infiniband/ulp/srpt/ib_srpt.c        |    2 +-
+ drivers/net/ethernet/mellanox/mlx4/eq.c      |   32 ++++++-
+ drivers/net/ethernet/mellanox/mlx4/main.c    |  126 +++++++++++++++++++++++--
+ drivers/net/ethernet/mellanox/mlx4/mlx4.h    |    9 ++-
+ drivers/net/ethernet/mellanox/mlx4/mr.c      |    3 +
+ drivers/net/ethernet/mellanox/mlx4/port.c    |   68 +++++---------
+ drivers/net/ethernet/mellanox/mlx4/profile.c |   19 ++++
+ include/linux/mlx4/device.h                  |   12 ++-
+ include/rdma/ib_mad.h                        |    9 ++
+ include/rdma/ib_verbs.h                      |   11 ++-
+ 40 files changed, 607 insertions(+), 352 deletions(-)
