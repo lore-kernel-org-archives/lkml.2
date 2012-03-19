@@ -1,156 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030248Ab2CSP5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:57:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52782 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab2CSP5v (ORCPT
+	id S1030703Ab2CSP6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:58:13 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50182 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755684Ab2CSP6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:57:51 -0400
-Date: Mon, 19 Mar 2012 16:57:45 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v4)
-Message-ID: <20120319155742.GF2660@somewhere>
-References: <1331746607-6706-1-git-send-email-asharma@fb.com>
- <20120315141402.GA550@somewhere.redhat.com>
- <4F622DCE.4090608@fb.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F622DCE.4090608@fb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Mar 2012 11:58:12 -0400
+Date: Mon, 19 Mar 2012 15:56:39 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Shea Levy <shea@shealevy.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: EFI Boot Stub Early Console
+Message-ID: <20120319155639.7cff5df6@pyx>
+In-Reply-To: <1332146834.4041.46.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <4F5E46EA.7020602@shealevy.com>
+	<4F5E47E4.2070303@shealevy.com>
+	<4F5E74A0.60001@zytor.com>
+	<4F5E761B.7010608@shealevy.com>
+	<4F5E775D.7080702@zytor.com>
+	<4F648DD3.3000405@shealevy.com>
+	<1332069701.4041.42.camel@mfleming-mobl1.ger.corp.intel.com>
+	<4F65D09B.4050807@shealevy.com>
+	<1332146834.4041.46.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i386-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 10:58:38AM -0700, Arun Sharma wrote:
-> On 3/15/12 7:14 AM, Frederic Weisbecker wrote:
+> > any bootloader (including the bootstub) will call ExitBootServices() 
+> > before any printk'ing actually happens?? Or am I misunderstanding the 
+> > spec somehow? I suppose I could just try it and see what happens...
 > 
-> >I still feel concerned about this.
-> >
-> >If I have only one event with a period of 1 and with that callchain:
-> >
-> >	a ->  b ->  c
-> >
-> >Then I produce three hists
-> >
-> >	1) a ->  b ->  c
-> >	2) a ->  b
-> >	3) a
-> >
-> >Each hist have a period of 1, but the total period is 1.
-> >So the end result should be (IIUC):
-> >
-> >100%    foo     a
-> >100%    foo     b
-> >                 |
-> >                 --- a
-> >100%    foo     c
-> >                 |
-> >                 --- b
-> >                     |
-> >                     --- c
-> >
-> 
-> That is correct. The first column no longer adds up to 100%.
+> Oops. Good point, that isn't going to work.
 
-So do we really want this?
-
->  		
-> >And the percentages on callchain branches will have the same kind
-> >of weird things.
-> 
-> I expect --sort inclusive to be used with -g graph,0.5,caller. I can
-> polish this in the next rev where a single top level flag will set this up.
->
-> The percentages on the branches should still be accurate (as a
-> percentage of total_period). Please let me know if this is not the
-> case.
-> >
-> >So I'm not sure this is a good direction. I'd rather advocate to create
-> >true hists for each callers, all having the same real period as the leaf.
-> >
-> 
-> Please see the v5 I just posted. The callers have a true histogram
-> entry in every sense, except that period_self == 0.
-> 
-> If we don't do this, total_period will be inflated.
-
-Yeah right I've just tried and callchains look right. I'm just puzzled
-by the percentages:
-
-+  98,99%  [k] execve
-+  98,99%  [k] stub_execve
-+  98,99%  [k] do_execve
-+  98,99%  [k] do_execve_common
-+  98,99%  [k] sys_execve
-+  53,12%  [k] __libc_start_main
-+  53,12%  [k] cmd_record
-+  53,12%  [k] T.101
-+  53,12%  [k] main
-+  53,12%  [k] run_builtin
-+  52,11%  [k] perf_evlist__prepare_workload
-+  52,09%  [k] T.1163
-
-> 
-> >Also this feature reminds me a lot the -b option in perf report.
-> >Branch sorting and callchain inclusive sorting are a bit different in
-> >the way they handle the things but the core idea is the same. Callchains
-> >are branches as well.
-> >
-> 
-> Yes - I kept asking why the branch stack stuff doesn't use the
-> existing callchain logic.
-
-Because I fear that loops branches could make the tree representation useless.
-
-> 
-> >Branch sorting (-b) adds a hist for every branch taken, and the period
-> >is always 1. I wonder if this makes more sense than using the original
-> >period of the event for all branches of the event. Not sure.
-> >
-> >Anyway I wonder if both features can be better integrated. After all
-> >they are about the same thing. The difference is that the source of
-> >the branches is not the same and that callchains can be depicted into
-> >trees.
-> >
-> >So perhaps we can have -b specifying the desired source, in case both
-> >are present: -b callchain and -b branch. Both at the same time wouldn't
-> >make much sense I think.
-> >
-> >And the source could default to either if we don't have callchain and
-> >branch at the same time in the events.
-> >
-> >Just an idea...
-> 
-> I haven't played much with the branch stack logic. Will do so and get back.
-> 
-> In the meanwhile, my impression is that there are two high level use cases:
-> 
-> * Compiler optimizers, tracing JITs etc
-> 
-> Which try to focus on a single branch and try to understand what
-> happened with that branch
-> 
-> * Programmers who're trying to understand the behavior of the code
-> they wrote in production
-> 
-> I think the branch-stack stuff primarily caters to the former and
-> inclusive callchain stuff to the latter. I was thinking that getting
-> the branch-stack data into callchains will make the data more useful
-> to more people.
-
-I don't know. "if/else" generated branch could be relevant when represented
-in a tree like we do for callchains. But I fear this doesn't work anymore
-once we deal with loops.
-
-> 
->  -Arun
+Surely it works fine if you are using bootstub directly from EFI ?
