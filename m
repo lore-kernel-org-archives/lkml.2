@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab2CSAbP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 20:31:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34465 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757313Ab2CSAbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 20:31:13 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        ath9k-devel@venema.h4ckr.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH wireless-next 0/3] ath: printk cleanups and code reduction
-Date: Sun, 18 Mar 2012 17:30:51 -0700
-Message-Id: <cover.1332116921.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+	id S964803Ab2CSAbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 20:31:22 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50088 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab2CSAbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 20:31:20 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F667DF1.3090109@jp.fujitsu.com>
+Date: Mon, 19 Mar 2012 09:29:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: seq_put_decimal_ull() et al
+References: <CACVxJT_UWzpVo1Jfbf5Z2A-s16QjEv05MiNSY_EGihKTPuMyxg@mail.gmail.com> <20120314093156.2bc3d3c5.kamezawa.hiroyu@jp.fujitsu.com> <20120314110844.d1654724.kamezawa.hiroyu@jp.fujitsu.com> <CACVxJT9mkX+7+hFrbt2rNCjUH9Y=t2AtGaXqcGfMh6x5WwMjmw@mail.gmail.com>
+In-Reply-To: <CACVxJT9mkX+7+hFrbt2rNCjUH9Y=t2AtGaXqcGfMh6x5WwMjmw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches (3):
-  ath: Add and use pr_fmt, convert printks to pr_<level>
-  ath5k: Introduce _ath5k_printk to reduce code/text
-  ath6kl: Add __printf verification to ath6kl_printk
+(2012/03/16 20:16), Alexey Dobriyan wrote:
 
- drivers/net/wireless/ath/ath5k/ani.c          |   44 +++++++++++--------------
- drivers/net/wireless/ath/ath5k/ath5k.h        |   29 +++++++++-------
- drivers/net/wireless/ath/ath5k/attach.c       |    2 +
- drivers/net/wireless/ath/ath5k/base.c         |   22 ++++++++++++
- drivers/net/wireless/ath/ath5k/debug.c        |   17 ++++++----
- drivers/net/wireless/ath/ath5k/desc.c         |    2 +
- drivers/net/wireless/ath/ath5k/dma.c          |    2 +
- drivers/net/wireless/ath/ath5k/eeprom.c       |    2 +
- drivers/net/wireless/ath/ath5k/initvals.c     |    5 ++-
- drivers/net/wireless/ath/ath5k/led.c          |    2 +
- drivers/net/wireless/ath/ath5k/mac80211-ops.c |    2 +
- drivers/net/wireless/ath/ath5k/pci.c          |    4 ++-
- drivers/net/wireless/ath/ath5k/phy.c          |    2 +
- drivers/net/wireless/ath/ath5k/qcu.c          |    2 +
- drivers/net/wireless/ath/ath5k/reset.c        |    2 +
- drivers/net/wireless/ath/ath5k/sysfs.c        |    2 +
- drivers/net/wireless/ath/ath6kl/cfg80211.c    |    2 +
- drivers/net/wireless/ath/ath6kl/common.h      |    3 +-
- drivers/net/wireless/ath/ath6kl/init.c        |    2 +
- drivers/net/wireless/ath/ath6kl/main.c        |    2 +
- drivers/net/wireless/ath/ath6kl/txrx.c        |    2 +
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    8 ++--
- drivers/net/wireless/ath/ath9k/htc_hst.c      |    7 ++--
- drivers/net/wireless/ath/ath9k/init.c         |   13 +++----
- drivers/net/wireless/ath/ath9k/pci.c          |    9 +++--
- drivers/net/wireless/ath/main.c               |    4 ++-
- drivers/net/wireless/ath/regd.c               |    4 ++-
- 27 files changed, 128 insertions(+), 69 deletions(-)
+> On Wed, Mar 14, 2012 at 5:08 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> On Wed, 14 Mar 2012 09:31:56 +0900
+>> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>
+>>> On Tue, 13 Mar 2012 15:35:54 +0200
+>>> Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>>>
+>>>>> Subject:    + procfs-add-num_to_str-to-speed-up-proc-stat-fix-2.patch added to -mm tree
+>>>>
+>>>> I think the fix is to create proper binary interface for exporting
+>>>> interrupt counts.
+>>>> Programs can parse raw data equally well if programming language is
+>>>> even minimally reasonable
+>>>> (POSIX shell may not qualify, though).
+>>>
+>>> Ok, please try with all tool-chain updates.
+>>> procps, top, sar, and more ?
+>>>
+> 
+> Well, why not?
+> We can tune print code or we can create maximally fast interface and forget.
+> 
 
--- 
-1.7.8.111.gad25c.dirty
+Do you have an idea where to place it ? 
+/proc/stat_binary ?
+/proc/binary/stat ?
+
+Hm, to parse /proc/stat binary format, the user has to know the format of the
+kernel version.
+
+Do we show a format file as
+/proc/binary/stat_format and show
+# cat /proc/binary/stat_format
+  =IHHHIHIQQQIHQQ...
+
+as python's pack/unpack ? or
+export the format via /usr/include/linux/proc_format.h ? as a structure ?
+
+any better idea ?
+
+Thanks,
+-Kame
+
+
+
+
+
+
 
