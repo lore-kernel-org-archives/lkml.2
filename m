@@ -1,33 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161790Ab2CSQO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:14:26 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:48386 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161624Ab2CSQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:14:23 -0400
-Message-ID: <4F675B01.70901@parallels.com>
-Date: Mon, 19 Mar 2012 20:12:49 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1161587Ab2CSQOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:14:32 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47041 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161624Ab2CSQO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:14:27 -0400
+Date: Mon, 19 Mar 2012 12:14:25 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: David Miller <davem@davemloft.net>, joe@perches.com,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+Message-ID: <20120319161425.GB2502@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Anca Emanuel <anca.emanuel@gmail.com>,
+	David Miller <davem@davemloft.net>, joe@perches.com,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120319040950.GG31682@thunk.org>
+ <20120319.001430.1735750114727679638.davem@davemloft.net>
+ <20120319043420.GL31682@thunk.org>
+ <20120319.011211.89954160788757412.davem@davemloft.net>
+ <20120319153133.GA2502@thunk.org>
+ <CAJL_dMtC9fnOsY=4uDVJD=-h5u-qW=xjaf64gtDcgnKX2brhPw@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
-Subject: Re: [PATCHSET] cgroup: cftype based file interface
-References: <1331940963-15756-1-git-send-email-tj@kernel.org> <4F6708F4.4000604@parallels.com> <20120319160532.GB11069@google.com>
-In-Reply-To: <20120319160532.GB11069@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.70]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJL_dMtC9fnOsY=4uDVJD=-h5u-qW=xjaf64gtDcgnKX2brhPw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 08:05 PM, Tejun Heo wrote:
-> Hello, Glauber.
+On Mon, Mar 19, 2012 at 05:51:17PM +0200, Anca Emanuel wrote:
+> Ted Ts'o: this effort is like BKL remove, ok, not like that.
+> In 5 years, to have an standard. Mmm, maybe, less.
 >
-> On Mon, Mar 19, 2012 at 02:22:44PM +0400, Glauber
-Hello, Tejun! =)
+> Joe, prease remind to all one more time your goal, and the benefits.
 
+Getting rid of the BKL had real, user-visible benefits.  Invoking a
+war on printk has no real-world benefits.
+
+It's about the same utility as fixing "colour" to be "color" because
+people think standardized spelling is somehow critically important.
+Guess what?  The world will keep spinning and users will not notice
+the difference if we use printk vs. pr_info
+
+    	       	     	 	    - Ted
