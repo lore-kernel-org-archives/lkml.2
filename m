@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab2CSA60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 20:58:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34102 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753049Ab2CSA6Z convert rfc822-to-8bit (ORCPT
+	id S1757374Ab2CSBDq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 21:03:46 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:48269 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754902Ab2CSBDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 20:58:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="78960919"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Index: AQHNA1ocb15RzWBzFUygeaTQHM0/VZZwzvhA
-Date: Mon, 19 Mar 2012 00:58:21 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
-	 <1331718197.18960.106.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-	 <1331808391.18960.160.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
- <1331891364.18960.221.camel@twins>
-In-Reply-To: <1331891364.18960.221.camel@twins>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 18 Mar 2012 21:03:43 -0400
+Message-ID: <4F6685ED.7040000@xenotime.net>
+Date: Sun, 18 Mar 2012 18:03:41 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: Wang YanQing <Udknight@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Michal Januszewski <spock@gentoo.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2] x86: export 'pcibios_enabled' as GPL
+References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au> <4F5FAE63.3090908@xenotime.net> <20120319003044.GA3744@udknight>
+In-Reply-To: <20120319003044.GA3744@udknight>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
+Export 'pcibios_enabled' so that when uvesafb is built as a
+loadable module (on X86_32), the build will succeed.
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:peterz@infradead.org]
-> Sent: Friday, March 16, 2012 5:49 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
-> Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-> 
-> On Fri, 2012-03-16 at 06:24 +0000, Liu, Chuansheng wrote:
-> 
-> > Based on your patch, I did a little modification, how do you think of that?
-> 
-> > --- a/kernel/cpu.c
-> > +++ b/kernel/cpu.c
-> > @@ -640,8 +640,10 @@ void set_cpu_present(unsigned int cpu, bool
-> > present)
-> >
-> >  void set_cpu_online(unsigned int cpu, bool online)  {
-> > -       if (online)
-> > +       if (online) {
-> >                 cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
-> > +               cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
-> > +       }
-> >         else
-> >                 cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
-> > }
-> 
-> I'm thinking this lacks rationale. What was wrong, Why does this fix it.
-> If you can't answer that stop tinkering and start thinking.
-Your patch advance the setting active bit before online setting, that will cause
-an warning error, I just move the setting active bit after setting online setting, it can fix
-the warning error, and it can fix the race issue between smp_call_function and CPU booting.
+ERROR: "pcibios_enabled" [drivers/video/uvesafb.ko] undefined!
 
-I have tested it by some stress tests.
+Patch v2 uses EXPORT_SYMBOL_GPL() as requested.
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Michal Januszewski <spock@gentoo.org>
+Cc:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc:	linux-fbdev@vger.kernel.org
+Cc:	x86@kernel.org
+---
+ arch/x86/pci/pcbios.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20120313.orig/arch/x86/pci/pcbios.c
++++ linux-next-20120313/arch/x86/pci/pcbios.c
+@@ -27,6 +27,7 @@
+ #define PCIBIOS_HW_TYPE2_SPEC		0x20
+ 
+ int pcibios_enabled;
++EXPORT_SYMBOL_GPL(pcibios_enabled);
+ 
+ /* According to the BIOS specification at:
+  * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could
