@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646Ab2CSXIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 19:08:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58198 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758465Ab2CSXIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 19:08:23 -0400
-Date: Mon, 19 Mar 2012 16:08:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
-Subject: [GIT PULL] workqueue changes for v3.4
-Message-ID: <20120319230819.GB2873@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758673Ab2CSXK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 19:10:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47684 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754059Ab2CSXK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 19:10:58 -0400
+Message-ID: <1332198657.7847.7.camel@joe2Laptop>
+Subject: Re: [PATCH 1/2] drivers/telephony/ixj.c::add_caps(): don't rely on
+ undefined behaviour
+From: Joe Perches <joe@perches.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Ed Okerson <eokerson@quicknet.net>,
+        Greg Herlein <gherlein@quicknet.net>,
+        "David W. Erhart" <derhart@quicknet.net>,
+        John Sellers <jsellers@quicknet.net>,
+        Mike Preston <mpreston@quicknet.net>,
+        David Huggins-Daines <dhd@cepstral.com>,
+        Fabio Ferrari <fabio.ferrari@digitro.com.br>,
+        Artis Kugevics <artis@mt.lv>, Daniele Bellucci <bellucda@tiscali.it>
+Date: Mon, 19 Mar 2012 16:10:57 -0700
+In-Reply-To: <alpine.LNX.2.00.1203192345020.9012@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1203192332420.9012@swampdragon.chaosbits.net>
+	 <1332197078.7847.1.camel@joe2Laptop>
+	 <alpine.LNX.2.00.1203192345020.9012@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Mon, 2012-03-19 at 23:46 +0100, Jesper Juhl wrote:
+> On Mon, 19 Mar 2012, Joe Perches wrote:
+> > On Mon, 2012-03-19 at 23:37 +0100, Jesper Juhl wrote:
+> > > In drivers/telephony/ixj.c::add_caps() we have several statements like this:
+> > > 
+> > >   	j->caplist[j->caps].handle = j->caps++;
+> > > 
+> > > That's undefined behaviour right there.
+> > telephony has been moved to staging.
+> Since when? Where?
+> In my up-to-date Linus tree with HEAD at 
+> c16fa4f2ad19908a47c63d8fa436a1178438c7e7, that file is is still in 
+> drivers/telephony/, not in staging/...
+> /confused
 
-Please pull from the following branch to receive workqueue changes for
-v3.4.
+In the -next tree.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.4
+Yes, it's a bug fix, but drivers/telephony is pretty dead.
 
-It contains only one commit which cleans up UP allocation path a bit.
-
-Thanks.
-
-Lai Jiangshan (1):
-      workqueue: use percpu allocator for cwq on UP
-
- kernel/workqueue.c |   22 +++-------------------
- 1 files changed, 3 insertions(+), 19 deletions(-)
-
---
-tejun
