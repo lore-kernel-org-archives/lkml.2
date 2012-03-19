@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab2CSN0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:26:35 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40554 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab2CSN0e (ORCPT
+	id S1759009Ab2CSN1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:27:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42525 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757627Ab2CSN1J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 09:26:34 -0400
-Date: Mon, 19 Mar 2012 13:26:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-Message-ID: <20120319132623.GO15988@n2100.arm.linux.org.uk>
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com> <20120319130445.GN15988@n2100.arm.linux.org.uk> <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 19 Mar 2012 09:27:09 -0400
+Message-ID: <1332163594.18960.335.camel@twins>
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Mon, 19 Mar 2012 14:26:34 +0100
+In-Reply-To: <20120319130401.GI24602@redhat.com>
+References: <20120316144028.036474157@chello.nl>
+	 <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>
+	 <20120319130401.GI24602@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 06:49:34PM +0530, Ajeet Yadav wrote:
-> On Mon, Mar 19, 2012 at 6:34 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Mar 19, 2012 at 06:31:44PM +0530, Ajeet Yadav wrote:
-> >> Hi John, refering to you patch:
-> >>
-> >> ARM: remove 'select GENERIC_TIME'
-> >> GENERIC_TIME is now enabled by default, so 'select GENERIC_TIME' is
-> >> redundant.  Remove them.
-> >>
-> >> The following config's are not selectable:
-> >> config NO_HZ, config HIGH_RES_TIMERS, config IRQSOFF_TRACER, config
-> >> PREEMPT_TRACER
-> >>
-> >> As far as I know, ARM now uses GENERIC_TIME via the arch_getoffset()
-> >> infrastructure, i.e ARCH_USES_GETTIMEOFFSET=y
-> >
-> > No.  It is possible to select these options, but only if your platform
-> > uses the clockevent and clocksource infrastructure.  If you're using that,
-> > then you must _not_ select ARCH_USES_GETTIMEOFFSET.
-> >
-> > ARCH_USES_GETTIMEOFFSET is for compatibility with old unconverted
-> > platforms, which are _not_ possible to use the above features.
-> 
-> Just before the patch "time: Kill off CONFIG_GENERIC_TIME" Generic
-> time was selectable option,
+On Mon, 2012-03-19 at 14:04 +0100, Andrea Arcangeli wrote:
 
-CONFIG_GENERIC_TIME was always set to 'y' on ARM (and everything else)
-before that commit.  As the option is always set, there's no point it
-existing.  So it was removed, and all the code paths associated with
-it became unconditional.
+> About the cost of the actual pagetable scanner, you're not being
+> rational about it. You should measure it for once, take khugepaged
+> make it scan 1G of memory per millisecond and measure the cost.
 
-Yes, there are places where GENERIC_TIME was subsituted with
-!ARCH_USES_GETTIMEOFFSET.  (John will know the details.)
+Death by a thousand cuts.. 
 
-> Therefore our target configuration with 2.6 kernel was
-> GENERIC_CLOCKEVENTS=y, ARCH_USES_GETTIMEOFFSET=y,
+> You keep complaining about the unaccountability of the pagetable
+> scanners in terms of process load, and that's a red herring as far as
+> I can tell. The irqs and ksoftirqd load in a busy server, is likely
+> much higher than whatever happens at the pagetable scanner level (sure
+> thing for khugepaged and by an huge order of magnitude so). 
 
-It's absolutely absurd to have a platform converted to use clockevents
-and clocksources, and then select ARCH_USES_GETTIMEOFFSET.  That's saying
-"I provide the new infrastructure, but I want the dodgy old compatibility
-which doesn't work properly with a set of other features as well".
+Who says I agree with ksoftirqd? I would love to get rid of all things
+softirq. And I also think workqueues are over-/ab-used.
 
-> I conclude that GENERIC_CLOCKEVENTS is supported, hence I must set
-> ARCH_USES_GETTIMEOFFSET=n, in order to use NO_HZ, HIGH_RES_TIMERS,
-> IRQSOFF_TRACER, PREEMPT_TRACER
+> I don't
+> think this is a relevant concern anyway because the pagetable scanners
+> go over all memory in a equal amount so the cost would be evenly
+> distributed for all processes over time (the same cannot be said about
+> the irqs and ksoftrqid that will benefit only a few processes doing
+> I/O). 
 
-Correct.  If you're using clockevents and clocksources, you should not
-select ARCH_USES_GETTIMEOFFSET.
+So what about the case where all I do is compile kernels and we already
+have near perfect locality because everything is short running? You're
+still scanning that memory, and I get no benefit.
