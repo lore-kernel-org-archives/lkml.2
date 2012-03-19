@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032702Ab2CSTrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:47:39 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:53263 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab2CSTrh (ORCPT
+	id S1032730Ab2CSTtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:49:12 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33831 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab2CSTtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:47:37 -0400
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 15:47:36 EDT
-Date: Mon, 19 Mar 2012 21:40:16 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Olof Johansson <olof@lixom.net>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] ARM: iop: add missing includes
-Message-ID: <20120319194016.GA708@ultra.musicnaut.iki.fi>
-References: <1329344682-29962-1-git-send-email-olof@lixom.net>
+	Mon, 19 Mar 2012 15:49:10 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6653"; a="173813709"
+Message-ID: <4F678DB6.5090006@codeaurora.org>
+Date: Mon, 19 Mar 2012 12:49:10 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329344682-29962-1-git-send-email-olof@lixom.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, linaro-dev@lists.linaro.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <1331878280-2758-3-git-send-email-mturquette@linaro.org> <4F6404C2.7000506@codeaurora.org> <CAJOA=zP1HHqBNS4V2dN=Q9oOcOErQj8W__fB_qRyZeNLBk7VJg@mail.gmail.com> <4F678561.3040105@codeaurora.org> <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+In-Reply-To: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/19/2012 12:33 PM, Turquette, Mike wrote:
+> On Mon, Mar 19, 2012 at 12:13 PM, Saravana Kannan
+> <skannan@codeaurora.org>  wrote:
+>> I saw some responses from you over the weekend but not to mine. So, I
+>> assumed you were busy with other stuff and I started working on a patch on
+>> top of v7.
+>
+> I only answer trivial emails on the weekend ;-)
+>
+>> I will send that out if I get around to finishing it before you
+>> do. Hope that's alright with you.
+>
+> I'm happy to for you to take a crack at it.  I don't know what your
+> implementation looks like, but here are a couple concerns I have:
+>
+> 1) if you're copying the data from the initializer over to the struct
+> clk then make sure you handle the __init data aspects of it properly
 
-On Wed, Feb 15, 2012 at 02:24:42PM -0800, Olof Johansson wrote:
-> Resolves two build breaks. One is a boatload of "unknown type name 'u32'"
-> in iop3xx.h due to missing include of <linux/types.h>.
-> 
-> The other is:
-> arch/arm/plat-iop/restart.c: In function 'iop3xx_restart':
-> arch/arm/plat-iop/restart.c:18:2: error: implicit declaration of function 'soft_restart' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
+Not copying them into clk again. Just leaving them in clk_hw and using 
+them as is. The only fields moved into clk_hw are:
++       const char              *name;
++       const struct clk_ops    *ops;
++       char                    **parent_names;
++       u8                      num_parents;
++       unsigned long           flags;
 
-Any chance to get this patch into 3.3.1 (stable), when and if such is made?
+>
+> 2) are the members of struct clk_hw visible to the rest of the world?
+> Are they modifiable (i.e., not const)?  This is undesirable.
 
-The v3.3 fails to build for IOP boards without this.
+I'm leaving the const as is. Some of them you can't mark as const if you 
+want to dynamically create them.
 
-> ---
-> 
->  arch/arm/include/asm/hardware/iop3xx.h |    2 ++
->  arch/arm/plat-iop/restart.c            |    1 +
->  2 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/hardware/iop3xx.h b/arch/arm/include/asm/hardware/iop3xx.h
-> index 077c323..ec0224d 100644
-> --- a/arch/arm/include/asm/hardware/iop3xx.h
-> +++ b/arch/arm/include/asm/hardware/iop3xx.h
-> @@ -15,6 +15,8 @@
->  #ifndef __IOP3XX_H
->  #define __IOP3XX_H
->  
-> +#include <linux/types.h>
-> +
->  /*
->   * IOP3XX GPIO handling
->   */
-> diff --git a/arch/arm/plat-iop/restart.c b/arch/arm/plat-iop/restart.c
-> index 6a85a0c..a6ee3b6 100644
-> --- a/arch/arm/plat-iop/restart.c
-> +++ b/arch/arm/plat-iop/restart.c
-> @@ -8,6 +8,7 @@
->   * published by the Free Software Foundation.
->   */
->  #include <asm/hardware/iop3xx.h>
-> +#include <asm/system.h>
->  #include <mach/hardware.h>
->  
->  void iop3xx_restart(char mode, const char *cmd)
-> -- 
-> 1.7.9.209.gb6b3b
+Yes, they are visible to all the platform drivers (not the rest of the 
+world). But these values are provided by the platform drivers anyway, so 
+I don't see a problem with it.
 
-A.
+I also don't see any useful hacks a platform driver can do by messing 
+with this fields without crashing the kernel since they don't have 
+access to the locks.
+
+flags might be the one that provides some possibilities since I think 
+you look at them often in the core code. We could just copy it into clk 
+if people really feel strongly about it. At the worst case, we can have 
+a full copy of all these fields inside clk and copy all of them over, 
+but I think that would be overkill for things like names, ops and parent 
+info.
+
+Thanks,
+Saravana
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
