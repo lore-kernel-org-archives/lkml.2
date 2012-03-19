@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161961Ab2CSTYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:24:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49034 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab2CSTYU (ORCPT
+	id S965171Ab2CSTd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:33:29 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:47014 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965127Ab2CSTd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:24:20 -0400
-Date: Mon, 19 Mar 2012 12:24:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
-Message-ID: <20120319192416.GE6339@kroah.com>
-References: <20120316233829.GA14022@kroah.com>
- <20120316233811.484341257@linuxfoundation.org>
- <20120317023740.GH12704@decadent.org.uk>
- <CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
- <1331969567.3022.233.camel@deadeye>
- <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
- <20120319155022.GC8176@kroah.com>
- <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
+	Mon, 19 Mar 2012 15:33:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F678561.3040105@codeaurora.org>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
+ <1331878280-2758-3-git-send-email-mturquette@linaro.org> <4F6404C2.7000506@codeaurora.org>
+ <CAJOA=zP1HHqBNS4V2dN=Q9oOcOErQj8W__fB_qRyZeNLBk7VJg@mail.gmail.com> <4F678561.3040105@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 19 Mar 2012 12:33:05 -0700
+Message-ID: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, linaro-dev@lists.linaro.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 11:11:35PM +0400, Pavel Shilovsky wrote:
-> 19 марта 2012 г. 19:50 пользователь Greg KH
-> <gregkh@linuxfoundation.org> написал:
-> > On Sat, Mar 17, 2012 at 11:52:24AM +0400, Pavel Shilovsky wrote:
-> >> 17 марта 2012 г. 11:32 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
-> >> > On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
-> >> >> 17 марта 2012 г. 6:37 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
-> >> >> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
-> >> >> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> >> > [...]
-> >> >> > But we test this before flock->fl_flags & FL_POSIX, which means we
-> >> >> > don't know whether this lock actually needs to be assigned one of
-> >> >> > those structures.  So it appears that we might report a spurious error
-> >> >> > if the lock list ends with a mandatory lock.  If so, this is
-> >> >> > relatively harmless but does need to be fixed.
-> >> >> >
-> >> >>
-> >> >> You are right here, thanks for the catch! I will repost the patch asap.
-> >> >
-> >> > This has already been merged into Linus's tree, so you need to submit a
-> >> > patch to apply on top of it.
-> >> >
-> >>
-> >> I posted two patches:
-> >> 1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
-> >> kmalloc under the flocks spinlock
-> >
-> > What do you mean by "fixed version"?
-> >
-> >> 2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
-> >> cifs_push_posix_locks
-> >
-> > What do you mean by this?
-> 
-> Ok, seems I didn't understand this process correctly. I reposted the
-> new "fixed" version of this patch, because I thought it is more
-> suitable for stale to merge one correct patch rather than one
-> incorrect + follow-on fixup. Sorry if I was wrong.
+On Mon, Mar 19, 2012 at 12:13 PM, Saravana Kannan
+<skannan@codeaurora.org> wrote:
+> I saw some responses from you over the weekend but not to mine. So, I
+> assumed you were busy with other stuff and I started working on a patch on
+> top of v7.
 
-I need to stay identical with Linus's tree as much as possible, it's
-easier for everyone in the end that way for tracking exactly what
-happens.
+I only answer trivial emails on the weekend ;-)
 
-> > If there was a follow-on patch in Linus's tree that fixes a problem, I
-> > need that git commit id, not a "fixed" patch that does not match up with
-> > what is in Linus's tree right now.
-> >
-> > So, if that's the case, please let me know what the git commit id of
-> > that patch is please.
-> 
-> Steve has just merged the follow-on patch:
-> http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=ce85852b90a214cf577fc1b4f49d99fd7e98784a
-> 
-> but seems hasn't sent a merge request to Linus yet - will let you know
-> when the patch comes to Linus's tree.
+> I will send that out if I get around to finishing it before you
+> do. Hope that's alright with you.
 
-Ok, please let me know when this goes into Linus's tree and I will
-queue it up for the next releases.
+I'm happy to for you to take a crack at it.  I don't know what your
+implementation looks like, but here are a couple concerns I have:
 
-thanks,
+1) if you're copying the data from the initializer over to the struct
+clk then make sure you handle the __init data aspects of it properly
 
-greg k-h
+2) are the members of struct clk_hw visible to the rest of the world?
+Are they modifiable (i.e., not const)?  This is undesirable.
+
+Thanks,
+Mike
