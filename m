@@ -1,203 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab2CSD7s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 23:59:48 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:40272 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752896Ab2CSD7q (ORCPT
+	id S1751200Ab2CSEBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 00:01:05 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38421 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab2CSEBD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 23:59:46 -0400
-From: Mai La <mla@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Tirumala R Marri <tmarri@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michael Neuling <mikey@neuling.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: open-source-review@apm.com, Mai La <mla@apm.com>
-Subject: [PATCH 1/2] [v4] powerpc/44x: Fix PCI MSI support for Maui APM821xx SoC and Bluestone board
-Date: Mon, 19 Mar 2012 10:59:08 +0700
-Message-Id: <1332129548-20379-1-git-send-email-mla@apm.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 19 Mar 2012 00:01:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120205145913.194746473361e324bda1eb4a@gmail.com>
+References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
+	<4F2F0065.9040909@lwfinger.net>
+	<20120205222141.GA26223@electric-eye.fr.zoreil.com>
+	<20120205145913.194746473361e324bda1eb4a@gmail.com>
+Date: Sun, 18 Mar 2012 21:01:01 -0700
+Message-ID: <CAKFRV=NghW3kokuD-VBAzVJf09r-9ePMG+L7qDYfqmuHwWo4mg@mail.gmail.com>
+Subject: Re: WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
+From: Justin Mattock <justinmattock@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch consists of:
-- Enable PCI MSI as default for Bluestone board
-- Change definition of number of MSI interrupts as it depends on SoC
-- Fix returning ENODEV as finding MSI node
-- Fix MSI physical high and low address
-- Keep MSI data logically
+On Sun, Feb 5, 2012 at 2:59 PM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On Sun, 5 Feb 2012 23:21:41 +0100
+> Francois Romieu <romieu@fr.zoreil.com> wrote:
+>
+>> Larry Finger <Larry.Finger@lwfinger.net> :
+>> > On 02/05/2012 03:40 PM, Justin P. Mattock wrote:
+>> > >
+>> > >this showed up as I woke the machine up from suspend. machine is connected
+>> > >I just see networkmanager constantly spinning trying to connect then telling me
+>> > >the wired network is not connected(even though its just wireless that I have).
+>>
+>> [ 1273.447349] r8169 0000:06:00.0: Refused to change power state, currently in D3
+>> [ 1273.571024] psmouse serio1: elantech: retrying ps2 command 0xf8 (2).
+>> [ 1273.656709] r8169 0000:06:00.0: eth0: link up
+>>                                          ^^^^^^^
+>>
+>> Justin, you did not ever connect a cable, did you ?
+>
+> nope! was using wireless the whole time.
+>
+>>
+>> [...]
+>> > The error clearly comes from r8169, not from ath9k. If you unload
+>> > r8169 before suspending, does this still happen? My suspicion is
+>> > that NM is getting confused.
+>>
+>> It could hide the problem but the D3 + link up messages are nonetheless
+>> a bit unexpected.
+>>
+>> > P.S. Unless it happens with just the ath9k active, this ML is likely
+>> > not the correct one.
+>>
+>> Yes, please Cc: netdev@vger.kernel.org + me instead.
+>>
+>> Thanks.
+>>
+>> --
+>> Ueimor
+>
+> removed linux-wireless and added netdev to the cc's
+> will monitor this and report anything that shows up.
+>
+> --
+> Justin P. Mattock <justinmattock@gmail.com>
 
-Signed-off-by: Mai La <mla@apm.com>
+seems I see this with the latest linux-next:
 
----
-v4:
-Per Josh Boyer's comment:
-* Declare msi_irqs as static
-* Handle error if allocation of MSI vitual interrupts fails
-* Return ENODEV if counting MSI interrupts fails
-v3:
-* Use upper_32_bits() / lower_32_bits() consistently as Wolfgang Denk recomments
-v2:
-* Change definition of number of MSI interrupt from config to count interrupts in device tree
+[21731.149774] wlan0: associate with 00:1e:2a:62:6b:1e (try 1/3)
+[21731.152858] wlan0: RX AssocResp from 00:1e:2a:62:6b:1e (capab=0x31
+status=0 aid=7)
+[21731.152867] wlan0: associated
+[21740.306348] ------------[ cut here ]------------
+[21740.306363] WARNING: at net/sched/sch_generic.c:256
+dev_watchdog+0x1f2/0x200()
+[21740.306367] Hardware name: 0914
+[21740.306370] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+[21740.306374] Modules linked in: dm_crypt xt_limit xt_tcpudp
+xt_addrtype snd_hda_codec_hdmi xt_state joydev arc4
+snd_hda_codec_conexant ath9k nf_conntrack_netbios_ns
+nf_conntrack_broadcast snd_hda_intel snd_hda_codec mac80211 nf_nat_ftp
+nf_nat snd_hwdep nf_conntrack_ipv4 nf_defrag_ipv4 snd_pcm
+nf_conntrack_ftp snd_seq_midi ath9k_common ath9k_hw nf_conntrack
+iptable_filter snd_rawmidi snd_seq_midi_event uvcvideo ath ip_tables
+videobuf2_core videodev psmouse x_tables ideapad_laptop serio_raw
+snd_seq cfg80211 lp snd_timer snd_seq_device snd videobuf2_vmalloc
+videobuf2_memops soundcore parport sparse_keymap intel_ips
+snd_page_alloc usb_storage uas i915 drm_kms_helper drm i2c_algo_bit
+r8169 intel_agp intel_gtt agpgart video
+[21740.306469] Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc7-next-20120316 #1
+[21740.306473] Call Trace:
+[21740.306483]  [<c1049072>] warn_slowpath_common+0x72/0xa0
+[21740.306489]  [<c14e00a2>] ? dev_watchdog+0x1f2/0x200
+[21740.306493]  [<c14e00a2>] ? dev_watchdog+0x1f2/0x200
+[21740.306498]  [<c1049143>] warn_slowpath_fmt+0x33/0x40
+[21740.306503]  [<c14e00a2>] dev_watchdog+0x1f2/0x200
+[21740.306520]  [<c1059c12>] run_timer_softirq+0x132/0x540
+[21740.306525]  [<c1059b98>] ? run_timer_softirq+0xb8/0x540
+[21740.306529]  [<c14dfeb0>] ? pfifo_fast_init+0x60/0x60
+[21740.306534]  [<c1050e67>] __do_softirq+0x97/0x360
+[21740.306539]  [<c1050dd0>] ? local_bh_enable+0xd0/0xd0
+[21740.306542]  <IRQ>  [<c10513d6>] ? irq_exit+0x86/0xb0
+[21740.306552]  [<c159f179>] ? smp_apic_timer_interrupt+0x59/0x88
+[21740.306559]  [<c12cf1a8>] ? trace_hardirqs_off_thunk+0xc/0x14
+[21740.306565]  [<c1597682>] ? apic_timer_interrupt+0x36/0x3c
+[21740.306572]  [<c10a007b>] ? clocks_calc_mult_shift+0xfb/0x100
+[21740.306580]  [<c1319fd9>] ? intel_idle+0xc9/0x130
+[21740.306588]  [<c1495655>] ? cpuidle_enter+0x15/0x20
+[21740.306592]  [<c1495b5a>] ? cpuidle_idle_call+0x8a/0x320
+[21740.306600]  [<c10152c5>] ? cpu_idle+0xa5/0xf0
+[21740.306607]  [<c1585d2d>] ? start_secondary+0x209/0x20f
+[21740.306611] ---[ end trace 9a4d94a7e2dfb4d0 ]---
+[21740.318685] r8169 0000:06:00.0: eth0: link up
+[21752.292679] r8169 0000:06:00.0: eth0: link up
+[21764.268569] r8169 0000:06:00.0: eth0: link up
+[21776.254393] r8169 0000:06:00.0: eth0: link up
+[21788.235797] r8169 0000:06:00.0: eth0: link up
+[21800.196524] r8169 0000:06:00.0: eth0: link up
+[21812.172497] r8169 0000:06:00.0: eth0: link up
 
----
- arch/powerpc/platforms/44x/Kconfig |    2 +
- arch/powerpc/sysdev/ppc4xx_msi.c   |   42 ++++++++++++++++++++++++------------
- 2 files changed, 30 insertions(+), 14 deletions(-)
+one thing I have noticed these few weeks is once I wake the machine
+up, wireless connects, but Networkmanager keeps trying to connect
+ethernet(switching ethernet off in preferences or waiting a while
+resolves this issue from the daemon), so I think there must be some
+strange thing with NM
+causing this(disabling "auto connect" gets rid of this issue)
+the system is ubuntu(oneiric)
 
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index fcf6bf2..9f04ce3 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -23,6 +23,8 @@ config BLUESTONE
- 	default n
- 	select PPC44x_SIMPLE
- 	select APM821xx
-+	select PCI_MSI
-+	select PPC4xx_MSI
- 	select IBM_EMAC_RGMII
- 	help
- 	  This option enables support for the APM APM821xx Evaluation board.
-diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
-index 1c2d7af..cc17f59 100644
---- a/arch/powerpc/sysdev/ppc4xx_msi.c
-+++ b/arch/powerpc/sysdev/ppc4xx_msi.c
-@@ -28,10 +28,11 @@
- #include <linux/of_platform.h>
- #include <linux/interrupt.h>
- #include <linux/export.h>
-+#include <linux/kernel.h>
- #include <asm/prom.h>
- #include <asm/hw_irq.h>
- #include <asm/ppc-pci.h>
--#include <boot/dcr.h>
-+#include <asm/dcr.h>
- #include <asm/dcr-regs.h>
- #include <asm/msi_bitmap.h>
- 
-@@ -43,13 +44,14 @@
- #define PEIH_FLUSH0	0x30
- #define PEIH_FLUSH1	0x38
- #define PEIH_CNTRST	0x48
--#define NR_MSI_IRQS	4
-+
-+static int msi_irqs;
- 
- struct ppc4xx_msi {
- 	u32 msi_addr_lo;
- 	u32 msi_addr_hi;
- 	void __iomem *msi_regs;
--	int msi_virqs[NR_MSI_IRQS];
-+	int *msi_virqs;
- 	struct msi_bitmap bitmap;
- 	struct device_node *msi_dev;
- };
-@@ -61,7 +63,7 @@ static int ppc4xx_msi_init_allocator(struct platform_device *dev,
- {
- 	int err;
- 
--	err = msi_bitmap_alloc(&msi_data->bitmap, NR_MSI_IRQS,
-+	err = msi_bitmap_alloc(&msi_data->bitmap, msi_irqs,
- 			      dev->dev.of_node);
- 	if (err)
- 		return err;
-@@ -83,6 +85,11 @@ static int ppc4xx_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	struct msi_desc *entry;
- 	struct ppc4xx_msi *msi_data = &ppc4xx_msi;
- 
-+	msi_data->msi_virqs = kmalloc((msi_irqs) * sizeof(int),
-+					    GFP_KERNEL);
-+	if (!msi_data->msi_virqs)
-+		return -ENOMEM;
-+
- 	list_for_each_entry(entry, &dev->msi_list, list) {
- 		int_no = msi_bitmap_alloc_hwirqs(&msi_data->bitmap, 1);
- 		if (int_no >= 0)
-@@ -150,12 +157,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	if (!sdr_addr)
- 		return -1;
- 
--	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
--	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
--
-+	mtdcri(SDR0, *sdr_addr, upper_32_bits(res.start));	/*HIGH addr */
-+	mtdcri(SDR0, *sdr_addr + 1, lower_32_bits(res.start));	/* Low addr */
- 
- 	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
--	if (msi->msi_dev)
-+	if (!msi->msi_dev)
- 		return -ENODEV;
- 
- 	msi->msi_regs = of_iomap(msi->msi_dev, 0);
-@@ -167,9 +173,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
- 
- 	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
--	msi->msi_addr_hi = 0x0;
--	msi->msi_addr_lo = (u32) msi_phys;
--	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
-+	if (!msi_virt)
-+		return -ENOMEM;
-+	msi->msi_addr_hi = (u32)(msi_phys >> 32);
-+	msi->msi_addr_lo = (u32)(msi_phys & 0xffffffff);
-+	dev_dbg(&dev->dev, "PCIE-MSI: msi address high 0x%x, low 0x%x\n",
-+		msi->msi_addr_hi, msi->msi_addr_lo);
- 
- 	/* Progam the Interrupt handler Termination addr registers */
- 	out_be32(msi->msi_regs + PEIH_TERMADH, msi->msi_addr_hi);
-@@ -185,6 +194,8 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	out_be32(msi->msi_regs + PEIH_MSIED, *msi_data);
- 	out_be32(msi->msi_regs + PEIH_MSIMK, *msi_mask);
- 
-+	dma_free_coherent(&dev->dev, 64, msi_virt, msi_phys);
-+
- 	return 0;
- }
- 
-@@ -194,7 +205,7 @@ static int ppc4xx_of_msi_remove(struct platform_device *dev)
- 	int i;
- 	int virq;
- 
--	for (i = 0; i < NR_MSI_IRQS; i++) {
-+	for (i = 0; i < msi_irqs; i++) {
- 		virq = msi->msi_virqs[i];
- 		if (virq != NO_IRQ)
- 			irq_dispose_mapping(virq);
-@@ -215,8 +226,6 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 	struct resource res;
- 	int err = 0;
- 
--	msi = &ppc4xx_msi;/*keep the msi data for further use*/
--
- 	dev_dbg(&dev->dev, "PCIE-MSI: Setting up MSI support...\n");
- 
- 	msi = kzalloc(sizeof(struct ppc4xx_msi), GFP_KERNEL);
-@@ -234,6 +243,10 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		goto error_out;
- 	}
- 
-+	msi_irqs = of_irq_count(dev->dev.of_node);
-+	if (!msi_irqs)
-+		return -ENODEV;
-+
- 	if (ppc4xx_setup_pcieh_hw(dev, res, msi))
- 		goto error_out;
- 
-@@ -242,6 +255,7 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		dev_err(&dev->dev, "Error allocating MSI bitmap\n");
- 		goto error_out;
- 	}
-+	ppc4xx_msi = *msi;
- 
- 	ppc_md.setup_msi_irqs = ppc4xx_setup_msi_irqs;
- 	ppc_md.teardown_msi_irqs = ppc4xx_teardown_msi_irqs;
+
 -- 
-1.7.3.4
-
+Justin P. Mattock
