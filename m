@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162238Ab2CSQvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:51:05 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:13409
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1162184Ab2CSQvC (ORCPT
+	id S1162251Ab2CSQvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:51:39 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42135 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162218Ab2CSQvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:51:02 -0400
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
- correctly when SRB status is INVALID
-Thread-Topic: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
- correctly when SRB status is INVALID
-Thread-Index: AQHNBWQK0XOEnDzC00OM+NEv/bIVW5Zxy24AgAAHREA=
-Date: Mon, 19 Mar 2012 16:50:36 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
-	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
- <1332173560.3152.65.camel@dabdike>
-In-Reply-To: <1332173560.3152.65.camel@dabdike>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.71]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 19 Mar 2012 12:51:37 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <20120316210343.993662395@openvz.org>
+References: <20120316205556.595309230@openvz.org>
+	<20120316210343.993662395@openvz.org>
+Date: Mon, 19 Mar 2012 09:51:36 -0700
+X-Google-Sender-Auth: GNudcAVSKf5fP8zNClM29M4Nx5M
+Message-ID: <CAGXu5jJq5yQDadMpRasXNOV3=auRF5WbyyEf3bodf42veg9F0g@mail.gmail.com>
+Subject: Re: [patch 2/2] c/r: prctl: Add ability to get clear_tid_address
+From: Kees Cook <keescook@chromium.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Andrew Vagin <avagin@openvz.org>,
+        Pedro Alves <palves@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2JGpCVf028516
 
+On Fri, Mar 16, 2012 at 1:55 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> Zero is written at clear_tid_address, when
+> the process exits. This functionality is used
+> by pthread_join().
+>
+> We already have sys_set_tid_address() to change this
+> address for current task but there is no way to obtain
+> it from a user space.
 
+Is it worth introducing a syscall for this just for symmetry? I
+suspect not, in which case:
 
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Monday, March 19, 2012 12:13 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: Re: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result correctly
-> when SRB status is INVALID
-> 
-> On Sun, 2012-03-18 at 17:12 -0700, K. Y. Srinivasan wrote:
-> > Currently Windows hosts only support a subset of scsi commands and for
-> commands
-> > that are not supported, the host returns a generic SRB failure status.
-> > However, they have agreed to change the return value to indicate that
-> > the command is not supported. In preparation for that, handle the
-> > SRB_STATUS_INVALID_REQUEST return value correctly.
-> >
-> > I would like to thank Jeff Garzik <jgpobox@gmail.com> and
-> > Douglas Gilbert <dgilbert@interlog.com> for suggesting the correct approach
-> > here.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  drivers/scsi/storvsc_drv.c |   12 ++++++++++++
-> >  1 files changed, 12 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> > index 44c7a48..018c363 100644
-> > --- a/drivers/scsi/storvsc_drv.c
-> > +++ b/drivers/scsi/storvsc_drv.c
-> > @@ -202,6 +202,7 @@ enum storvsc_request_type {
-> >  #define SRB_STATUS_INVALID_LUN	0x20
-> >  #define SRB_STATUS_SUCCESS	0x01
-> >  #define SRB_STATUS_ERROR	0x04
-> > +#define SRB_STATUS_INVALID_REQUEST 0x06
-> 
-> I don't really think this is the correct approach.  We already have a
-> SCSI error return for this, which you're now translating in the driver
-> and hypervisor.  Rather than have a special byte return of
-> SRB_STATUS_INVALID_REQUEST, why not have the hypervisor do the right
-> thing and fill in the ILLEGAL_REQUEST sense return.  That way you don't
-> need a special error code and you don't need to construct the sense
-> buffer in the driver.  Now HyperV will be correctly set up for both pass
-> through and emulated responses.  It's surely not much work and you
-> already process sense data correctly in storvsc_command_completion(), so
-> you wouldn't need any patches to the driver for this approach.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-James, the issue here is that currently shipping Windows hosts don't even do
-what I am handling here. Based on the input I got from you and Christoph,
-I convinced the windows team to at least return the SRB status that indicates
-an illegal request. I will suggest to them that perhaps they should also set the
-correct sense code and so I would not need this patch. However, keep in mind
-that there is no current ETA on when Windows will ship with these changes - Windows 8
-may ship with code where they would return an invalid SRB status, but they are not 
-setting the sense code, hence this patch. When the Window host does the "right thing"
-I will clean this up, but I don't know when that will be.
+-Kees
 
-More importantly, the second patch  in this series where I filter out the ATA_16 command
-on the guest is really important for us. Without that patch on a range on windows hosts
-including the current beta version of windows8 where the host is returning a generic 
-error in response to ATA_16 command, we cannot boot many Linux distros. If you
-prefer, I can drop the first patch and re-submit the second patch for consideration now.
-
-Regards,
-
-K. Y
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Kees Cook
+ChromeOS Security
