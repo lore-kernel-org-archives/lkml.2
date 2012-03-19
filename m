@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030625Ab2CSKvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 06:51:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab2CSKvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 06:51:43 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1331746607.5104.93.camel@jerome.southpole.se>
-References: <1331746607.5104.93.camel@jerome.southpole.se> <1331738610.5104.84.camel@jerome.southpole.se> <1331736182.5104.74.camel@jerome.southpole.se> <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233858.13888.34822.stgit@warthog.procyon.org.uk> <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com> <18016.1331738258@redhat.com> <21309.1331744879@redhat.com> 
-To: Jonas Bonn <jonas@southpole.se>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        hpa@zytor.com, torvalds@linux-foundation.org
-Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h [ver #2]
-Date: Mon, 19 Mar 2012 10:51:27 +0000
-Message-ID: <4913.1332154287@redhat.com>
+	id S1030741Ab2CSKvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 06:51:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55522 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030647Ab2CSKvw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 06:51:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332113668-4364-4-git-send-email-daniel.vetter@ffwll.ch>
+References: <1332113668-4364-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1332113668-4364-4-git-send-email-daniel.vetter@ffwll.ch>
+Date: Mon, 19 Mar 2012 10:51:51 +0000
+Message-ID: <CAPM=9twSZJyYcNwDwaC5eSy7fXNaRBGTZZ6F2K3D8AeQdYtgww@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 4/4] dma-buf: document fd flags and
+ O_CLOEXEC requirement
+From: Dave Airlie <airlied@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonas Bonn <jonas@southpole.se> wrote:
+On Sun, Mar 18, 2012 at 11:34 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> Otherwise subsystems will get this wrong and end up with and second
+> export ioctl with the flag and O_CLOEXEC support added.
 
-> or32-linux is supported in the toolchain from openrisc.net.  Likewise
-> or32-elf... follow the instructions (the easy ones should work) on the
-> link I sent you -- the submodules in the "toolchain" repo are from the
-> openrisc git repo and contain everything that is needed.
+Its not actually dma_buf_export that takes the O_CLOEXEC flag its dma_buf_fd
 
-I would like to include support as part of my mass-build cross-compiler RPMs.
-Do you have patches anywhere against upstream binutils and gcc that I might
-apply to mine?
+I'm not sure how blindly we should be passing flags in from userspace
+to these, like O_NONBLOCK or perms flags.
 
-David
+Dave.
