@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab2CSFjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:39:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53142 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755126Ab2CSFjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:39:40 -0400
-Message-ID: <1332135577.9873.8.camel@joe2Laptop>
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 18 Mar 2012 22:39:37 -0700
-In-Reply-To: <20120319045514.GQ31682@thunk.org>
-References: <cover.1331856299.git.joe@perches.com>
-	 <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
-	 <20120319045514.GQ31682@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756348Ab2CSFlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:41:12 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26712 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab2CSFlJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 01:41:09 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v3 00/11] PCI: pci_host_bridge related cleanup
+Date: Sun, 18 Mar 2012 22:40:13 -0700
+Message-Id: <1332135624-13528-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F66C6F0.00BA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 00:55 -0400, Ted Ts'o wrote:
-> On Thu, Mar 15, 2012 at 05:07:30PM -0700, Joe Perches wrote:
-> > Use a more current logging style.
-> Oh, just for yucks, I did a quick check:
-> % git grep printk | wc -l
-> 71266
-> % git grep pr_ | wc -l
-> 29552
-> (and there are no doubt some false positives when grepping for "pr_")
+will add struct device dev into host_bridge struct.
+also will add release support to make sure allocated resource get
+freed during root bus removal including hostbridge and pci_sysdata.
 
-As there are for printk.
+The patches need to apply to linus v3.3 plus pci/linux-next
 
-I use "\bpr_(emerg|crit|alert|err|notice|warn|warning|info|debug)\b"
-and "\bprintk\b" or -w
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-hostbridge-cleanup
 
-I did write "more current" and not predominate
-as there are large blocks of historical crud.
+-v2: dropped the patch that is with x86 pcibios_bus_to_resource that Bjorn objected.
+     reorder the patchesset to mold one appended patch into previous patch.
+-v3: separate the patchset.
 
-You might try the same test on current code in
-the last couple of years or so.
+Thanks
 
-pr_<foo> was introduced October 2007 by
-commit 1f7c8234c7a68
+Yinghai
 
-$ git log -p --since=2-years-ago | \
-  grep -P "^\+.*\bpr_(emerg|crit|alert|err|notice|warn|warning|info|debug)\b" | \
-  wc -l
-22704
+Yinghai Lu (11):
+  PCI: Separate host_bridge code out from probe.c
+  x86, PCI: Fix memleak with get_current_resources()
+  PCI: Rename pci_host_bridge() to find_pci_root_bridge()
+  PCI: Add generic device into pci_host_bridge struct
+  PCI: Add host bridge release support
+  x86, PCI: Break down get_current_resource()
+  x86, PCI: Add host bridge resource release for _CRS path
+  x86, PCI: Embed name into pci_root_info struct
+  x86, PCI: Embed pci_sysdata into pci_root_info on acpi path
+  x86, PCI: Allocate pci_root_info for not using _CRS path
+  x86, PCI: Merge root info printing for not using _CRS path
 
-$ git log -p --since=2-years-ago | \
-  grep -P "^\+.*\bprintk\b" | \
-  wc -l
-24899
+ arch/x86/pci/acpi.c         |  116 +++++++++++++++++++++-------------
+ arch/x86/pci/amd_bus.c      |   78 +++++++----------------
+ arch/x86/pci/broadcom_bus.c |   17 +----
+ arch/x86/pci/bus_numa.c     |   86 +++++++++++++++++++-------
+ arch/x86/pci/bus_numa.h     |   19 +++---
+ drivers/pci/Makefile        |    2 +-
+ drivers/pci/host-bridge.c   |   96 ++++++++++++++++++++++++++++
+ drivers/pci/probe.c         |  146 +++++++++++--------------------------------
+ include/linux/pci.h         |    9 +++-
+ 9 files changed, 313 insertions(+), 256 deletions(-)
+ create mode 100644 drivers/pci/host-bridge.c
 
-A lot of that was original submissions of older
-out-of-tree drivers with printk that were later
-converted to pr_<level> or dev_<level>, etc.
-
-In an aside:
-
-Gads, I need a faster netbook, that took
-10's of minutes to produce...
-
-Any suggestions?
-
-cheers, Joe
+-- 
+1.7.7
 
