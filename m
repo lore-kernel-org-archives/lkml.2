@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031820Ab2CSPGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:06:42 -0400
-Received: from s192156.ppp.asahi-net.or.jp ([220.157.192.156]:4875 "EHLO
-	suika.yumene.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030654Ab2CSPGl (ORCPT
+	id S1758627Ab2CSPIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:08:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54230 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757877Ab2CSPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:06:41 -0400
-X-Greylist: delayed 889 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 11:06:41 EDT
-Authentication-Results: suika.yumene.net; sender-id=permerror header.from=nico@meiwaku.net; spf=permerror smtp.mfrom=nico@meiwaku.net
-Date: Mon, 19 Mar 2012 23:49:49 +0900
-From: nico <nico@meiwaku.net>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] New product ID for pl2303.ko (USB serial device)
-Message-Id: <20120319234949.77ab0a4c.nico@meiwaku.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Mar 2012 11:08:12 -0400
+Date: Mon, 19 Mar 2012 10:08:01 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Santiago Garcia Mantinan <manty@debian.org>
+Cc: linux-kernel@vger.kernel.org, Matthias Urlichs <smurf@smurf.noris.de>,
+        linux-usb@vger.kernel.org, Dirk De Schepper <ddeschepper@nvtl.com>
+Subject: Re: [PATCH] USB: option: re-add
+ NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
+Message-ID: <20120319150801.GC11180@burratino>
+References: <20120319102154.GA16536@www.manty.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120319102154.GA16536@www.manty.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   Please add a new product ID to drivers/usb/serial/pl2303.h and pl2303.c.
-It works fine on Linux 2.6.32 (Ubuntu 10.04.4 LTS).
+(cc-ing some relevant people)
+Hi,
 
+Santiago Garcia Mantinan wrote:
 
---- pl2303.c.org	2012-02-14 06:46:49.000000000 +0900
-+++ pl2303.c	2012-03-17 14:22:18.844699349 +0900
-@@ -63,6 +63,7 @@
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
-+	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_WSIM) },
- 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
- 	{ USB_DEVICE(ATEN_VENDOR_ID2, ATEN_PRODUCT_ID) },
- 	{ USB_DEVICE(ELCOM_VENDOR_ID, ELCOM_PRODUCT_ID) },
+> c7aa8f44b4d1dc73591894a2dd6909213612d299
+[...]
+>    removed NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED from the scruct while
+> moving things around, it was a bit difficult to see as the defines and the
+> struct are not on the same order.  We've carried this for a year and a half
+> and for what I've seen there have been some reports about this like:
+> https://bugs.launchpad.net/ubuntu/+source/usb-modeswitch/+bug/750362
+> but unfortunately it didn't get much attention.
+>
+> I've looked at the strings and the only one missing was
+> NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED, so here is the patch for it.
 
+Thanks!  Can we have your sign-off?  See Documentation/SubmittingPatches,
+item 12 "Sign your work", for what this means.
 
---- pl2303.h.org	2012-02-14 06:46:49.000000000 +0900
-+++ pl2303.h	2012-03-17 14:23:30.044700076 +0900
-@@ -30,6 +30,7 @@
- #define IODATA_VENDOR_ID	0x04bb
- #define IODATA_PRODUCT_ID	0x0a03
- #define IODATA_PRODUCT_ID_RSAQ5	0x0a0e
-+#define IODATA_PRODUCT_ID_WSIM	0x0940
- 
- #define ELCOM_VENDOR_ID		0x056e
- #define ELCOM_PRODUCT_ID	0x5003
+> --- option.c.old	2012-03-19 10:16:31.046565765 +0100
+> +++ option.c	2012-03-19 10:55:34.348846327 +0100
+> @@ -538,6 +538,7 @@
+>  	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_FULLSPEED) },
+>  	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED) },
+>  	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_HIGHSPEED) },
+> +	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED) },
+>  	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED3) },
+>  	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED4) },
+>  	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED5) },
+
+Hope that helps,
+Jonathan
