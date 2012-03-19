@@ -1,170 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161910Ab2CSQRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:17:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48492 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031090Ab2CSQNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:13:33 -0400
-From: jean.pihet@newoldbits.com
-To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Jean Pihet <j-pihet@ti.com>
-Subject: [PATCH 8/9] ARM: OMAP2+: SmartReflex: add POWER_AVS Kconfig options
-Date: Mon, 19 Mar 2012 17:12:57 +0100
-Message-Id: <1332173578-27422-9-git-send-email-j-pihet@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+	id S1031959Ab2CSQR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:17:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33847 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031090Ab2CSQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:17:24 -0400
+Date: Mon, 19 Mar 2012 17:16:56 +0100
+From: Jan Kara <jack@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/4] writeback: Refactor writeback_single_inode()
+Message-ID: <20120319161656.GA10561@quack.suse.cz>
+References: <1331283748-12959-1-git-send-email-jack@suse.cz>
+ <1331283748-12959-4-git-send-email-jack@suse.cz>
+ <20120319071358.GC11113@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120319071358.GC11113@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Pihet <j-pihet@ti.com>
+On Mon 19-03-12 03:13:58, Christoph Hellwig wrote:
+> On Fri, Mar 09, 2012 at 10:02:27AM +0100, Jan Kara wrote:
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  fs/fs-writeback.c                |  264 +++++++++++++++++++++-----------------
+> >  include/trace/events/writeback.h |   36 ++++-
+> >  2 files changed, 174 insertions(+), 126 deletions(-)
+> 
+> Can you split this into a more gradual patch series?  This a a huge
+> change of lots of little bits in a very sensitive area.
+  OK, I'll try.
 
-Add a Kconfig menu (POWER_AVS) and rename the Kconfig options
-for the OMAP SmartReflex implementation:
- CONFIG_OMAP_SMARTREFLEX renames to CONFIG_POWER_AVS_OMAP
- CONFIG_OMAP_SMARTREFLEX_CLASS3 renames to CONFIG_POWER_AVS_OMAP_CLASS3
+> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> > index be84e28..1e8bf44 100644
+> > --- a/fs/fs-writeback.c
+> > +++ b/fs/fs-writeback.c
+> > @@ -231,11 +231,7 @@ static void requeue_io(struct inode *inode, struct bdi_writeback *wb)
+> >  
+> >  static void inode_sync_complete(struct inode *inode)
+> >  {
+> > -	/*
+> > -	 * Prevent speculative execution through
+> > -	 * spin_unlock(&wb->list_lock);
+> > -	 */
+> > -
+> > +	inode->i_state &= ~I_SYNC;
+> >  	smp_mb();
+> >  	wake_up_bit(&inode->i_state, __I_SYNC);
+> 
+> E.g. Moving the I_SYNC clearing later should be a small patch of it's
+> own with a changelog describing why it is safe.
+  OK.
 
-This change makes the SmartReflex implementation ready for the move
-to drivers/.
+> > -static void inode_wait_for_writeback(struct inode *inode,
+> > -				     struct bdi_writeback *wb)
+> > +static void inode_wait_for_writeback(struct inode *inode)
+> >  {
+> >  	DEFINE_WAIT_BIT(wq, &inode->i_state, __I_SYNC);
+> >  	wait_queue_head_t *wqh;
+> > @@ -340,70 +335,34 @@ static void inode_wait_for_writeback(struct inode *inode,
+> >  	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
+> >  	while (inode->i_state & I_SYNC) {
+> >  		spin_unlock(&inode->i_lock);
+> > -		spin_unlock(&wb->list_lock);
+> >  		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
+> > -		spin_lock(&wb->list_lock);
+> >  		spin_lock(&inode->i_lock);
+> >  	}
+> >  }
+> 
+> Ditto for why calling inode_wait_for_writeback without the list_lock
+> is fine now.
+  OK.
 
-Signed-off-by: Jean Pihet <j-pihet@ti.com>
----
- arch/arm/mach-omap2/Makefile      |    5 ++-
- arch/arm/mach-omap2/pm.h          |    2 +-
- arch/arm/mach-omap2/smartreflex.h |    6 ++--
- arch/arm/plat-omap/Kconfig        |   45 ++++++++++++++++++++++++------------
- 4 files changed, 37 insertions(+), 21 deletions(-)
+> >  
+> >  /*
+> > + * Do real work connected with writing out inode and its dirty pages.
+> 
+>     * Write out an inode and its dirty pages, but do not update the
+>       writeback list linkage, which is left to the caller.
+> 
+> > + * The function must be called with i_lock held and drops it.
+> 
+> Can we avoid these assymetric calling conventions if possible?  If not
+> pleae add least add the sparse locking context annotations.
+  Returning from __writeback_single_inode() with i_lock would be
+impractical because callers need to take wb->list_lock which ranks above
+it. Entering __writeback_single_inode() without i_lock might be possible
+(see comment below) but I'm not sure it's worth it.
 
-diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index 9746529..30666fd 100644
---- a/arch/arm/mach-omap2/Makefile
-+++ b/arch/arm/mach-omap2/Makefile
-@@ -68,8 +68,9 @@ obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o \
- obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o omap-mpuss-lowpower.o \
- 					   cpuidle44xx.o
- obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
--obj-$(CONFIG_OMAP_SMARTREFLEX)          += sr_device.o smartreflex.o
--obj-$(CONFIG_OMAP_SMARTREFLEX_CLASS3)	+= smartreflex-class3.o
-+
-+obj-$(CONFIG_POWER_AVS_OMAP)		+= sr_device.o smartreflex.o
-+obj-$(CONFIG_POWER_AVS_OMAP_CLASS3)	+= smartreflex-class3.o
- 
- AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
- AFLAGS_sleep34xx.o			:=-Wa,-march=armv7-a$(plus_sec)
-diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
-index a051431..1a2d483 100644
---- a/arch/arm/mach-omap2/pm.h
-+++ b/arch/arm/mach-omap2/pm.h
-@@ -110,7 +110,7 @@ extern void enable_omap3630_toggle_l2_on_restore(void);
- static inline void enable_omap3630_toggle_l2_on_restore(void) { }
- #endif		/* defined(CONFIG_PM) && defined(CONFIG_ARCH_OMAP3) */
- 
--#ifdef CONFIG_OMAP_SMARTREFLEX
-+#ifdef CONFIG_POWER_AVS_OMAP
- extern int omap_devinit_smartreflex(void);
- extern void omap_enable_smartreflex_on_init(void);
- #else
-diff --git a/arch/arm/mach-omap2/smartreflex.h b/arch/arm/mach-omap2/smartreflex.h
-index a87bac1..754f6aa 100644
---- a/arch/arm/mach-omap2/smartreflex.h
-+++ b/arch/arm/mach-omap2/smartreflex.h
-@@ -17,8 +17,8 @@
-  * published by the Free Software Foundation.
-  */
- 
--#ifndef __ASM_ARM_OMAP_SMARTREFLEX_H
--#define __ASM_ARM_OMAP_SMARTREFLEX_H
-+#ifndef __DRIVERS_POWER_AVS_SMARTREFLEX_H
-+#define __DRIVERS_POWER_AVS_SMARTREFLEX_H
- 
- #include <linux/platform_device.h>
- #include <linux/delay.h>
-@@ -177,7 +177,7 @@ struct omap_sr_pmic_data {
- };
- 
- 
--#ifdef CONFIG_OMAP_SMARTREFLEX
-+#ifdef CONFIG_POWER_AVS_OMAP
- /*
-  * The smart reflex driver supports CLASS1 CLASS2 and CLASS3 SR.
-  * The smartreflex class driver should pass the class type.
-diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-index f419a08..6ec9237 100644
---- a/arch/arm/plat-omap/Kconfig
-+++ b/arch/arm/plat-omap/Kconfig
-@@ -44,37 +44,52 @@ config OMAP_DEBUG_LEDS
- 	depends on OMAP_DEBUG_DEVICES
- 	default y if LEDS_CLASS
- 
--config OMAP_SMARTREFLEX
--	bool "SmartReflex support"
--	depends on (ARCH_OMAP3 || ARCH_OMAP4) && PM
-+menuconfig POWER_AVS
-+	tristate "Adaptive Voltage Scaling class support"
- 	help
--	  Say Y if you want to enable SmartReflex.
-+	  AVS is a power management technique which finely controls the
-+	  operating voltage of a device in order to optimize (i.e. reduce)
-+	  its power consumption.
-+	  At a given operating point the voltage is adapted depending on
-+	  static factors (chip manufacturing process) and dynamic factors
-+	  (temperature depending performance).
-+	  AVS is also called SmartReflex on OMAP devices.
-+
-+	  Say Y here to enable Adaptive Voltage Scaling class support.
-+
-+if POWER_AVS
- 
--	  SmartReflex can perform continuous dynamic voltage
--	  scaling around the nominal operating point voltage
--	  according to silicon characteristics and operating
--	  conditions. Enabling SmartReflex reduces power
--	  consumption.
-+config POWER_AVS_OMAP
-+	bool "AVS support for the OMAP IP versions 1&2"
-+	depends on (ARCH_OMAP3 || ARCH_OMAP4) && PM
-+	help
-+	  Say Y to enable AVS support on OMAP containing the version 1 or
-+	  version 2 of the SmartReflex IP.
-+	  V1 is the 65nm version used in OMAP3430.
-+	  V2 is the update for the 45nm version of the IP used in OMAP3630
-+	  and OMAP4430
- 
- 	  Please note, that by default SmartReflex is only
--	  initialized. To enable the automatic voltage
--	  compensation for vdd mpu  and vdd core from user space,
-+	  initialized and not enabled. To enable the automatic voltage
-+	  compensation for vdd mpu and vdd core from user space,
- 	  user must write 1 to
--		/debug/voltage/vdd_<X>/smartreflex/autocomp,
--	  where X is mpu or core for OMAP3.
-+		/debug/smartreflex/sr_<X>/autocomp,
-+	  where X is mpu_iva or core for OMAP3.
- 	  Optionally autocompensation can be enabled in the kernel
- 	  by default during system init via the enable_on_init flag
- 	  which an be passed as platform data to the smartreflex driver.
- 
--config OMAP_SMARTREFLEX_CLASS3
-+config POWER_AVS_OMAP_CLASS3
- 	bool "Class 3 mode of Smartreflex Implementation"
--	depends on OMAP_SMARTREFLEX && TWL4030_CORE
-+	depends on POWER_AVS_OMAP && TWL4030_CORE
- 	help
- 	  Say Y to enable Class 3 implementation of Smartreflex
- 
- 	  Class 3 implementation of Smartreflex employs continuous hardware
- 	  voltage calibration.
- 
-+endif # POWER_AVS
-+
- config OMAP_RESET_CLOCKS
- 	bool "Reset unused clocks during boot"
- 	depends on ARCH_OMAP
--- 
-1.7.5.4
+> > + * I_SYNC flag of the inode must be clear on entry and the function returns
+> > + * with I_SYNC set. Caller must call inode_sync_complete() when it is done
+> > + * with postprocessing of the inode.
+> 
+> Ewww..
+  Yeah, it is awkward. Sadly I don't have much better solution. Flusher thread
+cannot really afford normal waiting for I_SYNC because it doesn't hold
+inode reference and thus inode can go away once we drop i_lock. Because of
+that we have to enter without I_SYNC set. We could possibly set I_SYNC
+already in the caller. That would at least make the function less
+asymmetric. Also that would solve the problem with inode pinning so we could
+make the function completely symmetric (entering without i_lock). But still
+both callers would do unnecessary unlock of i_lock just for
+__writeback_single_inode() to take it again (to clear I_DIRTY_PAGES).
 
+  And we cannot clear I_SYNC before we have moved the inode to proper
+writeback list which is done in the caller.
+
+> >  	ret = do_writepages(mapping, wbc);
+> >  
+> > @@ -424,6 +383,9 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+> >  	 * write_inode()
+> >  	 */
+> >  	spin_lock(&inode->i_lock);
+> > +	/* Didn't write out all pages or some became dirty? */
+> > +	if (mapping_tagged(inode->i_mapping, PAGECACHE_TAG_DIRTY))
+> > +		inode->i_state |= I_DIRTY_PAGES;
+> 
+> Where did this hunk come from?
+  writeback_single_inode() had:
+		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+			/*
+			 * We didn't write back all the pages.  nfs_writepages()
+			 * sometimes bales out without doing anything.
+			 */
+			inode->i_state |= I_DIRTY_PAGES;
+			...
+
+> > +	if (inode->i_state & I_FREEING)
+> > +		goto out_unlock;
+> 
+> > +	if (inode->i_state & I_DIRTY)
+> > +		redirty_tail(inode, wb);
+> > +	else
+> > +		list_del_init(&inode->i_wb_list);
+> 
+> These lines should be factored into a small helper shared with the
+> writeback thread code, which would also avoid the out_unlock goto.
+  Yup. Will do.
+
+> > @@ -580,24 +587,51 @@ static long writeback_sb_inodes(struct super_block *sb,
+> >  			redirty_tail(inode, wb);
+> >  			continue;
+> >  		}
+> > +		if (inode->i_state & I_SYNC && work->sync_mode != WB_SYNC_ALL) {
+> 
+> Please add braces around the inode->i_state & I_SYNC.
+  OK.
+
+> > +		if (inode->i_state & I_FREEING)
+> > +			goto continue_unlock;
+> > +		/*
+> > +		 * Sync livelock prevention. Each inode is tagged and synced in
+> > +		 * one shot. If still dirty, it will be redirty_tail()'ed in
+> > +		 * inode_wb_requeue(). We update the dirty time to prevent
+> > +		 * queueing and syncing it again.
+> > +		 */
+> > +		if ((inode->i_state & I_DIRTY) &&
+> > +		    (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages))
+> > +			inode->dirtied_when = jiffies;
+> > +		inode_wb_requeue(inode, wb, &wbc);
+> > +continue_unlock:
+> 
+> I'd rather have the non-freeing code indentented one more level than the
+> goto magic here.  What's the problem with moving the dirtied_when update
+> into inode_wb_requeue, which would make the whole thing a lot more
+> readable?
+  Not sure why I put it here. Will move it inside inode_wb_requeue().
+
+> (Also factoring out inode_wb_requeue would be another good split patch)
+> 
+> > +		inode_sync_complete(inode);
+> >  		spin_unlock(&inode->i_lock);
+> >  		spin_unlock(&wb->list_lock);
+> >  		iput(inode);
+> > @@ -796,8 +830,10 @@ static long wb_writeback(struct bdi_writeback *wb,
+> >  			trace_writeback_wait(wb->bdi, work);
+> >  			inode = wb_inode(wb->b_more_io.prev);
+> >  			spin_lock(&inode->i_lock);
+> > +			spin_unlock(&wb->list_lock);
+> > +			inode_wait_for_writeback(inode);
+> >  			spin_unlock(&inode->i_lock);
+> > +			spin_lock(&wb->list_lock);
+> >  		}
+
+								Honza
