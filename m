@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab2CSPSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:18:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43922 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2CSPSC (ORCPT
+	id S1161211Ab2CSPU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:20:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35894 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758589Ab2CSPU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:18:02 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, "Justin P. Mattock" <justinmattock@gmail.com>,
-        Julian Andres Klode <jak@jak-linux.org>
-Subject: [PATCH 1/5]NEXT:drivers:staging:nvec:nvec.h Fix typos in staging:nvec
-Date: Mon, 19 Mar 2012 08:17:49 -0700
-Message-Id: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 19 Mar 2012 11:20:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F674616.8080103@gmail.com>
+References: <4F576FD5.2050208@gmail.com>
+	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
+	<4F577D9B.7020402@gmail.com>
+	<4F579A88.6030503@openwrt.org>
+	<4F61F551.5010608@gmail.com>
+	<4F639851.5080500@gmail.com>
+	<4F674616.8080103@gmail.com>
+Date: Mon, 19 Mar 2012 20:50:25 +0530
+Message-ID: <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+ AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Linux-wireless <linux-wireless@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+Hi Justin,
 
-The below patch fixes a typo I found while reading.
+> seems I got this when waking up from suspend, was trying to connect with NM
+> then all of a sudden Xorg shut off and this appeared on the screen(image
+> links below I could not save dmesg only pic)
+> http://flic.kr/p/bEhf2K
+> http://flic.kr/p/bEhf2x
+> http://flic.kr/p/bEhf2n
+> http://flic.kr/p/bEhf26
+>
+> I see ath9k in the image, but am unsure if its related.
+> kernel is: 3.3.0-rc7-next-20120316
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>
----
- drivers/staging/nvec/nvec.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+this looks like some new issue  in ath9k, lets try to recreate it here
 
-diff --git a/drivers/staging/nvec/nvec.h b/drivers/staging/nvec/nvec.h
-index a4c17b0..ba6ed8f 100644
---- a/drivers/staging/nvec/nvec.h
-+++ b/drivers/staging/nvec/nvec.h
-@@ -42,7 +42,7 @@
-  * enum nvec_event_size - The size of an event message
-  * @NVEC_2BYTES: The message has one command byte and one data byte
-  * @NVEC_3BYTES: The message has one command byte and two data bytes
-- * @NVEC_VAR_SIZE: The message has one command byte, one count byte, and as
-+ * @NVEC_VAR_SIZE: The message has one command byte, one count byte, and has
-  *                 up to as many bytes as the number in the count byte. The
-  *                 maximum is 32
-  *
+>
+> Justin P. Mattock
+>
+>
+>
+
+
+
 -- 
-1.7.5.4
-
+thanks,
+shafi
