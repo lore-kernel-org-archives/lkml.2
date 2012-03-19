@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab2CSWng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:43:36 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43161 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753621Ab2CSWne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:43:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120319223729.GC3852@pengutronix.de>
-References: <1331651129-30540-1-git-send-email-alexg@meprolight.com>
-	<4F67AD31.8030500@redhat.com>
-	<4F67B077.5050300@redhat.com>
-	<20120319223729.GC3852@pengutronix.de>
-Date: Mon, 19 Mar 2012 19:43:32 -0300
-Message-ID: <CAOMZO5B=Qpng68xLmxGaHMqSmYzbkpObVcjHDQSXaXcz5s6gMQ@mail.gmail.com>
-Subject: Re: [PATCH v1] i.MX35-PDK: Add Camera support
-From: Fabio Estevam <festevam@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, fabio.estevam@freescale.com,
-        linux-kernel@vger.kernel.org, Alex Gershgorin <alexg@meprolight.com>,
-        g.liakhovetski@gmx.de, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1758172Ab2CSWol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:44:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52936 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757944Ab2CSWok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 18:44:40 -0400
+Message-ID: <1332197078.7847.1.camel@joe2Laptop>
+Subject: Re: [PATCH 1/2] drivers/telephony/ixj.c::add_caps(): don't rely on
+ undefined behaviour
+From: Joe Perches <joe@perches.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Ed Okerson <eokerson@quicknet.net>,
+        Greg Herlein <gherlein@quicknet.net>,
+        "David W. Erhart" <derhart@quicknet.net>,
+        John Sellers <jsellers@quicknet.net>,
+        Mike Preston <mpreston@quicknet.net>,
+        David Huggins-Daines <dhd@cepstral.com>,
+        Fabio Ferrari <fabio.ferrari@digitro.com.br>,
+        Artis Kugevics <artis@mt.lv>, Daniele Bellucci <bellucda@tiscali.it>
+Date: Mon, 19 Mar 2012 15:44:38 -0700
+In-Reply-To: <alpine.LNX.2.00.1203192332420.9012@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1203192332420.9012@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+On Mon, 2012-03-19 at 23:37 +0100, Jesper Juhl wrote:
+> In drivers/telephony/ixj.c::add_caps() we have several statements like this:
+> 
+>   	j->caplist[j->caps].handle = j->caps++;
+> 
+> That's undefined behaviour right there.
 
-On Mon, Mar 19, 2012 at 7:37 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+telephony has been moved to staging.
 
-> It's scheduled there. I should have responded with an applied message.
-
-Please apply this one too: http://patchwork.ozlabs.org/patch/144942/
-
-Otherwise camera device cannot register.
