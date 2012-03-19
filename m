@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2CSCqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 22:46:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35229 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964825Ab2CSCqI (ORCPT
+	id S932207Ab2CSCxb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 22:53:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42219 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab2CSCx2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 22:46:08 -0400
-Date: Mon, 19 Mar 2012 13:45:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the drm tree
-Message-Id: <20120319134558.92dd67a87a2fc0cae5de6a4b@canb.auug.org.au>
-In-Reply-To: <20120316135303.7ad016ef3e29eac06027658e@canb.auug.org.au>
-References: <20120316135303.7ad016ef3e29eac06027658e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Mar_2012_13_45_58_+1100_X9xSu0AuVsc0jU8n"
+	Sun, 18 Mar 2012 22:53:28 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <4F65C1AA.40102@metafoo.de>
+References: <1331942824.6622.1.camel@phoenix> <4F65C1AA.40102@metafoo.de>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 19 Mar 2012 10:53:07 +0800
+Message-ID: <CAF+7xWk8Arz+XW+4_+LNFfrMp_nszOxHVoe+qwnbppRvzHwJ2Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] regulator: pcf50633: Don't write to reserved bits
+ of AUTO output voltage select register
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Mar_2012_13_45_58_+1100_X9xSu0AuVsc0jU8n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Dave,
-
-On Fri, 16 Mar 2012 13:53:03 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+2012/3/18 Lars-Peter Clausen <lars@metafoo.de>:
+> On 03/17/2012 01:07 AM, Axel Lin wrote:
+>> The datasheet says 00000000 to 00101110 are reserved, and the min value of the
+>> voltage setting is 1.8 V.
+>> Thus don't write 0 to AUTO output voltage select register (address 1Ah).
+>>
+>> Table 50. AUTOOUT - AUTO output voltage select register (address 1Ah) bit description[1]
+>> Bit Symbol Access Description
+>> 7:0 auto_out R/W VO(prog) = 0.625 + auto_out × 0.025 V
+>> eg. 00000000 to 00101110: reserved
+>> 00101111: 1.8 V (min)
+>> 01010011: 2.7 V
+>> 01101010: 3.275 V
+>> 01101011: 3.300 V
+>> 01101100: 3.325 V
+>> 01111111 : 3.800 V (max)
+>> ..... .....
+>> 11111110 : 3.800 V
+>> 11111111 : 3.800 V
+>>
+>> This patch also fixes a bug in pcf50633_regulator_list_voltage.
+>> It is wrong to do "index += 0x2f" for PCF50633_REGULATOR_AUTO in
+>> pcf50633_regulator_list_voltage. The purpose of adding 0x2f to index is because
+>> current code return 0 in auto_voltage_bits when millivolts < 1800.
+>> For millivolts > 1800, adding 0x2f to index is wrong.
+>>
 >
-> After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
->=20
-> ERROR: "drm_usb_init" [drivers/gpu/drm/udl/udl.ko] undefined!
-> ERROR: "drm_get_usb_dev" [drivers/gpu/drm/udl/udl.ko] undefined!
-> ERROR: "drm_usb_exit" [drivers/gpu/drm/udl/udl.ko] undefined!
->=20
-> Caused by commit 5320918b9a87 ("drm/udl: initial UDL driver (v4)").
->=20
-> I have used the drm tree from next-20120315 for today.
+> I think you misunderstood what the current code does. The first usable voltage
+> is 1.8V which is equal to a index of of 0x2f. So the driver adds 0x2f to the
+> index so that there is not a headroom of 0x2f unusable voltages. So a selector
+> of 0 translates to 1.8V, a selector of 1 translates to 1.825V and so on.
+I think what I wry to explain is:
+In regulator core _regulator_do_set_voltage function:
 
-Your attempted fix (commit 2de6d4a9e46c "drm: fix build with UDL if USB
-is a module") hasn't worked as I still get the same errors ...
+        if (rdev->desc->ops->set_voltage) {
+                ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV,
+                                                   &selector);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+                if (rdev->desc->ops->list_voltage)
+                        selector = rdev->desc->ops->list_voltage(rdev,
+                                                                 selector);
+                else
+                        selector = -1;
 
---Signature=_Mon__19_Mar_2012_13_45_58_+1100_X9xSu0AuVsc0jU8n
-Content-Type: application/pgp-signature
+The list_voltage call here takes the selector got from set_voltage callback.
+Thus adding 0x2f to the index in pcf50633_regulator_list_voltage looks
+wrong to me.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+e.g.
+If min_uV < 1.8V, pcf50633_regulator_set_voltage sets 0 to selector.
+For this case, adding 0x2f to the index in
+pcf50633_regulator_list_voltage is exactly what you want.
+However, if min_uV == 1.8V, pcf50633_regulator_set_voltage sets 0x2f
+to selector.
+Adding 0x2f to the index in pcf50633_regulator_list_voltage in this
+case is wrong.
 
-iQIcBAEBCAAGBQJPZp3mAAoJEECxmPOUX5FEtFIP/0cKMKPB+iy6TJucbXu/XIDo
-XHLT/UCztp91nilvUYDmoznOYunqUbMqwU/WYcZravDfb/Ccw8nwZf+QugyQiof+
-DqDx8qug6JOmc0fdfOhmM9QToR0rkK0oOP+UxUOAXur3GaB7rDUiPzFu6nam2bB5
-Nu8g7/n7SLqAfLIHZr9EazVDmKo5/AYVi1fSkbeJPQjKCzd7sjIfnje896PXqCqi
-weAoCqtcKAKeK6BxFHZpfJ6LDMZ+ULLo3EToDluRp4KFgWY6+uz6QwrOM9MB+5d/
-096fNihyC038QxKf3oBqtqKFaLXylt2L15Rf+B10zQrEAlfMQHVk0l0PshDNWP6L
-vg1Bu+rAaSJ3gGPGiOo7cPAntJIN9go4+E4kJuAjDXyBXgQvwQ/P4Na67ReEyW4t
-X2HYE+aVNkySdsY8iiCiETQxkRMsgE3/OhBLzItMVYZ/46o7xLXz/6sThz+lYE8Y
-WAamVIB0U03I8ivuhIahcp7UyrI9Y+3Zo6hO6AoQESMQ73n4WmCm9EZLajpMuJlH
-w/32UQ3BFWykv5i3u6vsmwlg1jr5ENiekX1Ri+3QzVzgqRsk9C5fHS9pZJjhqLgP
-MYmIzWfD7qd621zBp2B/0Gg1xMbWxVF2BVOcY2Uvd83C3jMjrD5cHv4lSGFSoXNl
-u0nerwnpaV/o4na/TUQW
-=xRrR
------END PGP SIGNATURE-----
+What this patch does is:
+The minimal voltage setting for AUTOOUT is 0x2f.
+Thus for the case min_uV < 1.8, set the voltage setting to 1.8V by writting
+0x2f to AUTOOUT register and set selector = 0x2f.
+So we don't write the rserved range to AUTOOUT register.
+Which means the possible range of AUTOOUT register value is 0x2f ~ 0xff.
 
---Signature=_Mon__19_Mar_2012_13_45_58_+1100_X9xSu0AuVsc0jU8n--
+We have no problem in regulator_get_voltage.
+Since we won't write 0~0x2e to AUTOOUT register, we have no problem converting
+the bits we read to voltage. The equation in auto_voltage_value works fine.
+
+For list_voltage, we need to take into account the case selector is 0 ~ 0x2e
+because the regulator core assumes the selector is starting from 0.
+This patch returns 0 for the cases selector is 0 ~ 0x2e, which means
+"this selector code can't be used on this system".
+
+>
+> I can see why you'd want to change it to simplify the code, but you also have
+> to change the number of voltages for the AUTO regulator to 128.
+yes, I missed that.
+The regulator core iterates from 0 to n_voltages to find the small voltage
+in the specific range.
+So yes, I think the n_voltages settings for AUTOOUT should be 128 now,
+including the reserved range of AUTOOUT.
+
+I'll send a V3 for review and update the commit log.
+Thanks,
+Axel
