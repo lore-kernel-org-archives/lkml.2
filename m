@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab2CSX25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 19:28:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:43820 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755249Ab2CSX2z convert rfc822-to-8bit (ORCPT
+	id S932289Ab2CSXeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 19:34:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50056 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888Ab2CSXeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 19:28:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, pawel.moll@arm.com
-Subject: Re: [00/11] pr_debug during module initialization
-In-Reply-To: <CAJfuBxxPY_25P70qzmEw0JgoxyCpKDuzB1vKsJR6R-GxS+NGCA@mail.gmail.com>
-References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com> <87aa3dxs6m.fsf@rustcorp.com.au> <CAJfuBxxPY_25P70qzmEw0JgoxyCpKDuzB1vKsJR6R-GxS+NGCA@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 20 Mar 2012 09:57:00 +1030
-Message-ID: <87d388qiij.fsf@rustcorp.com.au>
+	Mon, 19 Mar 2012 19:34:13 -0400
+Date: Mon, 19 Mar 2012 16:34:09 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
+Message-ID: <20120319233409.GA16124@kroah.com>
+References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20120316213227.GB24556@kroah.com>
+ <4F678100.1000707@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F678100.1000707@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012 00:17:29 -0600, Jim Cromie <jim.cromie@gmail.com> wrote:
-> On Sun, Mar 18, 2012 at 8:04 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > The module parts seem fine.  The re-parsing of the commandline seems
-> > weird:  I'd really rather see something in unknown_bootoption(), like:
-> >
-> >        /* Unused module parameter. */
-> >        if (strchr(param, '.') && (!val || strchr(param, '.') < val)) {
-> > +               /* Check for <module>.dyndebug fake param */
-> > +               dyndebug_parse(param, val);
-> >                return 0;
-> >        }
+On Mon, Mar 19, 2012 at 01:54:56PM -0500, Seth Jennings wrote:
+> > I'm sorry, I know this isn't fair for your specific patch, but we have
+> > to stop this sometime, and as this patch adds code isn't even used by
+> > anyone, its a good of a time as any.
 > 
-> That is too early - the dyndbg rules cant be activated
-> until dynamic_debug_init() runs, which is currently an
-> arch_initcall(dynamic_debug_init);
-> 
-> Patch 11 makes it core-initcall, (which Im not sure is ok
-> for all cases, but works for me), I also tried it with
-> early_initcall (and that worked too)
-> but I think thats still after the Booting kernel parse.
+> So, this the my first "promotion from staging" rodeo.  I would love to
+> see this code mainlined ASAP.  How would I/we go about doing that?
 
-Indeed.  OK, that's fine then.
+What subsystem should this code live in?  The -mm code, I'm guessing,
+right?  If so, submit it to the linux-mm mailing list for inclusion, you
+can point them at what is in drivers/staging right now, or probably it's
+easier if you just make a new patch that adds the code that is in
+drivers/staging/ to the correct location in the kernel.  That way it's
+easier to review and change.  When it finally gets accepted, we can then
+delete the drivers/staging code.
 
-> I *could* capture the dyndbg options during Booting kernel
-> parse, and activate them once the tables are loaded,
-> but this seems convoluted.
+hope this helps,
 
-Agreed.
-
-> a "private" parse-args. After your earlier suggestion to use a
-> callback, it occurred to me that just reusing parse_args would
-> work, be fairly minimal (only 2 lines in dynamic_debug_init())
-> and its already called a bunch of times; Booting kernel,
-> module-load, and do-initcall-level (in Pawel's patch).
-> Pawels patch doesnt do anything to avoid reparsing
-> boot-time params.
-> 
-> Does this change your weirdness assessment ?
-
-It's still weird to re-parse, but with a comment explaining that we
-need to do it again after dynamic_debug_init().  Unless we can call
-that explicitly before parse_args().
-> Lastly, my earlier rev handled  foo.dyndbg params
-> for loadable modules.  I took that out cuz
-> Documentation/kernel-parameters.txt says thats
-> for builtins (only, as I read it), and treating foo.dyndbg
-> differently should be done w/o discussion.
-
-Yes, when a module 'foo' declares it has a parameter 'bar', it becomes
-'foo.bar' if the module is built-in, and just 'bar' if the module is
-loaded.
-
-Furthermore, modprobe reads /proc/cmdline when loading foo, looking for
-"foo.*" to add to the modprobe arguments.
-
-> > Otherwise, all looks good!
-> >
-> > Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> thanks.  I guess the Ack (vs SOB) means that Jason should
-> forward it on to Greg as a single set ?
-> (subject to his Ack of course)
-
-I assumed it would go via Jason.  Otherwise, get his ack and resend to
-me.
-
-Thanks,
-Rusty.
--- 
-  How could I marry someone with more hair than me?  http://baldalex.org
+greg k-h
