@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2CSAa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 20:30:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43419 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab2CSAa5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 20:30:57 -0400
-Date: Mon, 19 Mar 2012 08:30:44 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michal Januszewski <spock@gentoo.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] x86: export 'pcibios_enabled'
-Message-ID: <20120319003044.GA3744@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Michal Januszewski <spock@gentoo.org>,
-	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-	linux-fbdev@vger.kernel.org, x86@kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au>
- <4F5FAE63.3090908@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5FAE63.3090908@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932171Ab2CSAbP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 20:31:15 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34465 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757313Ab2CSAbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 20:31:13 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH wireless-next 0/3] ath: printk cleanups and code reduction
+Date: Sun, 18 Mar 2012 17:30:51 -0700
+Message-Id: <cover.1332116921.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 01:30:27PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Export 'pcibios_enabled' so that when uvesafb is built as a
-> loadable module (on X86_32), the build will succeed.
-> 
-> ERROR: "pcibios_enabled" [drivers/video/uvesafb.ko] undefined!
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc:	Michal Januszewski <spock@gentoo.org>
-> Cc:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc:	linux-fbdev@vger.kernel.org
-> Cc:	x86@kernel.org
-> ---
-> Applies to mainline; found in linux-next.
-> 
->  arch/x86/pci/pcbios.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20120313.orig/arch/x86/pci/pcbios.c
-> +++ linux-next-20120313/arch/x86/pci/pcbios.c
-> @@ -27,6 +27,7 @@
->  #define PCIBIOS_HW_TYPE2_SPEC		0x20
->  
->  int pcibios_enabled;
-> +EXPORT_SYMBOL(pcibios_enabled);
->  
->  /* According to the BIOS specification at:
->   * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-Hi, could you resend this patch as EXPORT_SYMBOL_GPL to x86 architecture maintainer?
-Looks at the MAINTAINERS for the below:
+Joe Perches (3):
+  ath: Add and use pr_fmt, convert printks to pr_<level>
+  ath5k: Introduce _ath5k_printk to reduce code/text
+  ath6kl: Add __printf verification to ath6kl_printk
 
-X86 ARCHITECTURE (32-BIT AND 64-BIT)
-M:	Thomas Gleixner <tglx@linutronix.de>
-M:	Ingo Molnar <mingo@redhat.com>
-M:	"H. Peter Anvin" <hpa@zytor.com>
-M:	x86@kernel.org
+ drivers/net/wireless/ath/ath5k/ani.c          |   44 +++++++++++--------------
+ drivers/net/wireless/ath/ath5k/ath5k.h        |   29 +++++++++-------
+ drivers/net/wireless/ath/ath5k/attach.c       |    2 +
+ drivers/net/wireless/ath/ath5k/base.c         |   22 ++++++++++++
+ drivers/net/wireless/ath/ath5k/debug.c        |   17 ++++++----
+ drivers/net/wireless/ath/ath5k/desc.c         |    2 +
+ drivers/net/wireless/ath/ath5k/dma.c          |    2 +
+ drivers/net/wireless/ath/ath5k/eeprom.c       |    2 +
+ drivers/net/wireless/ath/ath5k/initvals.c     |    5 ++-
+ drivers/net/wireless/ath/ath5k/led.c          |    2 +
+ drivers/net/wireless/ath/ath5k/mac80211-ops.c |    2 +
+ drivers/net/wireless/ath/ath5k/pci.c          |    4 ++-
+ drivers/net/wireless/ath/ath5k/phy.c          |    2 +
+ drivers/net/wireless/ath/ath5k/qcu.c          |    2 +
+ drivers/net/wireless/ath/ath5k/reset.c        |    2 +
+ drivers/net/wireless/ath/ath5k/sysfs.c        |    2 +
+ drivers/net/wireless/ath/ath6kl/cfg80211.c    |    2 +
+ drivers/net/wireless/ath/ath6kl/common.h      |    3 +-
+ drivers/net/wireless/ath/ath6kl/init.c        |    2 +
+ drivers/net/wireless/ath/ath6kl/main.c        |    2 +
+ drivers/net/wireless/ath/ath6kl/txrx.c        |    2 +
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    8 ++--
+ drivers/net/wireless/ath/ath9k/htc_hst.c      |    7 ++--
+ drivers/net/wireless/ath/ath9k/init.c         |   13 +++----
+ drivers/net/wireless/ath/ath9k/pci.c          |    9 +++--
+ drivers/net/wireless/ath/main.c               |    4 ++-
+ drivers/net/wireless/ath/regd.c               |    4 ++-
+ 27 files changed, 128 insertions(+), 69 deletions(-)
+
+-- 
+1.7.8.111.gad25c.dirty
+
