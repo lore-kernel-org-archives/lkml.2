@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766Ab2CSMAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 08:00:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46242 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758668Ab2CSMAA convert rfc822-to-8bit (ORCPT
+	id S1758779Ab2CSMAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 08:00:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57498 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758668Ab2CSMAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 08:00:00 -0400
-Message-ID: <1332158367.18960.308.camel@twins>
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 19 Mar 2012 12:59:27 +0100
-In-Reply-To: <4F671B90.3010209@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	  <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>
-	 <4F671B90.3010209@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 19 Mar 2012 08:00:40 -0400
+Date: Mon, 19 Mar 2012 12:00:15 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marc Reilly <marc@cpdesign.com.au>
+Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
+        u.kleine-koenig@pengutronix.de, oskar@scara.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/4] mfd: mc13xxx-core: use regmap for register
+ access
+Message-ID: <20120319120015.GA5705@sirena.org.uk>
+References: <1332129838-7080-1-git-send-email-marc@cpdesign.com.au>
+ <1332129838-7080-3-git-send-email-marc@cpdesign.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332129838-7080-3-git-send-email-marc@cpdesign.com.au>
+X-Cookie: Uncompensated overtime?  Just Say No.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 13:42 +0200, Avi Kivity wrote:
-> > Now if you want to be able to scan per-thread, you need per-thread
-> > page-tables and I really don't want to ever see that. That will blow
-> > memory overhead and context switch times.
-> 
-> I thought of only duplicating down to the PDE level, that gets rid of
-> almost all of the overhead. 
+On Mon, Mar 19, 2012 at 03:03:56PM +1100, Marc Reilly wrote:
+> This change converts the mc13xxx core to use regmap rather than direct
+> spi r/w.
+> The spidev member of mc13xxx struct becomes redundant and is removed.
+> Extra debugging aids are added to mc13xxx_reg_rmw.
+> Mutex init is moved to before regmap init.
 
-You still get the significant CR3 cost for thread switches. 
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-[ /me grabs the SDM to find that PDE is what we in Linux call the pmd ]
-
-That'll cut the memory overhead down but also the severely impact the
-accuracy.
-
-Also, I still don't see how such a scheme would correctly identify
-per-cpu memory in guest kernels. While less frequent its still very
-common to do remote access to per-cpu data. So even if you did page
-granularity you'd get a fair amount of pages that are accesses by all
-threads (vcpus) in the scan interval, even thought they're primarily
-accesses by just one.
-
-If you go to pmd level you get even less information.
+though like I said it'd be good to get the rmw trace into regmap - if
+it's useful to you here similar trace is probably going to be useful to
+other users.
