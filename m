@@ -1,129 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab2CSIXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 04:23:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757840Ab2CSIXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 04:23:38 -0400
-Date: Mon, 19 Mar 2012 10:23:44 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: qemu-devel@nongnu.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-spec: split virtio-net device status filed into
- ro and rw byte
-Message-ID: <20120319082343.GD17673@redhat.com>
-References: <20120316152026.6428.6983.stgit@jason-ThinkPad-T400>
- <20120318122252.GE29902@redhat.com>
- <4F66A364.2080600@redhat.com>
+	id S1758319Ab2CSIY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 04:24:28 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:57932 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab2CSIY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 04:24:26 -0400
+X-SENDER-IP: [85.230.168.211]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhFSANjrZk9V5qjTPGdsb2JhbABCigOsRRkBAQEBNzSCCQEBBAEnExwcBwULCAMOOBQlChoTiAUJuT8TkAZjBJVnhX2DUYlC
+X-IronPort-AV: E=Sophos;i="4.73,611,1325458800"; 
+   d="scan'208";a="288573995"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 19 Mar 2012 09:26:53 +0100
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 12/20] Input: atmel_mxt_ts - simplify event reporting
+Message-ID: <20120319082653.GB15965@polaris.bitmath.org>
+References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+ <1331640263-18935-13-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F66A364.2080600@redhat.com>
+In-Reply-To: <1331640263-18935-13-git-send-email-djkurtz@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 11:09:24AM +0800, Jason Wang wrote:
-> On 03/18/2012 08:22 PM, Michael S. Tsirkin wrote:
-> >On Fri, Mar 16, 2012 at 11:20:26PM +0800, Jason Wang wrote:
-> >>This patch splits the device status field of virtio-net into ro and rw
-> >>byte. This would simplify the implementation of both host and guest
-> >>and make the layout more clean. As VIRTIO_NET_S_ANNOUNCE is a rw bit,
-> >>it was moved to bit 8 (0x100).
-> >>
-> >>btw. looks like there's no implementation that depends on
-> >>VIRTIO_NET_S_ANNOUNCE, so the move is safe.
-> >>
-> >>Signed-off-by: Jason Wang<jasowang@redhat.com>
-> >Hmm, I know I proposed this myself, and I thought it will
-> >prevent problems if we will add more rw bits,
-> >but I missed the following race:
-> >
-> >host writes VIRTIO_NET_S_ANNOUNCE = 1, interrupt
-> >
-> >				guest reads VIRTIO_NET_S_ANNOUNCE = 1
-> >
-> >host writes VIRTIO_NET_S_SOME_NEW_FIELD = 1, interrupt
-> >
-> >				guest writes VIRTIO_NET_S_ANNOUNCE = 0
-> >				VIRTIO_NET_S_SOME_NEW_FIELD is overwritten
-> >
-> >				guest reads VIRTIO_NET_S_SOME_NEW_FIELD = 0
-> >
-> >How about making the new bit write 1 to clear?
-> >If we do, we can keep it where it is currently ...
-> >
+Hi Daniel,
+
+> Instead of carrying around per-finger state in the driver instance, just
+> report each finger as it arrives to the input layer, and let the input
+> layer (evdev) hold the event state (which it does anyway).
 > 
-> Didn't follow, do you mean to make VIRITO_NET_S_ANNOUNCE bit clear
-> on read? Looks like this can prevent the race and keep what
-> currently we have.
+> Also, the atmel pad reports "amplitude", which is reported to userspace
+> using the "PRESSURE" event type.  The variables now reflect this.
+> 
+> Note: this driver does not really do MT-B properly. Each input report
+> (a goup of input events followed by a SYN_REPORT) only contains data for
+> a single contact.  When multiple fingers are present on a device, each is
+> properly reported in its own MT_SLOT.  However, there is only ever one
+> MT_SLOT per SYN_REPORT.  This is fixed in a subsequent patch.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
 
-Clear on read is evil, it makes debugging harder
-since you can't check the state without destroying it.
-Write 1 to clear means writing 0 to a bit does not
-change it, writing 1 clears it. This makes it possible
-to flip individual bits in config space without
-making Schrödinger's cat experiments.
+Simplification looking good overall, together with that later
+patch. Please find some comments below.
 
-> >
-> >>---
-> >>  virtio-0.9.4.lyx |   20 +++++++++++++++++++-
-> >>  1 files changed, 19 insertions(+), 1 deletions(-)
-> >>
-> >>diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
-> >>index 6c7bab1..ef3951c 100644
-> >>--- a/virtio-0.9.4.lyx
-> >>+++ b/virtio-0.9.4.lyx
-> >>@@ -58,6 +58,7 @@
-> >>  \html_be_strict false
-> >>  \author -608949062 "Rusty Russell,,,"
-> >>  \author 1531152142 "pbonzini"
-> >>+\author 2090695081 "Jason"
-> >>  \end_header
-> >>
-> >>  \begin_body
-> >>@@ -4012,8 +4013,19 @@ configuration
-> >>  layout Two configuration fields are currently defined.
-> >>   The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
-> >>   is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
-> >>+
-> >>+\change_inserted 2090695081 1331907586
-> >>+ The low byte of status field is read-only, guest write to this byte would
-> >>+ be ignored.
-> >>+ Currently only one bit is defined for this byte: VIRTIO_NET_S_LINK_UP.
-> >>+ The high byte of status field is read-writable.
-> >>+ Currently only one bit is defined for this byte: VIRTIO_NET_S_ANNOUNCE.
-> >>+
-> >>+\change_deleted 2090695081 1331907489
-> >>   Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
-> >>   and VIRTIO_NET_S_ANNOUNCE.
-> >>+
-> >>+\change_unchanged
-> >>
-> >>  \begin_inset listings
-> >>  inline false
-> >>@@ -4026,7 +4038,13 @@ status open
-> >>
-> >>  \begin_layout Plain Layout
-> >>
-> >>-#define VIRTIO_NET_S_ANNOUNCE	2
-> >>+#define VIRTIO_NET_S_ANNOUNCE	
-> >>+\change_inserted 2090695081 1331907493
-> >>+0x100
-> >>+\change_deleted 2090695081 1331907491
-> >>+2
-> >>+\change_unchanged
-> >>+
-> >>  \end_layout
-> >>
-> >>  \begin_layout Plain Layout
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >Please read the FAQ at  http://www.tux.org/lkml/
+>  drivers/input/touchscreen/atmel_mxt_ts.c |  122 +++++++++---------------------
+>  1 files changed, 36 insertions(+), 86 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index 4363511..fa692e5 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -194,6 +194,7 @@
+>  #define MXT_BOOT_STATUS_MASK	0x3f
+>  
+>  /* Touch status */
+> +#define MXT_UNGRIP		(1 << 0)
+>  #define MXT_SUPPRESS		(1 << 1)
+>  #define MXT_AMP			(1 << 2)
+>  #define MXT_VECTOR		(1 << 3)
+> @@ -238,14 +239,6 @@ struct mxt_message {
+>  	u8 message[7];
+>  };
+>  
+> -struct mxt_finger {
+> -	int status;
+> -	int x;
+> -	int y;
+> -	int area;
+> -	int pressure;
+> -};
+> -
+>  /* Each client has this additional data */
+>  struct mxt_data {
+>  	struct i2c_client *client;
+> @@ -253,7 +246,6 @@ struct mxt_data {
+>  	const struct mxt_platform_data *pdata;
+>  	struct mxt_object *object_table;
+>  	struct mxt_info info;
+> -	struct mxt_finger finger[MXT_MAX_FINGER];
+>  	unsigned int irq;
+>  	unsigned int max_x;
+>  	unsigned int max_y;
+> @@ -526,97 +518,55 @@ static int mxt_write_object(struct mxt_data *data,
+>  	return mxt_write_reg(data->client, reg + offset, 1, &val);
+>  }
+>  
+> -static void mxt_input_report(struct mxt_data *data, int single_id)
+> -{
+> -	struct mxt_finger *finger = data->finger;
+> -	struct input_dev *input_dev = data->input_dev;
+> -	int status = finger[single_id].status;
+> -	int finger_num = 0;
+> -	int id;
+> -
+> -	for (id = 0; id < MXT_MAX_FINGER; id++) {
+> -		if (!finger[id].status)
+> -			continue;
+> -
+> -		input_mt_slot(input_dev, id);
+> -		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
+> -				finger[id].status != MXT_RELEASE);
+> -
+> -		if (finger[id].status != MXT_RELEASE) {
+> -			finger_num++;
+> -			input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR,
+> -					finger[id].area);
+> -			input_report_abs(input_dev, ABS_MT_POSITION_X,
+> -					finger[id].x);
+> -			input_report_abs(input_dev, ABS_MT_POSITION_Y,
+> -					finger[id].y);
+> -			input_report_abs(input_dev, ABS_MT_PRESSURE,
+> -					finger[id].pressure);
+> -		} else {
+> -			finger[id].status = 0;
+> -		}
+> -	}
+> -
+> -	input_report_key(input_dev, BTN_TOUCH, finger_num > 0);
+> -
+> -	if (status != MXT_RELEASE) {
+> -		input_report_abs(input_dev, ABS_X, finger[single_id].x);
+> -		input_report_abs(input_dev, ABS_Y, finger[single_id].y);
+> -		input_report_abs(input_dev,
+> -				 ABS_PRESSURE, finger[single_id].pressure);
+> -	}
+> -
+> -	input_sync(input_dev);
+> -}
+> -
+>  static void mxt_input_touchevent(struct mxt_data *data,
+> -				      struct mxt_message *message, int id)
+> +				 struct mxt_message *message, int id)
+>  {
+> -	struct mxt_finger *finger = data->finger;
+>  	struct device *dev = &data->client->dev;
+> -	u8 status = message->message[0];
+> +	struct input_dev *input_dev = data->input_dev;
+> +	u8 status;
+>  	int x;
+>  	int y;
+>  	int area;
+> -	int pressure;
+> -
+> -	/* Check the touch is present on the screen */
+> -	if (!(status & MXT_DETECT)) {
+> -		if (status & MXT_RELEASE) {
+> -			dev_dbg(dev, "[%d] released\n", id);
+> -
+> -			finger[id].status = MXT_RELEASE;
+> -			mxt_input_report(data, id);
+> -		}
+> -		return;
+> -	}
+> -
+> -	/* Check only AMP detection */
+> -	if (!(status & (MXT_PRESS | MXT_MOVE)))
+> -		return;
+> +	int amplitude;
+>  
+> +	status = message->message[0];
+>  	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+>  	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
+>  	if (data->max_x < 1024)
+> -		x = x >> 2;
+> +		x >>= 2;
+>  	if (data->max_y < 1024)
+> -		y = y >> 2;
+> +		y >>= 2;
+>  
+>  	area = message->message[4];
+> -	pressure = message->message[5];
+> -
+> -	dev_dbg(dev, "[%d] %s x: %d, y: %d, area: %d\n", id,
+> -		status & MXT_MOVE ? "moved" : "pressed",
+> -		x, y, area);
+> -
+> -	finger[id].status = status & MXT_MOVE ?
+> -				MXT_MOVE : MXT_PRESS;
+> -	finger[id].x = x;
+> -	finger[id].y = y;
+> -	finger[id].area = area;
+> -	finger[id].pressure = pressure;
+> +	amplitude = message->message[5];
+> +
+> +	dev_dbg(dev,
+> +		"[%d] %c%c%c%c%c%c%c%c x: %d y: %d area: %d amp: %d\n",
+> +		id,
+> +		(status & MXT_DETECT) ? 'D' : '.',
+> +		(status & MXT_PRESS) ? 'P' : '.',
+> +		(status & MXT_RELEASE) ? 'R' : '.',
+> +		(status & MXT_MOVE) ? 'M' : '.',
+> +		(status & MXT_VECTOR) ? 'V' : '.',
+> +		(status & MXT_AMP) ? 'A' : '.',
+> +		(status & MXT_SUPPRESS) ? 'S' : '.',
+> +		(status & MXT_UNGRIP) ? 'U' : '.',
+> +		x, y, area, amplitude);
+> +
+> +	input_mt_slot(input_dev, id);
+> +	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
+> +				   status & MXT_DETECT);
+> +
+> +	if (status & MXT_DETECT) {
+> +		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+> +		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+> +		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
+> +		/* TODO: This should really be sqrt(area) */
+> +		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
+
+The functional relationship might not be perfect, but at least the
+reported scale should match the position units, as several userspace
+drivers depend on its accuracy. If the line size looks reasonable in
+mtview, for instance, it should be fine.
+
+> +	}
+>  
+> -	mxt_input_report(data, id);
+> +	input_mt_report_pointer_emulation(input_dev, false);
+> +	input_sync(input_dev);
+>  }
+>  
+>  static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+> -- 
+
+Thanks,
+Henrik
