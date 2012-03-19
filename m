@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032573Ab2CSTAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:00:52 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:54294 "EHLO
-	na3sys009amx259.postini.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1032445Ab2CSTAv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:00:51 -0400
+	id S1032593Ab2CSTDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1032496Ab2CSTDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 15:03:15 -0400
+Date: Mon, 19 Mar 2012 20:02:34 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] AutoNUMA alpha6
+Message-ID: <20120319190234.GH24602@redhat.com>
+References: <20120316144028.036474157@chello.nl>
+ <20120316182511.GJ24602@redhat.com>
+ <1332182842.18960.376.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20120318140707.GC29638@S2101-09.ap.freescale.net>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
- <1331878280-2758-3-git-send-email-mturquette@linaro.org> <20120318140707.GC29638@S2101-09.ap.freescale.net>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 19 Mar 2012 12:00:13 -0700
-Message-ID: <CAJOA=zMQeGL-D-Zk83qhR1zaY-N+HfFufO3uhgConUbLHnab+g@mail.gmail.com>
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linaro-dev@lists.linaro.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332182842.18960.376.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 7:07 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> Another trivial comment.  But if there is an incremental patch, maybe
-> consider to include it.
->
-> On Thu, Mar 15, 2012 at 11:11:19PM -0700, Mike Turquette wrote:
-> ...
->> +#ifdef CONFIG_COMMON_CLK_DISABLE_UNUSED
->> +static int clk_disable_unused(void)
->> +{
->> +     struct clk *clk;
->> +     struct hlist_node *tmp;
->> +
->> +     mutex_lock(&prepare_lock);
->> +
->> +     hlist_for_each_entry(clk, tmp, &clk_root_list, child_node)
->> +             clk_disable_unused_subtree(clk);
->> +
->> +     hlist_for_each_entry(clk, tmp, &clk_orphan_list, child_node)
->> +             clk_disable_unused_subtree(clk);
->> +
->> +     mutex_unlock(&prepare_lock);
->> +
->> +     return 0;
->> +}
->> +late_initcall(clk_disable_unused);
->> +#else
->> +static inline int clk_disable_unused(struct clk *clk) { return 0; }
->
-> This #else block seems completely unnecessary to me.
->
->> +#endif /* CONFIG_COMMON_CLK_DISABLE_UNUSED */
+On Mon, Mar 19, 2012 at 07:47:22PM +0100, Peter Zijlstra wrote:
+> On Fri, 2012-03-16 at 19:25 +0100, Andrea Arcangeli wrote:
+> > http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=patch;h=30ed50adf6cfe85f7feb12c4279359ec52f5f2cd;hp=c03cf0621ed5941f7a9c1e0a343d4df30dbfb7a1
+> > 
+> > It's a big monlithic patch, but I'll split it.
+> 
+> I applied this big patch to a fairly recent tree from Linus but it
+> failed to boot. It got stuck somewhere in SMP bringup.
+> 
+> I waited for several seconds but pressed the remote power switch when
+> nothing more came out..
+> 
+> The last bit out of my serial console looked like:
 
-Oops.  This is a leftover from when there was a separate
-drivers/clk/clk-debug.c which implemented this stuff.  I'll make a
-cleanup series and roll all these little things into it.
+btw, the dump_stack in your trace are very superflous and I should
+remove them... They were meant to debug a problem in numa emulation
+that I fixed some time ago and sent to Andrew just a few days ago.
 
-Thanks,
-Mike
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=c03cf0621ed5941f7a9c1e0a343d4df30dbfb7a1
+
+You may want to try to checkout a full git tree to be sure it's not a
+collision with something else, at that point of the boot stage
+autonuma shouldn't run at all so it's unlikely related.
+
+Hillf just sent me a fix for large systems which I already committed,
+maybe that's your problem?
+
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=refs/heads/autonuma
+
+I also added checks for cpu_online that are probably needed but those
+aren't visible yet but you don't need them to boot...
+
+If you want to extract the patch and all other patches to apply it
+hand, the simplest is to:
+
+git clone --reference linux -b autonuma git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+git diff origin/master origin/autonuma > x
+
+Or "git format-patch origin/master..origin/autonuma"
