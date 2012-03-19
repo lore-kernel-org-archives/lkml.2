@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab2CSFmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:42:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54604 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757813Ab2CSFmk (ORCPT
+	id S1758005Ab2CSFnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:43:53 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27583 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756959Ab2CSFnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:42:40 -0400
-Date: Mon, 19 Mar 2012 16:42:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: linux-next: manual merge of the moduleh tree with the vfs tree
-Message-Id: <20120319164226.47a03eac5ab3ff9365714208@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Mar_2012_16_42_26_+1100_=jSW.98qObSeO9h6"
+	Mon, 19 Mar 2012 01:43:51 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v11 00/30] PCI: allocate pci bus num range for unassigned bridge busn
+Date: Sun, 18 Mar 2012 22:42:31 -0700
+Message-Id: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090206.4F66C78E.0027,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Mar_2012_16_42_26_+1100_=jSW.98qObSeO9h6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Set up iobusn_resource tree, and register bus number range to it.
+Later when need to find bus range, will try to allocate from the tree
 
-Hi Paul,
+Need to test on arches other than x86. esp for ia64 and powerpc that support
+  more than on peer root buses.
 
-Today's linux-next merge of the moduleh tree got a conflict in fs/inode.c
-between commit 8bf58c2aaafb ("trim includes in inode.c") from the vfs
-tree and commit 630d9c47274a ("fs: reduce the use of module.h wherever
-possible") from the moduleh tree.
+The patches need to apply to linux v3.3 + pci-next and
+        [PATCH -v3] PCI: pci_host_bridge related cleanup
 
-The former makes the latter patch unneeded (it also replaces module.h
-with export.h).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+could be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-busn-alloc
 
---Signature=_Mon__19_Mar_2012_16_42_26_+1100_=jSW.98qObSeO9h6
-Content-Type: application/pgp-signature
+-v2: according to Jesse, split to more small patches.
+-v3: address some request from Bjorn. like make use %pR for busn_res debug print
+        out, and move the comment change with code change.
+-v4: fixes the problem about rescan that Bjorn found.
+-v5: add /proc/iobusn that is requested by Bjorn.
+     remove old workaround from pciehp.
+     add rescan_bridge for pci bridge in /sys
+-v6: remove global iobusn_resource, and every root bus's busn_res will be root
+     of children buses' busn_res.
+     pc cardbus change is tested by pcmcia maintainter.
+-v7: remove pci_scan_root_bus_max requested by Bjorn and Jesse.
+-v8: rebase on top other patches with arch/x86/pci/bus_numa.c changes
+     also only include busn_res related changes.
+-v9: Add busn into pci_root_info, and add it to resources list and pass it
+     to pci_create_root_bus.
+-v11: convert busn_res probe to generic probe_resource with resource lock holding
+     add more strict checking about not scaned peer bridges.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Yinghai Lu (30):
+  x86, PCI: Add print all root info for not using _CRS path
+  x86, PCI: Allocate temp range array in amd_bus pci_root_info probing
+  x86, PCI: Merge pcibios_scan_root and pci_scan_bus_on_node
+  PCI: Add busn_res into struct pci_bus.
+  PCI: Add busn_res operation functions
+  PCI: Release busn_res when removing bus
+  PCI: Insert busn_res in pci_create_root_bus()
+  PCI: Checking busn_res in pci_scan_root_bus()
+  PCI: Add default busn_resource
+  PCI: Add default busn_res for pci_scan_bus()
+  x86, PCI: Add busn_res into resources list for acpi path
+  x86, PCI: Put busn resource in pci_root_info for not using _CRS path
+  PCI, ia64: Register busn_res for root buses
+  PCI, sparc: Register busn_res for root buses
+  PCI, powerpc: Register busn_res for root buses
+  PCI, parisc: Register busn_res for root buses
+  resources: Add probe_resource()
+  resources: Replace registered resource in tree.
+  PCI: Add pci_bus_extend/shrink_top()
+  PCI: Probe safe range that we can use for unassigned bridge.
+  PCI: Add pci_bus_replace_busn_res()
+  PCI: Allocate bus range instead of use max blindly
+  PCI: Strict checking of valid range for bridge
+  PCI: Kill pci_fixup_parent_subordinate_busnr()
+  PCI: Seperate child bus scanning to two passes overall
+  pcmcia: Remove workaround for fixing pci parent bus subordinate
+  PCI: Double checking setting for bus register and bus struct.
+  PCI, pciehp: Remove not needed bus number range checking
+  PCI: More strict checking of valid range for bridge
+  PCI: Don't shrink too much for hotplug bridge
 
-iQIcBAEBCAAGBQJPZsdCAAoJEECxmPOUX5FEtZQP/0wNxXNcO85OdkxfgRJWmf8o
-OkfPVXXtjsLbQX4n4StmiKTnodsI2Ws2ZHvJ1N6LRegvWFgf9XGat0JlmjqtUDns
-Fjf79MuhFlMm0FyW2CfQJzYdCcef7A3GhosVTwzggBxOtoeGL7xgkAhD9dqgaO/3
-/h37YfhOi/QySO2iDLp/9lU8uTOTXB4u65N9OQOS3bYIv9pyPCec0uyRu0jz4aVL
-pyQfHiCFa5d2izPxpcINmUp9qBNDPeV+KCvb+msJPU4tFodoA4v15sKujRR0Nz/9
-/TYZATq2WMcoI6PMqweCwKucvXhq3WRhsjFbcbMAAa5m5NSlaaIdbhxmQmYPjnDm
-27vCyGWTVsXmV3v58Z2WhIEuJ75+AH/xTMI6c+6RqOia5ws4Fixn6cTLHMk5r6YB
-Io4ZC9NVWNEn7Xz01ND0fVDkmSdJ26Kln2hl6silUreKkkdmENUgifJsooOJeixM
-CWz9kEa8R4dthYqgSPFTTmkxqSePefiUxCfAbl1mgVUKdEPANdzD7SLdkjZ5I+1p
-YRx+KNiyCFNc1E27W92Djb03ygjDYvEACFgWDCgRbLYJIdSpz+xDPw/aoUiXJrqq
-JWor217zyTyTWo2Y+CNG63O8qiF8P2rn3HqqxjCO9AmP92Vie4MSHOEjBS5K3qst
-SLlpXWErSGxL4P3vLtbk
-=5kuq
------END PGP SIGNATURE-----
+ arch/ia64/pci/pci.c                   |    2 +
+ arch/powerpc/include/asm/pci-bridge.h |    1 +
+ arch/powerpc/kernel/pci-common.c      |   10 +-
+ arch/sparc/kernel/pci.c               |    4 +
+ arch/sparc/kernel/pci_impl.h          |    1 +
+ arch/x86/pci/acpi.c                   |   11 +-
+ arch/x86/pci/amd_bus.c                |   14 +-
+ arch/x86/pci/bus_numa.c               |   30 ++-
+ arch/x86/pci/bus_numa.h               |    4 +-
+ arch/x86/pci/common.c                 |   27 +--
+ drivers/parisc/dino.c                 |    5 +
+ drivers/parisc/lba_pci.c              |    3 +
+ drivers/pci/hotplug/pciehp_pci.c      |   12 +-
+ drivers/pci/probe.c                   |  439 +++++++++++++++++++++++++++------
+ drivers/pci/remove.c                  |    1 +
+ drivers/pcmcia/yenta_socket.c         |   75 ------
+ include/linux/ioport.h                |    8 +
+ include/linux/pci.h                   |    6 +
+ kernel/resource.c                     |  175 +++++++++++++-
+ 19 files changed, 613 insertions(+), 215 deletions(-)
 
---Signature=_Mon__19_Mar_2012_16_42_26_+1100_=jSW.98qObSeO9h6--
+-- 
+1.7.7
+
