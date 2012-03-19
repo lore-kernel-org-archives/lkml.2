@@ -1,182 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2CSXbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 19:31:11 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46229 "EHLO smtp.outflux.net"
+	id S1758846Ab2CSXlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 19:41:50 -0400
+Received: from soma.ebfe.org ([78.47.47.242]:34382 "EHLO soma.ebfe.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888Ab2CSXbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 19:31:08 -0400
-Date: Mon, 19 Mar 2012 16:12:53 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        kernel-hardening@lists.openwall.com, spender@grsecurity.net
-Subject: [PATCH] futex: do not leak robust list to unprivileged process
-Message-ID: <20120319231253.GA20893@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+	id S1758746Ab2CSXlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 19:41:46 -0400
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 19:41:46 EDT
+From: Michael Gehring <mg@ebfe.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Michael Gehring <mg@ebfe.org>
+Subject: [PATCH] tty/vt: set_get_cmap() check user buffer
+Date: Tue, 20 Mar 2012 00:34:01 +0100
+Message-Id: <1332200041-31052-1-git-send-email-mg@ebfe.org>
+X-Mailer: git-send-email 1.7.9.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was possible to extract the robust list head address from a setuid
-process if it had used set_robust_list(), allowing an ASLR info leak. This
-changes the permission checks to be the same as those used for similar
-info that comes out of /proc.
+set_get_cmap() ignores the result of {get,put}_user(), causing ioctl(vt,
+{G,P}IO_CMAP, 0xdeadbeef) to silently fail.
 
-Running a setuid program that uses robust futexes would have had:
-  cred->euid != pcred->euid
-  cred->euid == pcred->uid
-so the old permissions check would allow it. I'm not aware of any setuid
-programs that use robust futexes, so this is just a preventative measure.
+Another side effect of this: calling the PIO_CMAP ioctl with an invalid
+buffer will zero the default colormap and the palette for all vts (all
+colors set to black).
 
-(This patch is based on changes from grsecurity.)
+Use access_ok() and return -EFAULT when appropriate.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Michael Gehring <mg@ebfe.org>
 ---
- kernel/futex.c        |   36 +++++++++++++-----------------------
- kernel/futex_compat.c |   36 +++++++++++++-----------------------
- 2 files changed, 26 insertions(+), 46 deletions(-)
+ drivers/tty/vt/vt.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 1614be2..439440d 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -59,6 +59,7 @@
- #include <linux/magic.h>
- #include <linux/pid.h>
- #include <linux/nsproxy.h>
-+#include <linux/ptrace.h>
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index e716839..176b2a1 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3897,15 +3897,18 @@ static int set_get_cmap(unsigned char __user *arg, int set)
  
- #include <asm/futex.h>
+     WARN_CONSOLE_UNLOCKED();
  
-@@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
- {
- 	struct robust_list_head __user *head;
- 	unsigned long ret;
--	const struct cred *cred = current_cred(), *pcred;
-+	struct task_struct *p;
- 
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
-+	rcu_read_lock();
++    if (!access_ok(set ? VERIFY_READ : VERIFY_WRITE, arg, 3 * 16))
++	return -EFAULT;
 +
-+	ret = -ESRCH;
- 	if (!pid)
--		head = current->robust_list;
-+		p = current;
- 	else {
--		struct task_struct *p;
--
--		ret = -ESRCH;
--		rcu_read_lock();
- 		p = find_task_by_vpid(pid);
- 		if (!p)
- 			goto err_unlock;
--		ret = -EPERM;
--		pcred = __task_cred(p);
--		/* If victim is in different user_ns, then uids are not
--		   comparable, so we must have CAP_SYS_PTRACE */
--		if (cred->user->user_ns != pcred->user->user_ns) {
--			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--				goto err_unlock;
--			goto ok;
--		}
--		/* If victim is in same user_ns, then uids are comparable */
--		if (cred->euid != pcred->euid &&
--		    cred->euid != pcred->uid &&
--		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--			goto err_unlock;
--ok:
--		head = p->robust_list;
--		rcu_read_unlock();
+     for (i = 0; i < 16; i++)
+ 	if (set) {
+-	    get_user(default_red[i], arg++);
+-	    get_user(default_grn[i], arg++);
+-	    get_user(default_blu[i], arg++);
++	    __get_user(default_red[i], arg++);
++	    __get_user(default_grn[i], arg++);
++	    __get_user(default_blu[i], arg++);
+ 	} else {
+-	    put_user(default_red[i], arg++);
+-	    put_user(default_grn[i], arg++);
+-	    put_user(default_blu[i], arg++);
++	    __put_user(default_red[i], arg++);
++	    __put_user(default_grn[i], arg++);
++	    __put_user(default_blu[i], arg++);
  	}
- 
-+	ret = -EPERM;
-+	if (!ptrace_may_access(p, PTRACE_MODE_READ))
-+		goto err_unlock;
-+
-+	head = p->robust_list;
-+	rcu_read_unlock();
-+
- 	if (put_user(sizeof(*head), len_ptr))
- 		return -EFAULT;
- 	return put_user(head, head_ptr);
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index 5f9e689..a9642d5 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -10,6 +10,7 @@
- #include <linux/compat.h>
- #include <linux/nsproxy.h>
- #include <linux/futex.h>
-+#include <linux/ptrace.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- {
- 	struct compat_robust_list_head __user *head;
- 	unsigned long ret;
--	const struct cred *cred = current_cred(), *pcred;
-+	struct task_struct *p;
- 
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
-+	rcu_read_lock();
-+
-+	ret = -ESRCH;
- 	if (!pid)
--		head = current->compat_robust_list;
-+		p = current;
- 	else {
--		struct task_struct *p;
--
--		ret = -ESRCH;
--		rcu_read_lock();
- 		p = find_task_by_vpid(pid);
- 		if (!p)
- 			goto err_unlock;
--		ret = -EPERM;
--		pcred = __task_cred(p);
--		/* If victim is in different user_ns, then uids are not
--		   comparable, so we must have CAP_SYS_PTRACE */
--		if (cred->user->user_ns != pcred->user->user_ns) {
--			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--				goto err_unlock;
--			goto ok;
--		}
--		/* If victim is in same user_ns, then uids are comparable */
--		if (cred->euid != pcred->euid &&
--		    cred->euid != pcred->uid &&
--		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--			goto err_unlock;
--ok:
--		head = p->compat_robust_list;
--		rcu_read_unlock();
- 	}
- 
-+	ret = -EPERM;
-+	if (!ptrace_may_access(p, PTRACE_MODE_READ))
-+		goto err_unlock;
-+
-+	head = p->compat_robust_list;
-+	rcu_read_unlock();
-+
- 	if (put_user(sizeof(*head), len_ptr))
- 		return -EFAULT;
- 	return put_user(ptr_to_compat(head), head_ptr);
+     if (set) {
+ 	for (i = 0; i < MAX_NR_CONSOLES; i++)
 -- 
-1.7.0.4
+1.7.9.4
 
