@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161319Ab2CSPSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:18:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56306 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758854Ab2CSPSL (ORCPT
+	id S1161396Ab2CSPSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:18:42 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:48483 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758701Ab2CSPSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:18:11 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 5/5]NEXT:drivers:staging:quatech_usb2:quatech_usb2.c Fix typo in staging:quatech_usb2
-Date: Mon, 19 Mar 2012 08:17:53 -0700
-Message-Id: <1332170273-3482-5-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
-References: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
+	Mon, 19 Mar 2012 11:18:39 -0400
+Message-ID: <4F674E4F.5080904@xenotime.net>
+Date: Mon, 19 Mar 2012 08:18:39 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Steven Whitehouse <swhiteho@redhat.com>
+CC: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        teigland@redhat.com
+Subject: Re: GFS2: Pre-pull patch posting (merge window)
+References: <1332152728-4027-1-git-send-email-swhiteho@redhat.com>	 <4F674696.7030602@xenotime.net> <1332169153.2689.20.camel@menhir>
+In-Reply-To: <1332169153.2689.20.camel@menhir>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+On 03/19/2012 07:59 AM, Steven Whitehouse wrote:
 
-The below patch fixes a typo that I found while reading.
+> Hi,
+> 
+> On Mon, 2012-03-19 at 07:45 -0700, Randy Dunlap wrote:
+>> On 03/19/2012 03:25 AM, Steven Whitehouse wrote:
+>>
+>>> Hi,
+>>>
+>>> Not a huge number of patches this time. Some notable new features
+>>> though:
+>>>  - Glock stats gathering (v. useful for performance analysis)
+>>>  - FITRIM ioctl support
+>>>  - Sorting the ordered write list (big performance increase when the workload
+>>>    doesn't result in the write requests being nicely ordered to start with)
+>>>
+>>> Plus a few clean ups, and bug fixes in addition,
+>>
+>>
+>>
+>> Hi,
+>>
+>> I reported a build error in linux-next 20120313, but it appears
+>> that mainline also needs the fix (when it's ready) since mainline
+>> gfs2 Kconfig selects DLM_SCTP, which does not exist.
+>>
+>> https://lkml.org/lkml/2012/3/13/456
+>>
+> 
+> Does the following fix the problem? If so then I'll roll that into the
+> tree before it gets pushed,
+> 
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+No, that's not sufficient:
 
----
- drivers/staging/quatech_usb2/quatech_usb2.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+warning: (GFS2_FS) selects DLM which has unmet direct dependencies (EXPERIMENTAL && INET && SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n))
+warning: (DLM && GFS2_FS) selects IP_SCTP which has unmet direct dependencies (NET && INET && EXPERIMENTAL && (IPV6 || IPV6=n))
 
-diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
-index bb977e0..cb7d906 100644
---- a/drivers/staging/quatech_usb2/quatech_usb2.c
-+++ b/drivers/staging/quatech_usb2/quatech_usb2.c
-@@ -732,7 +732,7 @@ static int qt2_write(struct tty_struct *tty, struct usb_serial_port *port,
- 	}
- 
- 	/* We must fill the first 5 bytes of anything we sent with a transmit
--	 * header which directes the data to the correct port. The maximum
-+	 * header which directs the data to the correct port. The maximum
- 	 * size we can send out in one URB is port->bulk_out_size, which caps
- 	 * the number of bytes of real data we can send in each write. As the
- 	 * semantics of write allow us to write less than we were give, we cap
+and
+
+ERROR: "crc32c" [net/sctp/sctp.ko] undefined!
+
+
+
+
+> 
+> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+> index c465ae0..f4e1c60 100644
+> --- a/fs/gfs2/Kconfig
+> +++ b/fs/gfs2/Kconfig
+> @@ -4,7 +4,7 @@ config GFS2_FS
+>  	select DLM if GFS2_FS_LOCKING_DLM
+>  	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+>  	select SYSFS if GFS2_FS_LOCKING_DLM
+> -	select IP_SCTP if DLM_SCTP
+> +	select IP_SCTP if GFS2_FS_LOCKING_DLM
+>  	select FS_POSIX_ACL
+>  	select CRC32
+>  	select QUOTACTL
+> 
+> 
+
+
+
 -- 
-1.7.5.4
-
+~Randy
