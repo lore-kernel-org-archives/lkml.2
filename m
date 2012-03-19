@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab2CSPby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:31:54 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:28332 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759093Ab2CSPbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:31:53 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: bQMsEaAVM1lnnJyY8_FpmstvxYXL1tr7I_p6wKrgmKcb.Cf
- mPP6TFVH7F6CJH0gKUKdqJQw6LSjIHwXzm81l3JdE8KAc.hPffQFoOFEzkHg
- 4g5J.UB84iaq6uEyAKueDtIrSKKOOaKCf.nmavHWoet8Dad513IJeE12DpuC
- 6V7RNqYbUMFf.G7uL5NrB5cZ63xfK0BLNXN.4WuJ.n70VyFRL0Tvx75EOcov
- h_2A2Y1L8IVnDIB6BqM3q9mpxgRy8vja0HtD7MMbesRtfvG7MaQlDGIdAguq
- gRY0CMKyx0m1PKYMtv3sYtY.wJ1xpAeRzALVaiXQ8_b36tF6qsAJgDBtV8MA
- pwMNDPxDQnuga2wpkPaCSUAFTSH4_6T.K8iFW3w9BkL5QYtZLZHSg62k9JC4
- N
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 19 Mar 2012 10:31:47 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
-In-Reply-To: <1332170628.18960.349.camel@twins>
-Message-ID: <alpine.DEB.2.00.1203191029090.19189@router.home>
-References: <20120316144028.036474157@chello.nl> <20120316144240.763518310@chello.nl> <alpine.DEB.2.00.1203161333370.10211@router.home> <1331932375.18960.237.camel@twins> <alpine.DEB.2.00.1203190852380.16879@router.home> <1332165959.18960.340.camel@twins>
- <alpine.DEB.2.00.1203191012530.17008@router.home> <1332170628.18960.349.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1759121Ab2CSPdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:33:11 -0400
+Received: from nbd.name ([46.4.11.11]:56574 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758741Ab2CSPdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 11:33:09 -0400
+Message-ID: <4F6751B2.1030809@openwrt.org>
+Date: Mon, 19 Mar 2012 16:33:06 +0100
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        Linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com>
+In-Reply-To: <4F674FF5.2060406@gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012, Peter Zijlstra wrote:
+On 2012-03-19 4:25 PM, Justin P. Mattock wrote:
+> On 03/19/2012 08:20 AM, Mohammed Shafi wrote:
+>> Hi Justin,
+>>
+>>> seems I got this when waking up from suspend, was trying to connect with NM
+>>> then all of a sudden Xorg shut off and this appeared on the screen(image
+>>> links below I could not save dmesg only pic)
+>>> http://flic.kr/p/bEhf2K
+>>> http://flic.kr/p/bEhf2x
+>>> http://flic.kr/p/bEhf2n
+>>> http://flic.kr/p/bEhf26
+>>>
+>>> I see ath9k in the image, but am unsure if its related.
+>>> kernel is: 3.3.0-rc7-next-20120316
+>>
+>> this looks like some new issue  in ath9k, lets try to recreate it here
+>>
+>>>
+>>> Justin P. Mattock
+>>>
+>>>
+>>>
+>>
+>>
+>>
+> 
+> would be nice to recreate, then bisecting will be more accurate to do.. 
+> I am trying userspace tweaks here and there but no luck(hostapd etc..) 
+> keep in mind this is for the RX DMA, the above just occured..
+> as for writing a small app I still need to try, but my C skills only go 
+> so far(anything to trigger!).
+Was your kernel compiled with debug info? If so, please run gdb on the
+ath9k.ko module and enter this:
+l *ath9k_tx+start+0x284
+Then send me the output of that.
 
-> > No they wont work the same way as before. Applications may be relying on
-> > MPOL_DEFAULT behavior now expecting node local allocations. The home-node
-> > functionality would cause a difference in behavior because it would
-> > perform remote node allocs when a thread has been moved to a different
-> > socket. The changes also cause migrations that may cause additional
-> > latencies as well as change the location of memory in surprising ways for
-> > the applications
->
-> Still not sure what you're suggesting though, you argue to keep the
-> default what it is, this is in direct conflict with making the default
-> do something saner for most of the time.
-
-MPOL_DEFAULT is a certain type of behavior right now that applications
-rely on. If you change that then these applications will no longer work as
-expected.
-
-MPOL_DEFAULT is currently set to be the default policy on bootup. You can
-change that of course and allow setting MPOL_DEFAULT manually for
-applications that rely on old behavor. Instead set the default behavior on
-bootup for MPOL_HOME_NODE.
-
-So the default system behavior would be MPOL_HOME_NODE but it could be
-overriding by numactl to allow old apps to run as they are used to run.
-
+- Felix
