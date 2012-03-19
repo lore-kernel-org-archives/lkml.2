@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab2CSEbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 00:31:00 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56068 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754084Ab2CSEa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 00:30:59 -0400
-Message-ID: <1332131457.23125.48.camel@joe2Laptop>
-Subject: Re: [PATCH 3/9] ext4: Fix indentation
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+	id S1754657Ab2CSEeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 00:34:21 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55804 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab2CSEeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 00:34:20 -0400
+Date: Mon, 19 Mar 2012 00:34:20 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Sun, 18 Mar 2012 21:30:57 -0700
-In-Reply-To: <20120319041046.GH31682@thunk.org>
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+Message-ID: <20120319043420.GL31682@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	David Miller <davem@davemloft.net>, joe@perches.com,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 References: <cover.1331856299.git.joe@perches.com>
-	 <3457473a97c505cf9e5c5a34781a82e4e867a2e6.1331856300.git.joe@perches.com>
-	 <20120319041046.GH31682@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+ <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
+ <20120319040950.GG31682@thunk.org>
+ <20120319.001430.1735750114727679638.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120319.001430.1735750114727679638.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 00:10 -0400, Ted Ts'o wrote:
-> On Thu, Mar 15, 2012 at 05:07:31PM -0700, Joe Perches wrote:
-> > Indent a line appropriate.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
+On Mon, Mar 19, 2012 at 12:14:30AM -0400, David Miller wrote:
 > 
-> I'll fix indentation and whitespaces if I need to actually go in and
-> mess with that particular part of the code, but otherwise (since it
-> doesn't apply cleanly standalone anyway), I'm not going to bother...
+> I apply patches like Joe's all the time to the networking, consistency
+> has high value whether you choose to believe it or not.  And no we
+> don't have huge problems with patch conflicts and stuff like that
+> either, it simply isn't a real issue so don't use that as an excuse
+> either.
+> 
 
-No worries, it was next to a pr_<level> change and I
-just happened to notice it.
+It is for me.
 
+Things like printk(KERN_INFO, ...) are quite well established, and
+changing really doesn't add any value.  Sorry, I just don't buy the
+consistency argument.  I'd much rather keep everything consistent
+within ext3 and ext4.
 
+If you want to apply those sorts of patches, feel free.  I choose not
+to, and I actively discourage kernel newbies from running
+checkpatch.pl --file and trying to fix random things.  (A few years
+ago everyone agreed that that was a waste of time.)
+
+						- Ted
