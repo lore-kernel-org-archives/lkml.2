@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030314Ab2CSGsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:48:03 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36624 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab2CSGsB (ORCPT
+	id S1030689Ab2CSGvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:51:51 -0400
+Received: from edison.jonmasters.org ([173.255.233.168]:58455 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030209Ab2CSGvu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:48:01 -0400
-Date: Mon, 19 Mar 2012 17:47:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-Subject: linux-next: manual merge of the arm-soc tree with the l2-mtd tree
-Message-Id: <20120319174743.aff001d4f84e82cf4042277a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Mar_2012_17_47_43_+1100_3XFqHJ_=PE=pS8cF"
+	Mon, 19 Mar 2012 02:51:50 -0400
+X-Greylist: delayed 1016 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 02:51:50 EDT
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=windows-1252
+From: Jon Masters <jonathan@jonmasters.org>
+In-Reply-To: <CAKaWdxaaKMiwnhP7R786mqHTPs+o=izerZDbUgPBaxyU+XL-2g@mail.gmail.com>
+Date: Mon, 19 Mar 2012 02:34:48 -0400
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C141162D-9164-43D3-9A1F-93156DC7409B@jonmasters.org>
+References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com> <m1ehtd8qez.fsf@fess.ebiederm.org> <CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com> <87obshxt4w.fsf@xmission.com> <CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com> <87zkc1w6wp.fsf@xmission.com> <CAKaWdxa8yJJhnPj1th6GdYvn9+Lu7GUV1e=960gMQOdc8W47dQ@mail.gmail.com> <CAKaWdxaaKMiwnhP7R786mqHTPs+o=izerZDbUgPBaxyU+XL-2g@mail.gmail.com>
+To: Keith Chew <keith.chew@gmail.com>
+X-Mailer: Apple Mail (2.1257)
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Mar_2012_17_47_43_+1100_3XFqHJ_=PE=pS8cF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Keith,
 
-Hi all,
+I've just been reviewing LKML for the past month…was there ever any followup?
+Perhaps it's worth discussing a patch to change the below delay?
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/mtd/nand/atmel_nand.c between commit 4331c79c6895 ("mtd: do not
-use plain 0 as NULL") from the l2-mtd tree and commit d6a016616ba8
-("atmel/nand: add DT support") from the arm-soc tree.
+Jon.
 
-The latter superceded the former, so I used that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On Mar 10, 2012, at 6:45 PM, Keith Chew wrote:
 
---Signature=_Mon__19_Mar_2012_17_47_43_+1100_3XFqHJ_=PE=pS8cF
-Content-Type: application/pgp-signature
+> Hi Eric
+> 
+> Keep a quick update...
+> 
+>>> I would check with your BIOS folks and perhaps play with the kernel
+>>> option.  The most reliable way to peform a reset is to trigger a board
+>>> reset by writing to 0xcf9 or a similar register.  I expect your BIOS
+>>> does that and you can probably get the kernel to do that.  I would
+>>> definitely test to see if you can write to the mostly standard
+>>> 0xcf9 register directly from the kernel and trigger a reset directly.
+>>> 
+> 
+> Thank you very much for this. We have tried with reboot=p, which is
+> writing to the 0xCF9 register directly, and the test has been running
+> good for the past 9 days. Will keep monitoring it.
+> 
+> Also, I have also added a delay in the KBD reboot, which appears to
+> have made the reboot reliable (running good for past 8 days, before it
+> would hang after 2 days):
+> -----------------------
+> kb_wait();
+> udelay(150); <------ Increased from 50
+> outb(0xfe, 0x64); /* pulse reset low */
+> udelay(50);
+> -----------------------
+> 
+> Looks like the code may be issuing the reboot a bit too early after
+> returning from kb_wait().
+> 
+> Regards
+> Keith
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPZtaPAAoJEECxmPOUX5FEOMAP/1R3KfZ0BnrVmHcV4q5PrnTK
-TVCGblEAHTe02808bfdnuD6ISWiyFFBARKEOM91feOo870YO9pS9TWO39suxem7I
-Oa56mfBIiwGlbDpj9qWlfLeEkxYiyZRhrnvBWoLGZPmvlBqCu+t2qs2prbnTFnut
-ad7SPY78543LTdQrh6nluuBLLdGdLFcX+HCtEQAmslu34WNKkc0FD5w9XP+/kcJa
-pVfU2zf6ZqN4SsJz97KKbG8BvdRKo8yI1g1XsFlw81LVvpHCi70QhHxuJXInvb2Y
-BiU2ZobDrO/6yOQCHca0UF2/9RjZU9PALl0Io718jQr38jI9eoBnpI/xuPHUj8so
-tk3FhCH2MO9f1JvgjDSFmlMim0+ezo3rBYG5XYKT3ROLDxXSk7FL44Ov6xu09qBk
-rMebPuRg6+RUOA/R1+wUiaJpi9ebunVveGKrxjmtJbWBUAZDlVOFbtZK4e6lPMy1
-3GChoXsmvvcVnmPl4Y0MH7n1RrPzxDT6WizDLZKT93YrbICFCuYo4WV9L9L9CKEY
-latBsCFrYyYGr7I9NXRqu89axfVXusgBEoaoi8hcDGX5tVFBx79tsnI3zv04QWOU
-VqS0F1WRtQ1GCGl8LfMdHuQLzFo8SYpK30FQI66CjgEcVHfQBfZqWhOoRdaw6UVK
-ESXkw8rVcU68KkJepMzV
-=YW2C
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Mar_2012_17_47_43_+1100_3XFqHJ_=PE=pS8cF--
