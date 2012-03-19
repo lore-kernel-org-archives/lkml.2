@@ -1,41 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162028Ab2CSQQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:16:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56992 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161909Ab2CSQQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:16:05 -0400
-Date: Mon, 19 Mar 2012 09:15:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rni@google.com, ctalbott@google.com
-Subject: Re: [PATCHSET] cgroup: cftype based file interface
-Message-ID: <20120319161556.GE11069@google.com>
-References: <1331940963-15756-1-git-send-email-tj@kernel.org>
- <4F6708F4.4000604@parallels.com>
- <20120319160532.GB11069@google.com>
- <4F675B01.70901@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F675B01.70901@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1162043Ab2CSQQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:16:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59856 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031012Ab2CSQQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:16:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="119164225"
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+ __dma_request_channel()
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <Pine.LNX.4.64.1203191524200.11516@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	 <1331188201.4657.51.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+	 <1331204128.4657.54.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	 <1331206459.4657.59.camel@vkoul-udesk3>
+	 <1331211513.4657.67.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
+	 <1331284918.4657.69.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
+	 <1331285959.4657.76.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
+	 <1331520476.4657.79.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
+	 <1332157021.7180.5.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203191244240.11516@axis700.grange>
+	 <1332164062.7180.19.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203191436030.11516@axis700.grange>
+	 <1332165604.7180.24.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203191502170.11516@axis700.grange>
+	 <1332166938.7180.38.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203191524200.11516@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 21:50:36 +0530
+Message-ID: <1332174036.12110.15.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 08:12:49PM +0400, Glauber Costa wrote:
-> On 03/19/2012 08:05 PM, Tejun Heo wrote:
-> >Hello, Glauber.
-> >
-> >On Mon, Mar 19, 2012 at 02:22:44PM +0400, Glauber
-> Hello, Tejun! =)
+On Mon, 2012-03-19 at 15:45 +0100, Guennadi Liakhovetski wrote:
+> > Btw why should .device_alloc_chan_resources() need this, I so no reason,
+> > unless we are working around some other issue.
+> 
+> The reason is the following: with the proposed modifications to the 
+> existing API we want to achieve:
+> 
+> 1. client requests a channel
+> 	dmaengine_request_slave_channel(dev)
+> 2. the core looks through platform-specific mapping tables and finds a 
+>    suitable channel
+> 3. the core calls device driver's .device_alloc_chan_resources() method 
+>    for that channel
+> 4. the client uses
+> 	dmaengine_slave_config(chan, config)
+>    to configure the channel
+> 
+> Now, that last channel configuration can have two aspects: (1) static: 
+> routing, multiplexing, peripheral address. This needs to be set only once 
+> per each such channel allocation to a specific client,
+correct
 
-Heh, =)
+>  (2) (potentially) 
+> dynamic: any burst sizes etc.
+I dont think burst-size would be dynamic, are they on sh- ?
+
+>  We can pass both these configuration types 
+> together to the DMA device driver at step 4. For that the slave would have 
+> to embed struct dma_slave_config into another hardware-specific type with 
+> additional routing parameters.
+I think most of generic parameters are already there. As long as you
+dont have abnormal controller current dma_slave_config should suffice.
+Again, if you have specific need pls let us know, this structure can &
+should be expanded if dmacs needs something for slave configuration.
+
+>  Otherwise we could pass static 
+> configuration, supplied by the platform,
+platform, where is that coming into configuration discussion. Platforms
+role is only for *mapping* and not for configuration.
+>  from the client to the DMA device 
+> driver already at step 1. This way we would avoid having to embed struct 
+> dma_slave_config and pass it around even if the driver doesn't actually 
+> use it. In some cases step 4 would be then dropped completely. But I can 
+> live with either solution.
+> 
+> Another reason is, that in the future it can happen, that we get further 
+> restrictions on channel selection, that will not fit into the standard 
+> mapping scheme. In this case, having access to slave's identification, the 
+> DMA device driver will have another chance to check, whether the proposed 
+> channel is indeed suitable.
+DMAC do not and should not check that. It is again job of client to
+check that.
+I know sh- doesnt do it this way, but after we sort of mapping, I expect
+this to be gone. DMACs should not know anything about clients.
+
+> 
+> BTW, if we only pass a device pointer and return to the client channels 
+> one-by-one, how will the client know, which channel it just has got back - 
+> Tx or Rx? Will it have to try to configure it for each role and see, which 
+> one succeeds?...
+There are few options and considerations:
+a) if platform map forces you to use specific channel for TX and
+specific one for RX, then you should have mapping explicitly tell you
+about RX and TX channels.
+b) if not, then you should get a channel which can work with a client.
+And then use direction to find about TX and RX for a descriptor. I know
+some controller can use same channel for both RX and TX.
 
 -- 
-tejun
+~Vinod
+
