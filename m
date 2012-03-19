@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965171Ab2CSTd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:33:29 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:47014 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965127Ab2CSTd2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:33:28 -0400
+	id S1759333Ab2CSTiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:38:14 -0400
+Received: from dwdmx5.dwd.de ([141.38.3.242]:39758 "EHLO dwdmx5.dwd.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755331Ab2CSTiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 15:38:13 -0400
+Date: Mon, 19 Mar 2012 19:38:04 +0000 (GMT)
+From: Holger Kiehl <Holger.Kiehl@dwd.de>
+X-X-Sender: kiehl@diagnostix.dwd.de
+To: Shaohua Li <shli@fusionio.com>
+cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
+        axboe@kernel.dk, vgoyal@redhat.com, martin.petersen@oracle.com
+Subject: Re: [patch v2 0/6] Add TRIM support for raid linear/0/1/10
+In-Reply-To: <20120316073213.656519005@fusionio.com>
+Message-ID: <alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de>
+References: <20120316073213.656519005@fusionio.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4F678561.3040105@codeaurora.org>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
- <1331878280-2758-3-git-send-email-mturquette@linaro.org> <4F6404C2.7000506@codeaurora.org>
- <CAJOA=zP1HHqBNS4V2dN=Q9oOcOErQj8W__fB_qRyZeNLBk7VJg@mail.gmail.com> <4F678561.3040105@codeaurora.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 19 Mar 2012 12:33:05 -0700
-Message-ID: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, linaro-dev@lists.linaro.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 12:13 PM, Saravana Kannan
-<skannan@codeaurora.org> wrote:
-> I saw some responses from you over the weekend but not to mine. So, I
-> assumed you were busy with other stuff and I started working on a patch on
-> top of v7.
+Hello,
 
-I only answer trivial emails on the weekend ;-)
+On Fri, 16 Mar 2012, Shaohua Li wrote:
 
-> I will send that out if I get around to finishing it before you
-> do. Hope that's alright with you.
+> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM support for
+> raid 4/5/6 later. The implementation is pretty straightforward and
+> self-explained.
+>
+> v1->v2:
+> 1. fixed a checking issue
+> 2. dropped discard request plug and replace it with no discard merege, because
+> current SCSI layer can't handle discard request merge.
+>
+Have tested TRIM patches on three different systems with the following
+hardware/ setup:
 
-I'm happy to for you to take a crack at it.  I don't know what your
-implementation looks like, but here are a couple concerns I have:
+    1) root mounted on a raid1 over two SAS SSD's (200GB) and /home partition
+       on a raid0 over a fusionio ioDrive Duo. Is very new and seen very
+       little usage.
 
-1) if you're copying the data from the initializer over to the struct
-clk then make sure you handle the __init data aspects of it properly
+    2) root and /home mounted on a raid0 over two Intel X25 Postville
+       (160GB) connected to a Intel P55 Express chipset. Has seen very
+       heavy usage for approx. 2 years.
 
-2) are the members of struct clk_hw visible to the rest of the world?
-Are they modifiable (i.e., not const)?  This is undesirable.
+    3) root and /home mounted on a raid0 over three OCZ-VERTEX2 (120GB)
+       connected via ICH7 south bridge. Has seen mild usage for approx.
+       1.5 years.
 
-Thanks,
-Mike
+Made the following observations when running my own benchmark which
+copies around a lot of small files and deletes them. The benchmark on
+all systems was always run only on the /home partition ie. on a raid0.
+
+For system 1) there is hardly any measurable differnce whether discard
+is enabled or not (~29000 files per second).
+
+On system 2) the performance drops from 6500->3700 files per second,
+but under normal usage one does not notice any difference.
+
+System 3) has problems during boot, it is so slow that some operations
+receive a timeout during boot:
+
+   udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
+   udevd[474]: timeout: killing '/sbin/blkid -o udev -p /dev/md0' [866]
+   systemd[1]: dev-md3.swap activation timed out. Stopping.
+
+Even removing discard does not help and the above errors happen during
+boot and booting takes a long time.
+
+The performance in the benchmark drops from 4000->600 files per second.
+
+Regards,
+Holger
