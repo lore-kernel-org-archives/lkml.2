@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161014Ab2CSGJC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:09:02 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29856 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030649Ab2CSFpa (ORCPT
+	id S1030513Ab2CSFok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:44:40 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28251 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030352Ab2CSFo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:45:30 -0400
+	Mon, 19 Mar 2012 01:44:27 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -19,69 +19,58 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v11 18/30] resources: Replace registered resource in tree.
-Date: Sun, 18 Mar 2012 22:42:49 -0700
-Message-Id: <1332135781-13695-19-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v11 09/30] PCI: Add default busn_resource
+Date: Sun, 18 Mar 2012 22:42:40 -0700
+Message-Id: <1332135781-13695-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
 References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090209.4F66C7F1.0053,ss=1,re=0.000,fgs=0
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4F66C7B3.000F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could have one resource inserted in tree at first during proble.
-
-Later we need to put real resource into the tree.
-
-So try to hold the lock to swap them.
+We need to put into the resources list for legacy system.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/ioport.h |    1 +
- kernel/resource.c      |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ drivers/pci/probe.c |    7 +++++++
+ include/linux/pci.h |    2 ++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 20a30df..62af212 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -163,6 +163,7 @@ int probe_resource(struct resource *b_res,
- 			struct device *dev, struct resource *busn_res,
- 			resource_size_t needed_size, struct resource **p,
- 			int skip_nr, int limit, char *name);
-+void resource_replace(struct resource *old_res, struct resource *new_res);
- struct resource *lookup_resource(struct resource *root, resource_size_t start);
- int adjust_resource(struct resource *res, resource_size_t start,
- 		    resource_size_t size);
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 0c9616f..ea96dcf 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -1112,6 +1112,21 @@ reduce_needed_size:
- 	return ret;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 654c727..2378531 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -15,6 +15,13 @@
+ #define CARDBUS_LATENCY_TIMER	176	/* secondary latency timer */
+ #define CARDBUS_RESERVE_BUSNR	3
+ 
++struct resource busn_resource = {
++	.name	= "PCI busn",
++	.start	= 0,
++	.end	= 255,
++	.flags	= IORESOURCE_BUS,
++};
++
+ /* Ugh.  Need to stop exporting this to modules. */
+ LIST_HEAD(pci_root_buses);
+ EXPORT_SYMBOL(pci_root_buses);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index e494759..40606c1 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -368,6 +368,8 @@ static inline int pci_channel_offline(struct pci_dev *pdev)
+ 	return (pdev->error_state != pci_channel_io_normal);
  }
  
-+/* replace old with new in the resource tree */
-+void resource_replace(struct resource *old, struct resource *new)
-+{
-+	struct resource *parent;
++extern struct resource busn_resource;
 +
-+	write_lock(&resource_lock);
-+	parent = old->parent;
-+	new->start = old->start;
-+	new->end = old->end;
-+	new->flags = old->flags;
-+	__release_resource(old);
-+	__request_resource(parent, new);
-+	write_unlock(&resource_lock);
-+}
-+
- /*
-  * Managed region resource
-  */
+ struct pci_host_bridge_window {
+ 	struct list_head list;
+ 	struct resource *res;		/* host bridge aperture (CPU address) */
 -- 
 1.7.7
 
