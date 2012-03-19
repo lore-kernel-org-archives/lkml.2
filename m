@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759074Ab2CSPbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:31:37 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57857 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab2CSPbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:31:36 -0400
-Date: Mon, 19 Mar 2012 11:31:34 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-Message-ID: <20120319153133.GA2502@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	David Miller <davem@davemloft.net>, joe@perches.com,
-	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20120319040950.GG31682@thunk.org>
- <20120319.001430.1735750114727679638.davem@davemloft.net>
- <20120319043420.GL31682@thunk.org>
- <20120319.011211.89954160788757412.davem@davemloft.net>
+	id S1759112Ab2CSPby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:31:54 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:28332 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759093Ab2CSPbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 11:31:53 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: bQMsEaAVM1lnnJyY8_FpmstvxYXL1tr7I_p6wKrgmKcb.Cf
+ mPP6TFVH7F6CJH0gKUKdqJQw6LSjIHwXzm81l3JdE8KAc.hPffQFoOFEzkHg
+ 4g5J.UB84iaq6uEyAKueDtIrSKKOOaKCf.nmavHWoet8Dad513IJeE12DpuC
+ 6V7RNqYbUMFf.G7uL5NrB5cZ63xfK0BLNXN.4WuJ.n70VyFRL0Tvx75EOcov
+ h_2A2Y1L8IVnDIB6BqM3q9mpxgRy8vja0HtD7MMbesRtfvG7MaQlDGIdAguq
+ gRY0CMKyx0m1PKYMtv3sYtY.wJ1xpAeRzALVaiXQ8_b36tF6qsAJgDBtV8MA
+ pwMNDPxDQnuga2wpkPaCSUAFTSH4_6T.K8iFW3w9BkL5QYtZLZHSg62k9JC4
+ N
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 19 Mar 2012 10:31:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
+In-Reply-To: <1332170628.18960.349.camel@twins>
+Message-ID: <alpine.DEB.2.00.1203191029090.19189@router.home>
+References: <20120316144028.036474157@chello.nl> <20120316144240.763518310@chello.nl> <alpine.DEB.2.00.1203161333370.10211@router.home> <1331932375.18960.237.camel@twins> <alpine.DEB.2.00.1203190852380.16879@router.home> <1332165959.18960.340.camel@twins>
+ <alpine.DEB.2.00.1203191012530.17008@router.home> <1332170628.18960.349.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120319.011211.89954160788757412.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 01:12:11AM -0400, David Miller wrote:
-> 
-> It also allows you to modify pr_fmt at the top of the file or
-> elsewhere and have it influence the output, as just one example
-> of how it's better.
-> 
-> As a maintainer you can only take one of two positions:
-> 
-> 1) Accept all properly written patches that convert code over to use
->    the new and recommended way of doing things, such as pr_info() et
->    al.
+On Mon, 19 Mar 2012, Peter Zijlstra wrote:
 
-Recommended by *who*?!?  Who dictated that this is the best way to go?
+> > No they wont work the same way as before. Applications may be relying on
+> > MPOL_DEFAULT behavior now expecting node local allocations. The home-node
+> > functionality would cause a difference in behavior because it would
+> > perform remote node allocs when a thread has been moved to a different
+> > socket. The changes also cause migrations that may cause additional
+> > latencies as well as change the location of memory in surprising ways for
+> > the applications
+>
+> Still not sure what you're suggesting though, you argue to keep the
+> default what it is, this is in direct conflict with making the default
+> do something saner for most of the time.
 
-And in the past we've always allowed for local variations of style;
-it's never been a strict style nazism.  Linus has always given
-maintainers latitude and has frowned on patch churn for churn's sake.
+MPOL_DEFAULT is a certain type of behavior right now that applications
+rely on. If you change that then these applications will no longer work as
+expected.
 
-For goodness sake we still have get_fs() and set_fs() in the kernel
-code even though we haven't used the actual fs segment register in
-over a decade.
+MPOL_DEFAULT is currently set to be the default policy on bootup. You can
+change that of course and allow setting MPOL_DEFAULT manually for
+applications that rely on old behavor. Instead set the default behavior on
+bootup for MPOL_HOME_NODE.
 
-And we're arguing over "there must be only one true logging
-interface?!?".  This isn't Highlander.
+So the default system behavior would be MPOL_HOME_NODE but it could be
+overriding by numactl to allow old apps to run as they are used to run.
 
-						- Ted
