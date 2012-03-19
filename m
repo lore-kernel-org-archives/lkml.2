@@ -1,74 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab2CSJmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 05:42:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65197 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab2CSJmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 05:42:33 -0400
-Message-ID: <4F66FF7B.7040000@redhat.com>
-Date: Mon, 19 Mar 2012 17:42:19 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1758738Ab2CSJyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 05:54:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6491 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754406Ab2CSJy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 05:54:29 -0400
+X-IronPort-AV: E=Sophos;i="4.73,611,1325433600"; 
+   d="scan'208,223";a="4568606"
+Date: Mon, 19 Mar 2012 17:55:29 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Pekka Enberg <penberg@kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
+Subject: Re: [PATCH v5 2/3] virtio-scsi: add error handling
+Message-ID: <20120319095529.GA25623@localhost.localdomain>
+References: <1328440562-19425-1-git-send-email-pbonzini@redhat.com>
+ <1328440562-19425-3-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V4 PATCH] virtio-net: send gratuitous packet when needed
-References: <20120313090841.11110.82654.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120313143331.GE14931@redhat.com> <877gyhxrlu.fsf@rustcorp.com.au> <20120319084449.GF17673@redhat.com>
-In-Reply-To: <20120319084449.GF17673@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1328440562-19425-3-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-19 17:52:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-19 17:52:19,
+	Serialize complete at 2012-03-19 17:52:19
+Content-Type: multipart/mixed; boundary="pWyiEgJYm5f9v55/"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 04:44 PM, Michael S. Tsirkin wrote:
-> On Mon, Mar 19, 2012 at 12:46:29PM +1030, Rusty Russell wrote:
->> On Tue, 13 Mar 2012 16:33:31 +0200, "Michael S. Tsirkin"<mst@redhat.com>  wrote:
->>>> diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
->>>> index 970d5a2..44a38d6 100644
->>>> --- a/include/linux/virtio_net.h
->>>> +++ b/include/linux/virtio_net.h
->>>> @@ -49,8 +49,10 @@
->>>>   #define VIRTIO_NET_F_CTRL_RX	18	/* Control channel RX mode support */
->>>>   #define VIRTIO_NET_F_CTRL_VLAN	19	/* Control channel VLAN filtering */
->>>>   #define VIRTIO_NET_F_CTRL_RX_EXTRA 20	/* Extra RX mode control support */
->>>> +#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can send gratituous packet */
->>>>
->>>>   #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
->>>> +#define VIRTIO_NET_S_ANNOUNCE   2       /* Announcement is needed */
->>> I would put this in bit 8 (0x100), this way low status byte
->>> is RO, high byte is RW.
->> The whole idea of acking by clearing the bit is unreliable, moving to a
->> separate byte just controls the damage.
->>
->> How about you use bits 8-15 as a counter?  It's still theoretically
->> unreliable if 256 notifications pass before the guest notices, but it's
->> probably better and clearer than this.
->>
->> I leave the final call to MST though.
->>
->> Thanks,
->> Rusty.
-> I guess the point was that we want a single packet
-> so we don't care if multiple notifications are coalesced
-> into a single one.
->
 
-To reduce the possibility of dropping or losing of gratuitous packet by 
-the network, qemu usually send the gratuitous packets for many times ( 
-currently 5 time with a increment gap between them such as 50ms, 150ms, 
-250ms ...). As there's no method can guarantee the gratuitous packet 
-were received by switch in guest, no need to care about the coalesced 
-notifications in guest. And we may leave the work to qemu or just don't 
-care about this.
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 
->> -- 
->>    How could I marry someone with more hair than me?  http://baldalex.org
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Sun, Feb 05, 2012 at 12:16:01PM +0100, Paolo Bonzini wrote:
+> This commit adds basic error handling to the virtio-scsi
+> HBA device.  Task management functions are sent synchronously
+> via the control virtqueue.
+> 
+> Cc: linux-scsi <linux-scsi@vger.kernel.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Acked-by: Pekka Enberg <penberg@kernel.org> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	v3->v4: fixed 32-bit compilation; adjusted call to virtscsi_kick_cmd
+> 
+> 	v2->v3: added mempool, used GFP_NOIO instead of GFP_ATOMIC,
+> 	formatting fixes
+> 
+> 	v1->v2: use scmd_printk
+> 
+>  drivers/scsi/virtio_scsi.c |   73 +++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 72 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 3f87ae0..68104cd 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -29,6 +29,7 @@
+>  /* Command queue element */
+>  struct virtio_scsi_cmd {
+>  	struct scsi_cmnd *sc;
+> +	struct completion *comp;
+>  	union {
+>  		struct virtio_scsi_cmd_req       cmd;
+>  		struct virtio_scsi_ctrl_tmf_req  tmf;
+> @@ -168,11 +169,12 @@ static void virtscsi_req_done(struct virtqueue *vq)
+>  	virtscsi_vq_done(vq, virtscsi_complete_cmd);
+>  };
+>  
+> -/* These are still stubs.  */
+>  static void virtscsi_complete_free(void *buf)
+>  {
+>  	struct virtio_scsi_cmd *cmd = buf;
+>  
+> +	if (cmd->comp)
+> +		complete_all(cmd->comp);
+>  	mempool_free(cmd, virtscsi_cmd_pool);
+>  }
+>  
+> @@ -306,12 +308,81 @@ out:
+>  	return ret;
+>  }
+>  
+> +static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+> +{
+> +	DECLARE_COMPLETION_ONSTACK(comp);
+> +	int ret;
+> +
+> +	cmd->comp = &comp;
+> +	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
+> +			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+> +			       GFP_NOIO);
+> +	if (ret < 0)
+> +		return FAILED;
+> +
+> +	wait_for_completion(&comp);
+> +	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
+> +	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+> +		return FAILED;
+> +
+> +	return SUCCESS;
+> +}
 
+Hi Paolo,
+
+This is against v5.
+
+
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: attachment; filename="0001-fix-race-in-tmf.patch"
+
+>From 34ef5e64fc205044e4326fcc5dcf2aa6b219763a Mon Sep 17 00:00:00 2001
+From: Hu Tao <hutao@cn.fujitsu.com>
+Date: Mon, 19 Mar 2012 15:58:22 +0800
+Subject: [PATCH] fix two problems in tmf
+
+This patch fix two problems in tmf:
+
+  1. race in virtscsi_tmf that the cmd may have been already freed
+     when waking up from the completion
+
+  2. cmd leak if virtscsi_kick_cmd fails.
+
+
+Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+---
+ drivers/scsi/virtio_scsi.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index efccd72..3b8a6e6 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -175,7 +175,8 @@ static void virtscsi_complete_free(void *buf)
+ 
+ 	if (cmd->comp)
+ 		complete_all(cmd->comp);
+-	mempool_free(cmd, virtscsi_cmd_pool);
++	else
++		mempool_free(cmd, virtscsi_cmd_pool);
+ }
+ 
+ static void virtscsi_ctrl_done(struct virtqueue *vq)
+@@ -311,21 +312,23 @@ out:
+ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+-	int ret;
++	int ret = FAILED;
+ 
+ 	cmd->comp = &comp;
+ 	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
+ 			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+ 			       GFP_NOIO);
+ 	if (ret < 0)
+-		return FAILED;
++		goto failed;
+ 
+ 	wait_for_completion(&comp);
+-	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
+-	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+-		return FAILED;
++	if (cmd->resp.tmf.response == VIRTIO_SCSI_S_OK ||
++	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
++		ret = SUCCESS;
+ 
+-	return SUCCESS;
++failed:
++	mempool_free(cmd, virtscsi_cmd_pool);
++	return ret;
+ }
+ 
+ static int virtscsi_device_reset(struct scsi_cmnd *sc)
+-- 
+1.7.1
+
+
+--pWyiEgJYm5f9v55/--
