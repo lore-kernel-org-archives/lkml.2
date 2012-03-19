@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab2CSEWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 00:22:19 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:56419 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab2CSEWS (ORCPT
+	id S1753959Ab2CSEXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 00:23:09 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:50138 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750938Ab2CSEXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 00:22:18 -0400
-Message-ID: <1332130930.26765.2.camel@phoenix>
-Subject: [PATCH RESEND 1/4] regulator: Fix setting new voltage in
- s5m8767_set_voltage
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 19 Mar 2012 12:22:10 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Mon, 19 Mar 2012 00:23:07 -0400
+Message-ID: <4F66B4A9.3040208@xenotime.net>
+Date: Sun, 18 Mar 2012 21:23:05 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] fs: fix kernel-doc warnings in dcache.c
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code does not really update the register with new value, fix it.
-I rename the variable i to sel for better readability.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Fix kernel-doc warnings in fs/dcache.c:
+
+Warning(fs/dcache.c:1743): No description found for parameter 'seqp'
+Warning(fs/dcache.c:1743): Excess function parameter 'seq' description in '__d_lookup_rcu'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Alexander Viro <viro@zeniv.linux.org.uk>
 ---
-Hi Sangbeom,
-I make the following patchs on top of this one, so I resend this one as the
-first patch of this serial.
-I'd appreciate to have your feedback about the changes in this patch serial.
+ fs/dcache.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Axel
- drivers/regulator/s5m8767.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 58447db..4ca2db0 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -311,8 +311,7 @@ static int s5m8767_set_voltage(struct regulator_dev *rdev,
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	const struct s5m_voltage_desc *desc;
- 	int reg_id = rdev_get_id(rdev);
--	int reg, mask, ret;
--	int i;
-+	int sel, reg, mask, ret;
- 	u8 val;
- 
- 	switch (reg_id) {
-@@ -333,19 +332,20 @@ static int s5m8767_set_voltage(struct regulator_dev *rdev,
- 
- 	desc = reg_voltage_map[reg_id];
- 
--	i = s5m8767_convert_voltage_to_sel(desc, min_uV, max_uV);
--	if (i < 0)
--		return i;
-+	sel = s5m8767_convert_voltage_to_sel(desc, min_uV, max_uV);
-+	if (sel < 0)
-+		return sel;
- 
- 	ret = s5m8767_get_voltage_register(rdev, &reg);
- 	if (ret)
- 		return ret;
- 
- 	s5m_reg_read(s5m8767->iodev, reg, &val);
--	val = val & mask;
-+	val &= ~mask;
-+	val |= sel;
- 
- 	ret = s5m_reg_write(s5m8767->iodev, reg, val);
--	*selector = i;
-+	*selector = sel;
- 
- 	return ret;
- }
--- 
-1.7.5.4
-
-
-
+--- lnx-33.orig/fs/dcache.c
++++ lnx-33/fs/dcache.c
+@@ -1714,7 +1714,7 @@ EXPORT_SYMBOL(d_add_ci);
+  * __d_lookup_rcu - search for a dentry (racy, store-free)
+  * @parent: parent dentry
+  * @name: qstr of name we wish to find
+- * @seq: returns d_seq value at the point where the dentry was found
++ * @seqp: returns d_seq value at the point where the dentry was found
+  * @inode: returns dentry->d_inode when the inode was found valid.
+  * Returns: dentry, or NULL
+  *
