@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758404Ab2CSQMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:12:47 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49694 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756588Ab2CSQMp (ORCPT
+	id S1031885Ab2CSQNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:13:22 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48492 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031122Ab2CSQNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:12:45 -0400
-Message-ID: <1332173560.3152.65.camel@dabdike>
-Subject: Re: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
- correctly when SRB status is INVALID
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Date: Mon, 19 Mar 2012 16:12:40 +0000
-In-Reply-To: <1332115963-26855-1-git-send-email-kys@microsoft.com>
-References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
-	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 19 Mar 2012 12:13:18 -0400
+From: jean.pihet@newoldbits.com
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH v2 0/9] PM: Create the AVS class of drivers
+Date: Mon, 19 Mar 2012 17:12:49 +0100
+Message-Id: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-03-18 at 17:12 -0700, K. Y. Srinivasan wrote:
-> Currently Windows hosts only support a subset of scsi commands and for commands
-> that are not supported, the host returns a generic SRB failure status.
-> However, they have agreed to change the return value to indicate that
-> the command is not supported. In preparation for that, handle the
-> SRB_STATUS_INVALID_REQUEST return value correctly.
-> 
-> I would like to thank Jeff Garzik <jgpobox@gmail.com> and
-> Douglas Gilbert <dgilbert@interlog.com> for suggesting the correct approach
-> here.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/scsi/storvsc_drv.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> index 44c7a48..018c363 100644
-> --- a/drivers/scsi/storvsc_drv.c
-> +++ b/drivers/scsi/storvsc_drv.c
-> @@ -202,6 +202,7 @@ enum storvsc_request_type {
->  #define SRB_STATUS_INVALID_LUN	0x20
->  #define SRB_STATUS_SUCCESS	0x01
->  #define SRB_STATUS_ERROR	0x04
-> +#define SRB_STATUS_INVALID_REQUEST 0x06
+From: Jean Pihet <j-pihet@ti.com>
 
-I don't really think this is the correct approach.  We already have a
-SCSI error return for this, which you're now translating in the driver
-and hypervisor.  Rather than have a special byte return of
-SRB_STATUS_INVALID_REQUEST, why not have the hypervisor do the right
-thing and fill in the ILLEGAL_REQUEST sense return.  That way you don't
-need a special error code and you don't need to construct the sense
-buffer in the driver.  Now HyperV will be correctly set up for both pass
-through and emulated responses.  It's surely not much work and you
-already process sense data correctly in storvsc_command_completion(), so
-you wouldn't need any patches to the driver for this approach.
+AVS is a power management technique which controls the operating
+voltage of a device in order to optimize (i.e. reduce) its power
+consumption. The voltage is adapted depending on static factors
+(chip manufacturing process) and dynamic factors (temperature
+depending performance).
+AVS is also called SmartReflex on OMAP devices.
 
-James
+To that end, create the AVS framework in drivers/power/avs and
+move the OMAP SmartReflex code to the new directory.
 
+In preparation to the move of the OMAP code the following changes have been
+made:
+- split the include files into generic and platform specific code,
+- fill in platform data from the device initialization code and pass
+  it to the driver,
+- create CONFIG_AVS* config options accordingly.
+
+The platform integration data for SmartReflex is passed from hwmod
+and the voltage layer to the driver using pdata.
+
+
+Tested on OMAP3 Beagleboard using omap2plus_defconfig with the
+CONFIG_POWER_AVS* options set.
+Based on master branch of the l-o git tree (3.3.0-rc6) [1], commit
+85244e0edd240da2004bb2ab7cbcbc67a336f20d.
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
+
+
+History:
+v2: rework after the comments on MLs
+ . Keep the OMAP Kconfig options in the arch dir (Rafael),
+ . Move the shared header file from plat-omap to
+    include/linux/power/ (Tony)
+
+v1: initial revision
+ 
+
+Jean Pihet (9):
+  ARM: OMAP3+: voltage: export functions to plat/voltage.h
+  ARM: OMAP2+: SmartReflex: move the driver specific macros in
+    include/linux/power
+  ARM: OMAP3+: SmartReflex: class drivers should use struct omap_sr *
+  ARM: OMAP2+: smartreflex: Use the names from hwmod data instead of
+    voltage domains.
+  ARM: OMAP3: hwmod: rename the smartreflex entries
+  ARM: OMAP2+: SmartReflex: introduce a busy loop condition test macro
+  ARM: OMAP2+: SmartReflex: Use per-OPP data structure
+  ARM: OMAP2+: SmartReflex: add POWER_AVS Kconfig options
+  ARM: OMAP: SmartReflex: Move smartreflex driver to drivers/
+
+ arch/arm/mach-omap2/Makefile               |    4 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   12 +-
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    3 +-
+ arch/arm/mach-omap2/pm.h                   |    2 +-
+ arch/arm/mach-omap2/smartreflex-class3.c   |   60 --
+ arch/arm/mach-omap2/smartreflex.c          | 1165 ----------------------------
+ arch/arm/mach-omap2/smartreflex.h          |  256 ------
+ arch/arm/mach-omap2/sr_device.c            |   38 +-
+ arch/arm/mach-omap2/voltage.h              |    1 -
+ arch/arm/mach-omap2/vp.h                   |    2 -
+ arch/arm/plat-omap/Kconfig                 |   30 +-
+ arch/arm/plat-omap/include/plat/voltage.h  |    3 +
+ drivers/power/Kconfig                      |    2 +
+ drivers/power/Makefile                     |    2 +
+ drivers/power/avs/Kconfig                  |   12 +
+ drivers/power/avs/Makefile                 |    2 +
+ drivers/power/avs/smartreflex-class3.c     |   61 ++
+ drivers/power/avs/smartreflex.c            | 1118 ++++++++++++++++++++++++++
+ drivers/power/avs/smartreflex.h            |  238 ++++++
+ include/linux/power/smartreflex.h          |   97 +++
+ 20 files changed, 1590 insertions(+), 1518 deletions(-)
+ delete mode 100644 arch/arm/mach-omap2/smartreflex-class3.c
+ delete mode 100644 arch/arm/mach-omap2/smartreflex.c
+ delete mode 100644 arch/arm/mach-omap2/smartreflex.h
+ create mode 100644 drivers/power/avs/Kconfig
+ create mode 100644 drivers/power/avs/Makefile
+ create mode 100644 drivers/power/avs/smartreflex-class3.c
+ create mode 100644 drivers/power/avs/smartreflex.c
+ create mode 100644 drivers/power/avs/smartreflex.h
+ create mode 100644 include/linux/power/smartreflex.h
+
+-- 
+1.7.5.4
 
