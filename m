@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032507Ab2CSSzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 14:55:10 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34172 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030918Ab2CSSzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 14:55:08 -0400
-Message-ID: <4F678100.1000707@linux.vnet.ibm.com>
-Date: Mon, 19 Mar 2012 13:54:56 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1032530Ab2CSS4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 14:56:36 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:43771 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1031907Ab2CSS4e convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 14:56:34 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
-References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120316213227.GB24556@kroah.com>
-In-Reply-To: <20120316213227.GB24556@kroah.com>
+In-Reply-To: <4F6404C2.7000506@codeaurora.org>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
+ <1331878280-2758-3-git-send-email-mturquette@linaro.org> <4F6404C2.7000506@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 19 Mar 2012 11:56:11 -0700
+Message-ID: <CAJOA=zP1HHqBNS4V2dN=Q9oOcOErQj8W__fB_qRyZeNLBk7VJg@mail.gmail.com>
+Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, linaro-dev@lists.linaro.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031918-3270-0000-0000-000004E7742C
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2012 04:32 PM, Greg Kroah-Hartman wrote:
-> On Fri, Mar 16, 2012 at 04:04:48PM -0500, Seth Jennings wrote:
->> This patch allows a zsmalloc user to define the page
->> allocation and free functions to be used when growing
->> or releasing parts of the memory pool.
+On Fri, Mar 16, 2012 at 8:28 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 03/15/2012 11:11 PM, Mike Turquette wrote:
 >>
->> The functions are passed in the struct zs_pool_ops parameter
->> of zs_create_pool() at pool creation time.  If this parameter
->> is NULL, zsmalloc uses alloc_page and __free_page() by default.
+>> The common clock framework defines a common struct clk useful across
+>> most platforms as well as an implementation of the clk api that drivers
+>> can use safely for managing clocks.
 >>
->> While there is no current user of this functionality, zcache
->> development plans to make use of it in the near future.
-> 
-> I'm starting to get tired of seeing new features be added to this chunk
-> of code, and the other related bits, without any noticable movement
-> toward getting it merged into the mainline tree.
+>> The net result is consolidation of many different struct clk definitions
+>> and platform-specific clock framework implementations.
+>>
+>> This patch introduces the common struct clk, struct clk_ops and an
+>> implementation of the well-known clock api in include/clk/clk.h.
+>> Platforms may define their own hardware-specific clock structure and
+>> their own clock operation callbacks, so long as it wraps an instance of
+>> struct clk_hw.
+>>
+>> See Documentation/clk.txt for more details.
+>>
+>> This patch is based on the work of Jeremy Kerr, which in turn was based
+>> on the work of Ben Herrenschmidt.
+>>
+>> Signed-off-by: Mike Turquette<mturquette@linaro.org>
+>> Signed-off-by: Mike Turquette<mturquette@ti.com>
+>> Reviewed-by: Thomas Gleixner<tglx@linutronix.de>
+>> Tested-by: Andrew Lunn<andrew@lunn.ch>
+>> Reviewed-by: Rob Herring<rob.herring<at>  calxeda.com>
+>> Cc: Russell King<linux@arm.linux.org.uk>
+>> Cc: Jeremy Kerr<jeremy.kerr@canonical.com>
+>> Cc: Arnd Bergman<arnd.bergmann@linaro.org>
+>> Cc: Paul Walmsley<paul@pwsan.com>
+>> Cc: Shawn Guo<shawn.guo@freescale.com>
+>> Cc: Sascha Hauer<s.hauer@pengutronix.de>
+>> Cc: Richard Zhao<richard.zhao@linaro.org>
+>> Cc: Saravana Kannan<skannan@codeaurora.org>
+>> Cc: Magnus Damm<magnus.damm@gmail.com>
+>> Cc: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>> Cc: Linus Walleij<linus.walleij@stericsson.com>
+>> Cc: Stephen Boyd<sboyd@codeaurora.org>
+>> Cc: Amit Kucheria<amit.kucheria@linaro.org>
+>> Cc: Deepak Saxena<dsaxena@linaro.org>
+>> Cc: Grant Likely<grant.likely@secretlab.ca>
+>> ---
+>
+>
+> Mike,
+>
+> Thanks for the patches! Glad to see that it's finally getting in! I sent a
+> request for a minor change as a reply to the v5 series (since it had more
+> context). Can you please take a look at that and let me know if you can send
+> out a v8 or a patch on top of this to do that?
 
-Fair enough
+Hi Saravana,
 
-> 
-> So, I'm going to take a stance here and say, no more new features until
-> it gets merged into the "real" part of the kernel tree, as you all
-> should not be spinning your wheels on new stuff, when there's no
-> guarantee that the whole thing could just be rejected outright tomorrow.
-> 
-> I'm sorry, I know this isn't fair for your specific patch, but we have
-> to stop this sometime, and as this patch adds code isn't even used by
-> anyone, its a good of a time as any.
+I'm not sending a v8 series since Arnd has taken in v7 for the 3.4 merge window.
 
-So, this the my first "promotion from staging" rodeo.  I would love to
-see this code mainlined ASAP.  How would I/we go about doing that?
+I'm formulating a reply to your v5 queries, but I'm not done looking
+at the implications of the initializer stuff.  Lets keep the technical
+discussion in that thread for now.
 
-I guess another way to ask is, what needs to be done in the way of
-code quality and acks in the community to promote zcache to
-/drivers/misc for example?
+Regards,
+Mike
 
-Also, the tmem part of zcache will (probably, Dan?) be broken
-out an placed in /lib.
-
---
-Seth
-
+>
+> Thanks,
+> Saravana
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
