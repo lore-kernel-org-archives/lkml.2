@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2CSHjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 03:39:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60210 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2CSHjT (ORCPT
+	id S1757279Ab2CSHlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 03:41:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62054 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab2CSHlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 03:39:19 -0400
-Date: Mon, 19 Mar 2012 18:39:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the arm-soc tree
-Message-Id: <20120319183911.0cd46df560c714ee71184242@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6"
+	Mon, 19 Mar 2012 03:41:31 -0400
+Date: Mon, 19 Mar 2012 15:42:06 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Turquette, Mike" <mturquette@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+Message-ID: <20120319074202.GD31410@S2101-09.ap.freescale.net>
+References: <1330763341-3437-4-git-send-email-mturquette@linaro.org>
+ <20120303133158.GA26882@pengutronix.de>
+ <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
+ <20120304115201.GB26882@pengutronix.de>
+ <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
+ <20120305073836.GU3852@pengutronix.de>
+ <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com>
+ <20120306190039.GJ3852@pengutronix.de>
+ <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+ <4F6403CD.8020509@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6403CD.8020509@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 16, 2012 at 08:23:57PM -0700, Saravana Kannan wrote:
+> On 03/07/2012 01:20 PM, Turquette, Mike wrote:
+...
+> >Admittedly I think that the OMAP code could migrate some of these bits
+> >to a lazy-registration model, specifically the hwmod object instances,
+> >but that requires an awful lot of refactoring for a fairly large stack
+> >of platform code.  This might be something to achieve in the future
+> >but for now we *need* initialisation to be fully static.
+> 
+> When we work on moving clocks to device tree, wouldn't you face the
+> same problem? You will have to dynamically create most of the clocks
+> in that case too.
+> 
+>From what I heard from Mike[1], Omap will not have most of the clocks
+encoded in device tree. 
 
-Hi all,
+Although my original preference was to have all the clocks represented
+in device tree and dynamically registered to clk framework, I've heard
+people including Grant incline to only have oscillator and leaf modules
+clocks in device tree.  I somehow agree with that now, because having
+all the clocks in there will bloat device tree dramatically, considering
+there will be 3 clks, clk_gate, clk_divider and clk_mux backing one
+clock in general.
 
-After merging the arm-soc tree, today's linux-next build (all)
-produced this warning:
+Assuming we would agree to have most SoC internal clocks registered
+from clock driver rather than device tree, I would like to hear about
+how we should have these clock registered from clock driver, static
+initialization or using register function?
 
-drivers/clk/Kconfig:22: warning: menuconfig statement without prompt
+-- 
+Regards,
+Shawn
 
-Introduced by commit c173033d154e ("clk: make CONFIG_COMMON_CLK invisible").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPZuKfAAoJEECxmPOUX5FEiEwP/1gU/qpGpgQTEwA2dOX0nLob
-d25bJxWe47v4FZBwDneGmymyULfWxE9K64sDGig9yNbNfrpB+/Fo9zjS2gbA2gI1
-j2DT9tqeT71d53fRAlI7mwFPylxUUzg6G1TUhs+3htIniTkzEwp73m4+1zX9oRNZ
-mT0dcItKcI+2jRkq4N0pxeFkbrx/Rcf1yokkLsX/V4zYGZqQLvlvqD7BGPn655eP
-ON7R5vzPyoj1kpaQobbg7Qi70J0Q3cWH++IlYAUvBWmMQ4SLktPcCxn/a/qO4PZe
-1PgsxXSmvPPp9lvuOy9/M+CQmnHg2bLvPvRQyHawH0YHtbEWhsx2g7i+JaMvZXqO
-MLpAzXHya86qOxMoQK2fi00EuiZGSzgpvc/Nqxg7XBd6HcA/4Qy8BCNVSXJB+eFH
-udIKpeDM59p8Oe+cZh4UopmkxAPIFhu7bLxmNZiFOAv1t9um3O7I6T/l2aS0POoy
-Y1T7A37Vs632EyAyz9tNL5fF5ACsV4zZ2h9gqwHCqtWiLC9IrBLWdnVDzbjPHIW7
-6rIa1IaP7OjY7TnK2M5IgVrCTVkkWKgMG3bl+WZFh+xvmYbI5R1UMk7oX4k87cmn
-rxVN2mYrq/LPb5GmFNTpuR9CKUTb4HSpxpACV3RPUz8N/kOh+IuElpOghD/HLzLd
-6VhfOmSTe8o9QQzABmeK
-=lynW
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Mar_2012_18_39_11_+1100_HGvPfZyBByRP.6v6--
+[1] http://article.gmane.org/gmane.linux.linaro.devel/10554
