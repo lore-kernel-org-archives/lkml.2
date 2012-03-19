@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030362Ab2CSDiu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 23:38:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35797 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030205Ab2CSDir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 23:38:47 -0400
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] rtlwifi: Remove unused ETH_ADDR_LEN defines
-Date: Sun, 18 Mar 2012 20:37:59 -0700
-Message-Id: <b1302b9179a9fb95c28201fdc8ca1208fba51644.1332128181.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1332128181.git.joe@perches.com>
-References: <cover.1332128181.git.joe@perches.com>
+	id S1757528Ab2CSDrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 23:47:23 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:52183 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753150Ab2CSDrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 23:47:22 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19IsFhux9ZIUGuawmaSycK3tefn9jrW1XCfGjeK1F
+	emd5OAeaATXaPc
+Message-ID: <1332128832.7283.34.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC] rcu: Permit limiting of force_quiescent_state()
+ latency
+From: Mike Galbraith <efault@gmx.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, sivanich@sgi.com
+Date: Mon, 19 Mar 2012 04:47:12 +0100
+In-Reply-To: <20120319001014.GD2393@linux.vnet.ibm.com>
+References: <20120316160328.GA7207@linux.vnet.ibm.com>
+	 <1332003451.8147.77.camel@marge.simpson.net>
+	 <1332082821.7291.27.camel@marge.simpson.net>
+	 <20120319001014.GD2393@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just neatening.
+On Sun, 2012-03-18 at 17:10 -0700, Paul E. McKenney wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/rtlwifi/rtl8192ce/reg.h |    1 -
- drivers/net/wireless/rtlwifi/rtl8192de/reg.h |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+> Thank you very much for your efforts on this!!!
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
-index 43806d9..e4d738f 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
-@@ -1190,7 +1190,6 @@
- 
- #define USB_AGG_EN				BIT(3)
- 
--#define MAC_ADDR_LEN				6
- #define LAST_ENTRY_OF_TX_PKT_BUFFER		255
- 
- #define POLLING_LLT_THRESHOLD			20
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/reg.h b/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-index 9bc4623..ebb1d5f 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-@@ -998,7 +998,6 @@
- #define SCR_RXBCUSEDK				BIT(7)
- 
- /* General definitions */
--#define MAC_ADDR_LEN				6
- #define LAST_ENTRY_OF_TX_PKT_BUFFER		255
- #define LAST_ENTRY_OF_TX_PKT_BUFFER_DUAL_MAC	127
- 
--- 
-1.7.8.111.gad25c.dirty
+No problem, irq holdoff troubles are worth effort.
+
+> Given that you were seeing about 200-microsecond latency spikes on
+> grace-period initialization, I would expect that you would need about
+> 200 dyntick-idle CPUs for force_quiescent_state() to give you a
+> ten-microsecond spike, so I am not surprised that you could not see
+> the difference on 60 CPUs, which probably have given you something
+> like 3 microseconds..
+
+Crawling over fewer locks should still save cycles, so I'll measure.
+Big box rt needs every little usec we can scrape together.
+
+-Mike
 
