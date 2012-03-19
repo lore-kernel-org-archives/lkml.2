@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab2CSFhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:37:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36901 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab2CSFha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:37:30 -0400
-Date: Mon, 19 Mar 2012 13:38:04 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Turquette, Mike" <mturquette@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>, Andrew Lunn <andrew@lunn.ch>,
-        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>
-Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
-Message-ID: <20120319053801.GB31410@S2101-09.ap.freescale.net>
-References: <1330763341-3437-4-git-send-email-mturquette@linaro.org>
- <20120303133158.GA26882@pengutronix.de>
- <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
- <20120304115201.GB26882@pengutronix.de>
- <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
- <20120305073836.GU3852@pengutronix.de>
- <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com>
- <20120306190039.GJ3852@pengutronix.de>
- <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
- <4F6403CD.8020509@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6403CD.8020509@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755952Ab2CSFjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:39:42 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53142 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755126Ab2CSFjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 01:39:40 -0400
+Message-ID: <1332135577.9873.8.camel@joe2Laptop>
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+From: Joe Perches <joe@perches.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 18 Mar 2012 22:39:37 -0700
+In-Reply-To: <20120319045514.GQ31682@thunk.org>
+References: <cover.1331856299.git.joe@perches.com>
+	 <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
+	 <20120319045514.GQ31682@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 08:23:57PM -0700, Saravana Kannan wrote:
-...
-> Hi Mike,
-> 
-> I already took a quick look at the v7 series, but I thought this
-> thread has more relevant context for my response. So, responding
-> here.
-> 
-> I'm with Sascha on creating a clk_internal/clk_initializer and
-> removing clk_hw. You had asked about the benefits of his suggestion
-> in one of the earlier threads. I'm sure I have told some of these
-> reasons I don't like clk_hw, but repeating my points here for others
-> to chime in.
-> 
-> I used to be a huge proponent for using macros for clocks in our
-> internal tree. All the clocks were constructed using macros (you
-> will see it in the history of tree we publish in CAF). They quickly
-> became unreadable when you have several hundreds of clocks. The
-> biggest problem is that you can't quickly look at a clock's macro
-> and figure out what the register offset or bit mask or shift value
-> is. Our eyes/brains aren't meant for quickly parsing the commas and
-> finding the n-th field or even remembering what the n-th field of
-> each macro corresponds to. If it's actually broken out as fields in
-> a struct, it's much easier to read. So, long story short, I think
-> the well-intentioned helper macros will make code quite unreadable.
-> 
-While I second the idea of clk_initializer, using macros is not really
-the thing to complain.  You can save using those macro helpers by
-calling APIs clk_register_*().  But that does not solve the problem,
-because those APIs also have a long argument list to fill.
+On Mon, 2012-03-19 at 00:55 -0400, Ted Ts'o wrote:
+> On Thu, Mar 15, 2012 at 05:07:30PM -0700, Joe Perches wrote:
+> > Use a more current logging style.
+> Oh, just for yucks, I did a quick check:
+> % git grep printk | wc -l
+> 71266
+> % git grep pr_ | wc -l
+> 29552
+> (and there are no doubt some false positives when grepping for "pr_")
 
--- 
-Regards,
-Shawn
+As there are for printk.
+
+I use "\bpr_(emerg|crit|alert|err|notice|warn|warning|info|debug)\b"
+and "\bprintk\b" or -w
+
+I did write "more current" and not predominate
+as there are large blocks of historical crud.
+
+You might try the same test on current code in
+the last couple of years or so.
+
+pr_<foo> was introduced October 2007 by
+commit 1f7c8234c7a68
+
+$ git log -p --since=2-years-ago | \
+  grep -P "^\+.*\bpr_(emerg|crit|alert|err|notice|warn|warning|info|debug)\b" | \
+  wc -l
+22704
+
+$ git log -p --since=2-years-ago | \
+  grep -P "^\+.*\bprintk\b" | \
+  wc -l
+24899
+
+A lot of that was original submissions of older
+out-of-tree drivers with printk that were later
+converted to pr_<level> or dev_<level>, etc.
+
+In an aside:
+
+Gads, I need a faster netbook, that took
+10's of minutes to produce...
+
+Any suggestions?
+
+cheers, Joe
+
