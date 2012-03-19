@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758709Ab2CSXQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 19:16:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54161 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758063Ab2CSXQr (ORCPT
+	id S965027Ab2CSXRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 19:17:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44998 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758841Ab2CSXRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 19:16:47 -0400
-Date: Mon, 19 Mar 2012 16:16:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>, Jiri Kosina <trivial@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
+	Mon, 19 Mar 2012 19:17:13 -0400
+Date: Tue, 20 Mar 2012 03:17:09 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] TRIVIAL: mmap.c: fix comment for
- __insert_vm_struct()
-Message-Id: <20120319161646.4a39a678.akpm@linux-foundation.org>
-In-Reply-To: <4F667ED4.60204@jp.fujitsu.com>
-References: <1331918590-2786-1-git-send-email-consul.kautuk@gmail.com>
-	<4F667ED4.60204@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [patch 1/2] c/r: prctl: Add ability to set new
+ mm_struct::exe_file
+Message-ID: <20120319231709.GM19594@moon>
+References: <20120316205556.595309230@openvz.org>
+ <20120316210343.925446961@openvz.org>
+ <20120319151507.93bab32a.akpm@linux-foundation.org>
+ <20120319223941.GJ19594@moon>
+ <CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
+ <20120319154649.0687f545.akpm@linux-foundation.org>
+ <CAFLxGvyCRAq6t8_ni+VFUVpOGJ4-iz0i=PRFEFpVJ+ZaPEb3-g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFLxGvyCRAq6t8_ni+VFUVpOGJ4-iz0i=PRFEFpVJ+ZaPEb3-g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012 09:33:24 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> (2012/03/17 2:23), Kautuk Consul wrote:
+On Tue, Mar 20, 2012 at 12:02:44AM +0100, richard -rw- weinberger wrote:
+> On Mon, Mar 19, 2012 at 11:46 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > Well, let's discuss this more completely.  In what ways could an
+> > attacker use this?  How serious is the problem?  What actions can be
+> > taken to lessen it?  etcetera.
 > 
-> > The comment above __insert_vm_struct seems to suggest that this
-> > function is also going to link the VMA with the anon_vma, but
-> > this is not true.
-> > This function only links the VMA to the mm->mm_rb tree and the mm->mmap linked
-> > list.
-> > 
-> > Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-> > ---
-> >  mm/mmap.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/mm/mmap.c b/mm/mmap.c
-> > index da15a79..6328a36 100644
-> > --- a/mm/mmap.c
-> > +++ b/mm/mmap.c
-> > @@ -452,8 +452,8 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  
-> >  /*
-> >   * Helper for vma_adjust in the split_vma insert case:
-> > - * insert vm structure into list and rbtree and anon_vma,
-> > - * but it has already been inserted into prio_tree earlier.
-> > + * insert vm structure into list and rbtree, but it has
-> > + * already been inserted into prio_tree earlier.
-> >   */
-> >  static void __insert_vm_struct(struct mm_struct *mm, struct vm_area_struct *vma)
-> >  {
+> After considering the problem a bit more I think it's not a big problem.
+> We must not trust /proc/pid/exe in anyway.
+
+Well, Richard, we probably do not trust it anyway but sysadmins might do
+(and this was another reason for one-shot behaviour -- to not bring
+ heart attacks to sysadmins, and everyone would know this link might
+ be changed only one time ;)
+
+> An attacker can always execute another binary without calling execve().
+
+That's what c/r basically does :)
+
 > 
-> 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> So, why makes that one-short fashion the feature more secure?
+> Let the user change the exe symlink as often as he wants.
+> From a security point of view the exe symlink is anyway useless.
 
-It's still a bit painful.  I did this:
+Maybe better to call it 'predictable' then rather than 'secure'?
 
---- a/mm/mmap.c~mmapc-fix-comment-for-__insert_vm_struct-fix
-+++ a/mm/mmap.c
-@@ -452,9 +452,8 @@ static void vma_link(struct mm_struct *m
- }
- 
- /*
-- * Helper for vma_adjust in the split_vma insert case:
-- * insert vm structure into list and rbtree, but it has
-- * already been inserted into prio_tree earlier.
-+ * Helper for vma_adjust() in the split_vma insert case: insert a vma into the
-+ * mm's list and rbtree.  It has already been inserted into the prio_tree.
-  */
- static void __insert_vm_struct(struct mm_struct *mm, struct vm_area_struct *vma)
- {
-_
-
+	Cyrill
