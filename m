@@ -1,64 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab2CSC60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 22:58:26 -0400
-Received: from ozlabs.org ([203.10.76.45]:39830 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754031Ab2CSC6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 22:58:24 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: jim.cromie@gmail.com, jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [00/11] pr_debug during module initialization
-In-Reply-To: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
-References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 19 Mar 2012 12:34:01 +1030
-Message-ID: <87aa3dxs6m.fsf@rustcorp.com.au>
+	id S964880Ab2CSDC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 23:02:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56685 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab2CSDCZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 23:02:25 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F66A15B.7070804@jp.fujitsu.com>
+Date: Mon, 19 Mar 2012 12:00:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 08/10] hugetlbfs: Add a list for tracking in-use HugeTLB
+ pages
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1331919570-2264-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Mar 2012 17:01:55 -0600, jim.cromie@gmail.com wrote:
+(2012/03/17 2:39), Aneesh Kumar K.V wrote:
+
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > 
-> This is 3rd revision of the dyndbg modinit patches, previously sent
-> Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
-> this set reworks the remainder.
+> hugepage_activelist will be used to track currently used HugeTLB pages.
+> We need to find the in-use HugeTLB pages to support memcg removal.
+> On memcg removal we update the page's memory cgroup to point to
+> parent cgroup.
 > 
-> It implements the "fake" module param approach proposed by
-> Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+ 
+seems ok to me but...why the new list is not per node ? no benefit ?
+
+Thanks,
+-Kame
+
+> ---
+>  include/linux/hugetlb.h |    1 +
+>  mm/hugetlb.c            |   23 ++++++++++++++++++-----
+>  2 files changed, 19 insertions(+), 5 deletions(-)
 > 
-> This set is on top of linux-next, since that includes Pawel Moll's
-> initcall-level params patch.  Im not using this feature, but I didnt
-> know that when I started.
-> 
-> Rusty Russell did a partial review of 2nd rev (sent off-list), here:
-> http://thread.gmane.org/gmane.linux.kernel/1262934
-> This revision incorporates my understanding of his feedback.
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index cbd8dc5..6919100 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -217,6 +217,7 @@ struct hstate {
+>  	unsigned long resv_huge_pages;
+>  	unsigned long surplus_huge_pages;
+>  	unsigned long nr_overcommit_huge_pages;
+> +	struct list_head hugepage_activelist;
+>  	struct list_head hugepage_freelists[MAX_NUMNODES];
+>  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+>  	unsigned int free_huge_pages_node[MAX_NUMNODES];
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 684849a..8fd465d 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -433,7 +433,7 @@ void copy_huge_page(struct page *dst, struct page *src)
+>  static void enqueue_huge_page(struct hstate *h, struct page *page)
+>  {
+>  	int nid = page_to_nid(page);
+> -	list_add(&page->lru, &h->hugepage_freelists[nid]);
+> +	list_move(&page->lru, &h->hugepage_freelists[nid]);
+>  	h->free_huge_pages++;
+>  	h->free_huge_pages_node[nid]++;
+>  }
+> @@ -445,7 +445,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+>  	if (list_empty(&h->hugepage_freelists[nid]))
+>  		return NULL;
+>  	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
+> -	list_del(&page->lru);
+> +	list_move(&page->lru, &h->hugepage_activelist);
+>  	set_page_refcounted(page);
+>  	h->free_huge_pages--;
+>  	h->free_huge_pages_node[nid]--;
+> @@ -542,13 +542,14 @@ static void free_huge_page(struct page *page)
+>  	page->mapping = NULL;
+>  	BUG_ON(page_count(page));
+>  	BUG_ON(page_mapcount(page));
+> -	INIT_LIST_HEAD(&page->lru);
+>  
+>  	if (mapping)
+>  		mem_cgroup_hugetlb_uncharge_page(hstate_index(h),
+>  						 pages_per_huge_page(h), page);
+>  	spin_lock(&hugetlb_lock);
+>  	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
+> +		/* remove the page from active list */
+> +		list_del(&page->lru);
+>  		update_and_free_page(h, page);
+>  		h->surplus_huge_pages--;
+>  		h->surplus_huge_pages_node[nid]--;
+> @@ -562,6 +563,7 @@ static void free_huge_page(struct page *page)
+>  
+>  static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+>  {
+> +	INIT_LIST_HEAD(&page->lru);
+>  	set_compound_page_dtor(page, free_huge_page);
+>  	spin_lock(&hugetlb_lock);
+>  	h->nr_huge_pages++;
+> @@ -1861,6 +1863,7 @@ void __init hugetlb_add_hstate(unsigned order)
+>  	h->free_huge_pages = 0;
+>  	for (i = 0; i < MAX_NUMNODES; ++i)
+>  		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
+> +	INIT_LIST_HEAD(&h->hugepage_activelist);
+>  	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
+>  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+>  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+> @@ -2319,14 +2322,24 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+>  		page = pte_page(pte);
+>  		if (pte_dirty(pte))
+>  			set_page_dirty(page);
+> -		list_add(&page->lru, &page_list);
+> +
+> +		spin_lock(&hugetlb_lock);
+> +		list_move(&page->lru, &page_list);
+> +		spin_unlock(&hugetlb_lock);
+>  	}
+>  	spin_unlock(&mm->page_table_lock);
+>  	flush_tlb_range(vma, start, end);
+>  	mmu_notifier_invalidate_range_end(mm, start, end);
+>  	list_for_each_entry_safe(page, tmp, &page_list, lru) {
+>  		page_remove_rmap(page);
+> -		list_del(&page->lru);
+> +		/*
+> +		 * We need to move it back huge page active list. If we are
+> +		 * holding the last reference, below put_page will move it
+> +		 * back to free list.
+> +		 */
+> +		spin_lock(&hugetlb_lock);
+> +		list_move(&page->lru, &h->hugepage_activelist);
+> +		spin_unlock(&hugetlb_lock);
+>  		put_page(page);
+>  	}
+>  }
 
-The module parts seem fine.  The re-parsing of the commandline seems
-weird:  I'd really rather see something in unknown_bootoption(), like:
 
-	/* Unused module parameter. */
-	if (strchr(param, '.') && (!val || strchr(param, '.') < val)) {
-+               /* Check for <module>.dyndebug fake param */
-+               dyndebug_parse(param, val);
-		return 0;
-        }
 
-(Note that param will be the whole line here, eg "foo.dyndebug=+p", with
- val pointing just past the "=" (if any)).
-
-Of course, that means the parsing happens at that "parse_args("Booting
-kernel"...)" point in init/main.c, which may not suit.
-
-Otherwise, all looks good!
-
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-
-Cheers,
-Rusty.
--- 
-  How could I marry someone with more hair than me?  http://baldalex.org
