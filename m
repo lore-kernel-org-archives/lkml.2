@@ -1,417 +1,502 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab2CSUrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:47:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26032 "EHLO mx1.redhat.com"
+	id S1753281Ab2CSUss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:48:48 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:39019 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752972Ab2CSUrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:47:13 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH] poll: add poll_requested_events() and poll_does_not_wait() functions
-Date: Mon, 19 Mar 2012 21:49:00 +0100
-Message-Id: <1332190140-16090-2-git-send-email-hdegoede@redhat.com>
-In-Reply-To: <1332190140-16090-1-git-send-email-hdegoede@redhat.com>
-References: <1332190140-16090-1-git-send-email-hdegoede@redhat.com>
+	id S1751911Ab2CSUsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 16:48:45 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Patrick Boettcher <Patrick.Boettcher@dibcom.fr>,
+        Olivier Grenie <olivier.grenie@dibcom.fr>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] [media] dib9000: get rid of Dib*Lock macros
+Date: Tue, 20 Mar 2012 00:48:34 +0400
+Message-Id: <1332190114-25573-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <4F676E55.1060003@redhat.com>
+References: <4F676E55.1060003@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+The patch replaces Dib*Lock macros with direct calls to mutex functions
+as soon as they just make the driver code harder to review
+(per request of Mauro).
 
-In some cases the poll() implementation in a driver has to do different
-things depending on the events the caller wants to poll for. An example is
-when a driver needs to start a DMA engine if the caller polls for POLLIN,
-but doesn't want to do that if POLLIN is not requested but instead only
-POLLOUT or POLLPRI is requested. This is something that can happen in the
-video4linux subsystem among others.
-
-Unfortunately, the current epoll/poll/select implementation doesn't provide
-that information reliably. The poll_table_struct does have it: it has a key
-field with the event mask. But once a poll() call matches one or more bits
-of that mask any following poll() calls are passed a NULL poll_table pointer.
-
-Also, the eventpoll implementation always left the key field at ~0 instead
-of using the requested events mask.
-
-This was changed in eventpoll.c so the key field now contains the actual
-events that should be polled for as set by the caller.
-
-The solution to the NULL poll_table pointer is to set the qproc field to
-NULL in poll_table once poll() matches the events, not the poll_table
-pointer itself. That way drivers can obtain the mask through a new
-poll_requested_events inline.
-
-The poll_table_struct can still be NULL since some kernel code calls it
-internally (netfs_state_poll() in ./drivers/staging/pohmelfs/netfs.h). In
-that case poll_requested_events() returns ~0 (i.e. all events).
-
-Very rarely drivers might want to know whether poll_wait will actually wait.
-If another earlier file descriptor in the set already matched the events the
-caller wanted to wait for, then the kernel will return from the select() call
-without waiting. This might be useful information in order to avoid doing
-expensive work.
-
-A new helper function poll_does_not_wait() is added that drivers can use to
-detect this situation. This is now used in sock_poll_wait() in
-include/net/sock.h. This was the only place in the kernel that needed this
-information.
-
-Drivers should no longer access any of the poll_table internals, but use the
-poll_requested_events() and poll_does_not_wait() access functions instead.
-In order to enforce that the poll_table fields are now prepended with an
-underscore and a comment was added warning against using them directly.
-
-This required a change in unix_dgram_poll() in unix/af_unix.c which used the
-key field to get the requested events. It's been replaced by a call to
-poll_requested_events().
-
-For qproc it was especially important to change its name since the behavior of
-that field changes with this patch since this function pointer can now be NULL
-when that wasn't possible in the past.
-
-Any driver accessing the qproc or key fields directly will now fail to compile.
-
-Some notes regarding the correctness of this patch: the driver's poll()
-function is called with a 'struct poll_table_struct *wait' argument. This
-pointer may or may not be NULL, drivers can never rely on it being one or
-the other as that depends on whether or not an earlier file descriptor in
-the select()'s fdset matched the requested events.
-
-There are only three things a driver can do with the wait argument:
-
-1) obtain the key field:
-
-	events = wait ? wait->key : ~0;
-
-   This will still work although it should be replaced with the new
-   poll_requested_events() function (which does exactly the same).
-   This will now even work better, since wait is no longer set to NULL
-   unnecessarily.
-
-2) use the qproc callback. This could be deadly since qproc can now be
-   NULL. Renaming qproc should prevent this from happening. There are no
-   kernel drivers that actually access this callback directly, BTW.
-
-3) test whether wait == NULL to determine whether poll would return without
-   waiting. This is no longer sufficient as the correct test is now
-   wait == NULL || wait->_qproc == NULL.
-
-   However, the worst that can happen here is a slight performance hit in
-   the case where wait != NULL and wait->_qproc == NULL. In that case the
-   driver will assume that poll_wait() will actually add the fd to the set
-   of waiting file descriptors. Of course, poll_wait() will not do that
-   since it tests for wait->_qproc. This will not break anything, though.
-
-   There is only one place in the whole kernel where this happens
-   (sock_poll_wait() in include/net/sock.h) and that code will be replaced
-   by a call to poll_does_not_wait() in the next patch.
-
-   Note that even if wait->_qproc != NULL drivers cannot rely on poll_wait()
-   actually waiting. The next file descriptor from the set might match the
-   event mask and thus any possible waits will never happen.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reviewed-by: Jonathan Corbet <corbet@lwn.net>
-Reviewed-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- fs/eventpoll.c       |   18 +++++++++++++++---
- fs/select.c          |   40 ++++++++++++++++++----------------------
- include/linux/poll.h |   37 +++++++++++++++++++++++++++++++------
- include/net/sock.h   |    2 +-
- net/unix/af_unix.c   |    2 +-
- 5 files changed, 66 insertions(+), 33 deletions(-)
+ drivers/media/dvb/frontends/dib9000.c |  128 +++++++++++++++------------------
+ 1 files changed, 58 insertions(+), 70 deletions(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 4d9d3a4..ca30007 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -699,9 +699,12 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
- 			       void *priv)
- {
- 	struct epitem *epi, *tmp;
-+	poll_table pt;
+diff --git a/drivers/media/dvb/frontends/dib9000.c b/drivers/media/dvb/frontends/dib9000.c
+index 80848b4..953102f 100644
+--- a/drivers/media/dvb/frontends/dib9000.c
++++ b/drivers/media/dvb/frontends/dib9000.c
+@@ -31,13 +31,6 @@ struct i2c_device {
+ 	u8 *i2c_write_buffer;
+ };
  
-+	init_poll_funcptr(&pt, NULL);
- 	list_for_each_entry_safe(epi, tmp, head, rdllink) {
--		if (epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		pt._key = epi->event.events;
-+		if (epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
- 		    epi->event.events)
- 			return POLLIN | POLLRDNORM;
- 		else {
-@@ -1097,6 +1100,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 	/* Initialize the poll table using the queue callback */
- 	epq.epi = epi;
- 	init_poll_funcptr(&epq.pt, ep_ptable_queue_proc);
-+	epq.pt._key = event->events;
+-/* lock */
+-#define DIB_LOCK struct mutex
+-#define DibAcquireLock(lock) mutex_lock_interruptible(lock)
+-#define DibReleaseLock(lock) mutex_unlock(lock)
+-#define DibInitLock(lock) mutex_init(lock)
+-#define DibFreeLock(lock)
+-
+ struct dib9000_pid_ctrl {
+ #define DIB9000_PID_FILTER_CTRL 0
+ #define DIB9000_PID_FILTER      1
+@@ -82,11 +75,11 @@ struct dib9000_state {
+ 			} fe_mm[18];
+ 			u8 memcmd;
  
- 	/*
- 	 * Attach the item to the poll hooks and get current event bits.
-@@ -1191,6 +1195,9 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- {
- 	int pwake = 0;
- 	unsigned int revents;
-+	poll_table pt;
-+
-+	init_poll_funcptr(&pt, NULL);
+-			DIB_LOCK mbx_if_lock;	/* to protect read/write operations */
+-			DIB_LOCK mbx_lock;	/* to protect the whole mailbox handling */
++			struct mutex mbx_if_lock;	/* to protect read/write operations */
++			struct mutex mbx_lock;	/* to protect the whole mailbox handling */
  
- 	/*
- 	 * Set the new event interest mask before calling f_op->poll();
-@@ -1198,13 +1205,14 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 	 * f_op->poll() call and the new event set registering.
- 	 */
- 	epi->event.events = event->events;
-+	pt._key = event->events;
- 	epi->event.data = event->data; /* protected by mtx */
+-			DIB_LOCK mem_lock;	/* to protect the memory accesses */
+-			DIB_LOCK mem_mbx_lock;	/* to protect the memory-based mailbox */
++			struct mutex mem_lock;	/* to protect the memory accesses */
++			struct mutex mem_mbx_lock;	/* to protect the memory-based mailbox */
  
- 	/*
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
--	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
-+	revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt);
+ #define MBX_MAX_WORDS (256 - 200 - 2)
+ #define DIB9000_MSG_CACHE_SIZE 2
+@@ -108,7 +101,7 @@ struct dib9000_state {
+ 	struct i2c_msg msg[2];
+ 	u8 i2c_write_buffer[255];
+ 	u8 i2c_read_buffer[255];
+-	DIB_LOCK demod_lock;
++	struct mutex demod_lock;
+ 	u8 get_frontend_internal;
+ 	struct dib9000_pid_ctrl pid_ctrl[10];
+ 	s8 pid_ctrl_index; /* -1: empty list; -2: do not use the list */
+@@ -446,13 +439,13 @@ static int dib9000_risc_mem_read(struct dib9000_state *state, u8 cmd, u8 * b, u1
+ 	if (!state->platform.risc.fw_is_running)
+ 		return -EIO;
  
- 	/*
- 	 * If the item is "hot" and it is not registered inside the ready
-@@ -1239,6 +1247,9 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
- 	unsigned int revents;
- 	struct epitem *epi;
- 	struct epoll_event __user *uevent;
-+	poll_table pt;
-+
-+	init_poll_funcptr(&pt, NULL);
- 
- 	/*
- 	 * We can loop without lock because we are passed a task private list.
-@@ -1251,7 +1262,8 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
- 
- 		list_del_init(&epi->rdllink);
- 
--		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		pt._key = epi->event.events;
-+		revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
- 			epi->event.events;
- 
- 		/*
-diff --git a/fs/select.c b/fs/select.c
-index e782258..16211c7 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -223,7 +223,7 @@ static void __pollwait(struct file *filp, wait_queue_head_t *wait_address,
- 	get_file(filp);
- 	entry->filp = filp;
- 	entry->wait_address = wait_address;
--	entry->key = p->key;
-+	entry->key = p->_key;
- 	init_waitqueue_func_entry(&entry->wait, pollwake);
- 	entry->wait.private = pwq;
- 	add_wait_queue(wait_address, &entry->wait);
-@@ -386,13 +386,11 @@ get_max:
- static inline void wait_key_set(poll_table *wait, unsigned long in,
- 				unsigned long out, unsigned long bit)
- {
--	if (wait) {
--		wait->key = POLLEX_SET;
--		if (in & bit)
--			wait->key |= POLLIN_SET;
--		if (out & bit)
--			wait->key |= POLLOUT_SET;
--	}
-+	wait->_key = POLLEX_SET;
-+	if (in & bit)
-+		wait->_key |= POLLIN_SET;
-+	if (out & bit)
-+		wait->_key |= POLLOUT_SET;
+-	if (DibAcquireLock(&state->platform.risc.mem_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+ 	dib9000_risc_mem_setup(state, cmd | 0x80);
+ 	dib9000_risc_mem_read_chunks(state, b, len);
+-	DibReleaseLock(&state->platform.risc.mem_lock);
++	mutex_unlock(&state->platform.risc.mem_lock);
+ 	return 0;
  }
  
- int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
-@@ -414,7 +412,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 	poll_initwait(&table);
- 	wait = &table.pt;
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
--		wait = NULL;
-+		wait->_qproc = NULL;
- 		timed_out = 1;
+@@ -462,13 +455,13 @@ static int dib9000_risc_mem_write(struct dib9000_state *state, u8 cmd, const u8
+ 	if (!state->platform.risc.fw_is_running)
+ 		return -EIO;
+ 
+-	if (DibAcquireLock(&state->platform.risc.mem_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+ 	dib9000_risc_mem_setup(state, cmd);
+ 	dib9000_risc_mem_write_chunks(state, b, m->size);
+-	DibReleaseLock(&state->platform.risc.mem_lock);
++	mutex_unlock(&state->platform.risc.mem_lock);
+ 	return 0;
+ }
+ 
+@@ -537,7 +530,7 @@ static int dib9000_mbx_send_attr(struct dib9000_state *state, u8 id, u16 * data,
+ 	if (!state->platform.risc.fw_is_running)
+ 		return -EINVAL;
+ 
+-	if (DibAcquireLock(&state->platform.risc.mbx_if_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mbx_if_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -584,7 +577,7 @@ static int dib9000_mbx_send_attr(struct dib9000_state *state, u8 id, u16 * data,
+ 	ret = (u8) dib9000_write_word_attr(state, 1043, 1 << 14, attr);
+ 
+ out:
+-	DibReleaseLock(&state->platform.risc.mbx_if_lock);
++	mutex_unlock(&state->platform.risc.mbx_if_lock);
+ 
+ 	return ret;
+ }
+@@ -602,7 +595,7 @@ static u8 dib9000_mbx_read(struct dib9000_state *state, u16 * data, u8 risc_id,
+ 	if (!state->platform.risc.fw_is_running)
+ 		return 0;
+ 
+-	if (DibAcquireLock(&state->platform.risc.mbx_if_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mbx_if_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return 0;
+ 	}
+@@ -643,7 +636,7 @@ static u8 dib9000_mbx_read(struct dib9000_state *state, u16 * data, u8 risc_id,
+ 	/* Update register nb_mes_in_TX */
+ 	dib9000_write_word_attr(state, 1028 + mc_base, 1 << 14, attr);
+ 
+-	DibReleaseLock(&state->platform.risc.mbx_if_lock);
++	mutex_unlock(&state->platform.risc.mbx_if_lock);
+ 
+ 	return size + 1;
+ }
+@@ -713,7 +706,7 @@ static int dib9000_mbx_process(struct dib9000_state *state, u16 attr)
+ 	if (!state->platform.risc.fw_is_running)
+ 		return -1;
+ 
+-	if (DibAcquireLock(&state->platform.risc.mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -1;
+ 	}
+@@ -724,7 +717,7 @@ static int dib9000_mbx_process(struct dib9000_state *state, u16 attr)
+ 	tmp = dib9000_read_word_attr(state, 1229, attr);	/* Clear the IRQ */
+ /*      if (tmp) */
+ /*              dprintk( "cleared IRQ: %x", tmp); */
+-	DibReleaseLock(&state->platform.risc.mbx_lock);
++	mutex_unlock(&state->platform.risc.mbx_lock);
+ 
+ 	return ret;
+ }
+@@ -1193,7 +1186,7 @@ static int dib9000_fw_get_channel(struct dvb_frontend *fe)
+ 	struct dibDVBTChannel *ch;
+ 	int ret = 0;
+ 
+-	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -1323,7 +1316,7 @@ static int dib9000_fw_get_channel(struct dvb_frontend *fe)
  	}
  
-@@ -459,17 +457,17 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 					if ((mask & POLLIN_SET) && (in & bit)) {
- 						res_in |= bit;
- 						retval++;
--						wait = NULL;
-+						wait->_qproc = NULL;
- 					}
- 					if ((mask & POLLOUT_SET) && (out & bit)) {
- 						res_out |= bit;
- 						retval++;
--						wait = NULL;
-+						wait->_qproc = NULL;
- 					}
- 					if ((mask & POLLEX_SET) && (ex & bit)) {
- 						res_ex |= bit;
- 						retval++;
--						wait = NULL;
-+						wait->_qproc = NULL;
- 					}
- 				}
- 			}
-@@ -481,7 +479,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 				*rexp = res_ex;
- 			cond_resched();
+ error:
+-	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++	mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 	return ret;
+ }
+ 
+@@ -1678,7 +1671,7 @@ static int dib9000_fw_component_bus_xfer(struct i2c_adapter *i2c_adap, struct i2
+ 		p[12] = 0;
+ 	}
+ 
+-	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return 0;
+ 	}
+@@ -1692,7 +1685,7 @@ static int dib9000_fw_component_bus_xfer(struct i2c_adapter *i2c_adap, struct i2
+ 
+ 	/* do the transaction */
+ 	if (dib9000_fw_memmbx_sync(state, FE_SYNC_COMPONENT_ACCESS) < 0) {
+-		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++		mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 		return 0;
+ 	}
+ 
+@@ -1700,7 +1693,7 @@ static int dib9000_fw_component_bus_xfer(struct i2c_adapter *i2c_adap, struct i2
+ 	if ((num > 1) && (msg[1].flags & I2C_M_RD))
+ 		dib9000_risc_mem_read(state, FE_MM_RW_COMPONENT_ACCESS_BUFFER, msg[1].buf, msg[1].len);
+ 
+-	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++	mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 
+ 	return num;
+ }
+@@ -1789,7 +1782,7 @@ int dib9000_fw_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
+ 		return 0;
+ 	}
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -1799,7 +1792,7 @@ int dib9000_fw_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
+ 
+ 	dprintk("PID filter enabled %d", onoff);
+ 	ret = dib9000_write_word(state, 294 + 1, val);
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	return ret;
+ 
+ }
+@@ -1824,14 +1817,14 @@ int dib9000_fw_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
+ 		return 0;
+ 	}
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+ 	dprintk("Index %x, PID %d, OnOff %d", id, pid, onoff);
+ 	ret = dib9000_write_word(state, 300 + 1 + id,
+ 			onoff ? (1 << 13) | pid : 0);
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(dib9000_fw_pid_filter);
+@@ -1851,11 +1844,6 @@ static void dib9000_release(struct dvb_frontend *demod)
+ 	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (st->fe[index_frontend] != NULL); index_frontend++)
+ 		dvb_frontend_detach(st->fe[index_frontend]);
+ 
+-	DibFreeLock(&state->platform.risc.mbx_if_lock);
+-	DibFreeLock(&state->platform.risc.mbx_lock);
+-	DibFreeLock(&state->platform.risc.mem_lock);
+-	DibFreeLock(&state->platform.risc.mem_mbx_lock);
+-	DibFreeLock(&state->demod_lock);
+ 	dibx000_exit_i2c_master(&st->i2c_master);
+ 
+ 	i2c_del_adapter(&st->tuner_adap);
+@@ -1875,7 +1863,7 @@ static int dib9000_sleep(struct dvb_frontend *fe)
+ 	u8 index_frontend;
+ 	int ret = 0;
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -1887,7 +1875,7 @@ static int dib9000_sleep(struct dvb_frontend *fe)
+ 	ret = dib9000_mbx_send(state, OUT_MSG_FE_SLEEP, NULL, 0);
+ 
+ error:
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	return ret;
+ }
+ 
+@@ -1905,7 +1893,7 @@ static int dib9000_get_frontend(struct dvb_frontend *fe)
+ 	int ret = 0;
+ 
+ 	if (state->get_frontend_internal == 0) {
+-		if (DibAcquireLock(&state->demod_lock) < 0) {
++		if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 			dprintk("could not get the lock");
+ 			return -EINTR;
  		}
--		wait = NULL;
-+		wait->_qproc = NULL;
- 		if (retval || timed_out || signal_pending(current))
- 			break;
- 		if (table.error) {
-@@ -720,7 +718,7 @@ struct poll_list {
-  * interested in events matching the pollfd->events mask, and the result
-  * matching that mask is both recorded in pollfd->revents and returned. The
-  * pwait poll_table will be used by the fd-provided poll handler for waiting,
-- * if non-NULL.
-+ * if pwait->_qproc is non-NULL.
-  */
- static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
- {
-@@ -738,9 +736,7 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
- 		if (file != NULL) {
- 			mask = DEFAULT_POLLMASK;
- 			if (file->f_op && file->f_op->poll) {
--				if (pwait)
--					pwait->key = pollfd->events |
--							POLLERR | POLLHUP;
-+				pwait->_key = pollfd->events | POLLERR | POLLHUP;
- 				mask = file->f_op->poll(file, pwait);
- 			}
- 			/* Mask out unneeded events. */
-@@ -763,7 +759,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+@@ -1964,7 +1952,7 @@ static int dib9000_get_frontend(struct dvb_frontend *fe)
  
- 	/* Optimise the no-wait case */
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
--		pt = NULL;
-+		pt->_qproc = NULL;
- 		timed_out = 1;
- 	}
- 
-@@ -781,22 +777,22 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 			for (; pfd != pfd_end; pfd++) {
- 				/*
- 				 * Fish for events. If we found one, record it
--				 * and kill the poll_table, so we don't
-+				 * and kill poll_table->_qproc, so we don't
- 				 * needlessly register any other waiters after
- 				 * this. They'll get immediately deregistered
- 				 * when we break out and return.
- 				 */
- 				if (do_pollfd(pfd, pt)) {
- 					count++;
--					pt = NULL;
-+					pt->_qproc = NULL;
- 				}
- 			}
- 		}
- 		/*
- 		 * All waiters have already been registered, so don't provide
--		 * a poll_table to them on the next loop iteration.
-+		 * a poll_table->_qproc to them on the next loop iteration.
- 		 */
--		pt = NULL;
-+		pt->_qproc = NULL;
- 		if (!count) {
- 			count = wait->error;
- 			if (signal_pending(current))
-diff --git a/include/linux/poll.h b/include/linux/poll.h
-index cf40010..48fe8bc 100644
---- a/include/linux/poll.h
-+++ b/include/linux/poll.h
-@@ -32,21 +32,46 @@ struct poll_table_struct;
-  */
- typedef void (*poll_queue_proc)(struct file *, wait_queue_head_t *, struct poll_table_struct *);
- 
-+/*
-+ * Do not touch the structure directly, use the access functions
-+ * poll_does_not_wait() and poll_requested_events() instead.
-+ */
- typedef struct poll_table_struct {
--	poll_queue_proc qproc;
--	unsigned long key;
-+	poll_queue_proc _qproc;
-+	unsigned long _key;
- } poll_table;
- 
- static inline void poll_wait(struct file * filp, wait_queue_head_t * wait_address, poll_table *p)
- {
--	if (p && wait_address)
--		p->qproc(filp, wait_address, p);
-+	if (p && p->_qproc && wait_address)
-+		p->_qproc(filp, wait_address, p);
-+}
-+
-+/*
-+ * Return true if it is guaranteed that poll will not wait. This is the case
-+ * if the poll() of another file descriptor in the set got an event, so there
-+ * is no need for waiting.
-+ */
-+static inline bool poll_does_not_wait(const poll_table *p)
-+{
-+	return p == NULL || p->_qproc == NULL;
-+}
-+
-+/*
-+ * Return the set of events that the application wants to poll for.
-+ * This is useful for drivers that need to know whether a DMA transfer has
-+ * to be started implicitly on poll(). You typically only want to do that
-+ * if the application is actually polling for POLLIN and/or POLLOUT.
-+ */
-+static inline unsigned long poll_requested_events(const poll_table *p)
-+{
-+	return p ? p->_key : ~0UL;
+ return_value:
+ 	if (state->get_frontend_internal == 0)
+-		DibReleaseLock(&state->demod_lock);
++		mutex_unlock(&state->demod_lock);
+ 	return ret;
  }
  
- static inline void init_poll_funcptr(poll_table *pt, poll_queue_proc qproc)
- {
--	pt->qproc = qproc;
--	pt->key   = ~0UL; /* all events enabled */
-+	pt->_qproc = qproc;
-+	pt->_key   = ~0UL; /* all events enabled */
- }
- 
- struct poll_table_entry {
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 91c1c8b..da7f2ec 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1824,7 +1824,7 @@ static inline bool wq_has_sleeper(struct socket_wq *wq)
- static inline void sock_poll_wait(struct file *filp,
- 		wait_queue_head_t *wait_address, poll_table *p)
- {
--	if (p && wait_address) {
-+	if (!poll_does_not_wait(p) && wait_address) {
- 		poll_wait(filp, wait_address, p);
- 		/*
- 		 * We need to be sure we are in sync with the
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 85d3bb7..59f5202 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -2175,7 +2175,7 @@ static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
+@@ -2012,7 +2000,7 @@ static int dib9000_set_frontend(struct dvb_frontend *fe)
  	}
  
- 	/* No write status requested, avoid expensive OUT tests. */
--	if (wait && !(wait->key & (POLLWRBAND | POLLWRNORM | POLLOUT)))
-+	if (!(poll_requested_events(wait) & (POLLWRBAND | POLLWRNORM | POLLOUT)))
- 		return mask;
+ 	state->pid_ctrl_index = -1; /* postpone the pid filtering cmd */
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return 0;
+ 	}
+@@ -2081,7 +2069,7 @@ static int dib9000_set_frontend(struct dvb_frontend *fe)
+ 	/* check the tune result */
+ 	if (exit_condition == 1) {	/* tune failed */
+ 		dprintk("tune failed");
+-		DibReleaseLock(&state->demod_lock);
++		mutex_unlock(&state->demod_lock);
+ 		/* tune failed; put all the pid filtering cmd to junk */
+ 		state->pid_ctrl_index = -1;
+ 		return 0;
+@@ -2137,7 +2125,7 @@ static int dib9000_set_frontend(struct dvb_frontend *fe)
+ 	/* turn off the diversity for the last frontend */
+ 	dib9000_fw_set_diversity_in(state->fe[index_frontend - 1], 0);
  
- 	writable = unix_writable(sk);
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	if (state->pid_ctrl_index >= 0) {
+ 		u8 index_pid_filter_cmd;
+ 		u8 pid_ctrl_index = state->pid_ctrl_index;
+@@ -2175,7 +2163,7 @@ static int dib9000_read_status(struct dvb_frontend *fe, fe_status_t * stat)
+ 	u8 index_frontend;
+ 	u16 lock = 0, lock_slave = 0;
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -2197,7 +2185,7 @@ static int dib9000_read_status(struct dvb_frontend *fe, fe_status_t * stat)
+ 	if ((lock & 0x0008) || (lock_slave & 0x0008))
+ 		*stat |= FE_HAS_LOCK;
+ 
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 
+ 	return 0;
+ }
+@@ -2208,30 +2196,30 @@ static int dib9000_read_ber(struct dvb_frontend *fe, u32 * ber)
+ 	u16 *c;
+ 	int ret = 0;
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+-	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		ret = -EINTR;
+ 		goto error;
+ 	}
+ 	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
+-		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++		mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 		ret = -EIO;
+ 		goto error;
+ 	}
+ 	dib9000_risc_mem_read(state, FE_MM_R_FE_MONITOR,
+ 			state->i2c_read_buffer, 16 * 2);
+-	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++	mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 
+ 	c = (u16 *)state->i2c_read_buffer;
+ 
+ 	*ber = c[10] << 16 | c[11];
+ 
+ error:
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	return ret;
+ }
+ 
+@@ -2243,7 +2231,7 @@ static int dib9000_read_signal_strength(struct dvb_frontend *fe, u16 * strength)
+ 	u16 val;
+ 	int ret = 0;
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -2256,18 +2244,18 @@ static int dib9000_read_signal_strength(struct dvb_frontend *fe, u16 * strength)
+ 			*strength += val;
+ 	}
+ 
+-	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		ret = -EINTR;
+ 		goto error;
+ 	}
+ 	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
+-		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++		mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 		ret = -EIO;
+ 		goto error;
+ 	}
+ 	dib9000_risc_mem_read(state, FE_MM_R_FE_MONITOR, (u8 *) c, 16 * 2);
+-	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++	mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 
+ 	val = 65535 - c[4];
+ 	if (val > 65535 - *strength)
+@@ -2276,7 +2264,7 @@ static int dib9000_read_signal_strength(struct dvb_frontend *fe, u16 * strength)
+ 		*strength += val;
+ 
+ error:
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	return ret;
+ }
+ 
+@@ -2287,16 +2275,16 @@ static u32 dib9000_get_snr(struct dvb_frontend *fe)
+ 	u32 n, s, exp;
+ 	u16 val;
+ 
+-	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return 0;
+ 	}
+ 	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
+-		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++		mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 		return 0;
+ 	}
+ 	dib9000_risc_mem_read(state, FE_MM_R_FE_MONITOR, (u8 *) c, 16 * 2);
+-	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++	mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 
+ 	val = c[7];
+ 	n = (val >> 4) & 0xff;
+@@ -2326,7 +2314,7 @@ static int dib9000_read_snr(struct dvb_frontend *fe, u16 * snr)
+ 	u8 index_frontend;
+ 	u32 snr_master;
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+@@ -2340,7 +2328,7 @@ static int dib9000_read_snr(struct dvb_frontend *fe, u16 * snr)
+ 	} else
+ 		*snr = 0;
+ 
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 
+ 	return 0;
+ }
+@@ -2351,27 +2339,27 @@ static int dib9000_read_unc_blocks(struct dvb_frontend *fe, u32 * unc)
+ 	u16 *c = (u16 *)state->i2c_read_buffer;
+ 	int ret = 0;
+ 
+-	if (DibAcquireLock(&state->demod_lock) < 0) {
++	if (mutex_lock_interruptible(&state->demod_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		return -EINTR;
+ 	}
+-	if (DibAcquireLock(&state->platform.risc.mem_mbx_lock) < 0) {
++	if (mutex_lock_interruptible(&state->platform.risc.mem_mbx_lock) < 0) {
+ 		dprintk("could not get the lock");
+ 		ret = -EINTR;
+ 		goto error;
+ 	}
+ 	if (dib9000_fw_memmbx_sync(state, FE_SYNC_CHANNEL) < 0) {
+-		DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++		mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 		ret = -EIO;
+ 		goto error;
+ 	}
+ 	dib9000_risc_mem_read(state, FE_MM_R_FE_MONITOR, (u8 *) c, 16 * 2);
+-	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
++	mutex_unlock(&state->platform.risc.mem_mbx_lock);
+ 
+ 	*unc = c[12];
+ 
+ error:
+-	DibReleaseLock(&state->demod_lock);
++	mutex_unlock(&state->demod_lock);
+ 	return ret;
+ }
+ 
+@@ -2514,11 +2502,11 @@ struct dvb_frontend *dib9000_attach(struct i2c_adapter *i2c_adap, u8 i2c_addr, c
+ 	st->gpio_val = DIB9000_GPIO_DEFAULT_VALUES;
+ 	st->gpio_pwm_pos = DIB9000_GPIO_DEFAULT_PWM_POS;
+ 
+-	DibInitLock(&st->platform.risc.mbx_if_lock);
+-	DibInitLock(&st->platform.risc.mbx_lock);
+-	DibInitLock(&st->platform.risc.mem_lock);
+-	DibInitLock(&st->platform.risc.mem_mbx_lock);
+-	DibInitLock(&st->demod_lock);
++	mutex_init(&st->platform.risc.mbx_if_lock);
++	mutex_init(&st->platform.risc.mbx_lock);
++	mutex_init(&st->platform.risc.mem_lock);
++	mutex_init(&st->platform.risc.mem_mbx_lock);
++	mutex_init(&st->demod_lock);
+ 	st->get_frontend_internal = 0;
+ 
+ 	st->pid_ctrl_index = -2;
 -- 
-1.7.9.3
+1.7.4.1
 
