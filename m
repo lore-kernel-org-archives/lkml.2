@@ -1,56 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab2CSDrX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Mar 2012 23:47:23 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:52183 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753150Ab2CSDrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Mar 2012 23:47:22 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19IsFhux9ZIUGuawmaSycK3tefn9jrW1XCfGjeK1F
-	emd5OAeaATXaPc
-Message-ID: <1332128832.7283.34.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] rcu: Permit limiting of force_quiescent_state()
- latency
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sivanich@sgi.com
-Date: Mon, 19 Mar 2012 04:47:12 +0100
-In-Reply-To: <20120319001014.GD2393@linux.vnet.ibm.com>
-References: <20120316160328.GA7207@linux.vnet.ibm.com>
-	 <1332003451.8147.77.camel@marge.simpson.net>
-	 <1332082821.7291.27.camel@marge.simpson.net>
-	 <20120319001014.GD2393@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S932288Ab2CSDsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Mar 2012 23:48:04 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21913 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754754Ab2CSDsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Mar 2012 23:48:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120465299"
+Date: Mon, 19 Mar 2012 11:42:31 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4] writeback: Avoid iput() from flusher thread
+Message-ID: <20120319034231.GA14213@localhost>
+References: <1331283748-12959-1-git-send-email-jack@suse.cz>
+ <1331283748-12959-5-git-send-email-jack@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331283748-12959-5-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-03-18 at 17:10 -0700, Paul E. McKenney wrote:
+On Fri, Mar 09, 2012 at 10:02:28AM +0100, Jan Kara wrote:
+> Doing iput() from flusher thread (writeback_sb_inodes()) can create problems
+> because iput() can do a lot of work - for example truncate the inode if it's
+> the last iput on unlinked file. Some filesystems (e.g. ubifs) may need to
+> allocate blocks during truncate (due to their COW nature) and in some cases
+> they thus need to flush dirty data from truncate to reduce uncertainty in the
+> amount of free space. This effectively creates a deadlock.
+> 
+> We get rid of iput() in flusher thread by using the fact that I_SYNC inode
+> flag effectively pins the inode in memory. So if we take care to either hold
+> i_lock or have I_SYNC set, we can get away without taking inode reference
+> in writeback_sb_inodes().
 
-> Thank you very much for your efforts on this!!!
+I created this graph while trying to understand/prove the new locking
+rules, and it looks perfectly fine.
 
-No problem, irq holdoff troubles are worth effort.
+flusher:
 
-> Given that you were seeing about 200-microsecond latency spikes on
-> grace-period initialization, I would expect that you would need about
-> 200 dyntick-idle CPUs for force_quiescent_state() to give you a
-> ten-microsecond spike, so I am not surprised that you could not see
-> the difference on 60 CPUs, which probably have given you something
-> like 3 microseconds..
+                       I_FREEING check               requeue/dequeue
+                           .                                .
+                b_io.prev  .       writepages  write_inode  .
+                    .      .            .           .       .
+                    .      .            .           .       .
+I_SYNC		    .      .    ==============================
+i_lock		    .  ============           ===        ======
+list_lock	============= .                .        ==============
+                              .                .
+                              .                .
+                   check/wait I_SYNC        I_DIRTY handling
 
-Crawling over fewer locks should still save cycles, so I'll measure.
-Big box rt needs every little usec we can scrape together.
 
--Mike
+evict/end_writeback:
 
+                                 check I_SYNC
+               set I_FREEING           .     wait I_SYNC     destroy_inode
+                    .          dequeue .          .                 .
+I_SYNC		    .             .    . *********************      .
+i_lock		  =====           .  ====                     *==== .
+list_lock	                ======
+
+It may be worthwhile to note that evict() needs to grab i_lock *after*
+waiting for I_SYNC, so that the flusher won't be accessing possibly
+freed inode when unlocking i_lock.
+
+> As a side effect, we also fix possible use-after-free in wb_writeback() because
+> inode_wait_for_writeback() call could try to reacquire i_lock on the inode that
+> was already free.
+
+Good catch! I think you are referring to this code:
+
+                /*
+                 * Nothing written. Wait for some inode to
+                 * become available for writeback. Otherwise
+                 * we'll just busyloop.
+                 */     
+                if (!list_empty(&wb->b_more_io))  {
+                        trace_writeback_wait(wb->bdi, work);
+                        inode = wb_inode(wb->b_more_io.prev);
+                        spin_lock(&inode->i_lock);
+                        inode_wait_for_writeback(inode, wb);
+                        spin_unlock(&inode->i_lock);
+                }       
+
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/fs-writeback.c         |   38 ++++++++++++++++++++++++--------------
+>  fs/inode.c                |   11 ++++++++++-
+>  include/linux/fs.h        |    7 ++++---
+>  include/linux/writeback.h |    7 +------
+>  4 files changed, 39 insertions(+), 24 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 1e8bf44..f9f9b61 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -325,19 +325,21 @@ static int write_inode(struct inode *inode, struct writeback_control *wbc)
+>  }
+>  
+>  /*
+> - * Wait for writeback on an inode to complete.
+> + * Wait for writeback on an inode to complete. Called with i_lock held.
+> + * Return 1 if we dropped i_lock and waited, 0 is returned otherwise.
+>   */
+> -static void inode_wait_for_writeback(struct inode *inode)
+> +int __must_check inode_wait_for_writeback(struct inode *inode)
+>  {
+>  	DEFINE_WAIT_BIT(wq, &inode->i_state, __I_SYNC);
+>  	wait_queue_head_t *wqh;
+>  
+>  	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
+> -	while (inode->i_state & I_SYNC) {
+> +	if (inode->i_state & I_SYNC) {
+>  		spin_unlock(&inode->i_lock);
+>  		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
+> -		spin_lock(&inode->i_lock);
+> +		return 1;
+>  	}
+> +	return 0;
+>  }
+>  
+>  /*
+> @@ -426,9 +428,12 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+>  			return 0;
+>  		}
+>  		/*
+> -		 * It's a data-integrity sync.  We must wait.
+> +		 * It's a data-integrity sync. We must wait. Since callers hold
+> +		 * inode reference or inode has I_WILL_FREE set, it cannot go
+> +		 * away under us.
+>  		 */
+> -		inode_wait_for_writeback(inode);
+> +		while (inode_wait_for_writeback(inode))
+> +			spin_lock(&inode->i_lock);
+>  	}
+>  
+>  	ret = __writeback_single_inode(inode, wb, wbc);
+> @@ -604,12 +609,20 @@ static long writeback_sb_inodes(struct super_block *sb,
+>  		}
+>  		spin_unlock(&wb->list_lock);
+>  
+> -		__iget(inode);
+> -		inode_wait_for_writeback(inode);
+> +		/* Did we drop i_lock to wait for I_SYNC? */
+> +		if (inode_wait_for_writeback(inode)) {
+> +			/* Inode may be gone, start again */
+> +			spin_lock(&wb->list_lock);
+> +			continue;
+> +		}
+>  		write_chunk = writeback_chunk_size(wb->bdi, work);
+>  		wbc.nr_to_write = write_chunk;
+>  		wbc.pages_skipped = 0;
+>  
+> +		/*
+> +		 * We use I_SYNC to pin the inode in memory. While it is set
+> +		 * end_writeback() will wait so the inode cannot be freed.
+> +		 */
+>  		__writeback_single_inode(inode, wb, &wbc);
+>  
+>  		work->nr_pages -= write_chunk - wbc.nr_to_write;
+> @@ -633,10 +646,7 @@ static long writeback_sb_inodes(struct super_block *sb,
+>  continue_unlock:
+>  		inode_sync_complete(inode);
+>  		spin_unlock(&inode->i_lock);
+> -		spin_unlock(&wb->list_lock);
+> -		iput(inode);
+> -		cond_resched();
+> -		spin_lock(&wb->list_lock);
+> +		cond_resched_lock(&wb->list_lock);
+>  		/*
+>  		 * bail out to wb_writeback() often enough to check
+>  		 * background threshold and other termination conditions.
+> @@ -831,8 +841,8 @@ static long wb_writeback(struct bdi_writeback *wb,
+>  			inode = wb_inode(wb->b_more_io.prev);
+>  			spin_lock(&inode->i_lock);
+>  			spin_unlock(&wb->list_lock);
+> -			inode_wait_for_writeback(inode);
+> -			spin_unlock(&inode->i_lock);
+> +			if (!inode_wait_for_writeback(inode))
+> +				spin_unlock(&inode->i_lock);
+>  			spin_lock(&wb->list_lock);
+>  		}
+>  	}
+> diff --git a/fs/inode.c b/fs/inode.c
+> index d3ebdbe..b64e2fe 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -510,7 +510,16 @@ void end_writeback(struct inode *inode)
+>  	BUG_ON(!list_empty(&inode->i_data.private_list));
+>  	BUG_ON(!(inode->i_state & I_FREEING));
+>  	BUG_ON(inode->i_state & I_CLEAR);
+> -	inode_sync_wait(inode);
+> +	/*
+> +	 * Wait for flusher thread to be done with the inode. Since the inode
+> +	 * has I_FREEING set, flusher thread won't start new work on the inode.
+> +	 * We just have to wait for running writeback to finish. We must use
+> +	 * i_lock here because flusher thread might be working with the inode
+> +	 * without I_SYNC set but under i_lock.
+> +	 */
+> +	spin_lock(&inode->i_lock);
+> +	if (!inode_wait_for_writeback(inode))
+> +		spin_unlock(&inode->i_lock);
+>  	/* don't need i_lock here, no concurrent mods to i_state */
+>  	inode->i_state = I_FREEING | I_CLEAR;
+>  }
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 69cd5bb..e1f0f5a 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1742,9 +1742,10 @@ struct super_operations {
+>   *			anew.  Other functions will just ignore such inodes,
+>   *			if appropriate.  I_NEW is used for waiting.
+>   *
+> - * I_SYNC		Synchonized write of dirty inode data.  The bits is
+> - *			set during data writeback, and cleared with a wakeup
+> - *			on the bit address once it is done.
+> + * I_SYNC		Writeback of inode is running. The bits is set during
+
+s/bits/bit/
+
+> + *			data writeback, and cleared with a wakeup on the bit
+> + *			address once it is done. The bit is also used to pin
+> + *			the inode in memory for flusher thread.
+>   *
+>   * I_REFERENCED		Marks the inode as recently references on the LRU list.
+>   *
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index 995b8bf..3a34dc0 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -94,6 +94,7 @@ long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
+>  				enum wb_reason reason);
+>  long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
+>  void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
+> +int __must_check inode_wait_for_writeback(struct inode *inode);
+>  
+>  /* writeback.h requires fs.h; it, too, is not included from here. */
+>  static inline void wait_on_inode(struct inode *inode)
+> @@ -101,12 +102,6 @@ static inline void wait_on_inode(struct inode *inode)
+>  	might_sleep();
+>  	wait_on_bit(&inode->i_state, __I_NEW, inode_wait, TASK_UNINTERRUPTIBLE);
+>  }
+> -static inline void inode_sync_wait(struct inode *inode)
+> -{
+> -	might_sleep();
+> -	wait_on_bit(&inode->i_state, __I_SYNC, inode_wait,
+> -							TASK_UNINTERRUPTIBLE);
+> -}
+>  
+>  
+>  /*
+> -- 
+> 1.7.1
