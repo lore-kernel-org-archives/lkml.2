@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2CSGiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:38:17 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42338 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab2CSGiP (ORCPT
+	id S1030305Ab2CSGpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:45:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34634 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964825Ab2CSGpL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:38:15 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 02/10] hugetlbfs: don't use ERR_PTR with VM_FAULT* values
-In-Reply-To: <4F6695EC.2060208@jp.fujitsu.com>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F6695EC.2060208@jp.fujitsu.com>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 19 Mar 2012 12:07:47 +0530
-Message-ID: <877gyhksec.fsf@linux.vnet.ibm.com>
+	Mon, 19 Mar 2012 02:45:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12031821-3568-0000-0000-00000161AF27
+In-Reply-To: <C141162D-9164-43D3-9A1F-93156DC7409B@jonmasters.org>
+References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
+	<m1ehtd8qez.fsf@fess.ebiederm.org>
+	<CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com>
+	<87obshxt4w.fsf@xmission.com>
+	<CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com>
+	<87zkc1w6wp.fsf@xmission.com>
+	<CAKaWdxa8yJJhnPj1th6GdYvn9+Lu7GUV1e=960gMQOdc8W47dQ@mail.gmail.com>
+	<CAKaWdxaaKMiwnhP7R786mqHTPs+o=izerZDbUgPBaxyU+XL-2g@mail.gmail.com>
+	<C141162D-9164-43D3-9A1F-93156DC7409B@jonmasters.org>
+Date: Mon, 19 Mar 2012 19:45:10 +1300
+Message-ID: <CAKaWdxafKU6+s-1-5jqw=JzvUE7ntYUh=T3JOooDWVoiHgq9NA@mail.gmail.com>
+Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
+From: Keith Chew <keith.chew@gmail.com>
+To: Jon Masters <jonathan@jonmasters.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012 11:11:56 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> (2012/03/17 2:39), Aneesh Kumar K.V wrote:
-> 
-> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> > 
-> > Using VM_FAULT_* codes with ERR_PTR will require us to make sure
-> > VM_FAULT_* values will not exceed MAX_ERRNO value.
-> > 
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> 
-> Is this a bug fix ?
+Hi Jon
 
-No. Currently the values of VM_FAULT_* codes are all below MAX_ERRNO. The
-changes in the patch are done based on the suggestion from Andrew. 
+> I've just been reviewing LKML for the past month…was there ever any followup?
+> Perhaps it's worth discussing a patch to change the below delay?
+>
 
-http://article.gmane.org/gmane.linux.kernel.cgroups/1160
+I was about to prepare a patch for this change last Friday, but the
+system hanged on Saturday, after a few weeks of smooth reboots. The
+other unit with reboot=p (as Eric suggested to be the most reliable
+way of rebooting) is still going without any issues, so maybe that is
+the best workaround for now.
 
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I have now put the first unit in reboot=p, and will keep monitoring
+them. I am open to any other suggestions if anyone has any tweaks they
+think will help with the KBD reboot.
 
+Regards
+Keith
