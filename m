@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162176Ab2CSQhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:37:04 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:28239 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031218Ab2CSQhB convert rfc822-to-8bit (ORCPT
+	id S1757771Ab2CSQl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:41:26 -0400
+Received: from mail-wg0-f66.google.com ([74.125.82.66]:64421 "EHLO
+	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932291Ab2CSQlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:37:01 -0400
+	Mon, 19 Mar 2012 12:41:24 -0400
+Date: Mon, 19 Mar 2012 17:41:20 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/cpufeature change for v3.4
+Message-ID: <20120319164120.GA11153@gmail.com>
 MIME-Version: 1.0
-Message-ID: <6a7183b7-0fa1-4ae0-ba49-273f253496af@default>
-Date: Mon, 19 Mar 2012 09:06:26 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@ORACLE.COM>
-To: Konrad Rzeszutek Wilk <konrad.wilk@ORACLE.COM>, dan.magenheimer@ORACLE.COM,
-        linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] MAINTAINERS: Adding cleancache API to the list.
-References: <<1332172165-4362-1-git-send-email-konrad.wilk@oracle.com>>
- <<1332172165-4362-2-git-send-email-konrad.wilk@oracle.com>>
-In-Reply-To: <<1332172165-4362-2-git-send-email-konrad.wilk@oracle.com>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F6760AC.011A,ss=1,re=0.000,fgs=0
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> Sent: Monday, March 19, 2012 9:49 AM
-> To: dan.magenheimer@oracle.com; linux-kernel@vger.kernel.org
-> Cc: Konrad Rzeszutek Wilk
-> Subject: [PATCH] MAINTAINERS: Adding cleancache API to the list.
-> 
-> .. and electing myself as the maintainer.
-> 
-> CC: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Linus,
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Please pull the latest x86-cpufeature-for-linus git tree from:
 
-> ---
->  MAINTAINERS |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 9c63a43..e1a70cb 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1831,6 +1831,13 @@ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
->  S:	Supported
->  F:	sound/soc/codecs/cs4270*
-> 
-> +CLEANCACHE API
-> +M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> +L:	linux-kernel@vger.kernel.org
-> +S:	Maintained
-> +F:	mm/cleancache.c
-> +F:	include/linux/cleancache.h
-> +
->  CLK API
->  M:	Russell King <linux@arm.linux.org.uk>
->  F:	include/linux/clk.h
-> --
-> 1.7.7.5
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpufeature-for-linus
+
+   HEAD: 513c4ec6e4759aa33c90af0658b82eb4d2027871 x86, cpufeature: Add CPU features from Intel document 319433-012A
+
+ Thanks,
+
+	Ingo
+
+------------------>
+H. Peter Anvin (1):
+      x86, cpufeature: Add CPU features from Intel document 319433-012A
+
+
+ arch/x86/include/asm/cpufeature.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 8d67d42..0d3dcc9 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -199,10 +199,13 @@
+ /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
+ #define X86_FEATURE_FSGSBASE	(9*32+ 0) /* {RD/WR}{FS/GS}BASE instructions*/
+ #define X86_FEATURE_BMI1	(9*32+ 3) /* 1st group bit manipulation extensions */
++#define X86_FEATURE_HLE		(9*32+ 4) /* Hardware Lock Elision */
+ #define X86_FEATURE_AVX2	(9*32+ 5) /* AVX2 instructions */
+ #define X86_FEATURE_SMEP	(9*32+ 7) /* Supervisor Mode Execution Protection */
+ #define X86_FEATURE_BMI2	(9*32+ 8) /* 2nd group bit manipulation extensions */
+ #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
++#define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
++#define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
+ 
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
