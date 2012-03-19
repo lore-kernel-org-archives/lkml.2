@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162023Ab2CSQTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:19:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1032030Ab2CSQTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:19:03 -0400
-Date: Mon, 19 Mar 2012 17:18:52 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] do_exit(): do not panic if exiting thread is not serving
- an interrupt
-Message-ID: <20120319161851.GK2147@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758625Ab2CSQTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:19:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38607 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031899Ab2CSQN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:13:27 -0400
+From: jean.pihet@newoldbits.com
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH 5/9] ARM: OMAP3: hwmod: rename the smartreflex entries
+Date: Mon, 19 Mar 2012 17:12:54 +0100
+Message-Id: <1332173578-27422-6-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently a crashed and killed forced oneshot threaded handler hits
-in_interrupt() check in do_exit() and panics. As result, the code that
-cleans up IRQ descriptor never not get called and IRQ line stays masked.
+From: Jean Pihet <j-pihet@ti.com>
 
-Similarly non-forced oneshot threaded handlers that crashed while holding
-bh lock leave a IRQ line masked.
+Change the name field value to better reflect the smartreflex
+integration in the system
 
-Regular threaded handlers that crashed while holding bh simply panic,
-although they could have just terminate loudly.
-
-This fix allows IRQ threaded handlers get killed gracefully instead of
-panicking.
-
-Since introduction of SOFTIRQ_DISABLE_OFFSET in 75e1056 we can differ
-between bh being serviced and bh being disabled. Use this ability to
-avoid unnecessary crashes when a exiting thread explicitly disabled bh
-and is not serving any softirq. Still we will get the regular warning
-that exiting thread is in atomic context.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Signed-off-by: Jean Pihet <j-pihet@ti.com>
 ---
- include/linux/hardirq.h |    4 ++++
- kernel/exit.c           |    2 +-
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    8 ++++----
+ arch/arm/mach-omap2/smartreflex.c          |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index bb7f309..93aca12 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -82,11 +82,15 @@
-  * Are we in a softirq context? Interrupt context?
-  * in_softirq - Are we currently processing softirq or have bh disabled?
-  * in_serving_softirq - Are we currently processing softirq?
-+ * in_serving_interrupt - Are we currently processing softirq, nmi or
-+ *                        hardware interrupt?
-  */
- #define in_irq()		(hardirq_count())
- #define in_softirq()		(softirq_count())
- #define in_interrupt()		(irq_count())
- #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
-+#define in_serving_interrupt()	(preempt_count() & (HARDIRQ_MASK \
-+					 | SOFTIRQ_OFFSET | NMI_MASK))
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index d7d4c70..40f57c4 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -2751,7 +2751,7 @@ static struct omap_hwmod_ocp_if *omap34xx_sr1_slaves[] = {
+ };
  
- /*
-  * Are we in NMI context?
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 752d2c0..0c78ae6 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -896,7 +896,7 @@ void do_exit(long code)
+ static struct omap_hwmod omap34xx_sr1_hwmod = {
+-	.name		= "sr1",
++	.name		= "mpu_iva",
+ 	.class		= &omap34xx_smartreflex_hwmod_class,
+ 	.main_clk	= "sr1_fck",
+ 	.prcm		= {
+@@ -2775,7 +2775,7 @@ static struct omap_hwmod_ocp_if *omap36xx_sr1_slaves[] = {
+ };
  
- 	WARN_ON(blk_needs_flush_plug(tsk));
+ static struct omap_hwmod omap36xx_sr1_hwmod = {
+-	.name		= "sr1",
++	.name		= "mpu_iva",
+ 	.class		= &omap36xx_smartreflex_hwmod_class,
+ 	.main_clk	= "sr1_fck",
+ 	.prcm		= {
+@@ -2803,7 +2803,7 @@ static struct omap_hwmod_ocp_if *omap34xx_sr2_slaves[] = {
+ };
  
--	if (unlikely(in_interrupt()))
-+	if (unlikely(in_serving_interrupt()))
- 		panic("Aiee, killing interrupt handler!");
- 	if (unlikely(!tsk->pid))
- 		panic("Attempted to kill the idle task!");
+ static struct omap_hwmod omap34xx_sr2_hwmod = {
+-	.name		= "sr2",
++	.name		= "core",
+ 	.class		= &omap34xx_smartreflex_hwmod_class,
+ 	.main_clk	= "sr2_fck",
+ 	.prcm		= {
+@@ -2827,7 +2827,7 @@ static struct omap_hwmod_ocp_if *omap36xx_sr2_slaves[] = {
+ };
+ 
+ static struct omap_hwmod omap36xx_sr2_hwmod = {
+-	.name		= "sr2",
++	.name		= "core",
+ 	.class		= &omap36xx_smartreflex_hwmod_class,
+ 	.main_clk	= "sr2_fck",
+ 	.prcm		= {
+diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+index c18d47d..b2728a5 100644
+--- a/arch/arm/mach-omap2/smartreflex.c
++++ b/arch/arm/mach-omap2/smartreflex.c
+@@ -184,7 +184,7 @@ static void sr_set_regfields(struct omap_sr *sr)
+ 		sr->err_weight = OMAP3430_SR_ERRWEIGHT;
+ 		sr->err_maxlimit = OMAP3430_SR_ERRMAXLIMIT;
+ 		sr->accum_data = OMAP3430_SR_ACCUMDATA;
+-		if (!(strcmp(sr->name, "sr1"))) {
++		if (!(strcmp(sr->name, "sr_mpu_iva"))) {
+ 			sr->senn_avgweight = OMAP3430_SR1_SENNAVGWEIGHT;
+ 			sr->senp_avgweight = OMAP3430_SR1_SENPAVGWEIGHT;
+ 		} else {
 -- 
-1.7.7.6
-
+1.7.5.4
 
