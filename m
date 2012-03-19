@@ -1,191 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738Ab2CSJyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 05:54:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6491 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab2CSJy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 05:54:29 -0400
-X-IronPort-AV: E=Sophos;i="4.73,611,1325433600"; 
-   d="scan'208,223";a="4568606"
-Date: Mon, 19 Mar 2012 17:55:29 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Pekka Enberg <penberg@kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH v5 2/3] virtio-scsi: add error handling
-Message-ID: <20120319095529.GA25623@localhost.localdomain>
-References: <1328440562-19425-1-git-send-email-pbonzini@redhat.com>
- <1328440562-19425-3-git-send-email-pbonzini@redhat.com>
+	id S965006Ab2CSJ6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 05:58:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758646Ab2CSJ6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 05:58:45 -0400
+Message-ID: <4F670325.7080700@redhat.com>
+Date: Mon, 19 Mar 2012 11:57:57 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1328440562-19425-3-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-19 17:52:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-19 17:52:19,
-	Serialize complete at 2012-03-19 17:52:19
-Content-Type: multipart/mixed; boundary="pWyiEgJYm5f9v55/"
-Content-Disposition: inline
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+References: <20120316144028.036474157@chello.nl>
+In-Reply-To: <20120316144028.036474157@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2012 04:40 PM, Peter Zijlstra wrote:
+> The home-node migration handles both cpu and memory (anonymous only for now) in
+> an integrated fashion. The memory migration uses migrate-on-fault to avoid
+> doing a lot of work from the actual numa balancer kernl thread and only
+> migrates the active memory.
+>
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+IMO, this needs to be augmented with eager migration, for the following
+reasons:
 
-On Sun, Feb 05, 2012 at 12:16:01PM +0100, Paolo Bonzini wrote:
-> This commit adds basic error handling to the virtio-scsi
-> HBA device.  Task management functions are sent synchronously
-> via the control virtqueue.
-> 
-> Cc: linux-scsi <linux-scsi@vger.kernel.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: kvm@vger.kernel.org
-> Acked-by: Pekka Enberg <penberg@kernel.org> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
-> 	v3->v4: fixed 32-bit compilation; adjusted call to virtscsi_kick_cmd
-> 
-> 	v2->v3: added mempool, used GFP_NOIO instead of GFP_ATOMIC,
-> 	formatting fixes
-> 
-> 	v1->v2: use scmd_printk
-> 
->  drivers/scsi/virtio_scsi.c |   73 +++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 72 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index 3f87ae0..68104cd 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -29,6 +29,7 @@
->  /* Command queue element */
->  struct virtio_scsi_cmd {
->  	struct scsi_cmnd *sc;
-> +	struct completion *comp;
->  	union {
->  		struct virtio_scsi_cmd_req       cmd;
->  		struct virtio_scsi_ctrl_tmf_req  tmf;
-> @@ -168,11 +169,12 @@ static void virtscsi_req_done(struct virtqueue *vq)
->  	virtscsi_vq_done(vq, virtscsi_complete_cmd);
->  };
->  
-> -/* These are still stubs.  */
->  static void virtscsi_complete_free(void *buf)
->  {
->  	struct virtio_scsi_cmd *cmd = buf;
->  
-> +	if (cmd->comp)
-> +		complete_all(cmd->comp);
->  	mempool_free(cmd, virtscsi_cmd_pool);
->  }
->  
-> @@ -306,12 +308,81 @@ out:
->  	return ret;
->  }
->  
-> +static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
-> +{
-> +	DECLARE_COMPLETION_ONSTACK(comp);
-> +	int ret;
-> +
-> +	cmd->comp = &comp;
-> +	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
-> +			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
-> +			       GFP_NOIO);
-> +	if (ret < 0)
-> +		return FAILED;
-> +
-> +	wait_for_completion(&comp);
-> +	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-> +	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-> +		return FAILED;
-> +
-> +	return SUCCESS;
-> +}
+- lazy migration adds a bit of latency to page faults
+- doesn't work well with large pages
+- doesn't work with dma engines
 
-Hi Paolo,
+So I think that in addition to migrate on fault we need a background
+thread to do eager migration.  We might prioritize pages based on the
+active bit in the PDE (cheaper to clear and scan than the PTE, but gives
+less accurate information).
 
-This is against v5.
-
-
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: attachment; filename="0001-fix-race-in-tmf.patch"
-
->From 34ef5e64fc205044e4326fcc5dcf2aa6b219763a Mon Sep 17 00:00:00 2001
-From: Hu Tao <hutao@cn.fujitsu.com>
-Date: Mon, 19 Mar 2012 15:58:22 +0800
-Subject: [PATCH] fix two problems in tmf
-
-This patch fix two problems in tmf:
-
-  1. race in virtscsi_tmf that the cmd may have been already freed
-     when waking up from the completion
-
-  2. cmd leak if virtscsi_kick_cmd fails.
-
-
-Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
----
- drivers/scsi/virtio_scsi.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index efccd72..3b8a6e6 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -175,7 +175,8 @@ static void virtscsi_complete_free(void *buf)
- 
- 	if (cmd->comp)
- 		complete_all(cmd->comp);
--	mempool_free(cmd, virtscsi_cmd_pool);
-+	else
-+		mempool_free(cmd, virtscsi_cmd_pool);
- }
- 
- static void virtscsi_ctrl_done(struct virtqueue *vq)
-@@ -311,21 +312,23 @@ out:
- static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
- {
- 	DECLARE_COMPLETION_ONSTACK(comp);
--	int ret;
-+	int ret = FAILED;
- 
- 	cmd->comp = &comp;
- 	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
- 			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
- 			       GFP_NOIO);
- 	if (ret < 0)
--		return FAILED;
-+		goto failed;
- 
- 	wait_for_completion(&comp);
--	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
--	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
--		return FAILED;
-+	if (cmd->resp.tmf.response == VIRTIO_SCSI_S_OK ||
-+	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-+		ret = SUCCESS;
- 
--	return SUCCESS;
-+failed:
-+	mempool_free(cmd, virtscsi_cmd_pool);
-+	return ret;
- }
- 
- static int virtscsi_device_reset(struct scsi_cmnd *sc)
 -- 
-1.7.1
+error compiling committee.c: too many arguments to function
 
-
---pWyiEgJYm5f9v55/--
