@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030276Ab2CSGfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 02:35:53 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38923 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab2CSGfw (ORCPT
+	id S1030528Ab2CSGgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:36:07 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:56890
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030324Ab2CSGgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 02:35:52 -0400
-Message-ID: <4F66D3B5.60008@gmail.com>
-Date: Mon, 19 Mar 2012 14:35:33 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 19 Mar 2012 02:36:01 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zcb8kz1503M936eK1dbaL1432N98dK4015I1381ozz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M14CZT-02-2E5-02
+X-M-MSG: 
+Date: Mon, 19 Mar 2012 14:35:45 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 5/8] libata-acpi: add ata port runtime D3Cold
+ support
+Message-ID: <20120319063544.GA2707@localhost.amd.com>
+References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
+ <1330592577-16546-6-git-send-email-ming.m.lin@intel.com>
+ <20120319033616.GA32695@localhost.amd.com>
+ <1332134820.17875.17.camel@minggr>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs/async-thread: introduce macro BTRFS_WORKERS_IDLE_THRESH
- to replace the magic number 32 used for btrfs_workers->idle_thresh
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1332134820.17875.17.camel@minggr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 19 Mar 2012 06:35:45.0862 (UTC) FILETIME=[83D6FE60:01CD059A]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- fs/btrfs/async-thread.c |    2 +-
- fs/btrfs/async-thread.h |    8 +++++++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
+On Mon, Mar 19, 2012 at 01:27:00PM +0800, Lin Ming wrote:
+> On Mon, 2012-03-19 at 11:36 +0800, Aaron Lu wrote:
+> > Hi,
+> > 
+> > On Thu, Mar 01, 2012 at 05:02:54PM +0800, Lin Ming wrote:
+> > > ATA port may support runtime D3Cold state, for example, Zero-power ODD case.
+> > > This patch adds wakeup notifier and enable/disable run_wake during
+> > > supend/resume.
+> > 
+> > I've been thinking this for some time and realized that it would be
+> > impossible for AMD's platform to work with this patch, the reason:
+> > There is no _PRW in AMD's acpi implementation. And no _PRW would mean
+> > the device is not wake up capable in current Linux ACPI implementation.
+> > 
+> > I've checked the ACPI spec and it said: 'the _PRW is only required for
+> > devices that have the ability to wake the system from a system sleeping
+> > state.'
+> > So I'm not sure if _PRW fits here, since the most common use case for
+> > zpodd would be: odd put to D3 cold and system is at S0, and odd is back
+> > to D0 when necessary without affecting the system sleep state.
+> > 
+> > I suggest we install the acpi pm notifier on the handle based on the
+> > following two criteria:
+> > 1 This ata device is DA capable;
+> > 2 Its acpi device indicates it is able to wake up itself in S0(_S0W
+> > evaluates 4).
+> 
+> OK, reasonable to me.
+> 
+> > 
+> > Does this make sense and will this work for your platform?
+> 
+> Yes.
+> 
 
-diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
-index 5a7d756..2491096 100644
---- a/fs/btrfs/async-thread.c
-+++ b/fs/btrfs/async-thread.c
-@@ -445,7 +445,7 @@ void btrfs_init_workers(struct btrfs_workers *workers, char *name, int max,
- 	spin_lock_init(&workers->lock);
- 	spin_lock_init(&workers->order_lock);
- 	workers->max_workers = max;
--	workers->idle_thresh = 32;
-+	workers->idle_thresh = BTRFS_WORKERS_IDLE_THRESH;
- 	workers->name = name;
- 	workers->ordered = 0;
- 	workers->atomic_start_pending = 0;
-diff --git a/fs/btrfs/async-thread.h b/fs/btrfs/async-thread.h
-index f34cc31..9b9522e 100644
---- a/fs/btrfs/async-thread.h
-+++ b/fs/btrfs/async-thread.h
-@@ -60,6 +60,9 @@ struct btrfs_work {
- 	struct list_head order_list;
- };
- 
-+/* default value for btrfs_workers->idle_thresh */
-+#define BTRFS_WORKERS_IDLE_THRESH 32
-+
- struct btrfs_workers {
- 	/* current number of running workers */
- 	int num_workers;
-@@ -69,7 +72,10 @@ struct btrfs_workers {
- 	/* max number of workers allowed.  changed by btrfs_start_workers */
- 	int max_workers;
- 
--	/* once a worker has this many requests or fewer, it is idle */
-+	/*
-+	 * once a worker has this many requests or fewer, it is idle.
-+	 * default to BTRFS_WORKERS_IDLE_THRESH, which 32 is used currently.
-+	 */
- 	int idle_thresh;
- 
- 	/* force completions in the order they were queued */
--- 
-1.7.1
+Great ;-)
+
+> > 
+> > Another problem is how to place this ODD device into D3 cold state,
+> > since our platform uses _PS3 control method to power off it. Do you have
+> > any suggestions?
+> 
+> acpi_bus_set_power will execute _PS3 too.
+> 
+> So I think no problem for AMD's platform.
+> 
+
+Sorry I didn't make it clear.
+The problem here is, we are going to set the device power state to D3
+cold, and current OSPM has no support for it.
+
+Another patch of yours solved this problem by defining:
+1 Device supports D3 cold if it has _PR3;
+2 For a device to be put to D3 cold, power off all the power resources
+referenced in its _PR3.
+
+Since this can't work for AMD's platform(there is no _PR3 for the sata
+acpi device), I would like to change this a little bit:
+1 Device supports D3 cold if it has _PR3 or _PS3;
+2 For a device to be put to D3 cold, execute _PS3 first if available and
+then deal with _PR3 as above.
+
+What do you think of this?
+If you are OK to the above idea, I can change the corresponding patch for
+you to review.
+
+Thanks,
+Aaron
 
 
