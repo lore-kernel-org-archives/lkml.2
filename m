@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162287Ab2CSRJG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:09:06 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39571 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758572Ab2CSRJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:09:04 -0400
-Message-ID: <1332176943.1983.28.camel@joe2Laptop>
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 19 Mar 2012 10:09:03 -0700
-In-Reply-To: <4F6762F1.7050902@gmail.com>
-References: <cover.1331856299.git.joe@perches.com>
-	 <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
-	 <20120319040950.GG31682@thunk.org> <1332131137.23125.44.camel@joe2Laptop>
-	 <4F6762F1.7050902@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759212Ab2CSRJg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:09:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758001Ab2CSRJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 13:09:35 -0400
+Date: Mon, 19 Mar 2012 18:09:32 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] autonuma: fix typo in sched balance
+Message-ID: <20120319170932.GF24602@redhat.com>
+References: <CAJd=RBAhi6vmihBT4iZ2ELtix8vEtx-VM8gujb-q-cOjqqdcnQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBAhi6vmihBT4iZ2ELtix8vEtx-VM8gujb-q-cOjqqdcnQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 17:46 +0100, Jiri Slaby wrote:
-> On 03/19/2012 05:25 AM, Joe Perches wrote:
-> > On Mon, 2012-03-19 at 00:09 -0400, Ted Ts'o wrote:
-> >> One evidence that this patch is noise is that it doesn't apply cleanly
-> >> just on top of my current patch set that I plan to send to Linus.
-> > It's more evident that you don't make
-> > public your own internal patch queue
-> > quickly enough than anything else.
-> Please stop repeating that shit. I already explained you the reasons. A
-> couple of weeks ago.
+Hi Hillf,
 
-shrug.
+Thanks a lot for starting looking into it despite I hadn't the time
+yet to polish it in smaller commits.
 
-I don't quite understand your comment on this
-subject as git log -i --grep=slaby fs/ext4
-doesn't show your name.
+On Mon, Mar 19, 2012 at 08:45:03PM +0800, Hillf Danton wrote:
+> Hi Andrea
+> 
+> It is redefined to be safely used by set/test_bit(cpu, mm_mask).
+> 
+> Q-0: another case of mm_mask in struct rq?
 
-As far as I can tell, your "reasons" as you
-explained it is that you just do not like
-whitespace or style changes.
+You're right, we better move it to struct rq like I moved the other
+arrays. I already moved those to rq, but one recent patch slipped off.
 
-Ted seems to tend to defer changes to ext4.
-And in this case, Ted applied other patches
-before mine.
+> Q-1: make sense to move NR_CPUS variable out of stack?
 
-The issues at hand are simply normal patch
-conflict resolution and taste.  Ted's free
-to do what he wants with patches he receives.
+Absolutely. It should be ok in the latest autonuma branch (since Friday)
 
-Accept/reject/ridicule/ignore/defer, etc...
-Whatever, it doesn't bother me.
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=c9effed1071202090cb9e09da814dabf1b9af409;hp=30ed50adf6cfe85f7feb12c4279359ec52f5f2cd
 
-My patch applies cleanly on -next (ext4 #dev)
-as of the date I sent it.  I can not do more
-than that except to resend it after resolving
-the conflicts.  I see no real good reason to
-do that currently.  There are no patches from
-you for ext4 between the patch I sent and now.
+I committed it to aa.git last Friday, can you pull out again the
+autonuma branch and verify?
 
-cheers, Joe
+> Q-2: for online mem node, cpumask_of_node(nid) implies cpu also online?
+> 
+> 	for_each_online_node(nid) {
+> 		for_each_cpu_and(cpu, cpumask_of_node(nid), allowed) {
+> 			struct rq *rq;
+> 		+	if (!cpu_online(cpu))
+> 		+		continue;
+> 			rq = cpu_rq(cpu);
+> 			if (rq->curr->mm == mm)
+> 				nr_mm++;
+> 		}
+> 	}
+> 
+> where check needed for accessing rq->curr?
 
+I need to check what is in rq->curr of a cpu that isn't online, idle
+task maybe? At times cpu_online may be needed.
+
+
+> 
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+> 
+> --- a/kernel/sched/numa.c	Sat Mar 17 11:01:40 2012
+> +++ b/kernel/sched/numa.c	Mon Mar 19 20:01:34 2012
+> @@ -95,7 +95,7 @@ void sched_autonuma_balance(void)
+>  	struct migration_arg arg;
+>  	struct task_struct *p = current;
+>  	struct sched_autonuma *sched_autonuma = p->sched_autonuma;
+> -	DECLARE_BITMAP(mm_mask, MAX_NUMNODES);
+> +	DECLARE_BITMAP(mm_mask, NR_CPUS);
+> 
+>  	if (!sched_autonuma || sched_autonuma->autonuma_stop_one_cpu || !p->mm)
+>  		return;
+> @@ -136,7 +136,7 @@ void sched_autonuma_balance(void)
+>  		weight_current[nid] = p_w*AUTONUMA_BALANCE_SCALE/p_t;
+>  	}
+> 
+> -	bitmap_zero(mm_mask, MAX_NUMNODES);
+> +	bitmap_zero(mm_mask, NR_CPUS);
+>  	for_each_online_node(nid) {
+>  		if (nid == cpu_nid)
+>  			continue;
+
+Ouch thanks a lot. I need to rediff against
+c9effed1071202090cb9e09da814dabf1b9af409 , it's now in the rq.
