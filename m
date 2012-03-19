@@ -1,50 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab2CSXeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 19:34:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50056 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab2CSXeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 19:34:13 -0400
-Date: Mon, 19 Mar 2012 16:34:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
-Message-ID: <20120319233409.GA16124@kroah.com>
-References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20120316213227.GB24556@kroah.com>
- <4F678100.1000707@linux.vnet.ibm.com>
+	id S932255Ab2CSXbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 19:31:11 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46229 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755888Ab2CSXbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 19:31:08 -0400
+Date: Mon, 19 Mar 2012 16:12:53 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        kernel-hardening@lists.openwall.com, spender@grsecurity.net
+Subject: [PATCH] futex: do not leak robust list to unprivileged process
+Message-ID: <20120319231253.GA20893@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F678100.1000707@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 01:54:56PM -0500, Seth Jennings wrote:
-> > I'm sorry, I know this isn't fair for your specific patch, but we have
-> > to stop this sometime, and as this patch adds code isn't even used by
-> > anyone, its a good of a time as any.
-> 
-> So, this the my first "promotion from staging" rodeo.  I would love to
-> see this code mainlined ASAP.  How would I/we go about doing that?
+It was possible to extract the robust list head address from a setuid
+process if it had used set_robust_list(), allowing an ASLR info leak. This
+changes the permission checks to be the same as those used for similar
+info that comes out of /proc.
 
-What subsystem should this code live in?  The -mm code, I'm guessing,
-right?  If so, submit it to the linux-mm mailing list for inclusion, you
-can point them at what is in drivers/staging right now, or probably it's
-easier if you just make a new patch that adds the code that is in
-drivers/staging/ to the correct location in the kernel.  That way it's
-easier to review and change.  When it finally gets accepted, we can then
-delete the drivers/staging code.
+Running a setuid program that uses robust futexes would have had:
+  cred->euid != pcred->euid
+  cred->euid == pcred->uid
+so the old permissions check would allow it. I'm not aware of any setuid
+programs that use robust futexes, so this is just a preventative measure.
 
-hope this helps,
+(This patch is based on changes from grsecurity.)
 
-greg k-h
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ kernel/futex.c        |   36 +++++++++++++-----------------------
+ kernel/futex_compat.c |   36 +++++++++++++-----------------------
+ 2 files changed, 26 insertions(+), 46 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 1614be2..439440d 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -59,6 +59,7 @@
+ #include <linux/magic.h>
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
++#include <linux/ptrace.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+ {
+ 	struct robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->robust_list;
+-		rcu_read_unlock();
+ 	}
+ 
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(head, head_ptr);
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index 5f9e689..a9642d5 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -10,6 +10,7 @@
+ #include <linux/compat.h>
+ #include <linux/nsproxy.h>
+ #include <linux/futex.h>
++#include <linux/ptrace.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ {
+ 	struct compat_robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->compat_robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->compat_robust_list;
+-		rcu_read_unlock();
+ 	}
+ 
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->compat_robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(ptr_to_compat(head), head_ptr);
+-- 
+1.7.0.4
+
