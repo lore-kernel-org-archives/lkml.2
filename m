@@ -1,18 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032642Ab2CSTGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:06:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48414 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032620Ab2CSTGC convert rfc822-to-8bit (ORCPT
+	id S1032629Ab2CSTHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:07:09 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:36095 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1032553Ab2CSTHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:06:02 -0400
-Message-ID: <1332183927.18960.380.camel@twins>
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Mon, 19 Mar 2012 15:07:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 2KaATKIVM1kP_7d6CBwqDWJ3KoMcoTUCF2ZweZblLYjQuKZ
+ d4yZgsg4neOYcjm6clMLO1Nk0jqSYIIfpdKu12uDpeDFdKeIGZSh9Fbct8F8
+ vbg6FSuHLGX0nJHcMux1kkbqp.FtHiauZDxsrZaLE.QozwAfS2O4XKjRSWsC
+ b9DnZp8B2KroSJ_LcKMKZJhqQT.MZaV77KW8UCc3VzAbUUR5MjgRmfF3M_Ix
+ yy8ZyIGBHub4h6MXiJbBP5KakZXGJuMQWFGs.VpoVNSnZLlUEbOt9MDgwfr9
+ 4iLrM89NqFmoLXBTrKrRG_DRHC2YU_xK8Xsk7IFSu.lqoos_X6vL_MqyEwMy
+ nGEqgDVaMF7lR_R1dqqonKIoPpHcZlR8TXGYGZHbH2ERoOrsoK9depYMSoD8
+ a
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 19 Mar 2012 14:06:49 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Paul Turner <pjt@google.com>,
@@ -22,34 +31,29 @@ Cc: Avi Kivity <avi@redhat.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Mon, 19 Mar 2012 20:05:27 +0100
-In-Reply-To: <20120319140701.GM24602@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	 <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>
-	 <20120319130401.GI24602@redhat.com> <1332163591.18960.334.camel@twins>
-	 <20120319140701.GM24602@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
+In-Reply-To: <1332176969.18960.351.camel@twins>
+Message-ID: <alpine.DEB.2.00.1203191406280.23632@router.home>
+References: <20120316144028.036474157@chello.nl> <20120316144240.763518310@chello.nl> <alpine.DEB.2.00.1203161333370.10211@router.home> <1331932375.18960.237.camel@twins> <alpine.DEB.2.00.1203190852380.16879@router.home> <1332165959.18960.340.camel@twins>
+ <alpine.DEB.2.00.1203191012530.17008@router.home> <1332170628.18960.349.camel@twins> <alpine.DEB.2.00.1203191029090.19189@router.home> <1332176969.18960.351.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 15:07 +0100, Andrea Arcangeli wrote:
-> You may want to check how many gigabytes they swap... going through
-> the mess of swap-over-nfs to swap _only_ ~100M would be laughable. If
-> they push to swap several gigabytes ok, but then 100M more or less
-> won't matter. 
+On Mon, 19 Mar 2012, Peter Zijlstra wrote:
 
-They explicitly said the regular system services that get spawned at
-boot and are convenient to have around but are mostly just there sucking
-up memory. Thinks like sshd, crond etc..
+> > So the default system behavior would be MPOL_HOME_NODE but it could be
+> > overriding by numactl to allow old apps to run as they are used to run.
+>
+> Ah, OK. Although that's a mightily confusing usage of the word DEFAULT.
+> How about instead we make MPOL_LOCAL a real policy and allow explicitly
+> setting that?
 
-ps -deo pid,rss,comm | awk '{t += $2} END { print t }'
-
-On my (otherwise idle) box gives me ~62M.
-
+True. MPOL_LOCAL would be a good choice.
 
