@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162137Ab2CSQbK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:31:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44337 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161687Ab2CSQbI (ORCPT
+	id S1162150Ab2CSQbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:31:53 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:22546 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756590Ab2CSQbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:31:08 -0400
-Date: Mon, 19 Mar 2012 09:31:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Gerard Snitselaar <dev@snitselaar.org>
-Cc: devel@driverdev.osuosl.org, fmhess@users.sourceforge.net,
-        abbotti@mev.co.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: comedi: resolve section mismatch in s626
-Message-ID: <20120319163103.GC3694@kroah.com>
-References: <1332123921-14347-1-git-send-email-dev@snitselaar.org>
- <20120319030925.GB22956@perelman.Home>
+	Mon, 19 Mar 2012 12:31:50 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 93bxshMVM1kpvndxBVgPsbhiJyzflYj1G60UJtF3RvcxorR
+ h1P_zUhvto6LGvzGc_8bPc4eYNqQJwfNw.juklu_a0oJ1qcRSAkLOrhzW9xj
+ UfMyM84cDLlhDhDyK2qO7ZjAZHW.Voth17s8hO7itKmzhhvkFhyazDJ4Wmez
+ fDmstDMJjRvOX_FPHrzUFUXfoR3NznFcTZVx1tT1BQO4V7rKXbHTpKeTDsMA
+ Ooqg4k0mhQYClg763ERrWNy7k6_OJKIH.uO2tp5TRlV_OtEBceb8pEUYmK4y
+ Dym_S50c5xf3P_dElfjizGuooZIDVszUAta0kYHbwFk9mkzs_khr.1SU6Our
+ fYrDY0YGJayfPgz41jK9qxs2DTbLLTvAJaB9zItGI8zOQjVsF3VFiS1A29t4
+ R
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 19 Mar 2012 11:31:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: Pablo Neira Ayuso <pablo@netfilter.org>, kaber@trash.net,
+        davem@davemloft.net, Dave Jones <davej@redhat.com>,
+        netfilter-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: netfilter: Hung task
+In-Reply-To: <CA+1xoqdo5zvUe+=BYr42iEEq9mU=kd1zVxrGhQc0sNYqbpBkNQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1203191129440.20196@router.home>
+References: <CA+1xoqfCTXxXsbfUjttuOVutyD_FzYS8PoOoAOOtB72P8SwdVg@mail.gmail.com> <20120318141943.GA28850@1984> <CA+1xoqcQYqCgQb=1M5PVkm=6SBhV2oJxJ2CtBp=gAvZM36Kc2Q@mail.gmail.com> <20120319002811.GA30408@1984> <alpine.DEB.2.00.1203190854560.16879@router.home>
+ <CA+1xoqdo5zvUe+=BYr42iEEq9mU=kd1zVxrGhQc0sNYqbpBkNQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120319030925.GB22956@perelman.Home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 18, 2012 at 08:09:25PM -0700, Gerard Snitselaar wrote:
-> s626_attach is referencing s626_pci_table which is annotated
-> __devinitconst. Put pci vendor/device ids in the s626_board struct and
-> use s626_boards instead similar to what is done in gsc_hpdi.
-> 
-> v2: I had moved the PCI id defines to s626.h earlier, but later
-> decided to leave them in s626.c and forgot to move them up above where
-> they are being used in s626_boards.
-> 
-> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
-> ---
->  drivers/staging/comedi/drivers/s626.c |   27 +++++++++++++++++++--------
->  1 files changed, 19 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-> index 23fc64b..e531f1c 100644
-> --- a/drivers/staging/comedi/drivers/s626.c
-> +++ b/drivers/staging/comedi/drivers/s626.c
-> @@ -83,8 +83,17 @@ MODULE_AUTHOR("Gianluca Palli <gpalli@deis.unibo.it>");
->  MODULE_DESCRIPTION("Sensoray 626 Comedi driver module");
->  MODULE_LICENSE("GPL");
->  
-> +#define PCI_VENDOR_ID_S626 0x1131
-> +#define PCI_DEVICE_ID_S626 0x7146
-> +#define PCI_SUBVENDOR_ID_S626 0x6000
-> +#define PCI_SUBDEVICE_ID_S626 0x0272
-> +
->  struct s626_board {
->         const char *name;
-> +       int vendor_id;
-> +       int device_id;
-> +       int subvendor_id;
-> +       int subdevice_id;
->         int ai_chans;
->         int ai_bits;
->         int ao_chans;
-> @@ -97,6 +106,10 @@ struct s626_board {
->  static const struct s626_board s626_boards[] = {
->         {
->          .name = "s626",
-> +        .vendor_id = PCI_VENDOR_ID_S626,
-> +        .device_id = PCI_DEVICE_ID_S626,
-> +        .subvendor_id = PCI_SUBVENDOR_ID_S626,
-> +        .subdevice_id = PCI_SUBDEVICE_ID_S626,
->          .ai_chans = S626_ADC_CHANNELS,
->          .ai_bits = 14,
->          .ao_chans = S626_DAC_CHANNELS,
-> @@ -108,8 +121,6 @@ static const struct s626_board s626_boards[] = {
->  };
->  
->  #define thisboard ((const struct s626_board *)dev->board_ptr)
-> -#define PCI_VENDOR_ID_S626 0x1131
-> -#define PCI_DEVICE_ID_S626 0x7146
->  
->  /*
->   * For devices with vendor:device id == 0x1131:0x7146 you must specify
-> @@ -117,7 +128,7 @@ static const struct s626_board s626_boards[] = {
->   * Philips SAA7146 media/dvb based cards.
->   */
->  static DEFINE_PCI_DEVICE_TABLE(s626_pci_table) = {
-> -       {PCI_VENDOR_ID_S626, PCI_DEVICE_ID_S626, 0x6000, 0x0272, 0, 0, 0},
-> +       {PCI_VENDOR_ID_S626, PCI_DEVICE_ID_S626, PCI_SUBVENDOR_ID_S626, PCI_SUBDEVICE_ID_S626, 0, 0, 0},
->         {0}
->  };
->  
-> @@ -554,17 +565,17 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->         resource_size_t resourceStart;
->         dma_addr_t appdma;
->         struct comedi_subdevice *s;
-> -       const struct pci_device_id *ids;
->         struct pci_dev *pdev = NULL;
->  
->         if (alloc_private(dev, sizeof(struct s626_private)) < 0)
->                 return -ENOMEM;
->  
-> -       for (i = 0; i < (ARRAY_SIZE(s626_pci_table) - 1) && !pdev; i++) {
-> -               ids = &s626_pci_table[i];
-> +       for (i = 0; i < ARRAY_SIZE(s626_boards) && !pdev; i++) {
->                 do {
-> -                       pdev = pci_get_subsys(ids->vendor, ids->device,
-> -                                             ids->subvendor, ids->subdevice,
-> +                       pdev = pci_get_subsys(s626_boards[i].vendor_id,
-> +                                             s626_boards[i].device_id,
-> +                                             s626_boards[i].subvendor_id,
-> +                                             s626_boards[i].subdevice_id,
->                                               pdev);
+On Mon, 19 Mar 2012, Sasha Levin wrote:
 
-Ick, why is this loop even needed?  We are only here if the pci device
-is present in the system so this shouldn't be needed at all, right?
+> On Mon, Mar 19, 2012 at 3:56 PM, Christoph Lameter <cl@linux.com> wrote:
+> > This is sually something causing memory corruption. Please enable
+> > debugging to get backtrace that help to debutg this. CONFIG_SLUB_DEBUG_ON
+> > will do the trick or passing "slub_debug" on the kernel command line.
+>
+> The kernel was compiled with SLUB_DEBUG_ON, there's nothing coming out
+> of the slub before that hang message, nor after it.
 
-Or is this a bit more complex than I am making it out to be?
+Ok looking at the backtrace: This is kmem_cache_destroy and not the usual
+failure following a pointer in alloc / free.
 
-greg k-h
+netfilter calls kmem_cache_destroy which calls into sysfs functions and
+there the hang occurs.
+
+Did you try to see if lockdep can detect any serialization problems ?
+
+Is kmem_cache_destroy called with any locks held? Interrupts off?
+
