@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab2CSWqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:46:33 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:39227
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1758131Ab2CSWqb (ORCPT
+	id S965029Ab2CSWqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:46:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753621Ab2CSWqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:46:31 -0400
-Date: Mon, 19 Mar 2012 23:46:29 +0100 (CET)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch] Move CRC computation to separate function
-In-Reply-To: <1330531826.3545.128.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net> <1330531826.3545.128.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 Mar 2012 18:46:50 -0400
+Date: Mon, 19 Mar 2012 15:46:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [patch 1/2] c/r: prctl: Add ability to set new
+ mm_struct::exe_file
+Message-Id: <20120319154649.0687f545.akpm@linux-foundation.org>
+In-Reply-To: <CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
+References: <20120316205556.595309230@openvz.org>
+	<20120316210343.925446961@openvz.org>
+	<20120319151507.93bab32a.akpm@linux-foundation.org>
+	<20120319223941.GJ19594@moon>
+	<CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the computation of CRCs for data nodes from
-within ubifs_prepare_node to a separate function ubifs_set_datanode_crc,
-which takes a data node, and computes and sets the CRC. This is to avoid
-duplication of the CRC computation code in other places where it may be
-needed.
+On Mon, 19 Mar 2012 23:41:36 +0100
+richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
 
+> On Mon, Mar 19, 2012 at 11:39 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > On Mon, Mar 19, 2012 at 03:15:07PM -0700, Andrew Morton wrote:
+> > ...
+> >> >
+> >> > Also this action is one-shot only. For security reason
+> >> > we don't allow to change the symlink several times.
+> >>
+> >> What is this mysterious "security reason"?
+> >>
+> >
+> > Oh, sorry I should have included Matt's comment here
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+Please send a patch with the updated changelog and improved comment?
 
----
- fs/ubifs/io.c    |   16 +++++++++++++---
- fs/ubifs/ubifs.h |    1 +
- 2 files changed, 14 insertions(+), 3 deletions(-)
+> >
+> > Actually I liked multi-shot version more but Matt arguments convinced
+> > me that one-short fashion is more "secure" in terms of overall kernel
+> > state and potential transitions/changes of this /proc/pid/exe symlink.
+> >
+> > At least with one-shot version the admin may be sure that the symlink
+> > is never changed more than once, ever.
+> >
+> 
+> And changing it once does not harm security?
+> I'm sure that rootkit writers will like this feature...
 
-diff --git a/fs/ubifs/io.c b/fs/ubifs/io.c
-index 9228950..9d39b27 100644
---- a/fs/ubifs/io.c
-+++ b/fs/ubifs/io.c
-@@ -367,6 +367,18 @@ static unsigned long long next_sqnum(struct ubifs_info *c)
- }
-
- /**
-+ * ubifs_set_datanode_crc - writes the crc for a data node to the common
-+ * header.
-+ * @node: the data node
-+ */
-+void ubifs_set_datanode_crc(void *node)
-+{
-+	struct ubifs_ch *ch = (struct ubifs_ch *) node;
-+	int len = le32_to_cpu(ch->len);
-+	ch->crc = cpu_to_le32(crc32(UBIFS_CRC32_INIT, node + 8, len - 8));
-+}
-+
-+/**
-  * ubifs_prepare_node - prepare node to be written to flash.
-  * @c: UBIFS file-system description object
-  * @node: the node to pad
-@@ -379,7 +391,6 @@ static unsigned long long next_sqnum(struct ubifs_info *c)
-  */
- void ubifs_prepare_node(struct ubifs_info *c, void *node, int len, int pad)
- {
--	uint32_t crc;
- 	struct ubifs_ch *ch = node;
- 	unsigned long long sqnum = next_sqnum(c);
-
-@@ -390,8 +401,7 @@ void ubifs_prepare_node(struct ubifs_info *c, void *node, int len, int pad)
- 	ch->group_type = UBIFS_NO_NODE_GROUP;
- 	ch->sqnum = cpu_to_le64(sqnum);
- 	ch->padding[0] = ch->padding[1] = 0;
--	crc = crc32(UBIFS_CRC32_INIT, node + 8, len - 8);
--	ch->crc = cpu_to_le32(crc);
-+	ubifs_set_datanode_crc(node);
-
- 	if (pad) {
- 		len = ALIGN(len, 8);
-diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
-index 7c343e1..bfd0798 100644
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -1486,6 +1486,7 @@ int ubifs_write_node(struct ubifs_info *c, void *node, int len, int lnum,
- 		     int offs, int dtype);
- int ubifs_check_node(const struct ubifs_info *c, const void *buf, int lnum,
- 		     int offs, int quiet, int must_chk_crc);
-+void ubifs_set_datanode_crc(void *node);
- void ubifs_prepare_node(struct ubifs_info *c, void *buf, int len, int pad);
- void ubifs_prep_grp_node(struct ubifs_info *c, void *node, int len, int last);
- int ubifs_io_init(struct ubifs_info *c);
--- 
-1.7.0.4
-
-
-
+Well, let's discuss this more completely.  In what ways could an
+attacker use this?  How serious is the problem?  What actions can be
+taken to lessen it?  etcetera.
