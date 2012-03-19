@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab2CSFoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:44:00 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26855 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab2CSFn5 (ORCPT
+	id S964945Ab2CSGSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 02:18:07 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42090 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118Ab2CSGSB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:43:57 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v11 01/30] x86, PCI: Add print all root info for not using _CRS path
-Date: Sun, 18 Mar 2012 22:42:32 -0700
-Message-Id: <1332135781-13695-2-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
-References: <1332135781-13695-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F66C792.004C,ss=1,re=0.000,fgs=0
+	Mon, 19 Mar 2012 02:18:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <87aa3dxs6m.fsf@rustcorp.com.au>
+References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com> <87aa3dxs6m.fsf@rustcorp.com.au>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Mon, 19 Mar 2012 00:17:29 -0600
+Message-ID: <CAJfuBxxPY_25P70qzmEw0JgoxyCpKDuzB1vKsJR6R-GxS+NGCA@mail.gmail.com>
+Subject: Re: [00/11] pr_debug during module initialization
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org,
+        Thomas Renninger <trenn@suse.de>, pawel.moll@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/pci/amd_bus.c  |    2 +-
- arch/x86/pci/bus_numa.c |    8 ++++++++
- arch/x86/pci/bus_numa.h |    1 +
- 3 files changed, 10 insertions(+), 1 deletions(-)
+On Sun, Mar 18, 2012 at 8:04 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Wed, 14 Mar 2012 17:01:55 -0600, jim.cromie@gmail.com wrote:
+>>
+>> This is 3rd revision of the dyndbg modinit patches, previously sent
+>> Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
+>> this set reworks the remainder.
+>>
+>> It implements the "fake" module param approach proposed by
+>> Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
+>>
+>> This set is on top of linux-next, since that includes Pawel Moll's
+>> initcall-level params patch.  Im not using this feature, but I didnt
+>> know that when I started.
+>>
+>> Rusty Russell did a partial review of 2nd rev (sent off-list), here:
+>> http://thread.gmane.org/gmane.linux.kernel/1262934
+>> This revision incorporates my understanding of his feedback.
+>
+> The module parts seem fine.  The re-parsing of the commandline seems
+> weird:  I'd really rather see something in unknown_bootoption(), like:
+>
+>        /* Unused module parameter. */
+>        if (strchr(param, '.') && (!val || strchr(param, '.') < val)) {
+> +               /* Check for <module>.dyndebug fake param */
+> +               dyndebug_parse(param, val);
+>                return 0;
+>        }
+>
+> (Note that param will be the whole line here, eg "foo.dyndebug=+p", with
+>  val pointing just past the "=" (if any)).
+>
+> Of course, that means the parsing happens at that "parse_args("Booting
+> kernel"...)" point in init/main.c, which may not suit.
+>
 
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index 0b6abbe..5f30a98 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -291,7 +291,7 @@ static int __init early_fill_mp_bus_info(void)
- 		}
- 	}
- 
--	print_pci_root_info(info, "bus:", true);
-+	print_all_pci_root_info("ht link", true);
- 
- 	return 0;
- }
-diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
-index 7251011..772949f 100644
---- a/arch/x86/pci/bus_numa.c
-+++ b/arch/x86/pci/bus_numa.c
-@@ -94,6 +94,14 @@ void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink)
- 				 &root_res->res);
- }
- 
-+void print_all_pci_root_info(char *name, bool nodelink)
-+{
-+	struct pci_root_info *info;
-+
-+	list_for_each_entry(info, &pci_root_infos, list)
-+		print_pci_root_info(info, name, nodelink);
-+}
-+
- void __devinit update_res(struct pci_root_info *info, resource_size_t start,
- 			  resource_size_t end, unsigned long flags, int merge)
- {
-diff --git a/arch/x86/pci/bus_numa.h b/arch/x86/pci/bus_numa.h
-index d19ac93..deada6a 100644
---- a/arch/x86/pci/bus_numa.h
-+++ b/arch/x86/pci/bus_numa.h
-@@ -23,6 +23,7 @@ extern struct list_head pci_root_infos;
- struct pci_root_info *alloc_pci_root_info(int bus_min, int bus_max,
- 						int node, int link);
- void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink);
-+void print_all_pci_root_info(char *name, bool nodelink);
- extern void update_res(struct pci_root_info *info, resource_size_t start,
- 		      resource_size_t end, unsigned long flags, int merge);
- #endif
--- 
-1.7.7
+That is too early - the dyndbg rules cant be activated
+until dynamic_debug_init() runs, which is currently an
+arch_initcall(dynamic_debug_init);
 
+Patch 11 makes it core-initcall, (which Im not sure is ok
+for all cases, but works for me), I also tried it with
+early_initcall (and that worked too)
+but I think thats still after the Booting kernel parse.
+
+I *could* capture the dyndbg options during Booting kernel
+parse, and activate them once the tables are loaded,
+but this seems convoluted.
+
+Thomas' original approach (iirc, Id have to dig for the patches)
+was to reuse parse_one after filtering for dyndbg params in
+a "private" parse-args. After your earlier suggestion to use a
+callback, it occurred to me that just reusing parse_args would
+work, be fairly minimal (only 2 lines in dynamic_debug_init())
+and its already called a bunch of times; Booting kernel,
+module-load, and do-initcall-level (in Pawel's patch).
+Pawels patch doesnt do anything to avoid reparsing
+boot-time params.
+
+Does this change your weirdness assessment ?
+
+BTW, I think I can now drop ddebug_setup_string, ddebug_setup_query,
+and __setup("ddebug_query="...)
+
+
+
+Lastly, my earlier rev handled  foo.dyndbg params
+for loadable modules.  I took that out cuz
+Documentation/kernel-parameters.txt says thats
+for builtins (only, as I read it), and treating foo.dyndbg
+differently should be done w/o discussion.
+
+Is there a reason why foo.knownparam=val is not handled ?
+When I had it in, it was processed before modprobe args
+IIRC, it was /etc/modprobe.d/*, foo.dyndbg in boot-args,
+then modprobe args, which seemed correct - it let each override the
+previous settings.
+
+
+> Otherwise, all looks good!
+>
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+thanks.  I guess the Ack (vs SOB) means that Jason should
+forward it on to Greg as a single set ?
+(subject to his Ack of course)
+
+>
+> Cheers,
+> Rusty.
+> --
+>  How could I marry someone with more hair than me?  http://baldalex.org
