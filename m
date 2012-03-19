@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab2CSKxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 06:53:40 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.255.50]:35592 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932177Ab2CSKxW (ORCPT
+	id S1030484Ab2CSKyC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 06:54:02 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52492 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab2CSKx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 06:53:22 -0400
-X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 06:53:22 EDT
-X-Env-Sender: darryl.degraff@licor.com
-X-Msg-Ref: server-7.tower-172.messagelabs.com!1332154009!2153835!1
-X-Originating-IP: [208.82.105.217]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <4F670E6A.9060403@licor.com>
-Date: Mon, 19 Mar 2012 05:46:02 -0500
-From: Darryl <ddegraff@licor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Mon, 19 Mar 2012 06:53:58 -0400
+Date: Mon, 19 Mar 2012 10:53:47 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.pitre@linaro.org, catalin.marinas@arm.com,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] arm: Add unwinding support for memset and memzero.
+Message-ID: <20120319105346.GA2124@linaro.org>
+References: <1331574027-28542-1-git-send-email-lauraa@codeaurora.org>
+ <20120314111504.GA2033@linaro.org>
+ <4F63767E.3020706@codeaurora.org>
 MIME-Version: 1.0
-To: <prakash.pm@ti.com>, <sshtylyov@mvista.com>
-CC: <davinci-linux-open-source@linux.davincidsp.com>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>
-Subject: arm: davinci: USB ethernet
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F63767E.3020706@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are currently using a DA850 eval board but will eventually use a 
-custom board to interface host system to davinci using ethernet over 
-USB.  We are using 2.6.37 with real-time patches, but a cursory look 
-(have not been able to build yet) at 3.3-rc7 suggests that the issues 
-noted below still exist.
+On Fri, Mar 16, 2012 at 10:21:02AM -0700, Laura Abbott wrote:
+> On 3/14/2012 4:15 AM, Dave Martin wrote:
+> >
+> >For functions like this, the unwinding requirements are different
+> >depending on where we are in the function.  But the unwinder annotations
+> >don't remember exact instruction locations; only the extent of the
+> >whole unwind block is recorded, along with the sequence (but not
+> >location) of unwinder directives.
+> >
+> >As is, the unwinding may be wrong depending on which part of the function
+> >is executing when the fault occurs.
+> >
+> 
+> Hmmmm, I thought I could get away with only one annotation based on
+> the structure of memset/memzero but looking again you are right, it
+> really requires multiple annotations to be correct.
+> 
+> >It may be possible to split the function into multiple unwind blocks,
+> >e.g.:
+> >
+> >ENTRY(somefunc)
+> >UNWIND(.fnstart)
+> >
+> >UNWIND(.save {r4,lr})
+> >	stfmd	sp!, {r4,lr}
+> >
+> >	/* check something */
+> >
+> >	blt	_the_other_way
+> >	/* maybe carry out our job this way */
+> >
+> >	ldmfd	sp!, {r4,lr}
+> >UNWIND(.fnend)
+> >
+> >_the_other_way:
+> >UNWIND(.fnstart)
+> >UNWIND(.save {r4,lr})
+> >UNWIND(.save {r5-r8})
+> >	stmfd	sp!, {r5-r8}	/* !! */
+> >
+> >	/* carry out our job the other way */
+> >
+> >	ldmfd	sp!, {r5-r8}
+> >	ldmfd	sp!, {r4,pc}	/* !! */
+> >UNWIND(.fnend)
+> >
+> >
+> >This is still not exactly right (it's hard to be exactly right,
+> >since the unwind tables are not meant for handling asynchronous
+> >unwinding), but unwinding should be correct for the main bits of code
+> >where most time is spent and/or faults are most likely (the "carry out
+> >our job" comments).
+> >
+> 
+> Would a compiler be able to generate code such as this and still
+> generate correct completely unwinding annotations? Or if the
+> compiler knows unwinding is necessary, is the only option to
+> generate code in 'unwindable blocks'? (alternatively, no compiler is
+> smart/stupid enough to generate this code?)
 
-There are currently two issues:
+I believe the compiler will typically generate a single unwind block per
+function, with single save/restore sequences at the entry and exit
+points which save/restore everything the function could possibly
+use.  This means that unless a fault occurs in the save/restore
+sequences (this would imply a stack overflow etc.) then the resulting
+backtrace should be sensible.
 
-- Documentation/usb/hotplug.txt suggests that the drivers should be 
-built as modules so that such things as loading drivers and, in this 
-case, bringing up the interface, can ge moderated in user-space.  
-However, though the code can be build modular, the drivers are never 
-loaded.  I suspect that one or more of the several relevant configs (I 
-see at least these:  USB_MUSB_HDRC, USB_MUSB_DA8XX_GLUE, USB_GADGET, 
-USB_ETH, USB_GPIO_VBUS, NOP_USB_XCEIV, USB_ETH_RNDIS, USB_OTG_UTILS) are 
-required to be built in, but cannot seem to determine the correct ones.
+In assembly functions, we do sometimes optimise things further, so
+that if there is a fast path through the function we don't necessarily
+do the full save/restore on that path.  However, deferring state save
+like this doesn't fit the "single unwind block per function" model.
 
-- Even when compiling all the driver code built-in, neither the plug-in 
-nor plug-out event is propagated to user space, again, so that the 
-interface can be brought up.
+The unusual thing about the function being considered here is that
+it has two parts where non-stack faults can reasonably occur, with
+different save/restore frames in each part.
 
-I am happy enough to build-in the driver code, but I still need the 
-ability to bring up the interface.  I know that I can use a call to
-         call_usermodehelper
-to get to use-space, but I'd still be faced with where that call would 
-work best.
-
-So, I'm wondering if you have suggestions regarding how to proceed.
-
-Thanks,
-Darryl
-
+Cheers
+---Dave
