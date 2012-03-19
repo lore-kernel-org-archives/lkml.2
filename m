@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2CSFyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 01:54:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31277 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161913Ab2CSFth (ORCPT
+	id S1161928Ab2CSFzl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 01:55:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:25406 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161768Ab2CSFte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 01:49:37 -0400
+	Mon, 19 Mar 2012 01:49:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,97 +15,59 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v2 06/26] x86, PCI: Use for_each_res with pci_allocate_dev_resources
-Date: Sun, 18 Mar 2012 22:48:29 -0700
-Message-Id: <1332136129-14010-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v2 03/26] PCI: Add pci_dev_resource_idx()
+Date: Sun, 18 Mar 2012 22:48:26 -0700
+Message-Id: <1332136129-14010-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332136129-14010-1-git-send-email-yinghai@kernel.org>
 References: <1332136129-14010-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090209.4F66C8EF.0019,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F66C8EB.00BB,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   55 ++++++++++++++++++--------------------------------
- 1 files changed, 20 insertions(+), 35 deletions(-)
+ drivers/pci/probe.c |   12 ++++++++++++
+ include/linux/pci.h |    1 +
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 570197e..83befee 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -228,49 +228,34 @@ static void pcibios_allocate_bus_resources(struct pci_bus *bus)
- 		pcibios_allocate_bus_resources(child);
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 87e87b5..7d5550a 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -85,6 +85,18 @@ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
+ 	return NULL;
  }
  
--struct pci_check_idx_range {
--	int start;
--	int end;
--};
--
- static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
++int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
++{
++	int i;
++	struct resource *r;
++
++	for_each_pci_dev_all_resource(dev, r, i)
++		if (r == res)
++			return i;
++
++	return -1;
++}
++
+ static u64 pci_size(u64 base, u64 maxbase, u64 mask)
  {
--	int idx, disabled, i;
-+	int idx, disabled;
- 	u16 command;
- 	struct resource *r;
+ 	u64 size = mask & maxbase;	/* Find the significant bits */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 2b1fff8..e3f9ae1 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -348,6 +348,7 @@ struct pci_dev {
+ };
  
--	struct pci_check_idx_range idx_range[] = {
--		{ PCI_STD_RESOURCES, PCI_STD_RESOURCE_END },
--#ifdef CONFIG_PCI_IOV
--		{ PCI_IOV_RESOURCES, PCI_IOV_RESOURCE_END },
--#endif
--	};
--
- 	pci_read_config_word(dev, PCI_COMMAND, &command);
--	for (i = 0; i < ARRAY_SIZE(idx_range); i++)
--		for (idx = idx_range[i].start; idx <= idx_range[i].end; idx++) {
--			r = &dev->resource[idx];
--			if (r->parent)	/* Already allocated */
--				continue;
--			if (!r->start)	/* Address not assigned at all */
--				continue;
--			if (r->flags & IORESOURCE_IO)
--				disabled = !(command & PCI_COMMAND_IO);
--			else
--				disabled = !(command & PCI_COMMAND_MEMORY);
--			if (pass == disabled) {
--				dev_dbg(&dev->dev,
--					"BAR %d: reserving %pr (d=%d, p=%d)\n",
--					idx, r, disabled, pass);
--				if (pci_claim_resource(dev, idx) < 0) {
--					/* We'll assign a new address later */
--					pcibios_save_fw_addr(dev,
--							idx, r->start);
--					r->end -= r->start;
--					r->start = 0;
--				}
-+	for_each_pci_dev_base_norom_resource(dev, r, idx) {
-+		if (r->parent)	/* Already allocated */
-+			continue;
-+		if (!r->start)	/* Address not assigned at all */
-+			continue;
-+		if (r->flags & IORESOURCE_IO)
-+			disabled = !(command & PCI_COMMAND_IO);
-+		else
-+			disabled = !(command & PCI_COMMAND_MEMORY);
-+		if (pass == disabled) {
-+			dev_dbg(&dev->dev,
-+				"BAR %d: reserving %pr (d=%d, p=%d)\n",
-+				idx, r, disabled, pass);
-+			if (pci_claim_resource(dev, idx) < 0) {
-+				/* We'll assign a new address later */
-+				pcibios_save_fw_addr(dev, idx, r->start);
-+				r->end -= r->start;
-+				r->start = 0;
- 			}
- 		}
-+	}
- 	if (!pass) {
- 		r = &dev->resource[PCI_ROM_RESOURCE];
- 		if (r->flags & IORESOURCE_ROM_ENABLE) {
+ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
++int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+ 
+ #define resno_is_for_bridge(n)						\
+ 	((n) >= PCI_BRIDGE_RESOURCES && (n) <= PCI_BRIDGE_RESOURCE_END)
 -- 
 1.7.7
 
