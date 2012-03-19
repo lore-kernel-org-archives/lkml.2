@@ -1,135 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162043Ab2CSQQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:16:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59856 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031012Ab2CSQQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:16:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="119164225"
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
- __dma_request_channel()
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1203191524200.11516@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
-	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
-	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-	 <1331188201.4657.51.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
-	 <1331204128.4657.54.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
-	 <1331206459.4657.59.camel@vkoul-udesk3>
-	 <1331211513.4657.67.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
-	 <1331284918.4657.69.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
-	 <1331285959.4657.76.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
-	 <1331520476.4657.79.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
-	 <1332157021.7180.5.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203191244240.11516@axis700.grange>
-	 <1332164062.7180.19.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203191436030.11516@axis700.grange>
-	 <1332165604.7180.24.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203191502170.11516@axis700.grange>
-	 <1332166938.7180.38.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203191524200.11516@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Mar 2012 21:50:36 +0530
-Message-ID: <1332174036.12110.15.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1161910Ab2CSQRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:17:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48492 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031090Ab2CSQNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:13:33 -0400
+From: jean.pihet@newoldbits.com
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH 8/9] ARM: OMAP2+: SmartReflex: add POWER_AVS Kconfig options
+Date: Mon, 19 Mar 2012 17:12:57 +0100
+Message-Id: <1332173578-27422-9-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 15:45 +0100, Guennadi Liakhovetski wrote:
-> > Btw why should .device_alloc_chan_resources() need this, I so no reason,
-> > unless we are working around some other issue.
-> 
-> The reason is the following: with the proposed modifications to the 
-> existing API we want to achieve:
-> 
-> 1. client requests a channel
-> 	dmaengine_request_slave_channel(dev)
-> 2. the core looks through platform-specific mapping tables and finds a 
->    suitable channel
-> 3. the core calls device driver's .device_alloc_chan_resources() method 
->    for that channel
-> 4. the client uses
-> 	dmaengine_slave_config(chan, config)
->    to configure the channel
-> 
-> Now, that last channel configuration can have two aspects: (1) static: 
-> routing, multiplexing, peripheral address. This needs to be set only once 
-> per each such channel allocation to a specific client,
-correct
+From: Jean Pihet <j-pihet@ti.com>
 
->  (2) (potentially) 
-> dynamic: any burst sizes etc.
-I dont think burst-size would be dynamic, are they on sh- ?
+Add a Kconfig menu (POWER_AVS) and rename the Kconfig options
+for the OMAP SmartReflex implementation:
+ CONFIG_OMAP_SMARTREFLEX renames to CONFIG_POWER_AVS_OMAP
+ CONFIG_OMAP_SMARTREFLEX_CLASS3 renames to CONFIG_POWER_AVS_OMAP_CLASS3
 
->  We can pass both these configuration types 
-> together to the DMA device driver at step 4. For that the slave would have 
-> to embed struct dma_slave_config into another hardware-specific type with 
-> additional routing parameters.
-I think most of generic parameters are already there. As long as you
-dont have abnormal controller current dma_slave_config should suffice.
-Again, if you have specific need pls let us know, this structure can &
-should be expanded if dmacs needs something for slave configuration.
+This change makes the SmartReflex implementation ready for the move
+to drivers/.
 
->  Otherwise we could pass static 
-> configuration, supplied by the platform,
-platform, where is that coming into configuration discussion. Platforms
-role is only for *mapping* and not for configuration.
->  from the client to the DMA device 
-> driver already at step 1. This way we would avoid having to embed struct 
-> dma_slave_config and pass it around even if the driver doesn't actually 
-> use it. In some cases step 4 would be then dropped completely. But I can 
-> live with either solution.
-> 
-> Another reason is, that in the future it can happen, that we get further 
-> restrictions on channel selection, that will not fit into the standard 
-> mapping scheme. In this case, having access to slave's identification, the 
-> DMA device driver will have another chance to check, whether the proposed 
-> channel is indeed suitable.
-DMAC do not and should not check that. It is again job of client to
-check that.
-I know sh- doesnt do it this way, but after we sort of mapping, I expect
-this to be gone. DMACs should not know anything about clients.
+Signed-off-by: Jean Pihet <j-pihet@ti.com>
+---
+ arch/arm/mach-omap2/Makefile      |    5 ++-
+ arch/arm/mach-omap2/pm.h          |    2 +-
+ arch/arm/mach-omap2/smartreflex.h |    6 ++--
+ arch/arm/plat-omap/Kconfig        |   45 ++++++++++++++++++++++++------------
+ 4 files changed, 37 insertions(+), 21 deletions(-)
 
-> 
-> BTW, if we only pass a device pointer and return to the client channels 
-> one-by-one, how will the client know, which channel it just has got back - 
-> Tx or Rx? Will it have to try to configure it for each role and see, which 
-> one succeeds?...
-There are few options and considerations:
-a) if platform map forces you to use specific channel for TX and
-specific one for RX, then you should have mapping explicitly tell you
-about RX and TX channels.
-b) if not, then you should get a channel which can work with a client.
-And then use direction to find about TX and RX for a descriptor. I know
-some controller can use same channel for both RX and TX.
-
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 9746529..30666fd 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -68,8 +68,9 @@ obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o \
+ obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o omap-mpuss-lowpower.o \
+ 					   cpuidle44xx.o
+ obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+-obj-$(CONFIG_OMAP_SMARTREFLEX)          += sr_device.o smartreflex.o
+-obj-$(CONFIG_OMAP_SMARTREFLEX_CLASS3)	+= smartreflex-class3.o
++
++obj-$(CONFIG_POWER_AVS_OMAP)		+= sr_device.o smartreflex.o
++obj-$(CONFIG_POWER_AVS_OMAP_CLASS3)	+= smartreflex-class3.o
+ 
+ AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
+ AFLAGS_sleep34xx.o			:=-Wa,-march=armv7-a$(plus_sec)
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index a051431..1a2d483 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -110,7 +110,7 @@ extern void enable_omap3630_toggle_l2_on_restore(void);
+ static inline void enable_omap3630_toggle_l2_on_restore(void) { }
+ #endif		/* defined(CONFIG_PM) && defined(CONFIG_ARCH_OMAP3) */
+ 
+-#ifdef CONFIG_OMAP_SMARTREFLEX
++#ifdef CONFIG_POWER_AVS_OMAP
+ extern int omap_devinit_smartreflex(void);
+ extern void omap_enable_smartreflex_on_init(void);
+ #else
+diff --git a/arch/arm/mach-omap2/smartreflex.h b/arch/arm/mach-omap2/smartreflex.h
+index a87bac1..754f6aa 100644
+--- a/arch/arm/mach-omap2/smartreflex.h
++++ b/arch/arm/mach-omap2/smartreflex.h
+@@ -17,8 +17,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#ifndef __ASM_ARM_OMAP_SMARTREFLEX_H
+-#define __ASM_ARM_OMAP_SMARTREFLEX_H
++#ifndef __DRIVERS_POWER_AVS_SMARTREFLEX_H
++#define __DRIVERS_POWER_AVS_SMARTREFLEX_H
+ 
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+@@ -177,7 +177,7 @@ struct omap_sr_pmic_data {
+ };
+ 
+ 
+-#ifdef CONFIG_OMAP_SMARTREFLEX
++#ifdef CONFIG_POWER_AVS_OMAP
+ /*
+  * The smart reflex driver supports CLASS1 CLASS2 and CLASS3 SR.
+  * The smartreflex class driver should pass the class type.
+diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+index f419a08..6ec9237 100644
+--- a/arch/arm/plat-omap/Kconfig
++++ b/arch/arm/plat-omap/Kconfig
+@@ -44,37 +44,52 @@ config OMAP_DEBUG_LEDS
+ 	depends on OMAP_DEBUG_DEVICES
+ 	default y if LEDS_CLASS
+ 
+-config OMAP_SMARTREFLEX
+-	bool "SmartReflex support"
+-	depends on (ARCH_OMAP3 || ARCH_OMAP4) && PM
++menuconfig POWER_AVS
++	tristate "Adaptive Voltage Scaling class support"
+ 	help
+-	  Say Y if you want to enable SmartReflex.
++	  AVS is a power management technique which finely controls the
++	  operating voltage of a device in order to optimize (i.e. reduce)
++	  its power consumption.
++	  At a given operating point the voltage is adapted depending on
++	  static factors (chip manufacturing process) and dynamic factors
++	  (temperature depending performance).
++	  AVS is also called SmartReflex on OMAP devices.
++
++	  Say Y here to enable Adaptive Voltage Scaling class support.
++
++if POWER_AVS
+ 
+-	  SmartReflex can perform continuous dynamic voltage
+-	  scaling around the nominal operating point voltage
+-	  according to silicon characteristics and operating
+-	  conditions. Enabling SmartReflex reduces power
+-	  consumption.
++config POWER_AVS_OMAP
++	bool "AVS support for the OMAP IP versions 1&2"
++	depends on (ARCH_OMAP3 || ARCH_OMAP4) && PM
++	help
++	  Say Y to enable AVS support on OMAP containing the version 1 or
++	  version 2 of the SmartReflex IP.
++	  V1 is the 65nm version used in OMAP3430.
++	  V2 is the update for the 45nm version of the IP used in OMAP3630
++	  and OMAP4430
+ 
+ 	  Please note, that by default SmartReflex is only
+-	  initialized. To enable the automatic voltage
+-	  compensation for vdd mpu  and vdd core from user space,
++	  initialized and not enabled. To enable the automatic voltage
++	  compensation for vdd mpu and vdd core from user space,
+ 	  user must write 1 to
+-		/debug/voltage/vdd_<X>/smartreflex/autocomp,
+-	  where X is mpu or core for OMAP3.
++		/debug/smartreflex/sr_<X>/autocomp,
++	  where X is mpu_iva or core for OMAP3.
+ 	  Optionally autocompensation can be enabled in the kernel
+ 	  by default during system init via the enable_on_init flag
+ 	  which an be passed as platform data to the smartreflex driver.
+ 
+-config OMAP_SMARTREFLEX_CLASS3
++config POWER_AVS_OMAP_CLASS3
+ 	bool "Class 3 mode of Smartreflex Implementation"
+-	depends on OMAP_SMARTREFLEX && TWL4030_CORE
++	depends on POWER_AVS_OMAP && TWL4030_CORE
+ 	help
+ 	  Say Y to enable Class 3 implementation of Smartreflex
+ 
+ 	  Class 3 implementation of Smartreflex employs continuous hardware
+ 	  voltage calibration.
+ 
++endif # POWER_AVS
++
+ config OMAP_RESET_CLOCKS
+ 	bool "Reset unused clocks during boot"
+ 	depends on ARCH_OMAP
 -- 
-~Vinod
+1.7.5.4
 
