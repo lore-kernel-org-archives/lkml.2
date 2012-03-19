@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032264Ab2CSRL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:11:29 -0400
-Received: from na3sys010aog106.obsmtp.com ([74.125.245.80]:34978 "HELO
-	na3sys010aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758278Ab2CSRL1 (ORCPT
+	id S1162295Ab2CSRMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:12:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55734 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758113Ab2CSRMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:11:27 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Mon, 19 Mar 2012 10:11:19 -0700
-Message-Id: <1332177079-14339-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.9.1
+	Mon, 19 Mar 2012 13:12:14 -0400
+Subject: Re: [PATCH 1/1] net/hyperv: Fix the code handling tx busy
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: kys@microsoft.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+In-Reply-To: <1332176549-30960-2-git-send-email-haiyangz@microsoft.com>
+References: <1332176549-30960-1-git-send-email-haiyangz@microsoft.com>
+	 <1332176549-30960-2-git-send-email-haiyangz@microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 10:11:58 -0700
+Message-ID: <1332177118.9397.32.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2012-03-19 at 10:02 -0700, Haiyang Zhang wrote:
+> Instead of dropping the packet, we keep the skb buffer, and return
+> NETDEV_TX_BUSY to let upper layer retry send. This will not cause
+> endless loop, because the host is taking data away from ring buffer.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/net/hyperv/netvsc_drv.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 2517d20..dd29478 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -223,13 +223,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+>  		net->stats.tx_bytes += skb->len;
+>  		net->stats.tx_packets++;
+>  	} else {
+> -		/* we are shutting down or bus overloaded, just drop packet */
+> -		net->stats.tx_dropped++;
+>  		kfree(packet);
+> -		dev_kfree_skb_any(skb);
+>  	}
+>  
+> -	return NETDEV_TX_OK;
+> +	return ret ? NETDEV_TX_BUSY : NETDEV_TX_OK;
+>  }
+>  
+>  /*
 
-Please pull from
+Thats simply not true at all.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git rdma-for-linus
+A start_xmit() cannot do that.
 
-----------------------------------------------------------------
+TX_BUSY should never be returned at all, its a deprecated code, for
+pretty good reasons. (assuming queue is not stopped)
 
-InfiniBand/RDMA changes for the 3.4 merge window.  Nothing big really
-stands out; by patch count lots of fixes to the mlx4 driver plus some
-cleanups and fixes to the core and other drivers.
+Try this on a machine with one CPU, I am pretty sure this can trigger
+complete freezes.
 
-----------------------------------------------------------------
-Bart Van Assche (2):
-      IB/srp: Use pr_fmt() and pr_err()/pr_warn()
-      IB/srp: Consolidate repetitive sysfs code
+Once softirq loops in your start_xmit(), how do you think one process
+can help you now ?
 
-Doug Ledford (1):
-      IB/iser: Free IB connection resources in the proper place
 
-Eli Cohen (3):
-      IB/mlx4: Set bad_wr for invalid send opcode
-      mlx4: Enforce device max FMR maps in FMR alloc
-      IB/mlx4: Fix possible missed completion event
 
-Eric Dumazet (1):
-      IB/ehca: Use kthread_create_on_node()
-
-Hefty, Sean (1):
-      RDMA/ucma: Fix AB-BA deadlock
-
-Jack Morgenstein (1):
-      mlx4_core: Report thermal error events
-
-Kumar Sanghvi (1):
-      RDMA/cxgb4: Add missing peer2peer check in MPAv2 code
-
-Kyle McMartin (1):
-      IB/ehca: Fix ilog2() compile failure
-
-Masanari Iida (1):
-      IB/srpt: Fix typo "alocate" -> "allocate"
-
-Mike Marciniszyn (2):
-      IB/qib: Add logic for affinity hint
-      IB/qib: Avoid filtering LID on SMA portinfo
-
-Or Gerlitz (6):
-      IB/iser: Post initial receive buffers before sending the final login request
-      IB: Use central enum for speed instead of hard-coded values
-      mlx4_core: Get rid of redundant ext_port_cap flags
-      IB: Change CQE "csum_ok" field to a bit flag
-      IB/mlx4: Fix info returned when querying IBoE ports
-      mlx4_core: Allow dynamic MTU configuration for IB ports
-
-Roland Dreier (5):
-      IB/core: Fix SDR rates in sysfs
-      mlx4_core: Fix one more static exported function
-      mlx4_core: Scale size of MTT table with system RAM
-      Merge branches 'misc' and 'mlx4' into for-next
-      Merge branches 'cma', 'cxgb3', 'cxgb4', 'ehca', 'iser', 'mad', 'nes', 'qib', 'srp' and 'srpt' into for-next
-
-Steve Wise (2):
-      RDMA/cxgb3: Don't pass irq flags to flush_qp()
-      RDMA/iwcm: Reject connect requests if cmid is not in LISTEN state
-
-Swapna Thete (2):
-      IB/mad: Add MAD error codes from IBA spec
-      IB/mad: Return error response for unsupported MADs
-
-Tatyana Nikolova (1):
-      RDMA/nes: Fixes for sparse endianness warnings
-
- drivers/infiniband/core/iwcm.c               |   24 +++--
- drivers/infiniband/core/mad.c                |   21 ++++
- drivers/infiniband/core/sysfs.c              |   27 +++---
- drivers/infiniband/core/ucma.c               |   37 ++++----
- drivers/infiniband/hw/amso1100/c2_provider.c |    2 +-
- drivers/infiniband/hw/cxgb3/iwch_provider.c  |    2 +-
- drivers/infiniband/hw/cxgb3/iwch_qp.c        |   40 ++++----
- drivers/infiniband/hw/cxgb4/cm.c             |    2 +-
- drivers/infiniband/hw/cxgb4/provider.c       |    2 +-
- drivers/infiniband/hw/ehca/ehca_hca.c        |    2 +-
- drivers/infiniband/hw/ehca/ehca_irq.c        |    3 +-
- drivers/infiniband/hw/ehca/ehca_mrmw.c       |    2 +-
- drivers/infiniband/hw/mlx4/cq.c              |    6 +-
- drivers/infiniband/hw/mlx4/main.c            |  130 +++++++++++++------------
- drivers/infiniband/hw/mlx4/qp.c              |    1 +
- drivers/infiniband/hw/mthca/mthca_cq.c       |    3 +-
- drivers/infiniband/hw/nes/nes_cm.c           |   39 +++++----
- drivers/infiniband/hw/nes/nes_verbs.c        |    2 +-
- drivers/infiniband/hw/qib/qib.h              |   10 ++-
- drivers/infiniband/hw/qib/qib_iba7322.c      |  107 +++++++++++++++------
- drivers/infiniband/hw/qib/qib_mad.c          |    4 +-
- drivers/infiniband/hw/qib/qib_pcie.c         |   21 ++++-
- drivers/infiniband/hw/qib/qib_rc.c           |    1 -
- drivers/infiniband/hw/qib/qib_uc.c           |    1 -
- drivers/infiniband/ulp/ipoib/ipoib_ib.c      |    3 +-
- drivers/infiniband/ulp/iser/iscsi_iser.c     |   18 +---
- drivers/infiniband/ulp/iser/iscsi_iser.h     |    1 +
- drivers/infiniband/ulp/iser/iser_initiator.c |   42 ++++-----
- drivers/infiniband/ulp/iser/iser_verbs.c     |   12 +++
- drivers/infiniband/ulp/srp/ib_srp.c          |  103 +++++++++-----------
- drivers/infiniband/ulp/srpt/ib_srpt.c        |    2 +-
- drivers/net/ethernet/mellanox/mlx4/eq.c      |   32 ++++++-
- drivers/net/ethernet/mellanox/mlx4/main.c    |  126 +++++++++++++++++++++++--
- drivers/net/ethernet/mellanox/mlx4/mlx4.h    |    9 ++-
- drivers/net/ethernet/mellanox/mlx4/mr.c      |    3 +
- drivers/net/ethernet/mellanox/mlx4/port.c    |   68 +++++---------
- drivers/net/ethernet/mellanox/mlx4/profile.c |   19 ++++
- include/linux/mlx4/device.h                  |   12 ++-
- include/rdma/ib_mad.h                        |    9 ++
- include/rdma/ib_verbs.h                      |   11 ++-
- 40 files changed, 607 insertions(+), 352 deletions(-)
