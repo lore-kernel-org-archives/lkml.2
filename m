@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab2CSPdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:33:11 -0400
-Received: from nbd.name ([46.4.11.11]:56574 "EHLO nbd.name"
+	id S1759140Ab2CSPdv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:33:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1901 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758741Ab2CSPdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:33:09 -0400
-Message-ID: <4F6751B2.1030809@openwrt.org>
-Date: Mon, 19 Mar 2012 16:33:06 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com>
-In-Reply-To: <4F674FF5.2060406@gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759094Ab2CSPdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 11:33:49 -0400
+Subject: Re: GFS2: Pre-pull patch posting (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        teigland@redhat.com
+In-Reply-To: <4F674E4F.5080904@xenotime.net>
+References: <1332152728-4027-1-git-send-email-swhiteho@redhat.com>
+	 <4F674696.7030602@xenotime.net> <1332169153.2689.20.camel@menhir>
+	 <4F674E4F.5080904@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 19 Mar 2012 15:34:07 +0000
+Message-ID: <1332171247.2689.28.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-19 4:25 PM, Justin P. Mattock wrote:
-> On 03/19/2012 08:20 AM, Mohammed Shafi wrote:
->> Hi Justin,
->>
->>> seems I got this when waking up from suspend, was trying to connect with NM
->>> then all of a sudden Xorg shut off and this appeared on the screen(image
->>> links below I could not save dmesg only pic)
->>> http://flic.kr/p/bEhf2K
->>> http://flic.kr/p/bEhf2x
->>> http://flic.kr/p/bEhf2n
->>> http://flic.kr/p/bEhf26
->>>
->>> I see ath9k in the image, but am unsure if its related.
->>> kernel is: 3.3.0-rc7-next-20120316
->>
->> this looks like some new issue  in ath9k, lets try to recreate it here
->>
->>>
->>> Justin P. Mattock
->>>
->>>
->>>
->>
->>
->>
-> 
-> would be nice to recreate, then bisecting will be more accurate to do.. 
-> I am trying userspace tweaks here and there but no luck(hostapd etc..) 
-> keep in mind this is for the RX DMA, the above just occured..
-> as for writing a small app I still need to try, but my C skills only go 
-> so far(anything to trigger!).
-Was your kernel compiled with debug info? If so, please run gdb on the
-ath9k.ko module and enter this:
-l *ath9k_tx+start+0x284
-Then send me the output of that.
+Hi,
 
-- Felix
+On Mon, 2012-03-19 at 08:18 -0700, Randy Dunlap wrote:
+> On 03/19/2012 07:59 AM, Steven Whitehouse wrote:
+> 
+> > Hi,
+> > 
+> > On Mon, 2012-03-19 at 07:45 -0700, Randy Dunlap wrote:
+> >> On 03/19/2012 03:25 AM, Steven Whitehouse wrote:
+> >>
+> >>> Hi,
+> >>>
+> >>> Not a huge number of patches this time. Some notable new features
+> >>> though:
+> >>>  - Glock stats gathering (v. useful for performance analysis)
+> >>>  - FITRIM ioctl support
+> >>>  - Sorting the ordered write list (big performance increase when the workload
+> >>>    doesn't result in the write requests being nicely ordered to start with)
+> >>>
+> >>> Plus a few clean ups, and bug fixes in addition,
+> >>
+> >>
+> >>
+> >> Hi,
+> >>
+> >> I reported a build error in linux-next 20120313, but it appears
+> >> that mainline also needs the fix (when it's ready) since mainline
+> >> gfs2 Kconfig selects DLM_SCTP, which does not exist.
+> >>
+> >> https://lkml.org/lkml/2012/3/13/456
+> >>
+> > 
+> > Does the following fix the problem? If so then I'll roll that into the
+> > tree before it gets pushed,
+> > 
+> 
+> No, that's not sufficient:
+> 
+> warning: (GFS2_FS) selects DLM which has unmet direct dependencies (EXPERIMENTAL && INET && SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n))
+> warning: (DLM && GFS2_FS) selects IP_SCTP which has unmet direct dependencies (NET && INET && EXPERIMENTAL && (IPV6 || IPV6=n))
+> 
+> and
+> 
+> ERROR: "crc32c" [net/sctp/sctp.ko] undefined!
+> 
+> 
+Hmm, ok. I'll look at this again. I'm not sure why DLM is still calling
+itself EXPERIMENTAL since thats long since not been the case, maybe SCTP
+still is, but I don't think GFS2 should be selecting EXPERIMENTAL
+directly, anyway. It is rather easy to tie ones' self in knots with this
+config language.... since GFS2_FS_LOCKING_DLM depends on NET && INET &&
+(IPV6 || IPV6=n) && HOTPLUG then all those other deps must presumably be
+set anyway, so I don't understand quite why DLM doesn't have those
+available to it.
+
+I'll dig around a bit and see if I can figure out whats going on here,
+
+Steve.
+
+
+> 
+> 
+> > 
+> > diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+> > index c465ae0..f4e1c60 100644
+> > --- a/fs/gfs2/Kconfig
+> > +++ b/fs/gfs2/Kconfig
+> > @@ -4,7 +4,7 @@ config GFS2_FS
+> >  	select DLM if GFS2_FS_LOCKING_DLM
+> >  	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+> >  	select SYSFS if GFS2_FS_LOCKING_DLM
+> > -	select IP_SCTP if DLM_SCTP
+> > +	select IP_SCTP if GFS2_FS_LOCKING_DLM
+> >  	select FS_POSIX_ACL
+> >  	select CRC32
+> >  	select QUOTACTL
+> > 
+> > 
+> 
+> 
+> 
+
+
