@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162317Ab2CSUF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:05:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40040 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab2CSUFz (ORCPT
+	id S1032924Ab2CSUGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:06:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38738 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032812Ab2CSUGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:05:55 -0400
-Date: Mon, 19 Mar 2012 13:05:33 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-6db6127c4dad634ab98709b81e2f2770890b0d53@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1331887855-874-5-git-send-email-namhyung.kim@lge.com>
-References: <1331887855-874-5-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report: Treat an argument as a symbol filter
-Git-Commit-ID: 6db6127c4dad634ab98709b81e2f2770890b0d53
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 19 Mar 2012 16:06:30 -0400
+Date: Mon, 19 Mar 2012 13:05:55 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Rik van Riel <riel@redhat.com>
+cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: forbid lumpy-reclaim in shrink_active_list()
+In-Reply-To: <4F6774E8.2050202@redhat.com>
+Message-ID: <alpine.LSU.2.00.1203191239570.3498@eggly.anvils>
+References: <20120319091821.17716.54031.stgit@zurg> <4F676FA4.50905@redhat.com> <4F6773CC.2010705@openvz.org> <4F6774E8.2050202@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Mar 2012 13:05:39 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6db6127c4dad634ab98709b81e2f2770890b0d53
-Gitweb:     http://git.kernel.org/tip/6db6127c4dad634ab98709b81e2f2770890b0d53
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 16 Mar 2012 17:50:55 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 16 Mar 2012 16:44:36 -0300
+On Mon, 19 Mar 2012, Rik van Riel wrote:
+> On 03/19/2012 01:58 PM, Konstantin Khlebnikov wrote:
+> > Rik van Riel wrote:
+> > > On 03/19/2012 05:18 AM, Konstantin Khlebnikov wrote:
+> > > > This patch reset reclaim mode in shrink_active_list() to
+> > > > RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC.
+> > > > (sync/async sign is used only in shrink_page_list and does not affect
+> > > > shrink_active_list)
+> > > > 
+> > > > Currenly shrink_active_list() sometimes works in lumpy-reclaim mode,
+> > > > if RECLAIM_MODE_LUMPYRECLAIM left over from earlier
+> > > > shrink_inactive_list().
+> > > > Meanwhile, in age_active_anon() sc->reclaim_mode is totally zero.
+> > > > So, current behavior is too complex and confusing, all this looks
+> > > > like bug.
+> > > > 
+> > > > In general, shrink_active_list() populate inactive list for next
+> > > > shrink_inactive_list().
+> > > > Lumpy shring_inactive_list() isolate pages around choosen one from
+> > > > both active and
+> > > > inactive lists. So, there no reasons for lumpy-isolation in
+> > > > shrink_active_list()
+> > > > 
+> > > > Proposed-by: Hugh Dickins<hughd@google.com>
+> > > > Link: https://lkml.org/lkml/2012/3/15/583
+> > > > Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> > > 
+> > > Confirmed, this is already done by commit
+> > > 26f5f2f1aea7687565f55c20d69f0f91aa644fb8 in the
+> > > linux-next tree.
+> > > 
+> > 
+> > No, your patch fix this problem only if CONFIG_COMPACTION=y
+> 
+> True.
+> 
+> It was done that way, because Mel explained to me that deactivating
+> a whole chunk of active pages at once is a desired feature that makes
+> it more likely that a whole contiguous chunk of pages will eventually
+> reach the end of the inactive list.
 
-perf report: Treat an argument as a symbol filter
+I'm rather sceptical about this: is there a test which demonstrates
+a useful effect of that kind?
 
-As Ingo requested, it'd be better off treating first (and the only)
-argument as a symbol filter, so that user doesn't need to input the
-symbol on the dialog window on TUI.
+Lumpy movement from active won't help a lumpy allocation this time,
+because lumpy reclaim from inactive doesn't care which lru the
+surrounding pages come from anyway - and I argue that lumpy movement
+from active actually reduces the number of choices which lumpy
+reclaim will have, if they do near the bottom of inactive together.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1331887855-874-5-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+So if lumpy movement from active (miscategorizing physically adjacent
+pages as inactive too) is actually useful (the miscategorization turning
+out to have been a good bet, since they're not activated again before
+they reach the bottom of the inactive), and a nice buddyable group of
+pages is later reclaimed from the inactive list because of it (without
+any need for lumpy reclaim that time), then wouldn't we want to be
+doing it more?
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 80fb907..c005458 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -715,11 +715,16 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 	} else
- 		symbol_conf.exclude_other = false;
- 
--	/*
--	 * Any (unrecognized) arguments left?
--	 */
--	if (argc)
--		usage_with_options(report_usage, options);
-+	if (argc) {
-+		/*
-+		 * Special case: if there's an argument left then assume that
-+		 * it's a symbol filter:
-+		 */
-+		if (argc > 1)
-+			usage_with_options(report_usage, options);
-+
-+		report.symbol_filter_str = argv[0];
-+	}
- 
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
- 
+It should not be done only when inactive_is_low coincides with reclaim
+for a high-order allocation: we would want to note that there's a load
+which is making high-order requests, and do lumpy movement from active
+whenever replenishing inactive while such a load is in force.
+
+If it does more good than harm; but I'm sceptical about that.
+
+Hugh
