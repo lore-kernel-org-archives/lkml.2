@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500Ab2CSQLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:11:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758231Ab2CSQLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:11:51 -0400
-Date: Mon, 19 Mar 2012 17:04:01 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Roland McGrath <roland@hack.frob.com>,
-        Solar Designer <solar@openwall.com>,
-        Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] exec: move de_thread()->setmax_mm_hiwater_rss() into
-	exec_mmap()
-Message-ID: <20120319160401.GD4910@redhat.com>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <20120311172512.GA2729@redhat.com> <20120311174953.GB2729@redhat.com> <CA+55aFx43nZmhRg5Qv5x-4BdgcM-y80ECrgC8mCWc0RqU+_8rQ@mail.gmail.com> <20120314185510.GA14172@redhat.com> <20120314190939.GC14172@redhat.com> <20120319160249.GA4910@redhat.com>
+	id S1758375Ab2CSQLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:11:52 -0400
+Received: from avalon.kleine-koenig.org ([78.46.226.219]:34917 "EHLO
+	avalon.kleine-koenig.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758042Ab2CSQLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:11:50 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <uwe@kleine-koenig.org>
+To: Lars Ellenberg <drbd-dev@lists.linbit.com>
+Cc: drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] block/drbd: simplify drbd_buildtag fixing a build warning
+Date: Mon, 19 Mar 2012 17:11:27 +0100
+Message-Id: <1332173487-14167-1-git-send-email-uwe@kleine-koenig.org>
+X-Mailer: git-send-email 1.7.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120319160249.GA4910@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor cleanup. de_thread()->setmax_mm_hiwater_rss() looks a bit
-strange, move it into exec_mmap() which plays with old_mm.
+This fixes:
+	drivers/block/drbd/drbd_main.c: In function ‘drbd_buildtag’:
+	drivers/block/drbd/drbd_main.c:4187:24: warning: the comparison will always evaluate as ‘true’ for the address of ‘__this_module’ will never be NULL [-Waddress]
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Uwe Kleine-König <uwe@kleine-koenig.org>
 ---
- fs/exec.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/block/drbd/drbd_main.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 218d074..7f84e86 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -848,6 +848,7 @@ static int exec_mmap(struct mm_struct *mm)
- 	if (old_mm) {
- 		up_read(&old_mm->mmap_sem);
- 		BUG_ON(active_mm != old_mm);
-+		setmax_mm_hiwater_rss(&tsk->signal->maxrss, old_mm);
- 		mm_update_next_owner(old_mm);
- 		mmput(old_mm);
- 		return 0;
-@@ -978,9 +979,6 @@ no_thread_group:
- 	/* we have changed execution domain */
- 	tsk->exit_signal = SIGCHLD;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 211fc44..9cc7178 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -4177,21 +4177,19 @@ _drbd_insert_fault(struct drbd_conf *mdev, unsigned int type)
  
--	if (current->mm)
--		setmax_mm_hiwater_rss(&sig->maxrss, current->mm);
--
- 	exit_itimers(sig);
- 	flush_itimer_signals();
+ const char *drbd_buildtag(void)
+ {
++#if IS_MODULE(CONFIG_BLK_DEV_DRBD)
+ 	/* DRBD built from external sources has here a reference to the
+ 	   git hash of the source code. */
  
+-	static char buildtag[38] = "\0uilt-in";
++	static char buildtag[38] = "\0";
+ 
+-	if (buildtag[0] == 0) {
+-#ifdef CONFIG_MODULES
+-		if (THIS_MODULE != NULL)
+-			sprintf(buildtag, "srcversion: %-24s", THIS_MODULE->srcversion);
+-		else
+-#endif
+-			buildtag[0] = 'b';
+-	}
++	if (buildtag[0] == '\0')
++		sprintf(buildtag, "srcversion: %-24s", THIS_MODULE->srcversion);
+ 
+ 	return buildtag;
++#else
++	return "built-in";
++#endif
+ }
+ 
+ module_init(drbd_init)
 -- 
-1.5.5.1
-
+1.7.9.1
 
