@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964976Ab2CSJfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 05:35:00 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39523 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab2CSJe6 (ORCPT
+	id S1758697Ab2CSJiC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 05:38:02 -0400
+Received: from stringer.orebokech.com ([88.190.240.207]:47021 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab2CSJiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 05:34:58 -0400
-Message-ID: <4F66FDB9.1000306@linux.vnet.ibm.com>
-Date: Mon, 19 Mar 2012 17:34:49 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 19 Mar 2012 05:38:00 -0400
+X-Greylist: delayed 565 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Mar 2012 05:38:00 EDT
+From: Romain Francoise <romain@orebokech.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: Linux 3.3 release
+Organization: orebokech dot com
+References: <CA+55aFyR2TXcKdzXontH8B4Reu40bdY_APhuUJeUxm6D-OuQkg@mail.gmail.com>
+X-Face: }9mYu,e_@+e!`Z-P5kVXa3\_b:hdJ"B)ww[&=b<2=awG:GOIM</2q'*t@MNa)R`k0h1KbUu "Ek%gXCQA(?k=Uf9}qgF_x#7/+Ql\R!NJ9[Z[ky\CTYI<H(kc][?[m%*rsf!OG11|f&H[VgX;),"!N JG6IziY\~""3M
+Date: Mon, 19 Mar 2012 10:28:32 +0100
+In-Reply-To: <CA+55aFyR2TXcKdzXontH8B4Reu40bdY_APhuUJeUxm6D-OuQkg@mail.gmail.com>
+	(Linus Torvalds's message of "Sun, 18 Mar 2012 18:25:05 -0700")
+Message-ID: <87r4wpx7lr.fsf@silenus.orebokech.com>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp> <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp> <4F62C9B4.7060804@linux.vnet.ibm.com> <20120316155511.70455b4a.yoshikawa.takuya@oss.ntt.co.jp> <4F62EC25.5060306@linux.vnet.ibm.com> <20120316165547.4df2abe4.yoshikawa.takuya@oss.ntt.co.jp> <4F62F9C8.6090803@linux.vnet.ibm.com> <20120316184459.3c64c8cf.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120316184459.3c64c8cf.yoshikawa.takuya@oss.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12031823-1396-0000-0000-000000D5CBC4
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2012 05:44 PM, Takuya Yoshikawa wrote:
+There seems to be a regression in the final release compared to -rc7,
+specifically this commit:
 
-> On Fri, 16 Mar 2012 16:28:56 +0800
-> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
-> 
->> Thanks for your explanation, maybe you are right, i do not know migration
->> much.
->>
->> What i worried about is, you have changed the behaviour of GET_DIRTY_LOG,
->> in the current one, it can get all the dirty pages when it is called; after
->> your change, GET_DIRTY_LOG can get a empty dirty bitmap but dirty page exists.
-> 
-> The current code also see the same situation because nothing prevents the
-> guest from writing to pages before GET_DIRTY_LOG returns and the userspace
-> checks the bitmap.  Everything is running.
-> 
+> Matthew Garrett (1):
+>       PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
 
+causes an early kernel panic on my machine (Intel DP67BG). Reverting the
+change fixes it. Unfortunately it crashes before setting up the video mode
+so I don't have the full stack trace, but RIP points to
+pcie_aspm_init_link_state().
 
-The current code is under the protection of s-rcu:
-IIRC, it always holds s-rcu when write guest page and set dirty bit,
-that mean the dirty page is logged either in the old dirty_bitmap or in the
-current memslot->dirty_bitmap. Yes?
+When the machine boots successfully, dmesg contains the following related
+to ASPM:
 
+[    0.382384] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+[    0.433016] pci 0000:06:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
