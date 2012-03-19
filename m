@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab2CSPtU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:49:20 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57388 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769Ab2CSPtR (ORCPT
+	id S1757835Ab2CSPu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:50:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42867 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756861Ab2CSPu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:49:17 -0400
-Message-ID: <1332172283.22775.79.camel@saladin.home.flameeyes.eu>
-Subject: Re: [PATCH] gpio: add support for ITE IT87xx Super I/O GPIO.
-From: Diego Elio =?ISO-8859-1?Q?Petten=F2?= <flameeyes@flameeyes.eu>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Denis Turischev <denis@compulab.co.il>
-Date: Mon, 19 Mar 2012 16:51:23 +0100
-In-Reply-To: <20120318160718.GA26847@ericsson.com>
-References: <1331927293-17911-1-git-send-email-flameeyes@flameeyes.eu>
-	 <20120317123151.AAF9A3E0952@localhost>
-	 <1332010422.22775.76.camel@saladin.home.flameeyes.eu>
-	 <20120318160718.GA26847@ericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3
+	Mon, 19 Mar 2012 11:50:26 -0400
+Date: Mon, 19 Mar 2012 08:50:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+Message-ID: <20120319155022.GC8176@kroah.com>
+References: <20120316233829.GA14022@kroah.com>
+ <20120316233811.484341257@linuxfoundation.org>
+ <20120317023740.GH12704@decadent.org.uk>
+ <CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
+ <1331969567.3022.233.camel@deadeye>
+ <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+In-Reply-To: <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il giorno dom, 18/03/2012 alle 09.07 -0700, Guenter Roeck ha scritto:
-> I don't think that would make sense. IT8761E has a completely
-> different set
-> of registers. It is a "Legacy Low Pin Count I/O" only. The other chips
-> are
-> environmental control chips. I didn't follow the context of this
-> discussion,
-> but IT8761E does not support a watchdog. It also only supports 16 GPIO
-> pins.
+On Sat, Mar 17, 2012 at 11:52:24AM +0400, Pavel Shilovsky wrote:
+> 17 марта 2012 г. 11:32 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> > On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
+> >> 17 марта 2012 г. 6:37 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> >> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
+> >> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > [...]
+> >> > But we test this before flock->fl_flags & FL_POSIX, which means we
+> >> > don't know whether this lock actually needs to be assigned one of
+> >> > those structures.  So it appears that we might report a spurious error
+> >> > if the lock list ends with a mandatory lock.  If so, this is
+> >> > relatively harmless but does need to be fixed.
+> >> >
+> >>
+> >> You are right here, thanks for the catch! I will repost the patch asap.
+> >
+> > This has already been merged into Linus's tree, so you need to submit a
+> > patch to apply on top of it.
+> >
+> 
+> I posted two patches:
+> 1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
+> kmalloc under the flocks spinlock
 
-Not for watchdog, but the GPIO does require just a few modifications to
-support both chips as far as I can tell, I have some testable code here
-I think, but I wanted to see if I could implement MFD as well.
+What do you mean by "fixed version"?
 
--- 
-Diego Elio Pettenò — Flameeyes
-http://blog.flameeyes.eu/
+> 2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
+> cifs_push_posix_locks
 
+What do you mean by this?
 
+If there was a follow-on patch in Linus's tree that fixes a problem, I
+need that git commit id, not a "fixed" patch that does not match up with
+what is in Linus's tree right now.
+
+So, if that's the case, please let me know what the git commit id of
+that patch is please.
+
+thanks,
+
+greg k-h
