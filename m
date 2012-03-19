@@ -1,404 +1,1474 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031909Ab2CSQyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:54:08 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:42444
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1030563Ab2CSQyE (ORCPT
+	id S1032199Ab2CSQzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:55:06 -0400
+Received: from mail-wg0-f66.google.com ([74.125.82.66]:56372 "EHLO
+	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031917Ab2CSQy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:54:04 -0400
-Date: Mon, 19 Mar 2012 17:54:00 +0100 (CET)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] Add design document for UBIFS secure deletion
-In-Reply-To: <1331277476.22872.2.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1203191752300.22256@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <1329152067.22240.214.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>  <alpine.DEB.2.00.1202231628360.13720@eristoteles.iwoars.net>
- <1331277476.22872.2.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 19 Mar 2012 12:54:58 -0400
+Date: Mon, 19 Mar 2012 17:54:54 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/fpu changes for v3.4
+Message-ID: <20120319165454.GA12831@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Design document should be self explanatory.
+Linus,
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+Please pull the latest x86-fpu-for-linus git tree from:
 
----
- Documentation/filesystems/ubifsec.txt |  358 +++++++++++++++++++++++++++++++++
- 1 files changed, 358 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/filesystems/ubifsec.txt
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-fpu-for-linus
 
-diff --git a/Documentation/filesystems/ubifsec.txt b/Documentation/filesystems/ubifsec.txt
+   HEAD: 1361b83a13d4d92e53fbb6c877528713e118b821 i387: Split up <asm/i387.h> into exported and internal interfaces
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Linus Torvalds (2):
+      i387: Uninline the generic FP helpers that we expose to kernel modules
+      i387: Split up <asm/i387.h> into exported and internal interfaces
+
+
+ arch/x86/ia32/ia32_signal.c         |    1 +
+ arch/x86/include/asm/fpu-internal.h |  520 ++++++++++++++++++++++++++++++
+ arch/x86/include/asm/i387.h         |  590 +----------------------------------
+ arch/x86/kernel/cpu/common.c        |    3 +-
+ arch/x86/kernel/i387.c              |   83 +++++-
+ arch/x86/kernel/process.c           |    1 +
+ arch/x86/kernel/process_32.c        |    1 +
+ arch/x86/kernel/process_64.c        |    1 +
+ arch/x86/kernel/ptrace.c            |    1 +
+ arch/x86/kernel/signal.c            |    1 +
+ arch/x86/kernel/traps.c             |    1 +
+ arch/x86/kernel/xsave.c             |    1 +
+ arch/x86/kvm/vmx.c                  |    2 +-
+ arch/x86/kvm/x86.c                  |    1 +
+ arch/x86/power/cpu.c                |    1 +
+ 15 files changed, 624 insertions(+), 584 deletions(-)
+ create mode 100644 arch/x86/include/asm/fpu-internal.h
+
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index 6557769..5563ba1 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -24,6 +24,7 @@
+ #include <asm/ucontext.h>
+ #include <asm/uaccess.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/ptrace.h>
+ #include <asm/ia32_unistd.h>
+ #include <asm/user32.h>
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
 new file mode 100644
-index 0000000..4eb41fb
+index 0000000..4fa8815
 --- /dev/null
-+++ b/Documentation/filesystems/ubifsec.txt
-@@ -0,0 +1,357 @@
-+UBIFS Secure Deletion Enhancement
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -0,0 +1,520 @@
++/*
++ * Copyright (C) 1994 Linus Torvalds
++ *
++ * Pentium III FXSR, SSE support
++ * General FPU state handling cleanups
++ *	Gareth Hughes <gareth@valinux.com>, May 2000
++ * x86-64 work by Andi Kleen 2002
++ */
 +
-+Written by Joel Reardon <reardonj@inf.ethz.ch>
-+Last revised: 19.3.2012
++#ifndef _FPU_INTERNAL_H
++#define _FPU_INTERNAL_H
 +
-+Introduction
-+============
-+UBIFSec provides efficient secure deletion for the flash file system UBIFS.
-+Trivial secure deletion by overwriting the deleted data does not work for
-+flash memory, as there is a large difference between the size of the I/O unit
-+(page) and the erasure unit (erase block). UBIFSec encrypts each data node
-+with a distinct key and stores the keys colocated in a key storage area (KSA).
-+Secure deletion is achieved by atomically updating the (small) set of erase
-+blocks that constitute the KSA to remove keys corresponding to deleted data,
-+thereby deleting the data nodes they encrypted.
++#include <linux/kernel_stat.h>
++#include <linux/regset.h>
++#include <linux/slab.h>
++#include <asm/asm.h>
++#include <asm/cpufeature.h>
++#include <asm/processor.h>
++#include <asm/sigcontext.h>
++#include <asm/user.h>
++#include <asm/uaccess.h>
++#include <asm/xsave.h>
 +
-+Key Storage Area (KSA)
-+======================
-+UBIFSec uses a small migrating set of erase blocks to store all the data
-+node's keys---this set is called the Key Storage Area (KSA). The KSA is
-+managed separately from the rest of the file system. In particular, it does
-+not behave like a log-structured file system: when a KSA erase block is
-+updated, its contents are written to a new erase block, the logical reference
-+to the KSA block is updated, and the previous version of the KSA erase block
-+is then  erased. Thus, except while updating, only one copy of the data in the
-+KSA is available on the storage medium.  When the file system is created,
-+cryptographically-suitable random data is written from random_bytes() to each
-+of the KSA's LEBs and all the keys are marked as unused.  Purging writes new
-+versions of the KSA LEBs using UBI's atomic update feature.
++extern unsigned int sig_xstate_size;
++extern void fpu_init(void);
 +
-+Each data node's header stores the logical KSA position that contains its
-+decryption key. The erase blocks in the KSA are periodically erased to
-+securely delete any keys that decrypt deleted data. When the file system no
-+longer needs a data node---i.e, it is removed or updated---we mark the data
-+node's corresponding key in the KSA as deleted.  This is independent of the
-+notion of files; keys are marked as deleted whenever a data node is discarded.
-+A key remains marked as deleted until it is removed from the storage medium
-+and its location is replaced with fresh, unused random data, which is then
-+marked as unused.
++DECLARE_PER_CPU(struct task_struct *, fpu_owner_task);
 +
-+When a new data node is written to the storage medium, an unused key is
-+selected from the KSA and its position is written to the data node's header.
-+The keys are in a protected area of the file system, so only users with root
-+access to the storage medium are capable of reading the keys that encrypt
-+data.
++extern user_regset_active_fn fpregs_active, xfpregs_active;
++extern user_regset_get_fn fpregs_get, xfpregs_get, fpregs_soft_get,
++				xstateregs_get;
++extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
++				 xstateregs_set;
 +
-+Purging
-+=======
-+Purging is a periodic procedure that securely deletes keys from the KSA.
-+Purging proceeds iteratively over each of the KSA's erase blocks: a new
-+version of the erase block is prepared where the used keys remain in the same
-+position and all other keys (i.e., unused and deleted keys) are replaced with
-+fresh, unused, cryptographically-appropriate random data from a source of
-+hardware randomness. This fresh random data is then assigned to new keys as
-+needed. We keep used keys logically-fixed because their corresponding data
-+node has already written its logical position. The new version of the block is
-+then written to an arbitrary empty erase block on the storage medium.  After
-+completion, the erase block containing the old version is erased, thus
-+securely deleting the unused and deleted keys along with the data nodes they
-+encrypt.
 +
-+If a KSA erase block becomes a bad block while erasing it, it is possible that
-+its contents will remain readable on the storage medium without the ability to
-+remove them. In this case, it is necessary to re-encrypt any data node whose
-+encryption key remains available and force the garbage collection of those
-+erase blocks on which the data nodes reside.
++/*
++ * xstateregs_active == fpregs_active. Please refer to the comment
++ * at the definition of fpregs_active.
++ */
++#define xstateregs_active	fpregs_active
 +
-+Key State Map
-+=============
-+The key state map is an in-memory map that maps key positions to key states
-+{unused, used, deleted}. Unused keys can be assigned and then marked used.
-+Used keys are keys that encrypt some valid data node, so they must be
-+preserved to ensure availability of the file system's data. Deleted keys are
-+keys used to encrypt deleted data---i.e., data nodes that are no longer
-+referenced by the index---and should be purged from the system to achieve
-+secure deletion.
++extern struct _fpx_sw_bytes fx_sw_reserved;
++#ifdef CONFIG_IA32_EMULATION
++extern unsigned int sig_xstate_ia32_size;
++extern struct _fpx_sw_bytes fx_sw_reserved_ia32;
++struct _fpstate_ia32;
++struct _xstate_ia32;
++extern int save_i387_xstate_ia32(void __user *buf);
++extern int restore_i387_xstate_ia32(void __user *buf);
++#endif
 +
-+A correct key state map is one that has the following three properties:
-+1. every unused key must not decrypt any data node---either valid or invalid
-+2. every used key must have exactly one data node it can decrypt and this data
-+node must be valid according to the index
-+3. every deleted key must not decrypt any data node that is valid according to
-+the index.
++#ifdef CONFIG_MATH_EMULATION
++extern void finit_soft_fpu(struct i387_soft_struct *soft);
++#else
++static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
++#endif
 +
-+The operation of purging performed on a correct key state map guarantees
-+DNEFS's soundness: purging securely deletes any key in the KSA marked as
-+deleted---afterwards, every key either decrypts one valid data node or nothing
-+at all and every valid data node can be decrypted.  A correct key state map
-+also guarantees the integrity of our data during purging, because no key that
-+is used to decrypt valid data will be removed.
++#define X87_FSW_ES (1 << 7)	/* Exception Summary */
 +
-+The key state map is stored, used, and updated in volatile memory. Initially,
-+the key state map of a freshly-formatted UBIFSec file system is correct as it
-+consists of no data nodes, and every key is fresh random data that is marked
-+as unused. While mounted, UBIFSec performs appropriate key management to
-+ensure that the key state map is always correct when new data is written,
-+deleted, etc. We now show that we can always create a correct key state map
-+when mounting an arbitrary UBIFSec file system.
++static __always_inline __pure bool use_xsaveopt(void)
++{
++	return static_cpu_has(X86_FEATURE_XSAVEOPT);
++}
 +
-+The key state map is built from a periodic checkpoint combined with a replay
-+of the most recent changes while mounting.  We checkpoint the current key
-+state map to the storage medium whenever the KSA is purged. After a purge,
-+every key is either unused or used, and so a checkpoint of this map can be
-+stored using one bit per key---less than 1\% of the KSA's size---which is then
-+compressed.  A special LEB is used to store checkpoints, where each new
-+checkpoint is appended; when the erase block is full then the next checkpoint
-+is written at the beginning using an atomic update.
++static __always_inline __pure bool use_xsave(void)
++{
++	return static_cpu_has(X86_FEATURE_XSAVE);
++}
 +
-+Correctness of the Key State Map
-+================================
-+As an invariant, we require that UBIFSec's key state map is always correct
-+before and after executing a purge. This restriction---instead of requiring
-+correctness at all times after mounting---is to allow writing new data during
-+a purging operation, and to account for the time between marking a key as used
-+and writing the data it encrypts onto the storage medium.
++static __always_inline __pure bool use_fxsr(void)
++{
++        return static_cpu_has(X86_FEATURE_FXSR);
++}
 +
-+The checkpoint is correct when it is written to the storage medium, and
-+therefore it is correct when it is loaded during mounting if no other changes
-+occurred to the file system. If the file system changed after committing and
-+before unmounting, then UBIFS's replay mechanism is used to generate the
-+correct key state map: first the checkpoint is loaded, then the replay entries
-+are simulated. Therefore, we always perform purging during regular UBIFS
-+commits; the nodes that are replayed for UBIFS are exactly the ones that must
-+be replayed for UBIFSec. If the stored checkpoint gets corrupted, then a full
-+scan of the valid data nodes can rebuild the correct key state map.
++extern void __sanitize_i387_state(struct task_struct *);
 +
-+As it is possible for the storage medium to fail during the commit operation
-+(e.g., due to a  loss of power), we now show that our invariant holds
-+regardless of the condition of unmounting.  Purging consists of atomically
-+updating each LEB containing deleted keys and afterwards writing a new
-+checkpoint. UBI's atomic update feature ensures that any failure before
-+completing the update is equivalent to failing immediately before beginning.
-+Therefore, the following is the complete list of possible failure points:
-+1. before the first purge.
-+2. between some purges.
-+3. after all the purges but before the checkpoint.
-+4. during the checkpoint.
-+5. after the checkpoint but before finishing other UBIFS commit actions.
++static inline void sanitize_i387_state(struct task_struct *tsk)
++{
++	if (!use_xsaveopt())
++		return;
++	__sanitize_i387_state(tsk);
++}
 +
-+We now show that we can construct a correct key state map in all these
-+situations.
++#ifdef CONFIG_X86_64
++static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
++{
++	int err;
 +
-+First, failure can occur before purging the first LEB, which means the KSA is
-+unchanged.  When remounting the device, the loaded checkpoint is updated  with
-+the replay data, thereby constructing the exact key state map before
-+purging---taken as correct by assumption.
++	/* See comment in fxsave() below. */
++#ifdef CONFIG_AS_FXSAVEQ
++	asm volatile("1:  fxrstorq %[fx]\n\t"
++		     "2:\n"
++		     ".section .fixup,\"ax\"\n"
++		     "3:  movl $-1,%[err]\n"
++		     "    jmp  2b\n"
++		     ".previous\n"
++		     _ASM_EXTABLE(1b, 3b)
++		     : [err] "=r" (err)
++		     : [fx] "m" (*fx), "0" (0));
++#else
++	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
++		     "2:\n"
++		     ".section .fixup,\"ax\"\n"
++		     "3:  movl $-1,%[err]\n"
++		     "    jmp  2b\n"
++		     ".previous\n"
++		     _ASM_EXTABLE(1b, 3b)
++		     : [err] "=r" (err)
++		     : [fx] "R" (fx), "m" (*fx), "0" (0));
++#endif
++	return err;
++}
 +
-+Second, failure can occur after purging one, several, or indeed  all of the
-+KSA's LEBs. When remounting the device, the loaded checkpoint merged with the
-+replay data  reflects the state before the first purge, so some purged LEBs
-+contain new unused data while the key state map claims it is a deleted key. As
-+these are cryptographically-suitable random values, with high probability they
-+cannot successfully decrypt any existing valid data node.
++static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
++{
++	int err;
 +
-+Third, failure can occur while writing to the checkpoint LEB.  When the
-+checkpoint is written using atomic updates, then failing during the operation
-+is equivalent to failing before it begins (cf. 2nd case).  Incomplete
-+checkpoints are detected and so the previous valid checkpoint is loaded
-+instead.  After replaying all the nodes, the key state map is equal to its
-+state immediately before purging the KSA. This means that all entries marked
-+as deleted are actually unused entries, so the invariant holds.
++	/*
++	 * Clear the bytes not touched by the fxsave and reserved
++	 * for the SW usage.
++	 */
++	err = __clear_user(&fx->sw_reserved,
++			   sizeof(struct _fpx_sw_bytes));
++	if (unlikely(err))
++		return -EFAULT;
 +
-+Finally, failure can occur after successfully purging the KSA and
-+checkpointing the key state map, but before completing the regular UBIFS
-+commit.  In this case, the current key state map correctly reflects the
-+contents of the KSA. When mounting, the replay mechanism incorrectly updates
-+it with the journal entries of the previous iteration.  Table 1 shows the full
-+space of possibilities when replaying old changes on the post-purged
-+checkpoint. It shows that it is only possible for an unused key to be
-+erroneously marked as deleted, which still results in a correct key state map.
++	/* See comment in fxsave() below. */
++#ifdef CONFIG_AS_FXSAVEQ
++	asm volatile("1:  fxsaveq %[fx]\n\t"
++		     "2:\n"
++		     ".section .fixup,\"ax\"\n"
++		     "3:  movl $-1,%[err]\n"
++		     "    jmp  2b\n"
++		     ".previous\n"
++		     _ASM_EXTABLE(1b, 3b)
++		     : [err] "=r" (err), [fx] "=m" (*fx)
++		     : "0" (0));
++#else
++	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
++		     "2:\n"
++		     ".section .fixup,\"ax\"\n"
++		     "3:  movl $-1,%[err]\n"
++		     "    jmp  2b\n"
++		     ".previous\n"
++		     _ASM_EXTABLE(1b, 3b)
++		     : [err] "=r" (err), "=m" (*fx)
++		     : [fx] "R" (fx), "0" (0));
++#endif
++	if (unlikely(err) &&
++	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
++		err = -EFAULT;
++	/* No need to clear here because the caller clears USED_MATH */
++	return err;
++}
 +
-++--------+--------------+--------+---------+-----------------------+---------+
-+|old ckpt|   replay's   | ckpt   | value   |         cause         |  key's  |
-+| value  |    effect    | value  | after   |                       |  state  |
-+|        |              |        | recvry  |                       |         |
-++--------+--------------+--------+---------+-----------------------+---------+
-+| unused |    nothing   | unused | unused  |        no event       | correct |
-+| unused |   mark used  |  used  |  used   |      key assigned     | correct |
-+| unused | mark deleted | unused | deleted | key assigned, deleted | correct |
-+|  used  |    nothing   |  used  |  used   |        no event       | correct |
-+|  used  |  mark used   |  used  |  used   |      cannot occur     | correct |
-+|  used  | mark deleted | unused | deleted |      key deleted      | correct |
-++--------+--------------+--------+---------+-----------------------+---------+
-+Table 1: Consequences of replaying false information during committing.
++static inline void fpu_fxsave(struct fpu *fpu)
++{
++	/* Using "rex64; fxsave %0" is broken because, if the memory operand
++	   uses any extended registers for addressing, a second REX prefix
++	   will be generated (to the assembler, rex64 followed by semicolon
++	   is a separate instruction), and hence the 64-bitness is lost. */
 +
-+Adding Encryption in Compression
-+================================
-+Currently, compression (respectively decompression) is applied to all data
-+before (respectively after) storage medium operations.  We modify the compress
-+and decompress functions to take an optional key parameter. If no key is
-+provided, then the functions behave normally. If a key is provided, then the
-+data is encrypted before compression (respectively decrypted after
-+compression) using the provided key as an AES key in counter mode.
++#ifdef CONFIG_AS_FXSAVEQ
++	/* Using "fxsaveq %0" would be the ideal choice, but is only supported
++	   starting with gas 2.16. */
++	__asm__ __volatile__("fxsaveq %0"
++			     : "=m" (fpu->state->fxsave));
++#else
++	/* Using, as a workaround, the properly prefixed form below isn't
++	   accepted by any binutils version so far released, complaining that
++	   the same type of prefix is used twice if an extended register is
++	   needed for addressing (fix submitted to mainline 2005-11-21).
++	asm volatile("rex64/fxsave %0"
++		     : "=m" (fpu->state->fxsave));
++	   This, however, we can work around by forcing the compiler to select
++	   an addressing mode that doesn't require extended registers. */
++	asm volatile("rex64/fxsave (%[fx])"
++		     : "=m" (fpu->state->fxsave)
++		     : [fx] "R" (&fpu->state->fxsave));
++#endif
++}
 +
-+Implementing the Keymap
-+=======================
-+The keymap data structure and its algorithms constitute the majority of
-+UBIFSec's changes. The keymap  maintains KSA information and caches, along
-+with the key state map, the current position for assigning fresh keys, and a
-+buffer for atomic updates and checkpoint preparation.
++#else  /* CONFIG_X86_32 */
 +
-+The KSA is divided into discrete KSA ranges, which are ranked in terms of
-+expected data lifetime. Generational garbage collection is heuristically used
-+to promote longer-lived data to long-term ranges of the KSA. The goal is to
-+reduce the number of LEBs that need to be erased during purging by having data
-+that remains on the device reside elsewhere, which reduces the time required
-+to purge large storage media.  KSA LEBs that are skipped during a purge have
-+their unused keys marked as nonassignable until the LEB is finally replaced
-+with fresh, random data.
++/* perform fxrstor iff the processor has extended states, otherwise frstor */
++static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
++{
++	/*
++	 * The "nop" is needed to make the instructions the same
++	 * length.
++	 */
++	alternative_input(
++		"nop ; frstor %1",
++		"fxrstor %1",
++		X86_FEATURE_FXSR,
++		"m" (*fx));
 +
-+Each time UBIFS garbage collects a data node, it may be promoted to a
-+longer-term area of the KSA. This requires decrypting the stored data,
-+encrypting with a new key, and updating the data node's key location and
-+checksum. However, it does not incur additional cost to read or write the
-+data, as it is only optionally  performed during regular UBIFS garbage
-+collection when the data node is copied to a new location.
++	return 0;
++}
 +
-+The key state map is a two-dimensional array indexed first by the relative LEB
-+number and then by the offset in the LEB. Key positions, stored in
-+_crypto_lookup_ variables, are stored as 64-bit numbers where the first 32
-+bits encode the relative LEB number and the next 32 bits encode the offset.  A
-+key position's state can be changed to used or deleted by external functions,
-+but only the keymap's purging function marks the state as unused. A lock
-+synchronizes all access to the key state map. The function to get a free key
-+position atomically searches for  an unused key position, marks the entry as
-+used, and optionally returns the key.
++static inline void fpu_fxsave(struct fpu *fpu)
++{
++	asm volatile("fxsave %[fx]"
++		     : [fx] "=m" (fpu->state->fxsave));
++}
 +
-+The keymap structure maintains an LEB-sized buffer for atomic updates.
-+Purging the keymap proceeds iteratively for each of the KSA's LEBs. It reads
-+the old version of a block into that buffer, performs the update, and provides
-+it to UBI's atomic update function. Random data is taken from Linux kernel's
-+hardware randomness source that is cryptographically suitable.  Purging is
-+synchronized by a lock to prevent a second purge before the first has
-+completed.
++#endif	/* CONFIG_X86_64 */
 +
-+The keymap structure also maintains a buffer for checkpoint preparation. After
-+committing, the checkpoint is created  using one bit for each entry indicating
-+if the key position is unused or used.  The checkpoint is then compressed,
-+prefixed with the compressed size, and suffixed with the magic number.
++/*
++ * These must be called with preempt disabled. Returns
++ * 'true' if the FPU state is still intact.
++ */
++static inline int fpu_save_init(struct fpu *fpu)
++{
++	if (use_xsave()) {
++		fpu_xsave(fpu);
 +
-+The external interface of the keymap consists of the following:
-+keymap_purge() - purge the deleted keys, write a new checkpoint
-+keymap_init() - initialization
-+keymap_free() - deallocate memory
-+keymap_free_key() - find and return an unused key
-+keymap_read_key() - convert a key location to a key
-+keymap_mark_used() - mark a key location as used
-+keymap_mark_deleted() - mark a key location as deleted
-+keymap_assign_lebs() - used during initialization to tell the keymap which
-+		       LEBS are used for keys
-+keymap_keys_per_eb() - returns the number of keys that fit on an erase block
-+keymap_gc_should_promote() - returns true if we should reencrypt the data node
-+			     during garbage collection
-+keymap_swap_encryption_key() - performs the re-encryption of a data node during
-+			       garbage collection
++		/*
++		 * xsave header may indicate the init state of the FP.
++		 */
++		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
++			return 1;
++	} else if (use_fxsr()) {
++		fpu_fxsave(fpu);
++	} else {
++		asm volatile("fnsave %[fx]; fwait"
++			     : [fx] "=m" (fpu->state->fsave));
++		return 0;
++	}
 +
-+Summary of Changes to UBIFS Components
-+======================================
++	/*
++	 * If exceptions are pending, we need to clear them so
++	 * that we don't randomly get exceptions later.
++	 *
++	 * FIXME! Is this perhaps only true for the old-style
++	 * irq13 case? Maybe we could leave the x87 state
++	 * intact otherwise?
++	 */
++	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES)) {
++		asm volatile("fnclex");
++		return 0;
++	}
++	return 1;
++}
 +
-+Mounting.
++static inline int __save_init_fpu(struct task_struct *tsk)
++{
++	return fpu_save_init(&tsk->thread.fpu);
++}
 +
-+mounting the file system:
-+- allocate and initialize the keymap
-+- deallocate keymap if an error occurs
-+- read the size of the KSA from the master node
++static inline int fpu_fxrstor_checking(struct fpu *fpu)
++{
++	return fxrstor_checking(&fpu->state->fxsave);
++}
 +
-+unmounting the file system:
-+- deallocate the keymap
++static inline int fpu_restore_checking(struct fpu *fpu)
++{
++	if (use_xsave())
++		return fpu_xrstor_checking(fpu);
++	else
++		return fpu_fxrstor_checking(fpu);
++}
 +
-+creating default file system:
-+- use storage medium's geometry to compute the required KSA size
-+- store the size in the master node
-+- call keymap's initialize KSA routine
++static inline int restore_fpu_checking(struct task_struct *tsk)
++{
++	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
++	   is pending.  Clear the x87 state here by setting it to fixed
++	   values. "m" is a random variable that should be in L1 */
++	alternative_input(
++		ASM_NOP8 ASM_NOP2,
++		"emms\n\t"		/* clear stack tags */
++		"fildl %P[addr]",	/* set F?P to defined value */
++		X86_FEATURE_FXSAVE_LEAK,
++		[addr] "m" (tsk->thread.fpu.has_fpu));
 +
-+Commit.
++	return fpu_restore_checking(&tsk->thread.fpu);
++}
 +
-+committing the journal:
-+- call the keymap's purging routine
++/*
++ * Software FPU state helpers. Careful: these need to
++ * be preemption protection *and* they need to be
++ * properly paired with the CR0.TS changes!
++ */
++static inline int __thread_has_fpu(struct task_struct *tsk)
++{
++	return tsk->thread.fpu.has_fpu;
++}
 +
-+Input/Output.
++/* Must be paired with an 'stts' after! */
++static inline void __thread_clear_has_fpu(struct task_struct *tsk)
++{
++	tsk->thread.fpu.has_fpu = 0;
++	percpu_write(fpu_owner_task, NULL);
++}
 +
-+writing data:
-+- obtain an unused key position from the keymap
-+- store the key's position in the data node's header
-+- use the keymap and key position to look up the actual key
-+- provide the key to the compress function
++/* Must be paired with a 'clts' before! */
++static inline void __thread_set_has_fpu(struct task_struct *tsk)
++{
++	tsk->thread.fpu.has_fpu = 1;
++	percpu_write(fpu_owner_task, tsk);
++}
 +
-+recomputing last data node after truncation:
-+- obtain the original key, decrypt the data
-+- obtain a new key, encrypt the data with it after truncating
++/*
++ * Encapsulate the CR0.TS handling together with the
++ * software flag.
++ *
++ * These generally need preemption protection to work,
++ * do try to avoid using these on their own.
++ */
++static inline void __thread_fpu_end(struct task_struct *tsk)
++{
++	__thread_clear_has_fpu(tsk);
++	stts();
++}
 +
-+reading data:
-+- use the keymap and data node's key position to look up the actual key
-+- provide the key to the decompress function
++static inline void __thread_fpu_begin(struct task_struct *tsk)
++{
++	clts();
++	__thread_set_has_fpu(tsk);
++}
 +
-+Tree Node Cache.
++/*
++ * FPU state switching for scheduling.
++ *
++ * This is a two-stage process:
++ *
++ *  - switch_fpu_prepare() saves the old state and
++ *    sets the new state of the CR0.TS bit. This is
++ *    done within the context of the old process.
++ *
++ *  - switch_fpu_finish() restores the new state as
++ *    necessary.
++ */
++typedef struct { int preload; } fpu_switch_t;
 +
-+adding/updating the TNC:
-+- provide a key position when adding data nodes
-+- store the key position inside TNC entries
-+- mark key position as used
-+- if also updating, mark the old key position as deleted before storing the
-+  new position.
++/*
++ * FIXME! We could do a totally lazy restore, but we need to
++ * add a per-cpu "this was the task that last touched the FPU
++ * on this CPU" variable, and the task needs to have a "I last
++ * touched the FPU on this CPU" and check them.
++ *
++ * We don't do that yet, so "fpu_lazy_restore()" always returns
++ * false, but some day..
++ */
++static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
++{
++	return new == percpu_read_stable(fpu_owner_task) &&
++		cpu == new->thread.fpu.last_cpu;
++}
 +
-+deleting/truncating the TNC:
-+- when removing a data node from the TNC, mark the stored key position as
-+  deleted
++static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct task_struct *new, int cpu)
++{
++	fpu_switch_t fpu;
 +
-+committing the TNC:
-+- read and write key position to stored tree nodes
++	fpu.preload = tsk_used_math(new) && new->fpu_counter > 5;
++	if (__thread_has_fpu(old)) {
++		if (!__save_init_fpu(old))
++			cpu = ~0;
++		old->thread.fpu.last_cpu = cpu;
++		old->thread.fpu.has_fpu = 0;	/* But leave fpu_owner_task! */
 +
-+Garbage Collection.
++		/* Don't change CR0.TS if we just switch! */
++		if (fpu.preload) {
++			new->fpu_counter++;
++			__thread_set_has_fpu(new);
++			prefetch(new->thread.fpu.state);
++		} else
++			stts();
++	} else {
++		old->fpu_counter = 0;
++		old->thread.fpu.last_cpu = ~0;
++		if (fpu.preload) {
++			new->fpu_counter++;
++			if (fpu_lazy_restore(new, cpu))
++				fpu.preload = 0;
++			else
++				prefetch(new->thread.fpu.state);
++			__thread_fpu_begin(new);
++		}
++	}
++	return fpu;
++}
 +
-+copying a data node to a new location:
-+- decide whether to promote data nodes
-+- re-encrypt promoted data node
-+- mark old key is deleted, new key as used
++/*
++ * By the time this gets called, we've already cleared CR0.TS and
++ * given the process the FPU if we are going to preload the FPU
++ * state - all we need to do is to conditionally restore the register
++ * state itself.
++ */
++static inline void switch_fpu_finish(struct task_struct *new, fpu_switch_t fpu)
++{
++	if (fpu.preload) {
++		if (unlikely(restore_fpu_checking(new)))
++			__thread_fpu_end(new);
++	}
++}
 +
-+Future Extensions
-+=================
++/*
++ * Signal frame handlers...
++ */
++extern int save_i387_xstate(void __user *buf);
++extern int restore_i387_xstate(void __user *buf);
 +
-+Encrypting metadata.
++static inline void __clear_fpu(struct task_struct *tsk)
++{
++	if (__thread_has_fpu(tsk)) {
++		/* Ignore delayed exceptions from user space */
++		asm volatile("1: fwait\n"
++			     "2:\n"
++			     _ASM_EXTABLE(1b, 2b));
++		__thread_fpu_end(tsk);
++	}
++}
 +
-+UBIFSec securely deletes file content, but not a file's name and other
-+metadata.  Some encrypted file systems, such as ecryptfs, encrypt this
-+metadata along with the file data. Our implementation leverages the
-+compression functionality of UBIFS to seamlessly add cryptographic operations.
-+However, there is no technical reason that prohibits assigning an encryption
-+key to non-data nodes (such as the index) and storing them encrypted on the
-+storage medium.
++/*
++ * The actual user_fpu_begin/end() functions
++ * need to be preemption-safe.
++ *
++ * NOTE! user_fpu_end() must be used only after you
++ * have saved the FP state, and user_fpu_begin() must
++ * be used only immediately before restoring it.
++ * These functions do not do any save/restore on
++ * their own.
++ */
++static inline void user_fpu_end(void)
++{
++	preempt_disable();
++	__thread_fpu_end(current);
++	preempt_enable();
++}
 +
-+Purging Policies.
++static inline void user_fpu_begin(void)
++{
++	preempt_disable();
++	if (!user_has_fpu())
++		__thread_fpu_begin(current);
++	preempt_enable();
++}
 +
-+Purging is currently performed after a user-controlled period of time and
-+before unmounting the device. More elaborate policies could exist, where
-+purging occurs once a threshold of deleted keys is passed, ensuring that the
-+amount of exposable data is limited, so the deletion of many files would thus
-+act as a trigger for purging.  An ioctl can be offered to allow user-level
-+applications to trigger a purge, such as an email application that purges the
-+file system after clearing the cache. We can alternatively use a new extended
-+attribute to act a trigger: whenever any data node belonging to a sensitive
-+file is deleted, then UBIFSec triggers an immediate purge. This allows users
-+to have confidence that most files are periodically deleted, while sensitive
-+files are promptly deleted.
++/*
++ * These disable preemption on their own and are safe
++ */
++static inline void save_init_fpu(struct task_struct *tsk)
++{
++	WARN_ON_ONCE(!__thread_has_fpu(tsk));
++	preempt_disable();
++	__save_init_fpu(tsk);
++	__thread_fpu_end(tsk);
++	preempt_enable();
++}
 +
-+Password-protected Encrypted File System.
++static inline void clear_fpu(struct task_struct *tsk)
++{
++	preempt_disable();
++	__clear_fpu(tsk);
++	preempt_enable();
++}
 +
-+UBIFSec can be trivially extended to offer a passphrase-protected encrypted
-+file system: we simply encrypt the KSA whenever we write random data, and
-+derive the decryption key from a provided passphrase when mounting. Since,
-+with high probability, each randomly-generated key in the KSA is unique, we
-+can use a block cipher in electronic codebook mode to allow rapid decryption
-+of randomly accessed  offsets without storing additional initialization
-+vectors. Such a scheme provides all the benefits of UBIFSec along with the
-+additional guarantee that a non-coercive attacker (i.e., theft or repurposing)
-+is unable to access any data stored on the device---provided the master secret
-+does not reside in volatile memory at the time of the attack.
--- 
-1.7.0.4
-
-
-
++/*
++ * i387 state interaction
++ */
++static inline unsigned short get_fpu_cwd(struct task_struct *tsk)
++{
++	if (cpu_has_fxsr) {
++		return tsk->thread.fpu.state->fxsave.cwd;
++	} else {
++		return (unsigned short)tsk->thread.fpu.state->fsave.cwd;
++	}
++}
++
++static inline unsigned short get_fpu_swd(struct task_struct *tsk)
++{
++	if (cpu_has_fxsr) {
++		return tsk->thread.fpu.state->fxsave.swd;
++	} else {
++		return (unsigned short)tsk->thread.fpu.state->fsave.swd;
++	}
++}
++
++static inline unsigned short get_fpu_mxcsr(struct task_struct *tsk)
++{
++	if (cpu_has_xmm) {
++		return tsk->thread.fpu.state->fxsave.mxcsr;
++	} else {
++		return MXCSR_DEFAULT;
++	}
++}
++
++static bool fpu_allocated(struct fpu *fpu)
++{
++	return fpu->state != NULL;
++}
++
++static inline int fpu_alloc(struct fpu *fpu)
++{
++	if (fpu_allocated(fpu))
++		return 0;
++	fpu->state = kmem_cache_alloc(task_xstate_cachep, GFP_KERNEL);
++	if (!fpu->state)
++		return -ENOMEM;
++	WARN_ON((unsigned long)fpu->state & 15);
++	return 0;
++}
++
++static inline void fpu_free(struct fpu *fpu)
++{
++	if (fpu->state) {
++		kmem_cache_free(task_xstate_cachep, fpu->state);
++		fpu->state = NULL;
++	}
++}
++
++static inline void fpu_copy(struct fpu *dst, struct fpu *src)
++{
++	memcpy(dst->state, src->state, xstate_size);
++}
++
++extern void fpu_finit(struct fpu *fpu);
++
++#endif
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 2479049..7ce0798 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -13,476 +13,19 @@
+ #ifndef __ASSEMBLY__
+ 
+ #include <linux/sched.h>
+-#include <linux/kernel_stat.h>
+-#include <linux/regset.h>
+ #include <linux/hardirq.h>
+-#include <linux/slab.h>
+-#include <asm/asm.h>
+-#include <asm/cpufeature.h>
+-#include <asm/processor.h>
+-#include <asm/sigcontext.h>
+-#include <asm/user.h>
+-#include <asm/uaccess.h>
+-#include <asm/xsave.h>
++#include <asm/system.h>
++
++struct pt_regs;
++struct user_i387_struct;
+ 
+-extern unsigned int sig_xstate_size;
+-extern void fpu_init(void);
+-extern void mxcsr_feature_mask_init(void);
+ extern int init_fpu(struct task_struct *child);
+-extern void math_state_restore(void);
+ extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
++extern void math_state_restore(void);
+ 
+-DECLARE_PER_CPU(struct task_struct *, fpu_owner_task);
+-
+-extern user_regset_active_fn fpregs_active, xfpregs_active;
+-extern user_regset_get_fn fpregs_get, xfpregs_get, fpregs_soft_get,
+-				xstateregs_get;
+-extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
+-				 xstateregs_set;
+-
+-/*
+- * xstateregs_active == fpregs_active. Please refer to the comment
+- * at the definition of fpregs_active.
+- */
+-#define xstateregs_active	fpregs_active
+-
+-extern struct _fpx_sw_bytes fx_sw_reserved;
+-#ifdef CONFIG_IA32_EMULATION
+-extern unsigned int sig_xstate_ia32_size;
+-extern struct _fpx_sw_bytes fx_sw_reserved_ia32;
+-struct _fpstate_ia32;
+-struct _xstate_ia32;
+-extern int save_i387_xstate_ia32(void __user *buf);
+-extern int restore_i387_xstate_ia32(void __user *buf);
+-#endif
+-
+-#ifdef CONFIG_MATH_EMULATION
+-extern void finit_soft_fpu(struct i387_soft_struct *soft);
+-#else
+-static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
+-#endif
+-
+-#define X87_FSW_ES (1 << 7)	/* Exception Summary */
+-
+-static __always_inline __pure bool use_xsaveopt(void)
+-{
+-	return static_cpu_has(X86_FEATURE_XSAVEOPT);
+-}
+-
+-static __always_inline __pure bool use_xsave(void)
+-{
+-	return static_cpu_has(X86_FEATURE_XSAVE);
+-}
+-
+-static __always_inline __pure bool use_fxsr(void)
+-{
+-        return static_cpu_has(X86_FEATURE_FXSR);
+-}
+-
+-extern void __sanitize_i387_state(struct task_struct *);
+-
+-static inline void sanitize_i387_state(struct task_struct *tsk)
+-{
+-	if (!use_xsaveopt())
+-		return;
+-	__sanitize_i387_state(tsk);
+-}
+-
+-#ifdef CONFIG_X86_64
+-static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+-{
+-	int err;
+-
+-	/* See comment in fxsave() below. */
+-#ifdef CONFIG_AS_FXSAVEQ
+-	asm volatile("1:  fxrstorq %[fx]\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : [fx] "m" (*fx), "0" (0));
+-#else
+-	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : [fx] "R" (fx), "m" (*fx), "0" (0));
+-#endif
+-	return err;
+-}
+-
+-static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
+-{
+-	int err;
+-
+-	/*
+-	 * Clear the bytes not touched by the fxsave and reserved
+-	 * for the SW usage.
+-	 */
+-	err = __clear_user(&fx->sw_reserved,
+-			   sizeof(struct _fpx_sw_bytes));
+-	if (unlikely(err))
+-		return -EFAULT;
+-
+-	/* See comment in fxsave() below. */
+-#ifdef CONFIG_AS_FXSAVEQ
+-	asm volatile("1:  fxsaveq %[fx]\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err), [fx] "=m" (*fx)
+-		     : "0" (0));
+-#else
+-	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err), "=m" (*fx)
+-		     : [fx] "R" (fx), "0" (0));
+-#endif
+-	if (unlikely(err) &&
+-	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
+-		err = -EFAULT;
+-	/* No need to clear here because the caller clears USED_MATH */
+-	return err;
+-}
+-
+-static inline void fpu_fxsave(struct fpu *fpu)
+-{
+-	/* Using "rex64; fxsave %0" is broken because, if the memory operand
+-	   uses any extended registers for addressing, a second REX prefix
+-	   will be generated (to the assembler, rex64 followed by semicolon
+-	   is a separate instruction), and hence the 64-bitness is lost. */
+-
+-#ifdef CONFIG_AS_FXSAVEQ
+-	/* Using "fxsaveq %0" would be the ideal choice, but is only supported
+-	   starting with gas 2.16. */
+-	__asm__ __volatile__("fxsaveq %0"
+-			     : "=m" (fpu->state->fxsave));
+-#else
+-	/* Using, as a workaround, the properly prefixed form below isn't
+-	   accepted by any binutils version so far released, complaining that
+-	   the same type of prefix is used twice if an extended register is
+-	   needed for addressing (fix submitted to mainline 2005-11-21).
+-	asm volatile("rex64/fxsave %0"
+-		     : "=m" (fpu->state->fxsave));
+-	   This, however, we can work around by forcing the compiler to select
+-	   an addressing mode that doesn't require extended registers. */
+-	asm volatile("rex64/fxsave (%[fx])"
+-		     : "=m" (fpu->state->fxsave)
+-		     : [fx] "R" (&fpu->state->fxsave));
+-#endif
+-}
+-
+-#else  /* CONFIG_X86_32 */
+-
+-/* perform fxrstor iff the processor has extended states, otherwise frstor */
+-static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+-{
+-	/*
+-	 * The "nop" is needed to make the instructions the same
+-	 * length.
+-	 */
+-	alternative_input(
+-		"nop ; frstor %1",
+-		"fxrstor %1",
+-		X86_FEATURE_FXSR,
+-		"m" (*fx));
+-
+-	return 0;
+-}
+-
+-static inline void fpu_fxsave(struct fpu *fpu)
+-{
+-	asm volatile("fxsave %[fx]"
+-		     : [fx] "=m" (fpu->state->fxsave));
+-}
+-
+-#endif	/* CONFIG_X86_64 */
+-
+-/*
+- * These must be called with preempt disabled. Returns
+- * 'true' if the FPU state is still intact.
+- */
+-static inline int fpu_save_init(struct fpu *fpu)
+-{
+-	if (use_xsave()) {
+-		fpu_xsave(fpu);
+-
+-		/*
+-		 * xsave header may indicate the init state of the FP.
+-		 */
+-		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
+-			return 1;
+-	} else if (use_fxsr()) {
+-		fpu_fxsave(fpu);
+-	} else {
+-		asm volatile("fnsave %[fx]; fwait"
+-			     : [fx] "=m" (fpu->state->fsave));
+-		return 0;
+-	}
+-
+-	/*
+-	 * If exceptions are pending, we need to clear them so
+-	 * that we don't randomly get exceptions later.
+-	 *
+-	 * FIXME! Is this perhaps only true for the old-style
+-	 * irq13 case? Maybe we could leave the x87 state
+-	 * intact otherwise?
+-	 */
+-	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES)) {
+-		asm volatile("fnclex");
+-		return 0;
+-	}
+-	return 1;
+-}
+-
+-static inline int __save_init_fpu(struct task_struct *tsk)
+-{
+-	return fpu_save_init(&tsk->thread.fpu);
+-}
+-
+-static inline int fpu_fxrstor_checking(struct fpu *fpu)
+-{
+-	return fxrstor_checking(&fpu->state->fxsave);
+-}
+-
+-static inline int fpu_restore_checking(struct fpu *fpu)
+-{
+-	if (use_xsave())
+-		return fpu_xrstor_checking(fpu);
+-	else
+-		return fpu_fxrstor_checking(fpu);
+-}
+-
+-static inline int restore_fpu_checking(struct task_struct *tsk)
+-{
+-	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+-	   is pending.  Clear the x87 state here by setting it to fixed
+-	   values. "m" is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (tsk->thread.fpu.has_fpu));
+-
+-	return fpu_restore_checking(&tsk->thread.fpu);
+-}
+-
+-/*
+- * Software FPU state helpers. Careful: these need to
+- * be preemption protection *and* they need to be
+- * properly paired with the CR0.TS changes!
+- */
+-static inline int __thread_has_fpu(struct task_struct *tsk)
+-{
+-	return tsk->thread.fpu.has_fpu;
+-}
+-
+-/* Must be paired with an 'stts' after! */
+-static inline void __thread_clear_has_fpu(struct task_struct *tsk)
+-{
+-	tsk->thread.fpu.has_fpu = 0;
+-	percpu_write(fpu_owner_task, NULL);
+-}
+-
+-/* Must be paired with a 'clts' before! */
+-static inline void __thread_set_has_fpu(struct task_struct *tsk)
+-{
+-	tsk->thread.fpu.has_fpu = 1;
+-	percpu_write(fpu_owner_task, tsk);
+-}
+-
+-/*
+- * Encapsulate the CR0.TS handling together with the
+- * software flag.
+- *
+- * These generally need preemption protection to work,
+- * do try to avoid using these on their own.
+- */
+-static inline void __thread_fpu_end(struct task_struct *tsk)
+-{
+-	__thread_clear_has_fpu(tsk);
+-	stts();
+-}
+-
+-static inline void __thread_fpu_begin(struct task_struct *tsk)
+-{
+-	clts();
+-	__thread_set_has_fpu(tsk);
+-}
+-
+-/*
+- * FPU state switching for scheduling.
+- *
+- * This is a two-stage process:
+- *
+- *  - switch_fpu_prepare() saves the old state and
+- *    sets the new state of the CR0.TS bit. This is
+- *    done within the context of the old process.
+- *
+- *  - switch_fpu_finish() restores the new state as
+- *    necessary.
+- */
+-typedef struct { int preload; } fpu_switch_t;
+-
+-/*
+- * FIXME! We could do a totally lazy restore, but we need to
+- * add a per-cpu "this was the task that last touched the FPU
+- * on this CPU" variable, and the task needs to have a "I last
+- * touched the FPU on this CPU" and check them.
+- *
+- * We don't do that yet, so "fpu_lazy_restore()" always returns
+- * false, but some day..
+- */
+-static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
+-{
+-	return new == percpu_read_stable(fpu_owner_task) &&
+-		cpu == new->thread.fpu.last_cpu;
+-}
+-
+-static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct task_struct *new, int cpu)
+-{
+-	fpu_switch_t fpu;
+-
+-	fpu.preload = tsk_used_math(new) && new->fpu_counter > 5;
+-	if (__thread_has_fpu(old)) {
+-		if (!__save_init_fpu(old))
+-			cpu = ~0;
+-		old->thread.fpu.last_cpu = cpu;
+-		old->thread.fpu.has_fpu = 0;	/* But leave fpu_owner_task! */
+-
+-		/* Don't change CR0.TS if we just switch! */
+-		if (fpu.preload) {
+-			new->fpu_counter++;
+-			__thread_set_has_fpu(new);
+-			prefetch(new->thread.fpu.state);
+-		} else
+-			stts();
+-	} else {
+-		old->fpu_counter = 0;
+-		old->thread.fpu.last_cpu = ~0;
+-		if (fpu.preload) {
+-			new->fpu_counter++;
+-			if (fpu_lazy_restore(new, cpu))
+-				fpu.preload = 0;
+-			else
+-				prefetch(new->thread.fpu.state);
+-			__thread_fpu_begin(new);
+-		}
+-	}
+-	return fpu;
+-}
+-
+-/*
+- * By the time this gets called, we've already cleared CR0.TS and
+- * given the process the FPU if we are going to preload the FPU
+- * state - all we need to do is to conditionally restore the register
+- * state itself.
+- */
+-static inline void switch_fpu_finish(struct task_struct *new, fpu_switch_t fpu)
+-{
+-	if (fpu.preload) {
+-		if (unlikely(restore_fpu_checking(new)))
+-			__thread_fpu_end(new);
+-	}
+-}
+-
+-/*
+- * Signal frame handlers...
+- */
+-extern int save_i387_xstate(void __user *buf);
+-extern int restore_i387_xstate(void __user *buf);
+-
+-static inline void __clear_fpu(struct task_struct *tsk)
+-{
+-	if (__thread_has_fpu(tsk)) {
+-		/* Ignore delayed exceptions from user space */
+-		asm volatile("1: fwait\n"
+-			     "2:\n"
+-			     _ASM_EXTABLE(1b, 2b));
+-		__thread_fpu_end(tsk);
+-	}
+-}
+-
+-/*
+- * Were we in an interrupt that interrupted kernel mode?
+- *
+- * We can do a kernel_fpu_begin/end() pair *ONLY* if that
+- * pair does nothing at all: the thread must not have fpu (so
+- * that we don't try to save the FPU state), and TS must
+- * be set (so that the clts/stts pair does nothing that is
+- * visible in the interrupted kernel thread).
+- */
+-static inline bool interrupted_kernel_fpu_idle(void)
+-{
+-	return !__thread_has_fpu(current) &&
+-		(read_cr0() & X86_CR0_TS);
+-}
+-
+-/*
+- * Were we in user mode (or vm86 mode) when we were
+- * interrupted?
+- *
+- * Doing kernel_fpu_begin/end() is ok if we are running
+- * in an interrupt context from user mode - we'll just
+- * save the FPU state as required.
+- */
+-static inline bool interrupted_user_mode(void)
+-{
+-	struct pt_regs *regs = get_irq_regs();
+-	return regs && user_mode_vm(regs);
+-}
+-
+-/*
+- * Can we use the FPU in kernel mode with the
+- * whole "kernel_fpu_begin/end()" sequence?
+- *
+- * It's always ok in process context (ie "not interrupt")
+- * but it is sometimes ok even from an irq.
+- */
+-static inline bool irq_fpu_usable(void)
+-{
+-	return !in_interrupt() ||
+-		interrupted_user_mode() ||
+-		interrupted_kernel_fpu_idle();
+-}
+-
+-static inline void kernel_fpu_begin(void)
+-{
+-	struct task_struct *me = current;
+-
+-	WARN_ON_ONCE(!irq_fpu_usable());
+-	preempt_disable();
+-	if (__thread_has_fpu(me)) {
+-		__save_init_fpu(me);
+-		__thread_clear_has_fpu(me);
+-		/* We do 'stts()' in kernel_fpu_end() */
+-	} else {
+-		percpu_write(fpu_owner_task, NULL);
+-		clts();
+-	}
+-}
+-
+-static inline void kernel_fpu_end(void)
+-{
+-	stts();
+-	preempt_enable();
+-}
++extern bool irq_fpu_usable(void);
++extern void kernel_fpu_begin(void);
++extern void kernel_fpu_end(void);
+ 
+ /*
+  * Some instructions like VIA's padlock instructions generate a spurious
+@@ -524,126 +67,13 @@ static inline void irq_ts_restore(int TS_state)
+  * we can just assume we have FPU access - typically
+  * to save the FP state - we'll just take a #NM
+  * fault and get the FPU access back.
+- *
+- * The actual user_fpu_begin/end() functions
+- * need to be preemption-safe, though.
+- *
+- * NOTE! user_fpu_end() must be used only after you
+- * have saved the FP state, and user_fpu_begin() must
+- * be used only immediately before restoring it.
+- * These functions do not do any save/restore on
+- * their own.
+  */
+ static inline int user_has_fpu(void)
+ {
+-	return __thread_has_fpu(current);
+-}
+-
+-static inline void user_fpu_end(void)
+-{
+-	preempt_disable();
+-	__thread_fpu_end(current);
+-	preempt_enable();
+-}
+-
+-static inline void user_fpu_begin(void)
+-{
+-	preempt_disable();
+-	if (!user_has_fpu())
+-		__thread_fpu_begin(current);
+-	preempt_enable();
+-}
+-
+-/*
+- * These disable preemption on their own and are safe
+- */
+-static inline void save_init_fpu(struct task_struct *tsk)
+-{
+-	WARN_ON_ONCE(!__thread_has_fpu(tsk));
+-	preempt_disable();
+-	__save_init_fpu(tsk);
+-	__thread_fpu_end(tsk);
+-	preempt_enable();
+-}
+-
+-static inline void unlazy_fpu(struct task_struct *tsk)
+-{
+-	preempt_disable();
+-	if (__thread_has_fpu(tsk)) {
+-		__save_init_fpu(tsk);
+-		__thread_fpu_end(tsk);
+-	} else
+-		tsk->fpu_counter = 0;
+-	preempt_enable();
+-}
+-
+-static inline void clear_fpu(struct task_struct *tsk)
+-{
+-	preempt_disable();
+-	__clear_fpu(tsk);
+-	preempt_enable();
+-}
+-
+-/*
+- * i387 state interaction
+- */
+-static inline unsigned short get_fpu_cwd(struct task_struct *tsk)
+-{
+-	if (cpu_has_fxsr) {
+-		return tsk->thread.fpu.state->fxsave.cwd;
+-	} else {
+-		return (unsigned short)tsk->thread.fpu.state->fsave.cwd;
+-	}
+-}
+-
+-static inline unsigned short get_fpu_swd(struct task_struct *tsk)
+-{
+-	if (cpu_has_fxsr) {
+-		return tsk->thread.fpu.state->fxsave.swd;
+-	} else {
+-		return (unsigned short)tsk->thread.fpu.state->fsave.swd;
+-	}
+-}
+-
+-static inline unsigned short get_fpu_mxcsr(struct task_struct *tsk)
+-{
+-	if (cpu_has_xmm) {
+-		return tsk->thread.fpu.state->fxsave.mxcsr;
+-	} else {
+-		return MXCSR_DEFAULT;
+-	}
+-}
+-
+-static bool fpu_allocated(struct fpu *fpu)
+-{
+-	return fpu->state != NULL;
+-}
+-
+-static inline int fpu_alloc(struct fpu *fpu)
+-{
+-	if (fpu_allocated(fpu))
+-		return 0;
+-	fpu->state = kmem_cache_alloc(task_xstate_cachep, GFP_KERNEL);
+-	if (!fpu->state)
+-		return -ENOMEM;
+-	WARN_ON((unsigned long)fpu->state & 15);
+-	return 0;
+-}
+-
+-static inline void fpu_free(struct fpu *fpu)
+-{
+-	if (fpu->state) {
+-		kmem_cache_free(task_xstate_cachep, fpu->state);
+-		fpu->state = NULL;
+-	}
+-}
+-
+-static inline void fpu_copy(struct fpu *dst, struct fpu *src)
+-{
+-	memcpy(dst->state, src->state, xstate_size);
++	return current->thread.fpu.has_fpu;
+ }
+ 
+-extern void fpu_finit(struct fpu *fpu);
++extern void unlazy_fpu(struct task_struct *tsk);
+ 
+ #endif /* __ASSEMBLY__ */
+ 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index c0f7d68..89620b1 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -28,6 +28,7 @@
+ #include <asm/apic.h>
+ #include <asm/desc.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/mtrr.h>
+ #include <linux/numa.h>
+ #include <asm/asm.h>
+@@ -1045,7 +1046,6 @@ DEFINE_PER_CPU(char *, irq_stack_ptr) =
+ DEFINE_PER_CPU(unsigned int, irq_count) = -1;
+ 
+ DEFINE_PER_CPU(struct task_struct *, fpu_owner_task);
+-EXPORT_PER_CPU_SYMBOL(fpu_owner_task);
+ 
+ /*
+  * Special IST stacks which the CPU switches to when it calls
+@@ -1115,7 +1115,6 @@ void debug_stack_reset(void)
+ DEFINE_PER_CPU(struct task_struct *, current_task) = &init_task;
+ EXPORT_PER_CPU_SYMBOL(current_task);
+ DEFINE_PER_CPU(struct task_struct *, fpu_owner_task);
+-EXPORT_PER_CPU_SYMBOL(fpu_owner_task);
+ 
+ #ifdef CONFIG_CC_STACKPROTECTOR
+ DEFINE_PER_CPU_ALIGNED(struct stack_canary, stack_canary);
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 739d859..7734bcb 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -16,6 +16,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/ptrace.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/user.h>
+ 
+ #ifdef CONFIG_X86_64
+@@ -32,6 +33,86 @@
+ # define user32_fxsr_struct	user_fxsr_struct
+ #endif
+ 
++/*
++ * Were we in an interrupt that interrupted kernel mode?
++ *
++ * We can do a kernel_fpu_begin/end() pair *ONLY* if that
++ * pair does nothing at all: the thread must not have fpu (so
++ * that we don't try to save the FPU state), and TS must
++ * be set (so that the clts/stts pair does nothing that is
++ * visible in the interrupted kernel thread).
++ */
++static inline bool interrupted_kernel_fpu_idle(void)
++{
++	return !__thread_has_fpu(current) &&
++		(read_cr0() & X86_CR0_TS);
++}
++
++/*
++ * Were we in user mode (or vm86 mode) when we were
++ * interrupted?
++ *
++ * Doing kernel_fpu_begin/end() is ok if we are running
++ * in an interrupt context from user mode - we'll just
++ * save the FPU state as required.
++ */
++static inline bool interrupted_user_mode(void)
++{
++	struct pt_regs *regs = get_irq_regs();
++	return regs && user_mode_vm(regs);
++}
++
++/*
++ * Can we use the FPU in kernel mode with the
++ * whole "kernel_fpu_begin/end()" sequence?
++ *
++ * It's always ok in process context (ie "not interrupt")
++ * but it is sometimes ok even from an irq.
++ */
++bool irq_fpu_usable(void)
++{
++	return !in_interrupt() ||
++		interrupted_user_mode() ||
++		interrupted_kernel_fpu_idle();
++}
++EXPORT_SYMBOL(irq_fpu_usable);
++
++void kernel_fpu_begin(void)
++{
++	struct task_struct *me = current;
++
++	WARN_ON_ONCE(!irq_fpu_usable());
++	preempt_disable();
++	if (__thread_has_fpu(me)) {
++		__save_init_fpu(me);
++		__thread_clear_has_fpu(me);
++		/* We do 'stts()' in kernel_fpu_end() */
++	} else {
++		percpu_write(fpu_owner_task, NULL);
++		clts();
++	}
++}
++EXPORT_SYMBOL(kernel_fpu_begin);
++
++void kernel_fpu_end(void)
++{
++	stts();
++	preempt_enable();
++}
++EXPORT_SYMBOL(kernel_fpu_end);
++
++void unlazy_fpu(struct task_struct *tsk)
++{
++	preempt_disable();
++	if (__thread_has_fpu(tsk)) {
++		__save_init_fpu(tsk);
++		__thread_fpu_end(tsk);
++	} else
++		tsk->fpu_counter = 0;
++	preempt_enable();
++}
++EXPORT_SYMBOL(unlazy_fpu);
++
+ #ifdef CONFIG_MATH_EMULATION
+ # define HAVE_HWFP		(boot_cpu_data.hard_math)
+ #else
+@@ -44,7 +125,7 @@ EXPORT_SYMBOL_GPL(xstate_size);
+ unsigned int sig_xstate_ia32_size = sizeof(struct _fpstate_ia32);
+ static struct i387_fxsave_struct fx_scratch __cpuinitdata;
+ 
+-void __cpuinit mxcsr_feature_mask_init(void)
++static void __cpuinit mxcsr_feature_mask_init(void)
+ {
+ 	unsigned long mask = 0;
+ 
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 15763af..c38d84e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -21,6 +21,7 @@
+ #include <asm/idle.h>
+ #include <asm/uaccess.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/debugreg.h>
+ 
+ struct kmem_cache *task_xstate_cachep;
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index c08d1ff..ee32dee 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -45,6 +45,7 @@
+ #include <asm/ldt.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/desc.h>
+ #ifdef CONFIG_MATH_EMULATION
+ #include <asm/math_emu.h>
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index cfa5c90..5bad3c7 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -43,6 +43,7 @@
+ #include <asm/system.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/mmu_context.h>
+ #include <asm/prctl.h>
+ #include <asm/desc.h>
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 5026738..78f05e4 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -27,6 +27,7 @@
+ #include <asm/system.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/debugreg.h>
+ #include <asm/ldt.h>
+ #include <asm/desc.h>
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 46a01bd..25edcfc 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -24,6 +24,7 @@
+ #include <asm/processor.h>
+ #include <asm/ucontext.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/vdso.h>
+ #include <asm/mce.h>
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 4bbe04d..ec61d4c 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -54,6 +54,7 @@
+ #include <asm/traps.h>
+ #include <asm/desc.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/mce.h>
+ 
+ #include <asm/mach_traps.h>
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 7110911..e62728e 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -6,6 +6,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/compat.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #ifdef CONFIG_IA32_EMULATION
+ #include <asm/sigcontext32.h>
+ #endif
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 3b4c8d8..246490f 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1457,7 +1457,7 @@ static void __vmx_load_host_state(struct vcpu_vmx *vmx)
+ #ifdef CONFIG_X86_64
+ 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+ #endif
+-	if (__thread_has_fpu(current))
++	if (user_has_fpu())
+ 		clts();
+ 	load_gdt(&__get_cpu_var(host_gdt));
+ }
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 9cbfc06..b937b61 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -57,6 +57,7 @@
+ #include <asm/mtrr.h>
+ #include <asm/mce.h>
+ #include <asm/i387.h>
++#include <asm/fpu-internal.h> /* Ugh! */
+ #include <asm/xcr.h>
+ #include <asm/pvclock.h>
+ #include <asm/div64.h>
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index f10c0af..4889655 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -20,6 +20,7 @@
+ #include <asm/xcr.h>
+ #include <asm/suspend.h>
+ #include <asm/debugreg.h>
++#include <asm/fpu-internal.h> /* pcntxt_mask */
+ 
+ #ifdef CONFIG_X86_32
+ static struct saved_context saved_context;
