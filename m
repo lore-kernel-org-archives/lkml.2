@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032304Ab2CSR3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 13:29:04 -0400
-Received: from mail-wg0-f66.google.com ([74.125.82.66]:44153 "EHLO
-	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030441Ab2CSR3B (ORCPT
+	id S1759238Ab2CSRbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 13:31:33 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:56282 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab2CSRbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 13:29:01 -0400
-Date: Mon, 19 Mar 2012 18:28:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/uv change for v3.4
-Message-ID: <20120319172857.GA16633@gmail.com>
+	Mon, 19 Mar 2012 13:31:31 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Wyborny\, Carolyn" <carolyn.wyborny@intel.com>
+Cc: Chris Boot <bootc@bootc.net>,
+        "e1000-devel\@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [E1000-devel] e1000e interface hang on 82574L
+References: <4EFA4024.5000909@bootc.net>
+	<FCF3184D-CE4F-471C-B66C-0F671795FD3C@bootc.net>
+	<9BBC4E0CF881AA4299206E2E1412B626017762@ORSMSX102.amr.corp.intel.com>
+	<4F048861.8070501@bootc.net> <4F12B42C.9030803@bootc.net>
+	<9BBC4E0CF881AA4299206E2E1412B62621F0B1@ORSMSX102.amr.corp.intel.com>
+	<4F144A76.3050703@bootc.net> <4F64B4E2.20208@bootc.net>
+	<4F64CFCB.7060702@bootc.net>
+	<9BBC4E0CF881AA4299206E2E1412B6260E512E0C@ORSMSX102.amr.corp.intel.com>
+	<87r4wova0b.fsf@spindle.srvr.nix>
+	<9BBC4E0CF881AA4299206E2E1412B6260E512FB9@ORSMSX102.amr.corp.intel.com>
+Emacs: it's not slow --- it's stately.
+Date: Mon, 19 Mar 2012 17:31:14 +0000
+In-Reply-To: <9BBC4E0CF881AA4299206E2E1412B6260E512FB9@ORSMSX102.amr.corp.intel.com>
+	(Carolyn Wyborny's message of "Mon, 19 Mar 2012 16:29:03 +0000")
+Message-ID: <87ehsov6ot.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.93 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-DCC-dcc1.aftenposten.no-Metrics: spindle 1215; Body=5 Fuz1=5 Fuz2=5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 19 Mar 2012, Carolyn Wyborny said:
 
-Please pull the latest x86-uv-for-linus git tree from:
+>>you'll see that I tested that, and it doesn't work :( even if it did
+>>work, it shouldn't be needed: the driver attempts to turn off PCIe ASPM
+>>on affected NICs, and fails, apparently because *something* turns it
+>>back on again.
+>>
+> The driver attempts to disable L0s state, not the entire feature. It
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-uv-for-linus
+It tries to disable L1 state as well (or it did when I tested this last,
+although I suspect you're right and it may leave L1 turned on these
+days: judging by the contents of e1000_82574_info, anyway.)
 
-   HEAD: b0deca2e0270135f797e81bdb0743e50fd1dc58d x86/UV: Lower UV rtc clocksource rating
+> is also required that the device upstream on the bus from the 82574L
+> have this disabled. Yes, I agree there appears to be something in the
+> os that either ren-enables or fails to disable the feature on the
+> upstream device, as desired. Platforms/systems also appear to vary in
+> this regard, so the solutions may vary a bit as well.
+>
+> Its worth trying your solution as well if what I suggested doesn't
+> work, but there is not one solution that fits all, unfortunately.
 
- Thanks,
+I don't *have* a solution. :( 'setpci by hand some unknown amount of
+time after booting once the interface has stabilized' hardly counts as a
+solution of any sort. It's, at best, a workaround that lets me use my
+systems without hourly lockups until a real solution is found.
 
-	Ingo
+(To clarify: manual setpci to force off the ASPM bits is the only thing
+that works for me. The driver's automatic disabling of L0s and L1
+doesn't work: nor does booting with pcie_aspm=off. In both cases, I end
+up with both L0s and L1 turned on, and a lockup some time later, unless
+I setpci the bits off by hand.)
 
------------------->
-Dimitri Sivanich (1):
-      x86/UV: Lower UV rtc clocksource rating
-
-
- arch/x86/platform/uv/uv_time.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/platform/uv/uv_time.c b/arch/x86/platform/uv/uv_time.c
-index 9f29a01..5032e0d 100644
---- a/arch/x86/platform/uv/uv_time.c
-+++ b/arch/x86/platform/uv/uv_time.c
-@@ -37,7 +37,7 @@ static void uv_rtc_timer_setup(enum clock_event_mode,
- 
- static struct clocksource clocksource_uv = {
- 	.name		= RTC_NAME,
--	.rating		= 400,
-+	.rating		= 299,
- 	.read		= uv_read_rtc,
- 	.mask		= (cycle_t)UVH_RTC_REAL_TIME_CLOCK_MASK,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -379,10 +379,6 @@ static __init int uv_rtc_setup_clock(void)
- 	if (!is_uv_system())
- 		return -ENODEV;
- 
--	/* If single blade, prefer tsc */
--	if (uv_num_possible_blades() == 1)
--		clocksource_uv.rating = 250;
--
- 	rc = clocksource_register_hz(&clocksource_uv, sn_rtc_cycles_per_second);
- 	if (rc)
- 		printk(KERN_INFO "UV RTC clocksource failed rc %d\n", rc);
+-- 
+NULL && (void)
