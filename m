@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161311Ab2CSQKv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 12:10:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13223 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757053Ab2CSQKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 12:10:50 -0400
-Date: Mon, 19 Mar 2012 17:02:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Roland McGrath <roland@hack.frob.com>,
-        Solar Designer <solar@openwall.com>,
-        Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] exec_id/exit_signal fixes
-Message-ID: <20120319160249.GA4910@redhat.com>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <20120311172512.GA2729@redhat.com> <20120311174953.GB2729@redhat.com> <CA+55aFx43nZmhRg5Qv5x-4BdgcM-y80ECrgC8mCWc0RqU+_8rQ@mail.gmail.com> <20120314185510.GA14172@redhat.com> <20120314190939.GC14172@redhat.com>
+	id S1031856Ab2CSQLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 12:11:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44736 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757311Ab2CSQK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 12:10:58 -0400
+Date: Mon, 19 Mar 2012 09:10:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH 06/10] cgroup: convert memcg controller to the new
+ cftype interface
+Message-ID: <20120319161052.GC11069@google.com>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+ <1331940963-15756-7-git-send-email-tj@kernel.org>
+ <4F66B55A.8020307@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120314190939.GC14172@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F66B55A.8020307@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, these changes are orthogonal to
-"CLONE_PARENT shouldn't allow to set ->exit_signal" in -mm.
+Hello,
 
-Please review/comment. The patches are really simple I hope,
-but with or without them I do not understand eligible_child().
+On Mon, Mar 19, 2012 at 01:26:02PM +0900, KAMEZAWA Hiroyuki wrote:
+> > +CGROUP_SUBSYS_CFTYPES_COND(mem_cgroup_subsys, memsw_cgroup_files,
+> > +			   really_do_swap_account);
+> 
+> 
+> I'm sorry but why you use really_do_swap_account instead of do_swap_account ?
 
-	/* Wait for all children (clone and not) if __WALL is set;
-	 * otherwise, wait for clone children *only* if __WCLONE is
-	 * set; otherwise, wait for non-clone children *only*.  (Note:
-	 * A "clone" child here is one that reports to its parent
-	 * using a signal other than SIGCHLD.) */
-	if (((p->exit_signal != SIGCHLD) ^ !!(wo->wo_flags & __WCLONE))
-	    && !(wo->wo_flags & __WALL))
-		return 0;
+Because do_swap_account is initialized too late.
+CGROUP_SUBSYS_CFTYPES() are processed via fs_initcall().  AFAICS,
+do_swap_account may not have been initialized by then.  Also, if memcg
+as whole is disabled, it doesn't matter whether those files are
+registered or not, right?  We probably need some comment there tho.
 
-OK, but exec/exit can change ->exit_signal "in between".
+Thanks.
 
-For example. The parent clones the !SIGCHLD child and does
-do_wait(__WCLONE). The child execs. The parent still sleeps until
-child exits but do_wait() returns ECHILD. And more, this also
-depends on who does exec in mt case.
-
-Or the parent execs. In this case eligible_child() depends on when
-the child exits, before or after exec.
-
-Anyway, the current check in exit_notify() is wrong, 2/2 tries to
-fix this. But both patches add the (hopefully minor) user-visible
-changes wrt eligible_child().
-
-Really, I think de_thread() should set ->exit_signal = SIGCHLD for
-each child. This looks simple and understandable, and with the
-CLONE_PARENT change above we can kill self_exec_id/parent_exec_id.
-
-
-May be de_thread() should also do __wake_up_parent() if it changes
-->exit_signal. Or perhaps we should change eligible_child() to check
-p->cloned_with_not_SIGCHLD. I dunno. I hope this doesn't matter
-and nobody cares.
-
-OTOH, I never understood why we should reset ->exit_signal if the
-child execs but the parent is still the same.
-
-
-3/3 is offtopic minor cleanup. Imho setmax_mm_hiwater_rss() in
-de_thread() looks strange.
-
-Oleg.
-
+-- 
+tejun
