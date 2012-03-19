@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab2CSTJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 15:09:26 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:39568 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758406Ab2CSTJY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 15:09:24 -0400
+	id S1032586Ab2CSTLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 15:11:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38256 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab2CSTLg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 15:11:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120319112858.GX3852@pengutronix.de>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
- <1331878280-2758-3-git-send-email-mturquette@linaro.org> <4F6716DD.5090900@ti.com>
- <20120319112858.GX3852@pengutronix.de>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 19 Mar 2012 12:09:01 -0700
-Message-ID: <CAJOA=zOgHXy1_J+LG1LUWwsESwrtqAvrgHKUR22AJdsbRHa+YA@mail.gmail.com>
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Rajendra Nayak <rnayak@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Shawn Guo <shawn.guo@freescale.com>, linaro-dev@lists.linaro.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120319155022.GC8176@kroah.com>
+References: <20120316233829.GA14022@kroah.com>
+	<20120316233811.484341257@linuxfoundation.org>
+	<20120317023740.GH12704@decadent.org.uk>
+	<CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
+	<1331969567.3022.233.camel@deadeye>
+	<CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
+	<20120319155022.GC8176@kroah.com>
+Date: Mon, 19 Mar 2012 23:11:35 +0400
+X-Google-Sender-Auth: _Fxe5Mt1Uhh1G_yDqqwvsS7-sko
+Message-ID: <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
+Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 4:28 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Mon, Mar 19, 2012 at 04:52:05PM +0530, Rajendra Nayak wrote:
->> Hi Mike,
+19 Õ¡“‘¡ 2012ö«. 19:50 –œÃÿ⁄œ◊¡‘≈Ãÿ Greg KH
+<gregkh@linuxfoundation.org> Œ¡–…”¡Ã:
+> On Sat, Mar 17, 2012 at 11:52:24AM +0400, Pavel Shilovsky wrote:
+>> 17 Õ¡“‘¡ 2012ö«. 11:32 –œÃÿ⁄œ◊¡‘≈Ãÿ Ben Hutchings <ben@decadent.org.uk> Œ¡–…”¡Ã:
+>> > On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
+>> >> 17 Õ¡“‘¡ 2012 «. 6:37 –œÃÿ⁄œ◊¡‘≈Ãÿ Ben Hutchings <ben@decadent.org.uk> Œ¡–…”¡Ã:
+>> >> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
+>> >> >> 3.2-stable review patch. öIf anyone has any objections, please let me know.
+>> > [...]
+>> >> > But we test this before flock->fl_flags & FL_POSIX, which means we
+>> >> > don't know whether this lock actually needs to be assigned one of
+>> >> > those structures. öSo it appears that we might report a spurious error
+>> >> > if the lock list ends with a mandatory lock. öIf so, this is
+>> >> > relatively harmless but does need to be fixed.
+>> >> >
+>> >>
+>> >> You are right here, thanks for the catch! I will repost the patch asap.
+>> >
+>> > This has already been merged into Linus's tree, so you need to submit a
+>> > patch to apply on top of it.
+>> >
 >>
->> >+/*
->> >+ * calculate the new rates returning the topmost clock that has to be
->> >+ * changed.
->> >+ */
->> >+static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
->> >+{
->> >+ † †struct clk *top = clk;
->> >+ † †unsigned long best_parent_rate = clk->parent->rate;
->>
->> Shouldn't you check for a valid parent before dereferencing it? A
->> clk_set_rate() on a root clock might throw up some issues otherwise.
->>
+>> I posted two patches:
+>> 1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
+>> kmalloc under the flocks spinlock
 >
-> Yes, should be checked.
-
-The clk_calc_new_rates code assumes a valid parent pointer in several
-locations.  Thanks for the catch Rajendra.  Will roll into my fixes
-series.
-
->> >+ † †unsigned long new_rate;
->> >+
->> >+ † †if (!clk->ops->round_rate&& †!(clk->flags& †CLK_SET_RATE_PARENT)) {
->> >+ † † † † † †clk->new_rate = clk->rate;
->> >+ † † † † † †return NULL;
->>
->> So does this mean a clk_set_rate() fails for a clk which does not have
->> a valid .round_rate and does not have a CLK_SET_RATE_PARENT flag set?
->> I was thinking this could do a..
->> † † † † † † † clk->new_rate = rate;
->> † † † † † † † top = clk;
->> † † † † † † † goto out;
->> ..instead.
+> What do you mean by "fixed version"?
 >
-> The core should make sure that either both set_rate and round_rate are
-> present or none of them.
+>> 2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
+>> cifs_push_posix_locks
+>
+> What do you mean by this?
 
-Agreed.  The documentation covers which clk_ops are hard dependencies
-(based on supported operations), but the code doesn't strictly check
-this.  I'll add a small state machine to __clk_init which validates
-that .round_rate, .recalc_rate and .set_rate are *all* present if any
-one of them are present, and present a WARN if otherwise.
+Ok, seems I didn't understand this process correctly. I reposted the
+new "fixed" version of this patch, because I thought it is more
+suitable for stale to merge one correct patch rather than one
+incorrect + follow-on fixup. Sorry if I was wrong.
 
-Thanks,
-Mike
+>
+> If there was a follow-on patch in Linus's tree that fixes a problem, I
+> need that git commit id, not a "fixed" patch that does not match up with
+> what is in Linus's tree right now.
+>
+> So, if that's the case, please let me know what the git commit id of
+> that patch is please.
+
+Steve has just merged the follow-on patch:
+http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=ce85852b90a214cf577fc1b4f49d99fd7e98784a
+
+but seems hasn't sent a merge request to Linus yet - will let you know
+when the patch comes to Linus's tree.
+
+-- 
+Best regards,
+Pavel Shilovsky.
