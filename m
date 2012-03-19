@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab2CSIol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 04:44:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757027Ab2CSIok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 04:44:40 -0400
-Date: Mon, 19 Mar 2012 10:44:51 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V4 PATCH] virtio-net: send gratuitous packet when needed
-Message-ID: <20120319084449.GF17673@redhat.com>
-References: <20120313090841.11110.82654.stgit@amd-6168-8-1.englab.nay.redhat.com>
- <20120313143331.GE14931@redhat.com>
- <877gyhxrlu.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877gyhxrlu.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758547Ab2CSIrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 04:47:23 -0400
+Received: from mga12.intel.com ([143.182.124.36]:18435 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758513Ab2CSIrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 04:47:22 -0400
+Subject: Re: EFI Boot Stub Early Console
+From: Matt Fleming <matt.fleming@intel.com>
+To: Shea Levy <shea@shealevy.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4F65D09B.4050807@shealevy.com>
+References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com>
+	 <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com>
+	 <4F5E775D.7080702@zytor.com>  <4F648DD3.3000405@shealevy.com>
+	 <1332069701.4041.42.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <4F65D09B.4050807@shealevy.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Mon, 19 Mar 2012 08:47:14 +0000
+Message-ID: <1332146834.4041.46.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 12:46:29PM +1030, Rusty Russell wrote:
-> On Tue, 13 Mar 2012 16:33:31 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
-> > > index 970d5a2..44a38d6 100644
-> > > --- a/include/linux/virtio_net.h
-> > > +++ b/include/linux/virtio_net.h
-> > > @@ -49,8 +49,10 @@
-> > >  #define VIRTIO_NET_F_CTRL_RX	18	/* Control channel RX mode support */
-> > >  #define VIRTIO_NET_F_CTRL_VLAN	19	/* Control channel VLAN filtering */
-> > >  #define VIRTIO_NET_F_CTRL_RX_EXTRA 20	/* Extra RX mode control support */
-> > > +#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can send gratituous packet */
-> > >  
-> > >  #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
-> > > +#define VIRTIO_NET_S_ANNOUNCE   2       /* Announcement is needed */
-> > 
-> > I would put this in bit 8 (0x100), this way low status byte
-> > is RO, high byte is RW.
+On Sun, 2012-03-18 at 08:10 -0400, Shea Levy wrote:
+> Hi Matt,
 > 
-> The whole idea of acking by clearing the bit is unreliable, moving to a
-> separate byte just controls the damage.
+> On 3/18/12 7:21 AM, Matt Fleming wrote:
+> > I don't think you'll need to use the graphics protocols, you should 
+> > just be able to put something together using the 'output_string' 
+> > function from the EFI simple text output protocol, e.g. something like 
+> > this, https://lkml.org/lkml/2012/3/16/193 
 > 
-> How about you use bits 8-15 as a counter?  It's still theoretically
-> unreliable if 256 notifications pass before the guest notices, but it's
-> probably better and clearer than this.
+>  From the UEFI 2.3.1 spec:
 > 
-> I leave the final call to MST though.
+> > Prior to a call to ExitBootServices(), all of the fields of the EFI 
+> > System Table are valid. After an operating system has taken control of 
+> > the platform with a call to ExitBootServices(), only the Hdr, 
+> > FirmwareVendor, FirmwareRevision, RuntimeServices, 
+> > NumberOfTableEntries, and ConfigurationTable fields are valid.
 > 
-> Thanks,
-> Rusty.
+> Doesn't this mean that ConOut can't be used for the earlyprintk, since 
+> any bootloader (including the bootstub) will call ExitBootServices() 
+> before any printk'ing actually happens?? Or am I misunderstanding the 
+> spec somehow? I suppose I could just try it and see what happens...
 
-I guess the point was that we want a single packet
-so we don't care if multiple notifications are coalesced
-into a single one.
+Oops. Good point, that isn't going to work.
 
-> -- 
->   How could I marry someone with more hair than me?  http://baldalex.org
