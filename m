@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab2CSPVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 11:21:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58550 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab2CSPVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 11:21:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1121.1332169437@redhat.com>
-References: <1121.1332169437@redhat.com> <20120318235114.GA30497@thor.bakeyournoodle.com> <20120318184105.GC2095@windriver.com>
-To: Tony Breeds <tony@bakeyournoodle.com>
-Cc: dhowells@redhat.com, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: triage for March 18, 2012
-Date: Mon, 19 Mar 2012 15:21:31 +0000
-Message-ID: <9942.1332170491@redhat.com>
+	id S1758916Ab2CSPW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 11:22:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37598 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab2CSPWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 11:22:54 -0400
+Date: Mon, 19 Mar 2012 08:22:25 -0700
+From: tip-bot for Steffen Persvold <sp@numascale.com>
+Message-ID: <tip-943bc7e110f269f88dc92bbf249adbd384d35f1c@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, sp@numascale.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de, sp@numascale.com
+In-Reply-To: <1331810188-24785-1-git-send-email-sp@numascale.com>
+References: <1331810188-24785-1-git-send-email-sp@numascale.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86: Fix section warnings
+Git-Commit-ID: 943bc7e110f269f88dc92bbf249adbd384d35f1c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Mar 2012 08:22:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  943bc7e110f269f88dc92bbf249adbd384d35f1c
+Gitweb:     http://git.kernel.org/tip/943bc7e110f269f88dc92bbf249adbd384d35f1c
+Author:     Steffen Persvold <sp@numascale.com>
+AuthorDate: Thu, 15 Mar 2012 12:16:28 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 19 Mar 2012 12:01:01 +0100
 
-David Howells <dhowells@redhat.com> wrote:
+x86: Fix section warnings
 
-> Tony Breeds <tony@bakeyournoodle.com> wrote:
-> 
-> > > 	frv:defconfig  (arch/frv/kernel/head.S operand out of range)
-> 
-> What binutils are you using?  I suspect this is fixed by a patch that only
-> went upstream very recently.  Are you using a 64-bit machine to do your
-> compilation?
+Fix the following section warnings :
 
-Here's a patch I got from Nick Clifton to fix 64-bit binutils to handle
-representing things like 0xfffffff1 as a 32-bit negative immediate argument.
-It has been applied upstream.
+WARNING: vmlinux.o(.text+0x49dbc): Section mismatch in reference
+from the function acpi_map_cpu2node() to the variable
+.cpuinit.data:__apicid_to_node The function acpi_map_cpu2node()
+references the variable __cpuinitdata __apicid_to_node. This is
+often because acpi_map_cpu2node lacks a __cpuinitdata
+annotation or the annotation of __apicid_to_node is wrong.
 
-David
+WARNING: vmlinux.o(.text+0x49dc1): Section mismatch in reference
+from the function acpi_map_cpu2node() to the function
+.cpuinit.text:numa_set_node() The function acpi_map_cpu2node()
+references the function __cpuinit numa_set_node(). This is often
+because acpi_map_cpu2node lacks a __cpuinit  annotation or the
+annotation of numa_set_node is wrong.
+
+WARNING: vmlinux.o(.text+0x526e77): Section mismatch in
+reference from the function prealloc_protection_domains() to the
+function .init.text:alloc_passthrough_domain() The function
+prealloc_protection_domains() references the function __init
+alloc_passthrough_domain(). This is often because
+prealloc_protection_domains lacks a __init  annotation or the annotation of alloc_passthrough_domain is wrong.
+
+Signed-off-by: Steffen Persvold <sp@numascale.com>
+Link: http://lkml.kernel.org/r/1331810188-24785-1-git-send-email-sp@numascale.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-Index: opcodes/cgen-asm.c
-===================================================================
-RCS file: /cvs/src/src/opcodes/cgen-asm.c,v
-retrieving revision 1.14
-diff -c -3 -p -r1.14 cgen-asm.c
-*** opcodes/cgen-asm.c	2 Sep 2009 07:20:29 -0000	1.14
---- opcodes/cgen-asm.c	15 Dec 2011 08:27:02 -0000
-*************** cgen_parse_signed_integer (CGEN_CPU_DESC
-*** 268,274 ****
-       &result, &value);
-    /* FIXME: Examine `result'.  */
-    if (!errmsg)
-!     *valuep = value;
-    return errmsg;
-  }
-  
---- 268,291 ----
-       &result, &value);
-    /* FIXME: Examine `result'.  */
-    if (!errmsg)
-!     {
-! #if 1
-!       /* Handle the case where a hex value is parsed on a 64-bit host.
-! 	 A value like 0xffffe000 is clearly intended to be a negative
-! 	 16-bit value, but on a 64-bit host it will be parsed by gas
-! 	 as 0x00000000ffffe000.
-! 
-! 	 The shifts below are designed not to produce compile time
-! 	 warnings when compiled on a 32-bit host.  */
-!       if (sizeof (value) > 4
-! 	  && result == CGEN_PARSE_OPERAND_RESULT_NUMBER
-! 	  && value > 0
-! 	  && (value & 0x80000000)
-! 	  && ((value >> 31) == 1))
-! 	value |= -1 << 31;
-! #endif
-!       *valuep = value;
-!     }
-    return errmsg;
-  }
-  
-Index: opcodes/frv-asm.c
-===================================================================
-RCS file: /cvs/src/src/opcodes/frv-asm.c,v
-retrieving revision 1.19
-diff -c -3 -p -r1.19 frv-asm.c
-*** opcodes/frv-asm.c	27 Jun 2010 04:07:55 -0000	1.19
---- opcodes/frv-asm.c	15 Dec 2011 08:27:02 -0000
-*************** parse_uhi16 (CGEN_CPU_DESC cd,
-*** 465,475 ****
-  	  if (errmsg == NULL
-  	      && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
-  	    {
-! 	      /* If bfd_vma is wider than 32 bits, but we have a sign-
-! 		 or zero-extension, truncate it.  */
-! 	      if (value >= - ((bfd_vma)1 << 31)
-! 		  || value <= ((bfd_vma)1 << 31) - (bfd_vma)1)
-  		value &= (((bfd_vma)1 << 16) << 16) - 1;
-  	      value >>= 16;
-  	    }
-  	  *valuep = value;
---- 465,475 ----
-  	  if (errmsg == NULL
-  	      && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
-  	    {
-! 	      /* If value is wider than 32 bits then be
-! 		 careful about how we extract bits 16-31.  */
-! 	      if (sizeof (value) > 4)
-  		value &= (((bfd_vma)1 << 16) << 16) - 1;
-+ 
-  	      value >>= 16;
-  	    }
-  	  *valuep = value;
+ arch/x86/kernel/acpi/boot.c |    2 +-
+ drivers/iommu/amd_iommu.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index ce664f3..406ed77 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -593,7 +593,7 @@ void __init acpi_set_irq_model_ioapic(void)
+ #ifdef CONFIG_ACPI_HOTPLUG_CPU
+ #include <acpi/processor.h>
+ 
+-static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
++static void __cpuinitdata acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+ {
+ #ifdef CONFIG_ACPI_NUMA
+ 	int nid;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index f75e060..ae2ec92 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2804,7 +2804,7 @@ static int amd_iommu_dma_supported(struct device *dev, u64 mask)
+  * we don't need to preallocate the protection domains anymore.
+  * For now we have to.
+  */
+-static void prealloc_protection_domains(void)
++static void __init prealloc_protection_domains(void)
+ {
+ 	struct iommu_dev_data *dev_data;
+ 	struct dma_ops_domain *dma_dom;
