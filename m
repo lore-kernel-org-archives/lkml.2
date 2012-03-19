@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758326Ab2CSW4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:56:32 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53634 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753131Ab2CSW4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:56:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
-Date: Tue, 20 Mar 2012 00:00:43 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <4F66D2E8.2090906@codeaurora.org> <201203191225.00199.rjw@sisk.pl>
-In-Reply-To: <201203191225.00199.rjw@sisk.pl>
+	id S1758423Ab2CSW6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:58:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62613 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758241Ab2CSW6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 18:58:47 -0400
+Date: Mon, 19 Mar 2012 15:58:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: [GIT PULL] cgroup changes for v3.4
+Message-ID: <20120319225843.GA2873@google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203200000.43316.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 19, 2012, Rafael J. Wysocki wrote:
-> On Monday, March 19, 2012, Stephen Boyd wrote:
-> > On 3/18/2012 5:01 AM, Rafael J. Wysocki wrote:
-> > > On Sunday, March 18, 2012, Stephen Boyd wrote:
-> > >
-> > >> Ok. I like where nowait() is going in the other part of the thread but
-> > >> I'm still confused about when request_firmware() is correct to use. It
-> > >> seems that the function is inherently racy with freezing. Does every
-> > >> user of request_firmware() need to synchronize with freezing?
-> > >>
-> > >> For example, if one CPU is in the middle of a driver probe that makes a
-> > >> request_firmware() call and another CPU is starting to suspend we will
-> > >> have a race between usermodehelpers being disabled and the
-> > >> request_firmware() call acquiring the usermodehelper rwsem. If the
-> > >> suspending CPU wins the race it will disable usermodehelpers and the
-> > >> request_firmware() call will return -EBUSY and warn.
-> > > Yes, it will.
-> > 
-> > That sounds wrong then, no? Why don't we have request_firmware() do a
-> > read_lock on the usermodehelpers sem and then have suspend do a write
-> > lock, disable usermodehelpers, wait for any users  to finish, freeze
-> > processes and then unlock the write lock? That way we don't hit a case
-> > where request_firmware() races with suspend, and we don't have to change
-> > the warning or conditional.
-> 
-> So, you're postulating that the freezing of tasks be done under
-> umhelper_sem write-locked, right?
-> 
-> That would lead to freezing failures if a user space task waited in
-> request_firmware() for umhelper_sem to become available for read-locking
-> and unfortunately we don't have an interruptible variant of down_read().
-> 
-> However, we may catch request_firmware() and try to freeze the task
-> calling it instead.  I'll try to prototype something along these lines later
-> today (on top of the three "firmware_class" patches I posted yesterday).
+Hello, Linus.
 
-Well, that's going to take some more time, as it's more complicated than
-I thought initially.  Please, stay tuned.
+Please pull from the following branch to receive cgroup changes for
+v3.4.
 
-Thanks,
-Rafael
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.4
 
+Out of the 8 commits, one fixes a long-standing locking issue around
+tasklist walking and others are cleanups.
+
+Thanks.
+
+Frederic Weisbecker (2):
+      cgroup: Remove wrong comment on cgroup_enable_task_cg_list()
+      cgroup: Walk task list under tasklist_lock in cgroup_enable_task_cg_list
+
+Li Zefan (3):
+      cgroup: remove cgroup_attach_task_current_cg()
+      cgroup: move struct cgroup_pidlist out from the header file
+      cgroup: remove cgroup_subsys argument from callbacks
+
+Mandeep Singh Baines (3):
+      cgroup: simplify double-check locking in cgroup_attach_proc
+      cgroup: replace tasklist_lock with rcu_read_lock
+      cgroup: remove extra calls to find_existing_css_set
+
+ Documentation/cgroups/cgroups.txt |   26 ++--
+ block/blk-cgroup.c                |   22 +--
+ include/linux/cgroup.h            |   70 ++-------
+ include/net/sock.h                |    7 +-
+ include/net/tcp_memcontrol.h      |    2 +-
+ kernel/cgroup.c                   |  327 +++++++++++++++---------------------
+ kernel/cgroup_freezer.c           |   11 +-
+ kernel/cpuset.c                   |   16 +--
+ kernel/events/core.c              |   13 +-
+ kernel/sched/core.c               |   20 +--
+ mm/memcontrol.c                   |   48 ++----
+ net/core/netprio_cgroup.c         |   10 +-
+ net/core/sock.c                   |    6 +-
+ net/ipv4/tcp_memcontrol.c         |    2 +-
+ net/sched/cls_cgroup.c            |   10 +-
+ security/device_cgroup.c          |   10 +-
+ 16 files changed, 228 insertions(+), 372 deletions(-)
+
+--
+tejun
