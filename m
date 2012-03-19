@@ -1,70 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2CSWAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 18:00:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53445 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756552Ab2CSWAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 18:00:52 -0400
-Date: Mon, 19 Mar 2012 15:00:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Don Zickus <dzickus@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-Message-Id: <20120319150050.4ab474e1.akpm@linux-foundation.org>
-In-Reply-To: <1331827471.18960.195.camel@twins>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
-	<20120314161906.e53359d3.akpm@linux-foundation.org>
-	<20120315080232.GA17163@tiehlicka.suse.cz>
-	<20120315155413.GE3941@redhat.com>
-	<1331827471.18960.195.camel@twins>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756815Ab2CSWD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 18:03:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756552Ab2CSWDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 18:03:55 -0400
+Message-ID: <4F67AD31.8030500@redhat.com>
+Date: Mon, 19 Mar 2012 19:03:29 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Alex Gershgorin <alexg@meprolight.com>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        g.liakhovetski@gmx.de, fabio.estevam@freescale.com,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1] i.MX35-PDK: Add Camera support
+References: <1331651129-30540-1-git-send-email-alexg@meprolight.com>
+In-Reply-To: <1331651129-30540-1-git-send-email-alexg@meprolight.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012 17:04:31 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Thu, 2012-03-15 at 11:54 -0400, Don Zickus wrote:
-> > > > Why did watchdog() reset the scheduling policy seven instructions
-> > > > before exiting?  Seems pointless.
-> > > 
-> > > It has been introduced by Thomas in cba9bd22. To be honest I don't
-> > > understand why it makes a sense?
-> > 
-> > Yeah I noticed that too.  I didn't bother questioning it either when
-> > it
-> > went in.  I just assumed Thomas and Peter know scheduling a lot better
-> > than I do. :-) 
+Em 13-03-2012 12:05, Alex Gershgorin escreveu:
+> In i.MX35-PDK, OV2640  camera is populated on the
+> personality board. This camera is registered as a subdevice via soc-camera interface.
 > 
-> I just dug through my IRC logs and the reason is that running the entire
-> exit path as a highest priority RT task incurs a latency spike to other
-> tasks running on the system (313us). Since there's absolutely no point
-> in running the exit path as a RT task, tglx made it not do that.
+> Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
 
-IRC logs, huh?
+Patch doesn't apply over v3.3:
+
+patching file arch/arm/mach-imx/mach-mx35_3ds.c
+Hunk #3 FAILED at 149.
+Hunk #4 succeeded at 126 with fuzz 1 (offset -55 lines).
+Hunk #5 FAILED at 323.
+Hunk #6 succeeded at 277 (offset -57 lines).
+Hunk #7 succeeded at 293 (offset -57 lines).
+2 out of 7 hunks FAILED -- saving rejects to file arch/arm/mach-imx/mach-mx35_3ds.c.rej
+ arch/arm/mach-imx/mach-mx35_3ds.c |   87 ++++++++++++++++++++++++++++++++++++++
 
 
---- a/kernel/watchdog.c~a
-+++ a/kernel/watchdog.c
-@@ -349,6 +349,10 @@ static int watchdog(void *unused)
- 
- 		set_current_state(TASK_INTERRUPTIBLE);
- 	}
-+	/*
-+	 * Drop the policy/priority elevation during thread exit to avoid a
-+	 * scheduling latency spike.
-+	 */
- 	__set_current_state(TASK_RUNNING);
- 	sched_setscheduler(current, SCHED_NORMAL, &param);
- 	return 0;
-_
+> ---
+>  arch/arm/mach-imx/mach-mx35_3ds.c |   96 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 96 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
+> index 0af6c9c..a7dd8e6 100644
+> --- a/arch/arm/mach-imx/mach-mx35_3ds.c
+> +++ b/arch/arm/mach-imx/mach-mx35_3ds.c
+> @@ -4,6 +4,11 @@
+>   *
+>   * Author: Fabio Estevam <fabio.estevam@freescale.com>
+>   *
+> + * Copyright (C) 2011 Meprolight, Ltd.
+> + * Alex Gershgorin <alexg@meprolight.com>
+> + *
+> + * Modified from i.MX31 3-Stack Development System
+> + *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License as published by
+>   * the Free Software Foundation; either version 2 of the License, or
+> @@ -34,6 +39,7 @@
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach/time.h>
+>  #include <asm/mach/map.h>
+> +#include <asm/memblock.h>
+>  
+>  #include <mach/hardware.h>
+>  #include <mach/common.h>
+> @@ -41,6 +47,8 @@
+>  #include <mach/irqs.h>
+>  #include <mach/3ds_debugboard.h>
+>  
+> +#include <media/soc_camera.h>
+> +
+>  #include "devices-imx35.h"
+>  
+>  #define EXPIO_PARENT_INT	gpio_to_irq(IMX_GPIO_NR(1, 1))
+> @@ -120,6 +128,83 @@ static iomux_v3_cfg_t mx35pdk_pads[] = {
+>  	/* I2C1 */
+>  	MX35_PAD_I2C1_CLK__I2C1_SCL,
+>  	MX35_PAD_I2C1_DAT__I2C1_SDA,
+> +	/* CSI */
+> +	MX35_PAD_TX1__IPU_CSI_D_6,
+> +	MX35_PAD_TX0__IPU_CSI_D_7,
+> +	MX35_PAD_CSI_D8__IPU_CSI_D_8,
+> +	MX35_PAD_CSI_D9__IPU_CSI_D_9,
+> +	MX35_PAD_CSI_D10__IPU_CSI_D_10,
+> +	MX35_PAD_CSI_D11__IPU_CSI_D_11,
+> +	MX35_PAD_CSI_D12__IPU_CSI_D_12,
+> +	MX35_PAD_CSI_D13__IPU_CSI_D_13,
+> +	MX35_PAD_CSI_D14__IPU_CSI_D_14,
+> +	MX35_PAD_CSI_D15__IPU_CSI_D_15,
+> +	MX35_PAD_CSI_HSYNC__IPU_CSI_HSYNC,
+> +	MX35_PAD_CSI_MCLK__IPU_CSI_MCLK,
+> +	MX35_PAD_CSI_PIXCLK__IPU_CSI_PIXCLK,
+> +	MX35_PAD_CSI_VSYNC__IPU_CSI_VSYNC,
+> +};
+> +
+> +/*
+> + * Camera support
+> +*/
+> +static phys_addr_t mx3_camera_base __initdata;
+> +#define MX35_3DS_CAMERA_BUF_SIZE SZ_8M
+> +
+> +static const struct mx3_camera_pdata mx35_3ds_camera_pdata __initconst = {
+> +	.flags = MX3_CAMERA_DATAWIDTH_8,
+> +	.mclk_10khz = 2000,
+> +};
+> +
+> +static int __init imx35_3ds_init_camera(void)
+> +{
+> +	int dma, ret = -ENOMEM;
+> +	struct platform_device *pdev =
+> +		imx35_alloc_mx3_camera(&mx35_3ds_camera_pdata);
+> +
+> +	if (IS_ERR(pdev))
+> +		return PTR_ERR(pdev);
+> +
+> +	if (!mx3_camera_base)
+> +		goto err;
+> +
+> +	dma = dma_declare_coherent_memory(&pdev->dev,
+> +					mx3_camera_base, mx3_camera_base,
+> +					MX35_3DS_CAMERA_BUF_SIZE,
+> +					DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
+> +
+> +	if (!(dma & DMA_MEMORY_MAP))
+> +		goto err;
+> +
+> +	ret = platform_device_add(pdev);
+> +	if (ret)
+> +err:
+> +		platform_device_put(pdev);
+> +
+> +	return ret;
+> +}
+> +
+> +static const struct ipu_platform_data mx35_3ds_ipu_data __initconst = {
+> +	.irq_base = MXC_IPU_IRQ_START,
+> +};
+> +
+> +static struct i2c_board_info mx35_3ds_i2c_camera = {
+> +	I2C_BOARD_INFO("ov2640", 0x30),
+> +};
+> +
+> +static struct soc_camera_link iclink_ov2640 = {
+> +	.bus_id		= 0,
+> +	.board_info	= &mx35_3ds_i2c_camera,
+> +	.i2c_adapter_id	= 0,
+> +	.power		= NULL,
+> +};
+> +
+> +static struct platform_device mx35_3ds_ov2640 = {
+> +	.name	= "soc-camera-pdrv",
+> +	.id	= 0,
+> +	.dev	= {
+> +		.platform_data = &iclink_ov2640,
+> +	},
+>  };
+>  
+>  static int mx35_3ds_otg_init(struct platform_device *pdev)
+> @@ -204,6 +289,9 @@ static void __init mx35_3ds_init(void)
+>  		pr_warn("Init of the debugboard failed, all "
+>  				"devices on the debugboard are unusable.\n");
+>  	imx35_add_imx_i2c0(&mx35_3ds_i2c0_data);
+> +	imx35_add_ipu_core(&mx35_3ds_ipu_data);
+> +	platform_device_register(&mx35_3ds_ov2640);
+> +	imx35_3ds_init_camera();
+>  }
+>  
+>  static void __init mx35pdk_timer_init(void)
+> @@ -215,6 +303,13 @@ struct sys_timer mx35pdk_timer = {
+>  	.init	= mx35pdk_timer_init,
+>  };
+>  
+> +static void __init mx35_3ds_reserve(void)
+> +{
+> +	/* reserve MX35_3DS_CAMERA_BUF_SIZE bytes for mx3-camera */
+> +	mx3_camera_base = arm_memblock_steal(MX35_3DS_CAMERA_BUF_SIZE,
+> +					 MX35_3DS_CAMERA_BUF_SIZE);
+> +}
+> +
+>  MACHINE_START(MX35_3DS, "Freescale MX35PDK")
+>  	/* Maintainer: Freescale Semiconductor, Inc */
+>  	.atag_offset = 0x100,
+> @@ -224,5 +319,6 @@ MACHINE_START(MX35_3DS, "Freescale MX35PDK")
+>  	.handle_irq = imx35_handle_irq,
+>  	.timer = &mx35pdk_timer,
+>  	.init_machine = mx35_3ds_init,
+> +	.reserve = mx35_3ds_reserve,
+>  	.restart	= mxc_restart,
+>  MACHINE_END
 
