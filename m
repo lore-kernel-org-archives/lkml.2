@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032924Ab2CSUGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 16:06:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38738 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032812Ab2CSUGa (ORCPT
+	id S1032967Ab2CSUGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 16:06:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40056 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032761Ab2CSUGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 16:06:30 -0400
-Date: Mon, 19 Mar 2012 13:05:55 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Rik van Riel <riel@redhat.com>
-cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: forbid lumpy-reclaim in shrink_active_list()
-In-Reply-To: <4F6774E8.2050202@redhat.com>
-Message-ID: <alpine.LSU.2.00.1203191239570.3498@eggly.anvils>
-References: <20120319091821.17716.54031.stgit@zurg> <4F676FA4.50905@redhat.com> <4F6773CC.2010705@openvz.org> <4F6774E8.2050202@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 19 Mar 2012 16:06:38 -0400
+Date: Mon, 19 Mar 2012 13:06:20 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-f7e5410920fabadf294177f590b54ab0cadc4775@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1332125180-23041-1-git-send-email-namhyung.kim@lge.com>
+References: <1332125180-23041-1-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui browser:
+  Clean lines inside of the input window
+Git-Commit-ID: f7e5410920fabadf294177f590b54ab0cadc4775
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Mar 2012 13:06:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012, Rik van Riel wrote:
-> On 03/19/2012 01:58 PM, Konstantin Khlebnikov wrote:
-> > Rik van Riel wrote:
-> > > On 03/19/2012 05:18 AM, Konstantin Khlebnikov wrote:
-> > > > This patch reset reclaim mode in shrink_active_list() to
-> > > > RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC.
-> > > > (sync/async sign is used only in shrink_page_list and does not affect
-> > > > shrink_active_list)
-> > > > 
-> > > > Currenly shrink_active_list() sometimes works in lumpy-reclaim mode,
-> > > > if RECLAIM_MODE_LUMPYRECLAIM left over from earlier
-> > > > shrink_inactive_list().
-> > > > Meanwhile, in age_active_anon() sc->reclaim_mode is totally zero.
-> > > > So, current behavior is too complex and confusing, all this looks
-> > > > like bug.
-> > > > 
-> > > > In general, shrink_active_list() populate inactive list for next
-> > > > shrink_inactive_list().
-> > > > Lumpy shring_inactive_list() isolate pages around choosen one from
-> > > > both active and
-> > > > inactive lists. So, there no reasons for lumpy-isolation in
-> > > > shrink_active_list()
-> > > > 
-> > > > Proposed-by: Hugh Dickins<hughd@google.com>
-> > > > Link: https://lkml.org/lkml/2012/3/15/583
-> > > > Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > > 
-> > > Confirmed, this is already done by commit
-> > > 26f5f2f1aea7687565f55c20d69f0f91aa644fb8 in the
-> > > linux-next tree.
-> > > 
-> > 
-> > No, your patch fix this problem only if CONFIG_COMPACTION=y
-> 
-> True.
-> 
-> It was done that way, because Mel explained to me that deactivating
-> a whole chunk of active pages at once is a desired feature that makes
-> it more likely that a whole contiguous chunk of pages will eventually
-> reach the end of the inactive list.
+Commit-ID:  f7e5410920fabadf294177f590b54ab0cadc4775
+Gitweb:     http://git.kernel.org/tip/f7e5410920fabadf294177f590b54ab0cadc4775
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 19 Mar 2012 11:46:20 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 19 Mar 2012 12:07:30 -0300
 
-I'm rather sceptical about this: is there a test which demonstrates
-a useful effect of that kind?
+perf ui browser: Clean lines inside of the input window
 
-Lumpy movement from active won't help a lumpy allocation this time,
-because lumpy reclaim from inactive doesn't care which lru the
-surrounding pages come from anyway - and I argue that lumpy movement
-from active actually reduces the number of choices which lumpy
-reclaim will have, if they do near the bottom of inactive together.
+As Arnaldo pointed out, it should be cleared to prevent the window from
+displaying overlapped strings on the region.
 
-So if lumpy movement from active (miscategorizing physically adjacent
-pages as inactive too) is actually useful (the miscategorization turning
-out to have been a good bet, since they're not activated again before
-they reach the bottom of the inactive), and a nice buddyable group of
-pages is later reclaimed from the inactive list because of it (without
-any need for lumpy reclaim that time), then wouldn't we want to be
-doing it more?
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1332125180-23041-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/util.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-It should not be done only when inactive_is_low coincides with reclaim
-for a high-order allocation: we would want to note that there's a load
-which is making high-order requests, and do lumpy movement from active
-whenever replenishing inactive while such a load is in force.
-
-If it does more good than harm; but I'm sceptical about that.
-
-Hugh
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+index 360f43f..ad4374a 100644
+--- a/tools/perf/util/ui/util.c
++++ b/tools/perf/util/ui/util.c
+@@ -108,9 +108,13 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 	max_len -= 2;
+ 	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+ 				   nr_lines, max_len, 1);
+-	y += nr_lines + 1;
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y - 1, x + 1, 3, max_len - 2);
++	y += nr_lines;
++	len = 5;
++	while (len--) {
++		SLsmg_gotorc(y + len - 1, x);
++		SLsmg_write_nstring((char *)" ", max_len);
++	}
++	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
+ 
+ 	SLsmg_gotorc(y + 3, x);
+ 	SLsmg_write_nstring((char *)exit_msg, max_len);
