@@ -1,64 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030473Ab2CSNyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 09:54:06 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25956 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754090Ab2CSNyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 09:54:04 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: IbGsImMVM1lfEkDimj.2BnXR1mH9oiPl1XBtbiV1lALYFlj
- uKbrB7ZViKxil4vLnD4Z2IsmBkG3cmQsNlOz1zL7npEFW7hShdy_IidX78hZ
- jvEGCgf4y32PJuvF3YjwBPce8JUJXWSeTIEbjfwt3K5wGBpKo4ZIaG_XBoF.
- dzWF9z2cfQsl65mnWYErMLgRc6q4.8KlzjVmQatKWmjfpF5zoOWSGhREnJml
- Ni4fqb2g1fgAoByYuoetSs8Dy4k4eZwbJSVFuxKseoi2dCuHmmDryGB8buBE
- 7AZRgx9NCJNZABmTjaQfijAfih0wglnTSpxGzna6G0f6M2GHj56cAoieu_x6
- gioRh6n0TUMBR0ld1XVuOZziz7GKl1f.sQ93xMES.g7yoS4i3QN8DN2jLuJt
- A08S_X3fR6.nGp4sgdH.Kw80UPN2nQzCI7yvS
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 19 Mar 2012 08:53:57 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 10/26] mm, mpol: Make mempolicy home-node aware
-In-Reply-To: <1331932375.18960.237.camel@twins>
-Message-ID: <alpine.DEB.2.00.1203190852380.16879@router.home>
-References: <20120316144028.036474157@chello.nl> <20120316144240.763518310@chello.nl> <alpine.DEB.2.00.1203161333370.10211@router.home> <1331932375.18960.237.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1030343Ab2CSNzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 09:55:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37529 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754892Ab2CSNzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 09:55:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="141194971"
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+ __dma_request_channel()
+From: Vinod Koul <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <Pine.LNX.4.64.1203191436030.11516@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	 <1331188201.4657.51.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+	 <1331204128.4657.54.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	 <1331206459.4657.59.camel@vkoul-udesk3>
+	 <1331211513.4657.67.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
+	 <1331284918.4657.69.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
+	 <1331285959.4657.76.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
+	 <1331520476.4657.79.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
+	 <1332157021.7180.5.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203191244240.11516@axis700.grange>
+	 <1332164062.7180.19.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203191436030.11516@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Mar 2012 19:30:04 +0530
+Message-ID: <1332165604.7180.24.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Mar 2012, Peter Zijlstra wrote:
+On Mon, 2012-03-19 at 14:38 +0100, Guennadi Liakhovetski wrote:
+> On Mon, 19 Mar 2012, Vinod Koul wrote:
+> 
+> > On Mon, 2012-03-19 at 12:47 +0100, Guennadi Liakhovetski wrote:
+> > > As I wrote in a reply to Linus W - you need to pass information about the 
+> > > requesting client to the dmaengine core to let it match it against mapping 
+> > > tables. 
+> > NO. 
+> > The client only needs to say that he needs a channel for DMA_SLAVE
+> 
+> How?
+Did you miss our earlier discussion on 
+https://lkml.org/lkml/2012/3/8/26
 
-> > > Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
-> > > facilitate efficient on-demand memory migration.
-> >
-> > The numa hierachy is already complex. Could we avoid adding another layer
-> > by adding a MPOL_HOME_NODE and make that the default?
->
-> Not sure that's really a win, the behaviour would be the same we just
-> have to implement another policy, which is likely more code.
+Perhaps, I can enlighten you will below excerpt where we proposed to
+add:
 
-A HOME_NODE policy would also help to ensure that existing applications
-continue to work as expected. Given that people in the HPC industry and
-elsewhere have been fine tuning around the scheduler for years this is a
-desirable goal and ensures backward compatibility.
+int dmaengine_add_channel_map(struct dmaengine_map *map, unsigned int num_entries)
+{
+	/* store this map into dmaengine and use for channle allocation */
+}
 
+So dmaengine knows client A can use DMAC P, channel 2 and 3.
+So first request will receive ch 2 for A and second one will yield 3.
+
+> 
+> 	dma_request_channel(mask, filter_fn, filter_arg)
+> 
+> Where shall the client pass to dmaengine its identity info?
+Only change I see for above to tell which client is requesting, so we
+may have to add device pointer of client while requesting.
+> 
+> > DMAengine will know for this client, the platform channel map (already
+> > given to it by platform) says that we can give it DMAC X, channel 4
+> > only.
+> 
+> Some clients need multiple channels - Tx, Rx,...
+> 
+> Thanks
+> Guennadi
+> 
+> > So see if it free, if so allocate it and give to client (while
+> > doing usual stuff)
+> > > You have to pass this information with the dma_request_channel() 
+> > > function. So, either you need to add a parameter or you have to reuse one 
+> > > of existing ones, e.g., deprecate the filter and use its argument for this 
+> > > purpose. If you do this and as long as you pass that parameter further on 
+> > > to the dmaengine device (controller) driver after whatever matching you 
+> > > like to do in the core - I'm fine with that, that fits well with my 
+> > > initial proposal.
+> > I don't care about filter, it can go away if it is not required.
+> > 
+> > Passing slave_config is *enhancement* so for (hopefully) last time
+> >  a) it has *nothing* to do with getting a channel, no role to play in
+> > generic scheme of things
+> >  b) it allows client to call one api for get+configure thats all! 
+> > 
+> > -- 
+> > ~Vinod
+> > 
+> 
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+~Vinod
 
