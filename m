@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab2CSIHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 04:07:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:9670 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab2CSIHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 04:07:16 -0400
-X-IronPort-AV: E=Sophos;i="4.73,611,1325433600"; 
-   d="scan'208";a="4567341"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: [PATCH 0/4 V2] rcu: implement call_srcu()
-Date: Mon, 19 Mar 2012 16:12:10 +0800
-Message-Id: <1332144734-9375-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-19 16:05:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-19 16:05:07,
-	Serialize complete at 2012-03-19 16:05:07
+	id S1758243Ab2CSISC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 04:18:02 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36993 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756179Ab2CSISA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 04:18:00 -0400
+Date: Mon, 19 Mar 2012 11:17:53 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [3.3-rc7] sys_poll use after free (hibernate)
+Message-ID: <20120319081753.GA3333@p183.telecom.by>
+References: <20120313005855.GA24639@redhat.com>
+ <CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
+ <20120318192755.GB6589@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120318192755.GB6589@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are the second version of the
-"[RFC PATCH 5/5 single-thread-version] implement per-domain single-thread state machine call_srcu()"
+On Sun, Mar 18, 2012 at 07:27:55PM +0000, Al Viro wrote:
+> On Sun, Mar 18, 2012 at 12:02:04PM -0700, Linus Torvalds wrote:
+> Incidentally, I wonder if we want the whole thing in fs/proc; the argument
+> against splitoff to a separate fs used to be "that would break userland
+> setups - can't ask people to update /etc/fstab or init scripts to mount
+> that thing on /proc/sys".  Fair enough, but... what's to stop us from slapping
+> ->d_automount() on /proc/sys like that:
+> 	struct vfsmount *mnt = vfs_kern_mount(&sysctlfs_type, 0, "sysctl", 0);
+> 	if (!IS_ERR(mnt))
+> 		mntget(mnt);
+> 	return mnt;
+> and we are all set.  IOW, now that ->d_automount() stuff is there, we can
+> do that easily without any userland breakage.  Comments?
 
-These patches are on the top of paulmck/linux-rcu.git/rcu/srcu
-(3c8975b51a7bed5dd993c5c4eab245a121bdc728)
-
-I noticed this branch has patch "implement Peter's checking algorithm"
-applied, so the pathes are rebased on 3c8975b51 and are tested based on
-Peter's algorithm.
-
-Except the rebasing, only 2 changes:
-	Refactor the srcu_advance_batches() as Peter's suggestion.
-	Impletement synchronize_srcu() with fast path awared.
-	- old version just calls call_srcu() and waits.
-	- Ftrace shows new synchronize_srcu() cost 6us when fast path.
-
-Lai Jiangshan (4):
-  fix for peter's algorithm
-  use "int trycount" instead of "bool expedited"
-  add call_srcu()
-  add srcu torture
-
- include/linux/srcu.h |   25 ++++-
- kernel/rcutorture.c  |   44 ++++++-
- kernel/srcu.c        |  322 +++++++++++++++++++++++++++++++++++++++-----------
- 3 files changed, 314 insertions(+), 77 deletions(-)
-
--- 
-1.7.4.4
-
+IIRC, fstab argument was the only one.
