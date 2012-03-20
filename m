@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab2CTUYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 16:24:16 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33899 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758086Ab2CTUXV (ORCPT
+	id S1758064Ab2CTUXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 16:23:19 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:41104 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757939Ab2CTUXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 16:23:21 -0400
+	Tue, 20 Mar 2012 16:23:14 -0400
 From: Robert Lee <rob.lee@linaro.org>
 To: len.brown@intel.com
 Cc: akpm@linux-foundation.org, rjw@sisk.pl, khilman@ti.com,
@@ -23,9 +23,9 @@ Cc: akpm@linux-foundation.org, rjw@sisk.pl, khilman@ti.com,
         g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
         jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH v8 6/8] ARM: omap: Consolidate OMAP4 time keeping and irq enable
-Date: Tue, 20 Mar 2012 15:22:47 -0500
-Message-Id: <1332274969-15782-7-git-send-email-rob.lee@linaro.org>
+Subject: [PATCH v8 4/8] ARM: davinci: Consolidate time keeping and irq enable
+Date: Tue, 20 Mar 2012 15:22:45 -0500
+Message-Id: <1332274969-15782-5-git-send-email-rob.lee@linaro.org>
 X-Mailer: git-send-email 1.7.9.4
 In-Reply-To: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
 References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
@@ -41,59 +41,136 @@ Reviewed-by: Kevin Hilman <khilman@ti.com>
 Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Acked-by: Jean Pihet<j-pihet@ti.com>
 ---
- arch/arm/mach-omap2/cpuidle44xx.c |   21 +++------------------
- 1 file changed, 3 insertions(+), 18 deletions(-)
+ arch/arm/mach-davinci/cpuidle.c |   82 ++++++++++++++++-----------------------
+ 1 file changed, 33 insertions(+), 49 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
-index 72e018b..f386cbe 100644
---- a/arch/arm/mach-omap2/cpuidle44xx.c
-+++ b/arch/arm/mach-omap2/cpuidle44xx.c
-@@ -62,15 +62,9 @@ static int omap4_enter_idle(struct cpuidle_device *dev,
- {
- 	struct omap4_idle_statedata *cx =
- 			cpuidle_get_statedata(&dev->states_usage[index]);
--	struct timespec ts_preidle, ts_postidle, ts_idle;
- 	u32 cpu1_state;
--	int idle_time;
- 	int cpu_id = smp_processor_id();
+diff --git a/arch/arm/mach-davinci/cpuidle.c b/arch/arm/mach-davinci/cpuidle.c
+index a30c7c5..93ae096 100644
+--- a/arch/arm/mach-davinci/cpuidle.c
++++ b/arch/arm/mach-davinci/cpuidle.c
+@@ -18,6 +18,7 @@
+ #include <linux/io.h>
+ #include <linux/export.h>
+ #include <asm/proc-fns.h>
++#include <asm/cpuidle.h>
  
--	/* Used to keep track of the total time in idle */
--	getnstimeofday(&ts_preidle);
--
--	local_irq_disable();
- 	local_fiq_disable();
- 
- 	/*
-@@ -128,26 +122,17 @@ static int omap4_enter_idle(struct cpuidle_device *dev,
- 	if (index > 0)
- 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu_id);
- 
--	getnstimeofday(&ts_postidle);
--	ts_idle = timespec_sub(ts_postidle, ts_preidle);
--
--	local_irq_enable();
- 	local_fiq_enable();
- 
--	idle_time = ts_idle.tv_nsec / NSEC_PER_USEC + ts_idle.tv_sec * \
--								USEC_PER_SEC;
--
--	/* Update cpuidle counters */
--	dev->last_residency = idle_time;
--
- 	return index;
- }
- 
- DEFINE_PER_CPU(struct cpuidle_device, omap4_idle_dev);
- 
- struct cpuidle_driver omap4_idle_driver = {
--	.name =		"omap4_idle",
--	.owner =	THIS_MODULE,
-+	.name				= "omap4_idle",
-+	.owner				= THIS_MODULE,
-+	.en_core_tk_irqen		= 1,
+ #include <mach/cpuidle.h>
+ #include <mach/ddr2.h>
+@@ -30,12 +31,42 @@ struct davinci_ops {
+ 	u32 flags;
  };
  
- static inline void _fill_cstate(struct cpuidle_driver *drv,
++/* Actual code that puts the SoC in different idle states */
++static int davinci_enter_idle(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv,
++						int index)
++{
++	struct cpuidle_state_usage *state_usage = &dev->states_usage[index];
++	struct davinci_ops *ops = cpuidle_get_statedata(state_usage);
++
++	if (ops && ops->enter)
++		ops->enter(ops->flags);
++
++	index = cpuidle_wrap_enter(dev,	drv, index,
++				arm_cpuidle_simple_enter);
++
++	if (ops && ops->exit)
++		ops->exit(ops->flags);
++
++	return index;
++}
++
+ /* fields in davinci_ops.flags */
+ #define DAVINCI_CPUIDLE_FLAGS_DDR2_PWDN	BIT(0)
+ 
+ static struct cpuidle_driver davinci_idle_driver = {
+-	.name	= "cpuidle-davinci",
+-	.owner	= THIS_MODULE,
++	.name		= "cpuidle-davinci",
++	.owner		= THIS_MODULE,
++	.states[0]	= ARM_CPUIDLE_WFI_STATE,
++	.states[1]	= {
++		.enter			= davinci_enter_idle,
++		.exit_latency		= 10,
++		.target_residency	= 100000,
++		.flags			= CPUIDLE_FLAG_TIME_VALID,
++		.name			= "DDR SR",
++		.desc			= "WFI and DDR Self Refresh",
++	},
++	.state_count = DAVINCI_CPUIDLE_MAX_STATES,
+ };
+ 
+ static DEFINE_PER_CPU(struct cpuidle_device, davinci_cpuidle_device);
+@@ -77,41 +108,10 @@ static struct davinci_ops davinci_states[DAVINCI_CPUIDLE_MAX_STATES] = {
+ 	},
+ };
+ 
+-/* Actual code that puts the SoC in different idle states */
+-static int davinci_enter_idle(struct cpuidle_device *dev,
+-				struct cpuidle_driver *drv,
+-						int index)
+-{
+-	struct cpuidle_state_usage *state_usage = &dev->states_usage[index];
+-	struct davinci_ops *ops = cpuidle_get_statedata(state_usage);
+-	struct timeval before, after;
+-	int idle_time;
+-
+-	local_irq_disable();
+-	do_gettimeofday(&before);
+-
+-	if (ops && ops->enter)
+-		ops->enter(ops->flags);
+-	/* Wait for interrupt state */
+-	cpu_do_idle();
+-	if (ops && ops->exit)
+-		ops->exit(ops->flags);
+-
+-	do_gettimeofday(&after);
+-	local_irq_enable();
+-	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+-			(after.tv_usec - before.tv_usec);
+-
+-	dev->last_residency = idle_time;
+-
+-	return index;
+-}
+-
+ static int __init davinci_cpuidle_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+ 	struct cpuidle_device *device;
+-	struct cpuidle_driver *driver = &davinci_idle_driver;
+ 	struct davinci_cpuidle_config *pdata = pdev->dev.platform_data;
+ 
+ 	device = &per_cpu(davinci_cpuidle_device, smp_processor_id());
+@@ -123,27 +123,11 @@ static int __init davinci_cpuidle_probe(struct platform_device *pdev)
+ 
+ 	ddr2_reg_base = pdata->ddr2_ctlr_base;
+ 
+-	/* Wait for interrupt state */
+-	driver->states[0].enter = davinci_enter_idle;
+-	driver->states[0].exit_latency = 1;
+-	driver->states[0].target_residency = 10000;
+-	driver->states[0].flags = CPUIDLE_FLAG_TIME_VALID;
+-	strcpy(driver->states[0].name, "WFI");
+-	strcpy(driver->states[0].desc, "Wait for interrupt");
+-
+-	/* Wait for interrupt and DDR self refresh state */
+-	driver->states[1].enter = davinci_enter_idle;
+-	driver->states[1].exit_latency = 10;
+-	driver->states[1].target_residency = 10000;
+-	driver->states[1].flags = CPUIDLE_FLAG_TIME_VALID;
+-	strcpy(driver->states[1].name, "DDR SR");
+-	strcpy(driver->states[1].desc, "WFI and DDR Self Refresh");
+ 	if (pdata->ddr2_pdown)
+ 		davinci_states[1].flags |= DAVINCI_CPUIDLE_FLAGS_DDR2_PWDN;
+ 	cpuidle_set_statedata(&device->states_usage[1], &davinci_states[1]);
+ 
+ 	device->state_count = DAVINCI_CPUIDLE_MAX_STATES;
+-	driver->state_count = DAVINCI_CPUIDLE_MAX_STATES;
+ 
+ 	ret = cpuidle_register_driver(&davinci_idle_driver);
+ 	if (ret) {
 -- 
 1.7.9.4
 
