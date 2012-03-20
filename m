@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759796Ab2CTMBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 08:01:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61351 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759774Ab2CTMBA (ORCPT
+	id S1759815Ab2CTMHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 08:07:08 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40272 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab2CTMHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 08:01:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332208268.10843.1.camel@phoenix>
-References: <1332208268.10843.1.camel@phoenix>
-Date: Tue, 20 Mar 2012 13:00:59 +0100
-Message-ID: <CACRpkdayrqk40OkQMOfwm43NOE4GWYBNb1QxJJvuCuwPiPp1pA@mail.gmail.com>
-Subject: Re: [PATCH RFT] regulator: Convert ab8500 to set_voltage_sel
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
-        Sundar R Iyer <sundar.iyer@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Mar 2012 08:07:06 -0400
+Subject: Re: [PATCH 2/4] compat: backport work_busy()
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lf_driver_backport@lists.linux-foundation.org
+In-Reply-To: <1332214021-9716-3-git-send-email-mcgrof@frijolero.org> (sfid-20120320_042853_043155_41AC0608)
+References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
+	 <1332214021-9716-3-git-send-email-mcgrof@frijolero.org>
+	 (sfid-20120320_042853_043155_41AC0608)
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Mar 2012 13:07:03 +0100
+Message-ID: <1332245223.3329.5.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 2:51 AM, Axel Lin <axel.lin@gmail.com> wrote:
+On Mon, 2012-03-19 at 20:26 -0700, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+> 
+> Best we can do is just tell the users of we are WORK_BUSY_PENDING
+> for older kernels. The ckmake log:
 
-> Convert ab8500 to set_voltage_sel and then we can remove
-> ab8500_get_best_voltage_index function.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+[...]
 
-Tested on the U8500, works like a charm AFAICT.
-Tested-by: Linus Walleij <linus.walleij@linaro.org>
+> + * Test whether @work is currently pending or running.  There is no
+> + * synchronization around this function and the test result is
+> + * unreliable and only useful as advisory hints or for debugging.
+> + * Especially for reentrant wqs, the pending state might hide the
+> + * running state.
 
-Thanks Axel!
-Linus Walleij
+What's this needed for? It seems if it's used only for hints/debugging
+we should not need the function, or possibly simply return some
+pointless combination like -1?
+
+johannes
+
