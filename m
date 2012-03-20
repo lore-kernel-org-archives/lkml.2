@@ -1,99 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab2CTIaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 04:30:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43541 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757244Ab2CTIaH (ORCPT
+	id S1759361Ab2CTIa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 04:30:59 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:20238 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759321Ab2CTIaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 04:30:07 -0400
-Date: Tue, 20 Mar 2012 19:29:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>
-Subject: linux-next: build failure after merge of the final tree (nfs tree
- related)
-Message-Id: <20120320192952.ed82031eec8a49cf7da40a8e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__20_Mar_2012_19_29_52_+1100_7/cSXJIYlkE2DBlq"
+	Tue, 20 Mar 2012 04:30:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="171677482"
+X-IronPort-AV: E=Sophos;i="4.73,616,1325491200"; 
+   d="scan'208";a="158010845"
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20328.16366.166909.255035@gargle.gargle.HOWL>
+Date: Tue, 20 Mar 2012 13:59:34 +0530
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        Linux-wireless <linux-wireless@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, <linux-kernel@vger.kernel.org>,
+        Linux-netdev <netdev@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+In-Reply-To: <4F682555.3020502@gmail.com>
+References: <4F576FD5.2050208@gmail.com>
+	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
+	<4F577D9B.7020402@gmail.com>
+	<4F579A88.6030503@openwrt.org>
+	<4F61F551.5010608@gmail.com>
+	<4F639851.5080500@gmail.com>
+	<4F674616.8080103@gmail.com>
+	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
+	<4F674FF5.2060406@gmail.com>
+	<4F6751B2.1030809@openwrt.org>
+	<4F681B78.9000207@gmail.com>
+	<CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
+	<4F68235C.5090701@gmail.com>
+	<CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com>
+	<4F682555.3020502@gmail.com>
+X-Mailer: VM 8.2.0a under 23.4.1 (x86_64-unknown-linux-gnu)
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__20_Mar_2012_19_29_52_+1100_7/cSXJIYlkE2DBlq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Justin P. Mattock wrote:
+> yeah this works:
+> 
+> eading symbols from 
+> /home/kernel/linux-next/drivers/net/wireless/ath/ath9k/ath9k.o...done.
+> (gdb) l *(ath_tx_start+0x284)
+> 0xcad4 is in ath_tx_start (drivers/net/wireless/ath/ath9k/xmit.c:1878).
+> 1873			ieee80211_is_data_qos(hdr->frame_control)) {
+> 1874			tidno = ieee80211_get_qos_ctl(hdr)[0] &
+> 1875				IEEE80211_QOS_CTL_TID_MASK;
+> 1876			tid = ATH_AN_2_TID(txctl->an, tidno);
+> 1877	
+> 1878			WARN_ON(tid->ac->txq != txctl->txq);
+> 1879		}
+> 1880	
+> 1881		if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU) && tid) {
+> 1882			/*
+> (gdb)
 
-Hi Trond,
+Can you try this patch ?
 
-[This was previously reported as a warning ... but sparc uses -Werr in
-more places]
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Date: Tue, 20 Mar 2012 13:51:26 +0530
+Subject: [PATCH] ath9k: Use HW HT capabilites properly
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+The commit "ath9k: Remove aggregation flags" changed how
+nodes were being initialized. Use the HW HT cap bits
+to initialize/de-initialize nodes, else we would be
+accessing an uninitialized entry during a suspend/resume cycle,
+resulting in a panic.
 
-In file included from arch/sparc/kernel/sys_sparc32.c:24:0:
-include/linux/nfs_fs.h: In function 'nfs_display_fhandle_hash':
-include/linux/nfs_fs.h:416:1: error: no return statement in function return=
-ing non-void [-Werror=3Dreturn-type]
-
-Caused by commit d8e0539ebdff ("NFS: add filehandle crc for debug display").
-
-I added the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 20 Mar 2012 19:26:42 +1100
-Subject: [PATCH] nfs: non void functions must return a value
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: Justin P. Mattock <justinmattock@gmail.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 ---
- include/linux/nfs_fs.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index 8f27c2e..69ec9cb 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -413,6 +413,7 @@ extern void _nfs_display_fhandle(const struct nfs_fh *f=
-h, const char *caption);
- #else
- static inline u32 nfs_display_fhandle_hash(const struct nfs_fh *fh)
- {
-+	return 0;
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 3879485..215eb25 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -640,7 +640,7 @@ static void ath_node_attach(struct ath_softc *sc, struct ieee80211_sta *sta,
+ 	an->sta = sta;
+ 	an->vif = vif;
+ 
+-	if (sta->ht_cap.ht_supported) {
++	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+ 		ath_tx_node_init(sc, an);
+ 		an->maxampdu = 1 << (IEEE80211_HT_MAX_AMPDU_FACTOR +
+ 				     sta->ht_cap.ampdu_factor);
+@@ -659,7 +659,7 @@ static void ath_node_detach(struct ath_softc *sc, struct ieee80211_sta *sta)
+ 	an->sta = NULL;
+ #endif
+ 
+-	if (sta->ht_cap.ht_supported)
++	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT)
+ 		ath_tx_node_cleanup(sc, an);
  }
- static inline void nfs_display_fhandle(const struct nfs_fh *fh,
- 				       const char *caption)
---=20
-1.7.9.1
+ 
+-- 
+1.7.9.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__20_Mar_2012_19_29_52_+1100_7/cSXJIYlkE2DBlq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPaEAAAAoJEECxmPOUX5FEox0P/1iSg2SBPoyuj41RNWsRXqDQ
-V9QT9kNEb6Q9W3n7L8IF0FvlYJqcNwCU4UIPoFMlEsKi0oi4KLZ2VlF4jJwCJENn
-lK1enaDzy/yzHV1h40u3MXGhXr18uzS1c5ZJD1coBMIcqG4+DKknmoo0F6cSPBkz
-BScljwRA/rhOXHuVbYmQzN/pU7nMW715FUnObGJAWjQqvLIvhjk/gkMuduXYXfOZ
-kSRvWzfOannZg4m80CjPTI2JUy/GHws8cVdAOT9QvY91gwTTB1YLp/YCtEvddwhY
-szHPDCBsQg/v5HC7B3WPb6l9ofY2/Bo4JnC1BfE6+jwplneM4c/4Hbf4O1pESpbk
-AgV4c6W96xWfvZsQOq38OIsr6tisOvA7b7wo/8ud8CZe6vBZPWv6uqynibmFn/CR
-bFSnzLC9BGrSa6dPrDFyMQHhfP/1lv6gDu/JNgc65mbItzMFPtB02PJw9mW4oSa9
-AzLtuUcvYQJOOJoU9bDDZi5BFMLO0m/YF+Xi3EoIFCZtMnxSD2xbwxx4XY2WC4Hc
-h/qDLcgeujFyLI7XJDjDz3KAAkyCKY+1n45Vgx/UOTMB6qLbdV1A2iiR0cwPOGMt
-89d3uy4HIBXlHrGTg6T3Stlb9qP/P6GCB8RPY2ZCU6/ol0NXxxlq6cRZwkG6YW1C
-pW37pWqnAw4avsdHcnWh
-=kg8h
------END PGP SIGNATURE-----
-
---Signature=_Tue__20_Mar_2012_19_29_52_+1100_7/cSXJIYlkE2DBlq--
