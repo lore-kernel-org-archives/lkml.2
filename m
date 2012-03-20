@@ -1,168 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030804Ab2CTRVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:21:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46653 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab2CTRVl convert rfc822-to-8bit (ORCPT
+	id S1030827Ab2CTRXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:23:07 -0400
+Received: from mail-wi0-f194.google.com ([209.85.212.194]:56705 "EHLO
+	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab2CTRXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:21:41 -0400
+	Tue, 20 Mar 2012 13:23:05 -0400
+Date: Tue, 20 Mar 2012 18:23:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        kernel-hardening@lists.openwall.com, spender@grsecurity.net
+Subject: Re: [PATCH] futex: do not leak robust list to unprivileged process
+Message-ID: <20120320172300.GA8888@gmail.com>
+References: <20120319231253.GA20893@www.outflux.net>
+ <20120320133141.GC2918@peqn>
+ <alpine.LFD.2.02.1203201758220.2542@ionos>
+ <CAGXu5jKVx41+NSEWsw0YF74z5_heSQ6GOmkuDi1DXNPcO4sjTQ@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1331326042-32558-2-git-send-email-gorcunov@openvz.org>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org> <1331326042-32558-2-git-send-email-gorcunov@openvz.org>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 21 Mar 2012 06:21:19 +1300
-Message-ID: <CAKgNAkgJm01K9+GhnouxUwOUW3gk+YiuHLfofrs7adWzEqqO8Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] prctl.2: Add PR_SET_MM option description
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: akpm@linux-foundation.org, xemul@parallels.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jKVx41+NSEWsw0YF74z5_heSQ6GOmkuDi1DXNPcO4sjTQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Cyrill,
 
-The PR_SET_MM operation adds a number of new error cases to prctl(2).
-Could you extend you patch to add these under ERRORS?
+* Kees Cook <keescook@chromium.org> wrote:
+
+> On Tue, Mar 20, 2012 at 10:02 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Tue, 20 Mar 2012, Serge Hallyn wrote:
+> >
+> >> Quoting Kees Cook (keescook@chromium.org):
+> >> > It was possible to extract the robust list head address from a setuid
+> >> > process if it had used set_robust_list(), allowing an ASLR info leak. This
+> >> > changes the permission checks to be the same as those used for similar
+> >> > info that comes out of /proc.
+> >> >
+> >> > Running a setuid program that uses robust futexes would have had:
+> >> >   cred->euid != pcred->euid
+> >> >   cred->euid == pcred->uid
+> >> > so the old permissions check would allow it. I'm not aware of any setuid
+> >> > programs that use robust futexes, so this is just a preventative measure.
+> >> >
+> >> > (This patch is based on changes from grsecurity.)
+> >> >
+> >> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> >>
+> >> I like the change.  Much cleaner.  I'm not 100% sure though that
+> >> there are no legitimate cases of robust futexes use which would now
+> >> be forbidden.  (Explicitly cc:ing Ingo)
+> >
+> > get_robust_list is not necessary for robust futexes. There is no
+> > reference to get_robust_list in glibc.
+> >
+> > I really wonder why we have this syscall at all.
+> 
+> The documentation I found yesterday while looking at this was: 
+> http://linux.die.net/man/2/get_robust_list
+> 
+> Which says "The system call is only available for debugging 
+> purposes and is not needed for normal operations. Both system 
+> calls are not available to application programs as functions; 
+> they can be called using the syscall(3) function."
+> 
+> Dropping the syscall entirely would certainly make it secure. 
+> ;)
+
+The thinking was API completeness. In general it's possible for 
+a sufficiently privileged task to figure out all the state of a 
+task. We can query timers, fds - the robust list is such a 
+resource as well. The information leakage was obviously not 
+intended.
 
 Thanks,
 
-Michael
-
-
-On Sat, Mar 10, 2012 at 9:47 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  man2/prctl.2 |  104 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 104 insertions(+), 0 deletions(-)
->
-> diff --git a/man2/prctl.2 b/man2/prctl.2
-> index effad2a..7a50ac1 100644
-> --- a/man2/prctl.2
-> +++ b/man2/prctl.2
-> @@ -378,6 +378,110 @@ Return the current per-process machine check kill policy.
->  All unused
->  .BR prctl ()
->  arguments must be zero.
-> +.TP
-> +.BR PR_SET_MM " (since Linux 3.3)"
-> +Allows a user to modify certain kernel memory map descriptor fields
-> +of the calling process.
-> +Usually these fields are set by the kernel and dynamic loader (see
-> +.BR ld.so (8)
-> +for more information) and a regular application should not use this feature.
-> +Still there are cases such as self-modifying programs, where a program might
-> +find it useful to change its own memory map.
-> +The kernel must be built with
-> +.BR CONFIG_CHECKPOINT_RESTORE
-> +option turned on, otherwise this feature will not be accessible
-> +from a user space level.
-> +The calling process must have
-> +.BR CAP_SYS_RESOURCE
-> +(see
-> +.BR capabilities (7)
-> +for details) capability granted.
-> +The value in
-> +.I arg2
-> +is one of the options below, while
-> +.I arg3
-> +provides a new value for this option.
-> +
-> +.BR PR_SET_MM_START_CODE
-> +to set the address above which program text can run.
-> +The corresponding memory area must be readable and executable,
-> +but not writable or shareable (see
-> +.BR mprotect (2)
-> +and
-> +.BR mmap (2)
-> +for more information).
-> +
-> +.BR PR_SET_MM_END_CODE
-> +to set the address below which program text can run.
-> +The corresponding memory area must be readable and executable,
-> +but not writable or shareable.
-> +
-> +.BR PR_SET_MM_START_DATA
-> +to set the address above which program data+bss is placed.
-> +The corresponding memory area must be readable and writable,
-> +but not executable or shareable.
-> +
-> +.B PR_SET_MM_END_DATA
-> +to set the address below which program data+bss is placed.
-> +The corresponding memory area must be readable and writable,
-> +but not executable or shareable.
-> +
-> +.BR PR_SET_MM_START_STACK
-> +to set the start address of the stack.
-> +The corresponding memory area must be readable and writable.
-> +
-> +.BR PR_SET_MM_START_BRK
-> +to set the address above which program heap can be expanded with
-> +.BR brk (2)
-> +call.
-> +The address must not be greater than ending address of
-> +the current program data segment, neither it may exceed
-> +resource limit for data (see
-> +.BR setrlimit (2)
-> +for more information).
-> +
-> +.BR PR_SET_MM_BRK
-> +to set the current
-> +.BR brk (2)
-> +value.
-> +The requirements for address are the same as for
-> +.BR PR_SET_MM_START_BRK
-> +option.
-> +
-> +.BR PR_SET_MM_ARG_START
-> +to set the address above which program command line is placed.
-> +
-> +.BR PR_SET_MM_ARG_END
-> +to set the address below which program command line is placed.
-> +
-> +.BR PR_SET_MM_ENV_START
-> +to set the address above which program environment is placed.
-> +
-> +.BR PR_SET_MM_ENV_END
-> +to set the address below which program environment is placed.
-> +
-> +The address passed with
-> +.BR PR_SET_MM_ARG_START ,
-> +.BR PR_SET_MM_ARG_END ,
-> +.BR PR_SET_MM_ENV_START ,
-> +.BR PR_SET_MM_ENV_END ,
-> +should belong to a process stack area, thus corresponding memory area
-> +must be readable, writable and (depending on the kernel
-> +configuration) has
-> +.BR MAP_GROWSDOWN
-> +attribute set (see
-> +.BR mmap (2)
-> +for details).
-> +
-> +.BR PR_SET_MM_AUXV
-> +to set a new auxiliary vector.
-> +The
-> +.I arg3
-> +argument should provide the address of the vector.
-> +The
-> +.I arg4
-> +is the size of the vector.
-> +.\"
->  .SH "RETURN VALUE"
->  On success,
->  .BR PR_GET_DUMPABLE ,
-> --
-> 1.7.7.6
->
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+	Ingo
