@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760025Ab2CTN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:56:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40578 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab2CTN4V (ORCPT
+	id S1760039Ab2CTN4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:56:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51573 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760019Ab2CTN4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:56:21 -0400
-Subject: Re: [PATCH] net: bpf_jit: Simplify code by always using offset8 or
- offset32.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-In-Reply-To: <cfb04c3fe59e421093f035c035c88b51.squirrel@webmail.greenhost.nl>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
-	 <1331658828.4449.16.camel@edumazet-glaptop>
-	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-	 <1331704535.2456.37.camel@edumazet-laptop>
-	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
-	 <1331712357.2456.58.camel@edumazet-laptop>
-	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
-	 <1331992184.2466.45.camel@edumazet-laptop>
-	 <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
-	 <1332075121.3722.34.camel@edumazet-laptop>
-	 <371a1925e68e68f873e30381e0fa60ea.squirrel@webmail.greenhost.nl>
-	 <1332212386.22737.20.camel@edumazet-glaptop>
-	 <cfb04c3fe59e421093f035c035c88b51.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Mar 2012 06:56:17 -0700
-Message-ID: <1332251777.7893.4.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 09:56:39 -0400
+X-Sasl-enc: XuG0hOAj5d/4iiigQByxxanUIb6aoRlhbbVrGFwtmCXi 1332251798
+Date: Tue, 20 Mar 2012 06:56:37 -0700
+From: Greg KH <greg@kroah.com>
+To: Mate Soos <mate@srlabs.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Kernel Oops when unplugging USB
+Message-ID: <20120320135637.GA4634@kroah.com>
+References: <4F6747FF.1060005@srlabs.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6747FF.1060005@srlabs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 22:33 +1100, Indan Zupancic wrote:
+On Mon, Mar 19, 2012 at 03:51:43PM +0100, Mate Soos wrote:
+> Hi,
+> 
+> I had a kernel oops, so I thought I might report it.
+> 
+> [1.] One line summary of the problem
+> See 'messages' for the actual kernel oops messages.
+> 
+> [2.] Full description of the problem/report:
+> The kernel oops-ed when I pulled out an umounted 8GB USB key. This seems
+> to be visible in the "messages" file. All the data attached, except for
+> the "messages" has been produced after a reboot, since the system
+> hanged. Luckily, the "messages" got saved. The system after restart
+> should have exactly the same modules loaded as before.
+> 
+> [3.] Keywords (i.e., modules, networking, kernel):
+> USB, Kernel Ooops, Watchdog
+> 
+> [4.] Kernel version (from /proc/version):
+> $ cat
+>  /proc/version
+> Linux version 3.2.0-1-amd64 (Debian 3.2.4-1) (waldi@debian.org) (gcc
+> version 4.6.2 (Debian 4.6.2-12) ) #1 SMP Sun Feb 5 15:17:15 UTC 2012
 
-> And if the dev, len or data_len fields are really moved past the first
-> 127 bytes the JIT code can be changed too. The JIT code already depends
-> on some of struct sk_buff's field properties anyway.
+Can you please try the 3.2.12 release, this should be resolved there
+already.
 
-Its seems you didnt understand, but I said NO to your patch.
+Or can you try 3.3?
 
-This time I am really tired.
+thanks,
 
-
-
-
+greg k-h
