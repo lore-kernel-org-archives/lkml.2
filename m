@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab2CTACU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 20:02:20 -0400
-Received: from ozlabs.org ([203.10.76.45]:49158 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756569Ab2CTACS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 20:02:18 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-In-Reply-To: <4F674649.2000300@linux.vnet.ibm.com>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 20 Mar 2012 10:12:10 +1030
-Message-ID: <87aa3cqht9.fsf@rustcorp.com.au>
+	id S1758914Ab2CTAF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 20:05:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61892 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755314Ab2CTAFy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 20:05:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120319202846.GA26555@gmail.com>
+References: <20120316144028.036474157@chello.nl> <4F670325.7080700@redhat.com>
+ <1332155527.18960.292.camel@twins> <20120319130401.GI24602@redhat.com>
+ <1332164371.18960.339.camel@twins> <20120319142046.GP24602@redhat.com>
+ <alpine.DEB.2.00.1203191513110.23632@router.home> <20120319202846.GA26555@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 19 Mar 2012 17:05:33 -0700
+X-Google-Sender-Auth: WHLwPF-lBVRNeVWZWIJnLtHz01A
+Message-ID: <CA+55aFwa-81x2Dysk8WS8ez2WkYSbaQDyQvpH0qE7fGJgxTbUQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012 20:14:25 +0530, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Hi,
-> 
-> There had been some discussion on CPU Hotplug redesign/rework
-> some time ago, but it was buried under a thread with a different
-> subject.
-> (http://thread.gmane.org/gmane.linux.kernel/1246208/focus=1246404)
-> 
-> So I am opening a new thread with an appropriate subject to discuss
-> what needs to be done and how to go about it, as part of the rework.
-> 
-> Peter Zijlstra and Paul McKenney had come up with TODO lists for the
-> rework, and here are their extracts from the previous discussion:
+On Mon, Mar 19, 2012 at 1:28 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> That having said PeterZ's numbers showed some pretty good
+> improvement for the streams workload:
+>
+>  before: 512.8M
+>  after: 615.7M
+>
+> i.e. a +20% improvement on a not very heavily NUMA box.
 
-This is possible, but quite a lot of tricky auditing work.  There's an
-underlying assumption that stop_machine is the slow part, since it feels
-so heavy.
+Well, streams really isn't a very interesting benchmark. It's the
+traditional single-threaded cpu-only thing that just accesses things
+linearly, and I'm not convinced the numbers should be taken to mean
+anything at all.
 
-Unfortunately, this doesn't seem to be the case in my testing.  The time
-for hotplug seems to be moving all the threads around.  So how about:
+The HPC people want to multi-thread things these days, and "cpu/memory
+affinity" is a lot less clear then.
 
-(1) Let's not shutdown per-cpu kthreads, just leave them there to run
-    if the CPU comes back.
+So I can easily imagine that the performance improvement is real, but
+I really don't think "streams improves by X %" is all that
+interesting. Are there any more relevant loads that actually matter to
+people that we could show improvement on?
 
-(2) Do something more efficient with userspace threads than migrating
-    them one at a time.
-
-Otherwise, we risk doing a great deal of work and gaining nothing
-(cleanups aside, of course).
-
-Thanks,
-Rusty.
--- 
-  How could I marry someone with more hair than me?  http://baldalex.org
+                     Linus
