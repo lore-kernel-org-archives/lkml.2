@@ -1,38 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349Ab2CTW5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 18:57:48 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51081 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759266Ab2CTW5q (ORCPT
+	id S1759380Ab2CTW6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:58:11 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58623 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759266Ab2CTW6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 18:57:46 -0400
-Date: Tue, 20 Mar 2012 23:00:12 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Michael Gehring <mg@ebfe.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/vt: set_get_cmap() check user buffer
-Message-ID: <20120320230012.2bfd9e6a@pyramind.ukuu.org.uk>
-In-Reply-To: <20120320010544.GB22927@s755>
-References: <1332200041-31052-1-git-send-email-mg@ebfe.org>
-	<20120319234839.GA26931@kroah.com>
-	<20120320010544.GB22927@s755>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 18:58:09 -0400
+Date: Tue, 20 Mar 2012 18:58:06 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Cc: Jake Edge <jake@lwn.net>
+Subject: [RELEASE] LTTng 2.0 stable
+Message-ID: <20120320225806.GA4452@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:41:02 up 483 days,  3:44,  6 users,  load average: 0.18, 0.04,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For the 'set' case, that would result in a partially updated default
-> colormap.
+Hello World,
 
-Agreed - I don't think it really matters much but its so trivial to
-do right.
+We proudly announce the first stable release of LTTng 2.0, after 2 years
+R&D from the LTTng team. As always, we warmly welcome feedback, comments
+and ideas from our large user community, already familiar with the 0.x
+versions. LTTng 2.0 will be in the upcoming Ubuntu 12.04 LTS.
 
-This looks the right model to me.
+Some will be pleased to notice the new version names, describing the
+best Quebec beer brews we have tasted.
 
-Alan
+LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
+full system tracing solution toolchain. It is composed of several
+components to allow tracing of the kernel, of userspace, for combined
+trace viewing and analysis. LTTng is open source software.
+
+Key Features:
+
+- Efficient synchronized User-space and Kernel tracing using the same
+  time-source provides view of correlated kernel and user-space events.
+- LTTng 2.0 kernel modules build against a vanilla or distribution
+  kernel, without need for additional patches,
+- Tracepoints, detailed syscall tracing (fast strace replacement),
+  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
+  probing (kprobes) and function call/return tracing (kretprobes support),
+- Have the ability to attach "context" information to events in the
+  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
+  All the extra information fields to be collected with events are
+  optional, specified on a per-tracing-session basis (except for
+  timestamp and event id, which are mandatory).
+- Allows non-root users part of the "tracing" group to perform kernel
+  and userspace tracing.
+- Allows multiple tracing sessions to be active concurrently, each with
+  its own instrumentation set.
+- Integrated interface for both kernel and userspace tracing,
+- Produces CTF (Common Trace Format) natively,
+  (http://www.efficios.com/ctf)
+
+Changelog:
+
+- Please refer to the individual project Changelog files for details.
+
+Project website: http://lttng.org
+Download link: http://lttng.org/download
+(please refer to the README files for installation instructions and
+lttng-tools doc/quickstart.txt for usage information)
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
