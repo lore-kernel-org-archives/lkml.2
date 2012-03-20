@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965025Ab2CTQEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:04:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57489 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756410Ab2CTQEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:04:33 -0400
-Date: Tue, 20 Mar 2012 16:04:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: Convert ab3100 to set_voltage_sel
-Message-ID: <20120320160427.GK3445@opensource.wolfsonmicro.com>
-References: <1332209680.10843.3.camel@phoenix>
+	id S1030469Ab2CTQEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:04:41 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37189 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030386Ab2CTQEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 12:04:38 -0400
+Message-ID: <4F68AA37.80604@parallels.com>
+Date: Tue, 20 Mar 2012 20:03:03 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lZZ4ablUVnt2XgAh"
-Content-Disposition: inline
-In-Reply-To: <1332209680.10843.3.camel@phoenix>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
+Subject: Re: [PATCH 09/10] cgroup: introduce struct cfent
+References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-10-git-send-email-tj@kernel.org> <4F688EA9.8050905@parallels.com> <20120320160228.GD5684@google.com>
+In-Reply-To: <20120320160228.GD5684@google.com>
+Content-Type: multipart/mixed;
+	boundary="------------030309020803090007030503"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--------------030309020803090007030503
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
---lZZ4ablUVnt2XgAh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 03/20/2012 08:02 PM, Tejun Heo wrote:
+> On Tue, Mar 20, 2012 at 06:05:29PM +0400, Glauber Costa wrote:
+>> On 03/17/2012 03:36 AM, Tejun Heo wrote:
+>>> +static void cgroup_clear_directory(struct dentry *dir)
+>>> +{
+>>> +	struct cgroup *cgrp = __d_cgrp(dir);
+>>> +
+>>> +	while (!list_empty(&cgrp->files))
+>>> +		cgroup_rm_file(cgrp, NULL);
+>>> +	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
+>>>   }
+>>
+>>
+>> I am hitting this warning here under pretty much normal conditions.
+>> You forgot to account for trivial directories like "."
+>>
+>> I'll send a patch ontop of what you have.
+>
+> Heh, yeah, I hit that yesterday too and was gonna look into that
+> today.  Is the patch coming? :)
+>
+> Thanks.
 
-On Tue, Mar 20, 2012 at 10:14:40AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+I was about to send it together with my proposal for sock memcg, so I'm 
+compile testing that under multiple config options just to be sure we're 
+fine.
 
-Applied, thanks.
+That's more or less what I have, see if you agree. I tried to keep the 
+warning itself, because it is valuable...
 
---lZZ4ablUVnt2XgAh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+--------------030309020803090007030503
+Content-Type: text/x-patch;
+	name="0001-don-t-trigger-warning-when-d_subdirs-is-not-empty.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="0001-don-t-trigger-warning-when-d_subdirs-is-not-empty.patch"
 
-iQIcBAEBAgAGBQJPaKqEAAoJEBus8iNuMP3d064P/ikoNEneOF7RupOZLaXVWl2w
-MpqZDiPhnbzzfUdulhiCQrItmF5MBSrB/KK2IAyTXqLnHbm7ISJ+dLBPMlCEbBV7
-Q568y2XRucsxuEj/ltpWVG5leMwCeAHrCKekO1Ad6xuc/J6MZ6g4CzIHjvb3UtLr
-Y5F1Q26MGDBR1Z6E16n9dGEpujowHkuRMDQ9Go/hAXNo/rRT776kcUUooEgjyHXm
-14N2VTwSj2e5pWZoFnDFarNTG+rnmV2HXnEqWNIfZcx/OFLDg7b36DHcknZ0ctUC
-KdopNTGo7Nf2byRxFJtHUUgzDNv144xPutB0xi53dPh5jHbkMyMXMgPCBhQF8YAw
-8RMnvgpYqiqSvL9ncs5erfQH4fSON/EdN9MLd5hjITTPK+Dyjj7V4WtzKXRet4UY
-IIcLFeKyXjCNIHtyWxTYlAjjiQ1k8z3sKp5iKDU/n6TpMuuBXWXW6Qd3JeNXvrBv
-5cxigE1UuiKv0Aa+zmXcaAyzD1Z90uqc2y4olNQ5cAZNvwdWumpOqqdaSFcl2IFI
-ZwszFP2R0eyewpNf5yzD6H2FoRqaoySJJD7SEtAc4d7U0bff4zcxVVBbUNPg4N1I
-DDBBLC6SjBU6G1zT/BtaTM9rlBKswNotZZrmGkiOACU77FaAwlAOjqE/U4pBSjST
-MeLLo2LRwd9QFeoYy3QY
-=Hoxn
------END PGP SIGNATURE-----
+>From 04604201411ab0a14fa1447072cd1b273d0774ed Mon Sep 17 00:00:00 2001
+From: Glauber Costa <glommer@parallels.com>
+Date: Tue, 20 Mar 2012 18:12:55 +0400
+Subject: [PATCH] don't trigger warning when d_subdirs is not empty.
 
---lZZ4ablUVnt2XgAh--
+It is never empty at this point, because of the self references.
+a better test is to see if any of them gets d_inode set.
+
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index cf7b298..b45a653 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -947,10 +947,16 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+ static void cgroup_clear_directory(struct dentry *dir)
+ {
+ 	struct cgroup *cgrp = __d_cgrp(dir);
++	struct list_head *child;
+ 
+ 	while (!list_empty(&cgrp->files))
+ 		cgroup_rm_file(cgrp, NULL);
+-	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
++
++	list_for_each(child, &dir->d_subdirs) {
++		struct dentry *d;
++		d = list_entry(child, struct dentry, d_u.d_child);
++		WARN_ON_ONCE(d->d_inode);
++	}
+ }
+ 
+ /*
+-- 
+1.7.7.6
+
+
+--------------030309020803090007030503--
