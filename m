@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760430Ab2CTOuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:50:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54589 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760247Ab2CTOuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:50:08 -0400
-From: Sasikantha babu <sasikanth.v19@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Sasikantha babu <sasikanth.v19@gmail.com>
-Subject: [PATCH 1/1] setitimer : Return -EFAULT if the user pointer "value" is NULL
-Date: Tue, 20 Mar 2012 20:21:55 +0530
-Message-Id: <1332255115-13036-1-git-send-email-sasikanth.v19@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1760478Ab2CTOuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:50:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760206Ab2CTOui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:50:38 -0400
+Date: Tue, 20 Mar 2012 16:50:41 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, mst@redhat.com,
+        nyh@il.ibm.com, nyh@math.technion.ac.il
+Subject: [PULL] vhost-net/virtio: fixes for 3.4
+Message-ID: <20120320145010.GA31570@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return -EFAULT if user  pointer "value" is  NULL.
+The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
 
-In the current timer implementation  
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
 
-setitimer (which, NULL, NULL)
+are available in the git repository at:
 
-is equal to
+  ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
 
-timer.it_value.tv_sec = 0;
-timer.it_value.tv_usec = 0;
-timer.it_interval.tv_sec = 0;
-timer.it_interval.tv_usec = 0;
+  (ssh url as git.kernel.org seems down at the moment, when it comes up
+   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
+   should be the equivalent).
 
-setitimer (which, &timer, NULL);
+for you to fetch changes up to ea5d404655ba3b356d0c06d6a3c4f24112124522:
 
-setitimer man page says "The function setitimer() sets the specified timer to the value in new_value".
+  vhost: fix release path lockdep checks (2012-02-28 09:13:22 +0200)
 
-If the new_value is NULL, kernel should not set timer with tv_sec = 0 and tv_usec = 0, instead return -EFAULT.
+----------------------------------------------------------------
+vhost/virtio: fixes for 3.4
 
-Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
----
- kernel/itimer.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+This includes a couple of vhost-net bugfixes,
+and fixes tools/virtio making it useful again.
 
-diff --git a/kernel/itimer.c b/kernel/itimer.c
-index 22000c3..f356bdf 100644
---- a/kernel/itimer.c
-+++ b/kernel/itimer.c
-@@ -279,19 +279,18 @@ SYSCALL_DEFINE3(setitimer, int, which, struct itimerval __user *, value,
- 		struct itimerval __user *, ovalue)
- {
- 	struct itimerval set_buffer, get_buffer;
--	int error;
-+	int error = -EFAULT;
- 
- 	if (value) {
- 		if(copy_from_user(&set_buffer, value, sizeof(set_buffer)))
- 			return -EFAULT;
--	} else
--		memset((char *) &set_buffer, 0, sizeof(set_buffer));
- 
--	error = do_setitimer(which, &set_buffer, ovalue ? &get_buffer : NULL);
--	if (error || !ovalue)
--		return error;
-+		error = do_setitimer(which, &set_buffer, ovalue ? &get_buffer : NULL);
-+		if (error || !ovalue)
-+			return error;
- 
--	if (copy_to_user(ovalue, &get_buffer, sizeof(get_buffer)))
--		return -EFAULT;
--	return 0;
-+		if (copy_to_user(ovalue, &get_buffer, sizeof(get_buffer)))
-+			return -EFAULT;
-+	}
-+	return error;
- }
--- 
-1.7.3.4
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
+----------------------------------------------------------------
+Michael S. Tsirkin (4):
+      tools/virtio: add linux/module.h stub
+      tools/virtio: add linux/hrtimer.h stub
+      tools/virtio: stub out strong barriers
+      vhost: fix release path lockdep checks
+
+Nadav Har'El (1):
+      vhost: don't forget to schedule()
+
+ drivers/vhost/net.c         |    2 +-
+ drivers/vhost/vhost.c       |   11 +++++++----
+ drivers/vhost/vhost.h       |    2 +-
+ tools/virtio/linux/virtio.h |    3 +++
+ 4 files changed, 12 insertions(+), 6 deletions(-)
+ create mode 100644 tools/virtio/linux/hrtimer.h
+ create mode 100644 tools/virtio/linux/module.h
