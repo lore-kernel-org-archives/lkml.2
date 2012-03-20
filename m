@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab2CTX5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 19:57:17 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:44830 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752148Ab2CTX44 (ORCPT
+	id S1755981Ab2CTX5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 19:57:55 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:39649 "EHLO
+	homiemail-a58.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751996Ab2CTX5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 19:56:56 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Robert Lee <rob.lee@linaro.org>, len.brown@intel.com,
-        akpm@linux-foundation.org, rjw@sisk.pl, robherring2@gmail.com,
-        Baohua.Song@csr.com, amit.kucheria@linaro.org, nicolas.ferre@atmel.com,
-        linux@maxim.org.za, kgene.kim@samsung.com, amit.kachhap@linaro.org,
-        magnus.damm@gmail.com, nsekhar@ti.com, daniel.lezcano@linaro.org,
-        mturquette@linaro.org, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
-        nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
-        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
-        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
-        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
-Organization: Texas Instruments, Inc.
-References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
-	<201203202158.08042.arnd.bergmann@linaro.org> <873992zy5u.fsf@ti.com>
-	<201203202305.37952.arnd.bergmann@linaro.org>
-Date: Tue, 20 Mar 2012 16:56:51 -0700
-In-Reply-To: <201203202305.37952.arnd.bergmann@linaro.org> (Arnd Bergmann's
-	message of "Tue, 20 Mar 2012 23:05:37 +0000")
-Message-ID: <87ty1ix1vg.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 20 Mar 2012 19:57:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=l5xF2V+mS2Qc7ywF9lXZp40EogPu2Ux1Xxz9xZ/Jt2ylXnv3U4iP6n6/gCITu
+	OpqLL2uQIeDslhByQ4w3bmHjISxtbYtde13/Vx4685TZWLnKqW0kd33sDboZzV1J
+	EvKFmF4rc/LGCP/Tig0nwv+fqOT85nsullDxmH+xjaTQVc=
+Message-ID: <4F69197E.7020607@shealevy.com>
+Date: Tue, 20 Mar 2012 19:57:50 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20120311 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Matt Fleming <matt@console-pimps.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Matthew Garret <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 0/3] x86, efi: EFI boot stub documentation
+References: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd.bergmann@linaro.org> writes:
-
-> On Tuesday 20 March 2012, Kevin Hilman wrote:
->> Maybe it's time that drivers/cpuidle gets a maintainer.  With lots of
->> discussions of scheduler changes that affect load estimation, I suspect
->> we're all going to have a bit of CPUidle work to do in the
->> not-so-distant future.
+On 03/16/2012 10:18 AM, Matt Fleming wrote:
+> From: Matt Fleming<matt.fleming@intel.com>
 >
-> Hmm, according to the script, you are the maintainer ;-)
-
-doh, I knew I should've kept quiet :/
-
-> $ scripts/get_maintainer.pl -f drivers/cpuidle/cpuidle.c
-> Kevin Hilman <khilman@ti.com> (commit_signer:8/10=80%)
-> Len Brown <len.brown@intel.com> (commit_signer:7/10=70%)
-> Trinabh Gupta <g.trinabh@gmail.com> (commit_signer:4/10=40%)
-> Arjan van de Ven <arjan@linux.intel.com> (commit_signer:4/10=40%)
-> Deepthi Dharwar <deepthi@linux.vnet.ibm.com> (commit_signer:4/10=40%)
+> Some people trying out the EFI stub have been confused about the
+> syntax for the initrd= option, so this series adds some information to
+> Documentation/x86. It also adds some helpful error messages, as
+> previously if the user specified an incorrect initrd filename the
+> machine just appeared to hang. Now at least it will print a message
+> saying that it couldn't open the file.
 >
-> While I realize that the get_maintainers.pl is not the final word,
-> you could be the acting cpuidle maintainer for this merge window
-> and send the pull request.
+> The first patch is actually a bug fix for an issue where the wrong
+> loop counter was used when trying to close initrd files in the error
+> path, which caused the machine to hang because a garbage pointer was
+> dereferenced.
+>
+> Ideally I'd like to squeeze at least the last two patches in before
+> v3.3 is released.
+>
+> Matt Fleming (3):
+>    x86, efi: Only close open files in error path
+>    x86, efi; Add EFI boot stub console support
+>    x86, efi: Add EFI boot stub documentation
+>
+>   Documentation/x86/efi-stub.txt   |   65 ++++++++++++++++++++++++++++
+>   arch/x86/Kconfig                 |    2 +
+>   arch/x86/boot/compressed/eboot.c |   88 ++++++++++++++++++++++++++++++-------
+>   arch/x86/boot/compressed/eboot.h |    6 +++
+>   4 files changed, 144 insertions(+), 17 deletions(-)
+>   create mode 100644 Documentation/x86/efi-stub.txt
+>
 
-Not exactly the outcome I was hoping for (I have enough stuff to look
-after at the moment.) 
-
-However, if you think it would help and won't be seen as a take over
-attempt (I don't want to maintain CPUidle), I can possibly do it for
-this merge window.  
-
-Before doing that though, I'll need give this series a final once over
-before I'm willing to send a potentially flame-attracting pull request.
-
-Kevin
-
-
+Anyone know if we can expect these to be in mainline by the end of the 
+merge window?
