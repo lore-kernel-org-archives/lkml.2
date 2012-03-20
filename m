@@ -1,123 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759457Ab2CTKhC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:37:02 -0400
-Received: from mail.meprolight.com ([194.90.149.17]:39378 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756697Ab2CTKhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:37:00 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <g.liakhovetski@gmx.de>,
-        <fabio.estevam@freescale.com>, Alex Gershgorin <alexg@meprolight.com>
-Subject: [PATCH] ARM: i.MX35: Add set_rate and round_rate calls to csi_clk
-Date: Tue, 20 Mar 2012 12:29:52 +0200
-Message-ID: <1332239392-12639-1-git-send-email-alexg@meprolight.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1759588Ab2CTKmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:42:11 -0400
+Received: from cpanel23.proisp.no ([88.87.44.74]:58117 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759537Ab2CTKmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 06:42:08 -0400
+Message-ID: <4F685EE8.5020708@numascale.com>
+Date: Tue, 20 Mar 2012 11:41:44 +0100
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@redhat.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jack Steiner <steiner@sgi.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH REPOST] Added separate apic_id_valid() functions for selected
+ apic drivers.
+References: <CAE9FiQVxuVGe=m87fQKE+JjPk=Z83iOypQU+yQn5y-M-qVSArg@mail.gmail.com> <1331925935-13372-1-git-send-email-sp@numascale.com>
+In-Reply-To: <1331925935-13372-1-git-send-email-sp@numascale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add set_rate and round_rate calls to csi_clk. This is needed
-to give mx3-camera control over master clock rate to camera.
+On 3/16/2012 20:25, Steffen Persvold wrote:
+> As suggested by Suresh Siddha<suresh.b.siddha@intel.com>  and Yinghai Lu<yinghai@kernel.org>  :
+>
+> For x2apic pre-enabled systems, apic driver is set already early through early_acpi_boot_init()/early_acpi_process_madt()/acpi_parse_madt()/default_acpi_madt_oem_check() so that apic_id_valid() checking will be sufficient during MADT and SRAT prasing. For non- x2apic pre-enabled systems, all apic ids should be less than 255.
+>
+> This allows us to substitute the checks in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic() and arch/x86/mm/srat.c::acpi_numa_x2apic_affinity_init() with apic->apic_id_valid().
+>
+> In addition we can avoid feigning the x2apic cpu feature in the NumaChip apic code.
+>
+> The following apic drivers have separate apic_id_valid() functions which will accept x2apic type IDs :
+>
+> x2apic_phys
+> x2apic_cluster
+> x2apic_uv_x
+> apic_numachip
+>
+> Signed-off-by: Steffen Persvold<sp@numascale.com>
 
-Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
----
- arch/arm/mach-imx/clock-imx35.c |   57 +++++++++++++++++++++++++++++++++++++-
- 1 files changed, 55 insertions(+), 2 deletions(-)
+Ingo, any comments on this approach ? It should cover both cases as 
+suggested by Suresh and Yinghai.
 
-diff --git a/arch/arm/mach-imx/clock-imx35.c b/arch/arm/mach-imx/clock-imx35.c
-index ac8238c..3202b56 100644
---- a/arch/arm/mach-imx/clock-imx35.c
-+++ b/arch/arm/mach-imx/clock-imx35.c
-@@ -254,7 +254,7 @@ static unsigned long get_rate_ssi(struct clk *clk)
- 	return rate / ((div1 + 1) * (div2 + 1));
- }
- 
--static unsigned long get_rate_csi(struct clk *clk)
-+static unsigned long csi_get_rate(struct clk *clk)
- {
- 	unsigned long pdr2 = __raw_readl(CCM_BASE + CCM_PDR2);
- 	unsigned long rate;
-@@ -267,6 +267,45 @@ static unsigned long get_rate_csi(struct clk *clk)
- 	return rate / (((pdr2 >> 16) & 0x3f) + 1);
- }
- 
-+static int csi_set_rate(struct clk *clk, unsigned long rate)
-+{
-+	unsigned long div;
-+	unsigned long parent_rate;
-+	unsigned long pdr2 = __raw_readl(CCM_BASE + CCM_PDR2);
-+
-+	if (pdr2 & (1 << 7))
-+		parent_rate = get_rate_arm();
-+	else
-+		parent_rate = get_rate_ppll();
-+
-+	div = parent_rate / rate;
-+
-+	/* Set clock divider */
-+	pdr2 |= ((div - 1) & 0x3f) << 16;
-+	__raw_writel(pdr2, CCM_BASE + CCM_PDR2);
-+
-+	return 0;
-+}
-+
-+static unsigned long csi_round_rate(struct clk *clk, unsigned long rate)
-+{
-+	unsigned long div;
-+	unsigned long parent_rate;
-+	unsigned long pdr2 = __raw_readl(CCM_BASE + CCM_PDR2);
-+
-+	if (pdr2 & (1 << 7))
-+		parent_rate = get_rate_arm();
-+	else
-+		parent_rate = get_rate_ppll();
-+
-+	div = parent_rate / rate;
-+
-+	if (parent_rate % rate)
-+		div++;
-+
-+	return parent_rate / div;
-+}
-+
- static unsigned long get_rate_otg(struct clk *clk)
- {
- 	unsigned long pdr4 = __raw_readl(CCM_BASE + CCM_PDR4);
-@@ -353,6 +392,20 @@ static void clk_cgr_disable(struct clk *clk)
- 		.disable	= clk_cgr_disable,	\
- 	}
- 
-+#define DEFINE_CLOCK1(name, i, er, es, getsetround, s, p)	\
-+	static struct clk name = {                              \
-+		.id             = i,                            \
-+		.enable_reg     = CCM_BASE + er,                \
-+		.enable_shift   = es,                           \
-+		.get_rate       = getsetround##_get_rate,       \
-+		.set_rate       = getsetround##_set_rate,       \
-+		.round_rate     = getsetround##_round_rate,     \
-+		.enable         = clk_cgr_enable,               \
-+		.disable        = clk_cgr_disable,              \
-+		.secondary      = s,                            \
-+		.parent         = p,                            \
-+	}
-+
- DEFINE_CLOCK(asrc_clk,   0, CCM_CGR0,  0, NULL, NULL);
- DEFINE_CLOCK(pata_clk,    0, CCM_CGR0,  2, get_rate_ipg, NULL);
- /* DEFINE_CLOCK(audmux_clk, 0, CCM_CGR0,  4, NULL, NULL); */
-@@ -403,7 +456,7 @@ DEFINE_CLOCK(wdog_clk,   0, CCM_CGR2, 24, NULL, NULL);
- DEFINE_CLOCK(max_clk,    0, CCM_CGR2, 26, NULL, NULL);
- DEFINE_CLOCK(audmux_clk, 0, CCM_CGR2, 30, NULL, NULL);
- 
--DEFINE_CLOCK(csi_clk,    0, CCM_CGR3,  0, get_rate_csi, NULL);
-+DEFINE_CLOCK1(csi_clk,    0, CCM_CGR3,  0, csi, NULL, NULL);
- DEFINE_CLOCK(iim_clk,    0, CCM_CGR3,  2, NULL, NULL);
- DEFINE_CLOCK(gpu2d_clk,  0, CCM_CGR3,  4, NULL, NULL);
- 
+Kind regards,
 -- 
-1.7.0.4
+Steffen Persvold, Chief Architect NumaChip
+Numascale AS - www.numascale.com
+Tel: +47 92 49 25 54 Skype: spersvold
+
+
+> ---
+>   arch/x86/include/asm/apic.h           |    2 +-
+>   arch/x86/include/asm/x2apic.h         |    5 +++++
+>   arch/x86/kernel/acpi/boot.c           |    2 +-
+>   arch/x86/kernel/apic/apic_numachip.c  |    3 +--
+>   arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
+>   arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
+>   arch/x86/kernel/apic/x2apic_uv_x.c    |    7 ++++++-
+>   arch/x86/mm/srat.c                    |    2 +-
+>   8 files changed, 17 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+> index a9371c9..d3eaac4 100644
+> --- a/arch/x86/include/asm/apic.h
+> +++ b/arch/x86/include/asm/apic.h
+> @@ -535,7 +535,7 @@ static inline unsigned int read_apic_id(void)
+>
+>   static inline int default_apic_id_valid(int apicid)
+>   {
+> -	return x2apic_mode || (apicid<  255);
+> +	return (apicid<  255);
+>   }
+>
+>   extern void default_setup_apic_routing(void);
+> diff --git a/arch/x86/include/asm/x2apic.h b/arch/x86/include/asm/x2apic.h
+> index 6bf5b8e..92e54ab 100644
+> --- a/arch/x86/include/asm/x2apic.h
+> +++ b/arch/x86/include/asm/x2apic.h
+> @@ -18,6 +18,11 @@ static const struct cpumask *x2apic_target_cpus(void)
+>   	return cpu_online_mask;
+>   }
+>
+> +static int x2apic_apic_id_valid(int apicid)
+> +{
+> +	return 1;
+> +}
+> +
+>   static int x2apic_apic_id_registered(void)
+>   {
+>   	return 1;
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index ce664f3..4b5059c 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -239,7 +239,7 @@ acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
+>   	 * to not preallocating memory for all NR_CPUS
+>   	 * when we use CPU hotplug.
+>   	 */
+> -	if (!cpu_has_x2apic&&  (apic_id>= 0xff)&&  enabled)
+> +	if (!apic->apic_id_valid(apic_id)&&  enabled)
+>   		printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
+>   	else
+>   		acpi_register_lapic(apic_id, enabled);
+> diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+> index d9ea5f3..899803e 100644
+> --- a/arch/x86/kernel/apic/apic_numachip.c
+> +++ b/arch/x86/kernel/apic/apic_numachip.c
+> @@ -229,11 +229,10 @@ static int __init numachip_system_init(void)
+>   }
+>   early_initcall(numachip_system_init);
+>
+> -static int __cpuinit numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+> +static int numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+>   {
+>   	if (!strncmp(oem_id, "NUMASC", 6)) {
+>   		numachip_system = 1;
+> -		setup_force_cpu_cap(X86_FEATURE_X2APIC);
+>   		return 1;
+>   	}
+>
+> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+> index 9193713..48f3103 100644
+> --- a/arch/x86/kernel/apic/x2apic_cluster.c
+> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
+> @@ -213,7 +213,7 @@ static struct apic apic_x2apic_cluster = {
+>   	.name				= "cluster x2apic",
+>   	.probe				= x2apic_cluster_probe,
+>   	.acpi_madt_oem_check		= x2apic_acpi_madt_oem_check,
+> -	.apic_id_valid			= default_apic_id_valid,
+> +	.apic_id_valid			= x2apic_apic_id_valid,
+>   	.apic_id_registered		= x2apic_apic_id_registered,
+>
+>   	.irq_delivery_mode		= dest_LowestPrio,
+> diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
+> index bcd1db6..8a778db 100644
+> --- a/arch/x86/kernel/apic/x2apic_phys.c
+> +++ b/arch/x86/kernel/apic/x2apic_phys.c
+> @@ -119,7 +119,7 @@ static struct apic apic_x2apic_phys = {
+>   	.name				= "physical x2apic",
+>   	.probe				= x2apic_phys_probe,
+>   	.acpi_madt_oem_check		= x2apic_acpi_madt_oem_check,
+> -	.apic_id_valid			= default_apic_id_valid,
+> +	.apic_id_valid			= x2apic_apic_id_valid,
+>   	.apic_id_registered		= x2apic_apic_id_registered,
+>
+>   	.irq_delivery_mode		= dest_Fixed,
+> diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+> index fc47714..87bfa69 100644
+> --- a/arch/x86/kernel/apic/x2apic_uv_x.c
+> +++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+> @@ -266,6 +266,11 @@ static void uv_send_IPI_all(int vector)
+>   	uv_send_IPI_mask(cpu_online_mask, vector);
+>   }
+>
+> +static int uv_apic_id_valid(int apicid)
+> +{
+> +	return 1;
+> +}
+> +
+>   static int uv_apic_id_registered(void)
+>   {
+>   	return 1;
+> @@ -351,7 +356,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
+>   	.name				= "UV large system",
+>   	.probe				= uv_probe,
+>   	.acpi_madt_oem_check		= uv_acpi_madt_oem_check,
+> -	.apic_id_valid			= default_apic_id_valid,
+> +	.apic_id_valid			= uv_apic_id_valid,
+>   	.apic_id_registered		= uv_apic_id_registered,
+>
+>   	.irq_delivery_mode		= dest_Fixed,
+> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+> index 1c1c4f4..efb5b4b 100644
+> --- a/arch/x86/mm/srat.c
+> +++ b/arch/x86/mm/srat.c
+> @@ -70,7 +70,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+>   		return;
+>   	pxm = pa->proximity_domain;
+>   	apic_id = pa->apic_id;
+> -	if (!cpu_has_x2apic&&  (apic_id>= 0xff)) {
+> +	if (!apic->apic_id_valid(apic_id)) {
+>   		printk(KERN_INFO "SRAT: PXM %u ->  X2APIC 0x%04x ignored\n",
+>   			 pxm, apic_id);
+>   		return;
+
 
