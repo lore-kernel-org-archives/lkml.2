@@ -1,20 +1,20 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1753256Ab2CQAwb (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Fri, 16 Mar 2012 20:52:31 -0400
-Received: from bld14.srv.portugalmail.net ([195.170.168.142]:50689 "EHLO
-        bld14.srv.portugalmail.net" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1751423Ab2CQAw3 (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Fri, 16 Mar 2012 20:52:29 -0400
-Date: Sat, 17 Mar 2012 00:52:26 +0000
-Message-ID: <20120317005226.Horde.sCPNfyoH6vhPY_BKJe7iPXA@correio.portugalmail.pt>
-From: faith donald <faith.donald1@yahoo.com>
-Subject: HI
-X-Portugalmail-Sender: love6@portugalmail.pt
-User-Agent: Internet Messaging Program (IMP) H4 (5.0.19-git)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+        id S1758508Ab2CUAOm (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Tue, 20 Mar 2012 20:14:42 -0400
+Received: from smtp.inpi.gov.br ([189.3.205.182]:24048 "EHLO smtp.inpi.gov.br"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1756070Ab2CUAOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Tue, 20 Mar 2012 20:14:41 -0400
+Date: Tue, 20 Mar 2012 19:45:09 -0300 (BRT)
+From: Mr Leung Cheung <luna@inpi.gov.br>
+Reply-To: Mr Leung Cheung <cheungl@kimo.com>
+Subject: Hello
+Message-ID: <a9c31d2a-0229-49a3-b8af-2bbb65ea70f1@mail.inpi.gov.br>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Disposition: inline
+X-Originating-IP: [108.62.194.34]
+X-Mailer: Zimbra 7.1.0_GA_3140 (zclient/7.1.0_GA_3140)
 To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,10 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
 
--- 
-Good day dear how are you, i hope you are fine, i am faith by name its  
-nice to meet you
 
+I need your assistance to transfer an abandoned $22.5 Million Dollars from Hong-Kong to your country. You will get more info when i receive a positive reply from you.
 
-
-
+Best Regards,
+Mr.Leung Cheung
