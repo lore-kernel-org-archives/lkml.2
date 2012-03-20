@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2CTN6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:58:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49898 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123Ab2CTN6v (ORCPT
+	id S1760051Ab2CTN7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:59:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21264 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036Ab2CTN7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:58:51 -0400
-Date: Tue, 20 Mar 2012 06:58:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Darryl <ddegraff@licor.com>
-Cc: prakash.pm@ti.com, sshtylyov@mvista.com,
-        davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: arm: davinci: USB ethernet
-Message-ID: <20120320135847.GB4634@kroah.com>
-References: <4F670E6A.9060403@licor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F670E6A.9060403@licor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Mar 2012 09:59:33 -0400
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=SIHCdkDwiDgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Q-fNiiVtAAAA:8 a=meVymXHHAAAA:8 a=tEuzPHaVrRXT7MXQN2kA:9 a=PUjeQqilurYA:10 a=lcTMV_K9oDIA:10 a=jeBq3FmKZ4MA:10 a=SC57l1L_NNr_7kfT:21 a=LFEF35qfcZ3YedDR:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332251972.23924.14.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Michael J. Wang" <mjwang@broadcom.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yong.zhang0@gmail.com" <yong.zhang0@gmail.com>
+Date: Tue, 20 Mar 2012 09:59:32 -0400
+In-Reply-To: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 05:46:02AM -0500, Darryl wrote:
-> We are currently using a DA850 eval board but will eventually use a
-> custom board to interface host system to davinci using ethernet over
-> USB.  We are using 2.6.37 with real-time patches, but a cursory look
-> (have not been able to build yet) at 3.3-rc7 suggests that the
-> issues noted below still exist.
+On Mon, 2012-03-19 at 22:26 +0000, Michael J. Wang wrote:
+> From: Michael J Wang <mjwang@broadcom.com>
 > 
-> There are currently two issues:
+> Avoid extra work by continuing on to the next rt_rq if the highest prio task in current rt_rq is the same priority as our candidate task.
 > 
-> - Documentation/usb/hotplug.txt suggests that the drivers should be
-> built as modules so that such things as loading drivers and, in this
-> case, bringing up the interface, can ge moderated in user-space.
-> However, though the code can be build modular, the drivers are never
-> loaded.  I suspect that one or more of the several relevant configs
-> (I see at least these:  USB_MUSB_HDRC, USB_MUSB_DA8XX_GLUE,
-> USB_GADGET, USB_ETH, USB_GPIO_VBUS, NOP_USB_XCEIV, USB_ETH_RNDIS,
-> USB_OTG_UTILS) are required to be built in, but cannot seem to
-> determine the correct ones.
+> Signed-off-by: Michael J Wang <mjwang@broadcom.com>
+> 
+> ---
+> 
+> More detailed explanation:  if next is not NULL, then we have found a candidate task, and its priority is next->prio.  Now we are looking for an even higher priority task in the other rt_rq's.  idx is the highest priority in the current candidate rt_rq.  In the current 3.3 code, if idx is equal to next->prio, we would start scanning the tasks in that rt_rq and replace the current candidate task with a task from that rt_rq.  But the new task would only have a priority that is equal to our previous candidate task, so we have not advanced our goal of finding a higher prio task.  So we should avoid the extra work by continuing on to the next rt_rq if idx is equal to next->prio.
+> 
+> --- linux-3.3/kernel/sched/rt.c.orig	2012-03-18 16:15:34.000000000 -0700
+> +++ linux-3.3/kernel/sched/rt.c	2012-03-19 14:52:54.585391702 -0700
+> @@ -1403,7 +1403,7 @@ static struct task_struct *pick_next_hig
+>  next_idx:
+>  		if (idx >= MAX_RT_PRIO)
+>  			continue;
+> -		if (next && next->prio < idx)
+> +		if (next && next->prio <= idx)
+>  			continue;
+>  		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+>  			struct task_struct *p;
 
-Do you have a userspace tool that will automatically load the proper
-modules when they show up?
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-As for unwinding the .config issues, you will have to do this, based on
-your own settings, not much we can do here.
+-- Steve
 
-> - Even when compiling all the driver code built-in, neither the
-> plug-in nor plug-out event is propagated to user space, again, so
-> that the interface can be brought up.
 
-How do you know it isn't showing up?  What are you using to watch for
-it?  Are you using udev?  Something else?  devtmpfs?
-
-greg k-h
