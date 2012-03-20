@@ -1,187 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab2CTT5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 15:57:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:50556 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756270Ab2CTT5p (ORCPT
+	id S1757439Ab2CTT7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:59:07 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:45809 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757053Ab2CTT7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 15:57:45 -0400
-X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX1/oMXtZd4Toye/RizNza9sxttUoUXG2WDKC++dgML
-	VrrpglBxw5KPCN
-Message-ID: <4F68E12C.8090807@gmx.net>
-Date: Tue, 20 Mar 2012 20:57:32 +0100
-From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Tue, 20 Mar 2012 15:59:04 -0400
+Date: Tue, 20 Mar 2012 15:58:58 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-next@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: linux-next: triage for March 20, 2012
+Message-ID: <20120320195857.GA23137@windriver.com>
 MIME-Version: 1.0
-To: bhelgaas@google.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] PNP: Simplify setting of resources
-References: <4F68D14B.60409@gmx.net>
-In-Reply-To: <4F68D14B.60409@gmx.net>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch factors out the setting of PNP resources into one function which is 
-then reused for all PNP resource types.  This makes the code more concise and 
-avoids duplication.  The parameters "type" and "flags" are not used at the
-moment but will be used by follow-up patches.  Placeholders for these patches 
-can be found in the comment lines that contain the "TBD" marker. 
+New breakage since last report:
+	arm:cm_x2xx_defconfig (it8152.c: redefinition of 'dma_set_coherent_mask')
+	AVR32:defconfig (board.h: atmel_nand.h: No such file or directory)
+	tilegx:defconfig (`xfs_qm_exit' defined in discarded section `.exit.text')
 
-As the code does not make any changes to the ABI, no regressions are expected.
+Randconfig fails that may or may not be new (by their very nature):
+	i386: samsung-laptop.c: implicit declaration of function 'isalnum'
+		(http://kisskb.ellerman.id.au/kisskb/buildresult/5923709/)
+	powerpc: fadump.c: 'crashing_cpu' undeclared
+		(http://kisskb.ellerman.id.au/kisskb/buildresult/5923831/)
 
-NB: While at it, support for bus type resources is added. 
+Builds that are fixed since last report:
+	ARM:eseries_pxa_defconfig
+	ARM:u8500_defconfig
+	ARM:imx_v4_v5_defconfig
+	powerpc:mpc885_ads_defconfig
+	sparc[64]:allmodconfig
 
-The patch is applied against Linux 3.3.x.
 
+Note: The randconfig fails are only listed once and not tracked
+in the below listing.
 
-Signed-off-by: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+            ------------------------------------------------
 
+Latest results at:
+	http://kisskb.ellerman.id.au/kisskb/branch/9/
 
-Index: linux/drivers/pnp/interface.c
-===================================================================
---- linux.orig/drivers/pnp/interface.c
-+++ linux/drivers/pnp/interface.c
-@@ -298,6 +298,39 @@ static ssize_t pnp_show_current_resource
- 	return ret;
- }
- 
-+static char *pnp_get_resource_value(char *buf,
-+				    unsigned long type,
-+				    resource_size_t *start,
-+				    resource_size_t *end,
-+				    unsigned long *flags)
-+{
-+	if (start)
-+		*start = 0;
-+	if (end)
-+		*end = 0;
-+	if (flags)
-+		*flags = 0;
-+
-+	/* TBD: allow for disabled resources */
-+
-+	buf = skip_spaces(buf);
-+	if (start) {
-+		*start = simple_strtoull(buf, &buf, 0);
-+		if (end) {
-+			buf = skip_spaces(buf);
-+			if (*buf == '-') {
-+				buf = skip_spaces(buf + 1);
-+				*end = simple_strtoull(buf, &buf, 0);
-+			} else
-+				*end = *start;
-+		}
-+	}
-+
-+	/* TBD: allow for additional flags, e.g., IORESOURCE_WINDOW */
-+
-+	return buf;
-+}
-+
- static ssize_t pnp_set_current_resources(struct device *dmdev,
- 					 struct device_attribute *attr,
- 					 const char *ubuf, size_t count)
-@@ -305,7 +338,6 @@ static ssize_t pnp_set_current_resources
- 	struct pnp_dev *dev = to_pnp_dev(dmdev);
- 	char *buf = (void *)ubuf;
- 	int retval = 0;
--	resource_size_t start, end;
- 
- 	if (dev->status & PNP_ATTACHED) {
- 		retval = -EBUSY;
-@@ -349,6 +381,10 @@ static ssize_t pnp_set_current_resources
- 		goto done;
- 	}
- 	if (!strnicmp(buf, "set", 3)) {
-+		resource_size_t start;
-+		resource_size_t end;
-+		unsigned long flags;
-+
- 		if (dev->active)
- 			goto done;
- 		buf += 3;
-@@ -357,42 +393,42 @@ static ssize_t pnp_set_current_resources
- 		while (1) {
- 			buf = skip_spaces(buf);
- 			if (!strnicmp(buf, "io", 2)) {
--				buf = skip_spaces(buf + 2);
--				start = simple_strtoul(buf, &buf, 0);
--				buf = skip_spaces(buf);
--				if (*buf == '-') {
--					buf = skip_spaces(buf + 1);
--					end = simple_strtoul(buf, &buf, 0);
--				} else
--					end = start;
--				pnp_add_io_resource(dev, start, end, 0);
--				continue;
--			}
--			if (!strnicmp(buf, "mem", 3)) {
--				buf = skip_spaces(buf + 3);
--				start = simple_strtoul(buf, &buf, 0);
--				buf = skip_spaces(buf);
--				if (*buf == '-') {
--					buf = skip_spaces(buf + 1);
--					end = simple_strtoul(buf, &buf, 0);
--				} else
--					end = start;
--				pnp_add_mem_resource(dev, start, end, 0);
--				continue;
--			}
--			if (!strnicmp(buf, "irq", 3)) {
--				buf = skip_spaces(buf + 3);
--				start = simple_strtoul(buf, &buf, 0);
--				pnp_add_irq_resource(dev, start, 0);
--				continue;
--			}
--			if (!strnicmp(buf, "dma", 3)) {
--				buf = skip_spaces(buf + 3);
--				start = simple_strtoul(buf, &buf, 0);
--				pnp_add_dma_resource(dev, start, 0);
--				continue;
--			}
--			break;
-+				buf = pnp_get_resource_value(buf + 2,
-+							     IORESOURCE_IO,
-+							     &start,
-+							     &end,
-+							     &flags);
-+				pnp_add_io_resource(dev, start, end, flags);
-+			} else if (!strnicmp(buf, "mem", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_MEM,
-+							     &start,
-+							     &end,
-+							     &flags);
-+				pnp_add_mem_resource(dev, start, end, flags);
-+			} else if (!strnicmp(buf, "irq", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_IRQ,
-+							     &start,
-+							     NULL,
-+							     &flags);
-+				pnp_add_irq_resource(dev, start, flags);
-+			} else if (!strnicmp(buf, "dma", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_DMA,
-+							     &start,
-+							     NULL,
-+							     &flags);
-+				pnp_add_dma_resource(dev, start, flags);
-+			} else if (!strnicmp(buf, "bus", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_BUS,
-+							     &start,
-+							     &end,
-+							     NULL);
-+				pnp_add_bus_resource(dev, start, end);
-+			} else
-+				break;
- 		}
- 		mutex_unlock(&pnp_res_mutex);
- 		goto done;
+Failures as of March 20th, 2012:
+===============================
+
+AM33:asb2303_defconfig,asb2364_defconfig
+	when:	Mar 15
+	why:	cc1: error: unrecognized command line option '-mmem-funcs'
+	status:	Possible fix from TonyB sent for review.
+	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
+----------------
+
+ARM:cm_x2xx_defconfig
+	when:	Mar 19
+	why:	it8152.c: redefinition of 'dma_set_coherent_mask'
+	status:	bisected and reported (PaulG)
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133226851818586&w=2
+
+ARM:mxs_defconfig
+	when:	Mar 14
+	why:	Inconsistent kallsyms data This is a bug - please report
+	status: UFO bug keeps appearing at random
+	fix:	
+	ref:	https://lkml.org/lkml/2011/8/2/233
+	ref:	https://lkml.org/lkml/2011/10/8/70
+
+ARM:netx_defconfig,pnx4008_defconfig 
+	when:	Mar 14
+	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
+	ref:	https://lkml.org/lkml/2012/3/13/670
+
+ARM:cam60_defconfig
+	when:	Feb 23
+	why:	trace_entries.h: 'perf_ftrace_event_register' undeclared
+	status:	S. Rostedt has a patch somewhere.
+	fix:	
+	ref:	irc (#linux-rt)
+
+ARM:collie_defconfig
+	when:	Feb 14
+	why:	locomolcd.c: error: 'sa1100fb_lcd_power' undeclared
+	status:	fixed (PaulG) - pending integration
+	fix:	http://marc.info/?l=linux-next&m=133105157730749&w=2
+	ref:
+
+ARM:iop32x_defconfig,iop33x_defconfig
+	when:	Nov 23
+	why:	restart.c: implicit declaration of function 'soft_restart'
+	status:	fixed (PaulG) - pending integration
+	fix:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081461.html
+	fix:	https://lkml.org/lkml/2012/3/14/253
+	ref:
+
+ARM:ixp4xx_defconfig
+	when:	Oct 26
+	why:	gpio.h: implicit declaration of function '__gpio_get_value'
+	status:	fixed (Imre Kaloz) - but possibly needs rework?
+	fix:	https://lkml.org/lkml/2012/2/8/288
+	ref:	https://lkml.org/lkml/2012/2/8/287
+
+ARM:magician_defconfig
+	when:	Feb 13
+	why:	magician.c: unknown field 'dev' specified in initializer
+	status:	fixed (PaulG) - pending integration
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133106325903524&w=2
+
+ARM:em_x270_defconfig
+	when:	Feb 14
+	why:	em-x270.c: unknown field 'dev' specified in initializer
+	status:	 fixed (PaulG) - pending integration
+	fix:	http://www.spinics.net/lists/arm-kernel/msg164012.html
+	ref:	http://www.spinics.net/lists/arm-kernel/msg163135.html
+
+ARM:raumfeld_defconfig
+	when:	Nov 23
+	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
+	status:	perhaps broken since 2010?  See ref below.
+	fix:	
+	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
+
+ARM:omap2plus_defconfig
+	when:	Feb 16, 00:23
+	why:	control.c:238: error: 'OMAP343X_CTRL_BASE' undeclared
+	status:	PaulG did hack-n-slash, but at best a WIP, needs additonal reverts
+	fix:	http://www.spinics.net/lists/arm-kernel/msg163120.html
+	ref:	http://www.spinics.net/lists/arm-kernel/msg163262.html
+
+ARM:at91x40_defconfig
+	when:	Feb 28, 07:38 	
+	why:	super.c:(.text+0x3ffd8): undefined reference to `vm_is_stack'
+	status:	WIP, fix from PaulG + follow on from 
+	fix:	http://marc.info/?l=linux-next&m=133096554131691&w=2
+	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
+
+ARM:s3c2410_defconfig 
+	when:	Mar 7, 22:59
+	why:	s3c244x.c: expected declaration or statement at end of input
+	status:	bad commit introduces truncated file; pending integration.
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133123680904853&w=2
+
+ARM:arm-allnoconfig
+	when:	forever
+	why:	not supported
+	status:	nothing pending, but patches accepted
+	fix:	n/a
+	ref:	https://lkml.org/lkml/2009/4/30/105
+	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
+----------------
+
+AVR32:defconfig
+	when:	Mar 18
+	why:	board.h: atmel_nand.h: No such file or directory
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5917107/
+
+AVR32:allnoconfig
+	when:	May 26 2010, 20:49
+	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
+	status:
+	fix:
+	ref:
+---------------
+
+bfin:***all-builds***
+	when:	Jan 20, 22:13
+	why:	undefined reference to `vm_is_stack'
+	status:	WIP, fix from Siddhesh Poyarekar
+	fix:	http://marc.info/?l=linux-next&m=133096554131691&w=2
+	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
+---------------
+
+cris:***all-builds***
+	when:	Mar 25, 22:05
+	why:	include/linux/types.h:25: error expected ... before 'ino_t'
+	status:	
+	fix:	
+	ref:	
+----------------
+
+crisv32:***all-builds***
+	when:	Mar 25, 22:05
+	why:	include/linux/types.h:25: error expected ... before 'ino_t'
+	status:	
+	fix:	
+	ref:	
+----------------
+
+frv:defconfig
+	when:	Mar 15
+	why:	arch/frv/kernel/head.S operand out of range
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884666/
+----------------
+
+h8300:defconfig
+	when:	Mar 15
+	why:	time.c: implicit declaration of function 'get_irq_regs'
+	why:	also seems gcc suffers an ICE
+	status:	ICE bug lodged with gcc folks (TonyB)
+	fix:
+	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
+----------------
+
+i386:allmodconfig
+	when:	Mar 8, 20:41
+	why:	ERROR: "pcibios_enabled" [drivers/video/uvesafb.ko] undefined!
+	why:	ERROR: "mdfld_set_brightness" [drivers/gpu/drm/gma500/gma500_gfx.ko] undefined!
+	status:	
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878506/
+----------------
+
+m32r:m32700ut.smp_defconfig
+	when:	Mar 15
+	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
+----------------
+
+m68k:allmodconfig
+	when:	Mar 16
+	why:	persistent_ram.c: implicit declaration of 'memblock_reserve'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
+	ref:	http://www.spinics.net/lists/linux-next/msg19343.html
+----------------
+
+mips:allmodconfig
+	when:
+	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
+----------------
+
+parisc:allmodconfig
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+
+parisc64:a500_defconfig 
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+powerpc:allyesconfig
+	when:	May 18 2009, 22:11
+	why:	fat ass kernel with everything simply won't link
+	status:	need to fix build config to ignore the final link
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
+------------------
+
+sh4:***all-builds***
+	when:	Feb 24, 17:38
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+tilegx:defconfig
+	when:	Mar 19
+	why:	`xfs_qm_exit' defined in discarded section `.exit.text' of fs/built-in.o
+	status:	
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5924094/
+------------------
+
+um:um-defconfig
+	when:	Sep 16 2010, 01:28
+	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
+	status:	clearly broken forever, so does anyone care?
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
