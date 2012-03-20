@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030241Ab2CTGTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 02:19:35 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47148 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab2CTGTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 02:19:33 -0400
+	id S1754873Ab2CTGUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 02:20:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64187 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753997Ab2CTGUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 02:20:32 -0400
+Subject: [PATCH] virtio-spec: clarify ro/rw bits and updating rule of
+ virtio-net status field
+To: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Date: Tue, 20 Mar 2012 14:20:21 +0800
+Message-ID: <20120320062020.12815.61342.stgit@jason-ThinkPad-T400>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <4F681B78.9000207@gmail.com>
-References: <4F576FD5.2050208@gmail.com>
-	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
-	<4F577D9B.7020402@gmail.com>
-	<4F579A88.6030503@openwrt.org>
-	<4F61F551.5010608@gmail.com>
-	<4F639851.5080500@gmail.com>
-	<4F674616.8080103@gmail.com>
-	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
-	<4F674FF5.2060406@gmail.com>
-	<4F6751B2.1030809@openwrt.org>
-	<4F681B78.9000207@gmail.com>
-Date: Tue, 20 Mar 2012 11:49:32 +0530
-Message-ID: <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024
- AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Linux-wireless <linux-wireless@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        Linux-netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (gdb) list *ath9k_tx+start+0x284
-> No symbol "start" in current context.
+This patch clarifies VIRTIO_NET_S_LINK_UP as a read-only bit and
+VIRTIO_NET_S_ANNOUNCE as a read-writable bit. Also introduce the write 1 to
+clear semantics for all read-writable bits of config status field. This could
+help to reduce the config status field updating race between host and guest and
+also simplify the implementation.
 
-hey, pls try l *(ath9k_tx_start+0x284), yesterday i did the same in
-the latest wireless testing tree it pointed to line 1929 of xmit.c
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ virtio-0.9.4.lyx |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-sc->tx.seq_no +=0x10;
+diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
+index 6c7bab1..614ab55 100644
+--- a/virtio-0.9.4.lyx
++++ b/virtio-0.9.4.lyx
+@@ -58,6 +58,7 @@
+ \html_be_strict false
+ \author -608949062 "Rusty Russell,,," 
+ \author 1531152142 "pbonzini" 
++\author 2090695081 "jason" 
+ \end_header
+ 
+ \begin_body
+@@ -4013,7 +4014,21 @@ layout Two configuration fields are currently defined.
+  The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
+  is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
+  Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
+- and VIRTIO_NET_S_ANNOUNCE.
++ 
++\change_inserted 2090695081 1332220873
++(read-only) 
++\change_unchanged
++and VIRTIO_NET_S_ANNOUNCE
++\change_inserted 2090695081 1332220883
++ (read-writable)
++\change_unchanged
++.
++
++\change_inserted 2090695081 1332220901
++ Writing 1 to any read-writable bit of status filed would cause the bit
++ to be cleared.
++
++\change_unchanged
+  
+ \begin_inset listings
+ inline false
+@@ -4915,7 +4930,11 @@ Processing this notification involves:
+ \end_layout
+ 
+ \begin_layout Enumerate
+-Clearing VIRTIO_NET_S_ANNOUNCE bit in the status field.
++Clearing VIRTIO_NET_S_ANNOUNCE bit in the status field
++\change_inserted 2090695081 1332220849
++ (by writing 1 to VIRTIO_NET_S_ANNOUNCE bit)
++\change_unchanged
++.
+ \end_layout
+ 
+ \begin_layout Enumerate
 
-also did few suspend/resume in my machine, nothing interesting happened
-
->
-> before receiving the email to do the above code with gdb I had cleaned the
-> tree out with git clean -fx so rebuilding might have misalighned things(but
-> could be wrong)..
->
-
-
-
--- 
-thanks,
-shafi
