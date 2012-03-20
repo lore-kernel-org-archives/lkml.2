@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab2CTRo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:44:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39534 "EHLO
+	id S1753496Ab2CTRpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:45:04 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38598 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab2CTRox (ORCPT
+	with ESMTP id S1753045Ab2CTRo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:44:53 -0400
+	Tue, 20 Mar 2012 13:44:58 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: linus.walleij@linaro.org
 Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
@@ -15,9 +15,9 @@ Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
         thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH V2 3/6] pinctrl: core device tree mapping table parsing support
-Date: Tue, 20 Mar 2012 11:44:36 -0600
-Message-Id: <1332265479-1260-3-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V2 5/6] dt: Document Tegra20/30 pinctrl binding
+Date: Tue, 20 Mar 2012 11:44:38 -0600
+Message-Id: <1332265479-1260-5-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
 References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
@@ -26,541 +26,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During pinctrl_get(), if the client device has a device tree node, look
-for the common pinctrl properties there. If found, parse the referenced
-device tree nodes, with the help of the pinctrl drivers, and generate
-mapping table entries from them.
+Define a new binding for the Tegra pin controller, which is capable of
+defining all aspects of desired pin multiplexing and pin configuration.
+This is all based on the new common pinctrl bindings.
 
-During pinctrl_put(), free any results of device tree parsing.
+Add Tegra30 binding based on Tegra20 binding.
+
+Add some basic stuff that was missing before:
+* How many and what reg property entries must be provided.
+* An example.
 
 Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 ---
-v2: Place most code into new file devicetree.c
----
- drivers/pinctrl/Makefile        |    1 +
- drivers/pinctrl/core.c          |   72 ++++++++---
- drivers/pinctrl/core.h          |    8 ++
- drivers/pinctrl/devicetree.c    |  265 +++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/devicetree.h    |   35 +++++
- include/linux/pinctrl/pinctrl.h |    7 +
- 6 files changed, 371 insertions(+), 17 deletions(-)
- create mode 100644 drivers/pinctrl/devicetree.c
- create mode 100644 drivers/pinctrl/devicetree.h
+ .../bindings/pinctrl/nvidia,tegra20-pinmux.txt     |  131 +++++++++++++++++++-
+ .../bindings/pinctrl/nvidia,tegra30-pinmux.txt     |  132 ++++++++++++++++++++
+ 2 files changed, 261 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
 
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 6d4150b..049c9fb 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -5,6 +5,7 @@ ccflags-$(CONFIG_DEBUG_PINCTRL)	+= -DDEBUG
- obj-$(CONFIG_PINCTRL)		+= core.o
- obj-$(CONFIG_PINMUX)		+= pinmux.o
- obj-$(CONFIG_PINCONF)		+= pinconf.o
-+obj-$(CONFIG_OF)		+= devicetree.o
- obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
- obj-$(CONFIG_PINCTRL_PXA3xx)	+= pinctrl-pxa3xx.o
- obj-$(CONFIG_PINCTRL_MMP2)	+= pinctrl-mmp2.o
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index df6296c..832f71d 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -26,6 +26,7 @@
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/machine.h>
- #include "core.h"
-+#include "devicetree.h"
- #include "pinmux.h"
- #include "pinconf.h"
+diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
+index 36f82db..7d6602b 100644
+--- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
++++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
+@@ -1,5 +1,132 @@
+-NVIDIA Tegra 2 pinmux controller
++NVIDIA Tegra20 pinmux controller
  
-@@ -45,7 +46,7 @@ struct pinctrl_maps {
- DEFINE_MUTEX(pinctrl_mutex);
+ Required properties:
+-- compatible : "nvidia,tegra20-pinmux"
++- compatible: "nvidia,tegra20-pinmux"
++- reg: Should contain the register physical address and length for each of
++  the tri-state, mux, pull-up/down, and pad control register sets.
  
- /* Global list of pin control devices (struct pinctrl_dev) */
--static LIST_HEAD(pinctrldev_list);
-+LIST_HEAD(pinctrldev_list);
- 
- /* List of pin controller handles (struct pinctrl) */
- static LIST_HEAD(pinctrl_list);
-@@ -579,6 +580,13 @@ static struct pinctrl *create_pinctrl(struct device *dev)
- 	}
- 	p->dev = dev;
- 	INIT_LIST_HEAD(&p->states);
-+	INIT_LIST_HEAD(&p->dt_maps);
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
 +
-+	ret = pinctrl_dt_to_map(p);
-+	if (ret < 0) {
-+		kfree(p);
-+		return ERR_PTR(ret);
-+	}
- 
- 	devname = dev_name(dev);
- 
-@@ -662,6 +670,8 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
- 		kfree(state);
- 	}
- 
-+	pinctrl_dt_free_maps(p);
++Tegra's pin configuration nodes act as a container for an abitrary number of
++subnodes. Each of these subnodes represents some desired configuration for a
++pin, a group, or a list of pins or groups. This configuration can include the
++mux function to select on those pin(s)/group(s), and various pin configuration
++parameters, such as pull-up, tristate, drive strength, etc.
 +
- 	if (inlist)
- 		list_del(&p->node);
- 	kfree(p);
-@@ -787,15 +797,8 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
- }
- EXPORT_SYMBOL_GPL(pinctrl_select_state);
- 
--/**
-- * pinctrl_register_mappings() - register a set of pin controller mappings
-- * @maps: the pincontrol mappings table to register. This should probably be
-- *	marked with __initdata so it can be discarded after boot. This
-- *	function will perform a shallow copy for the mapping entries.
-- * @num_maps: the number of maps in the mapping table
-- */
--int pinctrl_register_mappings(struct pinctrl_map const *maps,
--			      unsigned num_maps)
-+int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
-+			 bool dup, bool locked)
- {
- 	int i, ret;
- 	struct pinctrl_maps *maps_node;
-@@ -851,20 +854,52 @@ int pinctrl_register_mappings(struct pinctrl_map const *maps,
- 	}
- 
- 	maps_node->num_maps = num_maps;
--	maps_node->maps = kmemdup(maps, sizeof(*maps) * num_maps, GFP_KERNEL);
--	if (!maps_node->maps) {
--		pr_err("failed to duplicate mapping table\n");
--		kfree(maps_node);
--		return -ENOMEM;
-+	if (dup) {
-+		maps_node->maps = kmemdup(maps, sizeof(*maps) * num_maps,
-+					  GFP_KERNEL);
-+		if (!maps_node->maps) {
-+			pr_err("failed to duplicate mapping table\n");
-+			kfree(maps_node);
-+			return -ENOMEM;
-+		}
-+	} else {
-+		maps_node->maps = maps;
- 	}
- 
--	mutex_lock(&pinctrl_mutex);
-+	if (!locked)
-+		mutex_lock(&pinctrl_mutex);
- 	list_add_tail(&maps_node->node, &pinctrl_maps);
--	mutex_unlock(&pinctrl_mutex);
-+	if (!locked)
-+		mutex_unlock(&pinctrl_mutex);
- 
- 	return 0;
- }
- 
-+/**
-+ * pinctrl_register_mappings() - register a set of pin controller mappings
-+ * @maps: the pincontrol mappings table to register. This should probably be
-+ *	marked with __initdata so it can be discarded after boot. This
-+ *	function will perform a shallow copy for the mapping entries.
-+ * @num_maps: the number of maps in the mapping table
-+ */
-+int pinctrl_register_mappings(struct pinctrl_map const *maps,
-+			      unsigned num_maps)
-+{
-+	return pinctrl_register_map(maps, num_maps, true, false);
-+}
++The name of each subnode is not important; all subnodes should be enumerated
++and processed purely based on their content.
 +
-+void pinctrl_unregister_map(struct pinctrl_map const *map)
-+{
-+	struct pinctrl_maps *maps_node;
++Each subnode only affects those parameters that are explicitly listed. In
++other words, a subnode that lists a mux function but no pin configuration
++parameters implies no information about any pin configuration parameters.
++Similarly, a pin subnode that describes a pullup parameter implies no
++information about e.g. the mux function or tristate parameter. For this
++reason, even seemingly boolean values are actually tristates in this binding:
++unspecified, off, or on. Unspecified is represented as an absent property,
++and off/on are represented as integer values 0 and 1.
 +
-+	list_for_each_entry(maps_node, &pinctrl_maps, node) {
-+		if (maps_node->maps == map) {
-+			list_del(&maps_node->node);
-+			return;
-+		}
-+	}
-+}
++Required subnode-properties:
++- nvidia,pins : An array of strings. Each string contains the name of a pin or
++    group. Valid values for these names are listed below.
 +
- #ifdef CONFIG_DEBUG_FS
- 
- static int pinctrl_pins_show(struct seq_file *s, void *what)
-@@ -1231,6 +1266,9 @@ static int pinctrl_check_ops(struct pinctrl_dev *pctldev)
- 	    !ops->get_group_pins)
- 		return -EINVAL;
- 
-+	if (ops->dt_node_to_map && !ops->dt_free_map)
-+		return -EINVAL;
++Optional subnode-properties:
++- nvidia,function: A string containing the name of the function to mux to the
++  pin or group. Valid values for function names are listed below. See the Tegra
++  TRM to determine which are valid for each pin or group.
++- nvidia,pull: Integer, representing the pull-down/up to apply to the pin.
++    0: none, 1: down, 2: up.
++- nvidia,tristate: Integer.
++    0: drive, 1: tristate.
++- nvidia,high-speed-mode: Integer. Enable high speed mode the pins.
++    0: no, 1: yes.
++- nvidia,schmitt: Integer. Enables Schmitt Trigger on the input.
++    0: no, 1: yes.
++- nvidia,low-power-mode: Integer. Valid values 0-3. 0 is least power, 3 is
++    most power. Controls the drive power or current. See "Low Power Mode"
++    or "LPMD1" and "LPMD0" in the Tegra TRM.
++- nvidia,pull-down-strength: Integer. Controls drive strength. 0 is weakest.
++    The range of valid values depends on the pingroup. See "CAL_DRVDN" in the
++    Tegra TRM.
++- nvidia,pull-up-strength: Integer. Controls drive strength. 0 is weakest.
++    The range of valid values depends on the pingroup. See "CAL_DRVUP" in the
++    Tegra TRM.
++- nvidia,slew-rate-rising: Integer. Controls rising signal slew rate. 0 is
++    fastest. The range of valid values depends on the pingroup. See
++    "DRVDN_SLWR" in the Tegra TRM.
++- nvidia,slew-rate-falling: Integer. Controls falling signal slew rate. 0 is
++    fastest. The range of valid values depends on the pingroup. See
++    "DRVUP_SLWF" in the Tegra TRM.
 +
- 	return 0;
- }
- 
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 17ecf65..8fc8314 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -52,12 +52,15 @@ struct pinctrl_dev {
-  * @dev: the device using this pin control handle
-  * @states: a list of states for this device
-  * @state: the current state
-+ * @dt_maps: the mapping table chunks dynamically parsed from device tree for
-+ *	this device, if any
-  */
- struct pinctrl {
- 	struct list_head node;
- 	struct device *dev;
- 	struct list_head states;
- 	struct pinctrl_state *state;
-+	struct list_head dt_maps;
- };
- 
- /**
-@@ -153,4 +156,9 @@ static inline struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev,
- 	return radix_tree_lookup(&pctldev->pin_desc_tree, pin);
- }
- 
-+int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
-+			 bool dup, bool locked);
-+void pinctrl_unregister_map(struct pinctrl_map const *map);
++Note that many of these properties are only valid for certain specific pins
++or groups. See the Tegra TRM and various pinmux spreadsheets for complete
++details regarding which groups support which functionality. The Linux pinctrl
++driver may also be a useful reference, since it consolidates, disambiguates,
++and corrects data from all those sources.
 +
- extern struct mutex pinctrl_mutex;
-+extern struct list_head pinctrldev_list;
-diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
++Valid values for pin and group names are:
++
++  mux groups:
++
++    These all support nvidia,function, nvidia,tristate, and many support
++    nvidia,pull.
++
++    ata, atb, atc, atd, ate, cdev1, cdev2, crtp, csus, dap1, dap2, dap3, dap4,
++    ddc, dta, dtb, dtc, dtd, dte, dtf, gma, gmb, gmc, gmd, gme, gpu, gpu7,
++    gpv, hdint, i2cp, irrx, irtx, kbca, kbcb, kbcc, kbcd, kbce, kbcf, lcsn,
++    ld0, ld1, ld2, ld3, ld4, ld5, ld6, ld7, ld8, ld9, ld10, ld11, ld12, ld13,
++    ld14, ld15, ld16, ld17, ldc, ldi, lhp0, lhp1, lhp2, lhs, lm0, lm1, lpp,
++    lpw0, lpw1, lpw2, lsc0, lsc1, lsck, lsda, lsdi, lspi, lvp0, lvp1, lvs,
++    owc, pmc, pta, rm, sdb, sdc, sdd, sdio1, slxa, slxc, slxd, slxk, spdi,
++    spdo, spia, spib, spic, spid, spie, spif, spig, spih, uaa, uab, uac, uad,
++    uca, ucb, uda.
++
++  tristate groups:
++
++    These only support nvidia,pull.
++
++    ck32, ddrc, pmca, pmcb, pmcc, pmcd, pmce, xm2c, xm2d, ls, lc, ld17_0,
++    ld19_18, ld21_20, ld23_22.
++
++  drive groups:
++
++    With some exceptions, these support nvidia,high-speed-mode,
++    nvidia,schmitt, nvidia,low-power-mode, nvidia,pull-down-strength,
++    nvidia,pull-up-strength, nvidia,slew_rate-rising, nvidia,slew_rate-falling.
++
++    drive_ao1, drive_ao2, drive_at1, drive_at2, drive_cdev1, drive_cdev2,
++    drive_csus, drive_dap1, drive_dap2, drive_dap3, drive_dap4, drive_dbg,
++    drive_lcd1, drive_lcd2, drive_sdmmc2, drive_sdmmc3, drive_spi, drive_uaa,
++    drive_uab, drive_uart2, drive_uart3, drive_vi1, drive_vi2, drive_xm2a,
++    drive_xm2c, drive_xm2d, drive_xm2clk, drive_sdio1, drive_crt, drive_ddc,
++    drive_gma, drive_gmb, drive_gmc, drive_gmd, drive_gme, drive_owr,
++    drive_uda.
++
++Example:
++
++	pinctrl@70000000 {
++		compatible = "nvidia,tegra20-pinmux";
++		reg = < 0x70000014 0x10    /* Tri-state registers */
++			0x70000080 0x20    /* Mux registers */
++			0x700000a0 0x14    /* Pull-up/down registers */
++			0x70000868 0xa8 >; /* Pad control registers */
++	};
++
++Example board file extract:
++
++	pinctrl@70000000 {
++		sdio4_default {
++			atb {
++				nvidia,pins = "atb", "gma", "gme";
++				nvidia,function = "sdio4";
++				nvidia,pull = <0>;
++				nvidia,tristate = <0>;
++			};
++		};
++	};
++
++	sdhci@c8000600 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdio4_default>;
++	};
+diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
 new file mode 100644
-index 0000000..fe70b23
+index 0000000..c275b70
 --- /dev/null
-+++ b/drivers/pinctrl/devicetree.c
-@@ -0,0 +1,265 @@
-+/*
-+ * Device tree integration for the pin control subsystem
-+ *
-+ * Copyright (C) 2012 NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
++++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
+@@ -0,0 +1,132 @@
++NVIDIA Tegra30 pinmux controller
 +
-+#include <linux/device.h>
-+#include <linux/of.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/slab.h>
++The Tegra30 pinctrl binding is very similar to the Tegra20 pinctrl binding,
++as described in nvidia,tegra20-pinmux.txt. In fact, this document assumes
++that binding as a baseline, and only documents the differences between the
++two bindings.
 +
-+#include "core.h"
-+#include "devicetree.h"
++Required properties:
++- compatible: "nvidia,tegra30-pinmux"
++- reg: Should contain the register physical address and length for each of
++  the pad control and mux registers.
 +
-+/**
-+ * struct pinctrl_dt_map - mapping table chunk parsed from device tree
-+ * @node: list node for struct pinctrl's @dt_maps field
-+ * @pctldev: the pin controller that allocated this struct, and will free it
-+ * @maps: the mapping table entries
-+ */
-+struct pinctrl_dt_map {
-+	struct list_head node;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_map *map;
-+	unsigned num_maps;
-+};
++Tegra30 adds the following optional properties for pin configuration subnodes:
++- nvidia,enable-input: Integer. Enable the pin's input path. 0: no, 1: yes.
++- nvidia,open-drain: Integer. Enable open drain mode. 0: no, 1: yes.
++- nvidia,lock: Integer. Lock the pin configuration against further changes
++    until reset. 0: no, 1: yes.
++- nvidia,io-reset: Integer. Reset the IO path. 0: no, 1: yes.
 +
-+static void dt_free_map(struct pinctrl_dev *pctldev,
-+		     struct pinctrl_map *map, unsigned num_maps)
-+{
-+	if (pctldev) {
-+		struct pinctrl_ops *ops = pctldev->desc->pctlops;
-+		ops->dt_free_map(pctldev, map, num_maps);
-+	} else {
-+		kfree(map);
-+	}
-+}
++As with Tegra20, see the Tegra TRM for complete details regarding which groups
++support which functionality.
 +
-+void pinctrl_dt_free_maps(struct pinctrl *p)
-+{
-+	struct pinctrl_dt_map *dt_map, *n1;
++Valid values for pin and group names are:
 +
-+	list_for_each_entry_safe(dt_map, n1, &p->dt_maps, node) {
-+		pinctrl_unregister_map(dt_map->map);
-+		list_del(&dt_map->node);
-+		dt_free_map(dt_map->pctldev, dt_map->map,
-+			    dt_map->num_maps);
-+		kfree(dt_map);
-+	}
++  per-pin mux groups:
 +
-+	of_node_put(p->dev->of_node);
-+}
++    These all support nvidia,function, nvidia,tristate, nvidia,pull,
++    nvidia,enable-input, nvidia,lock. Some support nvidia,open-drain,
++    nvidia,io-reset.
 +
-+static int dt_remember_or_free_map(struct pinctrl *p, const char *statename,
-+				   struct pinctrl_dev *pctldev,
-+				   struct pinctrl_map *map, unsigned num_maps)
-+{
-+	int i;
-+	struct pinctrl_dt_map *dt_map;
++    clk_32k_out_pa0, uart3_cts_n_pa1, dap2_fs_pa2, dap2_sclk_pa3,
++    dap2_din_pa4, dap2_dout_pa5, sdmmc3_clk_pa6, sdmmc3_cmd_pa7, gmi_a17_pb0,
++    gmi_a18_pb1, lcd_pwr0_pb2, lcd_pclk_pb3, sdmmc3_dat3_pb4, sdmmc3_dat2_pb5,
++    sdmmc3_dat1_pb6, sdmmc3_dat0_pb7, uart3_rts_n_pc0, lcd_pwr1_pc1,
++    uart2_txd_pc2, uart2_rxd_pc3, gen1_i2c_scl_pc4, gen1_i2c_sda_pc5,
++    lcd_pwr2_pc6, gmi_wp_n_pc7, sdmmc3_dat5_pd0, sdmmc3_dat4_pd1, lcd_dc1_pd2,
++    sdmmc3_dat6_pd3, sdmmc3_dat7_pd4, vi_d1_pd5, vi_vsync_pd6, vi_hsync_pd7,
++    lcd_d0_pe0, lcd_d1_pe1, lcd_d2_pe2, lcd_d3_pe3, lcd_d4_pe4, lcd_d5_pe5,
++    lcd_d6_pe6, lcd_d7_pe7, lcd_d8_pf0, lcd_d9_pf1, lcd_d10_pf2, lcd_d11_pf3,
++    lcd_d12_pf4, lcd_d13_pf5, lcd_d14_pf6, lcd_d15_pf7, gmi_ad0_pg0,
++    gmi_ad1_pg1, gmi_ad2_pg2, gmi_ad3_pg3, gmi_ad4_pg4, gmi_ad5_pg5,
++    gmi_ad6_pg6, gmi_ad7_pg7, gmi_ad8_ph0, gmi_ad9_ph1, gmi_ad10_ph2,
++    gmi_ad11_ph3, gmi_ad12_ph4, gmi_ad13_ph5, gmi_ad14_ph6, gmi_ad15_ph7,
++    gmi_wr_n_pi0, gmi_oe_n_pi1, gmi_dqs_pi2, gmi_cs6_n_pi3, gmi_rst_n_pi4,
++    gmi_iordy_pi5, gmi_cs7_n_pi6, gmi_wait_pi7, gmi_cs0_n_pj0, lcd_de_pj1,
++    gmi_cs1_n_pj2, lcd_hsync_pj3, lcd_vsync_pj4, uart2_cts_n_pj5,
++    uart2_rts_n_pj6, gmi_a16_pj7, gmi_adv_n_pk0, gmi_clk_pk1, gmi_cs4_n_pk2,
++    gmi_cs2_n_pk3, gmi_cs3_n_pk4, spdif_out_pk5, spdif_in_pk6, gmi_a19_pk7,
++    vi_d2_pl0, vi_d3_pl1, vi_d4_pl2, vi_d5_pl3, vi_d6_pl4, vi_d7_pl5,
++    vi_d8_pl6, vi_d9_pl7, lcd_d16_pm0, lcd_d17_pm1, lcd_d18_pm2, lcd_d19_pm3,
++    lcd_d20_pm4, lcd_d21_pm5, lcd_d22_pm6, lcd_d23_pm7, dap1_fs_pn0,
++    dap1_din_pn1, dap1_dout_pn2, dap1_sclk_pn3, lcd_cs0_n_pn4, lcd_sdout_pn5,
++    lcd_dc0_pn6, hdmi_int_pn7, ulpi_data7_po0, ulpi_data0_po1, ulpi_data1_po2,
++    ulpi_data2_po3, ulpi_data3_po4, ulpi_data4_po5, ulpi_data5_po6,
++    ulpi_data6_po7, dap3_fs_pp0, dap3_din_pp1, dap3_dout_pp2, dap3_sclk_pp3,
++    dap4_fs_pp4, dap4_din_pp5, dap4_dout_pp6, dap4_sclk_pp7, kb_col0_pq0,
++    kb_col1_pq1, kb_col2_pq2, kb_col3_pq3, kb_col4_pq4, kb_col5_pq5,
++    kb_col6_pq6, kb_col7_pq7, kb_row0_pr0, kb_row1_pr1, kb_row2_pr2,
++    kb_row3_pr3, kb_row4_pr4, kb_row5_pr5, kb_row6_pr6, kb_row7_pr7,
++    kb_row8_ps0, kb_row9_ps1, kb_row10_ps2, kb_row11_ps3, kb_row12_ps4,
++    kb_row13_ps5, kb_row14_ps6, kb_row15_ps7, vi_pclk_pt0, vi_mclk_pt1,
++    vi_d10_pt2, vi_d11_pt3, vi_d0_pt4, gen2_i2c_scl_pt5, gen2_i2c_sda_pt6,
++    sdmmc4_cmd_pt7, pu0, pu1, pu2, pu3, pu4, pu5, pu6, jtag_rtck_pu7, pv0,
++    pv1, pv2, pv3, ddc_scl_pv4, ddc_sda_pv5, crt_hsync_pv6, crt_vsync_pv7,
++    lcd_cs1_n_pw0, lcd_m1_pw1, spi2_cs1_n_pw2, spi2_cs2_n_pw3, clk1_out_pw4,
++    clk2_out_pw5, uart3_txd_pw6, uart3_rxd_pw7, spi2_mosi_px0, spi2_miso_px1,
++    spi2_sck_px2, spi2_cs0_n_px3, spi1_mosi_px4, spi1_sck_px5, spi1_cs0_n_px6,
++    spi1_miso_px7, ulpi_clk_py0, ulpi_dir_py1, ulpi_nxt_py2, ulpi_stp_py3,
++    sdmmc1_dat3_py4, sdmmc1_dat2_py5, sdmmc1_dat1_py6, sdmmc1_dat0_py7,
++    sdmmc1_clk_pz0, sdmmc1_cmd_pz1, lcd_sdin_pz2, lcd_wr_n_pz3, lcd_sck_pz4,
++    sys_clk_req_pz5, pwr_i2c_scl_pz6, pwr_i2c_sda_pz7, sdmmc4_dat0_paa0,
++    sdmmc4_dat1_paa1, sdmmc4_dat2_paa2, sdmmc4_dat3_paa3, sdmmc4_dat4_paa4,
++    sdmmc4_dat5_paa5, sdmmc4_dat6_paa6, sdmmc4_dat7_paa7, pbb0,
++    cam_i2c_scl_pbb1, cam_i2c_sda_pbb2, pbb3, pbb4, pbb5, pbb6, pbb7,
++    cam_mclk_pcc0, pcc1, pcc2, sdmmc4_rst_n_pcc3, sdmmc4_clk_pcc4,
++    clk2_req_pcc5, pex_l2_rst_n_pcc6, pex_l2_clkreq_n_pcc7,
++    pex_l0_prsnt_n_pdd0, pex_l0_rst_n_pdd1, pex_l0_clkreq_n_pdd2,
++    pex_wake_n_pdd3, pex_l1_prsnt_n_pdd4, pex_l1_rst_n_pdd5,
++    pex_l1_clkreq_n_pdd6, pex_l2_prsnt_n_pdd7, clk3_out_pee0, clk3_req_pee1,
++    clk1_req_pee2, hdmi_cec_pee3, clk_32k_in, core_pwr_req, cpu_pwr_req, owr,
++    pwr_int_n.
 +
-+	/* Initialize common mapping table entry fields */
-+	for (i = 0; i < num_maps; i++) {
-+		map[i].dev_name = dev_name(p->dev);
-+		map[i].name = statename;
-+		if (pctldev)
-+			map[i].ctrl_dev_name = dev_name(pctldev->dev);
-+	}
++  drive groups:
 +
-+	/* Remember the converted mapping table entries */
-+	dt_map = kzalloc(sizeof(*dt_map), GFP_KERNEL);
-+	if (!dt_map) {
-+		dev_err(p->dev, "failed to alloc struct pinctrl_dt_map\n");
-+		dt_free_map(pctldev, map, num_maps);
-+		return -ENOMEM;
-+	}
++    These all support nvidia,pull-down-strength, nvidia,pull-up-strength,
++    nvidia,slew_rate-rising, nvidia,slew_rate-falling. Most but not all
++    support nvidia,high-speed-mode, nvidia,schmitt, nvidia,low-power-mode.
 +
-+	dt_map->pctldev = pctldev;
-+	dt_map->map = map;
-+	dt_map->num_maps = num_maps;
-+	list_add_tail(&dt_map->node, &p->dt_maps);
++    ao1, ao2, at1, at2, at3, at4, at5, cdev1, cdev2, cec, crt, csus, dap1,
++    dap2, dap3, dap4, dbg, ddc, dev3, gma, gmb, gmc, gmd, gme, gmf, gmg,
++    gmh, gpv, lcd1, lcd2, owr, sdio1, sdio2, sdio3, spi, uaa, uab, uart2,
++    uart3, uda, vi1.
 +
-+	return 0;
-+}
++Example:
 +
-+static struct pinctrl_dev *find_pinctrl_by_of_node(struct device_node *np)
-+{
-+	struct pinctrl_dev *pctldev;
++	pinctrl@70000000 {
++		compatible = "nvidia,tegra30-pinmux";
++		reg = < 0x70000868 0xd0     /* Pad control registers */
++			0x70003000 0x3e0 >; /* Mux registers */
++	};
 +
-+	list_for_each_entry(pctldev, &pinctrldev_list, node)
-+		if (pctldev->dev->of_node == np)
-+			return pctldev;
++Example board file extract:
 +
-+	return NULL;
-+}
++	pinctrl@70000000 {
++		sdmmc4_default: pinmux {
++			sdmmc4_clk_pcc4 {
++				nvidia,pins =	"sdmmc4_clk_pcc4",
++						"sdmmc4_rst_n_pcc3";
++				nvidia,function = "sdmmc4";
++				nvidia,pull = <0>;
++				nvidia,tristate = <0>;
++			};
++			sdmmc4_dat0_paa0 {
++				nvidia,pins =	"sdmmc4_dat0_paa0",
++						"sdmmc4_dat1_paa1",
++						"sdmmc4_dat2_paa2",
++						"sdmmc4_dat3_paa3",
++						"sdmmc4_dat4_paa4",
++						"sdmmc4_dat5_paa5",
++						"sdmmc4_dat6_paa6",
++						"sdmmc4_dat7_paa7";
++				nvidia,function = "sdmmc4";
++				nvidia,pull = <2>;
++				nvidia,tristate = <0>;
++			};
++		};
++	};
 +
-+static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
-+				struct device_node *np_config)
-+{
-+	struct device_node *np_pctldev;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_ops *ops;
-+	int ret;
-+	struct pinctrl_map *map;
-+	unsigned num_maps;
-+
-+	/* Find the pin controller containing np_config */
-+	np_pctldev = of_node_get(np_config);
-+	for (;;) {
-+		np_pctldev = of_get_next_parent(np_pctldev);
-+		if (!np_pctldev || of_node_is_root(np_pctldev)) {
-+			dev_err(p->dev, "could not find pctldev for node %s\n",
-+				np_config->full_name);
-+			of_node_put(np_pctldev);
-+			/* FIXME: This should trigger deferrered probe */
-+			return -ENODEV;
-+		}
-+		pctldev = find_pinctrl_by_of_node(np_pctldev);
-+		if (pctldev)
-+			break;
-+	}
-+	of_node_put(np_pctldev);
-+
-+	/*
-+	 * Call pinctrl driver to parse device tree node, and
-+	 * generate mapping table entries
-+	 */
-+	ops = pctldev->desc->pctlops;
-+	if (!ops->dt_node_to_map) {
-+		dev_err(p->dev, "pctldev %s doesn't support DT\n",
-+			dev_name(pctldev->dev));
-+		return -ENODEV;
-+	}
-+	ret = ops->dt_node_to_map(pctldev, np_config, &map, &num_maps);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Stash the mapping table chunk away for later use */
-+	ret = dt_remember_or_free_map(p, statename, pctldev,
-+					map, num_maps);
-+	if (ret < 0)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int dt_remember_dummy_state(struct pinctrl *p, const char *statename)
-+{
-+	struct pinctrl_map *map;
-+	int ret;
-+
-+	map = kzalloc(sizeof(*map), GFP_KERNEL);
-+	if (!map) {
-+		dev_err(p->dev, "failed to alloc struct pinctrl_map\n");
-+		return -ENOMEM;
-+	}
-+
-+	map->type = PIN_MAP_TYPE_DUMMY_STATE;
-+
-+	ret = dt_remember_or_free_map(p, statename, NULL, map, 1);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+int pinctrl_dt_to_map(struct pinctrl *p)
-+{
-+	struct device_node *np = p->dev->of_node;
-+	int state, ret;
-+	char *propname;
-+	struct property *prop;
-+	const char *statename;
-+	const __be32 *list;
-+	int size, config;
-+	phandle phandle;
-+	struct device_node *np_config;
-+	struct pinctrl_dt_map *dt_map;
-+
-+	/* We may store pointers to property names within the node */
-+	of_node_get(np);
-+
-+	/* For each defined state ID */
-+	for (state = 0; ; state++) {
-+		/* Retrieve the pinctrl-* property */
-+		propname = kasprintf(GFP_KERNEL, "pinctrl-%d", state);
-+		prop = of_find_property(np, propname, &size);
-+		kfree(propname);
-+		if (!prop)
-+			break;
-+		list = prop->value;
-+		size /= sizeof(*list);
-+
-+		/* Determine whether pinctrl-names property names the state */
-+		ret = of_property_read_string_index(np, "pinctrl-names",
-+						    state, &statename);
-+		/*
-+		 * If not, statename is just the integer state ID. But rather
-+		 * than dynamically allocate it and have to free it later,
-+		 * just point part way into the property name for the string.
-+		 */
-+		if (ret < 0) {
-+			/* strlen("pinctrl-") == 8 */
-+			if (strlen(prop->name) < 8) {
-+				dev_err(p->dev, "prop %s inconsistent length\n",
-+					prop->name);
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+			statename = prop->name + 8;
-+		}
-+
-+		/* For every referenced pin configuration node in it */
-+		for (config = 0; config < size; config++) {
-+			phandle = be32_to_cpup(list++);
-+
-+			/* Look up the pin configuration node */
-+			np_config = of_find_node_by_phandle(phandle);
-+			if (!np_config) {
-+				dev_err(p->dev,
-+					"prop %s index %i invalid phandle\n",
-+					prop->name, config);
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+
-+			/* Parse the node */
-+			ret = dt_to_map_one_config(p, statename, np_config);
-+			of_node_put(np_config);
-+			if (ret < 0)
-+				goto err;
-+		}
-+
-+		/* No entries in DT? Generate a dummy state table entry */
-+		if (!size) {
-+			ret = dt_remember_dummy_state(p, statename);
-+			if (ret < 0)
-+				goto err;
-+		}
-+	}
-+
-+	list_for_each_entry(dt_map, &p->dt_maps, node) {
-+		ret = pinctrl_register_map(dt_map->map, dt_map->num_maps,
-+					   false, true);
-+		if (ret < 0)
-+			goto err;
-+	}
-+
-+	return 0;
-+
-+err:
-+	pinctrl_dt_free_maps(p);
-+	return ret;
-+}
-diff --git a/drivers/pinctrl/devicetree.h b/drivers/pinctrl/devicetree.h
-new file mode 100644
-index 0000000..760bc49
---- /dev/null
-+++ b/drivers/pinctrl/devicetree.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Internal interface to pinctrl device tree integration
-+ *
-+ * Copyright (C) 2012 NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifdef CONFIG_OF
-+
-+void pinctrl_dt_free_maps(struct pinctrl *p);
-+int pinctrl_dt_to_map(struct pinctrl *p);
-+
-+#else
-+
-+static inline int pinctrl_dt_to_map(struct pinctrl *p)
-+{
-+	return 0;
-+}
-+
-+static inline void pinctrl_dt_free_maps(struct pinctrl *p)
-+{
-+}
-+
-+#endif
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 4e9f078..aa92cde 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -21,9 +21,11 @@
- 
- struct device;
- struct pinctrl_dev;
-+struct pinctrl_map;
- struct pinmux_ops;
- struct pinconf_ops;
- struct gpio_chip;
-+struct device_node;
- 
- /**
-  * struct pinctrl_pin_desc - boards/machines provide information on their
-@@ -83,6 +85,11 @@ struct pinctrl_ops {
- 			       unsigned *num_pins);
- 	void (*pin_dbg_show) (struct pinctrl_dev *pctldev, struct seq_file *s,
- 			  unsigned offset);
-+	int (*dt_node_to_map) (struct pinctrl_dev *pctldev,
-+			       struct device_node *np_config,
-+			       struct pinctrl_map **map, unsigned *num_maps);
-+	void (*dt_free_map) (struct pinctrl_dev *pctldev,
-+			     struct pinctrl_map *map, unsigned num_maps);
- };
- 
- /**
++	sdhci@78000400 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc4_default>;
++	};
 -- 
 1.7.0.4
 
