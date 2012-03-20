@@ -1,153 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab2CTWYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 18:24:30 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47389 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab2CTWY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 18:24:28 -0400
-Date: Wed, 21 Mar 2012 02:24:24 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: akpm@linux-foundation.org, xemul@parallels.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] prctl.2: Add PR_SET_MM option description
-Message-ID: <20120320222424.GL14269@moon>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
- <1331326042-32558-2-git-send-email-gorcunov@openvz.org>
- <CAKgNAkgJm01K9+GhnouxUwOUW3gk+YiuHLfofrs7adWzEqqO8Q@mail.gmail.com>
+	id S1758717Ab2CTWYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:24:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50175 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758668Ab2CTWYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 18:24:31 -0400
+Message-ID: <4F690390.2060009@zytor.com>
+Date: Tue, 20 Mar 2012 15:24:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkgJm01K9+GhnouxUwOUW3gk+YiuHLfofrs7adWzEqqO8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shea Levy <shea@shealevy.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Subject: Re: [RFC][PATCH 1/1] x86, efi: EFI boot stub config file support
+References: <4F660313.1080301@shealevy.com> <4F660402.4040300@shealevy.com> <4F690314.3080601@shealevy.com>
+In-Reply-To: <4F690314.3080601@shealevy.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 06:21:19AM +1300, Michael Kerrisk (man-pages) wrote:
-> Hello Cyrill,
+On 03/20/2012 03:22 PM, Shea Levy wrote:
+> On 03/18/2012 11:49 AM, Shea Levy wrote:
+>> On 3/18/12 11:45 AM, Shea Levy wrote:
+>>> Hello,
+>>>
+>>> Inlined is a patch to have the kernel read its parameters from a
+>>> config file when booted via the EFI boot stub without any parameters
+>>> passed. This patch roughly follows the plan I discussed when
+>>> proposing this idea, except now the file is found relative to the
+>>> location of the bzImage and there is no additional check to see if
+>>> image->parent_handle is NULL (despite the spec saying it will be NULL
+>>> when the image was loaded by the firmware itself, it was never NULL
+>>> on any of the systems I tested).
+>>>
+>>> Cheers,
+>>> Shea Levy
 > 
-> The PR_SET_MM operation adds a number of new error cases to prctl(2).
-> Could you extend you patch to add these under ERRORS?
+> I haven't yet gotten a reply to this, should I wait until after the
+> merge window and resubmit it then?
 > 
 
-Hi Michael,
+Yes, please.
 
-here is an update on previous patch. Please take a look and
-tell me what you think when you get time. Complains are welcome!
-
-	Cyrill
----
->From 10dbf8dc2e40426c56a6d2a2414bcb9d3a0f5ff3 Mon Sep 17 00:00:00 2001
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Wed, 21 Mar 2012 02:20:11 +0400
-Subject: [PATCH] prctl.2: Update description for PR_SET_MM option
-
-New feature PR_SET_MM_EXE_FILE added, also
-error codes updated.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- man2/prctl.2 |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 69 insertions(+), 1 deletions(-)
-
-diff --git a/man2/prctl.2 b/man2/prctl.2
-index 7a50ac1..de15426 100644
---- a/man2/prctl.2
-+++ b/man2/prctl.2
-@@ -481,6 +481,30 @@ argument should provide the address of the vector.
- The
- .I arg4
- is the size of the vector.
-+
-+.BR PR_SET_MM_EXE_FILE
-+to supersede
-+.IR /proc/pid/exe
-+symbolic link with a new one pointing to a new executable file
-+which descriptor is provided provided in the
-+.I arg3
-+argument.
-+The file descriptor should be obtaned with a regular
-+.BR open (2)
-+call.
-+
-+To change the symlink, one needs to unmap all existing
-+executable memory areas being created by the kernel itself
-+(for example the kernel usually creates at least one executable
-+memory area for Elf file
-+.IR \.text
-+section).
-+
-+The second limitation is that such transition can be done once
-+in a process life time.
-+Any furter attempts will be rejected.
-+This should help system administrators to monitor the unusual
-+symlinks transitions over all process running in a system.
- .\"
- .SH "RETURN VALUE"
- On success,
-@@ -515,7 +539,9 @@ is not recognized.
- is
- .BR PR_MCE_KILL
- or
--.BR PR_MCE_KILL_GET ,
-+.BR PR_MCE_KILL_GET
-+or
-+.BR PR_SET_MM ,
- and unused
- .BR prctl ()
- arguments were not specified as zero.
-@@ -563,6 +589,48 @@ is
- and the caller does not have the
- .B CAP_SETPCAP
- capability.
-+.TP
-+.B EPERM
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the caller does not have the
-+.B CAP_SYS_RESOURCE
-+capability.
-+.TP
-+.B EACCES
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the file is not executable one.
-+.TP
-+.B EBUSY
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the second attempt to change
-+.I /proc/pid/exe
-+symlink is prohibited.
-+.TP
-+.B EBADF
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the file descriptor passed in
-+.I arg4
-+is not found.
- .\" The following can't actually happen, because prctl() in
- .\" seccomp mode will cause SIGKILL.
- .\" .TP
--- 
-1.7.7.6
+	-hpa
 
