@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab2CTHXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 03:23:53 -0400
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:49829 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab2CTHXw (ORCPT
+	id S1757197Ab2CTHY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 03:24:56 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:42491 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755066Ab2CTHYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 03:23:52 -0400
-Message-ID: <4F683083.1060801@gmail.com>
-Date: Tue, 20 Mar 2012 15:23:47 +0800
-From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, ubuntu.fan.2012@gmail.com
-Subject: [REQUEST] Request for Hosting My Xen and Linux Kernel HowTo/Tutorial/Documentation
- on www.xen.org and Xen Wiki
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 03:24:51 -0400
+Date: Tue, 20 Mar 2012 08:24:43 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping framework updates for 3.4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Message-id: <1332228283-29077-1-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.9.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Admins,
+Hi Linus,
 
-I have spent several days writing my Xen and Linux Kernel 
-HowTo/Tutorial/Documentation and also testing my XL domain configuration 
-files to make sure they work. I have also verified that creating virtual 
-machines with Virtual Machine Manager/libvirt works. I have done a lot 
-of testing with my Xen and Linux Kernel documentation.
+Please pull the dma-mapping framework updates for v3.4 since commit
+c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
 
-There are 4 bugs with Xen 4.2-unstable changeset 25070:
+  Linux 3.3
 
-1. In Xen 4.2-unstable, xend service does not start the HTTP listening 
-service on TCP port 8000, so Virtual Machine Manager/libvirt does not 
-work in Xen 4.2-unstable.
+with the top-most commit e749a9f707f1102735e02338fa564be86be3bb69
 
-2. In Xen 4.2-unstable, I am unable to start Linux PV guests. Linux PV 
-guests exit immediately after starting. But I am able to start Linux PV 
-guests successfully in Xen 4.1.3-rc1-pre. The bug is with xl.
+  common: DMA-mapping: add NON-CONSISTENT attribute
 
-3. Installing Ubuntu 12.04 Beta 1 amd64 HVM domU hangs at copying files.
+from the git repository at:
 
-4. (Xen 4.1.3-rc1-pre) The performance of Fedora 16 x86-64 
-paravirtualized domU is VERY POOR and VERY SLOW. Mouse cursor does not 
-appear. Maybe XL configuration problem? usb=1 and usb="tablet"???
+  git://git.infradead.org/users/kmpark/linux-samsung dma-mapping-next
 
-The title of my Xen and Linux Kernel documentation is:
+Those patches introduce a new alloc method (with support for memory
+attributes) in dma_map_ops structure, which will later replace
+dma_alloc_coherent and dma_alloc_writecombine functions.
 
-Building and Installing Xen 4.x and Linux Kernel 3.x on Ubuntu and 
-Debian Linux
+Thanks!
 
-My Xen and Linux Kernel documentation includes the following topics:
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
-1. Building the latest Linux Kernel 3.x
+Patch summary:
 
-2. Building Xen 4.1.3 and Xen 4.2-unstable
+Andrzej Pietrasiewicz (9):
+      X86: adapt for dma_map_ops changes
+      MIPS: adapt for dma_map_ops changes
+      PowerPC: adapt for dma_map_ops changes
+      IA64: adapt for dma_map_ops changes
+      SPARC: adapt for dma_map_ops changes
+      Alpha: adapt for dma_map_ops changes
+      SH: adapt for dma_map_ops changes
+      Microblaze: adapt for dma_map_ops changes
+      Unicore32: adapt for dma_map_ops changes
 
-3. GRUB2 configuration
+Marek Szyprowski (6):
+      common: dma-mapping: introduce alloc_attrs and free_attrs methods
+      Hexagon: adapt for dma_map_ops changes
+      common: dma-mapping: remove old alloc_coherent and free_coherent methods
+      common: dma-mapping: introduce mmap method
+      common: DMA-mapping: add WRITE_COMBINE attribute
+      common: DMA-mapping: add NON-CONSISTENT attribute
 
-4. Installing Virtual Machine Manager/libvirt
+ Documentation/DMA-attributes.txt          |   19 +++++++++++++++++++
+ arch/alpha/include/asm/dma-mapping.h      |   18 ++++++++++++------
+ arch/alpha/kernel/pci-noop.c              |   10 ++++++----
+ arch/alpha/kernel/pci_iommu.c             |   10 ++++++----
+ arch/hexagon/include/asm/dma-mapping.h    |   18 ++++++++++++------
+ arch/hexagon/kernel/dma.c                 |    9 +++++----
+ arch/ia64/hp/common/sba_iommu.c           |   11 ++++++-----
+ arch/ia64/include/asm/dma-mapping.h       |   18 ++++++++++++------
+ arch/ia64/kernel/pci-swiotlb.c            |    9 +++++----
+ arch/ia64/sn/pci/pci_dma.c                |    9 +++++----
+ arch/microblaze/include/asm/dma-mapping.h |   18 ++++++++++++------
+ arch/microblaze/kernel/dma.c              |   10 ++++++----
+ arch/mips/cavium-octeon/dma-octeon.c      |   16 ++++++++--------
+ arch/mips/include/asm/dma-mapping.h       |   18 ++++++++++++------
+ arch/mips/mm/dma-default.c                |    8 ++++----
+ arch/powerpc/include/asm/dma-mapping.h    |   24 ++++++++++++++++--------
+ arch/powerpc/kernel/dma-iommu.c           |   10 ++++++----
+ arch/powerpc/kernel/dma-swiotlb.c         |    4 ++--
+ arch/powerpc/kernel/dma.c                 |   10 ++++++----
+ arch/powerpc/kernel/ibmebus.c             |   10 ++++++----
+ arch/powerpc/kernel/vio.c                 |   14 ++++++++------
+ arch/powerpc/platforms/cell/iommu.c       |   16 +++++++++-------
+ arch/powerpc/platforms/ps3/system-bus.c   |   13 +++++++------
+ arch/sh/include/asm/dma-mapping.h         |   28 ++++++++++++++++++----------
+ arch/sh/kernel/dma-nommu.c                |    4 ++--
+ arch/sh/mm/consistent.c                   |    6 ++++--
+ arch/sparc/include/asm/dma-mapping.h      |   18 ++++++++++++------
+ arch/sparc/kernel/iommu.c                 |   10 ++++++----
+ arch/sparc/kernel/ioport.c                |   18 ++++++++++--------
+ arch/sparc/kernel/pci_sun4v.c             |    9 +++++----
+ arch/unicore32/include/asm/dma-mapping.h  |   18 ++++++++++++------
+ arch/unicore32/mm/dma-swiotlb.c           |    4 ++--
+ arch/x86/include/asm/dma-mapping.h        |   26 ++++++++++++++++----------
+ arch/x86/kernel/amd_gart_64.c             |   11 ++++++-----
+ arch/x86/kernel/pci-calgary_64.c          |    9 +++++----
+ arch/x86/kernel/pci-dma.c                 |    3 ++-
+ arch/x86/kernel/pci-nommu.c               |    6 +++---
+ arch/x86/kernel/pci-swiotlb.c             |   12 +++++++-----
+ arch/x86/xen/pci-swiotlb-xen.c            |    4 ++--
+ drivers/iommu/amd_iommu.c                 |   10 ++++++----
+ drivers/iommu/intel-iommu.c               |    9 +++++----
+ drivers/xen/swiotlb-xen.c                 |    5 +++--
+ include/linux/dma-attrs.h                 |    2 ++
+ include/linux/dma-mapping.h               |   13 +++++++++----
+ include/linux/swiotlb.h                   |    6 ++++--
+ include/xen/swiotlb-xen.h                 |    6 ++++--
+ lib/swiotlb.c                             |    5 +++--
+ 47 files changed, 338 insertions(+), 206 deletions(-)
 
-5. Shorewall Firewall Configuration for Xen networking
-
-6. XL Domain Configuration Files for Windows 8 Consumer Preview HVM 
-domU, Windows XP HVM domU, Fedora 16 PV domU, and Ubuntu 12.04 Precise 
-Pangolin Beta 1 HVM domU.
-
-7. Brief overview on Xen VGA Passthrough (reference to David Techer's blog).
-
-8. Linux Kernel Configuration Files for 3.3.0-rc7, 3.2.11, 3.3.0, and 
-3.2.12.
-
-I have finished writing my Xen and Linux Kernel documentation after 
-several days and the latest version of my HTML and PDF documents is 
-version 1.3.
-
-Could you accede to my request by hosting my Xen and Linux Kernel HTML 
-and PDF documentation on www.xen.org and the Xen Wiki?
-
-Download Links
-==============
-
-Version 1.0: 
-http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.0.pdf
-
-Version 1.1: 
-http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.1.pdf
-
-Version 1.2: 
-http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.2.pdf
-
-Version 1.3:
-
-(a) 
-http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.3.pdf
-
-(b) 
-http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.3.html
-
-Thank you very much for your kind consideration and assistance.
-
-Yours sincerely,
-
-Teo En Ming (Zhang Enming)
 
