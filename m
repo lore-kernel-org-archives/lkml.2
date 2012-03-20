@@ -1,175 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760353Ab2CTOms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:42:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29409 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760198Ab2CTOln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:41:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141907421"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Ted Tso <tytso@mit.edu>
-Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1 7/9] ext4: stop using VFS for dirty superblock management
-Date: Tue, 20 Mar 2012 16:41:27 +0200
-Message-Id: <1332254489-2300-8-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	id S1760339Ab2CTOmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:42:45 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:12892
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759567Ab2CTOml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:42:41 -0400
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275dhz2fh2a8h668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
+ correctly when SRB status is INVALID
+Thread-Topic: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
+ correctly when SRB status is INVALID
+Thread-Index: AQHNBWQK0XOEnDzC00OM+NEv/bIVW5Zxy24AgAAHRECAAGULgIAAANywgACp9gCAAFzJwA==
+Date: Tue, 20 Mar 2012 14:42:26 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B76A3D3@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
+	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
+	 <1332173560.3152.65.camel@dabdike>
+	 <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	 <1332196819.3152.77.camel@dabdike>
+	 <6E21E5352C11B742B20C142EB499E0481B76A16D@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <1332233502.14019.14.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1332233502.14019.14.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2KEh4FB002592
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Do not use VFS for managing dirty superblock but do it inside ext4. Remove the
-'ext4_write_super()' VFS callback and instead, schedule a delayed work when the
-superblock is marked as dirty. Use the 'dio_unwritten_wq' which we already have
-for these purposes.
 
-We add memory barriers to make sure the 's_dirt' flag changes are visible to
-other CPUs as soon as possible to avoid queuing unnecessary works.
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Tuesday, March 20, 2012 4:52 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result correctly
+> when SRB status is INVALID
+> 
+> On Mon, 2012-03-19 at 22:52 +0000, KY Srinivasan wrote:
+> > > >  However, keep in mind
+> > > > that there is no current ETA on when Windows will ship with these changes
+> -
+> > > Windows 8
+> > > > may ship with code where they would return an invalid SRB status, but they
+> are
+> > > not
+> > > > setting the sense code, hence this patch. When the Window host does the
+> > > "right thing"
+> > > > I will clean this up, but I don't know when that will be.
+> > >
+> > > I thought you just said you'd only just asked them if they could
+> > > implemented it, in which case no version of windows currently ships with
+> > > this, correct?
+> >
+> > There are some private builds of windows 8 floating around with this change,
+> where
+> > they are returning ILLEGAL_REQUEST SRB status  without any sense data.
+> 
+> Sure, but they're not shipped, right ... it's like the test builds we do
+> for large companies like IBM and HP to try out certain things before
+> deciding they don't work.
 
-The big changes comparing to the previous behavior:
-1. We use 'dio_unwritten' queue, so the superblock will be written by
-   per-filesystem 'ext4-dio-unwrit' thread, instead of 'sync_supers' thread.
-2. We allocate memory in 'ext4_mark_super_dirty()'.
+They are close to shipping and it is very difficult to get any changes in
+presently. Furthermore, this is only on windows8; none of the prior 
+versions of windows servers of interest support this. I am starting an effort to
+get this change into prior windows servers. Once again, it is not clear when
+these changes will be pushed out.
 
-Note: the final goal is to get rid of the 'sync_supers()' kernel thread which
-wakes up every 5 seconds and even if there is nothing to do. Thus, we are
-pushing superblock management from VFS down to file-systems.
+  
+> 
+> > > > More importantly, the second patch  in this series where I filter out
+> > > > the ATA_16 command
+> > > > on the guest is really important for us. Without that patch on a range
+> > > > on windows hosts
+> > > > including the current beta version of windows8 where the host is
+> > > > returning a generic
+> > > > error in response to ATA_16 command, we cannot boot many Linux
+> > > > distros. If you
+> > > > prefer, I can drop the first patch and re-submit the second patch for
+> > > > consideration now.
+> > >
+> > > I'm not sure about that either.  You presumably translate
+> > > SRB_STATUS_ERROR into DID_TARGET_FAILURE.  That should cause the
+> > > termination of the command with prejudice in exactly the same way as an
+> > > ILLEGAL_REQUEST sense code would (minus the useful error information),
+> > > so what's causing the boot failure?
+> >
+> > You are right, currently without a proper SRB code, I do a DID_TARGET_FAILURE
+> and
+> > this results in the device being offlined and if the device happens to be the root
+> device,
+> > we obviously cannot boot. I have seen this problem with sles11 sp2 on a win8
+> box.
+> 
+> OK, so this may be the root cause of the problem.  DID_TARGET_FAILURE
+> returns FAILED from scsi_decide_disposition().  This wakes up the error
+> handler to retry the command and, since the command is never going to
+> work, this ends up offlining the device.  The same thing will happen for
+> every command with no recovery.
+> 
+> The question now is, what else returns SRB_STATUS_ERROR?  If it's always
+> for stuff that's unretryable, then the DID_ error is wrong and you
+> should be returning DID_PASSTHROUGH with an error code and the problem
+> will be solved.  If we can get SRB_STATUS_ERROR on retryable commands,
+> then you discriminate at the point of failure, not at the point of input
+> and return DID_TARGET_FAILURE for the ones that should be retried and
+> DID_PASSTHROUGH + error for the ones that shouldn't.  This will ensure
+> the driver is completely backwards compatible and that it will work
+> if/when windows properly handles the commands.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ext4/super.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 63 insertions(+), 10 deletions(-)
+James, unfortunately based on the current SRB codes I get back from the
+host, I don't know which commands that failed ought to be retried and which
+ones should not be; I simply get a single SRB error code for cases where the 
+host filtered the unsupported commands as well as the case where the host 
+supported the command and something failed in the command execution.
+If there is something I can try in this driver to fix this problem, I am more than
+happy to try it. If it involves getting changes into  the host (win8, win2k8 etc.),
+I am willing to start a conversation with the relevant teams, but I cannot 
+obviously determine when such changes will ship. However, I do need
+solution for the problem now.
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index d9543f3..7d453f7 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -73,7 +73,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
- static int ext4_remount(struct super_block *sb, int *flags, char *data);
- static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
- static int ext4_unfreeze(struct super_block *sb);
--static void ext4_write_super(struct super_block *sb);
- static int ext4_freeze(struct super_block *sb);
- static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
- 		       const char *dev_name, void *data);
-@@ -1294,7 +1293,6 @@ static const struct super_operations ext4_nojournal_sops = {
- 	.dirty_inode	= ext4_dirty_inode,
- 	.drop_inode	= ext4_drop_inode,
- 	.evict_inode	= ext4_evict_inode,
--	.write_super	= ext4_write_super,
- 	.put_super	= ext4_put_super,
- 	.statfs		= ext4_statfs,
- 	.remount_fs	= ext4_remount,
-@@ -4140,6 +4138,14 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 
- 	if (!sbh || block_device_ejected(sb))
- 		return error;
-+
-+	sb->s_dirt = 0;
-+	/*
-+	 * Make sure we first mark the superblock as clean and then start
-+	 * writing it out.
-+	 */
-+	smp_wmb();
-+
- 	if (buffer_write_io_error(sbh)) {
- 		/*
- 		 * Oh, dear.  A previous attempt to write the
-@@ -4180,7 +4186,6 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 	es->s_free_inodes_count =
- 		cpu_to_le32(percpu_counter_sum_positive(
- 				&EXT4_SB(sb)->s_freeinodes_counter));
--	sb->s_dirt = 0;
- 	BUFFER_TRACE(sbh, "marking dirty");
- 	mark_buffer_dirty(sbh);
- 	if (sync) {
-@@ -4199,9 +4204,64 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 	return error;
- }
- 
-+struct sb_delayed_work {
-+	struct delayed_work dwork;
-+	struct super_block *sb;
-+};
-+
-+static struct sb_delayed_work *work_to_sbwork(struct work_struct *work)
-+{
-+	struct delayed_work *dwork;
-+
-+	dwork = container_of(work, struct delayed_work, work);
-+	return container_of(dwork, struct sb_delayed_work, dwork);
-+}
-+
-+static void write_super(struct work_struct *work)
-+{
-+	struct sb_delayed_work *sbwork = work_to_sbwork(work);
-+	struct super_block *sb = sbwork->sb;
-+
-+	kfree(sbwork);
-+
-+	smp_rmb();
-+	if (!sb->s_dirt)
-+		return;
-+
-+	lock_super(sb);
-+	ext4_commit_super(sb, 1);
-+	unlock_super(sb);
-+}
-+
- void __ext4_mark_super_dirty(struct super_block *sb)
- {
-+	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+	struct sb_delayed_work *sbwork;
-+	unsigned long delay;
-+
-+	/* Make sure we see 's_dirt' changes ASAP */
-+	smp_rmb();
-+	if (sb->s_dirt == 1)
-+		return;
- 	sb->s_dirt = 1;
-+	/* Make other CPUs see the 's_dirt' change as soon as possible */
-+	smp_wmb();
-+
-+	sbwork = kmalloc(sizeof(struct sb_delayed_work), GFP_NOFS);
-+	if (!sbwork) {
-+		/*
-+		 * Well, should not be a big deal - the system must be in
-+		 * trouble anyway, and the SB will be written out on unmount or
-+		 * we may be luckier next time it is marked as dirty.
-+		 */
-+		sb->s_dirt = 2;
-+		return;
-+	}
-+
-+	INIT_DELAYED_WORK(&sbwork->dwork, write_super);
-+	sbwork->sb = sb;
-+	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
-+	queue_delayed_work(sbi->dio_unwritten_wq, &sbwork->dwork, delay);
- }
- 
- /*
-@@ -4291,13 +4351,6 @@ int ext4_force_commit(struct super_block *sb)
- 	return ret;
- }
- 
--static void ext4_write_super(struct super_block *sb)
--{
--	lock_super(sb);
--	ext4_commit_super(sb, 1);
--	unlock_super(sb);
--}
--
- static int ext4_sync_fs(struct super_block *sb, int wait)
- {
- 	int ret = 0;
--- 
-1.7.7.6
+I appreciate your taking the time to help me gravitate towards the 
+correct solution here. Given my constraints, let me know what is the
+best way forward here.
 
+Regards,
+
+K. Y   
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
