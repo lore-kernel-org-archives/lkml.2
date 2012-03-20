@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760Ab2CTLrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 07:47:07 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:38399 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab2CTLrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 07:47:05 -0400
-Message-ID: <4F686E2A.3090100@windriver.com>
-Date: Tue, 20 Mar 2012 06:46:50 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1030214Ab2CTLtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 07:49:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756324Ab2CTLtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 07:49:31 -0400
+Message-ID: <4F686E83.3030907@redhat.com>
+Date: Tue, 20 Mar 2012 13:48:19 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: KGDB Mailing List <kgdb-bugreport@lists.sourceforge.net>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Kgdb-bugreport] [PATCH 4/4] kgdb: x86: Detach gdb if machine
- shuts down or reboots
-References: <cover.1331900215.git.jan.kiszka@siemens.com> <f0f7cff3e5a7679de73a3338138f023ed3aca39c.1331900215.git.jan.kiszka@siemens.com> <4F635E06.8070006@windriver.com> <4F673981.8030709@siemens.com> <4F67D6BA.2000500@windriver.com> <4F6867A1.5020906@mvista.com>
-In-Reply-To: <4F6867A1.5020906@mvista.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+References: <20120316144028.036474157@chello.nl>      <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>     <4F671B90.3010209@redhat.com> <1332158992.18960.316.camel@twins>    <4F672384.1030601@redhat.com> <1332187387.18960.389.camel@twins>   <4F685960.4080904@redhat.com> <1332240525.18960.403.camel@twins>  <4F686163.40509@redhat.com> <1332241633.18960.406.camel@twins>
+In-Reply-To: <1332241633.18960.406.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 06:18 AM, Sergei Shtylyov wrote:
-> Hello.
+On 03/20/2012 01:07 PM, Peter Zijlstra wrote:
+> On Tue, 2012-03-20 at 12:52 +0200, Avi Kivity wrote:
 >
-> On 20-03-2012 5:00, Jason Wessel wrote:
+> > You use the dma engine for eager copying, not on demand.
 >
->>> An arch-independent hook has its advantages, no question. Maybe we
->>> should just start this way and then evolved on top as needed.
->> Sounds good to me.  I added the reboot notifier patch into the merge queue for kgdb/kdb.
->>> I was wondering why those other archs do not use the notifier. Maybe one
->>> motivation is to avoid that too much code is excluded from the debugger
->>> by detaching too early. Could possibly be addressed by making
->>> detach-on-reboot runtime configurable.
->> There really isn't a whole lot of code between reboot hook invoked from kernel_restart_prepare(),
->> and the place where the reset is invoked.  Specifically it looked like:
->>          usermodehelper_disable();
->>          device_shutdown();
->>          syscore_shutdown();
->>          machine_restart(cmd);
->> Attached is the patch you asked for the conditional behavior with respect to the reboot hook.
->     You forgot to attach it?
+> Sure, but during that time no access to that entire vma is allowed, so
+> you have to unmap it, and any fault in there will have to wait for the
+> entire copy to complete.
+>
+> Or am I misunderstanding how things would work?
 
-Source Forge [kgdb mailling list] is eating attachments.  I had definitely attached it.  See: 
+Option 1: write-protect the area you are migrating, on write fault allow
+write access and discard the migration target (marking the page for
+migration later)
 
-https://lkml.org/lkml/2012/3/19/735
+Option 2: clear the dirty bits on the area you are migrating, after
+migration completes examine the dirty bit, and if dirty, discard the
+migration target.
 
-I also included this patch in the potential merge queue as patch 5 of 5, sent to the kgdb mailing list.
+-- 
+error compiling committee.c: too many arguments to function
 
-http://sourceforge.net/mailarchive/message.php?msg_id=29008292
-
-Jason.
-
-
-Jason.
