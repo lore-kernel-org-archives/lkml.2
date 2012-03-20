@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2CTJ0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 05:26:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36811 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2CTJ0n (ORCPT
+	id S1755185Ab2CTJ1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 05:27:41 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41480 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab2CTJ1j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 05:26:43 -0400
-Date: Tue, 20 Mar 2012 09:26:34 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vivek Singh <vivek.siwan@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Existence of NR_create_module for arm
-Message-ID: <20120320092634.GQ15988@n2100.arm.linux.org.uk>
-References: <CAJrcCc3By5gxvN4VY2OQUxBmTcSSWmpZuQGn6HqRDErAUKAmjA@mail.gmail.com>
+	Tue, 20 Mar 2012 05:27:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJrcCc3By5gxvN4VY2OQUxBmTcSSWmpZuQGn6HqRDErAUKAmjA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120320.031001.1532841232287663716.davem@davemloft.net>
+References: <20120320025835.GE14363@thunk.org>
+	<1332212574.7847.49.camel@joe2Laptop>
+	<216818.1332222366@turing-police.cc.vt.edu>
+	<20120320.031001.1532841232287663716.davem@davemloft.net>
+Date: Tue, 20 Mar 2012 10:27:38 +0100
+X-Google-Sender-Auth: DuubQFaTRHCBwxZti-28lX2-qyo
+Message-ID: <CAMuHMdWwP8CYQ2JaeFgyErfvCqKO9VThcq1_-RV1sNb3smtL5Q@mail.gmail.com>
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Miller <davem@davemloft.net>
+Cc: Valdis.Kletnieks@vt.edu, joe@perches.com, tytso@mit.edu,
+        anca.emanuel@gmail.com, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 02:02:06PM +0530, Vivek Singh wrote:
-> Hello There,
-> 
-> While compiling tomoyo-tools for arm I  found that NR_create_module  is not
-> available in
-> arch/arm/include/asm/unistd.h
-> 
-> #define __NR_sigprocmask                (__NR_SYSCALL_BASE+126)
->                                                        /* 127 was
-> sys_create_module */
-> #define __NR_init_module                (__NR_SYSCALL_BASE+128)
-> 
-> 
-> But it is available in
-> 
-> ./arch/x68/include/asm/unistd_32.h
-> 
-> #define __NR_sigprocmask        126
-> #define __NR_create_module      127
-> #define __NR_init_module        128
-> 
-> is there any reason why it is not available for arm ?
+On Tue, Mar 20, 2012 at 08:10, David Miller <davem@davemloft.net> wrote:
+> From: Valdis.Kletnieks@vt.edu
+> Date: Tue, 20 Mar 2012 01:46:06 -0400
+>
+>> OK. Say I'm a scraper.  How do I distinguish between:
+>>
+>> pr_info("foo");
+>> printk(KERN_INFO "foo");
+>>
+>> Oh my. seems that both result in exactly the same thing ending up in the
+>> dmesg buffer
+>
+> No it doesn't result in the same output, read the definitions again.
+>
+> pr_info can be influenced by pr_fmt, plain printk cannot
 
-The syscall is obsolete, and has been for many years.
+And for pr_debug(), there's even more, cfr. CONFIG_DYNAMIC_DEBUG.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
