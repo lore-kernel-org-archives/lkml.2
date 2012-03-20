@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab2CTVpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 17:45:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37767 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab2CTVp3 convert rfc822-to-8bit (ORCPT
+	id S1758115Ab2CTV4D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 17:56:03 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:47407 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab2CTV4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 17:45:29 -0400
+	Tue, 20 Mar 2012 17:56:01 -0400
+Message-ID: <4F68FCE3.5090403@windriver.com>
+Date: Tue, 20 Mar 2012 16:55:47 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <4F68F2FB.60401@xenotime.net>
-References: <1332277125-10785-1-git-send-email-geert@linux-m68k.org>
-	<4F68F2FB.60401@xenotime.net>
-Date: Tue, 20 Mar 2012 22:45:27 +0100
-X-Google-Sender-Auth: Wz-AZmkkawqUDNaVLJld02Iz2gY
-Message-ID: <CAMuHMdVpxW4oD2HOpLcBYd9NJGqW-xG3s47zx7ZSSp_S9rqfNA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tim Bird <tim.bird@am.sony.com>
+CC: "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kdb: Add message about CONFIG_DEBUG_RODATA on failure
+ to install breakpoint
+References: <4E7A4413.5000307@am.sony.com> <4F68CD32.3040202@windriver.com> <4F68F731.1040908@am.sony.com>
+In-Reply-To: <4F68F731.1040908@am.sony.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 22:13, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 03/20/2012 01:58 PM, Geert Uytterhoeven wrote:
-> > Below is the list of build error/warning regressions/improvements in
-> > v3.3[1] compared to v3.2[2].
-> >
-> > Summarized:
-> >   - build errors: +956/-112
-> >   - build warnings: +3135/-617
-> >
-> > JFYI, when comparing v3.3 to v3.3-rc7[3], the summaries are:
-> >   - build errors: +927/-91
-> >   - build warnings: +2464/-505
->
-> This is with the newly built tools, right?
+On 03/20/2012 04:31 PM, Tim Bird wrote:
+> On 03/20/2012 11:32 AM, Jason Wessel wrote:
+>> On 09/21/2011 03:07 PM, Tim Bird wrote:
+>>> On x86, if CONFIG_DEBUG_RODATA is set, one cannot set breakpoints
+>>> via KDB.  Apparently this is a well-known problem, as at least one distribution
+>>> now ships with both KDB enabled and CONFIG_DEBUG_RODATA=y for security reasons.
+>>>
+>>> This patch just adds an extra printk message to the breakpoint failure case,
+>>> in order to provide some useful diagnostics to the user.
+>>>
+>> The patch is definitely the right idea.  I believe we should try and tell the whole story and only print the message for the type of breakpoint that fails.  It is absolutely the case that you can still use kdb/kdb without recompiling the kernel.
+>>
+>> I propose a slightly different implementation below.
+> The new patch looks fine.
 
-Yep.
+Thanks.  Because you posed the question a while back about potentially changing this such that it works, I thought I might re-open the discussion around further integration with kgdb/kdb and kprobes.   Back in 2008 I explained you can "hack it" so as to use copy on write patches, just for the debugger in order to use software breakpoints.
 
-> Where is the WARNINGS section?
+Something horrible like:
 
-Not included due to size, cfr. below.
+@@ -42,11 +43,24 @@ EXPORT_SYMBOL_GPL(probe_kernel_read);
+ long probe_kernel_write(void *dst, void *src, size_t size)
+ {
+        long ret;
++#ifdef CONFIG_X86
++       unsigned int level;
++       pte_t *pte = lookup_address((unsigned long)dst, &level);
++       int unprotect = !pte_write(*pte);
++#endif
+        mm_segment_t old_fs = get_fs();
 
-> > Note that there may be false regressions:
-> >   - The number of configs increased from 106 to 116,
-> >   - The new toolchains emit a lot more warnings,
-> >   - The new toolchains add information about which warning option
-> >     triggered a warning. I postprocessed the logs to remove these
-> >     annotations, but there may still be slight differences left.
-> > As a consequence, I only kept the build error regressions in the report
-> > below. 412 KiB was just too much for lkml.
+[...clipped rest of original hack...]
 
-Gr{oetje,eeting}s,
+Obviously we are not going to go down the horrible hack route, so I thought I might look at how the kprobe implementation works, because they do deal with read-only pages.   They created a function called text_poke() that is called from arch_arm_probe().
 
-                        Geert
+It might be possible to take a short cut and use the arch_arm_probe() directly.  Ultimately I would like to consider just using kprobes instead for things like single stepping etc..., but it still has a few problems with atomic reservations.  This work had been shelved in back 2010, in favor of merging kdb.  I am not sure if anyone wants to take a look at it, but I do think it might warrant some experimentation.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Jason.
