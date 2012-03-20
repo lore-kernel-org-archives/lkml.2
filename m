@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759097Ab2CTBya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 21:54:30 -0400
-Received: from tundra.namei.org ([65.99.196.166]:51604 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755989Ab2CTBy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 21:54:28 -0400
-Date: Tue, 20 Mar 2012 12:54:24 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Eric Paris <eparis@parisplace.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [GIT] MAINTAINERS: Add Serge as maintainer of capabilities
-In-Reply-To: <CACLa4puKa8O8g2i05myV4bSEY5DmnjcZrmrAk==mX+iLdcV=ew@mail.gmail.com>
-Message-ID: <alpine.LRH.2.02.1203201253200.26596@tundra.namei.org>
-References: <alpine.LRH.2.02.1203161217060.32664@tundra.namei.org> <CACLa4puKa8O8g2i05myV4bSEY5DmnjcZrmrAk==mX+iLdcV=ew@mail.gmail.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1759336Ab2CTB4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 21:56:38 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:43612 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758799Ab2CTB4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 21:56:37 -0400
+Date: Mon, 19 Mar 2012 21:56:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Roland Stigge <stigge@antcom.de>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <w.sang@pengutronix.de>, <kevin.wells@nxp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <arm@kernel.org>,
+        <srinivas.bakki@nxp.com>
+Subject: Re: [PATCH] USB: gadget driver for LPC32xx
+In-Reply-To: <1332191930-2433-1-git-send-email-stigge@antcom.de>
+Message-ID: <Pine.LNX.4.44L0.1203192155150.24735-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-1188948363-1332208465=:26596"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 19 Mar 2012, Roland Stigge wrote:
 
---1665246916-1188948363-1332208465=:26596
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 16 Mar 2012, Eric Paris wrote:
-
-> > +M:     Serge Hallyn <serge.hallyn@canonical.com>
-> > +L:     linux-security-module@vger.kernel.org
-> > +S:     Supported
-> > +F:     include/linux/capability.h
-> > +F:     security/capability.c
-> > +F:     security/commoncap.c
+> This patch adds a USB gadget driver.
 > 
-> You forgot kernel/capability.c
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Thanks, I'll fix that after rebasing with linus.
+...
 
+> +static const struct usb_ep_ops lpc32xx_ep_ops = {
+> +	.enable		= lpc32xx_ep_enable,
+> +	.disable	= lpc32xx_ep_disable,
+> +	.alloc_request	= lpc32xx_ep_alloc_request,
+> +	.free_request	= lpc32xx_ep_free_request,
+> +	.queue		= lpc32xx_ep_queue,
+> +	.dequeue	= lpc32xx_ep_dequeue,
+> +	.set_halt	= lpc32xx_ep_set_halt,
+> +};
 
+You have not implemented the set_wedge method, which is needed for the 
+file-storage gadgets.
 
+Alan Stern
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
---1665246916-1188948363-1332208465=:26596--
