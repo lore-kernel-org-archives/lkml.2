@@ -1,154 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab2CTP7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 11:59:41 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39302 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab2CTP7j convert rfc822-to-8bit (ORCPT
+	id S1760292Ab2CTQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:00:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63820 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333Ab2CTQA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 11:59:39 -0400
+	Tue, 20 Mar 2012 12:00:27 -0400
+Date: Tue, 20 Mar 2012 09:00:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: ddegraff <ddegraff@neb.rr.com>
+Cc: prakash.pm@ti.com, sshtylyov@mvista.com,
+        davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: arm: davinci: USB ethernet
+Message-ID: <20120320160015.GA5930@kroah.com>
+References: <4F670E6A.9060403@licor.com>
+ <20120320135847.GB4634@kroah.com>
+ <4F68A7C6.9040909@neb.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <1332252722-3794-1-git-send-email-consul.kautuk@gmail.com>
-References: <1332252722-3794-1-git-send-email-consul.kautuk@gmail.com>
-Date: Tue, 20 Mar 2012 11:59:39 -0400
-Message-ID: <CAFPAmTSYNE4gVu_qJVngBjqcvb=CH04jrvdKnAR-oaiPk-rdDA@mail.gmail.com>
-Subject: Re: [PATCH 04/20 v2] powerpc/mm/fault.c: Port OOM changes to do_page_fault
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Jimi Xenidis <jimix@pobox.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christian Dietrich 
-	<christian.dietrich@informatik.uni-erlangen.de>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>,
-        "Mohd. Faris" <mohdfarisq2010@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F68A7C6.9040909@neb.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Sorry I found one more defect in this patch below.
+On Tue, Mar 20, 2012 at 10:52:38AM -0500, ddegraff wrote:
+> 
+> 
+> On 03/20/2012 08:58 AM, Greg KH wrote:
+> >On Mon, Mar 19, 2012 at 05:46:02AM -0500, Darryl wrote:
+> >>We are currently using a DA850 eval board but will eventually use a
+> >>custom board to interface host system to davinci using ethernet over
+> >>USB.  We are using 2.6.37 with real-time patches, but a cursory look
+> >>(have not been able to build yet) at 3.3-rc7 suggests that the
+> >>issues noted below still exist.
+> >>
+> >>There are currently two issues:
+> >>
+> >>- Documentation/usb/hotplug.txt suggests that the drivers should be
+> >>built as modules so that such things as loading drivers and, in this
+> >>case, bringing up the interface, can ge moderated in user-space.
+> >>However, though the code can be build modular, the drivers are never
+> >>loaded.  I suspect that one or more of the several relevant configs
+> >>(I see at least these:  USB_MUSB_HDRC, USB_MUSB_DA8XX_GLUE,
+> >>USB_GADGET, USB_ETH, USB_GPIO_VBUS, NOP_USB_XCEIV, USB_ETH_RNDIS,
+> >>USB_OTG_UTILS) are required to be built in, but cannot seem to
+> >>determine the correct ones.
+> >Do you have a userspace tool that will automatically load the proper
+> >modules when they show up?
+> Busybox's mdev is currently intended for that.  I've used udev for
+> other projects, but we have a very limited space here.
 
-Im gonna send a v3 for this patch.
+udev really is too big?  My cheap wireless router runs udev, I'm amazed
+that people really feel that mdev is a proper replacement.
 
-On Tue, Mar 20, 2012 at 10:12 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
->
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
->
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
->
-> Port these changes to powerpc.
->
-> Signed-off-by: Mohd. Faris <mohdfarisq2010@gmail.com>
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-> ---
->  arch/powerpc/mm/fault.c |   51 +++++++++++++++++++++++++++++++++-------------
->  1 files changed, 36 insertions(+), 15 deletions(-)
->
-> diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-> index 2f0d1b0..a3b1176 100644
-> --- a/arch/powerpc/mm/fault.c
-> +++ b/arch/powerpc/mm/fault.c
-> @@ -129,6 +129,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
->        int is_write = 0, ret;
->        int trap = TRAP(regs);
->        int is_exec = trap == 0x400;
-> +       unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
->
->  #if !(defined(CONFIG_4xx) || defined(CONFIG_BOOKE))
->        /*
-> @@ -212,6 +213,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
->                if (!user_mode(regs) && !search_exception_tables(regs->nip))
->                        goto bad_area_nosemaphore;
->
-> +retry:
->                down_read(&mm->mmap_sem);
->        }
->
-> @@ -313,6 +315,7 @@ good_area:
->        } else if (is_write) {
->                if (!(vma->vm_flags & VM_WRITE))
->                        goto bad_area;
-> +               flags |= FAULT_FLAG_WRITE;
->        /* a read */
->        } else {
->                /* protection fault */
-> @@ -327,7 +330,11 @@ good_area:
->         * make sure we exit gracefully rather than endlessly redo
->         * the fault.
->         */
-> -       ret = handle_mm_fault(mm, vma, address, is_write ? FAULT_FLAG_WRITE : 0);
-> +       ret = handle_mm_fault(mm, vma, address, flags);
-> +
-> +       if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-> +               return;
+Odds are, you really don't need mdev, just use devtmpfs and be done with
+it.
 
-Incorrect!
-This should return 0 or 1.
+Anyway, as you are stuck with an old kernel release, I suggest you get
+support from your vendor, they are the only ones that can help you out
+here.
 
-> +
->        if (unlikely(ret & VM_FAULT_ERROR)) {
->                if (ret & VM_FAULT_OOM)
->                        goto out_of_memory;
-> @@ -335,22 +342,36 @@ good_area:
->                        goto do_sigbus;
->                BUG();
->        }
-> -       if (ret & VM_FAULT_MAJOR) {
-> -               current->maj_flt++;
-> -               perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-> -                                    regs, address);
-> -#ifdef CONFIG_PPC_SMLPAR
-> -               if (firmware_has_feature(FW_FEATURE_CMO)) {
-> -                       preempt_disable();
-> -                       get_lppaca()->page_ins += (1 << PAGE_FACTOR);
-> -                       preempt_enable();
-> +       if (flags & FAULT_FLAG_ALLOW_RETRY) {
-> +               if (ret & VM_FAULT_MAJOR) {
-> +                       current->maj_flt++;
-> +                       perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-> +                                            regs, address);
-> +#ifdef CONFIG_PPC_SMLPAR
-> +                       if (firmware_has_feature(FW_FEATURE_CMO)) {
-> +                               preempt_disable();
-> +                               get_lppaca()->page_ins += (1 << PAGE_FACTOR);
-> +                               preempt_enable();
-> +                       }
-> +#endif
-> +               } else {
-> +                       current->min_flt++;
-> +                       perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-> +                                            regs, address);
-> +               }
-> +               if (fault & VM_FAULT_RETRY) {
-> +                       flags &= ~FAULT_FLAG_ALLOW_RETRY;
-> +
-> +                       /*
-> +                        * No need to up_read(&mm->mmap_sem) as we would
-> +                        * have already released it in __lock_page_or_retry
-> +                        * in mm/filemap.c.
-> +                        */
-> +
-> +                       goto retry;
->                }
-> -#endif
-> -       } else {
-> -               current->min_flt++;
-> -               perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-> -                                    regs, address);
->        }
-> +
->        up_read(&mm->mmap_sem);
->        return 0;
->
-> --
-> 1.7.5.4
->
+best of luck,
+
+greg k-h
