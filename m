@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab2CTCOi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 22:14:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55317 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759384Ab2CTCOg (ORCPT
+	id S1759451Ab2CTCOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 22:14:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58331 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759438Ab2CTCOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 22:14:36 -0400
-Date: Tue, 20 Mar 2012 13:14:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>
-Subject: linux-next: build warning after merge of the nfs tree
-Message-Id: <20120320131427.b166ba88d4ea86cea3ec8d7f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 19 Mar 2012 22:14:46 -0400
+Message-ID: <1332209680.10843.3.camel@phoenix>
+Subject: [PATCH RFT] regulator: Convert ab3100 to set_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 20 Mar 2012 10:14:40 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ab3100.c |   18 +++++-------------
+ 1 files changed, 5 insertions(+), 13 deletions(-)
 
-Hi Trond,
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index 042271a..ed56c93 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -338,20 +338,12 @@ static int ab3100_get_best_voltage_index(struct regulator_dev *reg,
+ 	return bestindex;
+ }
+ 
+-static int ab3100_set_voltage_regulator(struct regulator_dev *reg,
+-					int min_uV, int max_uV,
+-					unsigned *selector)
++static int ab3100_set_voltage_regulator_sel(struct regulator_dev *reg,
++					    unsigned selector)
+ {
+ 	struct ab3100_regulator *abreg = reg->reg_data;
+ 	u8 regval;
+ 	int err;
+-	int bestindex;
+-
+-	bestindex = ab3100_get_best_voltage_index(reg, min_uV, max_uV);
+-	if (bestindex < 0)
+-		return bestindex;
+-
+-	*selector = bestindex;
+ 
+ 	err = abx500_get_register_interruptible(abreg->dev, 0,
+ 						abreg->regreg, &regval);
+@@ -364,7 +356,7 @@ static int ab3100_set_voltage_regulator(struct regulator_dev *reg,
+ 
+ 	/* The highest three bits control the variable regulators */
+ 	regval &= ~0xE0;
+-	regval |= (bestindex << 5);
++	regval |= (selector << 5);
+ 
+ 	err = abx500_set_register_interruptible(abreg->dev, 0,
+ 						abreg->regreg, regval);
+@@ -464,7 +456,7 @@ static struct regulator_ops regulator_ops_variable = {
+ 	.disable     = ab3100_disable_regulator,
+ 	.is_enabled  = ab3100_is_enabled_regulator,
+ 	.get_voltage = ab3100_get_voltage_regulator,
+-	.set_voltage = ab3100_set_voltage_regulator,
++	.set_voltage_sel = ab3100_set_voltage_regulator_sel,
+ 	.list_voltage = ab3100_list_voltage_regulator,
+ 	.enable_time = ab3100_enable_time_regulator,
+ };
+@@ -474,7 +466,7 @@ static struct regulator_ops regulator_ops_variable_sleepable = {
+ 	.disable     = ab3100_disable_regulator,
+ 	.is_enabled  = ab3100_is_enabled_regulator,
+ 	.get_voltage = ab3100_get_voltage_regulator,
+-	.set_voltage = ab3100_set_voltage_regulator,
++	.set_voltage_sel = ab3100_set_voltage_regulator_sel,
+ 	.set_suspend_voltage = ab3100_set_suspend_voltage_regulator,
+ 	.list_voltage = ab3100_list_voltage_regulator,
+ 	.enable_time = ab3100_enable_time_regulator,
+-- 
+1.7.5.4
 
-After merging the nfs tree, today's linux-next build (powerpc
-ppc64_defconfig) produced lots of this warning:
 
-include/linux/nfs_fs.h: In function 'nfs_display_fhandle_hash':
-include/linux/nfs_fs.h:416:1: warning: no return statement in function retu=
-rning non-void [-Wreturn-type]
 
-Introduced by commit d8e0539ebdff ("NFS: add filehandle crc for debug
-display").  But made obvious by commit 855fa894a2b2 ("SUNRPC/NFS: Add
-Kbuild dependencies for NFS_DEBUG/RPC_DEBUG").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPZ+gDAAoJEECxmPOUX5FEbwwP/11bpEdNujL/IORj2uOEuZwJ
-JenRgENzKBYhNAkZjOL9fJ3173cyBMWJnuDDdE60Z8NNHBmonw6hhXEQRfyk0rZe
-ywGdTjI/3eRTlr2D6N/el94Sg9gD3m/2Fnh533xF8roo4xqDoQ+UeXmFlSIQ20qA
-HNVAh0J79W0G2QfRoLkMITGwYzVW9UXhFLNwRWVVKrnnkKp+xzGDhGJqdkX+ZEqe
-d+uPaW69yRtQuOzQeSNolyfDxmJUm8/DZYm1TXUPMFEZC8JfFTGkaxJMgh8dW+5j
-kaHHOFnRMCF6MEMTs/ws0d1Kqro3oRERSJqCp7wsB1Bus2ht+hAn2TtON0Mv9O49
-ef22dbBza31iykKtgCf+zfbcKuU/daT80Kgk5/66Yp3I45FOokqEZWLMYxKvSgqj
-GowAsQ4P4owfGMdx2/cwQ3TtFftLAxXa2gpyzB+Ir0yQdCiIfd2McGCPyoxRAD3I
-YEa1g+8gvXZia0HqxbLZ+4qp2EiLvGNXfxHWBFK8K8F+IzzJwcpKdhjcs1vkOBJp
-q04r8TCZp6cS0Bj1WY3ES433fXhieWzae+HrzQUrfgo1K+zUXlK+SicnpID83kHp
-5IsC0MQhvLHI4NOgijLkMH6RV1i1sQE2xpgPBgTpGsn7qcPVEOjy60p/j1CPFyEL
-YhzASI+E8yvtH6sj2Zdh
-=+/iJ
------END PGP SIGNATURE-----
-
---Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ--
