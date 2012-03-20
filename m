@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760287Ab2CTOls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:41:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29409 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760260Ab2CTOlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:41:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141907442"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Ted Tso <tytso@mit.edu>
-Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1 9/9] ext4: introduce own superblock dirty flag
-Date: Tue, 20 Mar 2012 16:41:29 +0200
-Message-Id: <1332254489-2300-10-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	id S1760317Ab2CTOmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:42:16 -0400
+Received: from [89.21.227.130] ([89.21.227.130]:42993 "EHLO
+	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756463Ab2CTOmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:42:12 -0400
+Message-ID: <4F68951E.2020601@itdev.co.uk>
+Date: Tue, 20 Mar 2012 07:33:02 -0700
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>,
+        "Tiwari, Atul" <Atul.Tiwari@atmel.com>
+Subject: Re: [PATCH 00/20] cleanup atmel_mxt_ts
+References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Daniel Kurtz wrote:
+> This patchset cleans up the atmel_mxt_ts touchscreen driver.
+> In particular, it addresses the following issues:
 
-We finally do not need VFS's 's_dirt' flag in ext4 - introduce our own
-'s_dirty' flag instead.
+Hi Daniel-
 
-Note: the final goal is to get rid of the 'sync_supers()' kernel thread which
-wakes up every 5 seconds and even if there is nothing to do. Thus, we are
-pushing superblock management from VFS down to file-systems.
+Thanks for your work on this, some of it looks very useful. I will go
+through and review each patch in turn.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ext4/ext4.h  |    1 +
- fs/ext4/super.c |   12 ++++++------
- 2 files changed, 7 insertions(+), 6 deletions(-)
+I have been working on Atmel's version of this driver. You can find most of
+that work on our github site: as you know we are intending to push it
+upstream as much as possible:
+https://github.com/atmel-maxtouch
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 87e8376..be15b2d 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1158,6 +1158,7 @@ struct ext4_sb_info {
- 	u32 s_hash_seed[4];
- 	int s_def_hash_version;
- 	int s_hash_unsigned;	/* 3 if hash should be signed, 0 if not */
-+	int s_dirty;
- 	struct percpu_counter s_freeclusters_counter;
- 	struct percpu_counter s_freeinodes_counter;
- 	struct percpu_counter s_dirs_counter;
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 64f3a6a..e24dec2 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -824,7 +824,7 @@ static void ext4_put_super(struct super_block *sb)
- 		EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
- 		es->s_state = cpu_to_le16(sbi->s_mount_state);
- 	}
--	if (sb->s_dirt || !(sb->s_flags & MS_RDONLY))
-+	if (sbi->s_dirty || !(sb->s_flags & MS_RDONLY))
- 		ext4_commit_super(sb, 1);
- 
- 	if (sbi->s_proc) {
-@@ -4140,7 +4140,7 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 	if (!sbh || block_device_ejected(sb))
- 		return error;
- 
--	sb->s_dirt = 0;
-+	sbi->s_dirty = 0;
- 	/*
- 	 * Make sure we first mark the superblock as clean and then start
- 	 * writing it out.
-@@ -4225,7 +4225,7 @@ static void write_super(struct work_struct *work)
- 	kfree(sbwork);
- 
- 	smp_rmb();
--	if (!sb->s_dirt)
-+	if (!EXT4_SB(sb)->s_dirty)
- 		return;
- 
- 	lock_super(sb);
-@@ -4241,9 +4241,9 @@ void __ext4_mark_super_dirty(struct super_block *sb)
- 
- 	/* Make sure we see 's_dirt' changes ASAP */
- 	smp_rmb();
--	if (sb->s_dirt == 1)
-+	if (sbi->s_dirty == 1)
- 		return;
--	sb->s_dirt = 1;
-+	sbi->s_dirty = 1;
- 	/* Make other CPUs see the 's_dirt' change as soon as possible */
- 	smp_wmb();
- 
-@@ -4254,7 +4254,7 @@ void __ext4_mark_super_dirty(struct super_block *sb)
- 		 * trouble anyway, and the SB will be written out on unmount or
- 		 * we may be luckier next time it is marked as dirty.
- 		 */
--		sb->s_dirt = 2;
-+		sbi->s_dirty = 2;
- 		return;
- 	}
- 
+The main overlap between your changes and ours is in your approach to
+writing config from userspace. There is a lot of complexity in these chips
+and providing a sysfs node for each function would end up being a
+never-ending task.
+
+So we have implemented an interface using a sysfs binary attribute which I
+think is considerably more general and flexible than the interface that you
+suggest. You can find a set of utilities on the same github that uses our
+interface. I would argue that we should try and converge the mainline
+driver on our approach rather than inventing something new unless there are
+significant advantages.
+
+cheers
+
 -- 
-1.7.7.6
-
+Nick Dyer
+Software Engineer, ITDev Ltd
+Hardware and Software Development Consultancy
+Website: http://www.itdev.co.uk
