@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760662Ab2CTPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 11:45:56 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61212 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760259Ab2CTPpy (ORCPT
+	id S1760674Ab2CTPqZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 11:46:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57841 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760259Ab2CTPqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 11:45:54 -0400
-Message-ID: <4F68A60D.2020303@gmail.com>
-Date: Tue, 20 Mar 2012 16:45:17 +0100
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 20 Mar 2012 11:46:23 -0400
+Date: Tue, 20 Mar 2012 08:46:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH 6/6] workqueue: use kmalloc_align() instead of
+ hacking
+Message-ID: <20120320154619.GA5684@google.com>
+References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com>
+ <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Shea Levy <shea@shealevy.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: EFI Boot Stub Early Console
-References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com>  <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com>  <4F5E775D.7080702@zytor.com> <4F648DD3.3000405@shealevy.com>  <1332069701.4041.42.camel@mfleming-mobl1.ger.corp.intel.com>  <4F65D09B.4050807@shealevy.com>  <1332146834.4041.46.camel@mfleming-mobl1.ger.corp.intel.com>  <20120319155639.7cff5df6@pyx> <1332172989.4041.52.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1332172989.4041.52.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Matt,
+On Tue, Mar 20, 2012 at 06:21:24PM +0800, Lai Jiangshan wrote:
+> kmalloc_align() makes the code simpler.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |   23 +++++------------------
+>  1 files changed, 5 insertions(+), 18 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 5abf42f..beec5fd 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2897,20 +2897,9 @@ static int alloc_cwqs(struct workqueue_struct *wq)
+>  
+>  	if (!(wq->flags & WQ_UNBOUND))
+>  		wq->cpu_wq.pcpu = __alloc_percpu(size, align);
+> -	else {
+> -		void *ptr;
+> -
+> -		/*
+> -		 * Allocate enough room to align cwq and put an extra
+> -		 * pointer at the end pointing back to the originally
+> -		 * allocated pointer which will be used for free.
+> -		 */
+> -		ptr = kzalloc(size + align + sizeof(void *), GFP_KERNEL);
+> -		if (ptr) {
+> -			wq->cpu_wq.single = PTR_ALIGN(ptr, align);
+> -			*(void **)(wq->cpu_wq.single + 1) = ptr;
+> -		}
+> -	}
+> +	else
+> +		wq->cpu_wq.single = kmalloc_align(size,
+> +				GFP_KERNEL | __GFP_ZERO, align);
+>  
+>  	/* just in case, make sure it's actually aligned */
+>  	BUG_ON(!IS_ALIGNED(wq->cpu_wq.v, align));
+> @@ -2921,10 +2910,8 @@ static void free_cwqs(struct workqueue_struct *wq)
+>  {
+>  	if (!(wq->flags & WQ_UNBOUND))
+>  		free_percpu(wq->cpu_wq.pcpu);
+> -	else if (wq->cpu_wq.single) {
+> -		/* the pointer to free is stored right after the cwq */
+> -		kfree(*(void **)(wq->cpu_wq.single + 1));
+> -	}
+> +	else if (wq->cpu_wq.single)
+> +		kfree(wq->cpu_wq.single);
 
-Op 19-03-12 17:03, Matt Fleming schreef:
-> On Mon, 2012-03-19 at 15:56 +0000, Alan Cox wrote:
->>>> any bootloader (including the bootstub) will call ExitBootServices() 
->>>> before any printk'ing actually happens?? Or am I misunderstanding the 
->>>> spec somehow? I suppose I could just try it and see what happens...
->>> Oops. Good point, that isn't going to work.
->> Surely it works fine if you are using bootstub directly from EFI ?
-> Yeah, up until the point you call ExitBootServices(), which is very
-> early in the boot process. After that you can't rely on the validity of
-> the console pointers in the system table.
->
-I think my system spontaneously rebooted when I tried to
-do some output right after ExitBootServices when debugging
-the efi stub, so not only is this unreliable, it will fail to boot for
-at least some systems out there.
+Yes, this is hacky but I don't think building the whole
+kmalloc_align() for only this is a good idea.  If the open coded hack
+bothers you just write a simplistic wrapper somewhere.  We can make
+that better integrated / more efficient when there are multiple users
+of the interface, which I kinda doubt would happen.  The reason why
+cwq requiring larger alignment is more historic than anything else
+after all.
 
-~Maarten
+Thanks.
+
+-- 
+tejun
