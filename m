@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab2CTBvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 21:51:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39804 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab2CTBvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 21:51:17 -0400
-Message-ID: <1332208268.10843.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: Convert ab8500 to set_voltage_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
-        Sundar R Iyer <sundar.iyer@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 20 Mar 2012 09:51:08 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759097Ab2CTBya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 21:54:30 -0400
+Received: from tundra.namei.org ([65.99.196.166]:51604 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755989Ab2CTBy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 21:54:28 -0400
+Date: Tue, 20 Mar 2012 12:54:24 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Eric Paris <eparis@parisplace.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [GIT] MAINTAINERS: Add Serge as maintainer of capabilities
+In-Reply-To: <CACLa4puKa8O8g2i05myV4bSEY5DmnjcZrmrAk==mX+iLdcV=ew@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1203201253200.26596@tundra.namei.org>
+References: <alpine.LRH.2.02.1203161217060.32664@tundra.namei.org> <CACLa4puKa8O8g2i05myV4bSEY5DmnjcZrmrAk==mX+iLdcV=ew@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-1188948363-1332208465=:26596"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert ab8500 to set_voltage_sel and then we can remove
-ab8500_get_best_voltage_index function.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/ab8500.c |   35 ++++-------------------------------
- 1 files changed, 4 insertions(+), 31 deletions(-)
+--1665246916-1188948363-1332208465=:26596
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index c7ee4c1..0d095b6 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -234,25 +234,8 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
- 		return val;
- }
- 
--static int ab8500_get_best_voltage_index(struct regulator_dev *rdev,
--		int min_uV, int max_uV)
--{
--	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
--	int i;
--
--	/* check the supported voltage */
--	for (i = 0; i < info->voltages_len; i++) {
--		if ((info->voltages[i] >= min_uV) &&
--		    (info->voltages[i] <= max_uV))
--			return i;
--	}
--
--	return -EINVAL;
--}
--
--static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
--					int min_uV, int max_uV,
--					unsigned *selector)
-+static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
-+					    unsigned selector)
- {
- 	int ret;
- 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
-@@ -263,18 +246,8 @@ static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
- 		return -EINVAL;
- 	}
- 
--	/* get the appropriate voltages within the range */
--	ret = ab8500_get_best_voltage_index(rdev, min_uV, max_uV);
--	if (ret < 0) {
--		dev_err(rdev_get_dev(rdev),
--				"couldn't get best voltage for regulator\n");
--		return ret;
--	}
--
--	*selector = ret;
--
- 	/* set the registers for the request */
--	regval = (u8)ret;
-+	regval = (u8)selector;
- 	ret = abx500_mask_and_set_register_interruptible(info->dev,
- 			info->voltage_bank, info->voltage_reg,
- 			info->voltage_mask, regval);
-@@ -319,7 +292,7 @@ static struct regulator_ops ab8500_regulator_ops = {
- 	.disable	= ab8500_regulator_disable,
- 	.is_enabled	= ab8500_regulator_is_enabled,
- 	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
--	.set_voltage	= ab8500_regulator_set_voltage,
-+	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
- 	.list_voltage	= ab8500_list_voltage,
- 	.enable_time	= ab8500_regulator_enable_time,
- 	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+On Fri, 16 Mar 2012, Eric Paris wrote:
+
+> > +M:     Serge Hallyn <serge.hallyn@canonical.com>
+> > +L:     linux-security-module@vger.kernel.org
+> > +S:     Supported
+> > +F:     include/linux/capability.h
+> > +F:     security/capability.c
+> > +F:     security/commoncap.c
+> 
+> You forgot kernel/capability.c
+
+Thanks, I'll fix that after rebasing with linus.
+
+
+
+
+- James
 -- 
-1.7.5.4
-
-
-
+James Morris
+<jmorris@namei.org>
+--1665246916-1188948363-1332208465=:26596--
