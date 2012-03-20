@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab2CTEcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 00:32:18 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:38394 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956Ab2CTEbw convert rfc822-to-8bit (ORCPT
+	id S1752057Ab2CTEjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 00:39:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58775 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab2CTEjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 00:31:52 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Joseph Glanville <joseph.glanville@orionvm.com.au>
-cc: Roland Dreier <roland@purestorage.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Kernel Panic with bonding + IPoIB on 3.2.9
-In-reply-to: <CAOzFzEgSWHqabw9yq6JxhD+CxQY61O+gqGwPMdbWPC=M+_oZAw@mail.gmail.com>
-References: <CAOzFzEiufg40gKBH6D7zeB47SebfPvgzqOLxhF5eQqpYd-r4zQ@mail.gmail.com> <CAOzFzEi=UOnwiV+qVks7+RnYU3PFbaQ+3OaEE3YFG2HHuD5ydQ@mail.gmail.com> <CAL1RGDVAd-LiS0sy6RAFNzkUuXrcuGv829nADcnxUnC2tfx3bw@mail.gmail.com> <CAOzFzEgSWHqabw9yq6JxhD+CxQY61O+gqGwPMdbWPC=M+_oZAw@mail.gmail.com>
-Comments: In-reply-to Joseph Glanville <joseph.glanville@orionvm.com.au>
-   message dated "Tue, 20 Mar 2012 14:33:03 +1100."
-X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 19 Mar 2012 21:30:26 -0700
-Message-ID: <5560.1332217826@death.nxdomain>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032004-3534-0000-0000-000006BED388
+	Tue, 20 Mar 2012 00:39:22 -0400
+Date: Tue, 20 Mar 2012 15:39:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arun Murthy <arun.murthy@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: linux-next: build failure after merge of the battery tree
+Message-Id: <20120320153912.b97107ca4128d0692de17799@canb.auug.org.au>
+In-Reply-To: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
+References: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joseph Glanville <joseph.glanville@orionvm.com.au> wrote:
+--Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->On 20 March 2012 06:05, Roland Dreier <roland@purestorage.com> wrote:
->> On Sun, Mar 18, 2012 at 1:21 PM, Joseph Glanville
->> <joseph.glanville@orionvm.com.au> wrote:
->>> [  422.047024] kernel BUG at net/core/dev.c:1896!
->>
->> So this line is
->>
->>        BUG_ON(offset >= skb_headlen(skb));
->>
->> right?  No paritcular idea how we hit this, though...
+Hi Anton,
+
+On Thu, 15 Mar 2012 13:56:09 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
->Yep... I have looked through most of /drivers/net/bonding and I can't
->really see why it should be blowing up there.. it really should cause
->the BUG_ON under normal IPoIB if the MTU was the cause - yet I have
->not experienced this.
->The bonding code doesn't seem to do anything special with the MTU
->other than propagating changes to the slaves.
+> After merging the battery tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_batctrl_volt_to_r=
+es':
+> drivers/power/ab8500_btemp.c:142:2: error: implicit declaration of functi=
+on 'is_ab8500_1p1_or_earlier' [-Werror=3Dimplicit-function-declaration]
+> drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_templow_handler':
+> drivers/power/ab8500_btemp.c:619:2: error: implicit declaration of functi=
+on 'is_ab8500_2p0_or_earlier' [-Werror=3Dimplicit-function-declaration]
+> drivers/power/ab8500_charger.c: In function 'ab8500_charger_ac_en':
+> drivers/power/ab8500_charger.c:1126:3: error: implicit declaration of fun=
+ction 'is_ab8500_1p1_or_earlier' [-Werror=3Dimplicit-function-declaration]
+> drivers/power/ab8500_charger.c: In function 'ab8500_charger_remove':
+> drivers/power/ab8500_charger.c:2519:2: error: implicit declaration of fun=
+ction 'usb_unregister_notifier' [-Werror=3Dimplicit-function-declaration]
+> drivers/power/ab8500_charger.c:2520:2: error: implicit declaration of fun=
+ction 'usb_put_transceiver' [-Werror=3Dimplicit-function-declaration]
+> drivers/power/ab8500_charger.c: In function 'ab8500_charger_probe':
+> drivers/power/ab8500_charger.c:2688:2: error: implicit declaration of fun=
+ction 'usb_get_transceiver' [-Werror=3Dimplicit-function-declaration]
+> drivers/power/ab8500_charger.c:2688:14: warning: assignment makes pointer=
+ from integer without a cast [enabled by default]
+> drivers/power/ab8500_charger.c:2695:2: error: implicit declaration of fun=
+ction 'usb_register_notifier' [-Werror=3Dimplicit-function-declaration]
+>=20
+> Caused by commits 89449ac8d6d2 ("ab8500-charger: AB8500 charger driver")
+> and 20ac1aed6206 ("ab8500-btemp: AB8500 battery temperature driver").
+>=20
+> I have used the battery tree form next-20120314 for today.
 
-	For IPoIB, though, there is some extra initialization stuff in
-bond_setup_by_slave(), and the hard_header_len will end up being set to
-something different from the usual Ethernet value.
+Still getting this build failure.
 
-	In looking at ipoib_setup, I see that hard_header_len appears to
-be set to 4 (IPOIB_ENCAP_LEN).  My recollection was that the IPoIB
-hard_header_len was quite a bit larger than that; it looks like it
-changed very recently from IPOIB_ENCAP_LEN + INFINIBAND_ALEN to what it
-is now:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-commit afd87adacb5de00768b2e54f0bd851278f2e6179
-Author: Roland Dreier <roland@purestorage.com>
-Date:   Tue Feb 7 14:51:21 2012 +0000
+--Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ
+Content-Type: application/pgp-signature
 
-    IPoIB: Stop lying about hard_header_len and use skb->cb to stash LL addresses
-    
-    [ Upstream commit 936d7de3d736e0737542641269436f4b5968e9ef ]
-    
-    Commit a0417fa3a18a ("net: Make qdisc_skb_cb upper size bound
-    explicit.") made it possible for a netdev driver to use skb->cb
-    between its header_ops.create method and its .ndo_start_xmit
-    method.  Use this in ipoib_hard_header() to stash away the LL address
-    (GID + QPN), instead of the "ipoib_pseudoheader" hack.  This allows
-    IPoIB to stop lying about its hard_header_len, which will let us fix
-    the L2 check for GRO.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPaAnwAAoJEECxmPOUX5FEThIQAI9ztS5zF5+X8wbFmPrWhxH+
+PrkLINLxe3YmGF5JAfD2jz5vxVqT8pg+FC8f1UypexM79aB4B3R+4gAqYWKzii8x
+pckXJ19/cRY9uuUvmsXaeQl9N1PVciJSSJzWvUYE3k4+jn9ldFACM1H/1nTZPHj8
+P2ZDGV/MZ936nAr/Jg3T3uznCcuScuqC/Jhw9Rgj+Y1oX3S537NMIPGJOpT8jUlk
+2OF9ka2YycyrUv2L1e7qSpQIVS8uawVWneiaeVdUC2Qi0UmPgax7B3d/ENLWW51c
+CArpU1wcyxBZ3w+D0ZMLqT2QaFtICyX+1h5O5LIPpJy/eroviLMHdRl4f2LP36Df
+ZSYyGTXs3bH12Mz38FCitqxODzKHqgWRqyFvFEwBHdE7DusU9uPsg9P07SkmAMPe
+7gFiCr63TsRbzcYjV4fI1RzgmEJEpedYGQqPdRbpWaVCwX0DA0IseBnEfin5lPDy
+NBuGKFak6ffkPFlr3BCWGicDhcjjA8LEhojcxJgW95ceiSPXgLzifFV1kW1sHGdE
++13nKqXkE8Ka6kodQmWqBU9zxB2JCU6zefVjYudqiBgvQcNRw4cPXR7z6yWw9HzQ
+Hq1HQyaK8d+zWjKdG9+vo1ORkfNrjf9i/SH3dfCcHsQvDzW6EcGyTw0oOXpw/M+l
+HBqV+PoeYu+guwaR5P9i
+=L1er
+-----END PGP SIGNATURE-----
 
-	I don't know if this change could be causing the problem (it
-appears to be new in 3.2.9), but the hard_header_len is one of the few
-areas in the TX path of bonding that IPoIB ends up being different from
-regular Ethernet.
-
-	-J
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
-
+--Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ--
