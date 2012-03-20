@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab2CTNUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:20:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33232 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756770Ab2CTNUN (ORCPT
+	id S964937Ab2CTNUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:20:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58539 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab2CTNUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:20:13 -0400
+	Tue, 20 Mar 2012 09:20:51 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Jimi Xenidis <jimix@pobox.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christian Dietrich 
-	<christian.dietrich@informatik.uni-erlangen.de>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>,
-        "Mohd. Faris" <mohdfarisq2010@gmail.com>
-Subject: [PATCH 04/20] powerpc/mm/fault.c: Port OOM changes to do_page_fault
-Date: Tue, 20 Mar 2012 09:19:55 -0400
-Message-Id: <1332249595-2678-1-git-send-email-consul.kautuk@gmail.com>
+To: Jonas Bonn <jonas@southpole.se>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 05/20] openrisc/mm/fault.c: Port OOM changes to do_page_fault
+Date: Tue, 20 Mar 2012 09:20:15 -0400
+Message-Id: <1332249615-2712-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,85 +30,70 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to powerpc.
+Port these changes to openrisc.
 
-Signed-off-by: Mohd. Faris <mohdfarisq2010@gmail.com>
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/powerpc/mm/fault.c |   51 +++++++++++++++++++++++++++++++++-------------
- 1 files changed, 36 insertions(+), 15 deletions(-)
+ arch/openrisc/mm/fault.c |   33 +++++++++++++++++++++++++++------
+ 1 files changed, 27 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 2f0d1b0..a3b1176 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -129,6 +129,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
- 	int is_write = 0, ret;
- 	int trap = TRAP(regs);
-  	int is_exec = trap == 0x400;
+diff --git a/arch/openrisc/mm/fault.c b/arch/openrisc/mm/fault.c
+index a5dce82..d5f56bc 100644
+--- a/arch/openrisc/mm/fault.c
++++ b/arch/openrisc/mm/fault.c
+@@ -54,6 +54,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long address,
+ 	struct vm_area_struct *vma;
+ 	siginfo_t info;
+ 	int fault;
 +	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- #if !(defined(CONFIG_4xx) || defined(CONFIG_BOOKE))
- 	/*
-@@ -212,6 +213,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
- 		if (!user_mode(regs) && !search_exception_tables(regs->nip))
- 			goto bad_area_nosemaphore;
+ 	tsk = current;
+ 
+@@ -105,6 +106,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long address,
+ 	if (in_interrupt() || !mm)
+ 		goto no_context;
  
 +retry:
- 		down_read(&mm->mmap_sem);
- 	}
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, address);
  
-@@ -313,6 +315,7 @@ good_area:
- 	} else if (is_write) {
+@@ -143,6 +145,7 @@ good_area:
+ 	if (write_acc) {
  		if (!(vma->vm_flags & VM_WRITE))
  			goto bad_area;
 +		flags |= FAULT_FLAG_WRITE;
- 	/* a read */
  	} else {
- 		/* protection fault */
-@@ -327,7 +330,11 @@ good_area:
- 	 * make sure we exit gracefully rather than endlessly redo
+ 		/* not present */
+ 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
+@@ -159,7 +162,11 @@ good_area:
  	 * the fault.
  	 */
--	ret = handle_mm_fault(mm, vma, address, is_write ? FAULT_FLAG_WRITE : 0);
-+	ret = handle_mm_fault(mm, vma, address, flags);
+ 
+-	fault = handle_mm_fault(mm, vma, address, write_acc);
++	fault = handle_mm_fault(mm, vma, address, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
 +		return;
 +
- 	if (unlikely(ret & VM_FAULT_ERROR)) {
- 		if (ret & VM_FAULT_OOM)
+ 	if (unlikely(fault & VM_FAULT_ERROR)) {
+ 		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -335,22 +342,36 @@ good_area:
+@@ -167,11 +174,25 @@ good_area:
  			goto do_sigbus;
  		BUG();
  	}
--	if (ret & VM_FAULT_MAJOR) {
--		current->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
--				     regs, address);
--#ifdef CONFIG_PPC_SMLPAR
--		if (firmware_has_feature(FW_FEATURE_CMO)) {
--			preempt_disable();
--			get_lppaca()->page_ins += (1 << PAGE_FACTOR);
--			preempt_enable();
+-	/*RGD modeled on Cris */
+-	if (fault & VM_FAULT_MAJOR)
+-		tsk->maj_flt++;
+-	else
+-		tsk->min_flt++;
++
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (ret & VM_FAULT_MAJOR) {
-+			current->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+					     regs, address);
-+#ifd#ifdef CONFIG_PPC_SMLPAR
-+			if (firmware_has_feature(FW_FEATURE_CMO)) {
-+				preempt_disable();
-+				get_lppaca()->page_ins += (1 << PAGE_FACTOR);
-+				preempt_enable();
-+			}
-+#end#endif
-+		} else {
-+			current->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+					     regs, address);
-+		}
++		/*RGD modeled on Cris */
++		if (fault & VM_FAULT_MAJOR)
++			tsk->maj_flt++;
++		else
++			tsk->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
@@ -124,17 +104,11 @@ index 2f0d1b0..a3b1176 100644
 +			 */
 +
 +			goto retry;
- 		}
--#endif
--	} else {
--		current->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
--				     regs, address);
- 	}
-+
- 	up_read(&mm->mmap_sem);
- 	return 0;
++		}
++	}
  
+ 	up_read(&mm->mmap_sem);
+ 	return;
 -- 
 1.7.5.4
 
