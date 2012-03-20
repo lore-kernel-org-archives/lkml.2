@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967Ab2CTNer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:34:47 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34156 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759463Ab2CTNem (ORCPT
+	id S1759956Ab2CTNgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:36:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38926 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab2CTNgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:34:42 -0400
+	Tue, 20 Mar 2012 09:36:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvwW2XcYSoidZZ0XF_a-pH3SwONqS+hCnpGUecQ__DLa_g@mail.gmail.com>
+In-Reply-To: <CAFPAmTSzV9mrkbP68p4PA-0i0o2Hz7JiBY=0A0V_myJEzWubjQ@mail.gmail.com>
 References: <CAFPAmTQs9dOpQTaXU=6Or66YU+my_CnPw33TE4h++YArBNa38g@mail.gmail.com>
 	<CAFLxGvwW2XcYSoidZZ0XF_a-pH3SwONqS+hCnpGUecQ__DLa_g@mail.gmail.com>
-Date: Tue, 20 Mar 2012 09:34:41 -0400
-Message-ID: <CAFPAmTSzV9mrkbP68p4PA-0i0o2Hz7JiBY=0A0V_myJEzWubjQ@mail.gmail.com>
+	<CAFPAmTSzV9mrkbP68p4PA-0i0o2Hz7JiBY=0A0V_myJEzWubjQ@mail.gmail.com>
+Date: Tue, 20 Mar 2012 14:36:06 +0100
+Message-ID: <CAFLxGvyVbDndbu_2ZbUBwbrJCq+d4rRZW0ROxTpQxAvetRm=0w@mail.gmail.com>
 Subject: Re: [PATCH 0/20] mmu: arch/mm: Port OOM changes to arch page fault handlers.
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
 Cc: linux-alpha@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         linux@openrisc.net, linux-am33-list@redhat.com,
         microblaze-uclinux@itee.uq.edu.au, linux-m68k@vger.kernel.org,
@@ -29,14 +30,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 20, 2012 at 2:34 PM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
+>>
+>> What about arch/um/?
+>> Does UML not need this change?
 >
-> What about arch/um/?
-> Does UML not need this change?
+> Oh yes, extremely sorry I accidentally missed that one out.
+> Mind if I send it separately ?
 
-Oh yes, extremely sorry I accidentally missed that one out.
-Mind if I send it separately ?
+No problem.
+handle_page_fault() is the function you want to patch. :)
 
->
-> --
-> Thanks,
-> //richard
+-- 
+Thanks,
+//richard
