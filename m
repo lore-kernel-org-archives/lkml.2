@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030649Ab2CTI5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 04:57:34 -0400
-Received: from smtp5.tech.numericable.fr ([82.216.111.41]:39076 "EHLO
-	smtp5.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965000Ab2CTIyK (ORCPT
+	id S1030615Ab2CTI5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 04:57:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55150 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030467Ab2CTI52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 04:54:10 -0400
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/14] samsung-laptop: cleanup return type: mode_t vs umode_t
-Date: Tue, 20 Mar 2012 09:53:07 +0100
-Message-Id: <1332233594-13099-8-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
-References: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrgeejucetggdotefuucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddm
+	Tue, 20 Mar 2012 04:57:28 -0400
+Message-ID: <4F684673.1050309@suse.cz>
+Date: Tue, 20 Mar 2012 09:57:23 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120314 Thunderbird/12.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+References: <cover.1331856299.git.joe@perches.com>  <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>  <20120319040950.GG31682@thunk.org> <1332131137.23125.44.camel@joe2Laptop>  <4F6762F1.7050902@gmail.com> <1332176943.1983.28.camel@joe2Laptop>
+In-Reply-To: <1332176943.1983.28.camel@joe2Laptop>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+On 03/19/2012 06:09 PM, Joe Perches wrote:
+> On Mon, 2012-03-19 at 17:46 +0100, Jiri Slaby wrote:
+>> On 03/19/2012 05:25 AM, Joe Perches wrote:
+>>> On Mon, 2012-03-19 at 00:09 -0400, Ted Ts'o wrote:
+>>>> One evidence that this patch is noise is that it doesn't apply cleanly
+>>>> just on top of my current patch set that I plan to send to Linus.
+>>> It's more evident that you don't make
+>>> public your own internal patch queue
+>>> quickly enough than anything else.
+>> Please stop repeating that shit. I already explained you the reasons. A
+>> couple of weeks ago.
+...
+> As far as I can tell, your "reasons" as you
+> explained it is that you just do not like
+> whitespace or style changes.
 
-This function returns a umode_t (unsigned short) instead of mode_t which
-is an unsigned int on some architectures.  Cleaning this up silences a
-compile warning:
+No, sorry, you misunderstand me. Here, I meant your complain that we are
+not fast enough with pushing patches. Some of us simply do not push
+patches as soon as they are written. I personally prefer deferring
+patches for some time (weeks) to actually give some testing to the
+changes. Simply because I have bad experiences with patches emerging in
+the (-next) tree immediately. (And I mean not only my patches.)
 
-drivers/platform/x86/samsung-laptop.c:1108:2: warning: initialization
-	from incompatible pointer type [enabled by default]
+While you are pointing to whitespace cleanup of whole subtrees. Yes, I
+wrote about _whitespace_ cleanup in the thread you are referring to. But
+this can be generalized to an arbitrary cleanup. I.e. changes which do
+not change functionality in no way. And that is doubtful with pr_*
+changes. But as you can see in my post a couple of minutes ago, maybe I
+am just missing the point of the new interface. (And I hate naming of
+the pr_* functions.)
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/platform/x86/samsung-laptop.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And BTW setting the argument that it is a newer interface (that is what
+ath5k pr_* conversion patches commit log says) is not a good
+justification at all.
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index d1142e3..4787afd 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -1087,7 +1087,7 @@ static int __init samsung_backlight_init(struct samsung_laptop *samsung)
- 	return 0;
- }
- 
--static mode_t samsung_sysfs_is_visible(struct kobject *kobj,
-+static umode_t samsung_sysfs_is_visible(struct kobject *kobj,
- 				       struct attribute *attr, int idx)
- {
- 	struct device *dev = container_of(kobj, struct device, kobj);
+thanks,
 -- 
-1.7.3.4
-
+js
+suse labs
