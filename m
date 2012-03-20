@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758657Ab2CTWT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 18:19:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757735Ab2CTWTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 18:19:24 -0400
-Message-ID: <4F69022D.3080300@redhat.com>
-Date: Tue, 20 Mar 2012 18:18:21 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1758613Ab2CTWWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:22:16 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:56838 "EHLO
+	homiemail-a50.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756051Ab2CTWWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 18:22:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=Orbpoo2E3cIcO7PFimojGWOonHLnYKTuQrmOtMAaKaiPn6uNUWGshrFvMJOAx
+	6RQY+jMKFJI7NcPGDAzzxTSxFXTx0rpiDM4aviWXMuoecVQI5N2QV1RtPmD5kzdS
+	9E3gaqZkAud7qbTnF4XpQY3PiQUiR5jwiwDmRHu4tVNKIM=
+Message-ID: <4F690314.3080601@shealevy.com>
+Date: Tue, 20 Mar 2012 18:22:12 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20120311 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-References: <20120316144028.036474157@chello.nl>  <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>  <20120319130401.GI24602@redhat.com> <1332163591.18960.334.camel@twins>  <20120319135745.GL24602@redhat.com> <4F673D73.90106@redhat.com>  <20120319143002.GQ24602@redhat.com> <1332182523.18960.372.camel@twins>
-In-Reply-To: <1332182523.18960.372.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: linux-kernel@vger.kernel.org
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Subject: Re: [RFC][PATCH 1/1] x86, efi: EFI boot stub config file support
+References: <4F660313.1080301@shealevy.com> <4F660402.4040300@shealevy.com>
+In-Reply-To: <4F660402.4040300@shealevy.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 02:42 PM, Peter Zijlstra wrote:
-> On Mon, 2012-03-19 at 15:30 +0100, Andrea Arcangeli wrote:
->
->> I agree for qemu those soft bindings are fine.
->
-> So for what exact program(s) are you working? Your solution seems purely
-> focused on the hard case of a multi-threaded application that's larger
-> than a single node.
->
-> While I'm sure such applications exist, how realistic is it that they're
-> the majority?
+On 03/18/2012 11:49 AM, Shea Levy wrote:
+> On 3/18/12 11:45 AM, Shea Levy wrote:
+>> Hello,
+>>
+>> Inlined is a patch to have the kernel read its parameters from a
+>> config file when booted via the EFI boot stub without any parameters
+>> passed. This patch roughly follows the plan I discussed when
+>> proposing this idea, except now the file is found relative to the
+>> location of the bzImage and there is no additional check to see if
+>> image->parent_handle is NULL (despite the spec saying it will be NULL
+>> when the image was loaded by the firmware itself, it was never NULL
+>> on any of the systems I tested).
+>>
+>> Cheers,
+>> Shea Levy
 
-I suspect Java and other runtimes may have issues where
-they simply do not know which thread will end up using
-which objects from the heap heavily.
+I haven't yet gotten a reply to this, should I wait until after the 
+merge window and resubmit it then?
 
-However, even for those migrate-on-fault could be a
-reasonable alternative to scanning + proactive migration.
-
-It is really too early to tell which of the approaches is
-going to work best.
-
->> When you focus only on the cost of collecting the information and no
->> actual discussion was spent yet on how to compute or react to it,
->> something's wrong... as that's the really interesting part of the code.
->
-> Yeah, the thing that's wrong is you dumping a ~2300 line patch of dense
-> code over the wall without any high-level explanation.
->
-> I just about got to the policy parts but its not like its easy reading.
->
-> Also, you giving clues but not really saying what you mean attitude
-> combined with your tendency to write books instead of emails isn't
-> really conductive to me wanting to ask for any explanation either.
-
-Getting high level documentation of the ideas behind both
-of the NUMA implementations could really help smooth out
-the debate.
-
-The more specifics on the ideas and designs we have, the
-easier it will be to look past small details in the code
-and debate the merits of the design (before we get to
-cleaning up whichever bits of code we end up choosing).
-
--- 
-All rights reversed
+~Shea
