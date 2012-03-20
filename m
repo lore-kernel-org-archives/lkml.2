@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab2CTJ1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 05:27:41 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41480 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2CTJ1j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 05:27:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120320.031001.1532841232287663716.davem@davemloft.net>
-References: <20120320025835.GE14363@thunk.org>
-	<1332212574.7847.49.camel@joe2Laptop>
-	<216818.1332222366@turing-police.cc.vt.edu>
-	<20120320.031001.1532841232287663716.davem@davemloft.net>
-Date: Tue, 20 Mar 2012 10:27:38 +0100
-X-Google-Sender-Auth: DuubQFaTRHCBwxZti-28lX2-qyo
-Message-ID: <CAMuHMdWwP8CYQ2JaeFgyErfvCqKO9VThcq1_-RV1sNb3smtL5Q@mail.gmail.com>
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Miller <davem@davemloft.net>
-Cc: Valdis.Kletnieks@vt.edu, joe@perches.com, tytso@mit.edu,
-        anca.emanuel@gmail.com, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755520Ab2CTJd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 05:33:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45777 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753443Ab2CTJdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 05:33:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1332212514-22071-1-git-send-email-gxt@mprc.pku.edu.cn>
+References: <1332212514-22071-1-git-send-email-gxt@mprc.pku.edu.cn> <7019.1332155925@redhat.com>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: dhowells@redhat.com, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH] Disintegrate asm/system.h for Unicore32 [based on ver #3, changed by gxt]
+Date: Tue, 20 Mar 2012 09:33:40 +0000
+Message-ID: <14078.1332236020@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 08:10, David Miller <davem@davemloft.net> wrote:
-> From: Valdis.Kletnieks@vt.edu
-> Date: Tue, 20 Mar 2012 01:46:06 -0400
->
->> OK. Say I'm a scraper.  How do I distinguish between:
->>
->> pr_info("foo");
->> printk(KERN_INFO "foo");
->>
->> Oh my. seems that both result in exactly the same thing ending up in the
->> dmesg buffer
->
-> No it doesn't result in the same output, read the definitions again.
->
-> pr_info can be influenced by pr_fmt, plain printk cannot
+Guan Xuetao <gxt@mprc.pku.edu.cn> wrote:
 
-And for pr_debug(), there's even more, cfr. CONFIG_DYNAMIC_DEBUG.
+> Disintegrate asm/system.h for Unicore32. (Compilation successful)
+> The implementation details are not changed, but only splitted.
+> BTW, some codestyles are adjusted.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-Gr{oetje,eeting}s,
+Aha!  Much better.  It mostly looks reasonable, apart from one thing.  See the
+attached patch, which I'll roll in if you're happy with it.
 
-                        Geert
+David
+---
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Fix unicore xchg() to fail at build time with an unsupported pointer
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Fix unicore xchg() to fail at build time with an unsupported pointer rather
+then using panic().
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Additionally, panic() should not be redeclared in this manner, but rather
+should be brought in by #inclusion of <linux/kernel.h>.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/unicore32/include/asm/cmpxchg.h |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+
+diff --git a/arch/unicore32/include/asm/cmpxchg.h b/arch/unicore32/include/asm/cmpxchg.h
+index 37c431d..f39a59d 100644
+--- a/arch/unicore32/include/asm/cmpxchg.h
++++ b/arch/unicore32/include/asm/cmpxchg.h
+@@ -10,7 +10,11 @@
+ #ifndef __UNICORE_CMPXCHG_H__
+ #define __UNICORE_CMPXCHG_H__
+ 
+-extern void panic(const char *fmt, ...);
++/*
++ * Generate a link failure on undefined symbol if the pointer points to a value
++ * of unsupported size.
++ */
++extern void __xchg_bad_pointer(void)
+ 
+ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
+ 		int size)
+@@ -31,8 +35,8 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
+ 			: "memory", "cc");
+ 		break;
+ 	default:
+-		panic("xchg: bad data size: ptr 0x%p, size %d\n",
+-			ptr, size);
++		__xchg_bad_pointer();
++		break;
+ 	}
+ 
+ 	return ret;
+
