@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab2CTWI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 18:08:57 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57418 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240Ab2CTWIz (ORCPT
+	id S1758630Ab2CTWJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:09:15 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:33405 "EHLO
+	homiemail-a91.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758609Ab2CTWJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 18:08:55 -0400
-Date: Wed, 21 Mar 2012 02:08:51 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] c/r: prctl: Add missing minus in error code
-Message-ID: <20120320220851.GJ14269@moon>
+	Tue, 20 Mar 2012 18:09:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:subject:content-type:
+	content-transfer-encoding; q=dns; s=shealevy.com; b=YU/tcrsv/pvD
+	sGD6s+KlqcsqMff2t/l8ihOfLW70sDVUNuTGl/nMtwYuV+U7LbZTmM7rod3viAQ+
+	QmvHFJUFN5sHUyRQZNF8qGE9DxKng76JrC7Gnahk9EZm7GWKjQhh7SLp2CiPGtnD
+	M2FVbRv1hY8jkVMkfR3iRzA4Fgsf0N0=
+Message-ID: <4F690003.1040404@shealevy.com>
+Date: Tue, 20 Mar 2012 18:09:07 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20120311 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org
+Subject: Macbook Pro 5,3 Video Issues
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error code should be a negative value.
+Hello,
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- Hi Andrew, could you please check if this patch
- is valid for -mm tree and it is not some left-over
- dangling in my local tree (found this typo while trying
- to describe error codes for man-page).
+On my system (Linux 3.3, booting in EFI mode, using Nouveau with 
+nouveau.noaccel=1 due to 
+https://bugs.freedesktop.org/show_bug.cgi?id=27501 ), I can't figure out 
+how to change the backlight or switch which of the two graphics cards (I 
+have an Nvidia 9600M GT and a 9400M, both are recognized by nouveau but 
+only the 9400M is ever used) Linux uses for the framebuffer or X uses 
+for the output. I have /sys/class/backlight/nv_backlight, and writting 
+to nv_backlight/brightness does change the value in 
+nv_backlight/actual_brightness, but no actual screen changes occur. I'm 
+using the in-tree staging version of nouveau, so I wasn't sure which ML 
+this should go to.
 
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1881,7 +1881,7 @@ static int prctl_set_mm(int opt, unsigne
- 		up_read(&mm->mmap_sem);
- 
- 		if (copy_from_user(user_auxv, (const void __user *)addr, arg4))
--			return EFAULT;
-+			return -EFAULT;
- 
- 		/* Make sure the last entry is always AT_NULL */
- 		user_auxv[AT_VECTOR_SIZE - 2] = 0;
+Cheers,
+Shea Levy
