@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759741Ab2CTNio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:38:44 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44059 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab2CTNim convert rfc822-to-8bit (ORCPT
+	id S1759207Ab2CTNlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:41:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51863 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab2CTNlV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:38:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120313131616.f66dbdad.akpm@linux-foundation.org>
-References: <4F57A3EC.7070101@gmail.com>
-	<1331660076-32766-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<20120313131616.f66dbdad.akpm@linux-foundation.org>
-Date: Tue, 20 Mar 2012 19:08:39 +0530
-Message-ID: <CAAHN_R3mFzmtCey_0JEHp=EAGh1sb87szpsKD_JkFwwYLCnKug@mail.gmail.com>
-Subject: Re: [PATCH] -mm/linux-next: procfs: Mark thread stack correctly in proc/<pid>/maps
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-next <linux-next@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Matt Mackall <mpm@selenic.com>, Mike Frysinger <vapier@gentoo.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mark Salter <msalter@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Mar 2012 09:41:21 -0400
+Message-ID: <1332250867.18960.423.camel@twins>
+Subject: Re: [PATCH] Fix the race between smp_call_function and CPU booting
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Date: Tue, 20 Mar 2012 14:41:07 +0100
+In-Reply-To: <4F6882BA.2040000@linux.vnet.ibm.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+	 <1331546307.18960.26.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
+	 <1331654251.18960.78.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+	 <1331718197.18960.106.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
+	 <1331808391.18960.160.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
+	 <1331891364.18960.221.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
+	 <1332151397.18960.252.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com>
+	 <1332245842.18960.413.camel@twins> <4F6882BA.2040000@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 1:46 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 13 Mar 2012 23:04:36 +0530
-> Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
->
->> Following is the updated patch with requested changes incorporated.
->
-> Boy, that's a lot of changes (below).  What does it all do?
->
+On Tue, 2012-03-20 at 18:44 +0530, Srivatsa S. Bhat wrote:
+> 
+> 
+> I don't think this patch would change anything, atleast it wouldn't get
+> rid of the warning that Liu reported. Because, he is running his stress
+> tests on a machine which has only 2 CPUs. So effectively, we are hotplugging
+> only CPU1 (since CPU0 can't be taken offline, on Intel boxes).
+> 
+> Also, CPU1 is removed from cpu_active_mask during CPU_DOWN_PREPARE time itself,
+> and migrate_tasks() comes much later (during CPU_DYING). And in any case,
+> dest_cpu will never be CPU1, because it is the CPU that is going down. So it
+> *has* to be CPU0 anyway.
+> 
+> So, I don't think changes to select_fallback_rq() to make it more careful is
+> going to make any difference in the particular scenario that Liu is testing.
+> 
+> That said, even I don't know what the root cause of the warning is.. :-(
 
-Hi,
+Its a race in cpu-up, we set active before online, when we do a wakeup
+select_task_rq() will see !cpu_online(), we then call
+select_fallback_rq() to compute a new cpu, select_fallback_rq() computes
+a new cpu against cpu_active (which is set) and can thus return cpu 1,
+even though it is still offline.
 
-Since this patch was included in the -mm tree on March 14th, I assumed
-that linux-next would get the patch in today's merge, but it hasn't.
-Is there something I am missing? Does the patch need additional
-review/acks that I need to request for?
+So we queue the task on cpu 1 and send a reschedule ipi, at which point
+we'll get the reported warning.
 
-Thanks,
-Siddhesh
-
-Thanks,
-Siddhesh
-
-
--- 
-Siddhesh Poyarekar
-http://siddhesh.in
+My change modifies select_fallback_rq() to require online && active.
