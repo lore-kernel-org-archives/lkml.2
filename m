@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760394Ab2CTOn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:43:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29409 "EHLO mga01.intel.com"
+	id S1760420Ab2CTOoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:44:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38372 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759756Ab2CTOlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:41:42 -0400
+	id S1760229Ab2CTOli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:41:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141907416"
+   d="scan'208";a="141907382"
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Ted Tso <tytso@mit.edu>
 Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1 6/9] ext4: introduce __ext4_mark_super_dirty
-Date: Tue, 20 Mar 2012 16:41:26 +0200
-Message-Id: <1332254489-2300-7-git-send-email-dedekind1@gmail.com>
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v1 4/9] mm: export dirty_writeback_interval
+Date: Tue, 20 Mar 2012 16:41:24 +0200
+Message-Id: <1332254489-2300-5-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
 References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
@@ -26,75 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Introduce another superblock dirtying helper: '__ext4_mark_super_dirty()' which
-marks the superblock as dirty unconditionally, without checking whether we have
-the superblock or not. Use this function from '__ext4_handle_dirty_super()'.
-
-This patch is a preparation for further work. We need to have a single place
-where we mark the superblock as dirty, and this place is now the
-'__ext4_mark_super_dirty()' function. We intentionally make it to be non-inline
-because one of the next patches will add more code there.
-
-Note: the final goal is to get rid of the 'sync_supers()' kernel thread which
-wakes up every 5 seconds and even if there is nothing to do. Thus, we are
-pushing superblock management from VFS down to file-systems.
+Export 'dirty_writeback_interval' to make it visible to file-systems. We are
+going to push superblock management down to file-systems and get rid of the
+'sync_supers' kernel thread completly.
 
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- fs/ext4/ext4.h      |    3 ++-
- fs/ext4/ext4_jbd2.c |    2 +-
- fs/ext4/super.c     |    5 +++++
- 3 files changed, 8 insertions(+), 2 deletions(-)
+ mm/page-writeback.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 513004f..87e8376 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1931,6 +1931,7 @@ extern int ext4_group_extend(struct super_block *sb,
- extern int ext4_resize_fs(struct super_block *sb, ext4_fsblk_t n_blocks_count);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 363ba70..5e39858 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -95,6 +95,8 @@ unsigned long vm_dirty_bytes;
+  */
+ unsigned int dirty_writeback_interval = 5 * 100; /* centiseconds */
  
- /* super.c */
-+extern void __ext4_mark_super_dirty(struct super_block *sb);
- extern void *ext4_kvmalloc(size_t size, gfp_t flags);
- extern void *ext4_kvzalloc(size_t size, gfp_t flags);
- extern void ext4_kvfree(void *ptr);
-@@ -2207,7 +2208,7 @@ static inline void ext4_unlock_group(struct super_block *sb,
- static inline void ext4_mark_super_dirty(struct super_block *sb)
- {
- 	if (EXT4_SB(sb)->s_journal == NULL)
--		sb->s_dirt =1;
-+		__ext4_mark_super_dirty(sb);
- }
- 
- /*
-diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
-index aca1790..57e5d5c 100644
---- a/fs/ext4/ext4_jbd2.c
-+++ b/fs/ext4/ext4_jbd2.c
-@@ -149,6 +149,6 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
- 			ext4_journal_abort_handle(where, line, __func__,
- 						  bh, handle, err);
- 	} else
--		sb->s_dirt = 1;
-+		__ext4_mark_super_dirty(sb);
- 	return err;
- }
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index d280bb6..d9543f3 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4199,6 +4199,11 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 	return error;
- }
- 
-+void __ext4_mark_super_dirty(struct super_block *sb)
-+{
-+	sb->s_dirt = 1;
-+}
++EXPORT_SYMBOL_GPL(dirty_writeback_interval);
 +
  /*
-  * Have we just finished recovery?  If so, and if we are mounting (or
-  * remounting) the filesystem readonly, then we will end up with a
+  * The longest time for which data is allowed to remain dirty
+  */
 -- 
 1.7.7.6
 
