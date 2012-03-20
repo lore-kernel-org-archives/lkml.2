@@ -1,319 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2CTQvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:51:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:63142 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab2CTQvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:51:15 -0400
-From: Bernhard Walle <walle@corscience.de>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: [PATCH] mfd: Add TWL4030 PWM driver
-Date: Tue, 20 Mar 2012 17:48:03 +0100
-Message-Id: <1332262083-9375-1-git-send-email-walle@corscience.de>
-X-Mailer: git-send-email 1.7.9.4
-X-Provags-ID: V02:K0:UIxlEkjMufcrAHI2pF5cMvenrTm6JK1o0UbyUDnkuln
- n98HQWqrHFjQ7b9GE6kw5w1reU5wUwfjnCR9RNMe8lBFETDLCY
- y8kKlScw/rF9I8ZSb7HDVy3WzWm6U/xFieG8h4isGGjaTX+EU1
- YbJj9ZQgTzJup3lzvk26e6jMEvmGwTes4yJCIuBLOysqZUhtsk
- o/mt3TEc1JqCuLSiVXOvbUk3nUXC79ndKABMfpheum3eWmc57c
- s3PjwYGdvFv+9XvmvHe+GF2pachcjC96tyVqjUPR1Ip9DY4jHe
- F8BFMLyYGkt+np0cUZwgQVwirO2yNTNmRiZPanedTad5XBAaUU
- /ssaw29FUaevTq7/sLc6M77gQhE9lwBC44ozteQU9d0L58QIwB
- BlmlaPiR4bKvw==
+	id S1757982Ab2CTQxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:53:03 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:55416 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757146Ab2CTQxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 12:53:01 -0400
+Message-ID: <4F68B590.7090204@parallels.com>
+Date: Tue, 20 Mar 2012 20:51:28 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
+Subject: Re: [PATCH 09/10] cgroup: introduce struct cfent
+References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-10-git-send-email-tj@kernel.org> <4F688EA9.8050905@parallels.com> <20120320160228.GD5684@google.com> <4F68AA37.80604@parallels.com> <20120320164915.GF5684@google.com>
+In-Reply-To: <20120320164915.GF5684@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.255.67.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This PWM driver uses the PWM of the TWL4030. The driver for the TWL6030
-PWM has been used as mode, but the PWM registers are different.
+On 03/20/2012 08:49 PM, Tejun Heo wrote:
+> On Tue, Mar 20, 2012 at 08:03:03PM +0400, Glauber Costa wrote:
+>>  From 04604201411ab0a14fa1447072cd1b273d0774ed Mon Sep 17 00:00:00 2001
+>> From: Glauber Costa<glommer@parallels.com>
+>> Date: Tue, 20 Mar 2012 18:12:55 +0400
+>> Subject: [PATCH] don't trigger warning when d_subdirs is not empty.
+>>
+>> It is never empty at this point, because of the self references.
+>> a better test is to see if any of them gets d_inode set.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> Signed-off-by: Tejun Heo<tj@kernel.org>
+>> ---
+>>   kernel/cgroup.c |    8 +++++++-
+>>   1 files changed, 7 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+>> index cf7b298..b45a653 100644
+>> --- a/kernel/cgroup.c
+>> +++ b/kernel/cgroup.c
+>> @@ -947,10 +947,16 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+>>   static void cgroup_clear_directory(struct dentry *dir)
+>>   {
+>>   	struct cgroup *cgrp = __d_cgrp(dir);
+>> +	struct list_head *child;
+>>
+>>   	while (!list_empty(&cgrp->files))
+>>   		cgroup_rm_file(cgrp, NULL);
+>> -	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
+>> +
+>> +	list_for_each(child,&dir->d_subdirs) {
+>> +		struct dentry *d;
+>> +		d = list_entry(child, struct dentry, d_u.d_child);
+>> +		WARN_ON_ONCE(d->d_inode);
+>> +	}
+>
+> This seems correct and I'll apply this but I still can't reproduce the
+> warning at will before the patch.  How do I a get negative dentry on
+> the d_subdirs when d_delete always returns 1?  Glauber, can you
+> trigger the warning at will?
+>
+> Thanks.
+Yes, everytime I reboot the machine.
 
-The driver can be used and has been tested in conjunction with
-pwm-backlight to control a backlight LED of a LCD touch screen.
 
-Signed-off-by: Bernhard Walle <walle@corscience.de>
----
- drivers/mfd/Kconfig       |    9 ++
- drivers/mfd/Makefile      |    1 +
- drivers/mfd/twl4030-pwm.c |  235 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 245 insertions(+)
- create mode 100644 drivers/mfd/twl4030-pwm.c
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index f147395..4a7bee8 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -235,6 +235,15 @@ config TWL4030_POWER
- 	  and load scripts controlling which resources are switched off/on
- 	  or reset when a sleep, wakeup or warm reset event occurs.
- 
-+config TWL4030_PWM
-+	tristate "TWL4030 PWM (Pulse Width Modulator) Support"
-+	depends on TWL4030_CORE
-+	select HAVE_PWM
-+	default n
-+	help
-+	  Say yes here if you want support for TWL4030 PWM. This PWM
-+	  can be used to control the brightness of an LCD backlight.
-+
- config MFD_TWL4030_AUDIO
- 	bool
- 	depends on TWL4030_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index b953bab..7b824eb 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -48,6 +48,7 @@ obj-$(CONFIG_MENELAUS)		+= menelaus.o
- obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
- obj-$(CONFIG_TWL4030_MADC)      += twl4030-madc.o
- obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
-+obj-$(CONFIG_TWL4030_PWM)	+= twl4030-pwm.o
- obj-$(CONFIG_MFD_TWL4030_AUDIO)	+= twl4030-audio.o
- obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
- obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
-diff --git a/drivers/mfd/twl4030-pwm.c b/drivers/mfd/twl4030-pwm.c
-new file mode 100644
-index 0000000..06a5dbf
---- /dev/null
-+++ b/drivers/mfd/twl4030-pwm.c
-@@ -0,0 +1,235 @@
-+/*
-+ * twl4030-pwm.c
-+ * Copyright (C) 2012 Corscience GmbH & Co. KG
-+ *               Bernhard Walle <bernhard@bwalle.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c/twl.h>
-+#include <linux/slab.h>
-+
-+#define TWL_INTBR_PMBR1		0xD
-+#define TWL_INTBR_GPBR1		0xC
-+#define TWL_LED_PWMON		0x0
-+#define TWL_LED_PWMOFF		0x1
-+
-+/* GPBR1 */
-+#define GPBR1_PWM1_ENABLE	(1<<3)
-+#define GPBR1_PWM0_ENABLE	(1<<2)
-+#define GPBR1_PWM1_CLK_ENABLE	(1<<1)
-+#define GPBR1_PWM0_CLK_ENABLE	(1<<0)
-+
-+/* PMBR1 */
-+#define PMBR1_GPIO7_MASK	((1<<5)|(1<<4))
-+#define PMBR1_GPIO7_GPIO	(0x0<<4)
-+#define PMBR1_GPIO7_VIBRASYNC	(0x1<<4)
-+#define PMBR1_GPIO7_NOACTION	(0x2<<4)
-+#define PMBR1_GPIO7_PWM1	(0x3<<4)
-+
-+#define PMBR1_GPIO6_MASK	((1<<3)|(1<<2))
-+#define PMBR1_GPIO6_GPIO	(0x0<<2)
-+#define PMBR1_GPIO6_PWM0	(0x1<<2)
-+#define PMBR1_GPIO6_MUTE	(0x2<<2)
-+
-+/* TWL_LED_PWMON and TWL_LED_PWMOFF must be between 0 and PWM_COUNT_MAX. */
-+#define PWM_COUNT_MAX		128
-+
-+/* Opaque data structure */
-+struct pwm_device {
-+	const char *label;
-+	unsigned int pwm_id;
-+};
-+
-+/*
-+ * Converts the pwm_id to the I2C register of the TWL that is used to
-+ * set the PWM on and off cycle.
-+ */
-+static const u8 twl_module_register[] = {
-+	[0] = TWL4030_MODULE_PWM0,
-+	[1] = TWL4030_MODULE_PWM1
-+};
-+
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	u8 duty_cycle, addr;
-+	int ret;
-+
-+	if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
-+		return -EINVAL;
-+
-+	duty_cycle = (duty_ns * PWM_COUNT_MAX) / period_ns;
-+	addr = twl_module_register[pwm->pwm_id];
-+
-+	ret = twl_i2c_write_u8(addr, 0, TWL_LED_PWMON);
-+	if (ret) {
-+		pr_err("%s: Failed to configure PWM, Error %d\n",
-+		       pwm->label, ret);
-+		return ret;
-+	}
-+
-+	ret = twl_i2c_write_u8(addr, duty_cycle, TWL_LED_PWMOFF);
-+	if (ret < 0) {
-+		pr_err("%s: Failed to configure PWM, Error %d\n",
-+		       pwm->label, ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(pwm_config);
-+
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	int ret;
-+	u8 val;
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL_INTBR_GPBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to read TWL_INTBR_GPBR1 register\n",
-+			pwm->label);
-+		return ret;
-+	}
-+
-+	if (pwm->pwm_id == 0)
-+		val |= GPBR1_PWM0_ENABLE | GPBR1_PWM0_CLK_ENABLE;
-+	else
-+		val |= GPBR1_PWM1_ENABLE | GPBR1_PWM1_CLK_ENABLE;
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL_INTBR_GPBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to write TWL_INTBR_GPBR1 register\n",
-+			pwm->label);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(pwm_enable);
-+
-+void pwm_disable(struct pwm_device *pwm)
-+{
-+	int ret;
-+	u8 val;
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL_INTBR_GPBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to read TWL_INTBR_GPBR1 register\n",
-+			pwm->label);
-+		return;
-+	}
-+
-+	if (pwm->pwm_id == 0)
-+		val &= ~(GPBR1_PWM0_ENABLE | GPBR1_PWM0_CLK_ENABLE);
-+	else
-+		val &= ~(GPBR1_PWM1_ENABLE | GPBR1_PWM1_CLK_ENABLE);
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL_INTBR_GPBR1);
-+	if (ret < 0)
-+		pr_err("%s: failed to write TWL_INTBR_GPBR1 register\n",
-+			pwm->label);
-+}
-+EXPORT_SYMBOL(pwm_disable);
-+
-+struct pwm_device *pwm_request(int pwm_id, const char *label)
-+{
-+	int ret;
-+	u8 val;
-+	struct pwm_device *pwm;
-+
-+	if (!(pwm_id == 0 || pwm_id == 1)) {
-+		pr_err("%s: Invalid pwm_id, only 0 or 1 allowed\n", label);
-+		return NULL;
-+	}
-+
-+	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-+	if (!pwm) {
-+		pr_err("%s: failed to allocate memory\n", label);
-+		return NULL;
-+	}
-+
-+	pwm->label = label;
-+	pwm->pwm_id = pwm_id;
-+
-+	/* change pin mux to use the PWM */
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL_INTBR_PMBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to read TWL_INTBR_PMBR1 register\n",
-+			pwm->label);
-+		goto err;
-+	}
-+
-+	if (pwm->pwm_id == 0) {
-+		val &= PMBR1_GPIO6_MASK;
-+		val |= PMBR1_GPIO6_PWM0;
-+	} else {
-+		val &= PMBR1_GPIO7_MASK;
-+		val |= PMBR1_GPIO7_PWM1;
-+	}
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL_INTBR_PMBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to write TWL_INTBR_PMBR1 register\n",
-+			pwm->label);
-+		goto err;
-+	}
-+
-+	return pwm;
-+
-+err:
-+	kfree(pwm);
-+	return NULL;
-+}
-+EXPORT_SYMBOL(pwm_request);
-+
-+void pwm_free(struct pwm_device *pwm)
-+{
-+	int ret;
-+	u8 val;
-+
-+	pwm_disable(pwm);
-+
-+	/* change pin mux to use the GPIOs */
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL_INTBR_PMBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to read TWL_INTBR_PMBR1 register\n",
-+			pwm->label);
-+		goto out;
-+	}
-+
-+	if (pwm->pwm_id == 0) {
-+		val &= PMBR1_GPIO6_MASK;
-+		val |= PMBR1_GPIO6_GPIO;
-+	} else {
-+		val &= PMBR1_GPIO7_MASK;
-+		val |= PMBR1_GPIO7_GPIO;
-+	}
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL_INTBR_PMBR1);
-+	if (ret < 0) {
-+		pr_err("%s: failed to write TWL_INTBR_PMBR1 register\n",
-+			pwm->label);
-+	}
-+
-+out:
-+	kfree(pwm);
-+}
-+EXPORT_SYMBOL(pwm_free);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("TWL4030 PWM driver");
-+MODULE_AUTHOR("Bernhard Walle <bernhard@bwalle.de>");
--- 
-1.7.9.4
 
