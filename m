@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622Ab2CTKtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:49:52 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:57043
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759568Ab2CTKtc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:49:32 -0400
-Message-ID: <4F6860AF.5060404@compulab.co.il>
-Date: Tue, 20 Mar 2012 12:49:19 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20120201 Thunderbird/9.0
+	id S1759626Ab2CTKxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:53:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757747Ab2CTKxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 06:53:17 -0400
+Message-ID: <4F686163.40509@redhat.com>
+Date: Tue, 20 Mar 2012 12:52:19 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
-References: <1331882917-27960-1-git-send-email-vbyravarasu@nvidia.com> <20120316200154.GU20524@sortiz-mobl> <D958900912E20642BCBC71664EFECE3E6DD3127A5D@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD3127A5D@BGMAIL02.nvidia.com>
-X-Enigmail-Version: 1.3.4
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+References: <20120316144028.036474157@chello.nl>     <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>    <4F671B90.3010209@redhat.com> <1332158992.18960.316.camel@twins>   <4F672384.1030601@redhat.com> <1332187387.18960.389.camel@twins>  <4F685960.4080904@redhat.com> <1332240525.18960.403.camel@twins>
+In-Reply-To: <1332240525.18960.403.camel@twins>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/12 10:43, Venu Byravarasu wrote:
-> Thanks Mark and Samuel.
-> 
->> -----Original Message-----
->> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
->> Sent: Saturday, March 17, 2012 1:32 AM
->> To: Venu Byravarasu
->> Cc: linux-kernel@vger.kernel.org; jedu@slimlogic.co.uk; lrg@slimlogic.co.uk;
->> broonie@opensource.wolfsonmicro.com; gg@slimlogic.co.uk
->> Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
->>
->> Hi Venu,
->>
->> On Fri, Mar 16, 2012 at 12:58:37PM +0530, Venu Byravarasu wrote:
->>> From: Venu Byravarasu <vbyravarasu@nvidia.com>
->>>
->>> Fix compilation error due to including TPS65910.h
->> Probably too late for 3.3, but I applied this patch anyway.
+On 03/20/2012 12:48 PM, Peter Zijlstra wrote:
+> On Tue, 2012-03-20 at 12:18 +0200, Avi Kivity wrote:
+> > On 03/19/2012 10:03 PM, Peter Zijlstra wrote:
+> > > On Mon, 2012-03-19 at 14:16 +0200, Avi Kivity wrote:
+> > > > > Afaik we do not use dma engines for memory migration. 
+> > > > 
+> > > > We don't, but I think we should. 
+> > >
+> > > ISTR we (the community) had this discussion once. I also seem to
+> > > remember the general consensus being that DMA engines would mostly
+> > > likely not be worth the effort, although I can't really recall the
+> > > specifics.
+> > >
+> > > Esp. for 4k pages the setup of the offload will likely be more expensive
+> > > than actually doing the memcpy.
+> > 
+> > If you're copying a page, yes.  If you're copying a large vma, the
+> > per-page setup cost is likely to be very low.
+> > 
+> > Especially if you're copying across nodes.
+>
+> But wouldn't you then have to wait for the entire copy to complete
+> before accessing any of the memory? That sounds like a way worse latency
+> hit than the per-page lazy-migrate.
 
-Venu,
-Should this go also to stable?
-
-If it should then, Samuel, can you please add Cc: stable@vger.kernel.org?
-
+You use the dma engine for eager copying, not on demand.
 
 -- 
-Regards,
-Igor.
+error compiling committee.c: too many arguments to function
+
