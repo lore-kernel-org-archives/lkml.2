@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab2CTVGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 17:06:55 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45475 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab2CTVGx (ORCPT
+	id S964850Ab2CTVNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 17:13:46 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:40666 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755067Ab2CTVNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 17:06:53 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 131.252.102.37
-Date: Tue, 20 Mar 2012 14:06:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: Check for quoted strings broken across lines
-Message-ID: <20120320210644.GA2493@leaf>
+	Tue, 20 Mar 2012 17:13:44 -0400
+Message-ID: <4F68F2FB.60401@xenotime.net>
+Date: Tue, 20 Mar 2012 14:13:31 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.3
+References: <1332277125-10785-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1332277125-10785-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch already makes an exception to the 80-column rule for quoted
-strings, and Documentation/CodingStyle recommends not splitting quoted
-strings across lines, because it breaks the ability to grep for the
-string.  Rather than just permitting this, actively warn about quoted
-strings split across lines.
+On 03/20/2012 01:58 PM, Geert Uytterhoeven wrote:
 
-Test case:
+> Below is the list of build error/warning regressions/improvements in
+> v3.3[1] compared to v3.2[2].
+> 
+> Summarized:
+>   - build errors: +956/-112
+>   - build warnings: +3135/-617
+> 
+> JFYI, when comparing v3.3 to v3.3-rc7[3], the summaries are:
+>   - build errors: +927/-91
+>   - build warnings: +2464/-505
 
-void context(void)
-{
-	struct { unsigned magic; const char *strdata; } foo[] = {
-		{ 42, "these strings"
-		      "do not produce warnings" },
-		{ 256, "though perhaps"
-		       "they should" },
-	};
-	pr_err("this string"
-	       " should produce a warning\n");
-	pr_err("this multi-line string\n"
-	       "should not produce a warning\n");
-	asm ("this asm\n\t"
-	     "should not produce a warning");
-}
 
-Results of checkpatch on that test case:
+Hi Geert,
 
-WARNING: quoted string split across lines
-+	       " should produce a warning\n");
+This is with the newly built tools, right?
 
-total: 0 errors, 1 warnings, 15 lines checked
+Where is the WARNINGS section?
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
+242 of the 956 errors are gpio-related.  :(
 
-Resending now that the merge window has opened.
 
- scripts/checkpatch.pl |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e3bfcbe..01a5e4b 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1737,6 +1737,21 @@ sub process {
- 			     "line over 80 characters\n" . $herecurr);
- 		}
- 
-+# Check for user-visible strings broken across lines, which breaks the ability
-+# to grep for the string.  Limited to strings used as parameters (those
-+# following an open parenthesis), which almost completely eliminates false
-+# positives, as well as warning only once per parameter rather than once per
-+# line of the string.  Make an exception when the previous string ends in a
-+# newline (multiple lines in one string constant) or \n\t (common in inline
-+# assembly to indent the instruction on the following line).
-+		if ($line =~ /^\+\s*"/ &&
-+		    $prevline =~ /"\s*$/ &&
-+		    $prevline =~ /\(/ &&
-+		    $prevrawline !~ /\\n(?:\\t)*"\s*$/) {
-+			WARN("SPLIT_STRING",
-+			     "quoted string split across lines\n" . $hereprev);
-+		}
-+
- # check for spaces before a quoted newline
- 		if ($rawline =~ /^.*\".*\s\\n/) {
- 			WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
+> Note that there may be false regressions:
+>   - The number of configs increased from 106 to 116,
+>   - The new toolchains emit a lot more warnings,
+>   - The new toolchains add information about which warning option
+>     triggered a warning. I postprocessed the logs to remove these
+>     annotations, but there may still be slight differences left.
+> As a consequence, I only kept the build error regressions in the report
+> below. 412 KiB was just too much for lkml.
+> Let's hope everything becomes more usable again with v3.4-rc1.
+> 
+> As master.kernel.org is down, there's no verbose summary yet at
+> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.3.summary.gz
+> 
+> Happy fixing! ;-)
+> 
+> Thanks to the linux-next team for providing the build service.
+> 
+> [1] http://kisskb.ellerman.id.au/kisskb/head/4840.processed/ (all 116 configs)
+> [2] http://kisskb.ellerman.id.au/kisskb/head/4572/ (107 out of 116 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/4812/ (106 out of 116 configs)
+
+
 -- 
-1.7.9
-
+~Randy
