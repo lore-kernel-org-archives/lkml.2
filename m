@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964850Ab2CTVNq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 17:13:46 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:40666 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755067Ab2CTVNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 17:13:44 -0400
-Message-ID: <4F68F2FB.60401@xenotime.net>
-Date: Tue, 20 Mar 2012 14:13:31 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1758043Ab2CTVR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 17:17:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57742 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753832Ab2CTVR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 17:17:26 -0400
+Date: Tue, 20 Mar 2012 22:17:24 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] autonuma: release page_table_lock in scanning pmd
+Message-ID: <20120320211723.GG24602@redhat.com>
+References: <CAJd=RBAjXi04AwyCS94xFZkKNWv3ngKw=04Jw+Y9nNnMXjH-WQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.3
-References: <1332277125-10785-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1332277125-10785-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBAjXi04AwyCS94xFZkKNWv3ngKw=04Jw+Y9nNnMXjH-WQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 01:58 PM, Geert Uytterhoeven wrote:
-
-> Below is the list of build error/warning regressions/improvements in
-> v3.3[1] compared to v3.2[2].
+On Tue, Mar 20, 2012 at 08:30:48PM +0800, Hillf Danton wrote:
+> Only for unlikely corner case, unlock is added to pair lock.
 > 
-> Summarized:
->   - build errors: +956/-112
->   - build warnings: +3135/-617
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
 > 
-> JFYI, when comparing v3.3 to v3.3-rc7[3], the summaries are:
->   - build errors: +927/-91
->   - build warnings: +2464/-505
-
-
-Hi Geert,
-
-This is with the newly built tools, right?
-
-Where is the WARNINGS section?
-
-242 of the 956 errors are gpio-related.  :(
-
-
-
-> Note that there may be false regressions:
->   - The number of configs increased from 106 to 116,
->   - The new toolchains emit a lot more warnings,
->   - The new toolchains add information about which warning option
->     triggered a warning. I postprocessed the logs to remove these
->     annotations, but there may still be slight differences left.
-> As a consequence, I only kept the build error regressions in the report
-> below. 412 KiB was just too much for lkml.
-> Let's hope everything becomes more usable again with v3.4-rc1.
+> --- a/mm/autonuma.c	Sat Mar 17 11:01:50 2012
+> +++ b/mm/autonuma.c	Tue Mar 20 19:58:44 2012
+> @@ -522,7 +522,8 @@ static int knumad_scan_pmd(struct mm_str
+>  				spin_unlock(&mm->page_table_lock);
+>  				goto out;
+>  			}
+> -		}
+> +		} else
+> +			spin_unlock(&mm->page_table_lock);
+>  	}
 > 
-> As master.kernel.org is down, there's no verbose summary yet at
-> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.3.summary.gz
-> 
-> Happy fixing! ;-)
-> 
-> Thanks to the linux-next team for providing the build service.
-> 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/4840.processed/ (all 116 configs)
-> [2] http://kisskb.ellerman.id.au/kisskb/head/4572/ (107 out of 116 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/4812/ (106 out of 116 configs)
+>  	VM_BUG_ON(!pmd_present(*pmd));
 
+I'm impressed by how fast you found these bugs.
 
--- 
-~Randy
+Thanks a lot, applied!
+Andrea
