@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030525Ab2CTLtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 07:49:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43011 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030322Ab2CTLtt (ORCPT
+	id S1030417Ab2CTLuf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 07:50:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59084 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757079Ab2CTLue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 07:49:49 -0400
-Date: Tue, 20 Mar 2012 12:49:43 +0100
+	Tue, 20 Mar 2012 07:50:34 -0400
+Date: Tue, 20 Mar 2012 12:50:25 +0100
 From: Jens Axboe <axboe@kernel.dk>
 To: Tejun Heo <tj@kernel.org>
-Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, ctalbott@google.com,
-        rni@google.com
-Subject: Re: [PATCHSET] block: remove ioc_*_changed()
-Message-ID: <20120320114943.GM7505@kernel.dk>
-References: <1332195059-2750-1-git-send-email-tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120320115025.GN7505@kernel.dk>
+References: <20120306135531.828ca78e.akpm@linux-foundation.org>
+ <20120307145556.GA11262@redhat.com>
+ <20120307150549.955d6f9c.akpm@linux-foundation.org>
+ <20120308175708.GB22922@redhat.com>
+ <20120308180833.GA25508@google.com>
+ <20120308181125.GB25508@google.com>
+ <20120308182245.GC22922@redhat.com>
+ <20120308182712.GD25508@google.com>
+ <20120315164800.GE3253@redhat.com>
+ <20120315165906.GE32137@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332195059-2750-1-git-send-email-tj@kernel.org>
+In-Reply-To: <20120315165906.GE32137@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19 2012, Tejun Heo wrote:
-> Hello, guys.
+On Thu, Mar 15 2012, Tejun Heo wrote:
+> Hello,
 > 
-> The changed notification used by cfq is rather odd.  cfq caches the
-> associated cfqqs per cic and uses the changed notification to expire
-> those lookup caches.
+> On Thu, Mar 15, 2012 at 12:48:00PM -0400, Vivek Goyal wrote:
+> > Your patches are in for-3.4/core branch of Jens's tree. So these indeed
+> > are going in 3.4 and not 3.5. I am confused.
 > 
-> The explicit notification mechanism might make sense if determining
-> whether the current cache is up-to-date is difficult or expensive;
-> however, that isn't the case here.  Determining whether ioprio or
-> cgroup has changed is straight-forward and inexpensive.
-> 
-> This patchset updates cfq to so that it remembers the current ioprio
-> and blkcg in the cic and determines whether cfqq's need to be reset
-> without using the changed notification and drops the changed
-> notification code.
-> 
->  0001-blkcg-add-blkcg-id.patch
->  0002-cfq-pass-around-cfq_io_cq-instead-of-io_context.patch
->  0003-cfq-don-t-use-icq_get_changed.patch
->  0004-block-remove-ioc_-_changed.patch
-> 
-> 0001 adds unique u64 id to each blkcg so that policies can tell
-> whether the associated blkcg has changed.
-> 
-> 0002 makes cfq pass around cic internally instead of ioc.  This is a
-> cleanup in itself and necessary for the next patch.
-> 
-> 0003 updates cfq to not use changed notification.
-> 
-> 0004 removes code implementing changed notification.
-> 
-> This patchset is on top of
-> 
->   block/for-3.4/core 671058fb2a2aac4e70f01b316b06bc59b98bd138
-> + [1] blkcg: fix percpu stat allocation and remove stats_lock, take#2
-> 
-> and available in the following git branch
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blk-ioc-remove-changed
+> Yeah, that's a bit confusing but they really aren't scheduled for the
+> upcoming merge window.  I suppose Jens just didn't want to create
+> for-3.5 branch at the moment.  Jens?
 
-Thanks Tejun, applied [1] and this one to for-3.4/core.
+They are going into 3.5, I just need to shuffle the branches a bit.
 
 -- 
 Jens Axboe
