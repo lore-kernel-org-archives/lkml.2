@@ -1,30 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2CTMaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 08:30:14 -0400
-Received: from plane.gmane.org ([80.91.229.3]:32817 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754283Ab2CTMaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 08:30:11 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: sp <satendra.pratap@gmail.com>
-Subject: using devfreq 
-Date: Tue, 20 Mar 2012 12:28:08 +0000 (UTC)
-Message-ID: <loom.20120320T132633-296@post.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 115.113.209.38 (Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7)
+	id S1757902Ab2CTMav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 08:30:51 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:51305 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab2CTMau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 08:30:50 -0400
+MIME-Version: 1.0
+Date: Tue, 20 Mar 2012 20:30:48 +0800
+Message-ID: <CAJd=RBAjXi04AwyCS94xFZkKNWv3ngKw=04Jw+Y9nNnMXjH-WQ@mail.gmail.com>
+Subject: [PATCH] autonuma: release page_table_lock in scanning pmd
+From: Hillf Danton <dhillf@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi , is there some example code to use defreq framework of linux?
+Only for unlikely corner case, unlock is added to pair lock.
 
-Thanks,
-sp
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
+--- a/mm/autonuma.c	Sat Mar 17 11:01:50 2012
++++ b/mm/autonuma.c	Tue Mar 20 19:58:44 2012
+@@ -522,7 +522,8 @@ static int knumad_scan_pmd(struct mm_str
+ 				spin_unlock(&mm->page_table_lock);
+ 				goto out;
+ 			}
+-		}
++		} else
++			spin_unlock(&mm->page_table_lock);
+ 	}
+
+ 	VM_BUG_ON(!pmd_present(*pmd));
+--
