@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030361Ab2CTIvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 04:51:49 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51617 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757330Ab2CTIvq (ORCPT
+	id S965106Ab2CTIwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 04:52:18 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34748 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964972Ab2CTIwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 04:51:46 -0400
-Message-ID: <1332233502.14019.14.camel@dabdike.int.hansenpartnership.com>
-Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
- correctly when SRB status is INVALID
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Date: Tue, 20 Mar 2012 08:51:42 +0000
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B76A16D@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
-	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
-	 <1332173560.3152.65.camel@dabdike>
-	 <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
-	 <1332196819.3152.77.camel@dabdike>
-	 <6E21E5352C11B742B20C142EB499E0481B76A16D@TK5EX14MBXC126.redmond.corp.microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 20 Mar 2012 04:52:14 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>, glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/10] cgroup: implement cgroup_add_cftypes() and friends
+In-Reply-To: <1331940963-15756-4-git-send-email-tj@kernel.org>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-4-git-send-email-tj@kernel.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 20 Mar 2012 14:22:02 +0530
+Message-ID: <877gyfu025.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12031922-1396-0000-0000-000000D72F0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 22:52 +0000, KY Srinivasan wrote:
-> > >  However, keep in mind
-> > > that there is no current ETA on when Windows will ship with these changes -
-> > Windows 8
-> > > may ship with code where they would return an invalid SRB status, but they are
-> > not
-> > > setting the sense code, hence this patch. When the Window host does the
-> > "right thing"
-> > > I will clean this up, but I don't know when that will be.
-> > 
-> > I thought you just said you'd only just asked them if they could
-> > implemented it, in which case no version of windows currently ships with
-> > this, correct?
-> 
-> There are some private builds of windows 8 floating around with this change, where
-> they are returning ILLEGAL_REQUEST SRB status  without any sense data.
+Tejun Heo <tj@kernel.org> writes:
 
-Sure, but they're not shipped, right ... it's like the test builds we do
-for large companies like IBM and HP to try out certain things before
-deciding they don't work.
+> Currently, cgroup directories are populated by subsys->populate()
+> callback explicitly creating files on each cgroup creation.  This
+> level of flexibility isn't needed or desirable.  It provides largely
+> unused flexibility which call for abuses while severely limiting what
+> the core layer can do through the lack of structure and conventions.
+>
+> Per each cgroup file type, the only distinction that cgroup users is
+> making is whether a cgroup is root or not, which can easily be
+> expressed with flags.
+>
+> This patch introduces cgroup_add_cftypes() and its wrapper macros -
+> CGROUP_SUBSYS_CFTYPES[_COND]().  These deal with cftypes instead of
+> individual files - controllers indicate that certain types of files
+> exist for certain subsystem.  Newly added CFTYPE_*_ON_ROOT flags
+> indicate whether a cftype should be excluded or created only on the
+> root cgroup.
+>
+> cgroup_add_cftypes() can be called any time whether the target
+> subsystem is currently attached or not.  cgroup core will create files
+> on the existing cgroups as necessary.  CGROUP_SUBSYS_CFTYPES[_COND]()
+> are convenience macros controllers so that cftypes can be declared to
+> belong to certain cgroup.  The COND variant is useful for cases where
+> certain files are dependent on boot time parameter.
+>
+> Further patches will convert the existing users and remove the file
+> based interface.  Note that this interface allows dynamic addition of
+> files to an active controller.  This will be used for sub-controller
+> modularity and unified hierarchy in the longer term.
+>
+> This patch implements the new mechanism but doesn't apply it to any
+> user.
+>
 
-> > > More importantly, the second patch  in this series where I filter out
-> > > the ATA_16 command
-> > > on the guest is really important for us. Without that patch on a range
-> > > on windows hosts
-> > > including the current beta version of windows8 where the host is
-> > > returning a generic
-> > > error in response to ATA_16 command, we cannot boot many Linux
-> > > distros. If you
-> > > prefer, I can drop the first patch and re-submit the second patch for
-> > > consideration now.
-> > 
-> > I'm not sure about that either.  You presumably translate
-> > SRB_STATUS_ERROR into DID_TARGET_FAILURE.  That should cause the
-> > termination of the command with prejudice in exactly the same way as an
-> > ILLEGAL_REQUEST sense code would (minus the useful error information),
-> > so what's causing the boot failure?
-> 
-> You are right, currently without a proper SRB code, I do a DID_TARGET_FAILURE and
-> this results in the device being offlined and if the device happens to be the root device,
-> we obviously cannot boot. I have seen this problem with sles11 sp2 on a win8 box.
+.....
 
-OK, so this may be the root cause of the problem.  DID_TARGET_FAILURE
-returns FAILED from scsi_decide_disposition().  This wakes up the error
-handler to retry the command and, since the command is never going to
-work, this ends up offlining the device.  The same thing will happen for
-every command with no recovery.
+> +/*
+> + * Declare cftype array @cfts for cgroup subsys @ss if @cond is %true.
+> + * Useful if the files are dependent on boot time parameter.
+> + */
+> +#define CGROUP_SUBSYS_CFTYPES_COND(ss, cfts, cond)			\
+> +	static int __init __cgroup_cfts_init_##ss_##cfts(void)		\
+> +	{								\
+> +		if ((cond))						\
+> +			WARN_ON(cgroup_add_cftypes(&ss, cfts));		\
+> +		return 0;						\
+> +	}								\
+> +	fs_initcall(__cgroup_cfts_init_##ss_##cfts);
+> +
 
-The question now is, what else returns SRB_STATUS_ERROR?  If it's always
-for stuff that's unretryable, then the DID_ error is wrong and you
-should be returning DID_PASSTHROUGH with an error code and the problem
-will be solved.  If we can get SRB_STATUS_ERROR on retryable commands,
-then you discriminate at the point of failure, not at the point of input
-and return DID_TARGET_FAILURE for the ones that should be retried and
-DID_PASSTHROUGH + error for the ones that shouldn't.  This will ensure
-the driver is completely backwards compatible and that it will work
-if/when windows properly handles the commands.
+Instead of using CGROUP_SUBSYS_CFTYPES_COND, are you ok if other
+subsystem called cgroup_add_cftypes ?. I am looking at how this will
+impact http://article.gmane.org/gmane.linux.kernel.mm/75470 . With
+HugeTLB we cannot do the above. 
 
-James
-
+-aneesh
 
