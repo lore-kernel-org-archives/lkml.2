@@ -1,158 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030219Ab2CTXI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 19:08:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57988 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab2CTXI1 (ORCPT
+	id S1759486Ab2CTXMt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 19:12:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35481 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757914Ab2CTXMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 19:08:27 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: linus.walleij@linaro.org
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH V3] dt: add property iteration helpers
-Date: Tue, 20 Mar 2012 17:08:19 -0600
-Message-Id: <1332284899-24702-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 20 Mar 2012 19:12:47 -0400
+Date: Wed, 21 Mar 2012 00:12:42 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>, Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] clk: Move init fields from clk to clk_hw
+Message-ID: <20120320231242.GP3852@pengutronix.de>
+References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+ <1332214706-675-1-git-send-email-skannan@codeaurora.org>
+ <1332214706-675-2-git-send-email-skannan@codeaurora.org>
+ <20120320072018.GC32469@S2101-09.ap.freescale.net>
+ <cbd6490459b9fd68875fec4a7c7de073.squirrel@www.codeaurora.org>
+ <20120320094031.GI3852@pengutronix.de>
+ <20120320141811.GF32469@S2101-09.ap.freescale.net>
+ <20120320181050.GN3852@pengutronix.de>
+ <4F68E34A.70207@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F68E34A.70207@codeaurora.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 23:40:35 up 129 days,  6:27, 32 users,  load average: 0.73, 2.10,
+ 1.23
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds macros of_property_for_each_u32() and
-of_property_for_each_string(), which iterate over an array of values
-within a device-tree property. Usage is for example:
+On Tue, Mar 20, 2012 at 01:06:34PM -0700, Saravana Kannan wrote:
+> On 03/20/2012 11:10 AM, Sascha Hauer wrote:
+> >On Tue, Mar 20, 2012 at 10:18:14PM +0800, Shawn Guo wrote:
+> >>On Tue, Mar 20, 2012 at 10:40:31AM +0100, Sascha Hauer wrote:
+> >>...
+> >>>I am using these functions and don't need a static array, I just call
+> >>>the functions with the desired parameters.
+> >>>
+> >>With this patch getting in, you do not have to use them then.  I feel
+> >>a static array will be much more readable than a long list of function
+> >>calls with a long list of hardcoded arguments to each.
+> >
+> >I'm also not a fan of long argument lists; a divider like defined in my
+> >tree takes 5 arguments, a gate 4 and a mux 6. While 6 is already at the
+> >border I think it's still acceptable.
+> >
+> >What I like in terms of readability is one line per clock which makes
+> >for quite short clock files.
+> 
+> It certainly makes for short clock files, but it's definitely less
+> readable that the expanded struct. For the original author the "one
+> line per clock" looks readable since they wrote it. But for someone
+> looking at the code to modify it, the expanded one would be much
+> easier to read. Also, you can always declare your own macro if you
+> really want to follow the one line approach.
+> 
+> >So when we use structs to initialize the clocks we'll probably have
+> >something like this:
+> >
+> >static struct clk_divider somediv = {
+> >	.reg = CCM_BASE + 0x14,
+> >	.width = 3,
+> >	.shift = 17,
+> >	.lock =&ccm_lock,
+> >	.hw.parent = "someotherdiv",
+> >	.hw.flags = CLK_SET_RATE_PARENT,
+> >};
+> 
+> Taken from your patches:
+> 
+> imx_clk_mux("spll_sel", CCM_CSCR, 17, 1, spll_sel_clks,
+> ARRAY_SIZE(spll_sel_clks));
+> 
+> Compare the struct to the one line call. Now tell me, what does "1"
+> represent? No clue. But in the struct, I can immediately tell what
+> each one of the parameters are.
+> 
+> Anyway, my patch certainly isn't forcing you to use multiple lines.
+> So, hopefully this won't be a point of contention.
+> 
+> >This will make a 4000 line file out of a 500 line file. Now when for
+> >some reason struct clk_divider changes we end with big patches. If the
+> >clk core gets a new fancy CLK_ flag which we want to have then again
+> >we end up with big patches. Then there's also the possibility that
+> >someone finds out that .lock and .hw.flags are common to all dividers
+> >and comes up with a #define DEFINE_CLK_DIVIDER again to share common
+> >fields.
+> 
+> This patch won't prevent you from doing any of that. You can still
+> create macros for that (there are already one for that). Also, what
+> you are pointing out is a bigger problem for the current
+> clk_register() function since you might have to change the no. of
+> params of all the callers even if a new field is optional.
+> 
+> >All this can be solved when we introduce a small wrapper function and
+> >use it in the clock files:
+> >
+> >static inline struct clk *imx_clk_divider(const char *name, const char *parent,
+> >		void __iomem *reg, u8 shift, u8 width)
+> >{
+> >	return clk_register_divider(NULL, name, parent, CLK_SET_RATE_PARENT,
+> >			reg, shift, width, 0,&imx_ccm_lock);
+> >}
+> >
+> >It decouples us from the structs used by the clock framework, we can
+> >add our preferred flags and still can share common fields like the lock.
+> >
+> >While this was not the intention when I first converted from struct
+> >initializers to function initializers I am confident that it will make
+> >a good job.
+> 
+> Now I'm confused -- it's not clear if you are leaning towards my
+> patch or away from it?
 
-struct property *prop;
-const __be32 *p;
-u32 u;
-of_property_for_each_u32(np, "propname", prop, p, u)
-	printk("U32 value: %x\n", u);
+There was a tendency to get rid of static initializers and I like the
+idea of not exposing any of the internally used members outside the
+clock framework.
+Now people try their best to make themselves comfortable with the
+static initializers and you even discussed the possibility of removing
+the clk_register_* functions (which make it possible for users not
+to use any of the internal struct members). That's what I don't like
+about your patches. But if we go for static initializers anyway then your
+patches probably change things for the better.
 
-struct property *prop;
-const char *s;
-of_property_for_each_string(np, "propname", prop, s)
-	printk("String value: %s\n", s);
+Sascha
 
-Based on work by Rob Herring <robherring2@gmail.com>
-
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
----
-v3: Moved code in base.c, defines/prototypes into of.h.
-v2: Simplified the implementation per suggestion by Rob Herring.
-
-I'm not reposting them to avoid spamming people, but I have pinctrl changes
-that depend on this, so if this could be merged through the pinctrl tree,
-or somehow pulled into that tree, that'd be great.
-
- drivers/of/base.c  |   41 +++++++++++++++++++++++++++++++++++++++++
- include/linux/of.h |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 76 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 5806449..d9bfd49 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1260,3 +1260,44 @@ int of_alias_get_id(struct device_node *np, const char *stem)
- 	return id;
- }
- EXPORT_SYMBOL_GPL(of_alias_get_id);
-+
-+const __be32 *of_prop_next_u32(struct property *prop, const __be32 *cur,
-+			       u32 *pu)
-+{
-+	const void *curv = cur;
-+
-+	if (!prop)
-+		return NULL;
-+
-+	if (!cur) {
-+		curv = prop->value;
-+		goto out_val;
-+	}
-+
-+	curv += sizeof(*cur);
-+	if (curv >= prop->value + prop->length)
-+		return NULL;
-+
-+out_val:
-+	*pu = be32_to_cpup(curv);
-+	return curv;
-+}
-+EXPORT_SYMBOL_GPL(of_prop_next_u32);
-+
-+const char *of_prop_next_string(struct property *prop, const char *cur)
-+{
-+	const void *curv = cur;
-+
-+	if (!prop)
-+		return NULL;
-+
-+	if (!cur)
-+		return prop->value;
-+
-+	curv += strlen(cur) + 1;
-+	if (curv >= prop->value + prop->length)
-+		return NULL;
-+
-+	return curv;
-+}
-+EXPORT_SYMBOL_GPL(of_prop_next_string);
-diff --git a/include/linux/of.h b/include/linux/of.h
-index ba5d849..7c58550 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -269,6 +269,37 @@ extern void of_detach_node(struct device_node *);
- #endif
- 
- #define of_match_ptr(_ptr)	(_ptr)
-+
-+/*
-+ * struct property *prop;
-+ * const __be32 *p;
-+ * u32 u;
-+ *
-+ * of_property_for_each_u32(np, "propname", prop, p, u)
-+ *         printk("U32 value: %x\n", u);
-+ */
-+const __be32 *of_prop_next_u32(struct property *prop, const __be32 *cur,
-+			       u32 *pu);
-+#define of_property_for_each_u32(np, propname, prop, p, u)	\
-+	for (prop = of_find_property(np, propname, NULL),	\
-+		p = of_prop_next_u32(prop, NULL, &u);		\
-+		p;						\
-+		p = of_prop_next_u32(prop, p, &u))
-+
-+/*
-+ * struct property *prop;
-+ * const char *s;
-+ *
-+ * of_property_for_each_string(np, "propname", prop, s)
-+ *         printk("String value: %s\n", s);
-+ */
-+const char *of_prop_next_string(struct property *prop, const char *cur);
-+#define of_property_for_each_string(np, propname, prop, s)	\
-+	for (prop = of_find_property(np, propname, NULL),	\
-+		s = of_prop_next_string(prop, NULL);		\
-+		s;						\
-+		s = of_prop_next_string(prop, s))
-+
- #else /* CONFIG_OF */
- 
- static inline bool of_have_populated_dt(void)
-@@ -359,6 +390,10 @@ static inline int of_machine_is_compatible(const char *compat)
- 
- #define of_match_ptr(_ptr)	NULL
- #define of_match_node(_matches, _node)	NULL
-+#define of_property_for_each_u32(np, propname, prop, p, u) \
-+	while (0)
-+#define of_property_for_each_string(np, propname, prop, s) \
-+	while (0)
- #endif /* CONFIG_OF */
- 
- /**
 -- 
-1.7.0.4
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
