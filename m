@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab2CTJuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 05:50:19 -0400
-Received: from dwdmx5.dwd.de ([141.38.3.242]:53964 "EHLO dwdmx5.dwd.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab2CTJuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 05:50:16 -0400
-Date: Tue, 20 Mar 2012 09:50:08 +0000 (GMT)
-From: Holger Kiehl <Holger.Kiehl@dwd.de>
-X-X-Sender: kiehl@diagnostix.dwd.de
-To: Shaohua Li <shli@kernel.org>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>, neilb@suse.de,
-        axboe@kernel.dk, vgoyal@redhat.com, martin.petersen@oracle.com
-Subject: Re: [patch v2 0/6] Add TRIM support for raid linear/0/1/10
-In-Reply-To: <CANejiEWeaF44Rbgt5jhf_bnafF4yoTTZAYsqoD2+greJ07c-_A@mail.gmail.com>
-Message-ID: <alpine.LRH.2.02.1203200839120.29880@diagnostix.dwd.de>
-References: <20120316073213.656519005@fusionio.com> <alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de> <CANejiEWeaF44Rbgt5jhf_bnafF4yoTTZAYsqoD2+greJ07c-_A@mail.gmail.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1758320Ab2CTJ5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 05:57:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49053 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753037Ab2CTJ5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 05:57:16 -0400
+X-IronPort-AV: E=Sophos;i="4.73,617,1325433600"; 
+   d="scan'208";a="4579888"
+Message-ID: <4F6854F4.3060703@cn.fujitsu.com>
+Date: Tue, 20 Mar 2012 17:59:16 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-823004345-1332237008=:29880"
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com>
+In-Reply-To: <4F66E14F.3040809@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-20 17:55:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-20 17:55:06,
+	Serialize complete at 2012-03-20 17:55:06
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+At 03/19/2012 03:33 PM, Wen Congyang Wrote:
+> At 03/08/2012 03:57 PM, Wen Congyang Wrote:
+>> We can know the guest is paniced when the guest runs on xen.
+>> But we do not have such feature on kvm.
+>>
+>> Another purpose of this feature is: management app(for example:
+>> libvirt) can do auto dump when the guest is crashed. If management
+>> app does not do auto dump, the guest's user can do dump by hand if
+>> he sees the guest is paniced.
+>>
+>> I touch the hypervisor instead of using virtio-serial, because
+>> 1. it is simple
+>> 2. the virtio-serial is an optional device, and the guest may
+>>    not have such device.
+>>
+>> Changes from v2 to v3:
+>> 1. correct spelling
+>>
+>> Changes from v1 to v2:
+>> 1. split up host and guest-side changes
+>> 2. introduce new request flag to avoid changing return values.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> 
+> Hi all:
+> 
+> we neet this feature, but we don't decide how to implement it.
+> We have two solution:
+> 1. use vmcall
+> 2. use virtio-serial.
+> 
+> I will not change this patch set before we decide how to do it.
+> Can we make a decision recent days?
 
---8323328-823004345-1332237008=:29880
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+Anybody can decide which solution to use?
 
-Hello,
+Thanks
+Wen Congyang
 
-On Tue, 20 Mar 2012, Shaohua Li wrote:
+> 
+> Thanks
+> Wen Congyang
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-> 2012/3/20 Holger Kiehl <Holger.Kiehl@dwd.de>:
->> Hello,
->>
->>
->> On Fri, 16 Mar 2012, Shaohua Li wrote:
->>
->>> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM support
->>> for
->>> raid 4/5/6 later. The implementation is pretty straightforward and
->>> self-explained.
->>>
->>> v1->v2:
->>> 1. fixed a checking issue
->>> 2. dropped discard request plug and replace it with no discard merege,
->>> because
->>> current SCSI layer can't handle discard request merge.
->>>
->> Have tested TRIM patches on three different systems with the following
->> hardware/ setup:
->>
->>   1) root mounted on a raid1 over two SAS SSD's (200GB) and /home partition
->>      on a raid0 over a fusionio ioDrive Duo. Is very new and seen very
->>      little usage.
->>
->>   2) root and /home mounted on a raid0 over two Intel X25 Postville
->>      (160GB) connected to a Intel P55 Express chipset. Has seen very
->>      heavy usage for approx. 2 years.
->>
->>   3) root and /home mounted on a raid0 over three OCZ-VERTEX2 (120GB)
->>      connected via ICH7 south bridge. Has seen mild usage for approx.
->>      1.5 years.
->>
->> Made the following observations when running my own benchmark which
->> copies around a lot of small files and deletes them. The benchmark on
->> all systems was always run only on the /home partition ie. on a raid0.
->>
->> For system 1) there is hardly any measurable differnce whether discard
->> is enabled or not (~29000 files per second).
->>
->> On system 2) the performance drops from 6500->3700 files per second,
->> but under normal usage one does not notice any difference.
-> do you have the blktrace data when the benchmark is running, especially
-> when doing file deletion. I'd like to check the latency of discard in this case.
->
-It is uploaded on ftp://ftp.dwd.de/pub/afd/test/trim
-
->> System 3) has problems during boot, it is so slow that some operations
->> receive a timeout during boot:
->>
->>  udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
->>  udevd[474]: timeout: killing '/sbin/blkid -o udev -p /dev/md0' [866]
->>  systemd[1]: dev-md3.swap activation timed out. Stopping.
-> In this one, discard request is slow. And per SATA standard, discard request
-> can't be parallel, so only one request one time, which further slows it down.
->
-Ok, so having three disc in a raid 0 is even worth.
-
->> Even removing discard does not help and the above errors happen during
->> boot and booting takes a long time.
-> this doesn't make sense. If you don't mount with discard option, no
-> discard request
-> is issued.
->
-I read some where that swap uses discard by default and if I remember
-correctly it initializes the whole swap area at boot. So doing that
-over three disks might explain why I get those timeout error messages
-and after boot these commands work without delay.
-
-Regards,
-Holger
---8323328-823004345-1332237008=:29880--
