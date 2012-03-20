@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab2CTTnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 15:43:43 -0400
-Received: from cloudless.ru ([31.186.96.18]:54969 "EHLO cloudless.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756202Ab2CTTnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 15:43:41 -0400
-X-Greylist: delayed 3315 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Mar 2012 15:43:41 EDT
-Message-ID: <59b85bdc6223722b86c39a7a028de596.squirrel@www.cloudless.ru>
-In-Reply-To: <20120320180030.GB808@redhat.com>
-References: <60a33e825f0ab0e114e6d5a0ea4bda3d.squirrel@www.cloudless.ru>
-    <20120320180030.GB808@redhat.com>
-Date: Tue, 20 Mar 2012 22:48:25 +0400
-Subject: Re: uio_pci_generic driver
-From: tochansky@tochlab.net
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22-2.el6
+	id S1756934Ab2CTTq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:46:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48353 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111Ab2CTTq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 15:46:27 -0400
+Message-ID: <4F68DE88.1040301@gmail.com>
+Date: Tue, 20 Mar 2012 13:46:16 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ashay Rane <ashay.r@gmail.com>
+CC: linux-perf-users@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Ashay Rane <ashay.rane@tacc.utexas.edu>
+Subject: Re: [PATCH 1/1] Fix number of events displayed in header
+References: <1332271396-21756-1-git-send-email-ashay.r@gmail.com> <20120320194241.GA24870@infradead.org>
+In-Reply-To: <20120320194241.GA24870@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Mar 20, 2012 at 09:56:03PM +0400, tochansky@tochlab.net wrote:
->> Hello!
->> I have a question about uio_pci_generic driver. I'm trying to use it in
->> my
->> project, but have no luck.
->> There are very little information on the subject. If you have a few
->> minutes, I would like to ask a few questions.
->> I need to mmap() memory of my board to work with it. I did
->> # modprobe uio_pci_generic
->> # echo "xxxx xxxx" > /sys/bus/pci/drivers/uio_pci_generic/new_id
+On 3/20/12 1:42 PM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Mar 20, 2012 at 02:23:16PM -0500, Ashay Rane escreveu:
+>> From: Ashay Rane<ashay.rane@tacc.utexas.edu>
+>
+> Too short a changeset comment, please elaborate.
+>
+> The change at least would have to be changed from
+>
+> "Events: %llu", total_period
+>
+> to
+>
+> "Total period: %llu", total_period
+>
+> To be consistent in what we call "Events", i.e. right now it is telling
+> the number of PERF_RECORD_SAMPLE events, with your change it woul0d be
+> showing the sum of the periods in all samples.
+
+Does not seem appropriate to change from number of sample events to 
+period for all event types. This change assumes the event is cycles, 
+cpu-clock or task-clock.
+
+David
+
+
+>
+> - Arnaldo
+>
+>> Signed-off-by: Ashay Rane<ashay.rane@tacc.utexas.edu>
+>> ---
+>>   tools/perf/builtin-report.c |    6 ++----
+>>   1 files changed, 2 insertions(+), 4 deletions(-)
 >>
->> Files in /sys/class/uio/uio0 appears, but there no directory named
->> /sys/class/uio/uio0/maps/.
->> Anyway I tryed to mmap with code:
+>> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+>> index 25d34d4..58a20cf 100644
+>> --- a/tools/perf/builtin-report.c
+>> +++ b/tools/perf/builtin-report.c
+>> @@ -202,11 +202,9 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+>>   					      const char *evname, FILE *fp)
+>>   {
+>>   	size_t ret;
+>> -	char unit;
+>> -	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
+>> +	u64 total_period = self->stats.total_period;
 >>
->> #include <sys/types.h>
->> #include <sys/stat.h>
->> #include <fcntl.h>
->>
->> #include <sys/mman.h>
->> #include <stdio.h>
->>
->> int main()
->> {
->>         int fd = open("/dev/uio0", O_RDWR | O_SYNC);
->>         printf("fd = %d\n", fd);
->>         void *addr = mmap(NULL, 1024, PROT_READ, MAP_SHARED, fd, 0);
->>         printf("addr = %p\n", addr);
->> }
->>
->> Ofcourse, mmap() failes with error "Invalid argument". Nothing criminal
->> in
->> dmesg and any other hints of error.
->>
+>> -	nr_events = convert_unit(nr_events,&unit);
+>> -	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
+>> +	ret = fprintf(fp, "# Events: %llu", total_period);
+>>   	if (evname != NULL)
+>>   		ret += fprintf(fp, " %s", evname);
+>>   	return ret + fprintf(fp, "\n#\n");
 >> --
->> Dmitriy
->
->
-> Map memory through /sys/bus/pci/devices/......
->
-> Also copy questions to mailing lists please.
->
-Thanks, it works now.
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <sys/mman.h>
-#include <stdio.h>
-
-int main() {
-        int fd =
-open("/sys/class/pci_bus/0000:03/device/0000:03:00.0/resource5",
-O_RDWR | O_SYNC);
-        printf("fd = %d\n", fd);
-        void *addr = mmap(NULL, 512, PROT_READ, MAP_SHARED, fd, 0);
-        if(addr == MAP_FAILED)  {
-                perror("mmap");
-        }
-        else {
-                printf("addr = %p\n", addr);
-        }
-}
-
-May be its time to add some hints in documentation? :-)
+>> 1.7.4.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
