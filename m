@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab2CTHbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 03:31:53 -0400
-Received: from mail-we0-f194.google.com ([74.125.82.194]:36807 "EHLO
-	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756846Ab2CTHbw (ORCPT
+	id S1758471Ab2CTHon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 03:44:43 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43881 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758130Ab2CTHol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 03:31:52 -0400
-Date: Tue, 20 Mar 2012 08:31:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-Message-ID: <20120320073147.GA27213@gmail.com>
-References: <20120316144028.036474157@chello.nl>
- <4F670325.7080700@redhat.com>
- <1332155527.18960.292.camel@twins>
- <20120319130401.GI24602@redhat.com>
- <1332164371.18960.339.camel@twins>
- <20120319142046.GP24602@redhat.com>
- <alpine.DEB.2.00.1203191513110.23632@router.home>
- <20120319202846.GA26555@gmail.com>
- <CA+55aFwa-81x2Dysk8WS8ez2WkYSbaQDyQvpH0qE7fGJgxTbUQ@mail.gmail.com>
+	Tue, 20 Mar 2012 03:44:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwa-81x2Dysk8WS8ez2WkYSbaQDyQvpH0qE7fGJgxTbUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F682555.3020502@gmail.com>
+References: <4F576FD5.2050208@gmail.com>
+	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
+	<4F577D9B.7020402@gmail.com>
+	<4F579A88.6030503@openwrt.org>
+	<4F61F551.5010608@gmail.com>
+	<4F639851.5080500@gmail.com>
+	<4F674616.8080103@gmail.com>
+	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
+	<4F674FF5.2060406@gmail.com>
+	<4F6751B2.1030809@openwrt.org>
+	<4F681B78.9000207@gmail.com>
+	<CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
+	<4F68235C.5090701@gmail.com>
+	<CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com>
+	<4F682555.3020502@gmail.com>
+Date: Tue, 20 Mar 2012 13:14:40 +0530
+Message-ID: <CAD2nsn2b9yVrX16m4Pc0F96PHF09ySv8ncY8Qnr7_9CC8hrbtA@mail.gmail.com>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+ AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Linux-wireless <linux-wireless@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=f46d0434bf42eec20c04bba7d864
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--f46d0434bf42eec20c04bba7d864
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> /home/kernel/linux-next/drivers/net/wireless/ath/ath9k/ath9k.o...done.
+> (gdb) l *(ath_tx_start+0x284)
+> 0xcad4 is in ath_tx_start (drivers/net/wireless/ath/ath9k/xmit.c:1878).
+> 1873 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ieee80211_is_data_qos(hdr->fr=
+ame_control)) {
+> 1874 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0tidno =3D ieee80211_get_qos_c=
+tl(hdr)[0] &
+> 1875 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0IEEE80211_QOS=
+_CTL_TID_MASK;
+> 1876 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0tid =3D ATH_AN_2_TID(txctl->a=
+n, tidno);
+> 1877
+> 1878 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0WARN_ON(tid->ac->txq !=3D txc=
+tl->txq);
+> 1879 =A0 =A0 =A0 =A0 =A0 =A0}
+> 1880
+> 1881 =A0 =A0 =A0 =A0 =A0 =A0if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU)=
+ && tid) {
+> 1882 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0/*
+> (gdb
 
-> On Mon, Mar 19, 2012 at 1:28 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > That having said PeterZ's numbers showed some pretty good
-> > improvement for the streams workload:
-> >
-> >  before: 512.8M
-> >  after: 615.7M
-> >
-> > i.e. a +20% improvement on a not very heavily NUMA box.
-> 
-> Well, streams really isn't a very interesting benchmark. It's 
-> the traditional single-threaded cpu-only thing that just 
-> accesses things linearly, and I'm not convinced the numbers 
-> should be taken to mean anything at all.
+please check with the attached debug patch if tid is 'NULL'
 
-Yeah, I considered it the 'ideal improvement' for memory-bound, 
-private-working-set workloads on commodity hardware - i.e. the 
-upper envelope of anything that might matter. We don't know the 
-worst-case regression percentage, nor the median improvement - 
-which might very well be a negative number.
 
-More fundamentally we don't even know whether such access 
-patterns matter at all.
+its my theory that tid is not initialized in ath_tx_node_init just after re=
+sume.
+during suspend ath9k_sta_remove may be called
+ieee80211_suspend -> drv_sta_state ->
+drv_sta_remove->ath9k_sta_remove->ath_node_detach->ath_tx_node_cleanup
 
-> The HPC people want to multi-thread things these days, and 
-> "cpu/memory affinity" is a lot less clear then.
-> 
-> So I can easily imagine that the performance improvement is 
-> real, but I really don't think "streams improves by X %" is 
-> all that interesting. Are there any more relevant loads that 
-> actually matter to people that we could show improvement on?
+during resume
 
-That would be interesting to see.
+ieee80211_resume ->
+ieee80211_reconfig->drv_sta_state->ath9k_sta_add->ath_node_attach->ath_tx_n=
+ode_init
 
-I could queue this up in a topical branch in a pure opt-in 
-fashion, to make it easier to test.
+now sta.ht_cap.ht_supported should be true. it will be set to true in
+assoc_sucess path and then sta_add is called.
 
-Assuming there will be real improvements on real workloads, do 
-you have any fundamental objections against the 'home node' 
-concept itself and its placement into mm_struct? I think it 
-makes sense and mm_struct is the most logical place to host it.
+let me see if i had missed something or my analysis itself is wrong.
 
-The rest looks rather non-controversial to me, apps that want 
-more memory affinity should get it and both the VM and the 
-scheduler should help achieve that goal, within memory and CPU 
-allocation constraints.
+>
 
-Thanks,
 
-	Ingo
+
+--=20
+thanks,
+shafi
+
+--f46d0434bf42eec20c04bba7d864
+Content-Type: text/x-diff; charset=US-ASCII; name="debug-panic.patch"
+Content-Disposition: attachment; filename="debug-panic.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h00n0nbr0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay94bWl0LmMgYi9kcml2
+ZXJzL25ldC93aXJlbGVzcy9hdGgvYXRoOWsveG1pdC5jCmluZGV4IDgzNGU2YmMuLmViMjIxNTYg
+MTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay94bWl0LmMKKysrIGIv
+ZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL3htaXQuYwpAQCAtMTg3NSw2ICsxODc1LDEy
+IEBAIHN0YXRpYyB2b2lkIGF0aF90eF9zdGFydF9kbWEoc3RydWN0IGF0aF9zb2Z0YyAqc2MsIHN0
+cnVjdCBza19idWZmICpza2IsCiAJCQlJRUVFODAyMTFfUU9TX0NUTF9USURfTUFTSzsKIAkJdGlk
+ID0gQVRIX0FOXzJfVElEKHR4Y3RsLT5hbiwgdGlkbm8pOwogCisJCWlmICghdGlkKSB7CisJCQlw
+cmludGsoIlxudGlkIGlzIE5VTEwhISEiKTsKKwkJCXJldHVybjsKKwkJfQorCisKIAkJV0FSTl9P
+Tih0aWQtPmFjLT50eHEgIT0gdHhjdGwtPnR4cSk7CiAJfQogCg==
+--f46d0434bf42eec20c04bba7d864--
