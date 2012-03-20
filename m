@@ -1,78 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab2CTM6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 08:58:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59639 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359Ab2CTM6i convert rfc822-to-8bit (ORCPT
+	id S1755298Ab2CTNDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:03:17 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:48968 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753727Ab2CTNDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 08:58:38 -0400
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: RE: [PATCH v5 2/3] arm:davinci: move emif driver to mfd framework
-Thread-Topic: [PATCH v5 2/3] arm:davinci: move emif driver to mfd framework
-Thread-Index: AQHM8jX94hGGsvaFkE+bBaOmSVmhh5ZQdwIAgAFTzjCAAzAEgIAH0xCQgBAmEgCABfNwYA==
-Date: Tue, 20 Mar 2012 12:57:55 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3178627F@DBDE01.ent.ti.com>
-References: <y> <1330005504-25321-3-git-send-email-prakash.pm@ti.com>
- <20120227142638.GN27687@sortiz-mobl>
- <A73F36158E33644199EB82C5EC81C7BC3176D103@DBDE01.ent.ti.com>
- <20120301112329.GI9008@sortiz-mobl>
- <A73F36158E33644199EB82C5EC81C7BC317702E9@DBDE01.ent.ti.com>
- <20120316172908.GG20524@sortiz-mobl>
-In-Reply-To: <20120316172908.GG20524@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.24]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Mar 2012 09:03:15 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] leds-pca955x: Fix race condition while setting brightness on several LEDs
+Date: Tue, 20 Mar 2012 14:03:11 +0100
+Message-ID: <4164556.rD0tn1gQO8@ws-stein>
+User-Agent: KMail/4.7.4 (Linux/3.2.1-gentoo-r2; KDE/4.7.4; x86_64; ; )
+In-Reply-To: <1328705048-21073-1-git-send-email-alexander.stein@systec-electronic.com>
+References: <1328705048-21073-1-git-send-email-alexander.stein@systec-electronic.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Any news/feedback on this?
 
-On Fri, Mar 16, 2012 at 22:59:08, Samuel Ortiz wrote:
-> Hi Prakash,
-> 
-> On Tue, Mar 06, 2012 at 01:12:25PM +0000, Manjunathappa, Prakash wrote:
-> > Hi Samuel,
-> > 
-> > May be I did not do a good job giving complete information on this earlier.
-> > So I have replied on top of my mail with below information (seems you missed it)
-> > 
-> I did get it, sorry for not being able to reply earlier.
-> 
-> 
-> > Taking above points into consideration Arnd Bergmann suggested to move AEMIF driver to
-> > MFD framework [1], relevant portion of his mail as follows,
-> > 
-> > " If you want it to provide endpoint devices that are handled by
-> > distinct subsystems in Linux, I would make it an mfd multifunction
-> > device and make the common... "
-> You're missing that part of the quote:
-> 
-> "...code a driver that scans the connected memories in order to register
-> its child devices for each of the subsystems."
-> 
+Regards,
+Alexander
 
-emif is not discoverable interface, does not support scanning for connected devices.
+Am Mittwoch, 8. Februar 2012, 13:44:08 schrieb Alexander Stein:
+> When issuing the following command:
+> for I in 0 1 2 3 4 5 6 7; do
+>   echo 0 > /sys/class/leds/pca955x\:${I}/brightness;
+> done
+> It is possible that all the pca955x_read_ls calls are done sequentially
+> before any pca955x_write_ls call is done. This updates the LS only to the
+> last LED update in its set.
+> Fix this by using a global lock for the pca995x device during
+> pca955x_led_work. Also used a struct for shared data bewteen all LEDs.
+> 
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> ---
+>  drivers/leds/leds-pca955x.c |  105
+> ++++++++++++++++++++++++++----------------- 1 files changed, 64
+> insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/leds/leds-pca955x.c b/drivers/leds/leds-pca955x.c
+> index dcc3bc3..2980d8e 100644
+> --- a/drivers/leds/leds-pca955x.c
+> +++ b/drivers/leds/leds-pca955x.c
+> @@ -101,11 +101,16 @@ static const struct i2c_device_id pca955x_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, pca955x_id);
+> 
+> -struct pca955x_led {
+> +struct pca955x {
+> +	struct mutex lock;
+> +	struct pca955x_led *leds;
+>  	struct pca955x_chipdef	*chipdef;
+>  	struct i2c_client	*client;
+> +};
+> +
+> +struct pca955x_led {
+> +	struct pca955x	*pca955x;
+>  	struct work_struct	work;
+> -	spinlock_t		lock;
+>  	enum led_brightness	brightness;
+>  	struct led_classdev	led_cdev;
+>  	int			led_num;	/* 0 .. 15 potentially */
+> @@ -128,7 +133,7 @@ static inline int pca95xx_num_led_regs(int bits)
+>   * Return an LED selector register value based on an existing one, with
+>   * the appropriate 2-bit state value set for the given LED number (0-3).
+>   */
+> -static inline u8 pca955x_ledsel(u8 oldval, int led_num, int state)
+> +static inline u8 pca955x_ledel(u8 oldval, int led_num, int state)
+>  {
+>  	return (oldval & (~(0x3 << (led_num << 1)))) |
+>  		((state & 0x3) << (led_num << 1));
+> @@ -140,7 +145,7 @@ static inline u8 pca955x_ledsel(u8 oldval, int led_num,
+> int state) */
+>  static void pca955x_write_psc(struct i2c_client *client, int n, u8 val)
+>  {
+> -	struct pca955x_led *pca955x = i2c_get_clientdata(client);
+> +	struct pca955x *pca955x = i2c_get_clientdata(client);
+> 
+>  	i2c_smbus_write_byte_data(client,
+>  		pca95xx_num_input_regs(pca955x->chipdef->bits) + 2*n,
+> @@ -156,7 +161,7 @@ static void pca955x_write_psc(struct i2c_client *client,
+> int n, u8 val) */
+>  static void pca955x_write_pwm(struct i2c_client *client, int n, u8 val)
+>  {
+> -	struct pca955x_led *pca955x = i2c_get_clientdata(client);
+> +	struct pca955x *pca955x = i2c_get_clientdata(client);
+> 
+>  	i2c_smbus_write_byte_data(client,
+>  		pca95xx_num_input_regs(pca955x->chipdef->bits) + 1 + 2*n,
+> @@ -169,7 +174,7 @@ static void pca955x_write_pwm(struct i2c_client *client,
+> int n, u8 val) */
+>  static void pca955x_write_ls(struct i2c_client *client, int n, u8 val)
+>  {
+> -	struct pca955x_led *pca955x = i2c_get_clientdata(client);
+> +	struct pca955x *pca955x = i2c_get_clientdata(client);
+> 
+>  	i2c_smbus_write_byte_data(client,
+>  		pca95xx_num_input_regs(pca955x->chipdef->bits) + 4 + n,
+> @@ -182,7 +187,7 @@ static void pca955x_write_ls(struct i2c_client *client,
+> int n, u8 val) */
+>  static u8 pca955x_read_ls(struct i2c_client *client, int n)
+>  {
+> -	struct pca955x_led *pca955x = i2c_get_clientdata(client);
+> +	struct pca955x *pca955x = i2c_get_clientdata(client);
+> 
+>  	return (u8) i2c_smbus_read_byte_data(client,
+>  		pca95xx_num_input_regs(pca955x->chipdef->bits) + 4 + n);
+> @@ -190,26 +195,31 @@ static u8 pca955x_read_ls(struct i2c_client *client,
+> int n)
+> 
+>  static void pca955x_led_work(struct work_struct *work)
+>  {
+> -	struct pca955x_led *pca955x;
+> +	struct pca955x_led *pca955x_led;
+> +	struct pca955x *pca955x;
+>  	u8 ls;
+>  	int chip_ls;	/* which LSx to use (0-3 potentially) */
+>  	int ls_led;	/* which set of bits within LSx to use (0-3) */
+> 
+> -	pca955x = container_of(work, struct pca955x_led, work);
+> -	chip_ls = pca955x->led_num / 4;
+> -	ls_led = pca955x->led_num % 4;
+> +	pca955x_led = container_of(work, struct pca955x_led, work);
+> +	pca955x = pca955x_led->pca955x;
+> +
+> +	chip_ls = pca955x_led->led_num / 4;
+> +	ls_led = pca955x_led->led_num % 4;
+> +
+> +	mutex_lock(&pca955x->lock);
+> 
+>  	ls = pca955x_read_ls(pca955x->client, chip_ls);
+> 
+> -	switch (pca955x->brightness) {
+> +	switch (pca955x_led->brightness) {
+>  	case LED_FULL:
+> -		ls = pca955x_ledsel(ls, ls_led, PCA955X_LS_LED_ON);
+> +		ls = pca955x_ledel(ls, ls_led, PCA955X_LS_LED_ON);
+>  		break;
+>  	case LED_OFF:
+> -		ls = pca955x_ledsel(ls, ls_led, PCA955X_LS_LED_OFF);
+> +		ls = pca955x_ledel(ls, ls_led, PCA955X_LS_LED_OFF);
+>  		break;
+>  	case LED_HALF:
+> -		ls = pca955x_ledsel(ls, ls_led, PCA955X_LS_BLINK0);
+> +		ls = pca955x_ledel(ls, ls_led, PCA955X_LS_BLINK0);
+>  		break;
+>  	default:
+>  		/*
+> @@ -219,12 +229,15 @@ static void pca955x_led_work(struct work_struct *work)
+> * OFF, HALF, or FULL.  But, this is probably better than
+>  		 * just turning off for all other values.
+>  		 */
+> -		pca955x_write_pwm(pca955x->client, 1, 255-pca955x->brightness);
+> -		ls = pca955x_ledsel(ls, ls_led, PCA955X_LS_BLINK1);
+> +		pca955x_write_pwm(pca955x->client, 1,
+> +				255 - pca955x_led->brightness);
+> +		ls = pca955x_ledel(ls, ls_led, PCA955X_LS_BLINK1);
+>  		break;
+>  	}
+> 
+>  	pca955x_write_ls(pca955x->client, chip_ls, ls);
+> +
+> +	mutex_unlock(&pca955x->lock);
+>  }
+> 
+>  static void pca955x_led_set(struct led_classdev *led_cdev, enum
+> led_brightness value) @@ -233,7 +246,6 @@ static void
+> pca955x_led_set(struct led_classdev *led_cdev, enum led_brightness v
+> 
+>  	pca955x = container_of(led_cdev, struct pca955x_led, led_cdev);
+> 
+> -	spin_lock(&pca955x->lock);
+>  	pca955x->brightness = value;
+> 
+>  	/*
+> @@ -241,14 +253,13 @@ static void pca955x_led_set(struct led_classdev
+> *led_cdev, enum led_brightness v * can sleep.
+>  	 */
+>  	schedule_work(&pca955x->work);
+> -
+> -	spin_unlock(&pca955x->lock);
+>  }
+> 
+>  static int __devinit pca955x_probe(struct i2c_client *client,
+>  					const struct i2c_device_id *id)
+>  {
+> -	struct pca955x_led *pca955x;
+> +	struct pca955x *pca955x;
+> +	struct pca955x_led *pca955x_led;
+>  	struct pca955x_chipdef *chip;
+>  	struct i2c_adapter *adapter;
+>  	struct led_platform_data *pdata;
+> @@ -282,39 +293,48 @@ static int __devinit pca955x_probe(struct i2c_client
+> *client, }
+>  	}
+> 
+> -	pca955x = kzalloc(sizeof(*pca955x) * chip->bits, GFP_KERNEL);
+> +	pca955x = kzalloc(sizeof(*pca955x), GFP_KERNEL);
+>  	if (!pca955x)
+>  		return -ENOMEM;
+> 
+> +	pca955x->leds = kzalloc(sizeof(*pca955x_led) * chip->bits, GFP_KERNEL);
+> +	if (!pca955x->leds) {
+> +		err = -ENOMEM;
+> +		goto exit_nomem;
+> +	}
+> +
+>  	i2c_set_clientdata(client, pca955x);
+> 
+> +	mutex_init(&pca955x->lock);
+> +	pca955x->client = client;
+> +	pca955x->chipdef = chip;
+> +
+>  	for (i = 0; i < chip->bits; i++) {
+> -		pca955x[i].chipdef = chip;
+> -		pca955x[i].client = client;
+> -		pca955x[i].led_num = i;
+> +		pca955x_led = &pca955x->leds[i];
+> +		pca955x_led->led_num = i;
+> +		pca955x_led->pca955x = pca955x;
+> 
+>  		/* Platform data can specify LED names and default triggers */
+>  		if (pdata) {
+>  			if (pdata->leds[i].name)
+> -				snprintf(pca955x[i].name,
+> -					 sizeof(pca955x[i].name), "pca955x:%s",
+> -					 pdata->leds[i].name);
+> +				snprintf(pca955x_led->name,
+> +					sizeof(pca955x_led->name), "pca955x:%s",
+> +					pdata->leds[i].name);
+>  			if (pdata->leds[i].default_trigger)
+> -				pca955x[i].led_cdev.default_trigger =
+> +				pca955x_led->led_cdev.default_trigger =
+>  					pdata->leds[i].default_trigger;
+>  		} else {
+> -			snprintf(pca955x[i].name, sizeof(pca955x[i].name),
+> +			snprintf(pca955x_led->name, sizeof(pca955x_led->name),
+>  				 "pca955x:%d", i);
+>  		}
+> 
+> -		spin_lock_init(&pca955x[i].lock);
+> -
+> -		pca955x[i].led_cdev.name = pca955x[i].name;
+> -		pca955x[i].led_cdev.brightness_set = pca955x_led_set;
+> +		pca955x_led->led_cdev.name = pca955x_led->name;
+> +		pca955x_led->led_cdev.brightness_set = pca955x_led_set;
+> 
+> -		INIT_WORK(&pca955x[i].work, pca955x_led_work);
+> +		INIT_WORK(&pca955x_led->work, pca955x_led_work);
+> 
+> -		err = led_classdev_register(&client->dev, &pca955x[i].led_cdev);
+> +		err = led_classdev_register(&client->dev,
+> +					&pca955x_led->led_cdev);
+>  		if (err < 0)
+>  			goto exit;
+>  	}
+> @@ -337,10 +357,12 @@ static int __devinit pca955x_probe(struct i2c_client
+> *client,
+> 
+>  exit:
+>  	while (i--) {
+> -		led_classdev_unregister(&pca955x[i].led_cdev);
+> -		cancel_work_sync(&pca955x[i].work);
+> +		led_classdev_unregister(&pca955x->leds[i].led_cdev);
+> +		cancel_work_sync(&pca955x->leds[i].work);
+>  	}
+> 
+> +	kfree(pca955x->leds);
+> +exit_nomem:
+>  	kfree(pca955x);
+> 
+>  	return err;
+> @@ -348,14 +370,15 @@ exit:
+> 
+>  static int __devexit pca955x_remove(struct i2c_client *client)
+>  {
+> -	struct pca955x_led *pca955x = i2c_get_clientdata(client);
+> +	struct pca955x *pca955x = i2c_get_clientdata(client);
+>  	int i;
+> 
+>  	for (i = 0; i < pca955x->chipdef->bits; i++) {
+> -		led_classdev_unregister(&pca955x[i].led_cdev);
+> -		cancel_work_sync(&pca955x[i].work);
+> +		led_classdev_unregister(&pca955x->leds[i].led_cdev);
+> +		cancel_work_sync(&pca955x->leds[i].work);
+>  	}
+> 
+> +	kfree(pca955x->leds);
+>  	kfree(pca955x);
+> 
+>  	return 0;
+-- 
+Dipl.-Inf. Alexander Stein
 
-Could you please let me know if there is any other way to achieve this? I will be happy
-to incorporate that and submit next version of the patch.
+SYS TEC electronic GmbH
+August-Bebel-Str. 29
+D-07973 Greiz
 
-Thanks,
-Prakash
+Tel: +49-3661-6279-0, Fax: +49-3661-6279-99
+eMail:    Alexander.Stein@systec-electronic.com
+Internet: http://www.systec-electronic.com
+
+Managing Director: Dipl.-Phys. Siegmar Schmidt
+Commercial registry: Amtsgericht Jena, HRB 205563
