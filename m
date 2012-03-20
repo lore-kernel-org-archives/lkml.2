@@ -1,151 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2CTUKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 16:10:24 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42267 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755769Ab2CTUKV (ORCPT
+	id S1757385Ab2CTUOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 16:14:53 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57399 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756261Ab2CTUOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 16:10:21 -0400
-Message-ID: <4F68E420.30801@xenotime.net>
-Date: Tue, 20 Mar 2012 13:10:08 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 20 Mar 2012 16:14:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="174185466"
+Message-ID: <4F68E53B.7040800@codeaurora.org>
+Date: Tue, 20 Mar 2012 13:14:51 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Joel Reardon <joel@clambassador.com>
-CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] Add design document for UBIFS secure deletion
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <1329152067.22240.214.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>  <alpine.DEB.2.00.1202231628360.13720@eristoteles.iwoars.net> <1331277476.22872.2.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203191752300.22256@eristoteles.iwoars.net>
-In-Reply-To: <alpine.DEB.2.00.1203191752300.22256@eristoteles.iwoars.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Shawn Guo <shawn.guo@linaro.org>, Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>, Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] clk: Move init fields from clk to clk_hw
+References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com> <1332214706-675-1-git-send-email-skannan@codeaurora.org> <1332214706-675-2-git-send-email-skannan@codeaurora.org> <20120320072018.GC32469@S2101-09.ap.freescale.net> <cbd6490459b9fd68875fec4a7c7de073.squirrel@www.codeaurora.org> <20120320094031.GI3852@pengutronix.de> <e22898bc8b69e85f1e6390d7d858f85c.squirrel@www.codeaurora.org> <20120320181441.GO3852@pengutronix.de>
+In-Reply-To: <20120320181441.GO3852@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 09:54 AM, Joel Reardon wrote:
+On 03/20/2012 11:14 AM, Sascha Hauer wrote:
+> On Tue, Mar 20, 2012 at 03:17:10AM -0700, Saravana Kannan wrote:
+>>
+>> On Tue, March 20, 2012 2:40 am, Sascha Hauer wrote:
+>>> On Tue, Mar 20, 2012 at 12:54:55AM -0700, Saravana Kannan wrote:
+>>>>
+>>> I am using these functions and don't need a static array, I just call
+>>> the functions with the desired parameters.
+>>
+>> Sure, then let's leave it in. Curious, where do you get the desired
+>> parameters from? Is it static date in code or is it from DT? You somehow
+>> probe it?
+>
+> It's not from DT. See this thread:
+>
+> http://www.spinics.net/lists/arm-kernel/msg165839.html
 
+Ah, I see. That's a lot of functions calls. I think it would be much 
+more efficient if you just have an array and loop over it. With my 
+patch, you can just call a single register function for all these clocks.
 
-Nice job overall.  I have just a few comments below.
+>>
+>>> Overall the clock framework was written in a way that we have to expose
+>>> as little information about the internally used structs as necessary. It
+>>> seems your patches are pulling in the opposite direction now.
+>>
+>> I'm not exposing anything that you don't already pass from the platform
+>> driver. Also, you realize that this is very similar to what you suggested
+>> with clk_initializer right? If there is a strong push, we can make a copy
+>> of these inside the struct clk, but for these few init fields I don't see
+>> a point (see earlier email).
+>
+> The difference is that a struct clk_initializer is only used to
+> initialize a clock and not actively used by the clock framework. But as
+> you already mentioned using a copy inside the clock framework has the
+> same effect.
 
+My opinion on this is to follow a wait and watch approach on the "flags" 
+field. I really can't think of a safe way anyone can misuse it. If 
+people start doing that, we can just do the copy and let them deal with 
+their broken code. Until that happens, I don't want to waste time/space 
+by copying it. The rest of the fields aren't actively used by the common 
+clock code after init.
 
-> Design document should be self explanatory.
-> 
-> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
-> 
-> ---
->  Documentation/filesystems/ubifsec.txt |  358 +++++++++++++++++++++++++++++++++
->  1 files changed, 358 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/filesystems/ubifsec.txt
-> 
-> diff --git a/Documentation/filesystems/ubifsec.txt b/Documentation/filesystems/ubifsec.txt
-> new file mode 100644
-> index 0000000..4eb41fb
-> --- /dev/null
-> +++ b/Documentation/filesystems/ubifsec.txt
-> @@ -0,0 +1,357 @@
-> +UBIFS Secure Deletion Enhancement
-> +
-> +Written by Joel Reardon <reardonj@inf.ethz.ch>
-> +Last revised: 19.3.2012
-> +
-> +Introduction
-> +============
-
-
-
-
-
-...
-
-> +Key State Map
-> +=============
-
-
-
-...
-
-> +The operation of purging performed on a correct key state map guarantees
-> +DNEFS's soundness: purging securely deletes any key in the KSA marked as
-
-
-
-
-What is DNEFS?
-
-> +deleted---afterwards, every key either decrypts one valid data node or nothing
-> +at all and every valid data node can be decrypted.  A correct key state map
-> +also guarantees the integrity of our data during purging, because no key that
-> +is used to decrypt valid data will be removed.
-> +
-
-
-
-
-...
-
-> +
-> +The key state map is built from a periodic checkpoint combined with a replay
-> +of the most recent changes while mounting.  We checkpoint the current key
-> +state map to the storage medium whenever the KSA is purged. After a purge,
-> +every key is either unused or used, and so a checkpoint of this map can be
-> +stored using one bit per key---less than 1\% of the KSA's size---which is then
-
-
-
-
-drop '\' ?
-
-> +compressed.  A special LEB is used to store checkpoints, where each new
-
-
-
-
-What is LEB?
-
-> +checkpoint is appended; when the erase block is full then the next checkpoint
-> +is written at the beginning using an atomic update.
-> +
-> +Correctness of the Key State Map
-> +================================
-
-
-
-
-...
-
-> +Second, failure can occur after purging one, several, or indeed  all of the
-> +KSA's LEBs. When remounting the device, the loaded checkpoint merged with the
-> +replay data  reflects the state before the first purge, so some purged LEBs
-> +contain new unused data while the key state map claims it is a deleted key. As
-> +these are cryptographically-suitable random values, with high probability they
-> +cannot successfully decrypt any existing valid data node.
-
-
-
-
-Last sentence seems to be incomplete or just odd.
-
-> +
-> +Third, failure can occur while writing to the checkpoint LEB.  When the
-> +checkpoint is written using atomic updates, then failing during the operation
-> +is equivalent to failing before it begins (cf. 2nd case).  Incomplete
-
-
-
-
-s/cf./compare/
-No need to save the space and lots of people probably won't know what
-cf. is.
-
-> +checkpoints are detected and so the previous valid checkpoint is loaded
-> +instead.  After replaying all the nodes, the key state map is equal to its
-> +state immediately before purging the KSA. This means that all entries marked
-> +as deleted are actually unused entries, so the invariant holds.
-
-
+Thanks,
+Saravana
 
 -- 
-~Randy
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
