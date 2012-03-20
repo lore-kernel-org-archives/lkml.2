@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760563Ab2CTPXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 11:23:10 -0400
-Received: from [89.21.227.130] ([89.21.227.130]:50652 "EHLO
-	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755008Ab2CTPXI (ORCPT
+	id S1760591Ab2CTPXc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 11:23:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:15489 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760576Ab2CTPX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 11:23:08 -0400
-Message-ID: <4F68A0D9.9040400@itdev.co.uk>
-Date: Tue, 20 Mar 2012 08:23:05 -0700
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 20 Mar 2012 11:23:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="171785107"
+X-IronPort-AV: E=Sophos;i="4.73,616,1325491200"; 
+   d="scan'208";a="229076619"
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 MIME-Version: 1.0
-To: Daniel Kurtz <djkurtz@chromium.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>,
-        "Tiwari, Atul" <Atul.Tiwari@atmel.com>,
-        "Bowens, Alan" <Alan.Bowens@atmel.com>
-Subject: Re: [PATCH 13/20] Input: atmel_mxt_ts - parse vector field of data
- packets
-References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org> <1331640263-18935-14-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1331640263-18935-14-git-send-email-djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-ID: <20328.41155.468698.30887@gargle.gargle.HOWL>
+Date: Tue, 20 Mar 2012 20:52:43 +0530
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        Linux-wireless <linux-wireless@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, <linux-kernel@vger.kernel.org>,
+        Linux-netdev <netdev@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+In-Reply-To: <4F6891F1.9010105@gmail.com>
+References: <4F576FD5.2050208@gmail.com>
+	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
+	<4F577D9B.7020402@gmail.com>
+	<4F579A88.6030503@openwrt.org>
+	<4F61F551.5010608@gmail.com>
+	<4F639851.5080500@gmail.com>
+	<4F674616.8080103@gmail.com>
+	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
+	<4F674FF5.2060406@gmail.com>
+	<4F6751B2.1030809@openwrt.org>
+	<4F681B78.9000207@gmail.com>
+	<CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
+	<4F68235C.5090701@gmail.com>
+	<CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com>
+	<4F682555.3020502@gmail.com>
+	<20328.16366.166909.255035@gargle.gargle.HOWL>
+	<4F6891F1.9010105@gmail.com>
+X-Mailer: VM 8.2.0a under 23.4.1 (x86_64-unknown-linux-gnu)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Kurtz wrote:
-> The atmel_mxt_ts T9 data contains information orientation in its 'vector'
-> field. Parse and debug print its contents, although its value isn't
-> actually used yet.
+Justin P. Mattock wrote:
+> both mohammed and sujith Thank you for the patches for this issue!
+> I really appreciate this..
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> I went and applied the debug printk and added ath_node_attach as well to 
+> my linux-next clone, will run for a few days to see if I get anything..
+> full dmesg is here..: http://fpaste.org/jHSX/
 
-Fair enough.
+Thanks for testing and please report if the issue is fixed.
 
-Acked-by: Nick Dyer <nick.dyer@itdev.co.uk>
-
--- 
-Nick Dyer
-Software Engineer, ITDev Ltd
-Hardware and Software Development Consultancy
-Website: http://www.itdev.co.uk
+Sujith
