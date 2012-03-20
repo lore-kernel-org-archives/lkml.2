@@ -1,193 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759933Ab2CTNbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:31:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43515 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759260Ab2CTNbv (ORCPT
+	id S1759938Ab2CTNdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:33:41 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58764 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759463Ab2CTNdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:31:51 -0400
-Date: Tue, 20 Mar 2012 08:31:41 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        kernel-hardening@lists.openwall.com, spender@grsecurity.net,
-        mingo@kernel.org
-Subject: Re: [PATCH] futex: do not leak robust list to unprivileged process
-Message-ID: <20120320133141.GC2918@peqn>
-References: <20120319231253.GA20893@www.outflux.net>
+	Tue, 20 Mar 2012 09:33:39 -0400
+Message-ID: <4F6882BA.2040000@linux.vnet.ibm.com>
+Date: Tue, 20 Mar 2012 18:44:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120319231253.GA20893@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] Fix the race between smp_call_function and CPU booting
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com> <1331546307.18960.26.camel@twins> <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com> <1331654251.18960.78.camel@twins> <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com> <1331718197.18960.106.camel@twins> <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com> <1331808391.18960.160.camel@twins> <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com> <1331891364.18960.221.camel@twins> <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com> <1332151397.18960.252.camel@twins> <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com> <1332245842.18960.413.camel@twins>
+In-Reply-To: <1332245842.18960.413.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12032013-8256-0000-0000-000001B8A7A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> It was possible to extract the robust list head address from a setuid
-> process if it had used set_robust_list(), allowing an ASLR info leak. This
-> changes the permission checks to be the same as those used for similar
-> info that comes out of /proc.
-> 
-> Running a setuid program that uses robust futexes would have had:
->   cred->euid != pcred->euid
->   cred->euid == pcred->uid
-> so the old permissions check would allow it. I'm not aware of any setuid
-> programs that use robust futexes, so this is just a preventative measure.
-> 
-> (This patch is based on changes from grsecurity.)
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-I like the change.  Much cleaner.  I'm not 100% sure though that
-there are no legitimate cases of robust futexes use which would now
-be forbidden.  (Explicitly cc:ing Ingo)
+[ Adding a few more Cc's since this affects suspend/resume. ]
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+On 03/20/2012 05:47 PM, Peter Zijlstra wrote:
 
+> On Tue, 2012-03-20 at 00:22 +0000, Liu, Chuansheng wrote:
+>> Thanks to give some time to have a look.
+>>
+> Does the below on top of current tip/master work?
+
+
+I don't think this patch would change anything, atleast it wouldn't get
+rid of the warning that Liu reported. Because, he is running his stress
+tests on a machine which has only 2 CPUs. So effectively, we are hotplugging
+only CPU1 (since CPU0 can't be taken offline, on Intel boxes).
+
+Also, CPU1 is removed from cpu_active_mask during CPU_DOWN_PREPARE time itself,
+and migrate_tasks() comes much later (during CPU_DYING). And in any case,
+dest_cpu will never be CPU1, because it is the CPU that is going down. So it
+*has* to be CPU0 anyway.
+
+So, I don't think changes to select_fallback_rq() to make it more careful is
+going to make any difference in the particular scenario that Liu is testing.
+
+That said, even I don't know what the root cause of the warning is.. :-(
+
+Regards,
+Srivatsa S. Bhat
+
+>>
 > ---
->  kernel/futex.c        |   36 +++++++++++++-----------------------
->  kernel/futex_compat.c |   36 +++++++++++++-----------------------
->  2 files changed, 26 insertions(+), 46 deletions(-)
+>  include/linux/cpuset.h |    6 +---
+>  kernel/cpuset.c        |   20 +++------------
+>  kernel/sched/core.c    |   62 +++++++++++++++++++++++++++++++++++------------
+>  3 files changed, 52 insertions(+), 36 deletions(-)
 > 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 1614be2..439440d 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -59,6 +59,7 @@
->  #include <linux/magic.h>
->  #include <linux/pid.h>
->  #include <linux/nsproxy.h>
-> +#include <linux/ptrace.h>
->  
->  #include <asm/futex.h>
->  
-> @@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
->  {
->  	struct robust_list_head __user *head;
->  	unsigned long ret;
-> -	const struct cred *cred = current_cred(), *pcred;
-> +	struct task_struct *p;
->  
->  	if (!futex_cmpxchg_enabled)
->  		return -ENOSYS;
->  
-> +	rcu_read_lock();
-> +
-> +	ret = -ESRCH;
->  	if (!pid)
-> -		head = current->robust_list;
-> +		p = current;
->  	else {
-> -		struct task_struct *p;
-> -
-> -		ret = -ESRCH;
-> -		rcu_read_lock();
->  		p = find_task_by_vpid(pid);
->  		if (!p)
->  			goto err_unlock;
-> -		ret = -EPERM;
-> -		pcred = __task_cred(p);
-> -		/* If victim is in different user_ns, then uids are not
-> -		   comparable, so we must have CAP_SYS_PTRACE */
-> -		if (cred->user->user_ns != pcred->user->user_ns) {
-> -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-> -				goto err_unlock;
-> -			goto ok;
-> -		}
-> -		/* If victim is in same user_ns, then uids are comparable */
-> -		if (cred->euid != pcred->euid &&
-> -		    cred->euid != pcred->uid &&
-> -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-> -			goto err_unlock;
-> -ok:
-> -		head = p->robust_list;
-> -		rcu_read_unlock();
->  	}
->  
-> +	ret = -EPERM;
-> +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
-> +		goto err_unlock;
-> +
-> +	head = p->robust_list;
-> +	rcu_read_unlock();
-> +
->  	if (put_user(sizeof(*head), len_ptr))
->  		return -EFAULT;
->  	return put_user(head, head_ptr);
-> diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-> index 5f9e689..a9642d5 100644
-> --- a/kernel/futex_compat.c
-> +++ b/kernel/futex_compat.c
-> @@ -10,6 +10,7 @@
->  #include <linux/compat.h>
->  #include <linux/nsproxy.h>
->  #include <linux/futex.h>
-> +#include <linux/ptrace.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
->  {
->  	struct compat_robust_list_head __user *head;
->  	unsigned long ret;
-> -	const struct cred *cred = current_cred(), *pcred;
-> +	struct task_struct *p;
->  
->  	if (!futex_cmpxchg_enabled)
->  		return -ENOSYS;
->  
-> +	rcu_read_lock();
-> +
-> +	ret = -ESRCH;
->  	if (!pid)
-> -		head = current->compat_robust_list;
-> +		p = current;
->  	else {
-> -		struct task_struct *p;
-> -
-> -		ret = -ESRCH;
-> -		rcu_read_lock();
->  		p = find_task_by_vpid(pid);
->  		if (!p)
->  			goto err_unlock;
-> -		ret = -EPERM;
-> -		pcred = __task_cred(p);
-> -		/* If victim is in different user_ns, then uids are not
-> -		   comparable, so we must have CAP_SYS_PTRACE */
-> -		if (cred->user->user_ns != pcred->user->user_ns) {
-> -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-> -				goto err_unlock;
-> -			goto ok;
-> -		}
-> -		/* If victim is in same user_ns, then uids are comparable */
-> -		if (cred->euid != pcred->euid &&
-> -		    cred->euid != pcred->uid &&
-> -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-> -			goto err_unlock;
-> -ok:
-> -		head = p->compat_robust_list;
-> -		rcu_read_unlock();
->  	}
->  
-> +	ret = -EPERM;
-> +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
-> +		goto err_unlock;
-> +
-> +	head = p->compat_robust_list;
-> +	rcu_read_unlock();
-> +
->  	if (put_user(sizeof(*head), len_ptr))
->  		return -EFAULT;
->  	return put_user(ptr_to_compat(head), head_ptr);
-> -- 
-> 1.7.0.4
+> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+> index e9eaec5..e0ffaf0 100644
+> --- a/include/linux/cpuset.h
+> +++ b/include/linux/cpuset.h
+> @@ -22,7 +22,7 @@ extern int cpuset_init(void);
+>  extern void cpuset_init_smp(void);
+>  extern void cpuset_update_active_cpus(void);
+>  extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
+> -extern int cpuset_cpus_allowed_fallback(struct task_struct *p);
+> +extern void cpuset_cpus_allowed_fallback(struct task_struct *p);
+>  extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
+>  #define cpuset_current_mems_allowed (current->mems_allowed)
+>  void cpuset_init_current_mems_allowed(void);
+> @@ -144,10 +144,8 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
+>  	cpumask_copy(mask, cpu_possible_mask);
+>  }
 > 
+> -static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
+> +static inline void cpuset_cpus_allowed_fallback(struct task_struct *p)
+>  {
+> -	do_set_cpus_allowed(p, cpu_possible_mask);
+> -	return cpumask_any(cpu_active_mask);
+>  }
+> 
+>  static inline nodemask_t cpuset_mems_allowed(struct task_struct *p)
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index a09ac2b..c9837b7 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -2195,7 +2195,7 @@ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+>  	mutex_unlock(&callback_mutex);
+>  }
+> 
+> -int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+> +void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+>  {
+>  	const struct cpuset *cs;
+>  	int cpu;
+> @@ -2219,22 +2219,10 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+>  	 * changes in tsk_cs()->cpus_allowed. Otherwise we can temporary
+>  	 * set any mask even if it is not right from task_cs() pov,
+>  	 * the pending set_cpus_allowed_ptr() will fix things.
+> +	 *
+> +	 * select_fallback_rq() will fix things ups and set cpu_possible_mask
+> +	 * if required.
+>  	 */
+> -
+> -	cpu = cpumask_any_and(&tsk->cpus_allowed, cpu_active_mask);
+> -	if (cpu >= nr_cpu_ids) {
+> -		/*
+> -		 * Either tsk->cpus_allowed is wrong (see above) or it
+> -		 * is actually empty. The latter case is only possible
+> -		 * if we are racing with remove_tasks_in_empty_cpuset().
+> -		 * Like above we can temporary set any mask and rely on
+> -		 * set_cpus_allowed_ptr() as synchronization point.
+> -		 */
+> -		do_set_cpus_allowed(tsk, cpu_possible_mask);
+> -		cpu = cpumask_any(cpu_active_mask);
+> -	}
+> -
+> -	return cpu;
+>  }
+> 
+>  void cpuset_init_current_mems_allowed(void)
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index e37c9af..04d3f7f 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1263,29 +1263,59 @@ EXPORT_SYMBOL_GPL(kick_process);
+>   */
+>  static int select_fallback_rq(int cpu, struct task_struct *p)
+>  {
+> -	int dest_cpu;
+>  	const struct cpumask *nodemask = cpumask_of_node(cpu_to_node(cpu));
+> +	enum { cpuset, possible, fail } state = cpuset;
+> +	int dest_cpu;
+> 
+>  	/* Look for allowed, online CPU in same node. */
+> -	for_each_cpu_and(dest_cpu, nodemask, cpu_active_mask)
+> +	for_each_cpu_mask(dest_cpu, *nodemask) {
+> +		if (!cpu_online(dest_cpu))
+> +			continue;
+> +		if (!cpu_active(dest_cpu))
+> +			continue;
+>  		if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+>  			return dest_cpu;
+> +	}
+> 
+> -	/* Any allowed, online CPU? */
+> -	dest_cpu = cpumask_any_and(tsk_cpus_allowed(p), cpu_active_mask);
+> -	if (dest_cpu < nr_cpu_ids)
+> -		return dest_cpu;
+> +	for (;;) {
+> +		/* Any allowed, online CPU? */
+> +		for_each_cpu_mask(dest_cpu, *tsk_cpus_allowed(p)) {
+> +			if (!cpu_online(dest_cpu))
+> +				continue;
+> +			if (!cpu_active(dest_cpu))
+> +				continue;
+> +			goto out;
+> +		}
+> 
+> -	/* No more Mr. Nice Guy. */
+> -	dest_cpu = cpuset_cpus_allowed_fallback(p);
+> -	/*
+> -	 * Don't tell them about moving exiting tasks or
+> -	 * kernel threads (both mm NULL), since they never
+> -	 * leave kernel.
+> -	 */
+> -	if (p->mm && printk_ratelimit()) {
+> -		printk_sched("process %d (%s) no longer affine to cpu%d\n",
+> -				task_pid_nr(p), p->comm, cpu);
+> +		switch (state) {
+> +		case cpuset:
+> +			/* No more Mr. Nice Guy. */
+> +			cpuset_cpus_allowed_fallback(p);
+> +			state = possible;
+> +			break;
+> +
+> +		case possible:
+> +			do_set_cpus_allowed(p, cpu_possible_mask);
+> +			state = fail;
+> +			break;
+> +
+> +		case fail:
+> +			BUG();
+> +			break;
+> +		}
+> +	}
+> +
+> +out:
+> +	if (state != cpuset) {
+> +		/*
+> +		 * Don't tell them about moving exiting tasks or
+> +		 * kernel threads (both mm NULL), since they never
+> +		 * leave kernel.
+> +		 */
+> +		if (p->mm && printk_ratelimit()) {
+> +			printk_sched("process %d (%s) no longer affine to cpu%d\n",
+> +					task_pid_nr(p), p->comm, cpu);
+> +		}
+>  	}
+> 
+>  	return dest_cpu;
+> 
+
+
