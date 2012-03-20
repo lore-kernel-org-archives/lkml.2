@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab2CTV7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 17:59:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64958 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab2CTV7B (ORCPT
+	id S1758391Ab2CTWA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:00:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34616 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab2CTWAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 17:59:01 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Robert Lee <rob.lee@linaro.org>
-Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
-Date: Tue, 20 Mar 2012 21:58:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: len.brown@intel.com, akpm@linux-foundation.org, rjw@sisk.pl,
-        khilman@ti.com, robherring2@gmail.com, Baohua.Song@csr.com,
-        amit.kucheria@linaro.org, nicolas.ferre@atmel.com, linux@maxim.org.za,
-        kgene.kim@samsung.com, amit.kachhap@linaro.org, magnus.damm@gmail.com,
-        nsekhar@ti.com, daniel.lezcano@linaro.org, mturquette@linaro.org,
-        vincent.guittot@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, deepthi@linux.vnet.ibm.com,
-        broonie@opensource.wolfsonmicro.com, nicolas.pitre@linaro.org,
-        linux@arm.linux.org.uk, jean.pihet@newoldbits.com, venki@google.com,
-        ccross@google.com, g.trinabh@gmail.com, kernel@wantstofly.org,
-        lethal@linux-sh.org, jon-hunter@ti.com, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
-In-Reply-To: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203202158.08042.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:hhJb0Mw+2YTPwv110ooby54tMD0b7C02LCnFBP/mWt1
- 0B6DBmJY9/93QO7rmajb9OHaHPfI/860Jy11o3EF+R3MYf4jOm
- r3FPKbjQTbUNfi+Os8R5z6yfThoafKnFoHOklyR9hP4goJ8lD9
- XpSChZdDxhU0z71hdA8NPZQLetyKDqjuZJZER9skmWTo+DF1NM
- s3S1c4gU/6gctIU+IPf1l7rJrn/G3l5+bd2VQ1dYmjplQ9YMfA
- rlK7iy/lUAv5/FjAPMZDYvaICPvTj7SPgAUpTF808zqP3EuKMQ
- HQvFC5V14y7wp/ROsFkXUOehKxua2/Bm2w6CWXWpwz32I/3sMh
- 9XP1r+RFVWNI5qWH0HCCTyq6lG+kgi2CpzTYLwHCX
+	Tue, 20 Mar 2012 18:00:55 -0400
+Date: Wed, 21 Mar 2012 09:00:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-Id: <20120321090038.06c65f50bd0329df8705f2cd@canb.auug.org.au>
+In-Reply-To: <20120308180048.GC26516@kroah.com>
+References: <20120308152110.12c805f59c45251d79bcb24b@canb.auug.org.au>
+	<20120308180048.GC26516@kroah.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Mar_2012_09_00_38_+1100_7v7Jho74cPLZ/qBH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 March 2012, Robert Lee wrote:
-> This patch series moves various functionality duplicated in platform 
-> cpuidle drivers to the core cpuidle driver. Also, the platform irq
-> disabling was removed as it appears that all calls into 
-> cpuidle_call_idle will have already called local_irq_disable().
-> 
-> These changes have been pulled into linux-next.
-> 
-> Len, Andrew, can a request be made for Linus to pull these changes?
+--Signature=_Wed__21_Mar_2012_09_00_38_+1100_7v7Jho74cPLZ/qBH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FWIW, Len seems to be rather inactive on the kernel mailing list right
-now and generally not very interested in anything outside of x86 and
-acpi. If he doesn't reply in the next few days and Andrew also isn't
-interested in handling these patches, I'd suggest you just send the pull
-request to Linus, with Len on Cc and explain that you tried to send
-them through him but gave up in the end.
+Hi all,
 
-	Arnd
+On Thu, 8 Mar 2012 10:00:48 -0800 Greg KH <greg@kroah.com> wrote:
+>
+> On Thu, Mar 08, 2012 at 03:21:10PM +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the tip tree, today's linux-next build (x86_64 allmodconf=
+ig)
+> > failed like this:
+> >=20
+> > drivers/staging/sep/sep_driver.c:55:32: fatal error: linux/rar_register=
+.h: No such file or directory
+> >=20
+> > Caused by commit 33e9970add94 ("x86/mid: Kill off Moorestown").
+> >=20
+> > Following previous instructions, I have disabled the staging tree driver
+> > using this patch (pending a fix in the tip tree):
+>=20
+> Looks good to me.  Alan, care to send me an update that fixes this
+> driver for real?
+
+Was this ever fixed?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__21_Mar_2012_09_00_38_+1100_7v7Jho74cPLZ/qBH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPaP4GAAoJEECxmPOUX5FEspsP/0vamxq9HO1wZG1yu7KSiWwJ
+NP5PAq6Tz8mBtNsQCki8k1/uFD9/grkxmMiPlTEwwbfktycUix6rQQYvn7pi1Q23
+av6ae4/M2SbcxIRYdo3OyvSEZ4iIlecsVKJZdj59LiL2Ewtdr4aCr14XGDwRHbb9
+/Jl82uK8AFTarknfnG2DqhyfFAJ2VjUvIvV91J5xNN5mwnFqj6lU3HVFUFgNeCrk
+FF8onZNODsIblWKDRknT0OmtpJ4t7YyT7Gg3WLjt7deRY5MXaj7WjHo9alhaZpFf
+GPzRXStY/bB+SW79UD80sRzPTntIg73k489MB91VfIzCDj2ntJEOnldRx9MryRsq
+1DbpybIAlclGHNz2LGYzJ8A/JyfnD7zIBXAkF0RKfyfEyCKdmPutDhCEnT0UeWDI
+Qi7eXfMdVs3BqbAgWssZN0z9d6v7LorKHEFhf7OCUaGrhJf7f74tLFKh8eEAwtYw
+VDAXdmzD+bhjxFKqKinn5aoCLCRE6qsyAJGcRqAqPzn9BeVr+VBHyjLt7ECEjfwt
+OxWe2qUyeOHHm+0T8KJO9mQcddZcqb6kHmAEaQCERgrLM/Jg7PWeb3U8Gm1De0Sf
+j09HHJca+lsP+IxudBLjH3cYYrrHH6Uictc5E9EQzdKs8e9YZVNND+IB58pxPr7n
+jFA4BavxOKmDMwHFtYhR
+=qw8a
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Mar_2012_09_00_38_+1100_7v7Jho74cPLZ/qBH--
