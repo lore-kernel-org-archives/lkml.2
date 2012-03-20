@@ -1,119 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab2CTBH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 21:07:58 -0400
-Received: from soma.ebfe.org ([78.47.47.242]:34394 "EHLO soma.ebfe.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759149Ab2CTBHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 21:07:55 -0400
-Date: Tue, 20 Mar 2012 02:07:39 +0100
-From: Michael Gehring <mg@ebfe.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/vt: set_get_cmap() check user buffer
-Message-ID: <20120320010544.GB22927@s755>
-References: <1332200041-31052-1-git-send-email-mg@ebfe.org>
- <20120319234839.GA26931@kroah.com>
+	id S1754494Ab2CTB1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 21:27:10 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:52806 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2CTB1I convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 21:27:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120319234839.GA26931@kroah.com>
-User-Agent: Mutt/ (2011-07-01)
+In-Reply-To: <alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de>
+References: <20120316073213.656519005@fusionio.com>
+	<alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de>
+Date: Tue, 20 Mar 2012 09:27:07 +0800
+X-Google-Sender-Auth: sQ2SupOLrur7MWvEsqgG7Y4HftE
+Message-ID: <CANejiEWeaF44Rbgt5jhf_bnafF4yoTTZAYsqoD2+greJ07c-_A@mail.gmail.com>
+Subject: Re: [patch v2 0/6] Add TRIM support for raid linear/0/1/10
+From: Shaohua Li <shli@kernel.org>
+To: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
+        axboe@kernel.dk, vgoyal@redhat.com, martin.petersen@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 04:48:39PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Mar 20, 2012 at 12:34:01AM +0100, Michael Gehring wrote:
-> > set_get_cmap() ignores the result of {get,put}_user(), causing ioctl(vt,
-> > {G,P}IO_CMAP, 0xdeadbeef) to silently fail.
-> 
-> Why not just check each return value, failing only if/when a specific
-> write fails?
+2012/3/20 Holger Kiehl <Holger.Kiehl@dwd.de>:
+> Hello,
+>
+>
+> On Fri, 16 Mar 2012, Shaohua Li wrote:
+>
+>> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM support
+>> for
+>> raid 4/5/6 later. The implementation is pretty straightforward and
+>> self-explained.
+>>
+>> v1->v2:
+>> 1. fixed a checking issue
+>> 2. dropped discard request plug and replace it with no discard merege,
+>> because
+>> current SCSI layer can't handle discard request merge.
+>>
+> Have tested TRIM patches on three different systems with the following
+> hardware/ setup:
+>
+>   1) root mounted on a raid1 over two SAS SSD's (200GB) and /home partition
+>      on a raid0 over a fusionio ioDrive Duo. Is very new and seen very
+>      little usage.
+>
+>   2) root and /home mounted on a raid0 over two Intel X25 Postville
+>      (160GB) connected to a Intel P55 Express chipset. Has seen very
+>      heavy usage for approx. 2 years.
+>
+>   3) root and /home mounted on a raid0 over three OCZ-VERTEX2 (120GB)
+>      connected via ICH7 south bridge. Has seen mild usage for approx.
+>      1.5 years.
+>
+> Made the following observations when running my own benchmark which
+> copies around a lot of small files and deletes them. The benchmark on
+> all systems was always run only on the /home partition ie. on a raid0.
+>
+> For system 1) there is hardly any measurable differnce whether discard
+> is enabled or not (~29000 files per second).
+>
+> On system 2) the performance drops from 6500->3700 files per second,
+> but under normal usage one does not notice any difference.
+do you have the blktrace data when the benchmark is running, especially
+when doing file deletion. I'd like to check the latency of discard in this case.
 
-For the 'set' case, that would result in a partially updated default
-colormap.
+> System 3) has problems during boot, it is so slow that some operations
+> receive a timeout during boot:
+>
+>  udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
+>  udevd[474]: timeout: killing '/sbin/blkid -o udev -p /dev/md0' [866]
+>  systemd[1]: dev-md3.swap activation timed out. Stopping.
+In this one, discard request is slow. And per SATA standard, discard request
+can't be parallel, so only one request one time, which further slows it down.
 
-> > diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> > index e716839..176b2a1 100644
-> > --- a/drivers/tty/vt/vt.c
-> > +++ b/drivers/tty/vt/vt.c
-> > @@ -3897,15 +3897,18 @@ static int set_get_cmap(unsigned char __user *arg, int set)
-... 
-> What's to keep this userspace buffer from becoming invalid after the
-> check?  For some reason I thought we couldn't check beforehand like
-> this, but I can't recall why at this specific moment.
-> 
-> And ugh, why do we have a function that does two things, like this?  The
-> only thing we are "saving" is a single for loop by doing things this
-> way, splitting it out into a set/get function, would make more sense in
-> the end.
+> Even removing discard does not help and the above errors happen during
+> boot and booting takes a long time.
+this doesn't make sense. If you don't mount with discard option, no
+discard request
+is issued.
 
-
-How about something like this (untested):
-
-
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index e716839..f0a881d 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -3928,24 +3928,53 @@ static int set_get_cmap(unsigned char __user *arg, int set)
- 
- int con_set_cmap(unsigned char __user *arg)
- {
--	int rc;
-+	int i, j, k;
-+	unsigned char colormap[3*16];
-+
-+	if (copy_from_user(colormap, arg, sizeof(colormap)))
-+		return -EFAULT;
- 
- 	console_lock();
--	rc = set_get_cmap (arg,1);
-+
-+	for (i = k = 0; i < 16; i++) {
-+		default_red[i] = colormap[k++];
-+		default_grn[i] = colormap[k++];
-+		default_blu[i] = colormap[k++];
-+	}
-+
-+	for (i = 0; i < MAX_NR_CONSOLES; i++) {
-+		if (!vc_cons_allocated(i))
-+			continue;
-+		for (j = k = 0; j < 16; j++) {
-+		    vc_cons[i].d->vc_palette[k++] = default_red[j];
-+		    vc_cons[i].d->vc_palette[k++] = default_grn[j];
-+		    vc_cons[i].d->vc_palette[k++] = default_blu[j];
-+		}
-+		set_palette(vc_cons[i].d);
-+	}
-+
- 	console_unlock();
- 
--	return rc;
-+	return 0;
- }
- 
- int con_get_cmap(unsigned char __user *arg)
- {
--	int rc;
-+	int i, k;
-+	unsigned char colormap[3*16];
- 
- 	console_lock();
--	rc = set_get_cmap (arg,0);
-+	for (i = k = 0; i < 16; i++) {
-+		colormap[k++] = default_red[i];
-+		colormap[k++] = default_grn[i];
-+		colormap[k++] = default_blu[i];
-+	}
- 	console_unlock();
- 
--	return rc;
-+	if (copy_to_user(arg, colormap, sizeof(colormap)))
-+		return -EFAULT;
-+
-+	return 0;
- }
- 
- void reset_palette(struct vc_data *vc)
+Thanks,
+Shaohua
