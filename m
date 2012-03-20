@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758320Ab2CTJ5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 05:57:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49053 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037Ab2CTJ5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 05:57:16 -0400
-X-IronPort-AV: E=Sophos;i="4.73,617,1325433600"; 
-   d="scan'208";a="4579888"
-Message-ID: <4F6854F4.3060703@cn.fujitsu.com>
-Date: Tue, 20 Mar 2012 17:59:16 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758654Ab2CTJ7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 05:59:30 -0400
+Received: from mail-we0-f194.google.com ([74.125.82.194]:44246 "EHLO
+	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757547Ab2CTJ72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 05:59:28 -0400
+Date: Tue, 20 Mar 2012 10:59:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org, midgoon@gmail.com
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot
+Message-ID: <20120320095924.GA8377@gmail.com>
+References: <20120125134947.GF13655@zod.bos.redhat.com>
+ <1327529048.2327.17.camel@sbsiddha-mobl2>
+ <20120125231534.GL13655@zod.bos.redhat.com>
+ <20120131142621.GA2136@zod.bos.redhat.com>
+ <1328083230.3638.2.camel@sbsiddha-mobl2>
+ <20120312132448.GA20204@zod.bos.redhat.com>
+ <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
+ <20120319133046.GB13093@zod.bos.redhat.com>
+ <20120319193842.GA8123@phenom.dumpdata.com>
+ <20120320094048.GC20079@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com>
-In-Reply-To: <4F66E14F.3040809@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-20 17:55:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-20 17:55:06,
-	Serialize complete at 2012-03-20 17:55:06
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120320094048.GC20079@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/19/2012 03:33 PM, Wen Congyang Wrote:
-> At 03/08/2012 03:57 PM, Wen Congyang Wrote:
->> We can know the guest is paniced when the guest runs on xen.
->> But we do not have such feature on kvm.
->>
->> Another purpose of this feature is: management app(for example:
->> libvirt) can do auto dump when the guest is crashed. If management
->> app does not do auto dump, the guest's user can do dump by hand if
->> he sees the guest is paniced.
->>
->> I touch the hypervisor instead of using virtio-serial, because
->> 1. it is simple
->> 2. the virtio-serial is an optional device, and the guest may
->>    not have such device.
->>
->> Changes from v2 to v3:
->> 1. correct spelling
->>
->> Changes from v1 to v2:
->> 1. split up host and guest-side changes
->> 2. introduce new request flag to avoid changing return values.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> 
-> Hi all:
-> 
-> we neet this feature, but we don't decide how to implement it.
-> We have two solution:
-> 1. use vmcall
-> 2. use virtio-serial.
-> 
-> I will not change this patch set before we decide how to do it.
-> Can we make a decision recent days?
 
-Anybody can decide which solution to use?
+* Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-Thanks
-Wen Congyang
+>  2). Make the Xen layer fake out an IOAPIC - so instead of 0xffffff, make sure to
+>      clear the three bits that Suresh' patch is testing for (Ewwwww, I don't actually
+>      like that - that stinks of a hack).
 
-> 
-> Thanks
-> Wen Congyang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+In what universe would a hardware virtualization layer emulating 
+actual hardware behavior be a 'hack'?
 
+Thanks,
+
+	Ingo
