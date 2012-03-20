@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab2CTSpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 14:45:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36978 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab2CTSpF convert rfc822-to-8bit (ORCPT
+	id S1755856Ab2CTSra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 14:47:30 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55820 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab2CTSr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 14:45:05 -0400
-Message-ID: <1332269081.18960.444.camel@twins>
-Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 20 Mar 2012 19:44:41 +0100
-In-Reply-To: <1332267341-26338-4-git-send-email-jolsa@redhat.com>
-References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
-	 <1332267341-26338-4-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 20 Mar 2012 14:47:28 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, tytso@mit.edu, anca.emanuel@gmail.com,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+In-Reply-To: Your message of "Tue, 20 Mar 2012 03:10:01 EDT."
+             <20120320.031001.1532841232287663716.davem@davemloft.net>
+From: Valdis.Kletnieks@vt.edu
+References: <20120320025835.GE14363@thunk.org> <1332212574.7847.49.camel@joe2Laptop> <216818.1332222366@turing-police.cc.vt.edu>
+            <20120320.031001.1532841232287663716.davem@davemloft.net>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332269243_2520P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 20 Mar 2012 14:47:23 -0400
+Message-ID: <35179.1332269243@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4F68D0BB.00B7,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 19:15 +0100, Jiri Olsa wrote:
-> Examples (first event in brackets is group leader):
-> 
->   # 1 group (cpu-clock,task-clock)
->   perf record --group -e cpu-clock,task-clock ls
->   perf record --group parsed -e cpu-clock,task-clock ls
-> 
->   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
->   perf record --group parsed -e cpu-clock,task-clock \
->    -e minor-faults,major-faults ls
-> 
->   # 1 group (cpu-clock,task-clock,minor-faults,major-faults)
->   perf record --group -e cpu-clock,task-clock \
->    -e minor-faults,major-faults ls
-> 
->   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
->   perf record --group parsed -e cpu-clock,task-clock \
->    -e minor-faults,major-faults -e instructions ls
-> 
->   # 1 group (cpu-clock,task-clock,minor-faults,major-faults,instructions)
->   perf record --group -e cpu-clock,task-clock \
->    -e minor-faults,major-faults -e instructions ls 
+--==_Exmh_1332269243_2520P
+Content-Type: text/plain; charset=us-ascii
 
-I can't help but dislike the --group/--group parsed thing...
+On Tue, 20 Mar 2012 03:10:01 EDT, David Miller said:
+> From: Valdis.Kletnieks@vt.edu
+> Date: Tue, 20 Mar 2012 01:46:06 -0400
+>
+> > OK. Say I'm a scraper.  How do I distinguish between:
+> >
+> > pr_info("foo");
+> > printk(KERN_INFO "foo");
+> >
+> > Oh my. seems that both result in exactly the same thing ending up in the
+> > dmesg buffer
+>
+> No it doesn't result in the same output, read the definitions again.
+>
+> pr_info can be influenced by pr_fmt, plain printk cannot
 
-How about something like:
+So if nobody screws around with a #define pr_fmt, you can't tell the
+difference, and if somebody *does* screw around wiht a #define pr_fmt, you have
+no good way to know what *this* build of the kernel produces as output without
+tracking down the actual define in use. Consider Joe Perche's example "you can
+do things like" - you don't have a good programmatic way to tell what that
+pr_info() actually outputs, so an actual human is going to have to review that
+and figure out what needs to be pattern-matched.
 
-  event_group = "{", events, "}" , [ ":", event_group_mod ]
+Not a situation you want to be in if you're a scraper.
 
-Such that you can write things like:
+At least the perf subsystem is nice enough to *tell* you "I've added an extra
+field you may not know about" and provides a mechanism to skip over it.
+And I can see why Ted doesn't want to have code churn to do a half-assed
+conversion, when there will just be *more* churn if and when we ever get off
+our collective butts and deploy a structured solution.
 
-  perf record -e "{cpu-clock,cache-misses,cache-references}"
 
-  perf stat -e "{cpu-clock,cycles},{cpu-clock,cache-misses,cache-references}"
-  perf stat -e "{cpu-clock,cycles}" -e "{cpu-clock,cache-misses,cache-references}"
+--==_Exmh_1332269243_2520P
+Content-Type: application/pgp-signature
 
-I'm not sure what the current behaviour of --group is, if you create a
-group like this, do they all sample?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-If so, we need some option like:
+iQIVAwUBT2jQugdmEQWDXROgAQLf8Q//TsehQmCxbb6gQUti3bUdpfzmYao4gHR7
+984jo5bR24UVi9mXQrc4s21O10LGZMl4GZZZjlrbZYMWzSwz93CkPivf78K7Cab+
+a5GcZiQLktiaYa27UMMf5I2h+5CqEF83HBpXCHnSnZ0Z9s+Oenw/uHTk5fdmaYwW
+mMxNqWRCWI9EA6MXu9SXctJJB6Bh5UrVGfI1nV/2whIFw1NecV4j8gMJpG7FjX/Y
+GygYuwu1z1jynlaEujaFWUlW0j2Kp+Zk2UhRV0DEcq6OHZ+/XymJk5XGGlJweIiL
+XRP74tConsIqCY+q2VGvW7sirOd4u/BAeINHDOK7WxAIXNjVmmsMy95T40ePqv57
+YCJa94QI7dshEyC2BIPErSINDQY4HJm0YNQj6nqlurdFAs0VTnRYSMvKCkuv4INd
+dHdwspqKh8rJ8fY/L/gJyyEu7LJ51nwlUGlLYhSqiVnm1tjemHADvYUFzM7UgPQz
+zR+e10+8ExFaJp5aErcdmlYgxj+2/DYhQ230K9G+Zv2289jnNxx3WOipCupotdnJ
+7gv9BtfAUUtKFgQPILdttY5zg+obXGXCjPI2GMMCbwZ/BztO70aG43HbZPEnTXIN
+FpuMxu82IShgvcHx08EODSPS7pflot/d2EmhuXhgYfiar3mbMmt4Bc4nC875EDYF
+g89dqa2TWi0=
+=jDAI
+-----END PGP SIGNATURE-----
 
-  perf record -e "{cpu-clock,cache-misses,cache-references}:1"
+--==_Exmh_1332269243_2520P--
 
-to mean, only sample on cpu-clock but use PERF_SAMPLE_READ and
-PERF_FORMAT_GROUP to read all siblings on every cpu-clock sample.
-
-Now the disadvantage is that {} needs quotes on bash, the advantage is
-that its completely natural on how to construct groups, without weird
---group/--group parsed. Also it provides a place for group modifiers.
