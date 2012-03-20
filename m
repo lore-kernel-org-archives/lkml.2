@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030719Ab2CTQaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:30:09 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:34320 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756420Ab2CTQaH (ORCPT
+	id S1030746Ab2CTQbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:31:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53096 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756420Ab2CTQbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:30:07 -0400
-Date: Tue, 20 Mar 2012 16:30:02 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/14] ACPI / Video: blacklist some samsung laptops
-Message-ID: <20120320163002.GB6811@srcf.ucam.org>
-References: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
- <1332233594-13099-2-git-send-email-corentin.chary@gmail.com>
- <20120320160537.GB6192@srcf.ucam.org>
- <CAHR064gLwW32y511tAEf4x59QEaWQzy-i=K7jF8YYC3GS4JHow@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHR064gLwW32y511tAEf4x59QEaWQzy-i=K7jF8YYC3GS4JHow@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 20 Mar 2012 12:31:21 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/1] arm: fault.c: correct how the tsk->[maj|min]_flt gets incremented
+Date: Tue, 20 Mar 2012 12:30:57 -0400
+Message-Id: <1332261057-2399-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 05:28:06PM +0100, Corentin Chary wrote:
-> On Tue, Mar 20, 2012 at 5:05 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > Are the hotkeys delivered via ACPI or via the Samsung device? If the
-> > latter, you can just do unregister_acpi_video() instead in the samsung
-> > driver and avoid having more machine-specific quirks in the ACPi code.
-> 
-> I wasn't aware of acpi_video_unregister(). The issue with that
-> solution is that it makes it harder to respect acpi_video= parameter.
-> 
-> On these machines, the ACPI Video device is broken (I don't know how,
-> I don't have the hardware, I just know it doesn't work at all), and I
-> want the default to be acpi_backlight=vendor, but it is still a good
-> idea to let users force acpi_backlight=video.
+commit 8878a539ff19a43cf3729e7562cd528f490246ae was done by me
+to make the page fault handler retryable as well as interruptible.
 
-If it's broken then I don't think there's a great argument for providing 
-an argument just to let people re-break their kernel :)
+Due to this commit, there is a mistake in the way in which
+tsk->[maj|min]_flt counter gets incremented for VM_FAULT_ERROR:
+If VM_FAULT_ERROR is returned in the fault flags by handle_mm_fault,
+then either maj_flt or min_flt will get incremented. This is wrong
+as in the case of a VM_FAULT_ERROR we need to be skip ahead to the
+error handling code in do_page_fault.
 
-> But if the policy is to use acpi_video_unregister() when the video
-> module is known to be broken, let's do that.
+Added a check after the call to __do_page_fault() to check for
+(fault & VM_FAULT_ERROR).
 
-As long as ACPI isn't being used to deliver brightness keys, then this 
-is fine.
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ arch/arm/mm/fault.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index bb7eac3..ec8c88b 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -318,7 +318,7 @@ retry:
+ 	 */
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+-	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++	if (!(fault & VM_FAULT_ERROR) && (flags & FAULT_FLAG_ALLOW_RETRY)) {
+ 		if (fault & VM_FAULT_MAJOR) {
+ 			tsk->maj_flt++;
+ 			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.5.4
+
