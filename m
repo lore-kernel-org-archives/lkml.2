@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760018Ab2CTNyO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:54:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52453 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759808Ab2CTNyM convert rfc822-to-8bit (ORCPT
+	id S1760025Ab2CTN4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:56:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40578 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab2CTN4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:54:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332245766.3329.14.camel@jlt3.sipsolutions.net>
-References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
- <1332214021-9716-5-git-send-email-mcgrof@frijolero.org> <1332245766.3329.14.camel@jlt3.sipsolutions.net>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Tue, 20 Mar 2012 06:53:52 -0700
-X-Google-Sender-Auth: JxLr9AKcQVXWfBabS0HD0SokDbE
-Message-ID: <CAB=NE6XyDDfzu71K-1ecMQ+F-0Z1iTN4OKCUjJ+E3yxvydks0Q@mail.gmail.com>
-Subject: Re: [PATCH 4/4] compat: add some tracing backport work
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lf_driver_backport@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Mar 2012 09:56:21 -0400
+Subject: Re: [PATCH] net: bpf_jit: Simplify code by always using offset8 or
+ offset32.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+In-Reply-To: <cfb04c3fe59e421093f035c035c88b51.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+	 <1331658828.4449.16.camel@edumazet-glaptop>
+	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+	 <1331704535.2456.37.camel@edumazet-laptop>
+	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
+	 <1331712357.2456.58.camel@edumazet-laptop>
+	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+	 <1331992184.2466.45.camel@edumazet-laptop>
+	 <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+	 <1332075121.3722.34.camel@edumazet-laptop>
+	 <371a1925e68e68f873e30381e0fa60ea.squirrel@webmail.greenhost.nl>
+	 <1332212386.22737.20.camel@edumazet-glaptop>
+	 <cfb04c3fe59e421093f035c035c88b51.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Mar 2012 06:56:17 -0700
+Message-ID: <1332251777.7893.4.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 5:16 AM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> In other words:
->
->>  #if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,27))
->
-> I'd change this to 2.6.33 so
+On Tue, 2012-03-20 at 22:33 +1100, Indan Zupancic wrote:
 
-I think I tried this approach as well.
+> And if the dev, len or data_len fields are really moved past the first
+> 127 bytes the JIT code can be changed too. The JIT code already depends
+> on some of struct sk_buff's field properties anyway.
 
->>  #include_next <linux/tracepoint.h>
->
-> I don't have to think about this:
->
->> +/* Backports f42c85e7 */
->> +#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30))
->> +#undef TP_STRUCT__entry
->> +#define TP_STRUCT__entry(args...) args
->> +#endif
->> +
->> +#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33))
->> +/* Backports 091ad365, a rename */
->> +#define DECLARE_EVENT_CLASS TRACE_EVENT_TEMPLATE
->> +
->> +#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30))
->> +#define TP_PROTO TPPROTO
->> +#define TP_ARGS TPARGS
->> +#define TP_FMT TPFMT
->> +#define TP_RAW_FMT TPRAWFMT
->> +#endif
->> +
->> +#endif
->
->
-> This seems worthwhile and looks good:
->
->> +#else /* just disable tracing */
->> +
->> +/* Disable all tracing */
->> +#undef TRACE_EVENT
->> +#define TRACE_EVENT(name, proto, ...) \
->> +static inline void trace_ ## name(proto) {}
->> +#undef DECLARE_EVENT_CLASS
->> +#define DECLARE_EVENT_CLASS(...)
->> +#undef DEFINE_EVENT
->> +#define DEFINE_EVENT(evt_class, name, proto, ...) \
->> +static inline void trace_ ## name(proto) {}
->> +
->> +#define TP_PROTO(args...)  args
->> +#define TP_ARGS(args...)   args
->> +#define TP_CONDITION(args...)      args
->
-> That doesn't seem to be needed since these are used inside the other
-> macros only?
->
->> +struct tracepoint_iter {
->> +};
->
-> Not sure why that would be needed?
+Its seems you didnt understand, but I said NO to your patch.
 
-Sure, yeah I think I tried disabling as you suggested and ran into
-compilation issues with mac80211 on 2.6.31.
+This time I am really tired.
 
-  Luis
+
+
+
