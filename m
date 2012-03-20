@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab2CTS7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 14:59:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55341 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab2CTS7s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 14:59:48 -0400
-Message-ID: <1332269976.18960.449.camel@twins>
-Subject: Re: extreme system load [kswapd]
-From: Peter Zijlstra <peterz@infradead.org>
-To: Karol =?UTF-8?Q?=C5=A0ebesta?= <sebesta.karol@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-admin@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>
-Date: Tue, 20 Mar 2012 19:59:36 +0100
-In-Reply-To: <CA+pWcCZ28ByXuOu72FAAAQAPny3O0WDvd+vv1TryXw+9DMKwiA@mail.gmail.com>
-References: <CA+pWcCZ28ByXuOu72FAAAQAPny3O0WDvd+vv1TryXw+9DMKwiA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756120Ab2CTTB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:01:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31684 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755521Ab2CTTB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 15:01:26 -0400
+Date: Tue, 20 Mar 2012 20:00:55 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, hughd@google.com
+Subject: Re: [PATCH -mm 2/2] mm: do not reset mm->free_area_cache on every
+ single munmap
+Message-ID: <20120320190055.GZ24602@redhat.com>
+References: <20120223145417.261225fd@cuia.bos.redhat.com>
+ <20120223150034.2c757b3a@cuia.bos.redhat.com>
+ <20120223135614.7c4e02db.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120223135614.7c4e02db.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 10:08 +0100, Karol Šebesta wrote:
-> We have a problem on our production machine with high CPU utilization
-> caused by kswapd3 daemon. Server is 128GB of physical memory and 81GB
-> of SWAP.
-> 
-> 
-> # cat /etc/redhat-release
-> Red Hat Enterprise Linux Server release 5.6 (Tikanga) 
+On Thu, Feb 23, 2012 at 01:56:14PM -0800, Andrew Morton wrote:
+> We've been playing whack-a-mole with this search for many years.  What
+> about developing a proper data structure with which to locate a
+> suitable-sized hole in O(log(N)) time?
 
-That's a very very old kernel, I would suggest you upgrade to something
-that has the reclaim rewrite Rik did to deal with large memory systems.
+I intended to implement it a couple of years ago.
 
-I think they're in RHEL6, but I'm sure Rik knows.
+It takes a change to the rbtree code so that when rb_erase and
+rb_insert_color are called, proper methods are called to notify the
+caller that there's been a rotation (probably calling a new
+rb_insert_color_with_metadata(&method(left_rot, right_rot)) ). So that
+these methods can update the new status of the tree. So you can keep
+the "max" hole information for the left and right side of the tree at
+the top node, and if the left side of the tree from the top doesn't
+have a big enough max hole you take the right immediately (if if fits)
+skipping over everything that isn't interesting and you keep doing so
+until the max hole on right or left fits the size of the allocation
+request (and then you find what you were searching for in vma and
+vma->vm_next). It's very tricky but it should be possible. Still it
+would remain generic code in rbtree.c, not actually knowing it's the
+max hole info we're collecting at the root node for left and right
+nodes. Maybe only the left side of the tree max hole needs to be
+collected, not having the right size only means a worst case O(log(N))
+walk on the tree (taking ->right all the time 'till the leaf) so it'd
+be perfectly ok and it may simplify things a lot having only the max
+hole on the left.
 
-Also, since you're running this dinosaur, contact RHT, they're the only
-ones that care about it -- but I guess you're going to get the same
-suggestion.
+I'm too busy optimizing AutoNUMA even further to delve into this but I
+hope somebody implements it. I thought about exactly this when I've
+seen these patches floating around, so I'm glad you mentioned it.
