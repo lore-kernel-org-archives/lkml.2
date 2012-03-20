@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab2CTD3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 23:29:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54550 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab2CTD3M (ORCPT
+	id S1758780Ab2CTDdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 23:33:09 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:50068 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756981Ab2CTDdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 23:29:12 -0400
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH] ARM: dts: imx6q: add anatop regulators
-Date: Tue, 20 Mar 2012 11:28:59 +0800
-Message-Id: <1332214139-6833-1-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.9.1
+	Mon, 19 Mar 2012 23:33:07 -0400
+Date: Mon, 19 Mar 2012 20:33:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] RCU changes for v3.4
+Message-ID: <20120320033300.GH2393@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120319152317.GA3932@gmail.com>
+ <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032003-1780-0000-0000-000004194E21
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000258; HX=3.00000186; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00123544; UDB=6.00029630; UTC=2012-03-20
+ 03:33:06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On Mon, Mar 19, 2012 at 05:18:21PM -0700, Linus Torvalds wrote:
+> On Mon, Mar 19, 2012 at 8:23 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > Please pull the latest core-rcu-for-linus git tree from:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-rcu-for-linus
+> 
+> So Ingo, Paul - I'd really have liked to have some high-level
+> user-readable explanation of the changes that I could have put in the
+> merge message.
+> 
+> This is especially true for something like RCU, which (a) seems to be
+> continually growing and (b) has had cases of "oops, now it stopped
+> working" or "uhhuh, new rules due to new rcu implementations
+> interacting differently with spinlocks" etc.
+> 
+> So when the diffstat summary looks like this:
+> 
+>   29 files changed, 2965 insertions(+), 642 deletions(-)
+> 
+> with basically 2000+ new lines (yes, many of them in Documebntation,
+> happily, but rcutree grew noticeably too), it really would have been
+> nice to have some blurb about what the heck actually happened, ok?
 
-Add anatop regulators to imx6q.dtsi for all imx6q platforms.
+Yep, 2072 of the net additions were in Documentation.
 
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>
----
- arch/arm/boot/dts/imx6q.dtsi |   86 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 86 insertions(+), 0 deletions(-)
+> I'm starting to get explanations in signed tags or in the "please
+> pull" messages from a fairly large number of maintainers now, and the
+> pulls from Ingo are beginning to look sad and unexplained in contrast.
 
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index 263e8f3..dd41514 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -346,6 +346,92 @@
- 				compatible = "fsl,imx6q-anatop";
- 				reg = <0x020c8000 0x1000>;
- 				interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				regulator-vddpu@140 {
-+					compatible = "fsl,anatop-regulator";
-+					regulator-name = "vddpu";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1300000>;
-+					regulator-always-on;
-+					reg = <0x140>;
-+					anatop-vol-bit-shift = <9>;
-+					anatop-vol-bit-width = <5>;
-+					anatop-min-bit-val = <1>;
-+					anatop-min-voltage = <725000>;
-+					anatop-max-voltage = <1300000>;
-+				};
-+
-+				regulator-vddcore@140 {
-+					compatible = "fsl,anatop-regulator";
-+					regulator-name = "cpu";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1300000>;
-+					regulator-always-on;
-+					reg = <0x140>;
-+					anatop-vol-bit-shift = <0>;
-+					anatop-vol-bit-width = <5>;
-+					anatop-min-bit-val = <1>;
-+					anatop-min-voltage = <725000>;
-+					anatop-max-voltage = <1300000>;
-+				};
-+
-+				regulator-vddsoc@140 {
-+					compatible = "fsl,anatop-regulator";
-+					regulator-name = "vddsoc";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1300000>;
-+					regulator-always-on;
-+					reg = <0x140>;
-+					anatop-vol-bit-shift = <18>;
-+					anatop-vol-bit-width = <5>;
-+					anatop-min-bit-val = <1>;
-+					anatop-min-voltage = <725000>;
-+					anatop-max-voltage = <1300000>;
-+				};
-+
-+				regulator-2p5@130 {
-+					compatible = "fsl,anatop-regulator";
-+					regulator-name = "vdd2p5";
-+					regulator-min-microvolt = <2000000>;
-+					regulator-max-microvolt = <2775000>;
-+					regulator-always-on;
-+					reg = <0x130>;
-+					anatop-vol-bit-shift = <8>;
-+					anatop-vol-bit-width = <5>;
-+					anatop-min-bit-val = <0>;
-+					anatop-min-voltage = <2000000>;
-+					anatop-max-voltage = <2775000>;
-+				};
-+
-+				regulator-1p1@110 {
-+					compatible = "fsl,anatop-regulator";
-+					regulator-name = "vdd1p1";
-+					regulator-min-microvolt = <800000>;
-+					regulator-max-microvolt = <1400000>;
-+					regulator-always-on;
-+					reg = <0x110>;
-+					anatop-vol-bit-shift = <8>;
-+					anatop-vol-bit-width = <5>;
-+					anatop-min-bit-val = <4>;
-+					anatop-min-voltage = <800000>;
-+					anatop-max-voltage = <1400000>;
-+				};
-+
-+				regulator-3p0@120 {
-+					compatible = "fsl,anatop-regulator";
-+					regulator-name = "vdd3p0";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <3150000>;
-+					regulator-always-on;
-+					reg = <0x120>;
-+					anatop-vol-bit-shift = <8>;
-+					anatop-vol-bit-width = <5>;
-+					anatop-min-bit-val = <7>;
-+					anatop-min-voltage = <2800000>;
-+					anatop-max-voltage = <3150000>;
-+				};
- 			};
- 
- 			usbphy@020c9000 { /* USBPHY1 */
--- 
-1.7.9.1
+Many of the change to rcutree.c were due to additions of checks for illegal
+use of RCU from idle or offlined CPUs, reworking of the CPU-offline code
+path, and fixes to allow use of RCU from idle CPUs (which has always been
+illegal, but many uses have nevertheless slipped in over the years).
+
+If it would help, I would be happy to put together an itemized list.
+I will of course do so for the next merge window.
+
+							Thanx, Paul
 
