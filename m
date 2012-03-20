@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2CTTB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 15:01:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab2CTTB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 15:01:26 -0400
-Date: Tue, 20 Mar 2012 20:00:55 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, hughd@google.com
-Subject: Re: [PATCH -mm 2/2] mm: do not reset mm->free_area_cache on every
- single munmap
-Message-ID: <20120320190055.GZ24602@redhat.com>
-References: <20120223145417.261225fd@cuia.bos.redhat.com>
- <20120223150034.2c757b3a@cuia.bos.redhat.com>
- <20120223135614.7c4e02db.akpm@linux-foundation.org>
+	id S1756239Ab2CTTEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:04:10 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44905 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755827Ab2CTTEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 15:04:08 -0400
+Date: Tue, 20 Mar 2012 14:58:41 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
+        midgoon@gmail.com
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot
+Message-ID: <20120320185841.GF29554@phenom.dumpdata.com>
+References: <1327529048.2327.17.camel@sbsiddha-mobl2>
+ <20120125231534.GL13655@zod.bos.redhat.com>
+ <20120131142621.GA2136@zod.bos.redhat.com>
+ <1328083230.3638.2.camel@sbsiddha-mobl2>
+ <20120312132448.GA20204@zod.bos.redhat.com>
+ <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
+ <20120319133046.GB13093@zod.bos.redhat.com>
+ <20120319193842.GA8123@phenom.dumpdata.com>
+ <20120320094048.GC20079@phenom.dumpdata.com>
+ <1332267178.16101.66.camel@sbsiddha-desk.sc.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120223135614.7c4e02db.akpm@linux-foundation.org>
+In-Reply-To: <1332267178.16101.66.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090204.4F68D461.010F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 01:56:14PM -0800, Andrew Morton wrote:
-> We've been playing whack-a-mole with this search for many years.  What
-> about developing a proper data structure with which to locate a
-> suitable-sized hole in O(log(N)) time?
+On Tue, Mar 20, 2012 at 11:12:58AM -0700, Suresh Siddha wrote:
+> On Tue, 2012-03-20 at 05:40 -0400, Konrad Rzeszutek Wilk wrote:
+> > I think there are three ways of fixing this:
+> > 
+> >  1). Revert Suresh's patch and look at just removing the "Unable to reset IRR" warning
+> >     (perhaps by being conditional on running in kexec-env?).
+> > 
+> >  2). Make the Xen layer fake out an IOAPIC - so instead of 0xffffff, make sure to
+> >      clear the three bits that Suresh' patch is testing for (Ewwwww, I don't actually
+> >      like that - that stinks of a hack).
+> > 
+> >  3). Rework Suresh's patch - to only remove the IOAPIC entry if there is no
+> >      INT_SRV_OVR that depend on it. I made a stab at it and here is draft patch, that
+> >      looks to work on my boxes that have more than one IOAPIC and are booting under Xen:
+> >      But I am not 100% confident about it so would appreciate somebody looking at it.
+> > 
+> 
+> Thanks for looking at this Konrad. This issue is not just specific to
+> INT_SRC_OVR per-say.
+> 
+> Issue is that Xen though it doesn't use IO-APIC, it does depend on
+> proper IO-APIC parsing for various things like getting proper gsi_top,
+> INT_SRV_OVR entries etc.
+> 
+> I think Xen should be setting up a valid dummy IO-APIC mapping instead
+> of working around.
 
-I intended to implement it a couple of years ago.
+Then this fixes the issue - thought if there are more checks in the future
+it will have to be redone..:
 
-It takes a change to the rbtree code so that when rb_erase and
-rb_insert_color are called, proper methods are called to notify the
-caller that there's been a rotation (probably calling a new
-rb_insert_color_with_metadata(&method(left_rot, right_rot)) ). So that
-these methods can update the new status of the tree. So you can keep
-the "max" hole information for the left and right side of the tree at
-the top node, and if the left side of the tree from the top doesn't
-have a big enough max hole you take the right immediately (if if fits)
-skipping over everything that isn't interesting and you keep doing so
-until the max hole on right or left fits the size of the allocation
-request (and then you find what you were searching for in vma and
-vma->vm_next). It's very tricky but it should be possible. Still it
-would remain generic code in rbtree.c, not actually knowing it's the
-max hole info we're collecting at the root node for left and right
-nodes. Maybe only the left side of the tree max hole needs to be
-collected, not having the right size only means a worst case O(log(N))
-walk on the tree (taking ->right all the time 'till the leaf) so it'd
-be perfectly ok and it may simplify things a lot having only the max
-hole on the left.
-
-I'm too busy optimizing AutoNUMA even further to delve into this but I
-hope somebody implements it. I thought about exactly this when I've
-seen these patches floating around, so I'm glad you mentioned it.
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 988828b..b8e2794 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1859,6 +1859,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+ #endif	/* CONFIG_X86_64 */
+ 
+ static unsigned char dummy_mapping[PAGE_SIZE] __page_aligned_bss;
++static unsigned char fake_ioapic_mapping[PAGE_SIZE] __page_aligned_bss;
+ 
+ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ {
+@@ -1899,7 +1900,7 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ 		 * We just don't map the IO APIC - all access is via
+ 		 * hypercalls.  Keep the address in the pte for reference.
+ 		 */
+-		pte = pfn_pte(PFN_DOWN(__pa(dummy_mapping)), PAGE_KERNEL);
++		pte = pfn_pte(PFN_DOWN(__pa(fake_ioapic_mapping)), PAGE_KERNEL);
+ 		break;
+ #endif
+ 
+@@ -2064,6 +2065,7 @@ void __init xen_init_mmu_ops(void)
+ 	pv_mmu_ops = xen_mmu_ops;
+ 
+ 	memset(dummy_mapping, 0xff, PAGE_SIZE);
++	memset(fake_ioapic_mapping, 0xfd, PAGE_SIZE);
+ }
+ 
+ /* Protected by xen_reservation_lock. */
+> 
+> thanks,
+> suresh
