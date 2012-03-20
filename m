@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759605Ab2CTIyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 04:54:40 -0400
-Received: from smtp5.tech.numericable.fr ([82.216.111.41]:39255 "EHLO
+	id S1759574Ab2CTIy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 04:54:27 -0400
+Received: from smtp5.tech.numericable.fr ([82.216.111.41]:39113 "EHLO
 	smtp5.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759594Ab2CTIyh (ORCPT
+	with ESMTP id S1759546Ab2CTIyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 04:54:37 -0400
+	Tue, 20 Mar 2012 04:54:17 -0400
 From: Corentin Chary <corentin.chary@gmail.com>
 To: Matthew Garrett <mjg@redhat.com>
 Cc: platform-driver-x86@vger.kernel.org,
         Corentin Chary <corentin.chary@gmail.com>,
         Corentin Chary <corentincj@iksaif.net>,
         acpi4asus-user@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/14] eeepc-wmi: split et2012 specific hacks
-Date: Tue, 20 Mar 2012 09:53:13 +0100
-Message-Id: <1332233594-13099-14-git-send-email-corentin.chary@gmail.com>
+Subject: [PATCH 12/14] eeepc-wmi: refine quirks handling
+Date: Tue, 20 Mar 2012 09:53:12 +0100
+Message-Id: <1332233594-13099-13-git-send-email-corentin.chary@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
 References: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
@@ -28,60 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 ---
- drivers/platform/x86/eeepc-wmi.c |   34 ++++++++++++++++++++--------------
- 1 files changed, 20 insertions(+), 14 deletions(-)
+ drivers/platform/x86/eeepc-wmi.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-index 0bb0aaf..6567613 100644
+index 389ff88..0bb0aaf 100644
 --- a/drivers/platform/x86/eeepc-wmi.c
 +++ b/drivers/platform/x86/eeepc-wmi.c
-@@ -109,26 +109,32 @@ static struct quirk_entry quirk_asus_et2012_type3 = {
+@@ -49,7 +49,6 @@ MODULE_LICENSE("GPL");
  
- static struct quirk_entry *quirks;
+ MODULE_ALIAS("wmi:"EEEPC_WMI_EVENT_GUID);
  
-+static void et2012_quirks(void)
-+{
-+	const struct dmi_device *dev = NULL;
-+	char oemstring[30];
-+
-+	while ((dev = dmi_find_device(DMI_DEV_TYPE_OEM_STRING, NULL, dev))) {
-+		if (sscanf(dev->name, "AEMS%24c", oemstring) == 1) {
-+			if (oemstring[18] == '1')
-+				quirks = &quirk_asus_et2012_type1;
-+			else if (oemstring[18] == '3')
-+				quirks = &quirk_asus_et2012_type3;
-+			break;
-+		}
-+	}
-+}
+-static struct quirk_entry *quirks;
+ static bool hotplug_wireless;
+ 
+ module_param(hotplug_wireless, bool, 0444);
+@@ -108,6 +107,8 @@ static struct quirk_entry quirk_asus_et2012_type3 = {
+ 	.store_backlight_power = true,
+ };
+ 
++static struct quirk_entry *quirks;
 +
  static int dmi_matched(const struct dmi_system_id *dmi)
  {
  	char *model;
-+
- 	quirks = dmi->driver_data;
+@@ -209,12 +210,14 @@ static int eeepc_wmi_probe(struct platform_device *pdev)
  
- 	model = (char *)dmi->matches[1].substr;
--	if (unlikely(strncmp(model, "ET2012", 6) == 0)) {
--		const struct dmi_device *dev = NULL;
--		char oemstring[30];
--		while ((dev = dmi_find_device(DMI_DEV_TYPE_OEM_STRING,
--					      NULL, dev))) {
--			if (sscanf(dev->name, "AEMS%24c", oemstring) == 1) {
--				if (oemstring[18] == '1')
--					quirks = &quirk_asus_et2012_type1;
--				else if (oemstring[18] == '3')
--					quirks = &quirk_asus_et2012_type3;
--				break;
--			}
--		}
--	}
-+	if (unlikely(strncmp(model, "ET2012", 6) == 0))
-+		et2012_quirks();
+ static void eeepc_wmi_quirks(struct asus_wmi_driver *driver)
+ {
+-	driver->panel_power = FB_BLANK_UNBLANK;
+-	driver->quirks = &quirk_asus_unknown;
+-	driver->quirks->hotplug_wireless = hotplug_wireless;
+-	driver->quirks->wapf = -1;
++	quirks = &quirk_asus_unknown;
++	quirks->hotplug_wireless = hotplug_wireless;
 +
- 	return 1;
+ 	dmi_check_system(asus_quirks);
++
+ 	driver->quirks = quirks;
++	driver->quirks->wapf = -1;
++	driver->panel_power = FB_BLANK_UNBLANK;
  }
  
+ static struct asus_wmi_driver asus_wmi_driver = {
 -- 
 1.7.3.4
 
