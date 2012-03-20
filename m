@@ -1,47 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab2CTRmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:42:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43378 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2CTRmP (ORCPT
+	id S1752770Ab2CTRow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:44:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36825 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab2CTRou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:42:15 -0400
-Message-ID: <4F68C16B.1090707@gmail.com>
-Date: Tue, 20 Mar 2012 10:42:03 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org> <4F681B78.9000207@gmail.com> <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com> <4F68235C.5090701@gmail.com> <CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com> <4F682555.3020502@gmail.com> <20328.16366.166909.255035@gargle.gargle.HOWL> <4F6891F1.9010105@gmail.com> <20328.41155.468698.30887@gargle.gargle.HOWL>
-In-Reply-To: <20328.41155.468698.30887@gargle.gargle.HOWL>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 13:44:50 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: linus.walleij@linaro.org
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linus.walleij@stericsson.com, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
+        thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH V2 2/6] dt: pinctrl: Document device tree binding
+Date: Tue, 20 Mar 2012 11:44:35 -0600
+Message-Id: <1332265479-1260-2-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
+References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 08:22 AM, Sujith Manoharan wrote:
-> Justin P. Mattock wrote:
->> both mohammed and sujith Thank you for the patches for this issue!
->> I really appreciate this..
->>
->> I went and applied the debug printk and added ath_node_attach as well to
->> my linux-next clone, will run for a few days to see if I get anything..
->> full dmesg is here..: http://fpaste.org/jHSX/
->
-> Thanks for testing and please report if the issue is fixed.
->
-> Sujith
->
+The core pin controller bindings define:
+* The fact that pin controllers expose pin configurations as nodes in
+  device tree.
+* That the bindings for those pin configuration nodes is defined by the
+  individual pin controller drivers.
+* A standardized set of properties for client devices to define numbered
+  or named pin configuration states, each referring to some number of the
+  afore-mentioned pin configuration nodes.
+* That the bindings for the client devices determines the set of numbered
+  or named states that must exist.
 
-no worries.. hopefully we can get this bug fixed.. will continue running 
-these patches and will send out anything I see..
+Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+v2: Fix a couple of grammar-os per Randy Dunlap. Add example of a client
+device that references no pin configuration nodes per Dong Aisheng.
+---
+ .../bindings/pinctrl/pinctrl-bindings.txt          |  128 ++++++++++++++++++++
+ 1 files changed, 128 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
 
-Justin P. Mattock
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+new file mode 100644
+index 0000000..c95ea82
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+@@ -0,0 +1,128 @@
++== Introduction ==
++
++Hardware modules that control pin multiplexing or configuration parameters
++such as pull-up/down, tri-state, drive-strength etc are designated as pin
++controllers. Each pin controller must be represented as a node in device tree,
++just like any other hardware module.
++
++Hardware modules whose signals are affected by pin configuration are
++designated client devices. Again, each client device must be represented as a
++node in device tree, just like any other hardware module.
++
++For a client device to operate correctly, certain pin controllers must
++set up certain specific pin configurations. Some client devices need a
++single static pin configuration, e.g. set up during initialization. Others
++need to reconfigure pins at run-time, for example to tri-state pins when the
++device is inactive. Hence, each client device can define a set of named
++states. The number and names of those states is defined by the client device's
++own binding.
++
++The common pinctrl bindings defined in this file provide an infrastructure
++for client device device tree nodes to map those state names to the pin
++configuration used by those states.
++
++Note that pin controllers themselves may also be client devices of themselves.
++For example, a pin controller may set up its own "active" state when the
++driver loads. This would allow representing a board's static pin configuration
++in a single place, rather than splitting it across multiple client device
++nodes. The decision to do this or not somewhat rests with the author of
++individual board device tree files, and any requirements imposed by the
++bindings for the individual client devices in use by that board, i.e. whether
++they require certain specific named states for dynamic pin configuration.
++
++== Pinctrl client devices ==
++
++For each client device individually, every pin state is assigned an integer
++ID. These numbers start at 0, and are contiguous. For each state ID, a unique
++property exists to define the pin configuration. Each state may also be
++assigned a name. When names are used, another property exists to map from
++those names to the integer IDs.
++
++Each client device's own binding determines the set of states the must be
++defined in its device tree node, and whether to define the set of state
++IDs that must be provided, or whether to define the set of state names that
++must be provided.
++
++Required properties:
++pinctrl-0:	List of phandles, each pointing at a pin configuration
++		node. These referenced pin configuration nodes must be child
++		nodes of the pin controller that they configure. Multiple
++		entries may exist in this list so that multiple pin
++		controllers may be configured, or so that a state may be built
++		from multiple nodes for a single pin controller, each
++		contributing part of the overall configuration. See the next
++		section of this document for details of the format of these
++		pin configuration nodes.
++
++		In some cases, it may be useful to define a state, but for it
++		to be empty. This may be required when a common IP block is
++		used in an SoC either without a pin controller, or where the
++		pin controller does not affect the HW module in question. If
++		the binding for that IP block requires certain pin states to
++		exist, they must still be defined, but may be left empty.
++
++Optional properties:
++pinctrl-1:	List of phandles, each pointing at a pin configuration
++		node within a pin controller.
++...
++pinctrl-n:	List of phandles, each pointing at a pin configuration
++		node within a pin controller.
++pinctrl-names:	The list of names to assign states. List entry 0 defines the
++		name for integer state ID 0, list entry 1 for state ID 1, and
++		so on.
++
++For example:
++
++	/* For a client device requiring named states */
++	device {
++		pinctrl-names = "active", "idle";
++		pinctrl-0 = <&state_0_node_a>;
++		pinctrl-1 = <&state_1_node_a &state_1_node_b>;
++	};
++
++	/* For the same device if using state IDs */
++	device {
++		pinctrl-0 = <&state_0_node_a>;
++		pinctrl-1 = <&state_1_node_a &state_1_node_b>;
++	};
++
++	/*
++	 * For an IP block whose binding supports pin configuration,
++	 * but in use on an SoC that doesn't have any pin control hardware
++	 */
++	device {
++		pinctrl-names = "active", "idle";
++		pinctrl-0 = <>;
++		pinctrl-1 = <>;
++	};
++
++== Pin controller devices ==
++
++Pin controller devices should contain the pin configuration nodes that client
++devices reference.
++
++For example:
++
++	pincontroller {
++		... /* Standard DT properties for the device itself elided */
++
++		state_0_node_a {
++			...
++		};
++		state_1_node_a {
++			...
++		};
++		state_1_node_b {
++			...
++		};
++	}
++
++The contents of each of those pin configuration child nodes is defined
++entirely by the binding for the individual pin controller device. There
++exists no common standard for this content.
++
++The pin configuration nodes need not be direct children of the pin controller
++device; they may be grandchildren, for example. Whether this is legal, and
++whether there is any interaction between the child and intermediate parent
++nodes, is again defined entirely by the binding for the individual pin
++controller device.
+-- 
+1.7.0.4
+
