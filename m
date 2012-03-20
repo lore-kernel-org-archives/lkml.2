@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410Ab2CTCCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 22:02:22 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:54595 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758827Ab2CTCCU (ORCPT
+	id S1759435Ab2CTCOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 22:14:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55317 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759384Ab2CTCOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 22:02:20 -0400
-Date: Mon, 19 Mar 2012 22:02:18 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Paul Taysom <taysom@google.com>
-cc: Mandeep Singh Baines <msb@chromium.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Theodore Tso <tytso@google.com>, Greg KH <greg@kroah.com>,
-        Paul Taysom <taysom@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@google.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>, <stable@kernel.org>
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-In-Reply-To: <CAKwO_5EgwVn+d1LGoms+6+u_76cBG0NLqF8tmeo1u=32AKGqVA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1203192156410.24735-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 Mar 2012 22:14:36 -0400
+Date: Tue, 20 Mar 2012 13:14:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Weston Andros Adamson <dros@netapp.com>
+Subject: linux-next: build warning after merge of the nfs tree
+Message-Id: <20120320131427.b166ba88d4ea86cea3ec8d7f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012, Paul Taysom wrote:
+--Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I have rerun my tests without my change on the 3.2.7 kernel and I was
-> not able to get it to crash. I even put some code in to do the early
-> detection so I didn't have to wait for another thread to stumble
-> across the corruption. The way I test is with several flash drivers
-> with ext2, ext3, ext4, FAT, and HPFS file systems and just repeatedly
-> plug and unplug them. When a flash drive is plugged in with a file
-> system, it is automatically mounted.
+Hi Trond,
 
-That's not the right way to test a race like this.  The right way is to 
-insert ssleep() calls at some appropriate spots, so that you can force 
-the race to come out the way you want every time.
+After merging the nfs tree, today's linux-next build (powerpc
+ppc64_defconfig) produced lots of this warning:
 
-What about the question of resetting the bdi pointer at the same time 
-as some other thread is using it?  Have you tested whether Mandeep's 
-locking suggestion will prevent problems?
+include/linux/nfs_fs.h: In function 'nfs_display_fhandle_hash':
+include/linux/nfs_fs.h:416:1: warning: no return statement in function retu=
+rning non-void [-Wreturn-type]
 
-Alan Stern
+Introduced by commit d8e0539ebdff ("NFS: add filehandle crc for debug
+display").  But made obvious by commit 855fa894a2b2 ("SUNRPC/NFS: Add
+Kbuild dependencies for NFS_DEBUG/RPC_DEBUG").
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPZ+gDAAoJEECxmPOUX5FEbwwP/11bpEdNujL/IORj2uOEuZwJ
+JenRgENzKBYhNAkZjOL9fJ3173cyBMWJnuDDdE60Z8NNHBmonw6hhXEQRfyk0rZe
+ywGdTjI/3eRTlr2D6N/el94Sg9gD3m/2Fnh533xF8roo4xqDoQ+UeXmFlSIQ20qA
+HNVAh0J79W0G2QfRoLkMITGwYzVW9UXhFLNwRWVVKrnnkKp+xzGDhGJqdkX+ZEqe
+d+uPaW69yRtQuOzQeSNolyfDxmJUm8/DZYm1TXUPMFEZC8JfFTGkaxJMgh8dW+5j
+kaHHOFnRMCF6MEMTs/ws0d1Kqro3oRERSJqCp7wsB1Bus2ht+hAn2TtON0Mv9O49
+ef22dbBza31iykKtgCf+zfbcKuU/daT80Kgk5/66Yp3I45FOokqEZWLMYxKvSgqj
+GowAsQ4P4owfGMdx2/cwQ3TtFftLAxXa2gpyzB+Ir0yQdCiIfd2McGCPyoxRAD3I
+YEa1g+8gvXZia0HqxbLZ+4qp2EiLvGNXfxHWBFK8K8F+IzzJwcpKdhjcs1vkOBJp
+q04r8TCZp6cS0Bj1WY3ES433fXhieWzae+HrzQUrfgo1K+zUXlK+SicnpID83kHp
+5IsC0MQhvLHI4NOgijLkMH6RV1i1sQE2xpgPBgTpGsn7qcPVEOjy60p/j1CPFyEL
+YhzASI+E8yvtH6sj2Zdh
+=+/iJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__20_Mar_2012_13_14_27_+1100_lDFFRlPUlSWdYknZ--
