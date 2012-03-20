@@ -1,102 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760171Ab2CTOTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:19:35 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55247 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab2CTOTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:19:33 -0400
-Message-ID: <4F6891F1.9010105@gmail.com>
-Date: Tue, 20 Mar 2012 07:19:29 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1760183Ab2CTOT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:19:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756497Ab2CTOTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:19:55 -0400
+Date: Tue, 20 Mar 2012 15:19:36 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH V2] x86: io_apic: Move and reenable irq only when
+ CONFIG_GENERIC_PENDING_IRQ=y
+Message-ID: <20120320141935.GA24806@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org> <4F681B78.9000207@gmail.com> <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com> <4F68235C.5090701@gmail.com> <CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com> <4F682555.3020502@gmail.com> <20328.16366.166909.255035@gargle.gargle.HOWL>
-In-Reply-To: <20328.16366.166909.255035@gargle.gargle.HOWL>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 01:29 AM, Sujith Manoharan wrote:
-> Justin P. Mattock wrote:
->> yeah this works:
->>
->> eading symbols from
->> /home/kernel/linux-next/drivers/net/wireless/ath/ath9k/ath9k.o...done.
->> (gdb) l *(ath_tx_start+0x284)
->> 0xcad4 is in ath_tx_start (drivers/net/wireless/ath/ath9k/xmit.c:1878).
->> 1873			ieee80211_is_data_qos(hdr->frame_control)) {
->> 1874			tidno = ieee80211_get_qos_ctl(hdr)[0]&
->> 1875				IEEE80211_QOS_CTL_TID_MASK;
->> 1876			tid = ATH_AN_2_TID(txctl->an, tidno);
->> 1877	
->> 1878			WARN_ON(tid->ac->txq != txctl->txq);
->> 1879		}
->> 1880	
->> 1881		if ((tx_info->flags&  IEEE80211_TX_CTL_AMPDU)&&  tid) {
->> 1882			/*
->> (gdb)
->
-> Can you try this patch ?
->
-> From: Sujith Manoharan<c_manoha@qca.qualcomm.com>
-> Date: Tue, 20 Mar 2012 13:51:26 +0530
-> Subject: [PATCH] ath9k: Use HW HT capabilites properly
->
-> The commit "ath9k: Remove aggregation flags" changed how
-> nodes were being initialized. Use the HW HT cap bits
-> to initialize/de-initialize nodes, else we would be
-> accessing an uninitialized entry during a suspend/resume cycle,
-> resulting in a panic.
->
-> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
-> Signed-off-by: Sujith Manoharan<c_manoha@qca.qualcomm.com>
-> ---
->   drivers/net/wireless/ath/ath9k/main.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-> index 3879485..215eb25 100644
-> --- a/drivers/net/wireless/ath/ath9k/main.c
-> +++ b/drivers/net/wireless/ath/ath9k/main.c
-> @@ -640,7 +640,7 @@ static void ath_node_attach(struct ath_softc *sc, struct ieee80211_sta *sta,
->   	an->sta = sta;
->   	an->vif = vif;
->
-> -	if (sta->ht_cap.ht_supported) {
-> +	if (sc->sc_ah->caps.hw_caps&  ATH9K_HW_CAP_HT) {
->   		ath_tx_node_init(sc, an);
->   		an->maxampdu = 1<<  (IEEE80211_HT_MAX_AMPDU_FACTOR +
->   				     sta->ht_cap.ampdu_factor);
-> @@ -659,7 +659,7 @@ static void ath_node_detach(struct ath_softc *sc, struct ieee80211_sta *sta)
->   	an->sta = NULL;
->   #endif
->
-> -	if (sta->ht_cap.ht_supported)
-> +	if (sc->sc_ah->caps.hw_caps&  ATH9K_HW_CAP_HT)
->   		ath_tx_node_cleanup(sc, an);
->   }
->
+When CONFIG_GENERIC_PENDING_IRQ=n irq move and reenable code is never
+get executed, nor do_unmask_irq variable updates its init value. Move
+the code under CONFIG_GENERIC_PENDING_IRQ macro.
 
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/x86/kernel/apic/io_apic.c |  101 ++++++++++++++++++++++++----------------
+ 1 files changed, 61 insertions(+), 40 deletions(-)
 
-alright!
-
-both mohammed and sujith Thank you for the patches for this issue!
-I really appreciate this..
-
-I went and applied the debug printk and added ath_node_attach as well to 
-my linux-next clone, will run for a few days to see if I get anything..
-full dmesg is here..: http://fpaste.org/jHSX/
-
-Justin P. Mattock
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..8cd6360 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2512,21 +2512,73 @@ static void ack_apic_edge(struct irq_data *data)
+ 
+ atomic_t irq_mis_count;
+ 
+-static void ack_apic_level(struct irq_data *data)
+-{
+-	struct irq_cfg *cfg = data->chip_data;
+-	int i, do_unmask_irq = 0, irq = data->irq;
+-	unsigned long v;
+-
+-	irq_complete_move(cfg);
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
++static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
++{
+ 	/* If we are moving the irq we need to mask it */
+ 	if (unlikely(irqd_is_setaffinity_pending(data))) {
+-		do_unmask_irq = 1;
+ 		mask_ioapic(cfg);
++		return true;
+ 	}
++	return false;
++}
++
++static inline void ioapic_irqd_unmask(struct irq_data *data,
++				      struct irq_cfg *cfg, bool masked)
++{
++	if (unlikely(masked)) {
++		/* Only migrate the irq if the ack has been received.
++		 *
++		 * On rare occasions the broadcast level triggered ack gets
++		 * delayed going to ioapics, and if we reprogram the
++		 * vector while Remote IRR is still set the irq will never
++		 * fire again.
++		 *
++		 * To prevent this scenario we read the Remote IRR bit
++		 * of the ioapic.  This has two effects.
++		 * - On any sane system the read of the ioapic will
++		 *   flush writes (and acks) going to the ioapic from
++		 *   this cpu.
++		 * - We get to see if the ACK has actually been delivered.
++		 *
++		 * Based on failed experiments of reprogramming the
++		 * ioapic entry from outside of irq context starting
++		 * with masking the ioapic entry and then polling until
++		 * Remote IRR was clear before reprogramming the
++		 * ioapic I don't trust the Remote IRR bit to be
++		 * completey accurate.
++		 *
++		 * However there appears to be no other way to plug
++		 * this race, so if the Remote IRR bit is not
++		 * accurate and is causing problems then it is a hardware bug
++		 * and you can go talk to the chipset vendor about it.
++		 */
++		if (!io_apic_level_ack_pending(cfg))
++			irq_move_masked_irq(data);
++		unmask_ioapic(cfg);
++	}
++}
++#else
++static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
++{
++	return false;
++}
++static inline void ioapic_irqd_unmask(struct irq_data *data,
++				      struct irq_cfg *cfg, bool masked)
++{
++}
+ #endif
+ 
++static void ack_apic_level(struct irq_data *data)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	int i, irq = data->irq;
++	unsigned long v;
++	bool masked;
++
++	irq_complete_move(cfg);
++	masked = ioapic_irqd_mask(data, cfg);
++
+ 	/*
+ 	 * It appears there is an erratum which affects at least version 0x11
+ 	 * of I/O APIC (that's the 82093AA and cores integrated into various
+@@ -2581,38 +2633,7 @@ static void ack_apic_level(struct irq_data *data)
+ 		eoi_ioapic_irq(irq, cfg);
+ 	}
+ 
+-	/* Now we can move and renable the irq */
+-	if (unlikely(do_unmask_irq)) {
+-		/* Only migrate the irq if the ack has been received.
+-		 *
+-		 * On rare occasions the broadcast level triggered ack gets
+-		 * delayed going to ioapics, and if we reprogram the
+-		 * vector while Remote IRR is still set the irq will never
+-		 * fire again.
+-		 *
+-		 * To prevent this scenario we read the Remote IRR bit
+-		 * of the ioapic.  This has two effects.
+-		 * - On any sane system the read of the ioapic will
+-		 *   flush writes (and acks) going to the ioapic from
+-		 *   this cpu.
+-		 * - We get to see if the ACK has actually been delivered.
+-		 *
+-		 * Based on failed experiments of reprogramming the
+-		 * ioapic entry from outside of irq context starting
+-		 * with masking the ioapic entry and then polling until
+-		 * Remote IRR was clear before reprogramming the
+-		 * ioapic I don't trust the Remote IRR bit to be
+-		 * completey accurate.
+-		 *
+-		 * However there appears to be no other way to plug
+-		 * this race, so if the Remote IRR bit is not
+-		 * accurate and is causing problems then it is a hardware bug
+-		 * and you can go talk to the chipset vendor about it.
+-		 */
+-		if (!io_apic_level_ack_pending(cfg))
+-			irq_move_masked_irq(data);
+-		unmask_ioapic(cfg);
+-	}
++	ioapic_irqd_unmask(data, cfg, masked);
+ }
+ 
+ #ifdef CONFIG_IRQ_REMAP
+-- 
+1.7.7.6
 
