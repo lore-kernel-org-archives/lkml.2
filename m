@@ -1,202 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab2CTKmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:42:11 -0400
-Received: from cpanel23.proisp.no ([88.87.44.74]:58117 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759537Ab2CTKmI (ORCPT
+	id S1759598Ab2CTKnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:43:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52565 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759537Ab2CTKnD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:42:08 -0400
-Message-ID: <4F685EE8.5020708@numascale.com>
-Date: Tue, 20 Mar 2012 11:41:44 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jack Steiner <steiner@sgi.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH REPOST] Added separate apic_id_valid() functions for selected
- apic drivers.
-References: <CAE9FiQVxuVGe=m87fQKE+JjPk=Z83iOypQU+yQn5y-M-qVSArg@mail.gmail.com> <1331925935-13372-1-git-send-email-sp@numascale.com>
-In-Reply-To: <1331925935-13372-1-git-send-email-sp@numascale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 20 Mar 2012 06:43:03 -0400
+Message-ID: <1332240151.18960.401.camel@twins>
+Subject: Re: CPU Hotplug rework
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Date: Tue, 20 Mar 2012 11:42:31 +0100
+In-Reply-To: <87aa3cqht9.fsf@rustcorp.com.au>
+References: <4F674649.2000300@linux.vnet.ibm.com>
+	 <87aa3cqht9.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/16/2012 20:25, Steffen Persvold wrote:
-> As suggested by Suresh Siddha<suresh.b.siddha@intel.com>  and Yinghai Lu<yinghai@kernel.org>  :
->
-> For x2apic pre-enabled systems, apic driver is set already early through early_acpi_boot_init()/early_acpi_process_madt()/acpi_parse_madt()/default_acpi_madt_oem_check() so that apic_id_valid() checking will be sufficient during MADT and SRAT prasing. For non- x2apic pre-enabled systems, all apic ids should be less than 255.
->
-> This allows us to substitute the checks in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic() and arch/x86/mm/srat.c::acpi_numa_x2apic_affinity_init() with apic->apic_id_valid().
->
-> In addition we can avoid feigning the x2apic cpu feature in the NumaChip apic code.
->
-> The following apic drivers have separate apic_id_valid() functions which will accept x2apic type IDs :
->
-> x2apic_phys
-> x2apic_cluster
-> x2apic_uv_x
-> apic_numachip
->
-> Signed-off-by: Steffen Persvold<sp@numascale.com>
+On Tue, 2012-03-20 at 10:12 +1030, Rusty Russell wrote:
+> On Mon, 19 Mar 2012 20:14:25 +0530, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > Hi,
+> > 
+> > There had been some discussion on CPU Hotplug redesign/rework
+> > some time ago, but it was buried under a thread with a different
+> > subject.
+> > (http://thread.gmane.org/gmane.linux.kernel/1246208/focus=1246404)
+> > 
+> > So I am opening a new thread with an appropriate subject to discuss
+> > what needs to be done and how to go about it, as part of the rework.
+> > 
+> > Peter Zijlstra and Paul McKenney had come up with TODO lists for the
+> > rework, and here are their extracts from the previous discussion:
+> 
+> This is possible, but quite a lot of tricky auditing work.  There's an
+> underlying assumption that stop_machine is the slow part, since it feels
+> so heavy.
 
-Ingo, any comments on this approach ? It should cover both cases as 
-suggested by Suresh and Yinghai.
+Depends on the machine and the needs. For the regular desktop with a
+regular kernel, the stop_machine in hotplug isn't really a problem. For
+_BIG_ machines stop_machine is a problem, for -RT stop_machine is a
+problem.
 
-Kind regards,
--- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
+So if we're going to re-architect hotplug anyway, it would be very good
+to get rid of it, because I really don't see any hard reasons why we
+would need it.
 
+> Unfortunately, this doesn't seem to be the case in my testing.  The time
+> for hotplug seems to be moving all the threads around.  So how about:
 
-> ---
->   arch/x86/include/asm/apic.h           |    2 +-
->   arch/x86/include/asm/x2apic.h         |    5 +++++
->   arch/x86/kernel/acpi/boot.c           |    2 +-
->   arch/x86/kernel/apic/apic_numachip.c  |    3 +--
->   arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
->   arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
->   arch/x86/kernel/apic/x2apic_uv_x.c    |    7 ++++++-
->   arch/x86/mm/srat.c                    |    2 +-
->   8 files changed, 17 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index a9371c9..d3eaac4 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -535,7 +535,7 @@ static inline unsigned int read_apic_id(void)
->
->   static inline int default_apic_id_valid(int apicid)
->   {
-> -	return x2apic_mode || (apicid<  255);
-> +	return (apicid<  255);
->   }
->
->   extern void default_setup_apic_routing(void);
-> diff --git a/arch/x86/include/asm/x2apic.h b/arch/x86/include/asm/x2apic.h
-> index 6bf5b8e..92e54ab 100644
-> --- a/arch/x86/include/asm/x2apic.h
-> +++ b/arch/x86/include/asm/x2apic.h
-> @@ -18,6 +18,11 @@ static const struct cpumask *x2apic_target_cpus(void)
->   	return cpu_online_mask;
->   }
->
-> +static int x2apic_apic_id_valid(int apicid)
-> +{
-> +	return 1;
-> +}
-> +
->   static int x2apic_apic_id_registered(void)
->   {
->   	return 1;
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index ce664f3..4b5059c 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -239,7 +239,7 @@ acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
->   	 * to not preallocating memory for all NR_CPUS
->   	 * when we use CPU hotplug.
->   	 */
-> -	if (!cpu_has_x2apic&&  (apic_id>= 0xff)&&  enabled)
-> +	if (!apic->apic_id_valid(apic_id)&&  enabled)
->   		printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
->   	else
->   		acpi_register_lapic(apic_id, enabled);
-> diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-> index d9ea5f3..899803e 100644
-> --- a/arch/x86/kernel/apic/apic_numachip.c
-> +++ b/arch/x86/kernel/apic/apic_numachip.c
-> @@ -229,11 +229,10 @@ static int __init numachip_system_init(void)
->   }
->   early_initcall(numachip_system_init);
->
-> -static int __cpuinit numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-> +static int numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
->   {
->   	if (!strncmp(oem_id, "NUMASC", 6)) {
->   		numachip_system = 1;
-> -		setup_force_cpu_cap(X86_FEATURE_X2APIC);
->   		return 1;
->   	}
->
-> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-> index 9193713..48f3103 100644
-> --- a/arch/x86/kernel/apic/x2apic_cluster.c
-> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-> @@ -213,7 +213,7 @@ static struct apic apic_x2apic_cluster = {
->   	.name				= "cluster x2apic",
->   	.probe				= x2apic_cluster_probe,
->   	.acpi_madt_oem_check		= x2apic_acpi_madt_oem_check,
-> -	.apic_id_valid			= default_apic_id_valid,
-> +	.apic_id_valid			= x2apic_apic_id_valid,
->   	.apic_id_registered		= x2apic_apic_id_registered,
->
->   	.irq_delivery_mode		= dest_LowestPrio,
-> diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-> index bcd1db6..8a778db 100644
-> --- a/arch/x86/kernel/apic/x2apic_phys.c
-> +++ b/arch/x86/kernel/apic/x2apic_phys.c
-> @@ -119,7 +119,7 @@ static struct apic apic_x2apic_phys = {
->   	.name				= "physical x2apic",
->   	.probe				= x2apic_phys_probe,
->   	.acpi_madt_oem_check		= x2apic_acpi_madt_oem_check,
-> -	.apic_id_valid			= default_apic_id_valid,
-> +	.apic_id_valid			= x2apic_apic_id_valid,
->   	.apic_id_registered		= x2apic_apic_id_registered,
->
->   	.irq_delivery_mode		= dest_Fixed,
-> diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-> index fc47714..87bfa69 100644
-> --- a/arch/x86/kernel/apic/x2apic_uv_x.c
-> +++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-> @@ -266,6 +266,11 @@ static void uv_send_IPI_all(int vector)
->   	uv_send_IPI_mask(cpu_online_mask, vector);
->   }
->
-> +static int uv_apic_id_valid(int apicid)
-> +{
-> +	return 1;
-> +}
-> +
->   static int uv_apic_id_registered(void)
->   {
->   	return 1;
-> @@ -351,7 +356,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
->   	.name				= "UV large system",
->   	.probe				= uv_probe,
->   	.acpi_madt_oem_check		= uv_acpi_madt_oem_check,
-> -	.apic_id_valid			= default_apic_id_valid,
-> +	.apic_id_valid			= uv_apic_id_valid,
->   	.apic_id_registered		= uv_apic_id_registered,
->
->   	.irq_delivery_mode		= dest_Fixed,
-> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-> index 1c1c4f4..efb5b4b 100644
-> --- a/arch/x86/mm/srat.c
-> +++ b/arch/x86/mm/srat.c
-> @@ -70,7 +70,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
->   		return;
->   	pxm = pa->proximity_domain;
->   	apic_id = pa->apic_id;
-> -	if (!cpu_has_x2apic&&  (apic_id>= 0xff)) {
-> +	if (!apic->apic_id_valid(apic_id)) {
->   		printk(KERN_INFO "SRAT: PXM %u ->  X2APIC 0x%04x ignored\n",
->   			 pxm, apic_id);
->   		return;
+Agreed, the thread creation on online is the most expensive operation.
 
+> (1) Let's not shutdown per-cpu kthreads, just leave them there to run
+>     if the CPU comes back.
 
+Wasn't as easy as it sounds, but should be doable.
+
+> (2) Do something more efficient with userspace threads than migrating
+>     them one at a time.
+
+Sadly that can't really be done. We need to pick up every task
+(userspace, but also running kernel threads) and update their state.
+
+> Otherwise, we risk doing a great deal of work and gaining nothing
+> (cleanups aside, of course).
+
+I don't really think its possible to spend too much time cleaning up
+hotplug at this point :-)
