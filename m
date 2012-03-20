@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760181Ab2CTOV3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:21:29 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:25788 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756497Ab2CTOV2 (ORCPT
+	id S1760193Ab2CTOWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:22:44 -0400
+Received: from mail.windriver.com ([147.11.1.11]:39892 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab2CTOWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:21:28 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ysbdXlsVM1mwUOkQ2zwvkEkna4brcwmXkQbH6jo9NaK_crt
- BHjRav358XlMpv1qqJlyfNu2EmG6Doxjm23leTYuGexW.t2C92CoJZaNDZhO
- 4QfInLdwqdnOmdZoz.vdTHyv10t_15hqfK4iuYH2smAnF8LpU.jwWscyeeUB
- maqOYNOxbRRltOrIfNuU944w4mp7W91nRjA_.LBdcvQx1v.I0A8qyE9AXSL7
- nqkV7n.nZy2kfOJ1z.CNf5tBT8Nabh7Tn9Ae0QwYyamTQ0T5g5Gd7WhPTU54
- pWuB_p_fTs0Mz.knq7TrYqjN.pg8Qry4FlfNKtyJY9O2.SiezabihHFEjlvI
- NA4EtOmMG7frXxU2eTew6ncVKBuhVyI2GylvYakxJSEbZGEEp.dBZE4nV5Ud
- O
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 20 Mar 2012 09:21:24 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+	Tue, 20 Mar 2012 10:22:43 -0400
+Date: Tue, 20 Mar 2012 09:20:58 -0500
+From: Peter Seebach <peter.seebach@windriver.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH 2/6] slub: add kmalloc_align()
-In-Reply-To: <alpine.DEB.2.00.1203200910030.19333@router.home>
-Message-ID: <alpine.DEB.2.00.1203200919520.19333@router.home>
-References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-3-git-send-email-laijs@cn.fujitsu.com> <alpine.DEB.2.00.1203200910030.19333@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH 1/6] kenrel.h: add ALIGN_OF_LAST_BIT()
+Message-ID: <20120320092058.1b3271a4@wrlaptop>
+In-Reply-To: <op.wbgvn00x3l0zgt@mpn-glaptop>
+References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com>
+	<1332238884-6237-2-git-send-email-laijs@cn.fujitsu.com>
+	<op.wbgvn00x3l0zgt@mpn-glaptop>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Mar 2012, Christoph Lameter wrote:
+On Tue, 20 Mar 2012 12:32:14 +0100
+Michal Nazarewicz <mina86@mina86.com> wrote:
 
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 4907563..01cf99d 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -3238,7 +3238,7 @@ static struct kmem_cache *__init create_kmalloc_cache(const char *name,
-> >  	 * This function is called with IRQs disabled during early-boot on
-> >  	 * single CPU so there's no need to take slub_lock here.
-> >  	 */
-> > -	if (!kmem_cache_open(s, name, size, ARCH_KMALLOC_MINALIGN,
-> > +	if (!kmem_cache_open(s, name, size, ALIGN_OF_LAST_BIT(size),
-> >  								flags, NULL))
-> >  		goto panic;
->
-> Why does the alignment of struct kmem_cache change? I'd rather have a
-> __alignof__(struct kmem_cache) here with alignment specified with the
-> struct definition.
+> >+#define ALIGN_OF_LAST_BIT(x)	((((x)^((x) - 1))>>1) + 1)  
+> 
+> Wouldn't ALIGNMENT() be less confusing? After all, that's what this
+> macro is calculating, right? Alignment of given address.
 
-Ok this aligns the data not the cache . Ok I see what is going on here.
-So the kmalloc array now has a higher alignment. That means you can align
-up to that limit within the structure.
+Why not just LAST_BIT(x)?  It's not particularly specific to pointer
+alignment, even though that's the context in which it apparently came
+up.  So far as I can tell, this isn't even meaningfully defined on
+pointer types as such; you'd have to convert.  So the implications for
+alignment seem a convenient side-effect, really.
 
+It might be instructive to see some example proposed uses; the question
+of why I'd care what alignment something had, rather than whether it
+was aligned for a given type, is one that will doubtless keep me awake
+nights.
+
+I guess this feels like it answers a question that is usually the wrong
+question.  Imagine if you will a couple-page block of memory, full of
+unsigned shorts.  Iterate through the array, calculating
+ALIGN_OF_LAST_BIT(&a[i]).  Do we really *care* that it's PAGE_SIZE for
+some i, and 2 (I assume) for other i, and PAGE_SIZE*2 for either i==0 or
+i==PAGE_SIZE?  (Apologies if this is a silly question; maybe this is
+such a commonly-needed feature that it's obvious.)
+
+-s
+-- 
+Listen, get this.  Nobody with a good compiler needs to be justified.
