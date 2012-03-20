@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759815Ab2CTMHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 08:07:08 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:40272 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab2CTMHG (ORCPT
+	id S1759825Ab2CTMIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 08:08:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43069 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759747Ab2CTMI2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 08:07:06 -0400
-Subject: Re: [PATCH 2/4] compat: backport work_busy()
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lf_driver_backport@lists.linux-foundation.org
-In-Reply-To: <1332214021-9716-3-git-send-email-mcgrof@frijolero.org> (sfid-20120320_042853_043155_41AC0608)
-References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
-	 <1332214021-9716-3-git-send-email-mcgrof@frijolero.org>
-	 (sfid-20120320_042853_043155_41AC0608)
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Mar 2012 13:07:03 +0100
-Message-ID: <1332245223.3329.5.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 08:08:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332209680.10843.3.camel@phoenix>
+References: <1332209680.10843.3.camel@phoenix>
+Date: Tue, 20 Mar 2012 13:08:28 +0100
+Message-ID: <CACRpkdaUKZUo-TYB-8S92s75pUa93OwKLuHBg1AEHDySn4LOrQ@mail.gmail.com>
+Subject: Re: [PATCH RFT] regulator: Convert ab3100 to set_voltage_sel
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 20:26 -0700, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-> 
-> Best we can do is just tell the users of we are WORK_BUSY_PENDING
-> for older kernels. The ckmake log:
+On Tue, Mar 20, 2012 at 3:14 AM, Axel Lin <axel.lin@gmail.com> wrote:
 
-[...]
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/regulator/ab3100.c |   18 +++++-------------
+>  1 files changed, 5 insertions(+), 13 deletions(-)
 
-> + * Test whether @work is currently pending or running.  There is no
-> + * synchronization around this function and the test result is
-> + * unreliable and only useful as advisory hints or for debugging.
-> + * Especially for reentrant wqs, the pending state might hide the
-> + * running state.
+Works like a charm.
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
-What's this needed for? It seems if it's used only for hints/debugging
-we should not need the function, or possibly simply return some
-pointless combination like -1?
-
-johannes
-
+Thanks Axel!
+Linus Walleij
