@@ -1,196 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab2CTTuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 15:50:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52984 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab2CTTuM convert rfc822-to-8bit (ORCPT
+	id S1757318Ab2CTTv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:51:26 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64827 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756981Ab2CTTvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 15:50:12 -0400
+	Tue, 20 Mar 2012 15:51:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1332265479-1260-2-git-send-email-swarren@wwwdotorg.org>
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
-	<1332265479-1260-2-git-send-email-swarren@wwwdotorg.org>
-Date: Tue, 20 Mar 2012 12:50:11 -0700
-X-Google-Sender-Auth: 2EMsSaE_xoapfyu57BUugJtzm9Q
-Message-ID: <CAPnjgZ3FFEZr9y=4CnH_-1YGRKAoDKa03PUEGM27ioVTy_KTKg@mail.gmail.com>
-Subject: Re: [PATCH V2 2/6] dt: pinctrl: Document device tree binding
-From: Simon Glass <sjg@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linus.walleij@stericsson.com,
-        B29396@freescale.com, s.hauer@pengutronix.de, dongas86@gmail.com,
-        shawn.guo@linaro.org, thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-tegra@vger.kernel.org
+In-Reply-To: <1332272870.18960.450.camel@twins>
+References: <1332271396-21756-1-git-send-email-ashay.r@gmail.com>
+	<20120320194241.GA24870@infradead.org>
+	<4F68DE88.1040301@gmail.com>
+	<1332272870.18960.450.camel@twins>
+Date: Tue, 20 Mar 2012 14:51:23 -0500
+Message-ID: <CANn2t1n3fiVGqMKm=a7k3bKgKRzVdo3zu54ZKiCMqtDFbS4MeA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Fix number of events displayed in header
+From: Ashay Rane <ashay.r@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-perf-users@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ashay Rane <ashay.rane@tacc.utexas.edu>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 10:44 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> The core pin controller bindings define:
-> * The fact that pin controllers expose pin configurations as nodes in
->  device tree.
-> * That the bindings for those pin configuration nodes is defined by the
->  individual pin controller drivers.
-> * A standardized set of properties for client devices to define numbered
->  or named pin configuration states, each referring to some number of the
->  afore-mentioned pin configuration nodes.
-> * That the bindings for the client devices determines the set of numbered
->  or named states that must exist.
->
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Hello,
 
-Acked-by: Simon Glass <sjg@chromium.org>
+The problem I am seeing is that the `perf record' output does not
+comform with the output of `perf stat'. For example, for `hackbench 10
+process 1000', I see 19 x 10^9 cycles reported by `perf stat'.
+However, `perf report -n' prints "Events: 2K cycles" and `perf report
+-n --dso hackbench' prints "Events: 47 cycles".
 
-> ---
-> v2: Fix a couple of grammar-os per Randy Dunlap. Add example of a client
-> device that references no pin configuration nodes per Dong Aisheng.
-> ---
->  .../bindings/pinctrl/pinctrl-bindings.txt          |  128 ++++++++++++++++++++
->  1 files changed, 128 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+The difference in the reported counts occurs for PMU events too.
+
+$ perf stat -e cycles ./hackbench 10 process 1000
+Running with 10*40 (== 400) tasks.
+Time: 4.039
+
+ Performance counter stats for './hackbench 10 process 1000':
+
+    19,060,433,134 cycles                    #    0.000 GHz
+
+       4.078210213 seconds time elapsed
+
+$ perf record -e cycles ./hackbench 10 process 1000
+Running with 10*40 (== 400) tasks.
+Time: 4.053
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.165 MB perf.data (~7205 samples) ]
+
+$ perf report -n --stdio --dso hackbench
+# dso: hackbench
+# ========
+# captured on: Mon Mar 12 15:14:57 2012
+# hostname : iHitch
+# os release : 3.2.8-1-ARCH
+# perf version : 3.2-3
+# arch : x86_64
+# nrcpus online : 2
+# nrcpus avail : 2
+# cpudesc : Intel(R) Core(TM)2 Duo CPU P8600 @ 2.40GHz
+# cpuid : GenuineIntel,6,23,10
+# total memory : 2979384 kB
+# cmdline : /usr/bin/perf record -e cycles ./hackbench 10 process 1000
+# event : name = cycles, type = 0, config = 0x0, config1 = 0x0,
+config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 1611, 1612 }
+# HEADER_CPU_TOPOLOGY info available, use -I to display
+# HEADER_NUMA_TOPOLOGY info available, use -I to display
+# ========
+#
+# Events: 47  cycles
+#
+# Overhead  Samples      Command     Symbol
+# ........ ..........  .........  .........
+#
+    56.16%         24  hackbench  receiver
+    40.21%         21  hackbench  sender
+     3.63%          2  hackbench  write@plt
+
+
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+
+$
+
+2012/3/20 Peter Zijlstra <a.p.zijlstra@chello.nl>:
+> On Tue, 2012-03-20 at 13:46 -0600, David Ahern wrote:
+>>
+>> Does not seem appropriate to change from number of sample events to
+>> period for all event types. This change assumes the event is cycles,
+>> cpu-clock or task-clock.
 >
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> new file mode 100644
-> index 0000000..c95ea82
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> @@ -0,0 +1,128 @@
-> +== Introduction ==
-> +
-> +Hardware modules that control pin multiplexing or configuration parameters
-> +such as pull-up/down, tri-state, drive-strength etc are designated as pin
-> +controllers. Each pin controller must be represented as a node in device tree,
-> +just like any other hardware module.
-> +
-> +Hardware modules whose signals are affected by pin configuration are
-> +designated client devices. Again, each client device must be represented as a
-> +node in device tree, just like any other hardware module.
-> +
-> +For a client device to operate correctly, certain pin controllers must
-> +set up certain specific pin configurations. Some client devices need a
-> +single static pin configuration, e.g. set up during initialization. Others
-> +need to reconfigure pins at run-time, for example to tri-state pins when the
-> +device is inactive. Hence, each client device can define a set of named
-> +states. The number and names of those states is defined by the client device's
-> +own binding.
-> +
-> +The common pinctrl bindings defined in this file provide an infrastructure
-> +for client device device tree nodes to map those state names to the pin
-> +configuration used by those states.
-> +
-> +Note that pin controllers themselves may also be client devices of themselves.
-> +For example, a pin controller may set up its own "active" state when the
-> +driver loads. This would allow representing a board's static pin configuration
-> +in a single place, rather than splitting it across multiple client device
-> +nodes. The decision to do this or not somewhat rests with the author of
-> +individual board device tree files, and any requirements imposed by the
-> +bindings for the individual client devices in use by that board, i.e. whether
-> +they require certain specific named states for dynamic pin configuration.
-> +
-> +== Pinctrl client devices ==
-> +
-> +For each client device individually, every pin state is assigned an integer
-> +ID. These numbers start at 0, and are contiguous. For each state ID, a unique
-> +property exists to define the pin configuration. Each state may also be
-> +assigned a name. When names are used, another property exists to map from
-> +those names to the integer IDs.
-> +
-> +Each client device's own binding determines the set of states the must be
-> +defined in its device tree node, and whether to define the set of state
-> +IDs that must be provided, or whether to define the set of state names that
-> +must be provided.
-> +
-> +Required properties:
-> +pinctrl-0:     List of phandles, each pointing at a pin configuration
-> +               node. These referenced pin configuration nodes must be child
-> +               nodes of the pin controller that they configure. Multiple
-> +               entries may exist in this list so that multiple pin
-> +               controllers may be configured, or so that a state may be built
-> +               from multiple nodes for a single pin controller, each
-> +               contributing part of the overall configuration. See the next
-> +               section of this document for details of the format of these
-> +               pin configuration nodes.
-> +
-> +               In some cases, it may be useful to define a state, but for it
-> +               to be empty. This may be required when a common IP block is
-> +               used in an SoC either without a pin controller, or where the
-> +               pin controller does not affect the HW module in question. If
-> +               the binding for that IP block requires certain pin states to
-> +               exist, they must still be defined, but may be left empty.
-> +
-> +Optional properties:
-> +pinctrl-1:     List of phandles, each pointing at a pin configuration
-> +               node within a pin controller.
-> +...
-> +pinctrl-n:     List of phandles, each pointing at a pin configuration
-> +               node within a pin controller.
-> +pinctrl-names: The list of names to assign states. List entry 0 defines the
-> +               name for integer state ID 0, list entry 1 for state ID 1, and
-> +               so on.
-> +
-> +For example:
-> +
-> +       /* For a client device requiring named states */
-> +       device {
-> +               pinctrl-names = "active", "idle";
-> +               pinctrl-0 = <&state_0_node_a>;
-> +               pinctrl-1 = <&state_1_node_a &state_1_node_b>;
-> +       };
-> +
-> +       /* For the same device if using state IDs */
-> +       device {
-> +               pinctrl-0 = <&state_0_node_a>;
-> +               pinctrl-1 = <&state_1_node_a &state_1_node_b>;
-> +       };
-> +
-> +       /*
-> +        * For an IP block whose binding supports pin configuration,
-> +        * but in use on an SoC that doesn't have any pin control hardware
-> +        */
-> +       device {
-> +               pinctrl-names = "active", "idle";
-> +               pinctrl-0 = <>;
-> +               pinctrl-1 = <>;
-> +       };
-> +
-> +== Pin controller devices ==
-> +
-> +Pin controller devices should contain the pin configuration nodes that client
-> +devices reference.
-> +
-> +For example:
-> +
-> +       pincontroller {
-> +               ... /* Standard DT properties for the device itself elided */
-> +
-> +               state_0_node_a {
-> +                       ...
-> +               };
-> +               state_1_node_a {
-> +                       ...
-> +               };
-> +               state_1_node_b {
-> +                       ...
-> +               };
-> +       }
-> +
-> +The contents of each of those pin configuration child nodes is defined
-> +entirely by the binding for the individual pin controller device. There
-> +exists no common standard for this content.
-> +
-> +The pin configuration nodes need not be direct children of the pin controller
-> +device; they may be grandchildren, for example. Whether this is legal, and
-> +whether there is any interaction between the child and intermediate parent
-> +nodes, is again defined entirely by the binding for the individual pin
-> +controller device.
-> --
-> 1.7.0.4
->
+> I'm not seeing that assumption. That said, I don't see the point of the
+> change either.
