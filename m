@@ -1,161 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab2CTRou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:44:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57673 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab2CTRos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:44:48 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: linus.walleij@linaro.org
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linus.walleij@stericsson.com, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH V2 1/6] dt: add property iteration helpers
-Date: Tue, 20 Mar 2012 11:44:34 -0600
-Message-Id: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	id S1752880Ab2CTRtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:49:49 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:56550 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751930Ab2CTRtr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 13:49:47 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: melwyn lobo <linux.melwyn@gmail.com>
+Cc: "Chalhoub\, Nicole" <n-chalhoub@ti.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm\@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] CPUIdle: Reevaluate C-states under CPU load to favor deeper C-states
+Organization: Texas Instruments, Inc.
+References: <1316475315-5905-1-git-send-email-khilman@ti.com>
+	<87d3d75zo6.fsf@ti.com> <4EBA6046.2060305@linux.vnet.ibm.com>
+	<37CAE120BAE10B42A790DD1418C8021D0136C7@DNCE02.ent.ti.com>
+	<CAHSGOuuexpCDNoP1G1Gyge2DCep0rsPmUwrVyZFDQ1_tH+Du7Q@mail.gmail.com>
+Date: Tue, 20 Mar 2012 10:49:45 -0700
+In-Reply-To: <CAHSGOuuexpCDNoP1G1Gyge2DCep0rsPmUwrVyZFDQ1_tH+Du7Q@mail.gmail.com>
+	(melwyn lobo's message of "Tue, 20 Mar 2012 20:19:02 +0530")
+Message-ID: <878viv17t2.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds macros of_property_for_each_u32() and
-of_property_for_each_string(), which iterate over an array of values
-within a device-tree property. Usage is for example:
+melwyn lobo <linux.melwyn@gmail.com> writes:
 
-struct property *prop;
-const __be32 *p;
-u32 u;
-of_property_for_each_u32(np, "propname", prop, p, u)
-	printk("U32 value: %x\n", u);
+> Hey Kevin,
+> I would like to try out this patch in my platform see the benefits
+> that you are reporting. But there is one issue in this patch. You have
+> not initialized "hrtimer_timeout" variable.
+> This will always be 0 right ?.
 
-struct property *prop;
-const char *s;
-of_property_for_each_string(np, "propname", prop, s)
-	printk("String value: %s\n", s);
+Correct.
 
-Based on work by Rob Herring <robherring2@gmail.com>
+The generic code defaults to zero so that the default behavior with this
+patch is unchanged from previous behavior.  In order to use this
+feature, your platform-specific code which creates your C-states sets
+the per-C-state timer values.
 
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
----
-v2: Simplified the implementation per suggestion by Rob Herring.
----
- include/linux/of_iter_prop.h |  101 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 101 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/of_iter_prop.h
+Kevin
 
-diff --git a/include/linux/of_iter_prop.h b/include/linux/of_iter_prop.h
-new file mode 100644
-index 0000000..e3df23c
---- /dev/null
-+++ b/include/linux/of_iter_prop.h
-@@ -0,0 +1,101 @@
-+/*
-+ * Copyright (c) 2011-2012 NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * Iterate over properties that store arrays.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __OF_ITER_PROP_H__
-+#define __OF_ITER_PROP_H__
-+
-+#include <linux/of.h>
-+
-+#ifdef CONFIG_OF
-+static inline const __be32 *of_prop_next_u32(struct property *prop,
-+					     const __be32 *cur, u32 *pu)
-+{
-+	const void *curv = cur;
-+
-+	if (!prop)
-+		return NULL;
-+
-+	if (!cur) {
-+		curv = prop->value;
-+		goto out_val;
-+	}
-+
-+	curv += sizeof(*cur);
-+	if (curv >= prop->value + prop->length)
-+		return NULL;
-+
-+out_val:
-+	*pu = be32_to_cpup(curv);
-+	return curv;
-+}
-+
-+/*
-+ * struct property *prop;
-+ * const __be32 *p;
-+ * u32 u;
-+ *
-+ * of_property_for_each_u32(np, "propname", prop, p, u)
-+ *         printk("U32 value: %x\n", u);
-+ */
-+#define of_property_for_each_u32(np, propname, prop, p, u)	\
-+	for (prop = of_find_property(np, propname, NULL),	\
-+		p = of_prop_next_u32(prop, NULL, &u);		\
-+		p;						\
-+		p = of_prop_next_u32(prop, p, &u))
-+
-+static inline const char *of_prop_next_string(struct property *prop,
-+					      const char *cur)
-+{
-+	const void *curv = cur;
-+
-+	if (!prop)
-+		return NULL;
-+
-+	if (!cur)
-+		return prop->value;
-+
-+	curv += strlen(cur) + 1;
-+	if (curv >= prop->value + prop->length)
-+		return NULL;
-+
-+	return curv;
-+}
-+
-+/*
-+ * struct property *prop;
-+ * const char *s;
-+ *
-+ * of_property_for_each_string(np, "propname", prop, s)
-+ *         printk("String value: %s\n", s);
-+ */
-+#define of_property_for_each_string(np, propname, prop, s)	\
-+	for (prop = of_find_property(np, propname, NULL),	\
-+		s = of_prop_next_string(prop, NULL);		\
-+		s;						\
-+		s = of_prop_next_string(prop, s))
-+
-+#else
-+
-+#define of_property_for_each_u32(np, propname, prop, p, u) \
-+	while (0)
-+
-+#define of_property_for_each_string(np, propname, prop, s) \
-+	while (0)
-+
-+#endif /* CONFIG_OF */
-+
-+#endif /* __OF_ITER_PROP_H__ */
--- 
-1.7.0.4
-
+> Thanks,
+> -M
+>
+> On Wed, Nov 9, 2011 at 11:36 PM, Chalhoub, Nicole <n-chalhoub@ti.com> wrote:
+>> Hi Deepthi,
+>>
+>>>
+>> Texas Instruments France SA, 821 Avenue Jack Kilby, 06270 Villeneuve Loubet. 036 420 040 R.C.S Antibes. Capital de EUR 753.920
+>>
+>> -----Original Message-----
+>>> From: Deepthi Dharwar [mailto:deepthi@linux.vnet.ibm.com]
+>>> Sent: Wednesday, November 09, 2011 12:13 PM
+>>> To: Hilman, Kevin
+>>> Cc: linux-kernel@vger.kernel.org; Arjan van de Ven; linux-arm-
+>>> kernel@lists.infradead.org; linux-omap@vger.kernel.org; linux-
+>>> pm@lists.linux-foundation.org; Chalhoub, Nicole
+>>> Subject: Re: [PATCH] CPUIdle: Reevaluate C-states under CPU load to favor
+>>> deeper C-states
+>>
+>> [...]
+>>> By setting timers when we enter non-deepest C-state possible, such that
+>>> when it fires we
+>>> can re-evaluate and try moving into deeper and deeper C-states enhancing
+>>> the
+>>> power savings is a good feature to have.
+>>>
+>>> Looking at the current implementation, is it possible to have it as
+>>> configurable option
+>>> where one can enable/disable this functionality through the backhand
+>>> driver ?
+>>
+>> The timeout values of the c state timers are set in the backhand driver.
+>> By setting the timeout to 0 the timers will not fire so you'll not have this functionality enabled
+>>
+>>> Also I am thinking, instead of having them in governor
+>>> wouldnt it be a good idea to have it implemented in
+>>> the backhand driver itself ?
+>>> --Deepthi
+>>
+>>
+>> In fact each C-state had its own configurable timer, so it is a parameter characterizing a C-state as it is for the exit_latency and target_residency parameters.
+>> And we wanted the timer to fire only when we do not go in deep Cstate due to a high load. This decision is made in the CPU idle governor. So the functionality should be seen from the governor..
+>>
+>> Thanks and Regards
+>> Nicole
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
