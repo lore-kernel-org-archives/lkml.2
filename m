@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab2CTC7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 22:59:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50566 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab2CTC7u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 22:59:50 -0400
-Subject: Re: [PATCH] net: bpf_jit: Simplify code by always using offset8 or
- offset32.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-In-Reply-To: <371a1925e68e68f873e30381e0fa60ea.squirrel@webmail.greenhost.nl>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
-	 <1331658828.4449.16.camel@edumazet-glaptop>
-	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-	 <1331704535.2456.37.camel@edumazet-laptop>
-	 <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
-	 <1331712357.2456.58.camel@edumazet-laptop>
-	 <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
-	 <1331992184.2466.45.camel@edumazet-laptop>
-	 <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
-	 <1332075121.3722.34.camel@edumazet-laptop>
-	 <371a1925e68e68f873e30381e0fa60ea.squirrel@webmail.greenhost.nl>
+	id S1756732Ab2CTDC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 23:02:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36969 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754680Ab2CTDC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 23:02:56 -0400
+Message-ID: <1332212574.7847.49.camel@joe2Laptop>
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+From: Joe Perches <joe@perches.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: David Miller <davem@davemloft.net>, anca.emanuel@gmail.com,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 Mar 2012 20:02:54 -0700
+In-Reply-To: <20120320025835.GE14363@thunk.org>
+References: <20120319153133.GA2502@thunk.org>
+	 <CAJL_dMtC9fnOsY=4uDVJD=-h5u-qW=xjaf64gtDcgnKX2brhPw@mail.gmail.com>
+	 <20120319161425.GB2502@thunk.org>
+	 <20120319.141402.934377752041508724.davem@davemloft.net>
+	 <20120319183126.GA6031@thunk.org> <1332182773.3908.11.camel@joe2Laptop>
+	 <20120320010401.GA14363@thunk.org> <1332207202.7847.23.camel@joe2Laptop>
+	 <20120320014707.GD14363@thunk.org> <1332208741.7847.46.camel@joe2Laptop>
+	 <20120320025835.GE14363@thunk.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Mar 2012 19:59:46 -0700
-Message-ID: <1332212386.22737.20.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 13:24 +1100, Indan Zupancic wrote:
+On Mon, 2012-03-19 at 22:58 -0400, Ted Ts'o wrote:
 
-> If it does then perhaps the fast path should be made faster by inlining
-> the code instead of calling a function which may not be cached.
-> 
+[good stuff]
 
-inlining 400 times a sequence of code is waste of icache, you probably
-missed this.
+> Of course, the body of the message needs to be standardized too.  But
+> that's orthogonal to the problem of passing the kernel structure which
+> identifies the object which the log message is about.  That part is
+> completely and utterly necessary if you're going to standardize the
+> *first* part of the printable dmesg log, which contains the structured
+> information.
 
-I spent a lot of time on working on this implementation, tried many
-different strategies before choosing the one in place.
-
-Listen, I am tired of this thread, it seems you want to push changes
-that have almost no value but still need lot of review.
-
-Unless you make benchmarks and can make at least 5 % improvement of the
-speed, or improve maintainability of this code, I am not interested.
-
-We certainly _can_ one day have sizeof(struct sk_buff) > 256, and actual
-code is ready for this. You want to break this for absolutely no valid
-reason.
-
-We _can_ change fields order anytime in struct sk_buff, even if you
-state "its very unlikely that those fields are ever moved to the end
-of sk_buff".
-
+All of what you say is true, but you're neglecting
+the ability to scrape or notify a particular set of
+per subsystem messages that pr_<level> could easily
+provide that a bare printk could not.
 
 
