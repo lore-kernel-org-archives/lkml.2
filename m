@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab2CTUW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 16:22:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33899 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab2CTUW6 (ORCPT
+	id S1757887Ab2CTUXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 16:23:07 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:50787 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757814Ab2CTUXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 16:22:58 -0400
+	Tue, 20 Mar 2012 16:23:01 -0400
 From: Robert Lee <rob.lee@linaro.org>
 To: len.brown@intel.com
 Cc: akpm@linux-foundation.org, rjw@sisk.pl, khilman@ti.com,
@@ -23,143 +23,290 @@ Cc: akpm@linux-foundation.org, rjw@sisk.pl, khilman@ti.com,
         g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
         jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH v8 0/8] Consolidate cpuidle functionality
-Date: Tue, 20 Mar 2012 15:22:41 -0500
-Message-Id: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
+Subject: [PATCH v8 1/8] cpuidle: Add common time keeping and irq enabling
+Date: Tue, 20 Mar 2012 15:22:42 -0500
+Message-Id: <1332274969-15782-2-git-send-email-rob.lee@linaro.org>
 X-Mailer: git-send-email 1.7.9.4
+In-Reply-To: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
+References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series moves various functionality duplicated in platform 
-cpuidle drivers to the core cpuidle driver. Also, the platform irq
-disabling was removed as it appears that all calls into 
-cpuidle_call_idle will have already called local_irq_disable().
+Make necessary changes to implement time keeping and irq enabling
+in the core cpuidle code.  This will allow the removal of these
+functionalities from various platform cpuidle implementations whose
+timekeeping and irq enabling follows the form in this common code.
 
-These changes have been pulled into linux-next.
-
-Len, Andrew, can a request be made for Linus to pull these changes?
-
-Acked-by: Jean Pihet<j-pihet@ti.com>  (v6)
-Tested-by: Jean Pihet<j-pihet@ti.com>  (v6, omap3)
-Tested-by: Amit Daniel<amit.kachhap@linaro.org>  (v6, Exynos4)
-Tested-by: Robert Lee<rob.lee@linaro.org>  (imx51, imx6q)
+Signed-off-by: Robert Lee <rob.lee@linaro.org>
+Tested-by: Jean Pihet<j-pihet@ti.com>
+Tested-by: Amit Daniel<amit.kachhap@linaro.org>
+Tested-by: Robert Lee<rob.lee@linaro.org>
 Reviewed-by: Kevin Hilman <khilman@ti.com>
 Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Reviewed-by: Deepthi Dharwar<deepthi@linux.vnet.ibm.com> (core cpuidle only)
-
-v8 changes:
-* v7 testing in linux-next revealed a bug reported by Hugh Dickins on x86
-platforms.  Investigated and fixed by Daniel Lezcano.
-* Made a slight change to the defaut ARM WFI state macro as Daniel Lezcano
-suggested the previous interface was prone to mis-use by platforms that 
-set power_specified to 1.
-* updated to kernel v3.3
-
-These v8 fixes have been applied to the pull tree being used by linux-next:
-git://git.linaro.org/people/rob_lee/linux.git cpuidle_consol_pull
-
-v7 submission can be found here:
-http://www.spinics.net/lists/arm-kernel/msg162290.html
-
-v7 changes:
-* Made some  struct whitespace alignment changes.
-* Fixed a coding style violation (thanks Jean Pihet)
-* Fixed a bug in davinci cpuidle (thanks Jean Pihet)
-* Corrected the common ARM cpuidle WFI state description to be ARM platform
- agnostic (thanks Kevin Hilman)
-* Fixed the problem causing x86 and PPC builds to fail (thanks Deepthi)
-* Re-added a line of code that was mistakenly removed (thanks Deepthi)
-
-v6 submission can be found here:
-http://www.spinics.net/lists/arm-kernel/msg162018.html
-
-v6 changes:
-* Fixed mindless bug in CONFIG_ARCH_HAS_RELAX code in drivers/cpuidle/cpuidle.c
-* Removed inline from wrapper function (thanks Mike Turquette and Rob Herring)
-* Add zeroing out of last_residency if error value is returned (thanks Mike)
-* Made drivers/cpuidle/cpuidle.c more intelligently handle en_core_tk_irqen
-flag allowing removal of the if (en_core_tk_irqen) in cpuidle_idle_call (thanks
-Daniel Lezcano)
-* Moved CPUIDLE_ARM_WFI_STATE macro to arch/arm/include/asm/cpuidle.h (thanks
-Jean Pihet)
-* Cleaned up some comments and a stray change (thanks Jean)
-
-v5 submission can be found here:
-http://www.spinics.net/lists/arm-kernel/msg161596.html
-
-v5 changes:
-* Added common cpu_do_idle function to core cpuidle
-* Added time keep irq en wrapper to core cpuidle
-* Removed pre/post enter
-* Re-added platforms that can use new common code.
-
-v4 submission can be found here:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/082742.html
-
-v4 changes:
-* Removed drivers/cpuidle/common.c
-** Removed the initialization helper functions
-** Removed the wrapper used to consolidate time keeping and irq enable/disable
-* Add time keeping and local_irq_disable handling in cpuidle_call_idle().
-* Made necessary modifications to a few platforms that required the most changes
-** Note on omap3: changed structure of omap3_idle_drvdata and added
- per_next_state and per_saved_state vars to accomodate new framework.
-
-v3 submission can be found here:
-http://www.spinics.net/lists/arm-kernel/msg156751.html
-
-v3 changes:
-* Made various code organization and style changes as suggested in v2 review.
- (thanks Mark Brown, Rob Herring, Mike Turquette, Kevin Hillman, Daniel Lezcano)
-* Removed at91 use of common code.  A separate effort is underway to clean
-at91 code and the author has offered to convert to common interface as part
-of those changes (if this common interface is accepted in time).
-* Made platform cpuidle_driver objects __initdata and dynamically added one
-persistent instance of this object in common code.
-* Removed imx5 pm usage of gpc_dvfs clock as it is no longer needed after
-being enabled during clock initialization.
-* Re-organized patches.
-
-v2 submission can be found here:
-http://comments.gmane.org/gmane.linux.ports.arm.kernel/144199
-
-v2 changes:
-* Common interface moved to drivers/cpuidle and made non arch-specific.
-* Made various fixes and suggested additions to the common cpuidle
-code from v1 review. (Thanks Rob Herring and Mark Brown)
-* Added callback for filling in driver_data field as needed.
-* Modified the various platforms with these changes.
-
-v1 submission can be found here:
-http://comments.gmane.org/gmane.linux.ports.arm.kernel/142791
-
-Robert Lee (8):
-  cpuidle: Add common time keeping and irq enabling
-  ARM: at91: Consolidate time keeping and irq enable
-  ARM: kirkwood: Consolidate time keeping and irq enable
-  ARM: davinci: Consolidate time keeping and irq enable
-  ARM: omap: Consolidate OMAP3 time keeping and irq enable
-  ARM: omap: Consolidate OMAP4 time keeping and irq enable
-  ARM: shmobile: Consolidate time keeping and irq enable
-  SH: shmobile: Consolidate time keeping and irq enable
-
- arch/arm/include/asm/cpuidle.h        |   30 ++++++++++++
- arch/arm/kernel/Makefile              |    2 +-
- arch/arm/kernel/cpuidle.c             |   21 +++++++++
- arch/arm/mach-at91/cpuidle.c          |   67 ++++++++++-----------------
- arch/arm/mach-davinci/cpuidle.c       |   82 +++++++++++++--------------------
- arch/arm/mach-kirkwood/cpuidle.c      |   72 +++++++++--------------------
- arch/arm/mach-omap2/cpuidle34xx.c     |   42 +++++++----------
- arch/arm/mach-omap2/cpuidle44xx.c     |   21 ++-------
- arch/arm/mach-shmobile/cpuidle.c      |   31 +++----------
- arch/sh/kernel/cpu/shmobile/cpuidle.c |   10 ++--
- drivers/cpuidle/cpuidle.c             |   66 +++++++++++++++++++++++---
- include/linux/cpuidle.h               |   13 +++++-
- 12 files changed, 231 insertions(+), 226 deletions(-)
+Reviewed-by: Deepthi Dharwar<deepthi@linux.vnet.ibm.com>
+Acked-by: Jean Pihet<j-pihet@ti.com>
+---
+ arch/arm/include/asm/cpuidle.h |   30 ++++++++++++++++++
+ arch/arm/kernel/Makefile       |    2 +-
+ arch/arm/kernel/cpuidle.c      |   21 +++++++++++++
+ drivers/cpuidle/cpuidle.c      |   66 +++++++++++++++++++++++++++++++++++-----
+ include/linux/cpuidle.h        |   13 +++++++-
+ 5 files changed, 123 insertions(+), 9 deletions(-)
  create mode 100644 arch/arm/include/asm/cpuidle.h
  create mode 100644 arch/arm/kernel/cpuidle.c
 
+diff --git a/arch/arm/include/asm/cpuidle.h b/arch/arm/include/asm/cpuidle.h
+new file mode 100644
+index 0000000..9322f444
+--- /dev/null
++++ b/arch/arm/include/asm/cpuidle.h
+@@ -0,0 +1,30 @@
++#ifndef __ASM_ARM_CPUIDLE_H
++#define __ASM_ARM_CPUIDLE_H
++
++#ifdef CONFIG_CPU_IDLE
++extern int arm_cpuidle_simple_enter(struct cpuidle_device *dev,
++		struct cpuidle_driver *drv, int index);
++#else
++static inline int arm_cpuidle_simple_enter(struct cpuidle_device *dev,
++		struct cpuidle_driver *drv, int index) { return -ENODEV; }
++#endif
++
++/* Common ARM WFI state */
++#define ARM_CPUIDLE_WFI_STATE_PWR(p) {\
++	.enter                  = arm_cpuidle_simple_enter,\
++	.exit_latency           = 1,\
++	.target_residency       = 1,\
++	.power_usage		= p,\
++	.flags                  = CPUIDLE_FLAG_TIME_VALID,\
++	.name                   = "WFI",\
++	.desc                   = "ARM WFI",\
++}
++
++/*
++ * in case power_specified == 1, give a default WFI power value needed
++ * by some governors
++ */
++#define ARM_CPUIDLE_WFI_STATE ARM_CPUIDLE_WFI_STATE_PWR(UINT_MAX)
++
++#endif
++
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 43b740d..940c27f 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -21,7 +21,7 @@ obj-$(CONFIG_DEPRECATED_PARAM_STRUCT) += compat.o
+ 
+ obj-$(CONFIG_LEDS)		+= leds.o
+ obj-$(CONFIG_OC_ETM)		+= etm.o
+-
++obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+ obj-$(CONFIG_ISA_DMA_API)	+= dma.o
+ obj-$(CONFIG_ARCH_ACORN)	+= ecard.o 
+ obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
+diff --git a/arch/arm/kernel/cpuidle.c b/arch/arm/kernel/cpuidle.c
+new file mode 100644
+index 0000000..89545f6
+--- /dev/null
++++ b/arch/arm/kernel/cpuidle.c
+@@ -0,0 +1,21 @@
++/*
++ * Copyright 2012 Linaro Ltd.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++#include <linux/cpuidle.h>
++#include <asm/proc-fns.h>
++
++int arm_cpuidle_simple_enter(struct cpuidle_device *dev,
++		struct cpuidle_driver *drv, int index)
++{
++	cpu_do_idle();
++
++	return index;
++}
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 59f4261..4869b55 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -53,6 +53,24 @@ static void cpuidle_kick_cpus(void) {}
+ 
+ static int __cpuidle_register_device(struct cpuidle_device *dev);
+ 
++static inline int cpuidle_enter(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv, int index)
++{
++	struct cpuidle_state *target_state = &drv->states[index];
++	return target_state->enter(dev, drv, index);
++}
++
++static inline int cpuidle_enter_tk(struct cpuidle_device *dev,
++			       struct cpuidle_driver *drv, int index)
++{
++	return cpuidle_wrap_enter(dev, drv, index, cpuidle_enter);
++}
++
++typedef int (*cpuidle_enter_t)(struct cpuidle_device *dev,
++			       struct cpuidle_driver *drv, int index);
++
++static cpuidle_enter_t cpuidle_enter_ops;
++
+ /**
+  * cpuidle_idle_call - the main idle loop
+  *
+@@ -63,7 +81,6 @@ int cpuidle_idle_call(void)
+ {
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_driver();
+-	struct cpuidle_state *target_state;
+ 	int next_state, entered_state;
+ 
+ 	if (off)
+@@ -92,12 +109,10 @@ int cpuidle_idle_call(void)
+ 		return 0;
+ 	}
+ 
+-	target_state = &drv->states[next_state];
+-
+ 	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
+ 	trace_cpu_idle(next_state, dev->cpu);
+ 
+-	entered_state = target_state->enter(dev, drv, next_state);
++	entered_state = cpuidle_enter_ops(dev, drv, next_state);
+ 
+ 	trace_power_end(dev->cpu);
+ 	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+@@ -110,6 +125,8 @@ int cpuidle_idle_call(void)
+ 		dev->states_usage[entered_state].time +=
+ 				(unsigned long long)dev->last_residency;
+ 		dev->states_usage[entered_state].usage++;
++	} else {
++		dev->last_residency = 0;
+ 	}
+ 
+ 	/* give the governor an opportunity to reflect on the outcome */
+@@ -164,6 +181,37 @@ void cpuidle_resume_and_unlock(void)
+ 
+ EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+ 
++/**
++ * cpuidle_wrap_enter - performs timekeeping and irqen around enter function
++ * @dev: pointer to a valid cpuidle_device object
++ * @drv: pointer to a valid cpuidle_driver object
++ * @index: index of the target cpuidle state.
++ */
++int cpuidle_wrap_enter(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv, int index,
++				int (*enter)(struct cpuidle_device *dev,
++					struct cpuidle_driver *drv, int index))
++{
++	ktime_t time_start, time_end;
++	s64 diff;
++
++	time_start = ktime_get();
++
++	index = enter(dev, drv, index);
++
++	time_end = ktime_get();
++
++	local_irq_enable();
++
++	diff = ktime_to_us(ktime_sub(time_end, time_start));
++	if (diff > INT_MAX)
++		diff = INT_MAX;
++
++	dev->last_residency = (int) diff;
++
++	return index;
++}
++
+ #ifdef CONFIG_ARCH_HAS_CPU_RELAX
+ static int poll_idle(struct cpuidle_device *dev,
+ 		struct cpuidle_driver *drv, int index)
+@@ -212,10 +260,11 @@ static void poll_idle_init(struct cpuidle_driver *drv) {}
+ int cpuidle_enable_device(struct cpuidle_device *dev)
+ {
+ 	int ret, i;
++	struct cpuidle_driver *drv = cpuidle_get_driver();
+ 
+ 	if (dev->enabled)
+ 		return 0;
+-	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
++	if (!drv || !cpuidle_curr_governor)
+ 		return -EIO;
+ 	if (!dev->state_count)
+ 		return -EINVAL;
+@@ -226,13 +275,16 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+ 			return ret;
+ 	}
+ 
+-	poll_idle_init(cpuidle_get_driver());
++	cpuidle_enter_ops = drv->en_core_tk_irqen ?
++		cpuidle_enter_tk : cpuidle_enter;
++
++	poll_idle_init(drv);
+ 
+ 	if ((ret = cpuidle_add_state_sysfs(dev)))
+ 		return ret;
+ 
+ 	if (cpuidle_curr_governor->enable &&
+-	    (ret = cpuidle_curr_governor->enable(cpuidle_get_driver(), dev)))
++	    (ret = cpuidle_curr_governor->enable(drv, dev)))
+ 		goto fail_sysfs;
+ 
+ 	for (i = 0; i < dev->state_count; i++) {
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 712abcc..927db28 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -15,6 +15,7 @@
+ #include <linux/list.h>
+ #include <linux/kobject.h>
+ #include <linux/completion.h>
++#include <linux/hrtimer.h>
+ 
+ #define CPUIDLE_STATE_MAX	8
+ #define CPUIDLE_NAME_LEN	16
+@@ -122,6 +123,8 @@ struct cpuidle_driver {
+ 	struct module 		*owner;
+ 
+ 	unsigned int		power_specified:1;
++	/* set to 1 to use the core cpuidle time keeping (for all states). */
++	unsigned int		en_core_tk_irqen:1;
+ 	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
+ 	int			state_count;
+ 	int			safe_state_index;
+@@ -140,7 +143,10 @@ extern void cpuidle_pause_and_lock(void);
+ extern void cpuidle_resume_and_unlock(void);
+ extern int cpuidle_enable_device(struct cpuidle_device *dev);
+ extern void cpuidle_disable_device(struct cpuidle_device *dev);
+-
++extern int cpuidle_wrap_enter(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv, int index,
++				int (*enter)(struct cpuidle_device *dev,
++					struct cpuidle_driver *drv, int index));
+ #else
+ static inline void disable_cpuidle(void) { }
+ static inline int cpuidle_idle_call(void) { return -ENODEV; }
+@@ -157,6 +163,11 @@ static inline void cpuidle_resume_and_unlock(void) { }
+ static inline int cpuidle_enable_device(struct cpuidle_device *dev)
+ {return -ENODEV; }
+ static inline void cpuidle_disable_device(struct cpuidle_device *dev) { }
++static inline int cpuidle_wrap_enter(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv, int index,
++				int (*enter)(struct cpuidle_device *dev,
++					struct cpuidle_driver *drv, int index))
++{ return -ENODEV; }
+ 
+ #endif
+ 
 -- 
 1.7.9.4
 
