@@ -1,89 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab2CTCOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 22:14:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58331 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759438Ab2CTCOq (ORCPT
+	id S1759458Ab2CTCZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 22:25:15 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:33606 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab2CTCZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 22:14:46 -0400
-Message-ID: <1332209680.10843.3.camel@phoenix>
-Subject: [PATCH RFT] regulator: Convert ab3100 to set_voltage_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 20 Mar 2012 10:14:40 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 19 Mar 2012 22:25:11 -0400
+Message-ID: <371a1925e68e68f873e30381e0fa60ea.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1332075121.3722.34.camel@edumazet-laptop>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+    <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+    <1331658828.4449.16.camel@edumazet-glaptop>
+    <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+    <1331704535.2456.37.camel@edumazet-laptop>
+    <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
+    <1331712357.2456.58.camel@edumazet-laptop>
+    <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+    <1331992184.2466.45.camel@edumazet-laptop>
+    <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+    <1332075121.3722.34.camel@edumazet-laptop>
+Date: Tue, 20 Mar 2012 13:24:56 +1100
+Subject: [PATCH] net: bpf_jit: Simplify code by always using offset8 or
+ offset32.
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 59382953e30ad212b3f63ce6d1cef961
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Sun, March 18, 2012 23:52, Eric Dumazet wrote:
+> Le dimanche 18 mars 2012 à 19:35 +1100, Indan Zupancic a écrit :
+>
+>> Yes. The main difference would be that the JIT could always generate imm8
+>> offsets, saving 4 bytes per long offset while also simplifying the compiler
+>> code. The %rdi + 127 is 4 bytes, and if the rest become slightly faster
+>> because they're imm8 then it's worth the extra instruction.
+>>
+>
+> Do you understand you try to save 3 bytes in the function prolog, but
+> your single EMIT4(0x48, 0x83, 0xc7, 127); /* addq $127,%rdi */
+> defeats this ?
+
+That's not what I'm trying to do, I'm trying to simplify the code
+so it's easier to verify and less cluttered. I admit the fixup in
+bpf_slow_path_common makes it a bad idea over all. But if that one
+extra addq would have been all that was needed then it would have
+been worth it I think. Even if it makes the prologue one byte longer.
+
+>
+> Ancillary instructions are rarely used, libpcap for example doesnt have
+> support for them.
+>
+>> I first thought the +127 could be done in two bytes, but 4 bytes are
+>> needed, so maybe it's not worth it.
+> ...
+>> The add 127 would be at the start, the first instruction using it would
+>> be a couple of instructions later, so I don't think the dependency is a
+>> problem.
+>>
+>> You're right about skb_copy_bits(), I did a quick search for rdi usage
+>> but missed it was the first parameter too. It would need one extra
+>> sub 127 or add -127 in the slow path, after the push. But it's the slow
+>> path already, one extra instruction won't make much difference.
+>
+> It will, because new NIC drivers tend to provide skbs with fragments.
+
+If it does then perhaps the fast path should be made faster by inlining
+the code instead of calling a function which may not be cached.
+
+>
+> Using libpcap filter like "udp[100]" calls the skb_copy_bits() helper in
+> this case.
+>
+> There is no difference in instruction timing using offset32 or offset8,
+> so the code you add will slow the filter anyway.
+
+I assumed optimising for imm8 was worthwile, but if it's the same speed,
+saving a few bytes here and there while wasting kilobytes of memory
+any way doesn't make much sense.
+
+Greetings,
+
+Indan
+
+
+[PATCH] net: bpf_jit: Simplify code by always using offset8 or offset32.
+
+Instruction timing of offset32 or offset8 is the same, do not bother saving
+a few bytes of code here and there. Only use offset8 for skb.len, skb.data_len
+and skb.dev: It is very unlikely that those fields are ever moved to the end
+of sk_buff. The other fields are used in ancillary instructions, for those
+always use offset32.
+
+Signed-off-by: Indan Zupancic <indan@nul.nu>
+
+ arch/x86/net/bpf_jit_comp.c |  104 +++++++++++++------------------------------
+ 1 files changed, 31 insertions(+), 73 deletions(-)
 ---
- drivers/regulator/ab3100.c |   18 +++++-------------
- 1 files changed, 5 insertions(+), 13 deletions(-)
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 7c1b765..5ddb82b 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -102,6 +102,12 @@ do {								\
+ 		f_op = FOP;		\
+ 		goto cond_branch
 
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index 042271a..ed56c93 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -338,20 +338,12 @@ static int ab3100_get_best_voltage_index(struct regulator_dev *reg,
- 	return bestindex;
- }
- 
--static int ab3100_set_voltage_regulator(struct regulator_dev *reg,
--					int min_uV, int max_uV,
--					unsigned *selector)
-+static int ab3100_set_voltage_regulator_sel(struct regulator_dev *reg,
-+					    unsigned selector)
- {
- 	struct ab3100_regulator *abreg = reg->reg_data;
- 	u8 regval;
- 	int err;
--	int bestindex;
--
--	bestindex = ab3100_get_best_voltage_index(reg, min_uV, max_uV);
--	if (bestindex < 0)
--		return bestindex;
--
--	*selector = bestindex;
- 
- 	err = abx500_get_register_interruptible(abreg->dev, 0,
- 						abreg->regreg, &regval);
-@@ -364,7 +356,7 @@ static int ab3100_set_voltage_regulator(struct regulator_dev *reg,
- 
- 	/* The highest three bits control the variable regulators */
- 	regval &= ~0xE0;
--	regval |= (bestindex << 5);
-+	regval |= (selector << 5);
- 
- 	err = abx500_set_register_interruptible(abreg->dev, 0,
- 						abreg->regreg, regval);
-@@ -464,7 +456,7 @@ static struct regulator_ops regulator_ops_variable = {
- 	.disable     = ab3100_disable_regulator,
- 	.is_enabled  = ab3100_is_enabled_regulator,
- 	.get_voltage = ab3100_get_voltage_regulator,
--	.set_voltage = ab3100_set_voltage_regulator,
-+	.set_voltage_sel = ab3100_set_voltage_regulator_sel,
- 	.list_voltage = ab3100_list_voltage_regulator,
- 	.enable_time = ab3100_enable_time_regulator,
- };
-@@ -474,7 +466,7 @@ static struct regulator_ops regulator_ops_variable_sleepable = {
- 	.disable     = ab3100_disable_regulator,
- 	.is_enabled  = ab3100_is_enabled_regulator,
- 	.get_voltage = ab3100_get_voltage_regulator,
--	.set_voltage = ab3100_set_voltage_regulator,
-+	.set_voltage_sel = ab3100_set_voltage_regulator_sel,
- 	.set_suspend_voltage = ab3100_set_suspend_voltage_regulator,
- 	.list_voltage = ab3100_list_voltage_regulator,
- 	.enable_time = ab3100_enable_time_regulator,
--- 
-1.7.5.4
++#define SKB_OFF8(field) ({				\
++	int _off = offsetof(struct sk_buff, field);	\
++	BUILD_BUG_ON(_off > 127);			\
++	_off;						\
++	})
++
 
+ #define SEEN_DATAREF 1 /* might call external helpers */
+ #define SEEN_XREG    2 /* ebx is used */
+@@ -172,30 +178,13 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 			 *  r8 = skb->data
+ 			 */
+ 			if (seen_or_pass0 & SEEN_DATAREF) {
+-				if (offsetof(struct sk_buff, len) <= 127)
+-					/* mov    off8(%rdi),%r9d */
+-					EMIT4(0x44, 0x8b, 0x4f, offsetof(struct sk_buff, len));
+-				else {
+-					/* mov    off32(%rdi),%r9d */
+-					EMIT3(0x44, 0x8b, 0x8f);
+-					EMIT(offsetof(struct sk_buff, len), 4);
+-				}
+-				if (is_imm8(offsetof(struct sk_buff, data_len)))
+-					/* sub    off8(%rdi),%r9d */
+-					EMIT4(0x44, 0x2b, 0x4f, offsetof(struct sk_buff, data_len));
+-				else {
+-					EMIT3(0x44, 0x2b, 0x8f);
+-					EMIT(offsetof(struct sk_buff, data_len), 4);
+-				}
+-
+-				if (is_imm8(offsetof(struct sk_buff, data)))
+-					/* mov off8(%rdi),%r8 */
+-					EMIT4(0x4c, 0x8b, 0x47, offsetof(struct sk_buff, data));
+-				else {
+-					/* mov off32(%rdi),%r8 */
+-					EMIT3(0x4c, 0x8b, 0x87);
+-					EMIT(offsetof(struct sk_buff, data), 4);
+-				}
++				/* mov    off8(%rdi),%r9d */
++				EMIT4(0x44, 0x8b, 0x4f, SKB_OFF8(len));
++				/* sub    off8(%rdi),%r9d */
++				EMIT4(0x44, 0x2b, 0x4f, SKB_OFF8(data_len));
++				/* mov off32(%rdi),%r8 */
++				EMIT3(0x4c, 0x8b, 0x87);
++				EMIT(offsetof(struct sk_buff, data), 4);
+ 			}
+ 		}
+
+@@ -391,43 +380,24 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 				break;
+ 			case BPF_S_LD_W_LEN: /*	A = skb->len; */
+ 				BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, len) != 4);
+-				if (is_imm8(offsetof(struct sk_buff, len)))
+-					/* mov    off8(%rdi),%eax */
+-					EMIT3(0x8b, 0x47, offsetof(struct sk_buff, len));
+-				else {
+-					EMIT2(0x8b, 0x87);
+-					EMIT(offsetof(struct sk_buff, len), 4);
+-				}
++				/* mov    off8(%rdi),%eax */
++				EMIT3(0x8b, 0x47, SKB_OFF8(len));
+ 				break;
+ 			case BPF_S_LDX_W_LEN: /* X = skb->len; */
+ 				seen |= SEEN_XREG;
+-				if (is_imm8(offsetof(struct sk_buff, len)))
+-					/* mov off8(%rdi),%ebx */
+-					EMIT3(0x8b, 0x5f, offsetof(struct sk_buff, len));
+-				else {
+-					EMIT2(0x8b, 0x9f);
+-					EMIT(offsetof(struct sk_buff, len), 4);
+-				}
++				/* mov off8(%rdi),%ebx */
++				EMIT3(0x8b, 0x5f, SKB_OFF8(len));
+ 				break;
+ 			case BPF_S_ANC_PROTOCOL: /* A = ntohs(skb->protocol); */
+ 				BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, protocol) != 2);
+-				if (is_imm8(offsetof(struct sk_buff, protocol))) {
+-					/* movzwl off8(%rdi),%eax */
+-					EMIT4(0x0f, 0xb7, 0x47, offsetof(struct sk_buff, protocol));
+-				} else {
+-					EMIT3(0x0f, 0xb7, 0x87); /* movzwl off32(%rdi),%eax */
+-					EMIT(offsetof(struct sk_buff, protocol), 4);
+-				}
++				/* movzwl off32(%rdi),%eax */
++				EMIT3(0x0f, 0xb7, 0x87);
++				EMIT(offsetof(struct sk_buff, protocol), 4);
+ 				EMIT2(0x86, 0xc4); /* ntohs() : xchg   %al,%ah */
+ 				break;
+ 			case BPF_S_ANC_IFINDEX:
+-				if (is_imm8(offsetof(struct sk_buff, dev))) {
+-					/* movq off8(%rdi),%rax */
+-					EMIT4(0x48, 0x8b, 0x47, offsetof(struct sk_buff, dev));
+-				} else {
+-					EMIT3(0x48, 0x8b, 0x87); /* movq off32(%rdi),%rax */
+-					EMIT(offsetof(struct sk_buff, dev), 4);
+-				}
++				/* movq off8(%rdi),%rax */
++				EMIT4(0x48, 0x8b, 0x47, SKB_OFF8(dev));
+ 				EMIT3(0x48, 0x85, 0xc0);	/* test %rax,%rax */
+ 				EMIT_COND_JMP(X86_JE, cleanup_addr - (addrs[i] - 6));
+ 				BUILD_BUG_ON(FIELD_SIZEOF(struct net_device, ifindex) != 4);
+@@ -436,33 +406,21 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 				break;
+ 			case BPF_S_ANC_MARK:
+ 				BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, mark) != 4);
+-				if (is_imm8(offsetof(struct sk_buff, mark))) {
+-					/* mov off8(%rdi),%eax */
+-					EMIT3(0x8b, 0x47, offsetof(struct sk_buff, mark));
+-				} else {
+-					EMIT2(0x8b, 0x87);
+-					EMIT(offsetof(struct sk_buff, mark), 4);
+-				}
++				/* mov off32(%rdi),%eax */
++				EMIT2(0x8b, 0x87);
++				EMIT(offsetof(struct sk_buff, mark), 4);
+ 				break;
+ 			case BPF_S_ANC_RXHASH:
+ 				BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, rxhash) != 4);
+-				if (is_imm8(offsetof(struct sk_buff, rxhash))) {
+-					/* mov off8(%rdi),%eax */
+-					EMIT3(0x8b, 0x47, offsetof(struct sk_buff, rxhash));
+-				} else {
+-					EMIT2(0x8b, 0x87);
+-					EMIT(offsetof(struct sk_buff, rxhash), 4);
+-				}
++				/* mov off32(%rdi),%eax */
++				EMIT2(0x8b, 0x87);
++				EMIT(offsetof(struct sk_buff, rxhash), 4);
+ 				break;
+ 			case BPF_S_ANC_QUEUE:
+ 				BUILD_BUG_ON(FIELD_SIZEOF(struct sk_buff, queue_mapping) != 2);
+-				if (is_imm8(offsetof(struct sk_buff, queue_mapping))) {
+-					/* movzwl off8(%rdi),%eax */
+-					EMIT4(0x0f, 0xb7, 0x47, offsetof(struct sk_buff, queue_mapping));
+-				} else {
+-					EMIT3(0x0f, 0xb7, 0x87); /* movzwl off32(%rdi),%eax */
+-					EMIT(offsetof(struct sk_buff, queue_mapping), 4);
+-				}
++				/* movzwl off32(%rdi),%eax */
++				EMIT3(0x0f, 0xb7, 0x87);
++				EMIT(offsetof(struct sk_buff, queue_mapping), 4);
+ 				break;
+ 			case BPF_S_ANC_CPU:
+ #ifdef CONFIG_SMP
 
 
