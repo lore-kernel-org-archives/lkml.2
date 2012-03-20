@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030712Ab2CTRLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:11:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40914 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964814Ab2CTRLE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:11:04 -0400
+	id S1030634Ab2CTRNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:13:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755564Ab2CTRNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 13:13:31 -0400
+Date: Tue, 20 Mar 2012 13:13:25 -0400
+From: Dave Jones <davej@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: snd_pcm lockdep report from 3.3-rc6
+Message-ID: <20120320171325.GA10110@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Takashi Iwai <tiwai@suse.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120312143514.GA1881@redhat.com>
+ <s5hfwdd3ecn.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1203201758220.2542@ionos>
-References: <20120319231253.GA20893@www.outflux.net>
-	<20120320133141.GC2918@peqn>
-	<alpine.LFD.2.02.1203201758220.2542@ionos>
-Date: Tue, 20 Mar 2012 10:11:02 -0700
-X-Google-Sender-Auth: 6R-b-1e1wvkG7puyBegXZnYpYQ0
-Message-ID: <CAGXu5jKVx41+NSEWsw0YF74z5_heSQ6GOmkuDi1DXNPcO4sjTQ@mail.gmail.com>
-Subject: Re: [PATCH] futex: do not leak robust list to unprivileged process
-From: Kees Cook <keescook@chromium.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>, linux-kernel@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        kernel-hardening@lists.openwall.com, spender@grsecurity.net,
-        mingo@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hfwdd3ecn.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 10:02 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 20 Mar 2012, Serge Hallyn wrote:
->
->> Quoting Kees Cook (keescook@chromium.org):
->> > It was possible to extract the robust list head address from a setuid
->> > process if it had used set_robust_list(), allowing an ASLR info leak. This
->> > changes the permission checks to be the same as those used for similar
->> > info that comes out of /proc.
->> >
->> > Running a setuid program that uses robust futexes would have had:
->> >   cred->euid != pcred->euid
->> >   cred->euid == pcred->uid
->> > so the old permissions check would allow it. I'm not aware of any setuid
->> > programs that use robust futexes, so this is just a preventative measure.
->> >
->> > (This patch is based on changes from grsecurity.)
->> >
->> > Signed-off-by: Kees Cook <keescook@chromium.org>
->>
->> I like the change.  Much cleaner.  I'm not 100% sure though that
->> there are no legitimate cases of robust futexes use which would now
->> be forbidden.  (Explicitly cc:ing Ingo)
->
-> get_robust_list is not necessary for robust futexes. There is no
-> reference to get_robust_list in glibc.
->
-> I really wonder why we have this syscall at all.
+On Mon, Mar 12, 2012 at 06:42:48PM +0100, Takashi Iwai wrote:
+ > However, that code is known to be too tricky and messy for long time.
+ > It'd be really better to get rid of this complexity.  I tried some
+ > times but failed to reach to the final goal due to lack of time.
+ > 
+ > OK, let me respin my old patch.  The refreshed one is attached below.
+ > (Note that it's totally untested.  I have to leave my office now,
+ >  sorry for that.  Let me know if the wonder happens and it works :)
 
-The documentation I found yesterday while looking at this was:
-http://linux.die.net/man/2/get_robust_list
+I thought I was going crazy when I still saw the same trace,
+and made sure the patch was actually applied, and rebuilt the kernel.
+Seems this patch doesn't fix this.
 
-Which says "The system call is only available for debugging purposes
-and is not needed for normal operations. Both system calls are not
-available to application programs as functions; they can be called
-using the syscall(3) function."
+The trace is slightly different (one fewer lock taken)..
 
-Dropping the syscall entirely would certainly make it secure. ;)
+	Dave
 
--Kees
+=============================================
+[ INFO: possible recursive locking detected ]
+3.3.0+ #15 Not tainted
+---------------------------------------------
+pulseaudio/1269 is trying to acquire lock:
+ (&(&substream->self_group.lock)->rlock/1){......}, at: [<ffffffffa0476c00>] snd_pcm_action_group+0x90/0x250 [snd_pcm]
 
--- 
-Kees Cook
-ChromeOS Security
+but task is already holding lock:
+ (&(&substream->self_group.lock)->rlock/1){......}, at: [<ffffffffa0476c00>] snd_pcm_action_group+0x90/0x250 [snd_pcm]
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(&(&substream->self_group.lock)->rlock/1);
+  lock(&(&substream->self_group.lock)->rlock/1);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+3 locks held by pulseaudio/1269:
+ #0:  (snd_pcm_link_rwlock){......}, at: [<ffffffffa0478ac9>] snd_pcm_drop+0x49/0xe0 [snd_pcm]
+ #1:  (&(&substream->group->lock)->rlock){......}, at: [<ffffffffa0478ad5>] snd_pcm_drop+0x55/0xe0 [snd_pcm]
+ #2:  (&(&substream->self_group.lock)->rlock/1){......}, at: [<ffffffffa0476c00>] snd_pcm_action_group+0x90/0x250 [snd_pcm]
+
+stack backtrace:
+Pid: 1269, comm: pulseaudio Not tainted 3.3.0+ #15
+Call Trace:
+ [<ffffffff810cee37>] __lock_acquire+0xe47/0x1bb0
+ [<ffffffff81023322>] ? native_sched_clock+0x22/0x80
+ [<ffffffff810d02bd>] lock_acquire+0x9d/0x220
+ [<ffffffffa0476c00>] ? snd_pcm_action_group+0x90/0x250 [snd_pcm]
+ [<ffffffff810ca8be>] ? put_lock_stats+0xe/0x40
+ [<ffffffff816a1a1d>] _raw_spin_lock_nested+0x4d/0x90
+ [<ffffffffa0476c00>] ? snd_pcm_action_group+0x90/0x250 [snd_pcm]
+ [<ffffffffa0476c00>] snd_pcm_action_group+0x90/0x250 [snd_pcm]
+ [<ffffffff812c5a46>] ? avc_has_perm_noaudit+0x46/0x500
+ [<ffffffffa0477f03>] snd_pcm_action+0x23/0x40 [snd_pcm]
+ [<ffffffffa0477f3a>] snd_pcm_stop+0x1a/0x20 [snd_pcm]
+ [<ffffffffa0478aef>] snd_pcm_drop+0x6f/0xe0 [snd_pcm]
+ [<ffffffffa047ad08>] snd_pcm_common_ioctl1+0x668/0xc30 [snd_pcm]
+ [<ffffffffa047b727>] snd_pcm_playback_ioctl1+0x147/0x2e0 [snd_pcm]
+ [<ffffffff812c839c>] ? file_has_perm+0xdc/0xf0
+ [<ffffffffa047b8f4>] snd_pcm_playback_ioctl+0x34/0x40 [snd_pcm]
+ [<ffffffff811d4858>] do_vfs_ioctl+0x98/0x570
+ [<ffffffff811d4dc1>] sys_ioctl+0x91/0xa0
+ [<ffffffff816aa3e9>] system_call_fastpath+0x16/0x1b
+
