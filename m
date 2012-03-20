@@ -1,99 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab2CTSra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 14:47:30 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55820 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519Ab2CTSr2 (ORCPT
+	id S1756005Ab2CTSyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 14:54:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59665 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890Ab2CTSyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 14:47:28 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, tytso@mit.edu, anca.emanuel@gmail.com,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-In-Reply-To: Your message of "Tue, 20 Mar 2012 03:10:01 EDT."
-             <20120320.031001.1532841232287663716.davem@davemloft.net>
-From: Valdis.Kletnieks@vt.edu
-References: <20120320025835.GE14363@thunk.org> <1332212574.7847.49.camel@joe2Laptop> <216818.1332222366@turing-police.cc.vt.edu>
-            <20120320.031001.1532841232287663716.davem@davemloft.net>
+	Tue, 20 Mar 2012 14:54:47 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1332241764.10557.329.camel@linux-s257.site>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+	 <1332122514.10557.270.camel@linux-s257.site>
+	 <1332241764.10557.329.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Mar 2012 00:25:10 +0530
+Message-ID: <1332269710.3921.31.camel@debian.Gayathri>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1332269243_2520P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.30.3
 Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Mar 2012 14:47:23 -0400
-Message-ID: <35179.1332269243@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.4F68D0BB.00B7,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1332269243_2520P
-Content-Type: text/plain; charset=us-ascii
 
-On Tue, 20 Mar 2012 03:10:01 EDT, David Miller said:
-> From: Valdis.Kletnieks@vt.edu
-> Date: Tue, 20 Mar 2012 01:46:06 -0400
->
-> > OK. Say I'm a scraper.  How do I distinguish between:
-> >
-> > pr_info("foo");
-> > printk(KERN_INFO "foo");
-> >
-> > Oh my. seems that both result in exactly the same thing ending up in the
-> > dmesg buffer
->
-> No it doesn't result in the same output, read the definitions again.
->
-> pr_info can be influenced by pr_fmt, plain printk cannot
+> >From 5da43d2ee6c87dcf17fda34f0b50fe11b04a16bf Mon Sep 17 00:00:00 2001
+> From: "Lee, Chun-Yi" <jlee@suse.com>
+> Date: Tue, 20 Mar 2012 19:00:58 +0800
+> Subject: [PATCH] acer-wmi: add quirk table for video backlight vendor mode
+> 
+> There have some acer laptop have broken _BCM implemenation, the AML
+> code wrote value to EC register but firmware didn't change brighenss.
+> 
+> Fortunately, the brightness control works on those machines with
+> vendor mode. So, add quirk table for video backlight vendor mode
+> and unregister acpi video interface on those machines.
+> 
+> Tested on Acer TravelMate 4750
+> 
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> ---
+>  drivers/platform/x86/Kconfig    |    4 ++++
+>  drivers/platform/x86/acer-wmi.c |   38 +++++++++++++++++++++++++++++++++++---
+>  2 files changed, 39 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index 15dbd8c..fe3a494 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -26,6 +26,10 @@ config ACER_WMI
+>  	depends on RFKILL || RFKILL = n
+>  	depends on ACPI_WMI
+>  	select INPUT_SPARSEKMAP
+> +	# Acer WMI depends on ACPI_VIDEO when ACPI is enabled
+> +	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
+> +        select VIDEO_OUTPUT_CONTROL if ACPI
+> +        select ACPI_VIDEO if ACPI
+>  	---help---
+>  	  This is a driver for newer Acer (and Wistron) laptops. It adds
+>  	  wireless radio and bluetooth control, and on some laptops,
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index 1e5290b..984a7b5 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/input/sparse-keymap.h>
+>  
+>  #include <acpi/acpi_drivers.h>
+> +#include <acpi/video.h>
+>  
+>  MODULE_AUTHOR("Carlos Corbacho");
+>  MODULE_DESCRIPTION("Acer Laptop WMI Extras Driver");
+> @@ -478,6 +479,33 @@ static struct dmi_system_id acer_quirks[] = {
+>  	{}
+>  };
+>  
+> +static int video_set_backlight_video_vendor(const struct dmi_system_id *d)
+> +{
+> +	interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> +	pr_info("Brightness must be controlled by generic video driver\n");
+> +	return 0;
+> +}
+> +
+> +static const struct dmi_system_id video_vendor_dmi_table[] = {
+> +	{
+> +		.callback = video_set_backlight_video_vendor,
+> +		.ident = "Acer Aspire 4736",
+> +		.matches = {
+> +			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 4736"),
+> +		},
+> +	},
+> +	{
+> +		.callback = video_set_backlight_video_vendor,
+> +		.ident = "Acer TravelMate 4750",
+> +		.matches = {
+> +			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 4750"),
+> +		},
+> +	},
+> +	{}
+> +};
+> +
+>  /* Find which quirks are needed for a particular vendor/ model pair */
+>  static void find_quirks(void)
+>  {
+> @@ -1981,9 +2009,13 @@ static int __init acer_wmi_init(void)
+>  	set_quirks();
+>  
+>  	if (acpi_video_backlight_support()) {
+> -		interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> -		pr_info("Brightness must be controlled by "
+> -		       "generic video driver\n");
+> +		if (dmi_check_system(video_vendor_dmi_table)) {
+> +			acpi_video_unregister();
+> +		} else {
+> +			interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> +			pr_info("Brightness must be controlled by "
+> +				"acpi video driver\n");
+> +		}
+>  	}
+>  
+>  	if (wmi_has_guid(WMID_GUID3)) {
 
-So if nobody screws around with a #define pr_fmt, you can't tell the
-difference, and if somebody *does* screw around wiht a #define pr_fmt, you have
-no good way to know what *this* build of the kernel produces as output without
-tracking down the actual define in use. Consider Joe Perche's example "you can
-do things like" - you don't have a good programmatic way to tell what that
-pr_info() actually outputs, so an actual human is going to have to review that
-and figure out what needs to be pattern-matched.
+I tried out applied your patch . Boot message shows , 
 
-Not a situation you want to be in if you're a scraper.
+[11.220410] acer_wmi: Brightness must be controlled by generic video
+driver
 
-At least the perf subsystem is nice enough to *tell* you "I've added an extra
-field you may not know about" and provides a mechanism to skip over it.
-And I can see why Ted doesn't want to have code churn to do a half-assed
-conversion, when there will just be *more* churn if and when we ever get off
-our collective butts and deploy a structured solution.
+Now 'acpi_video0' and 'intel_backlight' are present
+inside /sys/class/backlight .Hot key works like earlier ( ie problem
+after maximum level still exists).
+I tried following commands , 
+
+echo 5 > /sys/class/backlight/acpi_video0/brightness 
+echo 5 > /sys/class/backlight/intel_backlight/brightness
+
+But it doesn't make any change . 
+
+In my case  , 'acpi_backlight = vendor' does not make any difference since the hot key control 
+
+already starts working with 'acpi_osi=Linux' option.
+
+cat /proc/cmdline gives , 
+
+BOOT_IMAGE=/boot/vmlinuz-3.3.0+
+root=UUID=f0197a59-c067-4fd8-ad90-c4d721816077 ro acpi_osi=Linux 
 
 
---==_Exmh_1332269243_2520P
-Content-Type: application/pgp-signature
+Thanks , 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT2jQugdmEQWDXROgAQLf8Q//TsehQmCxbb6gQUti3bUdpfzmYao4gHR7
-984jo5bR24UVi9mXQrc4s21O10LGZMl4GZZZjlrbZYMWzSwz93CkPivf78K7Cab+
-a5GcZiQLktiaYa27UMMf5I2h+5CqEF83HBpXCHnSnZ0Z9s+Oenw/uHTk5fdmaYwW
-mMxNqWRCWI9EA6MXu9SXctJJB6Bh5UrVGfI1nV/2whIFw1NecV4j8gMJpG7FjX/Y
-GygYuwu1z1jynlaEujaFWUlW0j2Kp+Zk2UhRV0DEcq6OHZ+/XymJk5XGGlJweIiL
-XRP74tConsIqCY+q2VGvW7sirOd4u/BAeINHDOK7WxAIXNjVmmsMy95T40ePqv57
-YCJa94QI7dshEyC2BIPErSINDQY4HJm0YNQj6nqlurdFAs0VTnRYSMvKCkuv4INd
-dHdwspqKh8rJ8fY/L/gJyyEu7LJ51nwlUGlLYhSqiVnm1tjemHADvYUFzM7UgPQz
-zR+e10+8ExFaJp5aErcdmlYgxj+2/DYhQ230K9G+Zv2289jnNxx3WOipCupotdnJ
-7gv9BtfAUUtKFgQPILdttY5zg+obXGXCjPI2GMMCbwZ/BztO70aG43HbZPEnTXIN
-FpuMxu82IShgvcHx08EODSPS7pflot/d2EmhuXhgYfiar3mbMmt4Bc4nC875EDYF
-g89dqa2TWi0=
-=jDAI
------END PGP SIGNATURE-----
-
---==_Exmh_1332269243_2520P--
+Pradeep Subrahmanion
 
