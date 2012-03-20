@@ -1,141 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759665Ab2CTLhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 07:37:22 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:33428 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab2CTLhT (ORCPT
+	id S1759683Ab2CTLnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 07:43:15 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:44646 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752939Ab2CTLnM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 07:37:19 -0400
-Date: Tue, 20 Mar 2012 12:37:12 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for 3.4 merge window
-Message-ID: <20120320123712.3fa8527e@de.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12032011-0342-0000-0000-00000135BDCA
+	Tue, 20 Mar 2012 07:43:12 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] net: bpf_jit: Simplify code by always using offset8 or offset32.
+Date: Tue, 20 Mar 2012 11:41:46 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6EB0@saturn3.aculab.com>
+In-Reply-To: <cfb04c3fe59e421093f035c035c88b51.squirrel@webmail.greenhost.nl>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] net: bpf_jit: Simplify code by always using offset8 or offset32.
+Thread-Index: Ac0GjVo68y9K5pYeRP+gyPzvqjPOhgAACYUQ
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Indan Zupancic" <indan@nul.nu>, "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Will Drewry" <wad@chromium.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <kernel-hardening@lists.openwall.com>, <netdev@vger.kernel.org>,
+        <x86@kernel.org>, <arnd@arndb.de>, <davem@davemloft.net>,
+        <hpa@zytor.com>, <mingo@redhat.com>, <oleg@redhat.com>,
+        <peterz@infradead.org>, <rdunlap@xenotime.net>,
+        <mcgrathr@chromium.org>, <tglx@linutronix.de>, <luto@mit.edu>,
+        <eparis@redhat.com>, <serge.hallyn@canonical.com>, <djm@mindrot.org>,
+        <scarybeasts@gmail.com>, <pmoore@redhat.com>,
+        <akpm@linux-foundation.org>, <corbet@lwn.net>, <markus@chromium.org>,
+        <coreyb@linux.vnet.ibm.com>, <keescook@chromium.org>
+X-OriginalArrivalTime: 20 Mar 2012 11:42:03.0635 (UTC) FILETIME=[78425C30:01CD068E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+ 
+> On Tue, March 20, 2012 13:59, Eric Dumazet wrote:
+> > On Tue, 2012-03-20 at 13:24 +1100, Indan Zupancic wrote:
+> >
+> >> If it does then perhaps the fast path should be made faster by
+inlining
+> >> the code instead of calling a function which may not be cached.
+> >>
+> >
+> > inlining 400 times a sequence of code is waste of icache you
+probably
+> > missed this.
+> 
+> Well, according to you most filters were small, inling 26 bytes a few
+> times should be faster than calling an external function. Not 
+> all calls need to be inlined either.
 
-please pull from 'for-linus' branch of
+I wouldn't bet on it.
+If the number of arguments is small enough to fit in the registers,
+the called function doesn't to save any registers, and the call
+doesn't mean the calling code runs out of registers,
+the actual cost of the call will be minimal.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+OTOH the benefit of only having to fetch the code once,
+and the higher likelyhood that it will be in the i-cache
+from some other use, will make the version with the calls
+faster.
 
-to receive the s390 changes for the 3.4 merge window. The biggest patch
-is the rework of the smp code, something I wanted to do for some time.
-There are some patches for our various dump methods and one new thing:
-z/VM LGR detection. LGR stands for linux-guest-relocation and is the
-guest migration feature of z/VM. For debugging purposes we keep a log
-of the systems where a specific guest has lived.
+You need to do real benchmarks on a real system running
+a real workload to find out which is better.
+Oh and beware that changes in which code shares cache
+lines can have a measuarable effect (typified by unrelated
+changes affecting measured performance).
 
-Heiko Carstens (3):
-      [S390] irq: set __ARCH_IRQ_EXIT_IRQS_DISABLED
-      [S390] irq: external interrupt code passing
-      [S390] stack dump: fix indentation in output
+	David
 
-Holger Dengler (1):
-      [S390] Remove monolithic build option for zcrypt driver.
-
-Martin Schwidefsky (3):
-      [S390] rename lowcore field
-      [S390] rework smp code
-      [S390] rework idle code
-
-Matt Fleming (1):
-      [S390] Use block_sigmask()
-
-Michael Holzheu (7):
-      [S390] Fix gcc 4.6.0 compile warning
-      [S390] Use copy_to_absolute_zero() instead of "stura/sturg"
-      [S390] zfcpdump: Implement async sdias event processing
-      [S390] kernel: Add z/VM LGR detection
-      [S390] kernel: Add OS info memory interface
-      [S390] Ensure that vmcore_info pointer is never accessed directly
-      [S390] kernel: Pass correct stack for smp_call_ipl_cpu()
-
-Stefan Haberland (1):
-      [S390] dasd: prevent validate server for offline devices
-
- arch/s390/include/asm/cputime.h     |    9 +-
- arch/s390/include/asm/debug.h       |    1 +
- arch/s390/include/asm/hardirq.h     |    1 +
- arch/s390/include/asm/ipl.h         |    1 +
- arch/s390/include/asm/irq.h         |    7 +-
- arch/s390/include/asm/lowcore.h     |  119 ++--
- arch/s390/include/asm/os_info.h     |   50 ++
- arch/s390/include/asm/sigp.h        |  132 ----
- arch/s390/include/asm/smp.h         |   63 +--
- arch/s390/include/asm/system.h      |   34 +
- arch/s390/include/asm/timer.h       |    4 +-
- arch/s390/include/asm/vdso.h        |    4 +-
- arch/s390/kernel/Makefile           |    4 +-
- arch/s390/kernel/asm-offsets.c      |   27 +-
- arch/s390/kernel/compat_signal.c    |    6 +-
- arch/s390/kernel/crash_dump.c       |   37 +-
- arch/s390/kernel/debug.c            |   40 +-
- arch/s390/kernel/early.c            |   22 +-
- arch/s390/kernel/entry.S            |  159 +++---
- arch/s390/kernel/entry.h            |   17 +-
- arch/s390/kernel/entry64.S          |  139 +++--
- arch/s390/kernel/ipl.c              |   99 ++--
- arch/s390/kernel/irq.c              |   14 +-
- arch/s390/kernel/lgr.c              |  200 ++++++
- arch/s390/kernel/machine_kexec.c    |   52 +--
- arch/s390/kernel/nmi.c              |    2 -
- arch/s390/kernel/os_info.c          |  169 +++++
- arch/s390/kernel/process.c          |    7 +-
- arch/s390/kernel/setup.c            |   61 +-
- arch/s390/kernel/signal.c           |    6 +-
- arch/s390/kernel/smp.c              | 1147 ++++++++++++++++++-----------------
- arch/s390/kernel/switch_cpu.S       |   58 --
- arch/s390/kernel/switch_cpu64.S     |   51 --
- arch/s390/kernel/swsusp_asm64.S     |   19 +-
- arch/s390/kernel/time.c             |    4 +-
- arch/s390/kernel/topology.c         |    8 +-
- arch/s390/kernel/traps.c            |    6 +-
- arch/s390/kernel/vdso.c             |   28 +-
- arch/s390/kernel/vtime.c            |  168 ++----
- arch/s390/kvm/interrupt.c           |    6 +-
- arch/s390/lib/delay.c               |   31 +-
- arch/s390/lib/spinlock.c            |   30 +-
- arch/s390/mm/fault.c                |    4 +-
- arch/s390/oprofile/hwsampler.c      |    6 +-
- drivers/crypto/Kconfig              |    9 -
- drivers/s390/block/dasd.c           |    4 +
- drivers/s390/block/dasd_diag.c      |    8 +-
- drivers/s390/block/dasd_eckd.c      |    8 +
- drivers/s390/char/sclp.c            |    4 +-
- drivers/s390/char/sclp_quiesce.c    |    1 -
- drivers/s390/char/sclp_sdias.c      |  101 +++-
- drivers/s390/char/zcore.c           |    1 -
- drivers/s390/cio/cio.c              |    2 -
- drivers/s390/cio/qdio_main.c        |    6 +
- drivers/s390/crypto/Makefile        |   10 -
- drivers/s390/crypto/ap_bus.c        |    2 -
- drivers/s390/crypto/zcrypt_api.c    |    2 -
- drivers/s390/crypto/zcrypt_cex2a.c  |    4 -
- drivers/s390/crypto/zcrypt_mono.c   |  100 ---
- drivers/s390/crypto/zcrypt_pcica.c  |    4 -
- drivers/s390/crypto/zcrypt_pcicc.c  |    4 -
- drivers/s390/crypto/zcrypt_pcixcc.c |    4 -
- drivers/s390/kvm/kvm_virtio.c       |    6 +-
- net/iucv/iucv.c                     |    2 +-
- 64 files changed, 1701 insertions(+), 1633 deletions(-)
- create mode 100644 arch/s390/include/asm/os_info.h
- delete mode 100644 arch/s390/include/asm/sigp.h
- create mode 100644 arch/s390/kernel/lgr.c
- create mode 100644 arch/s390/kernel/os_info.c
- delete mode 100644 arch/s390/kernel/switch_cpu.S
- delete mode 100644 arch/s390/kernel/switch_cpu64.S
- delete mode 100644 drivers/s390/crypto/zcrypt_mono.c
 
