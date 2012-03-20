@@ -1,109 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030469Ab2CTQEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:04:41 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37189 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030386Ab2CTQEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:04:38 -0400
-Message-ID: <4F68AA37.80604@parallels.com>
-Date: Tue, 20 Mar 2012 20:03:03 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1030510Ab2CTQE5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:04:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42909 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756410Ab2CTQEy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 12:04:54 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
-Subject: Re: [PATCH 09/10] cgroup: introduce struct cfent
-References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-10-git-send-email-tj@kernel.org> <4F688EA9.8050905@parallels.com> <20120320160228.GD5684@google.com>
-In-Reply-To: <20120320160228.GD5684@google.com>
-Content-Type: multipart/mixed;
-	boundary="------------030309020803090007030503"
+In-Reply-To: <1332249746-2867-1-git-send-email-consul.kautuk@gmail.com>
+References: <1332249746-2867-1-git-send-email-consul.kautuk@gmail.com>
+Date: Tue, 20 Mar 2012 12:04:53 -0400
+Message-ID: <CAFPAmTQFGiF56XLgGHb3Tm15+H2eV=cXU8qDfrHpGabXrsNVNg@mail.gmail.com>
+Subject: Re: [PATCH 08/20] m68k/mm/fault.c: Port OOM changes to do_page_fault
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------030309020803090007030503
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi,
 
-On 03/20/2012 08:02 PM, Tejun Heo wrote:
-> On Tue, Mar 20, 2012 at 06:05:29PM +0400, Glauber Costa wrote:
->> On 03/17/2012 03:36 AM, Tejun Heo wrote:
->>> +static void cgroup_clear_directory(struct dentry *dir)
->>> +{
->>> +	struct cgroup *cgrp = __d_cgrp(dir);
->>> +
->>> +	while (!list_empty(&cgrp->files))
->>> +		cgroup_rm_file(cgrp, NULL);
->>> +	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
->>>   }
->>
->>
->> I am hitting this warning here under pretty much normal conditions.
->> You forgot to account for trivial directories like "."
->>
->> I'll send a patch ontop of what you have.
+Im sorry there is a defect in this patch.
+
+I am now posting a v2 of this patch.
+
+On Tue, Mar 20, 2012 at 9:22 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
+> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+> (mm: retry page fault when blocking on disk transfer) and
+> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+> (x86,mm: make pagefault killable)
 >
-> Heh, yeah, I hit that yesterday too and was gonna look into that
-> today.  Is the patch coming? :)
+> The above commits introduced changes into the x86 pagefault handler
+> for making the page fault handler retryable as well as killable.
 >
-> Thanks.
+> These changes reduce the mmap_sem hold time, which is crucial
+> during OOM killer invocation.
+>
+> Port these changes to m68k.
+>
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> ---
+>  arch/m68k/mm/fault.c |   31 ++++++++++++++++++++++++++-----
+>  1 files changed, 26 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/m68k/mm/fault.c b/arch/m68k/mm/fault.c
+> index 2db6099..27879bd 100644
+> --- a/arch/m68k/mm/fault.c
+> +++ b/arch/m68k/mm/fault.c
+> @@ -74,6 +74,7 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
+>        struct mm_struct *mm = current->mm;
+>        struct vm_area_struct * vma;
+>        int write, fault;
+> +       unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+>
+>  #ifdef DEBUG
+>        printk ("do page fault:\nregs->sr=%#x, regs->pc=%#lx, address=%#lx, %ld, %p\n",
+> @@ -88,6 +89,7 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
+>        if (in_atomic() || !mm)
+>                goto no_context;
+>
+> +retry:
+>        down_read(&mm->mmap_sem);
+>
+>        vma = find_vma(mm, address);
+> @@ -126,6 +128,7 @@ good_area:
+>                        if (!(vma->vm_flags & VM_WRITE))
+>                                goto acc_err;
+>                        write++;
+> +                       flags |= FAULT_FLAG_WRITE;
+>                        break;
+>                case 1:         /* read, present */
+>                        goto acc_err;
+> @@ -140,10 +143,14 @@ good_area:
+>         * the fault.
+>         */
+>
+> -       fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
+> +       fault = handle_mm_fault(mm, vma, address, flags);
+>  #ifdef DEBUG
+>        printk("handle_mm_fault returns %d\n",fault);
+>  #endif
+> +
+> +       if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
+> +               return;
 
-I was about to send it together with my proposal for sock memcg, so I'm 
-compile testing that under multiple config options just to be sure we're 
-fine.
+Incorrect. This function returns an int.
 
-That's more or less what I have, see if you agree. I tried to keep the 
-warning itself, because it is valuable...
-
-
---------------030309020803090007030503
-Content-Type: text/x-patch;
-	name="0001-don-t-trigger-warning-when-d_subdirs-is-not-empty.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="0001-don-t-trigger-warning-when-d_subdirs-is-not-empty.patch"
-
->From 04604201411ab0a14fa1447072cd1b273d0774ed Mon Sep 17 00:00:00 2001
-From: Glauber Costa <glommer@parallels.com>
-Date: Tue, 20 Mar 2012 18:12:55 +0400
-Subject: [PATCH] don't trigger warning when d_subdirs is not empty.
-
-It is never empty at this point, because of the self references.
-a better test is to see if any of them gets d_inode set.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index cf7b298..b45a653 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -947,10 +947,16 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
- static void cgroup_clear_directory(struct dentry *dir)
- {
- 	struct cgroup *cgrp = __d_cgrp(dir);
-+	struct list_head *child;
- 
- 	while (!list_empty(&cgrp->files))
- 		cgroup_rm_file(cgrp, NULL);
--	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
-+
-+	list_for_each(child, &dir->d_subdirs) {
-+		struct dentry *d;
-+		d = list_entry(child, struct dentry, d_u.d_child);
-+		WARN_ON_ONCE(d->d_inode);
-+	}
- }
- 
- /*
--- 
-1.7.7.6
-
-
---------------030309020803090007030503--
+> +
+>        if (unlikely(fault & VM_FAULT_ERROR)) {
+>                if (fault & VM_FAULT_OOM)
+>                        goto out_of_memory;
+> @@ -151,10 +158,24 @@ good_area:
+>                        goto bus_err;
+>                BUG();
+>        }
+> -       if (fault & VM_FAULT_MAJOR)
+> -               current->maj_flt++;
+> -       else
+> -               current->min_flt++;
+> +
+> +       if (flags & FAULT_FLAG_ALLOW_RETRY) {
+> +               if (fault & VM_FAULT_MAJOR)
+> +                       current->maj_flt++;
+> +               else
+> +                       current->min_flt++;
+> +               if (fault & VM_FAULT_RETRY) {
+> +                       flags &= ~FAULT_FLAG_ALLOW_RETRY;
+> +
+> +                       /*
+> +                        * No need to up_read(&mm->mmap_sem) as we would
+> +                        * have already released it in __lock_page_or_retry
+> +                        * in mm/filemap.c.
+> +                        */
+> +
+> +                       goto retry;
+> +               }
+> +       }
+>
+>        up_read(&mm->mmap_sem);
+>        return 0;
+> --
+> 1.7.5.4
+>
