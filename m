@@ -1,53 +1,1022 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813Ab2CTUzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 16:55:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60463 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065Ab2CTUzB (ORCPT
+	id S1030177Ab2CTU65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 16:58:57 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:52950 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757255Ab2CTU6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 16:55:01 -0400
-Subject: [PATCH linux-next] mm: fix rcu-lock/unlock balance in vm_is_stack()
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 00:54:55 +0400
-Message-ID: <20120320205455.31285.23096.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 16:58:53 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Subject: Build regressions/improvements in v3.3
+Date: Tue, 20 Mar 2012 21:58:45 +0100
+Message-Id: <1332277125-10785-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix bug introduced in "procfs: mark thread stack correctly in proc/<pid>/maps"
-(patch in mm/linux-next)
+Below is the list of build error/warning regressions/improvements in
+v3.3[1] compared to v3.2[2].
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- mm/memory.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Summarized:
+  - build errors: +956/-112
+  - build warnings: +3135/-617
 
-diff --git a/mm/memory.c b/mm/memory.c
-index ee85fc4..cc08b86 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3932,13 +3932,12 @@ pid_t vm_is_stack(struct task_struct *task,
- 		while_each_thread(task, t) {
- 			if (vm_is_stack_for_task(t, vma)) {
- 				ret = t->pid;
--				goto done;
-+				break;
- 			}
- 		}
-+		rcu_read_unlock();
- 	}
- 
--done:
--	rcu_read_unlock();
- 	return ret;
- }
- 
+JFYI, when comparing v3.3 to v3.3-rc7[3], the summaries are:
+  - build errors: +927/-91
+  - build warnings: +2464/-505
 
+Note that there may be false regressions:
+  - The number of configs increased from 106 to 116,
+  - The new toolchains emit a lot more warnings,
+  - The new toolchains add information about which warning option
+    triggered a warning. I postprocessed the logs to remove these
+    annotations, but there may still be slight differences left.
+As a consequence, I only kept the build error regressions in the report
+below. 412 KiB was just too much for lkml.
+Let's hope everything becomes more usable again with v3.4-rc1.
+
+As master.kernel.org is down, there's no verbose summary yet at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.3.summary.gz
+
+Happy fixing! ;-)
+
+Thanks to the linux-next team for providing the build service.
+
+[1] http://kisskb.ellerman.id.au/kisskb/head/4840.processed/ (all 116 configs)
+[2] http://kisskb.ellerman.id.au/kisskb/head/4572/ (107 out of 116 configs)
+[3] http://kisskb.ellerman.id.au/kisskb/head/4812/ (106 out of 116 configs)
+
+
+*** ERRORS ***
+
+956 regressions:
+  + error: "__ashldi3" [drivers/mtd/nand/nand.ko] undefined!:  => N/A
+  + error: "__ashldi3" [fs/fat/fat.ko] undefined!:  => N/A
+  + error: "__ashldi3" [fs/xfs/xfs.ko] undefined!:  => N/A
+  + error: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!:  => N/A
+  + error: "__ashrdi3" [fs/xfs/xfs.ko] undefined!:  => N/A
+  + error: "__lshrdi3" [drivers/mtd/mtd.ko] undefined!:  => N/A
+  + error: "__lshrdi3" [fs/ntfs/ntfs.ko] undefined!:  => N/A
+  + error: "__lshrdi3" [fs/xfs/xfs.ko] undefined!:  => N/A
+  + error: No rule to make target arch/m32r/boot/compressed/vmlinux.bin.:  => N/A
+  + error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+9e4:  => (.text+0x7da)
+  + error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+9e8:  => (.text+0x7ea)
+  + src/arch/frv/kernel/head.S: Error: operand out of range (0xffff31ff not between 0 and 0xffff) `sethi.p %hi(~(0x80000000|0x40000000|0x08000000|0x0...':  => 52
+  + src/arch/h8300/include/asm/irqflags.h: error: unknown type name 'bool':  => 38:1, 33:1
+  + src/arch/h8300/kernel/signal.c: error: assignment of read-only variable '__gu_val':  => 122:3, 118:7, 121:3, 119:7
+  + src/arch/h8300/kernel/time.c: error: implicit declaration of function 'get_irq_regs':  => 39:2
+  + src/arch/h8300/kernel/time.c: error: invalid type argument of '->' (have 'int'):  => 39:42
+  + src/arch/xtensa/kernel/pci.c: error: '_PAGE_NO_CACHE' undeclared (first use in this function):  => 365:11
+  + src/drivers/ata/ata_generic.c: error: implicit declaration of function 'ioread8':  => 63:3
+  + src/drivers/ata/ata_piix.c: error: implicit declaration of function 'ioread32':  => 979:2
+  + src/drivers/ata/ata_piix.c: error: implicit declaration of function 'iowrite32':  => 966:2
+  + src/drivers/ata/ata_piix.c: error: implicit declaration of function 'pci_iomap':  => 1263:2
+  + src/drivers/ata/ata_piix.c: error: implicit declaration of function 'pci_iounmap':  => 1277:2
+  + src/drivers/ata/libata-core.c: error: implicit declaration of function 'ioread32':  => 6603:2
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread16':  => 2172:3
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread16_rep':  => 567:3
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread32_rep':  => 626:3
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread8':  => 86:2
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite16_rep':  => 569:3
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite32':  => 3018:2
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite32_rep':  => 628:3
+  + src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite8':  => 301:3
+  + src/drivers/ata/pata_arasan_cf.c: error: implicit declaration of function 'ioread8':  => 552:3
+  + src/drivers/ata/pata_atp867x.c: error: implicit declaration of function 'ioread8':  => 142:2
+  + src/drivers/ata/pata_atp867x.c: error: implicit declaration of function 'iowrite16':  => 395:3
+  + src/drivers/ata/pata_atp867x.c: error: implicit declaration of function 'iowrite8':  => 150:2
+  + src/drivers/ata/pata_cs5530.c: error: implicit declaration of function 'ioread32':  => 66:2
+  + src/drivers/ata/pata_cs5530.c: error: implicit declaration of function 'ioread8':  => 125:2
+  + src/drivers/ata/pata_cs5530.c: error: implicit declaration of function 'iowrite32':  => 73:2
+  + src/drivers/ata/pata_cs5530.c: error: implicit declaration of function 'iowrite8':  => 127:2
+  + src/drivers/ata/pata_hpt37x.c: error: implicit declaration of function 'ioread8':  => 480:2
+  + src/drivers/ata/pata_hpt37x.c: error: implicit declaration of function 'iowrite8':  => 493:3
+  + src/drivers/ata/pata_hpt3x2n.c: error: implicit declaration of function 'ioread8':  => 289:2
+  + src/drivers/ata/pata_hpt3x2n.c: error: implicit declaration of function 'iowrite8':  => 281:2
+  + src/drivers/ata/pata_hpt3x3.c: error: implicit declaration of function 'ioread8':  => 103:2
+  + src/drivers/ata/pata_hpt3x3.c: error: implicit declaration of function 'iowrite8':  => 103:2
+  + src/drivers/ata/pata_it821x.c: error: implicit declaration of function 'ioread16_rep':  => 684:4
+  + src/drivers/ata/pata_it821x.c: error: implicit declaration of function 'ioread8':  => 677:3
+  + src/drivers/ata/pata_it821x.c: error: implicit declaration of function 'iowrite8':  => 669:2
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'ioread16':  => 470:2
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'ioread32':  => 333:5
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'ioread32_rep':  => 326:4
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'ioread8':  => 320:3
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'iowrite32':  => 337:5
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'iowrite32_rep':  => 328:4
+  + src/drivers/ata/pata_legacy.c: error: implicit declaration of function 'iowrite8':  => 377:2
+  + src/drivers/ata/pata_marvell.c: error: implicit declaration of function 'ioread32':  => 52:2
+  + src/drivers/ata/pata_marvell.c: error: implicit declaration of function 'ioread8':  => 49:3
+  + src/drivers/ata/pata_marvell.c: error: implicit declaration of function 'pci_iomap':  => 43:2
+  + src/drivers/ata/pata_marvell.c: error: implicit declaration of function 'pci_iounmap':  => 53:2
+  + src/drivers/ata/pata_ninja32.c: error: implicit declaration of function 'iowrite8':  => 64:2
+  + src/drivers/ata/pata_ns87415.c: error: implicit declaration of function 'ioread8':  => 132:2
+  + src/drivers/ata/pata_ns87415.c: error: implicit declaration of function 'iowrite32':  => 129:2
+  + src/drivers/ata/pata_ns87415.c: error: implicit declaration of function 'iowrite8':  => 139:2
+  + src/drivers/ata/pata_opti.c: error: implicit declaration of function 'ioread16':  => 86:2
+  + src/drivers/ata/pata_opti.c: error: implicit declaration of function 'iowrite8':  => 88:2
+  + src/drivers/ata/pata_optidma.c: error: implicit declaration of function 'ioread16':  => 82:2
+  + src/drivers/ata/pata_optidma.c: error: implicit declaration of function 'iowrite8':  => 84:2
+  + src/drivers/ata/pata_pcmcia.c: error: implicit declaration of function 'ioread8':  => 142:3
+  + src/drivers/ata/pata_pcmcia.c: error: implicit declaration of function 'ioread8_rep':  => 111:3
+  + src/drivers/ata/pata_pcmcia.c: error: implicit declaration of function 'iowrite8':  => 245:2
+  + src/drivers/ata/pata_pcmcia.c: error: implicit declaration of function 'iowrite8_rep':  => 113:3
+  + src/drivers/ata/pata_pdc2027x.c: error: implicit declaration of function 'ioread16':  => 578:2
+  + src/drivers/ata/pata_pdc2027x.c: error: implicit declaration of function 'ioread32':  => 217:2
+  + src/drivers/ata/pata_pdc2027x.c: error: implicit declaration of function 'ioread8':  => 235:2
+  + src/drivers/ata/pata_pdc2027x.c: error: implicit declaration of function 'iowrite16':  => 577:2
+  + src/drivers/ata/pata_pdc2027x.c: error: implicit declaration of function 'iowrite32':  => 315:2
+  + src/drivers/ata/pata_pdc202xx_old.c: error: implicit declaration of function 'ioread8':  => 192:3
+  + src/drivers/ata/pata_pdc202xx_old.c: error: implicit declaration of function 'iowrite32':  => 209:3
+  + src/drivers/ata/pata_pdc202xx_old.c: error: implicit declaration of function 'iowrite8':  => 43:2
+  + src/drivers/ata/pata_sil680.c: error: implicit declaration of function 'ioread8':  => 217:2
+  + src/drivers/ata/pata_sil680.c: error: implicit declaration of function 'iowrite8':  => 216:2
+  + src/drivers/ata/pata_via.c: error: implicit declaration of function 'iowrite8':  => 398:3
+  + src/drivers/ata/sata_mv.c: error: implicit declaration of function 'ioread8':  => 1952:3
+  + src/drivers/ata/sata_nv.c: error: implicit declaration of function 'ioread32':  => 1552:2
+  + src/drivers/ata/sata_nv.c: error: implicit declaration of function 'ioread8':  => 1526:2
+  + src/drivers/ata/sata_nv.c: error: implicit declaration of function 'iowrite32':  => 1561:2
+  + src/drivers/ata/sata_nv.c: error: implicit declaration of function 'iowrite8':  => 1605:2
+  + src/drivers/ata/sata_sil.c: error: implicit declaration of function 'ioread8':  => 570:2
+  + src/drivers/ata/sata_sil.c: error: implicit declaration of function 'iowrite32':  => 286:2
+  + src/drivers/ata/sata_sil.c: error: implicit declaration of function 'iowrite8':  => 274:2
+  + src/drivers/ata/sata_sis.c: error: implicit declaration of function 'ioread32':  => 175:2
+  + src/drivers/ata/sata_sis.c: error: implicit declaration of function 'iowrite32':  => 190:2
+  + src/drivers/ata/sata_sx4.c: error: implicit declaration of function 'ioread8':  => 789:2
+  + src/drivers/ata/sata_via.c: error: implicit declaration of function 'ioread32':  => 192:2
+  + src/drivers/ata/sata_via.c: error: implicit declaration of function 'iowrite32':  => 200:2
+  + src/drivers/atm/solos-pci.c: error: implicit declaration of function 'ioread32':  => 578:2
+  + src/drivers/atm/solos-pci.c: error: implicit declaration of function 'iowrite32':  => 577:2
+  + src/drivers/atm/solos-pci.c: error: implicit declaration of function 'pci_iomap':  => 1116:2
+  + src/drivers/atm/solos-pci.c: error: implicit declaration of function 'pci_iounmap':  => 1209:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'ioread16':  => 49:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'ioread16_rep':  => 92:3
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'ioread32':  => 55:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'ioread32_rep':  => 96:3
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'ioread8':  => 43:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'ioread8_rep':  => 88:3
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'iowrite16':  => 69:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'iowrite16_rep':  => 115:3
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'iowrite32':  => 76:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'iowrite32_rep':  => 119:3
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'iowrite8':  => 62:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'iowrite8_rep':  => 111:3
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'pci_iomap':  => 195:2
+  + src/drivers/bcma/host_pci.c: error: implicit declaration of function 'pci_iounmap':  => 215:2
+  + src/drivers/char/mem.c: error: implicit declaration of function '__clear_user':  => 658:3
+  + src/drivers/dma/timb_dma.c: error: implicit declaration of function 'ioread32':  => 129:2
+  + src/drivers/dma/timb_dma.c: error: implicit declaration of function 'iowrite32':  => 133:2
+  + src/drivers/firewire/ohci.c: error: implicit declaration of function 'mmiowb':  => 2852:2
+  + src/drivers/firewire/ohci.c: error: implicit declaration of function 'pci_iomap':  => 3485:2
+  + src/drivers/firewire/ohci.c: error: implicit declaration of function 'pci_iounmap':  => 3597:2
+  + src/drivers/gpu/drm/drm_memory.c: error: implicit declaration of function 'ioremap_wc':  => 148:3
+  + src/drivers/gpu/drm/nouveau/nouveau_bios.c: error: implicit declaration of function 'ioread32':  => 2089:3
+  + src/drivers/gpu/drm/nouveau/nouveau_bios.c: error: implicit declaration of function 'iowrite32':  => 2105:3
+  + src/drivers/gpu/drm/nouveau/nouveau_bo.c: error: implicit declaration of function 'ioread16be':  => 310:3
+  + src/drivers/gpu/drm/nouveau/nouveau_bo.c: error: implicit declaration of function 'iowrite16be':  => 322:3
+  + src/drivers/gpu/drm/nouveau/nouveau_drv.h: error: implicit declaration of function 'ioread32be':  => 1512:2
+  + src/drivers/gpu/drm/nouveau/nouveau_drv.h: error: implicit declaration of function 'ioread8':  => 1544:2
+  + src/drivers/gpu/drm/nouveau/nouveau_drv.h: error: implicit declaration of function 'iowrite32be':  => 1518:2
+  + src/drivers/gpu/drm/nouveau/nouveau_drv.h: error: implicit declaration of function 'iowrite8':  => 1550:2
+  + src/drivers/gpu/drm/nouveau/nvc0_fifo.c: error: implicit declaration of function 'ioremap_wc':  => 126:2
+  + src/drivers/gpu/drm/radeon/r100.c: error: implicit declaration of function 'ioread32':  => 4126:3
+  + src/drivers/gpu/drm/radeon/r100.c: error: implicit declaration of function 'iowrite32':  => 4128:3
+  + src/drivers/gpu/drm/radeon/radeon_device.c: error: implicit declaration of function 'pci_iomap':  => 802:4
+  + src/drivers/gpu/drm/radeon/radeon_device.c: error: implicit declaration of function 'pci_iounmap':  => 857:3
+  + src/drivers/gpu/drm/ttm/ttm_bo_util.c: error: implicit declaration of function 'ioread32':  => 239:3
+  + src/drivers/gpu/drm/ttm/ttm_bo_util.c: error: implicit declaration of function 'ioremap_wc':  => 202:4
+  + src/drivers/gpu/drm/ttm/ttm_bo_util.c: error: implicit declaration of function 'iowrite32':  => 239:3
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c: error: implicit declaration of function 'ioremap_wc':  => 523:2
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c: error: implicit declaration of function 'iowrite32':  => 239:4
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c: error: implicit declaration of function 'ioread32':  => 320:2
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c: error: implicit declaration of function 'iowrite32':  => 328:4
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c: error: implicit declaration of function 'ioread32':  => 41:2
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c: error: implicit declaration of function 'iowrite32':  => 120:2
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c: error: implicit declaration of function 'ioread32':  => 64:4
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_irq.c: error: implicit declaration of function 'ioread32':  => 78:2
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_irq.c: error: implicit declaration of function 'iowrite32':  => 176:3
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c: error: implicit declaration of function 'ioread32':  => 169:2
+  + src/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c: error: implicit declaration of function 'iowrite32':  => 166:2
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_direction_input':  => 102:2
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_direction_output':  => 372:3
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_free':  => 130:2
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_get_value':  => 79:2
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_request':  => 98:2
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_set_value':  => 156:3
+  + src/drivers/hwmon/gpio-fan.c: error: implicit declaration of function 'gpio_to_irq':  => 114:2
+  + src/drivers/hwmon/i5k_amb.c: error: implicit declaration of function 'ioread8':  => 132:2
+  + src/drivers/hwmon/i5k_amb.c: error: implicit declaration of function 'iowrite8':  => 138:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_direction_input':  => 293:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_direction_output':  => 216:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_free':  => 1000:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_get_value':  => 296:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_request':  => 946:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_set_value':  => 218:2
+  + src/drivers/hwmon/sht15.c: error: implicit declaration of function 'gpio_to_irq':  => 514:2
+  + src/drivers/i2c/busses/i2c-eg20t.c: error: implicit declaration of function 'ioread32':  => 203:2
+  + src/drivers/i2c/busses/i2c-eg20t.c: error: implicit declaration of function 'iowrite32':  => 205:2
+  + src/drivers/i2c/busses/i2c-eg20t.c: error: implicit declaration of function 'pci_iomap':  => 888:2
+  + src/drivers/i2c/busses/i2c-eg20t.c: error: implicit declaration of function 'pci_iounmap':  => 942:2
+  + src/drivers/i2c/busses/i2c-gpio.c: error: implicit declaration of function 'gpio_direction_input':  => 26:3
+  + src/drivers/i2c/busses/i2c-gpio.c: error: implicit declaration of function 'gpio_direction_output':  => 28:3
+  + src/drivers/i2c/busses/i2c-gpio.c: error: implicit declaration of function 'gpio_free':  => 167:2
+  + src/drivers/i2c/busses/i2c-gpio.c: error: implicit declaration of function 'gpio_get_value':  => 71:2
+  + src/drivers/i2c/busses/i2c-gpio.c: error: implicit declaration of function 'gpio_request':  => 100:2
+  + src/drivers/i2c/busses/i2c-gpio.c: error: implicit declaration of function 'gpio_set_value':  => 40:2
+  + src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'gpio_direction_output':  => 216:4
+  + src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'gpio_free':  => 248:3
+  + src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'gpio_request':  => 214:3
+  + src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'gpio_set_value':  => 116:2
+  + src/drivers/i2c/muxes/gpio-i2cmux.c: error: implicit declaration of function 'gpio_direction_output':  => 101:3
+  + src/drivers/i2c/muxes/gpio-i2cmux.c: error: implicit declaration of function 'gpio_free':  => 130:3
+  + src/drivers/i2c/muxes/gpio-i2cmux.c: error: implicit declaration of function 'gpio_request':  => 98:3
+  + src/drivers/i2c/muxes/gpio-i2cmux.c: error: implicit declaration of function 'gpio_set_value':  => 31:3
+  + src/drivers/infiniband/hw/cxgb4/device.c: error: implicit declaration of function 'ioremap_wc':  => 424:2
+  + src/drivers/infiniband/hw/mlx4/qp.c: error: implicit declaration of function 'mmiowb':  => 1929:3
+  + src/drivers/infiniband/hw/mthca/mthca_cmd.c: error: implicit declaration of function 'mmiowb':  => 299:2
+  + src/drivers/infiniband/hw/mthca/mthca_cq.c: error: implicit declaration of function 'mmiowb':  => 218:3
+  + src/drivers/infiniband/hw/mthca/mthca_qp.c: error: implicit declaration of function 'mmiowb':  => 1792:3
+  + src/drivers/infiniband/hw/mthca/mthca_srq.c: error: implicit declaration of function 'mmiowb':  => 569:2
+  + src/drivers/input/joystick/as5011.c: error: implicit declaration of function 'gpio_free':  => 321:2
+  + src/drivers/input/joystick/as5011.c: error: implicit declaration of function 'gpio_request':  => 267:2
+  + src/drivers/input/joystick/as5011.c: error: implicit declaration of function 'gpio_to_irq':  => 273:2
+  + src/drivers/input/keyboard/gpio_keys.c: error: implicit declaration of function 'gpio_direction_input':  => 389:2
+  + src/drivers/input/keyboard/gpio_keys.c: error: implicit declaration of function 'gpio_free':  => 431:2
+  + src/drivers/input/keyboard/gpio_keys.c: error: implicit declaration of function 'gpio_request':  => 382:2
+  + src/drivers/input/keyboard/gpio_keys.c: error: implicit declaration of function 'gpio_set_debounce':  => 398:3
+  + src/drivers/input/keyboard/gpio_keys.c: error: implicit declaration of function 'gpio_to_irq':  => 117:3
+  + src/drivers/input/keyboard/gpio_keys_polled.c: error: implicit declaration of function 'gpio_direction_input':  => 169:3
+  + src/drivers/input/keyboard/gpio_keys_polled.c: error: implicit declaration of function 'gpio_free':  => 206:3
+  + src/drivers/input/keyboard/gpio_keys_polled.c: error: implicit declaration of function 'gpio_get_value':  => 54:3
+  + src/drivers/input/keyboard/gpio_keys_polled.c: error: implicit declaration of function 'gpio_request':  => 161:3
+  + src/drivers/input/keyboard/matrix_keypad.c: error: implicit declaration of function 'gpio_direction_input':  => 57:3
+  + src/drivers/input/keyboard/matrix_keypad.c: error: implicit declaration of function 'gpio_direction_output':  => 54:3
+  + src/drivers/input/keyboard/matrix_keypad.c: error: implicit declaration of function 'gpio_free':  => 369:3
+  + src/drivers/input/keyboard/matrix_keypad.c: error: implicit declaration of function 'gpio_request':  => 309:3
+  + src/drivers/input/keyboard/matrix_keypad.c: error: implicit declaration of function 'gpio_to_irq':  => 95:4
+  + src/drivers/input/keyboard/tca6416-keypad.c: error: implicit declaration of function 'gpio_to_irq':  => 275:4
+  + src/drivers/input/keyboard/tca8418_keypad.c: error: implicit declaration of function 'gpio_to_irq':  => 361:3
+  + src/drivers/input/misc/gp2ap002a00f.c: error: implicit declaration of function 'gpio_free':  => 201:2
+  + src/drivers/input/misc/gp2ap002a00f.c: error: implicit declaration of function 'gpio_get_value':  => 44:2
+  + src/drivers/input/misc/gp2ap002a00f.c: error: implicit declaration of function 'gpio_request_one':  => 141:2
+  + src/drivers/input/misc/gpio_tilt_polled.c: error: implicit declaration of function 'gpio_free_array':  => 175:2
+  + src/drivers/input/misc/gpio_tilt_polled.c: error: implicit declaration of function 'gpio_get_value':  => 54:4
+  + src/drivers/input/misc/gpio_tilt_polled.c: error: implicit declaration of function 'gpio_request_array':  => 117:2
+  + src/drivers/input/mouse/gpio_mouse.c: error: implicit declaration of function 'gpio_direction_input':  => 93:4
+  + src/drivers/input/mouse/gpio_mouse.c: error: implicit declaration of function 'gpio_free':  => 147:4
+  + src/drivers/input/mouse/gpio_mouse.c: error: implicit declaration of function 'gpio_get_value':  => 31:5
+  + src/drivers/input/mouse/gpio_mouse.c: error: implicit declaration of function 'gpio_request':  => 86:4
+  + src/drivers/input/touchscreen/ads7846.c: error: implicit declaration of function 'gpio_free':  => 1378:3
+  + src/drivers/input/touchscreen/ads7846.c: error: implicit declaration of function 'gpio_get_value':  => 639:2
+  + src/drivers/input/touchscreen/ads7846.c: error: implicit declaration of function 'gpio_request_one':  => 973:3
+  + src/drivers/input/touchscreen/eeti_ts.c: error: implicit declaration of function 'gpio_get_value':  => 65:2
+  + src/drivers/input/touchscreen/eeti_ts.c: error: implicit declaration of function 'irq_to_gpio':  => 65:2
+  + src/drivers/input/touchscreen/egalax_ts.c: error: implicit declaration of function 'gpio_direction_input':  => 141:2
+  + src/drivers/input/touchscreen/egalax_ts.c: error: implicit declaration of function 'gpio_direction_output':  => 137:2
+  + src/drivers/input/touchscreen/egalax_ts.c: error: implicit declaration of function 'gpio_free':  => 142:2
+  + src/drivers/input/touchscreen/egalax_ts.c: error: implicit declaration of function 'gpio_request':  => 128:2
+  + src/drivers/input/touchscreen/egalax_ts.c: error: implicit declaration of function 'gpio_set_value':  => 138:2
+  + src/drivers/input/touchscreen/egalax_ts.c: error: implicit declaration of function 'irq_to_gpio':  => 125:2
+  + src/drivers/isdn/hisax/enternow_pci.c: error: #error "not running on big endian machines now":  => 398:2
+  + src/drivers/isdn/hisax/hfc_pci.c: error: #error "not running on big endian machines now":  => 1647:2
+  + src/drivers/isdn/hisax/nj_s.c: error: #error "not running on big endian machines now":  => 269:2
+  + src/drivers/isdn/hisax/nj_u.c: error: #error "not running on big endian machines now":  => 232:2
+  + src/drivers/isdn/hisax/telespci.c: error: #error "not running on big endian machines now":  => 295:2
+  + src/drivers/leds/leds-bd2802.c: error: implicit declaration of function 'gpio_request_one':  => 691:2
+  + src/drivers/leds/leds-bd2802.c: error: implicit declaration of function 'gpio_set_value':  => 208:3
+  + src/drivers/leds/leds-gpio.c: error: implicit declaration of function 'gpio_direction_output':  => 132:2
+  + src/drivers/leds/leds-gpio.c: error: implicit declaration of function 'gpio_free':  => 144:2
+  + src/drivers/leds/leds-gpio.c: error: implicit declaration of function 'gpio_request':  => 109:2
+  + src/drivers/leds/leds-gpio.c: error: implicit declaration of function 'gpio_set_value':  => 79:4
+  + src/drivers/leds/leds-lt3593.c: error: implicit declaration of function 'gpio_direction_output':  => 113:2
+  + src/drivers/leds/leds-lt3593.c: error: implicit declaration of function 'gpio_free':  => 129:2
+  + src/drivers/leds/leds-lt3593.c: error: implicit declaration of function 'gpio_request':  => 97:2
+  + src/drivers/leds/leds-ot200.c: error: implicit declaration of function 'outb':  => 114:2
+  + src/drivers/media/dvb/b2c2/flexcop-pci.c: error: implicit declaration of function 'pci_iomap':  => 303:2
+  + src/drivers/media/dvb/b2c2/flexcop-pci.c: error: implicit declaration of function 'pci_iounmap':  => 321:2
+  + src/drivers/media/dvb/dm1105/dm1105.c: error: implicit declaration of function 'pci_iomap':  => 1026:2
+  + src/drivers/media/dvb/dm1105/dm1105.c: error: implicit declaration of function 'pci_iounmap':  => 1164:2
+  + src/drivers/media/dvb/pluto2/pluto2.c: error: implicit declaration of function 'pci_iomap':  => 577:2
+  + src/drivers/media/dvb/pluto2/pluto2.c: error: implicit declaration of function 'pci_iounmap':  => 594:2
+  + src/drivers/media/dvb/pt1/pt1.c: error: implicit declaration of function 'pci_iomap':  => 1062:2
+  + src/drivers/media/dvb/pt1/pt1.c: error: implicit declaration of function 'pci_iounmap':  => 1034:2
+  + src/drivers/media/radio/si4713-i2c.c: error: implicit declaration of function 'gpio_direction_output':  => 2019:3
+  + src/drivers/media/radio/si4713-i2c.c: error: implicit declaration of function 'gpio_free':  => 2065:3
+  + src/drivers/media/radio/si4713-i2c.c: error: implicit declaration of function 'gpio_request':  => 2012:3
+  + src/drivers/media/radio/si4713-i2c.c: error: implicit declaration of function 'gpio_set_value':  => 388:3
+  + src/drivers/media/video/marvell-ccic/cafe-driver.c: error: implicit declaration of function 'pci_iomap':  => 499:2
+  + src/drivers/media/video/marvell-ccic/cafe-driver.c: error: implicit declaration of function 'pci_iounmap':  => 534:2
+  + src/drivers/media/video/marvell-ccic/mcam-core.h: error: implicit declaration of function 'ioread32':  => 170:2
+  + src/drivers/media/video/marvell-ccic/mcam-core.h: error: implicit declaration of function 'iowrite32':  => 164:2
+  + src/drivers/media/video/uvc/uvc_queue.c: error: 'buf' undeclared (first use in this function):  => 263:23
+  + src/drivers/media/video/uvc/uvc_queue.c: error: 'struct uvc_video_queue' has no member named 'buffer':  => 255:18
+  + src/drivers/media/video/uvc/uvc_queue.c: error: 'struct uvc_video_queue' has no member named 'count':  => 259:16, 254:23
+  + src/drivers/media/video/uvc/uvc_queue.c: error: 'struct vb2_buffer' has no member named 'm':  => 256:19
+  + src/drivers/memstick/host/jmb38x_ms.c: error: implicit declaration of function 'mmiowb':  => 646:2
+  + src/drivers/message/fusion/mptbase.c: error: implicit declaration of function 'readl_relaxed':  => 1224:2
+  + src/drivers/mfd/ezx-pcap.c: error: implicit declaration of function 'gpio_get_value':  => 205:2
+  + src/drivers/mfd/ezx-pcap.c: error: implicit declaration of function 'irq_to_gpio':  => 205:2
+  + src/drivers/mfd/janz-cmodio.c: error: implicit declaration of function 'ioread8':  => 219:2
+  + src/drivers/mfd/janz-cmodio.c: error: implicit declaration of function 'iowrite8':  => 232:2
+  + src/drivers/mfd/stmpe.c: error: implicit declaration of function 'gpio_free':  => 1034:3
+  + src/drivers/mfd/stmpe.c: error: implicit declaration of function 'gpio_request_one':  => 992:3
+  + src/drivers/mfd/stmpe.c: error: implicit declaration of function 'gpio_to_irq':  => 999:3
+  + src/drivers/misc/hpilo.c: error: implicit declaration of function 'ioread32':  => 233:2
+  + src/drivers/misc/hpilo.c: error: implicit declaration of function 'ioread8':  => 410:2
+  + src/drivers/misc/hpilo.c: error: implicit declaration of function 'iowrite32':  => 233:2
+  + src/drivers/misc/hpilo.c: error: implicit declaration of function 'iowrite8':  => 177:2
+  + src/drivers/misc/hpilo.c: error: implicit declaration of function 'pci_iomap':  => 693:2
+  + src/drivers/misc/hpilo.c: error: implicit declaration of function 'pci_iounmap':  => 683:2
+  + src/drivers/misc/ioc4.c: error: implicit declaration of function 'mmiowb':  => 160:2
+  + src/drivers/misc/pch_phub.c: error: implicit declaration of function 'ioread32':  => 162:2
+  + src/drivers/misc/pch_phub.c: error: implicit declaration of function 'ioread8':  => 299:2
+  + src/drivers/misc/pch_phub.c: error: implicit declaration of function 'iowrite32':  => 162:2
+  + src/drivers/misc/pch_phub.c: error: implicit declaration of function 'pci_iomap':  => 703:2
+  + src/drivers/misc/pch_phub.c: error: implicit declaration of function 'pci_iounmap':  => 815:2
+  + src/drivers/misc/phantom.c: error: implicit declaration of function 'ioread32':  => 74:3
+  + src/drivers/misc/phantom.c: error: implicit declaration of function 'iowrite32':  => 72:3
+  + src/drivers/misc/phantom.c: error: implicit declaration of function 'pci_iomap':  => 373:2
+  + src/drivers/misc/phantom.c: error: implicit declaration of function 'pci_iounmap':  => 421:2
+  + src/drivers/misc/pti.c: error: implicit declaration of function 'iowrite32':  => 135:3
+  + src/drivers/misc/pti.c: error: implicit declaration of function 'pci_iounmap':  => 407:3
+  + src/drivers/misc/tifm_7xx1.c: error: implicit declaration of function 'mmiowb':  => 400:2
+  + src/drivers/mmc/core/cd-gpio.c: error: implicit declaration of function 'gpio_free':  => 59:2
+  + src/drivers/mmc/core/cd-gpio.c: error: implicit declaration of function 'gpio_request_one':  => 43:2
+  + src/drivers/mmc/host/sdhci-pci.c: error: implicit declaration of function 'gpio_direction_output':  => 1233:4
+  + src/drivers/mmc/host/sdhci-pci.c: error: implicit declaration of function 'gpio_free':  => 1253:3
+  + src/drivers/mmc/host/sdhci-pci.c: error: implicit declaration of function 'gpio_request':  => 1232:3
+  + src/drivers/mmc/host/sdhci.c: error: implicit declaration of function 'mmiowb':  => 1309:2
+  + src/drivers/mmc/host/sdricoh_cs.c: error: implicit declaration of function 'pci_iomap':  => 413:6
+  + src/drivers/mmc/host/sdricoh_cs.c: error: implicit declaration of function 'pci_iounmap':  => 467:3
+  + src/drivers/mmc/host/tifm_sd.c: error: implicit declaration of function 'mmiowb':  => 891:2
+  + src/drivers/mmc/host/via-sdmmc.c: error: implicit declaration of function 'mmiowb':  => 688:2
+  + src/drivers/mtd/devices/pmc551.c: error: implicit declaration of function 'pci_iomap':  => 763:3
+  + src/drivers/mtd/devices/pmc551.c: error: implicit declaration of function 'pci_iounmap':  => 803:4
+  + src/drivers/mtd/maps/gpio-addr-flash.c: error: implicit declaration of function 'gpio_direction_output':  => 241:3
+  + src/drivers/mtd/maps/gpio-addr-flash.c: error: implicit declaration of function 'gpio_free':  => 237:5
+  + src/drivers/mtd/maps/gpio-addr-flash.c: error: implicit declaration of function 'gpio_request':  => 233:3
+  + src/drivers/mtd/maps/gpio-addr-flash.c: error: implicit declaration of function 'gpio_set_value':  => 71:4
+  + src/drivers/mtd/nand/cafe_nand.c: error: implicit declaration of function 'pci_iomap':  => 657:2
+  + src/drivers/mtd/nand/cafe_nand.c: error: implicit declaration of function 'pci_iounmap':  => 813:2
+  + src/drivers/mtd/nand/denali.c: error: implicit declaration of function 'ioread32':  => 125:2
+  + src/drivers/mtd/nand/denali.c: error: implicit declaration of function 'iowrite32':  => 116:2
+  + src/drivers/mtd/nand/r852.c: error: implicit declaration of function 'mmiowb':  => 45:2
+  + src/drivers/mtd/nand/r852.c: error: implicit declaration of function 'pci_iounmap':  => 971:2
+  + src/drivers/net/can/cc770/cc770_isa.c: error: implicit declaration of function 'inb':  => 133:2
+  + src/drivers/net/can/cc770/cc770_isa.c: error: implicit declaration of function 'outb':  => 139:2
+  + src/drivers/net/can/cc770/cc770_platform.c: error: implicit declaration of function 'ioread8':  => 68:2
+  + src/drivers/net/can/cc770/cc770_platform.c: error: implicit declaration of function 'iowrite8':  => 74:2
+  + src/drivers/net/can/janz-ican3.c: error: implicit declaration of function 'ioread8':  => 290:2
+  + src/drivers/net/can/janz-ican3.c: error: implicit declaration of function 'iowrite8':  => 269:2
+  + src/drivers/net/can/pch_can.c: error: implicit declaration of function 'ioread16':  => 703:4
+  + src/drivers/net/can/pch_can.c: error: implicit declaration of function 'ioread32':  => 207:2
+  + src/drivers/net/can/pch_can.c: error: implicit declaration of function 'iowrite16':  => 936:3
+  + src/drivers/net/can/pch_can.c: error: implicit declaration of function 'iowrite32':  => 207:2
+  + src/drivers/net/can/pch_can.c: error: implicit declaration of function 'pci_iomap':  => 1201:2
+  + src/drivers/net/can/pch_can.c: error: implicit declaration of function 'pci_iounmap':  => 969:2
+  + src/drivers/net/can/sja1000/ems_pci.c: error: implicit declaration of function 'pci_iomap':  => 265:2
+  + src/drivers/net/can/sja1000/ems_pci.c: error: implicit declaration of function 'pci_iounmap':  => 202:3
+  + src/drivers/net/can/sja1000/kvaser_pci.c: error: implicit declaration of function 'ioread32':  => 137:2
+  + src/drivers/net/can/sja1000/kvaser_pci.c: error: implicit declaration of function 'ioread8':  => 121:2
+  + src/drivers/net/can/sja1000/kvaser_pci.c: error: implicit declaration of function 'iowrite32':  => 139:2
+  + src/drivers/net/can/sja1000/kvaser_pci.c: error: implicit declaration of function 'iowrite8':  => 127:2
+  + src/drivers/net/can/sja1000/kvaser_pci.c: error: implicit declaration of function 'pci_iomap':  => 318:2
+  + src/drivers/net/can/sja1000/kvaser_pci.c: error: implicit declaration of function 'pci_iounmap':  => 202:2
+  + src/drivers/net/can/sja1000/peak_pci.c: error: implicit declaration of function 'pci_iomap':  => 134:2
+  + src/drivers/net/can/sja1000/peak_pci.c: error: implicit declaration of function 'pci_iounmap':  => 223:2
+  + src/drivers/net/can/sja1000/plx_pci.c: error: implicit declaration of function 'ioread32':  => 341:2
+  + src/drivers/net/can/sja1000/plx_pci.c: error: implicit declaration of function 'ioread8':  => 289:2
+  + src/drivers/net/can/sja1000/plx_pci.c: error: implicit declaration of function 'iowrite32':  => 343:2
+  + src/drivers/net/can/sja1000/plx_pci.c: error: implicit declaration of function 'iowrite8':  => 294:2
+  + src/drivers/net/can/sja1000/plx_pci.c: error: implicit declaration of function 'pci_iomap':  => 391:3
+  + src/drivers/net/can/sja1000/plx_pci.c: error: implicit declaration of function 'pci_iounmap':  => 399:4
+  + src/drivers/net/can/sja1000/sja1000_isa.c: error: implicit declaration of function 'inb':  => 93:2
+  + src/drivers/net/can/sja1000/sja1000_isa.c: error: implicit declaration of function 'outb':  => 99:2
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'ioport_map':  => 995:3
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'ioread16':  => 693:33
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'ioread32':  => 694:33
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'ioread32_rep':  => 2521:6
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'ioread8':  => 692:31
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'iowrite16':  => 665:3
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'iowrite32':  => 694:453
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'iowrite32_rep':  => 2090:3
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'iowrite8':  => 692:448
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'pci_iomap':  => 1026:2
+  + src/drivers/net/ethernet/3com/3c59x.c: error: implicit declaration of function 'pci_iounmap':  => 1038:3
+  + src/drivers/net/ethernet/3com/typhoon.c: error: implicit declaration of function 'ioread32':  => 394:2
+  + src/drivers/net/ethernet/3com/typhoon.c: error: implicit declaration of function 'iowrite32':  => 390:2
+  + src/drivers/net/ethernet/3com/typhoon.c: error: implicit declaration of function 'pci_iomap':  => 2219:2
+  + src/drivers/net/ethernet/3com/typhoon.c: error: implicit declaration of function 'pci_iounmap':  => 2254:2
+  + src/drivers/net/ethernet/atheros/atl1e/atl1e_main.c: error: implicit declaration of function 'pci_iomap':  => 2317:2
+  + src/drivers/net/ethernet/atheros/atlx/atl1.c: error: implicit declaration of function 'ioread16':  => 283:2
+  + src/drivers/net/ethernet/atheros/atlx/atl1.c: error: implicit declaration of function 'iowrite16':  => 282:2
+  + src/drivers/net/ethernet/atheros/atlx/atl1.c: error: implicit declaration of function 'iowrite8':  => 823:2
+  + src/drivers/net/ethernet/atheros/atlx/atl1.c: error: implicit declaration of function 'mmiowb':  => 2435:2
+  + src/drivers/net/ethernet/atheros/atlx/atl1.c: error: implicit declaration of function 'pci_iomap':  => 2948:2
+  + src/drivers/net/ethernet/atheros/atlx/atl1.c: error: implicit declaration of function 'pci_iounmap':  => 3050:2
+  + src/drivers/net/ethernet/atheros/atlx/atl2.c: error: implicit declaration of function 'ioread16':  => 2789:2
+  + src/drivers/net/ethernet/atheros/atlx/atl2.c: error: implicit declaration of function 'ioread32':  => 144:2
+  + src/drivers/net/ethernet/atheros/atlx/atl2.c: error: implicit declaration of function 'iowrite16':  => 217:2
+  + src/drivers/net/ethernet/atheros/atlx/atl2.c: error: implicit declaration of function 'iowrite32':  => 154:2
+  + src/drivers/net/ethernet/atheros/atlx/atl2.c: error: implicit declaration of function 'iowrite8':  => 271:2
+  + src/drivers/net/ethernet/atheros/atlx/atl2.c: error: implicit declaration of function 'mmiowb':  => 916:2
+  + src/drivers/net/ethernet/atheros/atlx/atlx.c: error: implicit declaration of function 'ioread32':  => 135:2
+  + src/drivers/net/ethernet/atheros/atlx/atlx.c: error: implicit declaration of function 'iowrite32':  => 144:2
+  + src/drivers/net/ethernet/broadcom/bnx2.c: error: implicit declaration of function 'mmiowb':  => 3261:2
+  + src/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h: error: implicit declaration of function 'mmiowb':  => 581:2
+  + src/drivers/net/ethernet/broadcom/tg3.c: error: implicit declaration of function 'mmiowb':  => 900:2
+  + src/drivers/net/ethernet/cisco/enic/enic_main.c: error: implicit declaration of function 'pci_iomap':  => 2348:3
+  + src/drivers/net/ethernet/cisco/enic/vnic_cq.c: error: implicit declaration of function 'iowrite32':  => 66:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_dev.c: error: implicit declaration of function 'ioread32':  => 105:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_dev.c: error: implicit declaration of function 'ioread8':  => 124:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_dev.c: error: implicit declaration of function 'iowrite32':  => 292:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_intr.h: error: implicit declaration of function 'ioread32':  => 66:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_intr.h: error: implicit declaration of function 'iowrite32':  => 56:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_rq.c: error: implicit declaration of function 'ioread32':  => 149:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_rq.h: error: implicit declaration of function 'iowrite32':  => 140:3
+  + src/drivers/net/ethernet/cisco/enic/vnic_wq.c: error: implicit declaration of function 'ioread32':  => 152:2
+  + src/drivers/net/ethernet/cisco/enic/vnic_wq.h: error: implicit declaration of function 'iowrite32':  => 122:3
+  + src/drivers/net/ethernet/dec/tulip/21142.c: error: implicit declaration of function 'iowrite16':  => 81:4
+  + src/drivers/net/ethernet/dec/tulip/de2104x.c: error: implicit declaration of function 'ioread32':  => 503:2
+  + src/drivers/net/ethernet/dec/tulip/de2104x.c: error: implicit declaration of function 'iowrite32':  => 511:2
+  + src/drivers/net/ethernet/dec/tulip/tulip.h: error: implicit declaration of function 'ioread32':  => 527:2
+  + src/drivers/net/ethernet/dec/tulip/tulip.h: error: implicit declaration of function 'iowrite32':  => 525:2
+  + src/drivers/net/ethernet/dec/tulip/tulip_core.c: error: implicit declaration of function 'ioread16':  => 468:3
+  + src/drivers/net/ethernet/dec/tulip/tulip_core.c: error: implicit declaration of function 'pci_iomap':  => 1446:2
+  + src/drivers/net/ethernet/dec/tulip/tulip_core.c: error: implicit declaration of function 'pci_iounmap':  => 1806:2
+  + src/drivers/net/ethernet/dec/tulip/winbond-840.c: error: implicit declaration of function 'iowrite8':  => 880:3
+  + src/drivers/net/ethernet/dec/tulip/winbond-840.c: error: implicit declaration of function 'pci_iomap':  => 392:2
+  + src/drivers/net/ethernet/dec/tulip/winbond-840.c: error: implicit declaration of function 'pci_iounmap':  => 476:2
+  + src/drivers/net/ethernet/dlink/dl2k.c: error: implicit declaration of function 'inb':  => 381:4
+  + src/drivers/net/ethernet/dlink/dl2k.c: error: implicit declaration of function 'inl':  => 424:2
+  + src/drivers/net/ethernet/dlink/dl2k.c: error: implicit declaration of function 'inw':  => 242:2
+  + src/drivers/net/ethernet/dlink/dl2k.c: error: implicit declaration of function 'outb':  => 381:4
+  + src/drivers/net/ethernet/dlink/dl2k.c: error: implicit declaration of function 'outl':  => 424:2
+  + src/drivers/net/ethernet/dlink/dl2k.c: error: implicit declaration of function 'outw':  => 419:2
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'ioread16':  => 713:3
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'ioread32':  => 450:2
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'ioread8':  => 745:3
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'iowrite16':  => 710:2
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'iowrite32':  => 450:2
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'iowrite8':  => 744:3
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'pci_iomap':  => 516:2
+  + src/drivers/net/ethernet/dlink/sundance.c: error: implicit declaration of function 'pci_iounmap':  => 687:2
+  + src/drivers/net/ethernet/emulex/benet/be_cmds.c: error: implicit declaration of function 'ioread32':  => 310:3
+  + src/drivers/net/ethernet/emulex/benet/be_cmds.c: error: implicit declaration of function 'iowrite32':  => 41:2
+  + src/drivers/net/ethernet/emulex/benet/be_main.c: error: implicit declaration of function 'ioread32':  => 1883:3
+  + src/drivers/net/ethernet/emulex/benet/be_main.c: error: implicit declaration of function 'iowrite32':  => 181:2
+  + src/drivers/net/ethernet/fealnx.c: error: implicit declaration of function 'ioread32':  => 450:3
+  + src/drivers/net/ethernet/fealnx.c: error: implicit declaration of function 'ioread8':  => 543:3
+  + src/drivers/net/ethernet/fealnx.c: error: implicit declaration of function 'iowrite16':  => 843:3
+  + src/drivers/net/ethernet/fealnx.c: error: implicit declaration of function 'iowrite32':  => 448:2
+  + src/drivers/net/ethernet/fealnx.c: error: implicit declaration of function 'pci_iomap':  => 528:2
+  + src/drivers/net/ethernet/fealnx.c: error: implicit declaration of function 'pci_iounmap':  => 683:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'ioread16':  => 699:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'ioread32':  => 385:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'ioread8':  => 206:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'iowrite16':  => 681:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'iowrite32':  => 397:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'iowrite8':  => 177:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'mmiowb':  => 1940:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'pci_iomap':  => 2260:2
+  + src/drivers/net/ethernet/icplus/ipg.c: error: implicit declaration of function 'pci_iounmap':  => 2183:2
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'ioread16':  => 2402:3
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'ioread32':  => 950:3
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'ioread8':  => 632:2
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'iowrite32':  => 659:2
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'iowrite8':  => 640:2
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'pci_iomap':  => 2799:2
+  + src/drivers/net/ethernet/intel/e100.c: error: implicit declaration of function 'pci_iounmap':  => 2887:2
+  + src/drivers/net/ethernet/intel/e1000/e1000_hw.c: error: implicit declaration of function 'ioread16_rep':  => 3926:3
+  + src/drivers/net/ethernet/intel/e1000/e1000_hw.c: error: implicit declaration of function 'iowrite16_rep':  => 4100:3
+  + src/drivers/net/ethernet/intel/e1000/e1000_main.c: error: implicit declaration of function 'mmiowb':  => 3022:2
+  + src/drivers/net/ethernet/intel/e1000e/netdev.c: error: implicit declaration of function 'mmiowb':  => 4868:2
+  + src/drivers/net/ethernet/intel/igb/igb_main.c: error: implicit declaration of function 'mmiowb':  => 4321:2
+  + src/drivers/net/ethernet/intel/igbvf/netdev.c: error: implicit declaration of function 'mmiowb':  => 2155:2
+  + src/drivers/net/ethernet/marvell/sky2.c: error: implicit declaration of function 'mmiowb':  => 1129:2
+  + src/drivers/net/ethernet/mellanox/mlx4/cmd.c: error: implicit declaration of function 'mmiowb':  => 192:2
+  + src/drivers/net/ethernet/mellanox/mlx4/en_tx.c: error: implicit declaration of function 'iowrite32be':  => 804:3
+  + src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'ioread16':  => 207:2
+  + src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'ioread32':  => 247:2
+  + src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'ioread8':  => 233:2
+  + src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'iowrite16':  => 185:2
+  + src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'iowrite32':  => 180:2
+  + src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'iowrite8':  => 192:2
+  + src/drivers/net/ethernet/myricom/myri10ge/myri10ge.c: error: implicit declaration of function 'ioremap_wc':  => 3979:2
+  + src/drivers/net/ethernet/myricom/myri10ge/myri10ge.c: error: implicit declaration of function 'mmiowb':  => 1461:4
+  + src/drivers/net/ethernet/neterion/s2io.c: error: implicit declaration of function 'mmiowb':  => 4217:2
+  + src/drivers/net/ethernet/neterion/vxge/vxge-main.c: error: implicit declaration of function 'mmiowb':  => 1831:3
+  + src/drivers/net/ethernet/neterion/vxge/vxge-traffic.c: error: implicit declaration of function 'mmiowb':  => 1417:2
+  + src/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_ethtool.c: error: implicit declaration of function 'ioread32':  => 188:3
+  + src/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c: error: implicit declaration of function 'ioread32':  => 119:2
+  + src/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c: error: implicit declaration of function 'iowrite32':  => 106:2
+  + src/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c: error: implicit declaration of function 'pci_iomap':  => 2436:2
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'ioread16':  => 551:3
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'ioread32':  => 491:7
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'ioread8':  => 421:4
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'iowrite16':  => 548:2
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'iowrite32':  => 429:2
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'iowrite8':  => 533:2
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'pci_iomap':  => 413:2
+  + src/drivers/net/ethernet/packetengines/yellowfin.c: error: implicit declaration of function 'pci_iounmap':  => 521:2
+  + src/drivers/net/ethernet/qlogic/qlge/qlge.h: error: implicit declaration of function 'mmiowb':  => 2175:2
+  + src/drivers/net/ethernet/rdc/r6040.c: error: implicit declaration of function 'ioread16':  => 213:3
+  + src/drivers/net/ethernet/rdc/r6040.c: error: implicit declaration of function 'ioread8':  => 436:2
+  + src/drivers/net/ethernet/rdc/r6040.c: error: implicit declaration of function 'iowrite16':  => 210:2
+  + src/drivers/net/ethernet/rdc/r6040.c: error: implicit declaration of function 'pci_iomap':  => 1124:2
+  + src/drivers/net/ethernet/rdc/r6040.c: error: implicit declaration of function 'pci_iounmap':  => 1223:2
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'ioread16':  => 1226:7
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'ioread32':  => 849:2
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'ioread8':  => 734:3
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'iowrite16':  => 1269:4
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'iowrite32':  => 1375:2
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'iowrite8':  => 729:2
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'pci_iomap':  => 823:3
+  + src/drivers/net/ethernet/realtek/8139too.c: error: implicit declaration of function 'pci_iounmap':  => 714:3
+  + src/drivers/net/ethernet/realtek/r8169.c: error: expected identifier before numeric constant:  => 418:2
+  + src/drivers/net/ethernet/sfc/io.h: error: implicit declaration of function 'mmiowb':  => 106:2
+  + src/drivers/net/ethernet/silan/sc92031.c: error: implicit declaration of function 'ioread32':  => 312:2
+  + src/drivers/net/ethernet/silan/sc92031.c: error: implicit declaration of function 'iowrite32':  => 329:2
+  + src/drivers/net/ethernet/silan/sc92031.c: error: implicit declaration of function 'mmiowb':  => 366:2
+  + src/drivers/net/ethernet/silan/sc92031.c: error: implicit declaration of function 'pci_iomap':  => 1425:2
+  + src/drivers/net/ethernet/silan/sc92031.c: error: implicit declaration of function 'pci_iounmap':  => 1494:2
+  + src/drivers/net/ethernet/smsc/smsc9420.c: error: implicit declaration of function 'ioread32':  => 117:2
+  + src/drivers/net/ethernet/smsc/smsc9420.c: error: implicit declaration of function 'iowrite32':  => 123:2
+  + src/drivers/net/ethernet/sun/cassini.c: error: implicit declaration of function 'pci_iomap':  => 5076:2
+  + src/drivers/net/ethernet/sun/cassini.c: error: implicit declaration of function 'pci_iounmap':  => 5160:2
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'ioread16':  => 537:2
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'ioread8':  => 512:3
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'iowrite16':  => 550:2
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'iowrite32':  => 748:2
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'iowrite8':  => 549:3
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'mmiowb':  => 551:2
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'pci_iomap':  => 946:2
+  + src/drivers/net/ethernet/via/via-rhine.c: error: implicit declaration of function 'pci_iounmap':  => 1068:2
+  + src/drivers/net/fddi/skfp/drvfbi.c: error: implicit declaration of function 'ioread16':  => 117:2
+  + src/drivers/net/fddi/skfp/drvfbi.c: error: implicit declaration of function 'ioread8':  => 109:2
+  + src/drivers/net/fddi/skfp/drvfbi.c: error: implicit declaration of function 'iowrite16':  => 102:2
+  + src/drivers/net/fddi/skfp/drvfbi.c: error: implicit declaration of function 'iowrite32':  => 145:3
+  + src/drivers/net/fddi/skfp/drvfbi.c: error: implicit declaration of function 'iowrite8':  => 103:2
+  + src/drivers/net/fddi/skfp/fplustm.c: error: implicit declaration of function 'ioread16':  => 114:2
+  + src/drivers/net/fddi/skfp/fplustm.c: error: implicit declaration of function 'iowrite16':  => 147:2
+  + src/drivers/net/fddi/skfp/fplustm.c: error: implicit declaration of function 'iowrite32':  => 975:3
+  + src/drivers/net/fddi/skfp/fplustm.c: error: implicit declaration of function 'iowrite8':  => 915:3
+  + src/drivers/net/fddi/skfp/hwmtm.c: error: implicit declaration of function 'ioread16':  => 755:5
+  + src/drivers/net/fddi/skfp/hwmtm.c: error: implicit declaration of function 'ioread32':  => 742:2
+  + src/drivers/net/fddi/skfp/hwmtm.c: error: implicit declaration of function 'iowrite32':  => 376:2
+  + src/drivers/net/fddi/skfp/hwt.c: error: implicit declaration of function 'ioread32':  => 171:3
+  + src/drivers/net/fddi/skfp/hwt.c: error: implicit declaration of function 'iowrite16':  => 82:2
+  + src/drivers/net/fddi/skfp/hwt.c: error: implicit declaration of function 'iowrite32':  => 81:2
+  + src/drivers/net/fddi/skfp/pcmplc.c: error: implicit declaration of function 'ioread16':  => 438:2
+  + src/drivers/net/fddi/skfp/pcmplc.c: error: implicit declaration of function 'iowrite16':  => 430:2
+  + src/drivers/net/fddi/skfp/skfddi.c: error: implicit declaration of function 'ioread32':  => 617:2
+  + src/drivers/net/fddi/skfp/skfddi.c: error: implicit declaration of function 'iowrite32':  => 510:2
+  + src/drivers/net/phy/mdio-gpio.c: error: implicit declaration of function 'gpio_direction_input':  => 50:3
+  + src/drivers/net/phy/mdio-gpio.c: error: implicit declaration of function 'gpio_direction_output':  => 48:3
+  + src/drivers/net/phy/mdio-gpio.c: error: implicit declaration of function 'gpio_free':  => 134:2
+  + src/drivers/net/phy/mdio-gpio.c: error: implicit declaration of function 'gpio_get_value':  => 58:2
+  + src/drivers/net/phy/mdio-gpio.c: error: implicit declaration of function 'gpio_request':  => 121:2
+  + src/drivers/net/phy/mdio-gpio.c: error: implicit declaration of function 'gpio_set_value':  => 66:2
+  + src/drivers/net/wireless/adm8211.c: error: implicit declaration of function 'ioread32':  => 83:2
+  + src/drivers/net/wireless/adm8211.c: error: implicit declaration of function 'iowrite32':  => 105:2
+  + src/drivers/net/wireless/adm8211.c: error: implicit declaration of function 'pci_iomap':  => 1832:2
+  + src/drivers/net/wireless/adm8211.c: error: implicit declaration of function 'pci_iounmap':  => 1922:2
+  + src/drivers/net/wireless/ath/ath5k/ath5k.h: error: implicit declaration of function 'ioread32':  => 1671:2
+  + src/drivers/net/wireless/ath/ath5k/ath5k.h: error: implicit declaration of function 'iowrite32':  => 1676:2
+  + src/drivers/net/wireless/ath/ath5k/base.c: error: implicit declaration of function 'mmiowb':  => 760:2
+  + src/drivers/net/wireless/ath/ath5k/mac80211-ops.c: error: implicit declaration of function 'mmiowb':  => 260:3
+  + src/drivers/net/wireless/ath/ath5k/pci.c: error: implicit declaration of function 'pci_iomap':  => 236:2
+  + src/drivers/net/wireless/ath/ath5k/pci.c: error: implicit declaration of function 'pci_iounmap':  => 276:2
+  + src/drivers/net/wireless/ath/ath9k/pci.c: error: implicit declaration of function 'pci_iomap':  => 225:2
+  + src/drivers/net/wireless/ath/ath9k/pci.c: error: implicit declaration of function 'pci_iounmap':  => 275:2
+  + src/drivers/net/wireless/b43/main.c: error: implicit declaration of function 'mmiowb':  => 435:2
+  + src/drivers/net/wireless/b43/sysfs.c: error: implicit declaration of function 'mmiowb':  => 132:2
+  + src/drivers/net/wireless/b43legacy/ilt.c: error: implicit declaration of function 'mmiowb':  => 318:2
+  + src/drivers/net/wireless/b43legacy/phy.c: error: implicit declaration of function 'mmiowb':  => 137:2
+  + src/drivers/net/wireless/b43legacy/pio.h: error: implicit declaration of function 'mmiowb':  => 94:2
+  + src/drivers/net/wireless/b43legacy/radio.c: error: implicit declaration of function 'mmiowb':  => 98:2
+  + src/drivers/net/wireless/b43legacy/sysfs.c: error: implicit declaration of function 'mmiowb':  => 146:2
+  + src/drivers/net/wireless/iwlegacy/3945-mac.c: error: implicit declaration of function 'pci_iomap':  => 3691:2
+  + src/drivers/net/wireless/iwlegacy/3945-mac.c: error: implicit declaration of function 'pci_iounmap':  => 3817:2
+  + src/drivers/net/wireless/iwlegacy/4965-mac.c: error: implicit declaration of function 'pci_iomap':  => 6202:2
+  + src/drivers/net/wireless/iwlegacy/4965-mac.c: error: implicit declaration of function 'pci_iounmap':  => 6337:2
+  + src/drivers/net/wireless/iwlegacy/common.h: error: implicit declaration of function 'ioread32':  => 2193:2
+  + src/drivers/net/wireless/iwlegacy/common.h: error: implicit declaration of function 'iowrite32':  => 2187:2
+  + src/drivers/net/wireless/iwlegacy/common.h: error: implicit declaration of function 'iowrite8':  => 2180:2
+  + src/drivers/net/wireless/iwlwifi/iwl-pci.c: error: implicit declaration of function 'ioread32':  => 166:2
+  + src/drivers/net/wireless/iwlwifi/iwl-pci.c: error: implicit declaration of function 'iowrite32':  => 161:2
+  + src/drivers/net/wireless/iwlwifi/iwl-pci.c: error: implicit declaration of function 'iowrite8':  => 156:2
+  + src/drivers/net/wireless/iwlwifi/iwl-pci.c: error: implicit declaration of function 'pci_iomap':  => 420:2
+  + src/drivers/net/wireless/iwlwifi/iwl-pci.c: error: implicit declaration of function 'pci_iounmap':  => 464:2
+  + src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'ioread16':  => 118:2
+  + src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'ioread16_rep':  => 132:2
+  + src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'ioread8':  => 111:2
+  + src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'iowrite16':  => 146:2
+  + src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'iowrite16_rep':  => 158:2
+  + src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'iowrite8':  => 139:2
+  + src/drivers/net/wireless/mwifiex/pcie.c: error: implicit declaration of function 'ioread32':  => 274:2
+  + src/drivers/net/wireless/mwifiex/pcie.c: error: implicit declaration of function 'iowrite32':  => 262:2
+  + src/drivers/net/wireless/mwifiex/pcie.c: error: implicit declaration of function 'pci_iomap':  => 1724:2
+  + src/drivers/net/wireless/mwifiex/pcie.c: error: implicit declaration of function 'pci_iounmap':  => 1771:2
+  + src/drivers/net/wireless/mwl8k.c: error: implicit declaration of function 'ioread32':  => 587:3
+  + src/drivers/net/wireless/mwl8k.c: error: implicit declaration of function 'iowrite32':  => 462:2
+  + src/drivers/net/wireless/mwl8k.c: error: implicit declaration of function 'pci_iomap':  => 5747:2
+  + src/drivers/net/wireless/mwl8k.c: error: implicit declaration of function 'pci_iounmap':  => 5799:3
+  + src/drivers/net/wireless/orinoco/hermes.h: error: implicit declaration of function 'ioread16':  => 437:2
+  + src/drivers/net/wireless/orinoco/hermes.h: error: implicit declaration of function 'ioread16_rep':  => 473:2
+  + src/drivers/net/wireless/orinoco/hermes.h: error: implicit declaration of function 'iowrite16':  => 443:2
+  + src/drivers/net/wireless/orinoco/hermes.h: error: implicit declaration of function 'iowrite16_rep':  => 480:2
+  + src/drivers/net/wireless/orinoco/hermes.h: error: implicit declaration of function 'iowrite8':  => 482:3
+  + src/drivers/net/wireless/orinoco/orinoco_nortel.c: error: implicit declaration of function 'pci_iomap':  => 161:2
+  + src/drivers/net/wireless/orinoco/orinoco_nortel.c: error: implicit declaration of function 'pci_iounmap':  => 241:2
+  + src/drivers/net/wireless/orinoco/orinoco_pci.c: error: implicit declaration of function 'pci_iomap':  => 133:2
+  + src/drivers/net/wireless/orinoco/orinoco_pci.c: error: implicit declaration of function 'pci_iounmap':  => 191:2
+  + src/drivers/net/wireless/orinoco/orinoco_plx.c: error: implicit declaration of function 'ioread32':  => 166:2
+  + src/drivers/net/wireless/orinoco/orinoco_plx.c: error: implicit declaration of function 'ioread8':  => 150:3
+  + src/drivers/net/wireless/orinoco/orinoco_plx.c: error: implicit declaration of function 'iowrite32':  => 169:3
+  + src/drivers/net/wireless/orinoco/orinoco_plx.c: error: implicit declaration of function 'pci_iomap':  => 200:2
+  + src/drivers/net/wireless/orinoco/orinoco_plx.c: error: implicit declaration of function 'pci_iounmap':  => 280:2
+  + src/drivers/net/wireless/orinoco/orinoco_tmd.c: error: implicit declaration of function 'pci_iomap':  => 111:2
+  + src/drivers/net/wireless/orinoco/orinoco_tmd.c: error: implicit declaration of function 'pci_iounmap':  => 177:2
+  + src/drivers/net/wireless/p54/p54spi.c: error: implicit declaration of function 'gpio_direction_input':  => 637:2
+  + src/drivers/net/wireless/p54/p54spi.c: error: implicit declaration of function 'gpio_direction_output':  => 636:2
+  + src/drivers/net/wireless/p54/p54spi.c: error: implicit declaration of function 'gpio_free':  => 688:2
+  + src/drivers/net/wireless/p54/p54spi.c: error: implicit declaration of function 'gpio_request':  => 624:2
+  + src/drivers/net/wireless/p54/p54spi.c: error: implicit declaration of function 'gpio_set_value':  => 280:2
+  + src/drivers/net/wireless/p54/p54spi.c: error: implicit declaration of function 'gpio_to_irq':  => 279:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/dev.c: error: implicit declaration of function 'pci_iomap':  => 965:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/dev.c: error: implicit declaration of function 'pci_iounmap':  => 1142:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/rtl8180.h: error: implicit declaration of function 'ioread16':  => 104:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/rtl8180.h: error: implicit declaration of function 'ioread32':  => 109:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/rtl8180.h: error: implicit declaration of function 'ioread8':  => 99:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/rtl8180.h: error: implicit declaration of function 'iowrite16':  => 121:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/rtl8180.h: error: implicit declaration of function 'iowrite32':  => 127:2
+  + src/drivers/net/wireless/rtl818x/rtl8180/rtl8180.h: error: implicit declaration of function 'iowrite8':  => 115:2
+  + src/drivers/net/wireless/rtlwifi/pci.c: error: implicit declaration of function 'pci_iomap':  => 1823:4
+  + src/drivers/net/wireless/rtlwifi/pci.c: error: implicit declaration of function 'pci_iounmap':  => 1921:3
+  + src/drivers/power/max8903_charger.c: error: implicit declaration of function 'gpio_get_value':  => 57:4
+  + src/drivers/power/max8903_charger.c: error: implicit declaration of function 'gpio_set_value':  => 97:3
+  + src/drivers/power/max8903_charger.c: error: implicit declaration of function 'gpio_to_irq':  => 298:3
+  + src/drivers/power/sbs-battery.c: error: implicit declaration of function 'gpio_direction_input':  => 733:2
+  + src/drivers/power/sbs-battery.c: error: implicit declaration of function 'gpio_free':  => 736:3
+  + src/drivers/power/sbs-battery.c: error: implicit declaration of function 'gpio_get_value':  => 218:3
+  + src/drivers/power/sbs-battery.c: error: implicit declaration of function 'gpio_request':  => 726:2
+  + src/drivers/power/sbs-battery.c: error: implicit declaration of function 'gpio_to_irq':  => 741:2
+  + src/drivers/pps/clients/pps-gpio.c: error: implicit declaration of function 'gpio_direction_input':  => 83:2
+  + src/drivers/pps/clients/pps-gpio.c: error: implicit declaration of function 'gpio_free':  => 86:3
+  + src/drivers/pps/clients/pps-gpio.c: error: implicit declaration of function 'gpio_get_value':  => 60:2
+  + src/drivers/pps/clients/pps-gpio.c: error: implicit declaration of function 'gpio_request':  => 77:2
+  + src/drivers/pps/clients/pps-gpio.c: error: implicit declaration of function 'gpio_to_irq':  => 123:2
+  + src/drivers/regulator/bq24022.c: error: implicit declaration of function 'gpio_direction_output':  => 106:2
+  + src/drivers/regulator/bq24022.c: error: implicit declaration of function 'gpio_free':  => 121:2
+  + src/drivers/regulator/bq24022.c: error: implicit declaration of function 'gpio_get_value':  => 40:2
+  + src/drivers/regulator/bq24022.c: error: implicit declaration of function 'gpio_request':  => 94:2
+  + src/drivers/regulator/bq24022.c: error: implicit declaration of function 'gpio_set_value':  => 32:2
+  + src/drivers/regulator/fixed.c: error: implicit declaration of function 'gpio_direction_output':  => 234:3
+  + src/drivers/regulator/fixed.c: error: implicit declaration of function 'gpio_free':  => 267:3
+  + src/drivers/regulator/fixed.c: error: implicit declaration of function 'gpio_request':  => 219:3
+  + src/drivers/regulator/gpio-regulator.c: error: implicit declaration of function 'gpio_direction_output':  => 249:4
+  + src/drivers/regulator/gpio-regulator.c: error: implicit declaration of function 'gpio_free':  => 302:3
+  + src/drivers/regulator/gpio-regulator.c: error: implicit declaration of function 'gpio_free_array':  => 299:2
+  + src/drivers/regulator/gpio-regulator.c: error: implicit declaration of function 'gpio_request':  => 236:3
+  + src/drivers/regulator/gpio-regulator.c: error: implicit declaration of function 'gpio_request_array':  => 271:2
+  + src/drivers/regulator/gpio-regulator.c: error: implicit declaration of function 'gpio_set_value':  => 121:3
+  + src/drivers/regulator/max8952.c: error: implicit declaration of function 'gpio_direction_output':  => 225:4
+  + src/drivers/regulator/max8952.c: error: implicit declaration of function 'gpio_free':  => 253:5
+  + src/drivers/regulator/max8952.c: error: implicit declaration of function 'gpio_request':  => 224:3
+  + src/drivers/regulator/max8952.c: error: implicit declaration of function 'gpio_set_value':  => 100:3
+  + src/drivers/regulator/wm831x-dcdc.c: error: implicit declaration of function 'gpio_direction_output':  => 449:2
+  + src/drivers/regulator/wm831x-dcdc.c: error: implicit declaration of function 'gpio_free':  => 453:3
+  + src/drivers/regulator/wm831x-dcdc.c: error: implicit declaration of function 'gpio_request':  => 437:2
+  + src/drivers/regulator/wm831x-dcdc.c: error: implicit declaration of function 'gpio_set_value':  => 278:2
+  + src/drivers/rtc/rtc-v3020.c: error: implicit declaration of function 'gpio_direction_input':  => 168:2
+  + src/drivers/rtc/rtc-v3020.c: error: implicit declaration of function 'gpio_direction_output':  => 132:3
+  + src/drivers/rtc/rtc-v3020.c: error: implicit declaration of function 'gpio_free':  => 141:3
+  + src/drivers/rtc/rtc-v3020.c: error: implicit declaration of function 'gpio_get_value':  => 172:2
+  + src/drivers/rtc/rtc-v3020.c: error: implicit declaration of function 'gpio_request':  => 128:3
+  + src/drivers/rtc/rtc-v3020.c: error: implicit declaration of function 'gpio_set_value':  => 157:2
+  + src/drivers/scsi/3w-sas.c: error: implicit declaration of function 'pci_iomap':  => 1657:2
+  + src/drivers/scsi/be2iscsi/be_cmds.c: error: implicit declaration of function 'ioread32':  => 334:3
+  + src/drivers/scsi/be2iscsi/be_cmds.c: error: implicit declaration of function 'iowrite32':  => 109:2
+  + src/drivers/scsi/be2iscsi/be_main.c: error: implicit declaration of function 'ioread32':  => 734:2
+  + src/drivers/scsi/be2iscsi/be_main.c: error: implicit declaration of function 'iowrite32':  => 602:2
+  + src/drivers/scsi/bfa/bfa_core.c: error: implicit declaration of function 'mmiowb':  => 1289:2
+  + src/drivers/scsi/bfa/bfa_fcpim.c: error: implicit declaration of function 'mmiowb':  => 1181:2
+  + src/drivers/scsi/bfa/bfa_hw_cb.c: error: implicit declaration of function 'mmiowb':  => 63:2
+  + src/drivers/scsi/bfa/bfa_hw_ct.c: error: implicit declaration of function 'mmiowb':  => 83:2
+  + src/drivers/scsi/bfa/bfa_svc.c: error: implicit declaration of function 'mmiowb':  => 877:2
+  + src/drivers/scsi/bfa/bfad.c: error: implicit declaration of function 'pci_iomap':  => 756:2
+  + src/drivers/scsi/bfa/bfad.c: error: implicit declaration of function 'pci_iounmap':  => 839:2
+  + src/drivers/scsi/bnx2fc/bnx2fc_hwi.c: error: implicit declaration of function 'mmiowb':  => 989:2
+  + src/drivers/scsi/bnx2i/bnx2i_hwi.c: error: implicit declaration of function 'mmiowb':  => 254:2
+  + src/drivers/scsi/mvumi.c: error: implicit declaration of function 'ioread32':  => 426:2
+  + src/drivers/scsi/mvumi.c: error: implicit declaration of function 'iowrite32':  => 452:2
+  + src/drivers/scsi/mvumi.c: error: implicit declaration of function 'pci_iomap':  => 102:4
+  + src/drivers/scsi/mvumi.c: error: implicit declaration of function 'pci_iounmap':  => 93:4
+  + src/drivers/scsi/pmcraid.c: error: implicit declaration of function 'ioread32':  => 465:3
+  + src/drivers/scsi/pmcraid.c: error: implicit declaration of function 'iowrite32':  => 486:2
+  + src/drivers/scsi/pmcraid.c: error: implicit declaration of function 'pci_iomap':  => 5925:2
+  + src/drivers/scsi/qla1280.c: error: implicit declaration of function 'mmiowb':  => 3281:2
+  + src/drivers/scsi/qla1280.c: error: implicit declaration of function 'readw_relaxed':  => 775:2
+  + src/drivers/scsi/qla2xxx/qla_iocb.c: error: implicit declaration of function 'readl_relaxed':  => 495:4
+  + src/drivers/scsi/qla2xxx/qla_iocb.c: error: implicit declaration of function 'readw_relaxed':  => 380:3
+  + src/drivers/scsi/qla2xxx/qla_isr.c: error: implicit declaration of function 'readl_relaxed':  => 2255:3
+  + src/drivers/scsi/qla2xxx/qla_isr.c: error: implicit declaration of function 'readw_relaxed':  => 223:3
+  + src/drivers/scsi/sym53c8xx_2/sym_glue.c: error: implicit declaration of function 'ioread8':  => 1718:2
+  + src/drivers/scsi/sym53c8xx_2/sym_glue.c: error: implicit declaration of function 'iowrite8':  => 974:5
+  + src/drivers/scsi/sym53c8xx_2/sym_glue.c: error: implicit declaration of function 'pci_iomap':  => 1628:3
+  + src/drivers/scsi/sym53c8xx_2/sym_glue.c: error: implicit declaration of function 'pci_iounmap':  => 1291:3
+  + src/drivers/scsi/sym53c8xx_2/sym_hipd.c: error: implicit declaration of function 'ioread16':  => 164:4
+  + src/drivers/scsi/sym53c8xx_2/sym_hipd.c: error: implicit declaration of function 'ioread32':  => 985:2
+  + src/drivers/scsi/sym53c8xx_2/sym_hipd.c: error: implicit declaration of function 'ioread8':  => 136:2
+  + src/drivers/scsi/sym53c8xx_2/sym_hipd.c: error: implicit declaration of function 'iowrite16':  => 197:3
+  + src/drivers/scsi/sym53c8xx_2/sym_hipd.c: error: implicit declaration of function 'iowrite32':  => 984:2
+  + src/drivers/scsi/sym53c8xx_2/sym_hipd.c: error: implicit declaration of function 'iowrite8':  => 135:2
+  + src/drivers/scsi/sym53c8xx_2/sym_nvram.c: error: implicit declaration of function 'ioread8':  => 276:2
+  + src/drivers/scsi/sym53c8xx_2/sym_nvram.c: error: implicit declaration of function 'iowrite8':  => 275:2
+  + src/drivers/spi/spi-gpio.c: error: implicit declaration of function 'gpio_direction_input':  => 266:4
+  + src/drivers/spi/spi-gpio.c: error: implicit declaration of function 'gpio_direction_output':  => 238:4
+  + src/drivers/spi/spi-gpio.c: error: implicit declaration of function 'gpio_free':  => 245:4
+  + src/drivers/spi/spi-gpio.c: error: implicit declaration of function 'gpio_get_value':  => 118:2
+  + src/drivers/spi/spi-gpio.c: error: implicit declaration of function 'gpio_request':  => 235:4
+  + src/drivers/spi/spi-gpio.c: error: implicit declaration of function 'gpio_set_value':  => 108:2
+  + src/drivers/spi/spi-oc-tiny.c: error: implicit declaration of function 'gpio_direction_output':  => 353:3
+  + src/drivers/spi/spi-oc-tiny.c: error: implicit declaration of function 'gpio_free':  => 367:3
+  + src/drivers/spi/spi-oc-tiny.c: error: implicit declaration of function 'gpio_request':  => 350:3
+  + src/drivers/spi/spi-oc-tiny.c: error: implicit declaration of function 'gpio_set_value':  => 78:3
+  + src/drivers/spi/spi-topcliff-pch.c: error: implicit declaration of function 'ioread32':  => 247:2
+  + src/drivers/spi/spi-topcliff-pch.c: error: implicit declaration of function 'iowrite32':  => 236:2
+  + src/drivers/spi/spi-topcliff-pch.c: error: implicit declaration of function 'pci_iomap':  => 1375:2
+  + src/drivers/spi/spi-topcliff-pch.c: error: implicit declaration of function 'pci_iounmap':  => 1440:2
+  + src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'ioread32':  => 104:2
+  + src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'ioread32be':  => 114:2
+  + src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'iowrite32':  => 99:2
+  + src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'iowrite32be':  => 109:2
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'ioread16':  => 257:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'ioread16_rep':  => 859:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'ioread32':  => 837:2
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'ioread32_rep':  => 863:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'ioread8':  => 811:2
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'ioread8_rep':  => 855:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'iowrite16':  => 898:2
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'iowrite16_rep':  => 933:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'iowrite32':  => 911:2
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'iowrite32_rep':  => 937:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'iowrite8':  => 885:2
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'iowrite8_rep':  => 929:3
+  + src/drivers/ssb/pci.c: error: implicit declaration of function 'mmiowb':  => 289:3
+  + src/drivers/ssb/pcmcia.c: error: implicit declaration of function 'mmiowb':  => 344:2
+  + src/drivers/ssb/scan.c: error: implicit declaration of function 'pci_iomap':  => 237:3
+  + src/drivers/ssb/scan.c: error: implicit declaration of function 'pci_iounmap':  => 211:3
+  + src/drivers/staging/android/switch/switch_gpio.c: error: implicit declaration of function 'gpio_direction_input':  => 102:2
+  + src/drivers/staging/android/switch/switch_gpio.c: error: implicit declaration of function 'gpio_free':  => 127:2
+  + src/drivers/staging/android/switch/switch_gpio.c: error: implicit declaration of function 'gpio_get_value':  => 45:2
+  + src/drivers/staging/android/switch/switch_gpio.c: error: implicit declaration of function 'gpio_request':  => 98:2
+  + src/drivers/staging/android/switch/switch_gpio.c: error: implicit declaration of function 'gpio_to_irq':  => 108:2
+  + src/drivers/staging/android/timed_gpio.c: error: implicit declaration of function 'gpio_direction_output':  => 42:2
+  + src/drivers/staging/android/timed_gpio.c: error: implicit declaration of function 'gpio_free':  => 114:5
+  + src/drivers/staging/android/timed_gpio.c: error: implicit declaration of function 'gpio_request':  => 110:3
+  + src/drivers/staging/iio/accel/lis3l02dq_core.c: error: implicit declaration of function 'irq_to_gpio':  => 700:2
+  + src/drivers/staging/iio/accel/lis3l02dq_ring.c: error: implicit declaration of function 'gpio_get_value':  => 266:3
+  + src/drivers/staging/iio/accel/lis3l02dq_ring.c: error: implicit declaration of function 'irq_to_gpio':  => 266:3
+  + src/drivers/staging/iio/adc/ad7816.c: error: implicit declaration of function 'gpio_direction_input':  => 379:2
+  + src/drivers/staging/iio/adc/ad7816.c: error: implicit declaration of function 'gpio_free':  => 423:2
+  + src/drivers/staging/iio/adc/ad7816.c: error: implicit declaration of function 'gpio_get_value':  => 82:2
+  + src/drivers/staging/iio/adc/ad7816.c: error: implicit declaration of function 'gpio_request':  => 373:2
+  + src/drivers/staging/iio/adc/ad7816.c: error: implicit declaration of function 'gpio_set_value':  => 64:2
+  + src/drivers/staging/iio/addac/adt7316.c: error: implicit declaration of function 'gpio_set_value':  => 981:3
+  + src/drivers/staging/iio/magnetometer/ak8975.c: error: implicit declaration of function 'gpio_direction_input':  => 496:3
+  + src/drivers/staging/iio/magnetometer/ak8975.c: error: implicit declaration of function 'gpio_free':  => 540:3
+  + src/drivers/staging/iio/magnetometer/ak8975.c: error: implicit declaration of function 'gpio_get_value':  => 301:3
+  + src/drivers/staging/iio/magnetometer/ak8975.c: error: implicit declaration of function 'gpio_request':  => 488:3
+  + src/drivers/staging/iio/resolver/ad2s1200.c: error: implicit declaration of function 'gpio_free':  => 146:3
+  + src/drivers/staging/iio/resolver/ad2s1200.c: error: implicit declaration of function 'gpio_request_one':  => 108:3
+  + src/drivers/staging/iio/resolver/ad2s1200.c: error: implicit declaration of function 'gpio_set_value':  => 54:2
+  + src/drivers/staging/iio/resolver/ad2s1210.c: error: implicit declaration of function 'gpio_free_array':  => 679:2
+  + src/drivers/staging/iio/resolver/ad2s1210.c: error: implicit declaration of function 'gpio_get_value':  => 171:3
+  + src/drivers/staging/iio/resolver/ad2s1210.c: error: implicit declaration of function 'gpio_request_array':  => 665:2
+  + src/drivers/staging/iio/resolver/ad2s1210.c: error: implicit declaration of function 'gpio_set_value':  => 104:2
+  + src/drivers/staging/iio/trigger/iio-trig-gpio.c: error: implicit declaration of function 'gpio_to_irq':  => 125:3
+  + src/drivers/staging/media/dt3155v4l/dt3155v4l.c: error: implicit declaration of function 'ioread32':  => 107:2
+  + src/drivers/staging/media/dt3155v4l/dt3155v4l.c: error: implicit declaration of function 'iowrite32':  => 104:2
+  + src/drivers/staging/media/dt3155v4l/dt3155v4l.c: error: implicit declaration of function 'mmiowb':  => 105:2
+  + src/drivers/staging/media/dt3155v4l/dt3155v4l.c: error: implicit declaration of function 'pci_iomap':  => 910:2
+  + src/drivers/staging/media/dt3155v4l/dt3155v4l.c: error: implicit declaration of function 'pci_iounmap':  => 928:2
+  + src/drivers/staging/media/solo6x10/core.c: error: implicit declaration of function 'pci_iounmap':  => 121:3
+  + src/drivers/staging/rts_pstor/rtsx_card.c: error: implicit declaration of function 'ioread32':  => 344:2
+  + src/drivers/staging/rts_pstor/rtsx_chip.c: error: implicit declaration of function 'ioread32':  => 55:2
+  + src/drivers/staging/rts_pstor/rtsx_chip.c: error: implicit declaration of function 'ioread8':  => 667:2
+  + src/drivers/staging/rts_pstor/rtsx_chip.c: error: implicit declaration of function 'iowrite32':  => 58:2
+  + src/drivers/staging/rts_pstor/rtsx_scsi.c: error: implicit declaration of function 'ioread32':  => 1269:2
+  + src/drivers/staging/rts_pstor/rtsx_scsi.c: error: implicit declaration of function 'iowrite32':  => 1306:2
+  + src/drivers/staging/rts_pstor/rtsx_transport.c: error: implicit declaration of function 'iowrite32':  => 231:2
+  + src/drivers/staging/rts_pstor/sd.c: error: implicit declaration of function 'ioread32':  => 2276:2
+  + src/drivers/staging/vme/boards/vme_vmivme7805.c: error: implicit declaration of function 'ioread32':  => 80:2
+  + src/drivers/staging/vme/boards/vme_vmivme7805.c: error: implicit declaration of function 'iowrite32':  => 77:2
+  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: error: implicit declaration of function 'ioread16':  => 891:4
+  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: error: implicit declaration of function 'ioread32':  => 104:2
+  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: error: implicit declaration of function 'ioread8':  => 880:3
+  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: error: implicit declaration of function 'iowrite16':  => 945:4
+  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: error: implicit declaration of function 'iowrite32':  => 193:2
+  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: error: implicit declaration of function 'iowrite8':  => 934:3
+  + src/drivers/staging/vme/bridges/vme_tsi148.c: error: implicit declaration of function 'ioread16':  => 1338:2
+  + src/drivers/staging/vme/bridges/vme_tsi148.c: error: implicit declaration of function 'ioread32':  => 2294:2
+  + src/drivers/staging/vme/bridges/vme_tsi148.c: error: implicit declaration of function 'ioread32be':  => 130:4
+  + src/drivers/staging/vme/bridges/vme_tsi148.c: error: implicit declaration of function 'ioread8':  => 236:4
+  + src/drivers/staging/vme/bridges/vme_tsi148.c: error: implicit declaration of function 'iowrite32be':  => 160:2
+  + src/drivers/staging/xgifb/vb_setmode.c: error: expected identifier before numeric constant:  => 7299:121
+  + src/drivers/staging/xgifb/vb_struct.h: error: expected identifier or '(' before numeric constant:  => 56:16
+  + src/drivers/tty/nozomi.c: error: implicit declaration of function 'iowrite16':  => 1466:2
+  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'inb':  => 381:2
+  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'inb_p':  => 1240:3
+  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'outb':  => 380:2
+  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'outb_p':  => 1241:3
+  + src/drivers/tty/serial/8250/8250_early.c: error: implicit declaration of function 'inb':  => 59:3
+  + src/drivers/tty/serial/8250/8250_early.c: error: implicit declaration of function 'outb':  => 75:3
+  + src/drivers/tty/serial/8250/8250_pci.c: error: implicit declaration of function 'ioread32':  => 1022:2
+  + src/drivers/tty/serial/8250/8250_pci.c: error: implicit declaration of function 'ioread8':  => 1025:3
+  + src/drivers/tty/serial/8250/8250_pci.c: error: implicit declaration of function 'pci_iomap':  => 1018:2
+  + src/drivers/tty/serial/8250/8250_pci.c: error: implicit declaration of function 'pci_iounmap':  => 1030:2
+  + src/drivers/tty/serial/8250/serial_cs.c: error: implicit declaration of function 'outb':  => 149:3
+  + src/drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'ioread8':  => 306:2
+  + src/drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'iowrite8':  => 317:2
+  + src/drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'pci_iomap':  => 1331:2
+  + src/drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'pci_iounmap':  => 1316:2
+  + src/drivers/uio/uio_aec.c: error: implicit declaration of function 'ioread8':  => 57:2
+  + src/drivers/uio/uio_aec.c: error: implicit declaration of function 'iowrite32':  => 116:2
+  + src/drivers/uio/uio_aec.c: error: implicit declaration of function 'iowrite8':  => 117:2
+  + src/drivers/uio/uio_aec.c: error: implicit declaration of function 'pci_iomap':  => 100:2
+  + src/drivers/uio/uio_aec.c: error: implicit declaration of function 'pci_iounmap':  => 127:2
+  + src/drivers/uio/uio_cif.c: error: implicit declaration of function 'ioread8':  => 34:2
+  + src/drivers/uio/uio_cif.c: error: implicit declaration of function 'iowrite8':  => 39:2
+  + src/drivers/uio/uio_netx.c: error: implicit declaration of function 'ioread32':  => 41:2
+  + src/drivers/uio/uio_netx.c: error: implicit declaration of function 'iowrite32':  => 46:2
+  + src/drivers/uio/uio_sercos3.c: error: implicit declaration of function 'ioread32':  => 57:2
+  + src/drivers/uio/uio_sercos3.c: error: implicit declaration of function 'iowrite32':  => 60:2
+  + src/drivers/usb/gadget/ci13xxx_pci.c: error: implicit declaration of function 'pci_iomap':  => 78:2
+  + src/drivers/usb/gadget/ci13xxx_pci.c: error: implicit declaration of function 'pci_iounmap':  => 105:2
+  + src/drivers/usb/gadget/ci13xxx_udc.c: error: implicit declaration of function 'ioread32':  => 204:2
+  + src/drivers/usb/gadget/ci13xxx_udc.c: error: implicit declaration of function 'ioread8':  => 283:2
+  + src/drivers/usb/gadget/ci13xxx_udc.c: error: implicit declaration of function 'iowrite32':  => 215:2
+  + src/drivers/usb/gadget/pch_udc.c: error: implicit declaration of function 'ioread32':  => 396:2
+  + src/drivers/usb/gadget/pch_udc.c: error: implicit declaration of function 'iowrite32':  => 402:2
+  + src/drivers/usb/host/isp1760-hcd.c: error: implicit declaration of function 'gpio_set_value':  => 453:3
+  + src/drivers/usb/misc/sisusbvga/sisusb_init.c: error: expected identifier before numeric constant:  => 372:68
+  + src/drivers/usb/misc/sisusbvga/sisusb_struct.h: error: expected identifier or '(' before numeric constant:  => 72:16
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_direction_input':  => 250:2
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_direction_output':  => 271:3
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_free':  => 268:4
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_get_value':  => 87:2
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_request':  => 244:2
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_set_value':  => 119:4
+  + src/drivers/usb/otg/gpio_vbus.c: error: implicit declaration of function 'gpio_to_irq':  => 163:2
+  + src/drivers/uwb/whci.c: error: implicit declaration of function 'pci_iomap':  => 145:2
+  + src/drivers/uwb/whci.c: error: implicit declaration of function 'pci_iounmap':  => 149:2
+  + src/drivers/video/arkfb.c: error: implicit declaration of function 'pci_iomap':  => 1005:2
+  + src/drivers/video/arkfb.c: error: implicit declaration of function 'pci_iounmap':  => 1075:2
+  + src/drivers/video/backlight/l4f00242t03.c: error: implicit declaration of function 'gpio_free':  => 228:2
+  + src/drivers/video/backlight/l4f00242t03.c: error: implicit declaration of function 'gpio_request_one':  => 175:2
+  + src/drivers/video/backlight/l4f00242t03.c: error: implicit declaration of function 'gpio_set_value':  => 38:2
+  + src/drivers/video/backlight/lms283gf05.c: error: implicit declaration of function 'gpio_direction_output':  => 165:3
+  + src/drivers/video/backlight/lms283gf05.c: error: implicit declaration of function 'gpio_free':  => 200:3
+  + src/drivers/video/backlight/lms283gf05.c: error: implicit declaration of function 'gpio_request':  => 161:3
+  + src/drivers/video/backlight/lms283gf05.c: error: implicit declaration of function 'gpio_set_value':  => 98:2
+  + src/drivers/video/console/fonts.c: error: #error No fonts configured.:  => 71:2
+  + src/drivers/video/s3fb.c: error: implicit declaration of function 'pci_iomap':  => 1163:2
+  + src/drivers/video/s3fb.c: error: implicit declaration of function 'pci_iounmap':  => 1383:2
+  + src/drivers/video/sis/init.c: error: expected identifier before numeric constant:  => 1867:56
+  + src/drivers/video/sis/vstruct.h: error: expected identifier or '(' before numeric constant:  => 135:16
+  + src/drivers/video/vt8623fb.c: error: implicit declaration of function 'pci_iomap':  => 711:2
+  + src/drivers/video/vt8623fb.c: error: implicit declaration of function 'pci_iounmap':  => 796:2
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'ioread16':  => 287:3
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'ioread32':  => 116:2
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'ioread8':  => 143:3
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'iowrite16':  => 209:2
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'iowrite32':  => 129:2
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'iowrite8':  => 158:3
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'pci_iomap':  => 675:2
+  + src/drivers/virtio/virtio_pci.c: error: implicit declaration of function 'pci_iounmap':  => 698:2
+  + src/drivers/w1/masters/w1-gpio.c: error: implicit declaration of function 'gpio_direction_input':  => 27:3
+  + src/drivers/w1/masters/w1-gpio.c: error: implicit declaration of function 'gpio_direction_output':  => 29:3
+  + src/drivers/w1/masters/w1-gpio.c: error: implicit declaration of function 'gpio_free':  => 86:2
+  + src/drivers/w1/masters/w1-gpio.c: error: implicit declaration of function 'gpio_get_value':  => 43:2
+  + src/drivers/w1/masters/w1-gpio.c: error: implicit declaration of function 'gpio_request':  => 59:2
+  + src/drivers/w1/masters/w1-gpio.c: error: implicit declaration of function 'gpio_set_value':  => 36:2
+  + src/drivers/watchdog/wm831x_wdt.c: error: implicit declaration of function 'gpio_direction_output':  => 257:4
+  + src/drivers/watchdog/wm831x_wdt.c: error: implicit declaration of function 'gpio_free':  => 295:3
+  + src/drivers/watchdog/wm831x_wdt.c: error: implicit declaration of function 'gpio_request':  => 248:4
+  + src/fs/exec.c: error: assignment of read-only variable '__gu_val':  => 428:2
+  + src/fs/namespace.c: error: assignment of read-only variable '__gu_val':  => 2050:3
+  + src/fs/splice.c: error: assignment of read-only variable '__gu_val':  => 1548:3, 1551:3
+  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_grant_add_space':  => 1415:2
+  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_grant_sub_space':  => 2698:2
+  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_space_left':  => 224:2
+  + src/fs/xfs/xfs_log.c: error: unknown type name 'atomic64_t':  => 50:39, 101:2, 919:2, 127:2
+  + src/fs/xfs/xfs_log_priv.h: error: unknown type name 'atomic64_t':  => 533:2, 529:2, 521:2, 580:23, 519:2, 622:24, 610:23, 592:24
+  + src/include/linux/cb710.h: error: implicit declaration of function 'ioread16':  => 76:240
+  + src/include/linux/cb710.h: error: implicit declaration of function 'ioread32':  => 77:240
+  + src/include/linux/cb710.h: error: implicit declaration of function 'ioread8':  => 75:235
+  + src/include/linux/cb710.h: error: implicit declaration of function 'iowrite16':  => 76:78
+  + src/include/linux/cb710.h: error: implicit declaration of function 'iowrite32':  => 77:78
+  + src/include/linux/cb710.h: error: implicit declaration of function 'iowrite8':  => 75:77
+  + src/include/linux/io-mapping.h: error: implicit declaration of function 'ioremap_wc':  => 129:17
+  + src/include/linux/pagemap.h: error: assignment of read-only variable '__gu_val':  => 448:5, 442:2
+  + src/include/linux/regset.h: error: implicit declaration of function '__clear_user':  => 288:3
+  + src/include/linux/uwb/whci.h: error: implicit declaration of function 'ioread32':  => 90:2
+  + src/include/linux/uwb/whci.h: error: implicit declaration of function 'iowrite32':  => 82:2
+  + src/include/net/netfilter/nf_conntrack_acct.h: error: unknown type name 'atomic64_t':  => 18:2, 19:2
+  + src/kernel/sched/core.c: error: implicit declaration of function 'arch_start_context_switch':  => 2029:2
+  + src/kernel/signal.c: error: assignment of read-only variable '__gu_val':  => 3017:4, 3015:3, 3016:4
+  + src/lib/atomic64_test.c: error: implicit declaration of function 'ATOMIC64_INIT':  => 24:2
+  + src/lib/atomic64_test.c: error: request for member 'counter' in something not a structure or union:  => 56:32, 101:32, 146:32, 41:32, 51:32, 91:32, 141:32, 61:32, 26:32, 105:32, 76:32, 137:32, 30:32, 96:32, 46:32, 36:32, 66:32, 71:32, 109:32, 86:32, 81:32, 114:32
+  + src/lib/atomic64_test.c: error: unknown type name 'atomic64_t':  => 24:2
+  + src/lib/bitmap.c: error: assignment of read-only variable '__gu_val':  => 434:5, 613:5
+  + src/lib/mpi/generic_mpih-mul1.c: error: impossible constraint in 'asm':  => 50:3
+  + src/lib/mpi/generic_mpih-mul1.c: error: inconsistent operand constraints in an 'asm':  => 50:70
+  + src/lib/mpi/generic_mpih-mul2.c: error: impossible constraint in 'asm':  => 49:3
+  + src/lib/mpi/generic_mpih-mul2.c: error: inconsistent operand constraints in an 'asm':  => 49:70
+  + src/lib/mpi/generic_mpih-mul3.c: error: impossible constraint in 'asm':  => 49:3
+  + src/lib/mpi/generic_mpih-mul3.c: error: inconsistent operand constraints in an 'asm':  => 49:70
+  + src/lib/mpi/mpih-div.c: error: impossible constraint in 'asm':  => 135:202, 135:55, 106:201, 97:55, 106:54, 97:202
+  + src/lib/mpi/mpih-div.c: error: inconsistent operand constraints in an 'asm':  => 135:122, 135:371, 97:122, 106:121, 106:370, 97:371
+  + src/net/bluetooth/rfcomm/tty.c: error: array type has incomplete element type:  => 852:125, 848:125
+  + src/net/bluetooth/rfcomm/tty.c: error: invalid application of 'sizeof' to incomplete type 'struct serial_struct' :  => 848:153, 848:86, 852:153, 852:197, 852:86, 848:197
+  + src/net/mac80211/key.h: error: unknown type name 'atomic64_t':  => 100:4, 88:4
+  + src/net/mac80211/led.c: error: 'struct led_classdev' has no member named 'trig_list': 278, 214 => 278:411, 278:352, 278:59, 214:352, 214:411, 214:160, 278:319, 214:223, 214:319, 278:160, 214:59, 278:223
+  + src/net/netfilter/nf_conntrack_acct.c: error: implicit declaration of function 'atomic64_read':  => 49:6
+  + src/net/netfilter/nf_conntrack_core.c: error: implicit declaration of function 'atomic64_add':  => 1083:4
+  + src/net/netfilter/nf_conntrack_core.c: error: implicit declaration of function 'atomic64_inc':  => 1082:4
+  + src/net/netfilter/nf_conntrack_netlink.c: error: implicit declaration of function 'atomic64_read':  => 242:3
+  + src/net/netfilter/nf_conntrack_netlink.c: error: implicit declaration of function 'atomic64_xchg':  => 239:3
+  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_add':  => 326:2
+  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_inc':  => 325:2
+  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_read':  => 118:3
+  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_set':  => 67:4
+  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_xchg':  => 115:3
+  + src/net/netfilter/nfnetlink_acct.c: error: unknown type name 'atomic64_t':  => 33:2, 34:2
+  + src/net/netfilter/xt_connbytes.c: error: implicit declaration of function 'atomic64_read':  => 43:4
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'ioread16':  => 473:2
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'ioread32':  => 478:2
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'ioread8':  => 468:2
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'iowrite16':  => 488:2
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'iowrite32':  => 493:2
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'iowrite8':  => 483:2
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'pci_iomap':  => 3066:3
+  + src/sound/pci/intel8x0.c: error: implicit declaration of function 'pci_iounmap':  => 2614:3
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'ioread16':  => 258:2
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'ioread32':  => 263:2
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'ioread8':  => 253:2
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'iowrite16':  => 273:2
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'iowrite32':  => 278:2
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'iowrite8':  => 268:2
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'pci_iomap':  => 1152:3
+  + src/sound/pci/intel8x0m.c: error: implicit declaration of function 'pci_iounmap':  => 1002:3
+  + src/sound/pci/lx6464es/lx6464es.c: error: implicit declaration of function 'ioport_map':  => 1026:2
+  + src/sound/pci/lx6464es/lx6464es.c: error: implicit declaration of function 'ioport_unmap':  => 565:2
+  + src/sound/pci/lx6464es/lx_core.c: error: implicit declaration of function 'ioread32':  => 78:2
+  + src/sound/pci/lx6464es/lx_core.c: error: implicit declaration of function 'iowrite32':  => 96:2
+  + src/sound/soc/codecs/ak4641.c: error: implicit declaration of function 'gpio_free':  => 558:4
+  + src/sound/soc/codecs/ak4641.c: error: implicit declaration of function 'gpio_request_one':  => 526:4
+  + src/sound/soc/codecs/ak4641.c: error: implicit declaration of function 'gpio_set_value':  => 415:5
+  + src/sound/soc/codecs/cs4271.c: error: implicit declaration of function 'gpio_direction_output':  => 477:3
+  + src/sound/soc/codecs/cs4271.c: error: implicit declaration of function 'gpio_free':  => 530:3
+  + src/sound/soc/codecs/cs4271.c: error: implicit declaration of function 'gpio_request':  => 473:3
+  + src/sound/soc/codecs/cs4271.c: error: implicit declaration of function 'gpio_set_value':  => 479:3
+  + src/sound/soc/codecs/pcm3008.c: error: implicit declaration of function 'gpio_direction_output':  => 79:3
+  + src/sound/soc/codecs/pcm3008.c: error: implicit declaration of function 'gpio_free':  => 56:2
+  + src/sound/soc/codecs/pcm3008.c: error: implicit declaration of function 'gpio_request':  => 77:2
+  + src/sound/soc/codecs/tlv320aic3x.c: error: implicit declaration of function 'gpio_direction_output':  => 1393:3
+  + src/sound/soc/codecs/tlv320aic3x.c: error: implicit declaration of function 'gpio_free':  => 1447:3
+  + src/sound/soc/codecs/tlv320aic3x.c: error: implicit declaration of function 'gpio_request':  => 1390:3
+  + src/sound/soc/codecs/tlv320aic3x.c: error: implicit declaration of function 'gpio_set_value':  => 1096:4
+  + src/sound/soc/codecs/tlv320dac33.c: error: implicit declaration of function 'gpio_direction_output':  => 1565:3
+  + src/sound/soc/codecs/tlv320dac33.c: error: implicit declaration of function 'gpio_free':  => 1589:3
+  + src/sound/soc/codecs/tlv320dac33.c: error: implicit declaration of function 'gpio_request':  => 1558:3
+  + src/sound/soc/codecs/tlv320dac33.c: error: implicit declaration of function 'gpio_set_value':  => 398:4
+  + src/sound/soc/codecs/tpa6130a2.c: error: implicit declaration of function 'gpio_direction_output':  => 407:3
+  + src/sound/soc/codecs/tpa6130a2.c: error: implicit declaration of function 'gpio_free':  => 451:3
+  + src/sound/soc/codecs/tpa6130a2.c: error: implicit declaration of function 'gpio_request':  => 401:3
+  + src/sound/soc/codecs/tpa6130a2.c: error: implicit declaration of function 'gpio_set_value':  => 146:4
+  + src/sound/soc/codecs/uda1380.c: error: implicit declaration of function 'gpio_free':  => 760:3
+  + src/sound/soc/codecs/uda1380.c: error: implicit declaration of function 'gpio_request_one':  => 724:3
+  + src/sound/soc/codecs/uda1380.c: error: implicit declaration of function 'gpio_set_value':  => 153:3
+  + src/sound/soc/codecs/wm1250-ev1.c: error: implicit declaration of function 'gpio_free_array':  => 153:3
+  + src/sound/soc/codecs/wm1250-ev1.c: error: implicit declaration of function 'gpio_request_array':  => 134:2
+  + src/sound/soc/codecs/wm5100.c: error: implicit declaration of function 'gpio_free':  => 2570:3
+  + src/sound/soc/codecs/wm5100.c: error: implicit declaration of function 'gpio_request_one':  => 2537:3
+  + src/sound/soc/codecs/wm8996.c: error: implicit declaration of function 'gpio_free':  => 3238:3
+  + src/sound/soc/codecs/wm8996.c: error: implicit declaration of function 'gpio_request_one':  => 3140:3
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
