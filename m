@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab2CTBvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 21:51:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50141 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754215Ab2CTBvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 21:51:14 -0400
-Message-ID: <1332208272.7847.39.camel@joe2Laptop>
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: david@lang.hm
-Cc: "Ted Ts'o" <tytso@mit.edu>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 19 Mar 2012 18:51:12 -0700
-In-Reply-To: <alpine.DEB.2.02.1203191826100.22704@asgard.lang.hm>
-References: <cover.1331856299.git.joe@perches.com>
-	 <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
-	 <20120319040950.GG31682@thunk.org> <1332131137.23125.44.camel@joe2Laptop>
-	 <4F6762F1.7050902@gmail.com> <1332176943.1983.28.camel@joe2Laptop>
-	 <171703.1332178579@turing-police.cc.vt.edu>
-	 <1332179050.3341.7.camel@joe2Laptop> <20120320010606.GC14363@thunk.org>
-	 <alpine.DEB.2.02.1203191826100.22704@asgard.lang.hm>
+	id S1759208Ab2CTBvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 21:51:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39804 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab2CTBvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 21:51:17 -0400
+Message-ID: <1332208268.10843.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: Convert ab8500 to set_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        Sundar R Iyer <sundar.iyer@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 20 Mar 2012 09:51:08 +0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -31,51 +25,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-19 at 18:28 -0700, david@lang.hm wrote:
-> On Mon, 19 Mar 2012, Ted Ts'o wrote:
-> > On Mon, Mar 19, 2012 at 10:44:10AM -0700, Joe Perches wrote:
-> >> This stuff ain't whitespace.
-> >>> I'll have to respectfully disagree with you.  For ext4, as far as I am
-> > concerned, changing printk(KERN_INFO, ...) to pr_info(...) is *purely*
-> > a whitespace-level change.
-> Joe, if everything did change, what difference would it make?
+Convert ab8500 to set_voltage_sel and then we can remove
+ab8500_get_best_voltage_index function.
 
-Hi David.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ab8500.c |   35 ++++-------------------------------
+ 1 files changed, 4 insertions(+), 31 deletions(-)
 
-> just being a consistant style doesn't matter much,
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index c7ee4c1..0d095b6 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -234,25 +234,8 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 		return val;
+ }
+ 
+-static int ab8500_get_best_voltage_index(struct regulator_dev *rdev,
+-		int min_uV, int max_uV)
+-{
+-	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+-	int i;
+-
+-	/* check the supported voltage */
+-	for (i = 0; i < info->voltages_len; i++) {
+-		if ((info->voltages[i] >= min_uV) &&
+-		    (info->voltages[i] <= max_uV))
+-			return i;
+-	}
+-
+-	return -EINVAL;
+-}
+-
+-static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
+-					int min_uV, int max_uV,
+-					unsigned *selector)
++static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
++					    unsigned selector)
+ {
+ 	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+@@ -263,18 +246,8 @@ static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	/* get the appropriate voltages within the range */
+-	ret = ab8500_get_best_voltage_index(rdev, min_uV, max_uV);
+-	if (ret < 0) {
+-		dev_err(rdev_get_dev(rdev),
+-				"couldn't get best voltage for regulator\n");
+-		return ret;
+-	}
+-
+-	*selector = ret;
+-
+ 	/* set the registers for the request */
+-	regval = (u8)ret;
++	regval = (u8)selector;
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 			info->voltage_bank, info->voltage_reg,
+ 			info->voltage_mask, regval);
+@@ -319,7 +292,7 @@ static struct regulator_ops ab8500_regulator_ops = {
+ 	.disable	= ab8500_regulator_disable,
+ 	.is_enabled	= ab8500_regulator_is_enabled,
+ 	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
+-	.set_voltage	= ab8500_regulator_set_voltage,
++	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
+ 	.list_voltage	= ab8500_list_voltage,
+ 	.enable_time	= ab8500_regulator_enable_time,
+ 	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+-- 
+1.7.5.4
 
-Perhaps we disagree on the value of consistency.
-I believe it's a small but measurable effect and it
-can reduce overall ongoing defect rates.
 
-Is it DoublePlus_important_?  No, definitely not.
-
-To me using pr_<level> is a bit like using const
-or marking sections devinitconst.
-
-It hardly matters, but it's good form and it can
-free up some working memory in ram limited systems.
-
-> but if there is some 
-> functionality that would be possible with pr_info(...) that would not be 
-> possible with printk(KERN_INFO, ...), there may be more reason to change.
-
-Right now, it's just macros over printk so it's pretty
-trivial.  I do intend to convert pr_<level> macros to
-functions eventually to reduce code size ~.5% overall.
-That reduction does depend on quantity of CONFIG_<FOO>
-options enabled of course.  Enable everything, I think
-it's ~.01%.  I haven't done it in quite awhile though
-so that's a guess.
-
-It matters a tiny bit more for flash or ram limited
-systems.
-
-Some driver optimizations like the rtlwifi reduction
-in -next commit 481b9606ec might have more of an
-impact though for those systems.
-
-So, it depends...
-
-cheers, Joe
 
