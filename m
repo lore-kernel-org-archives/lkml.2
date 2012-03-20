@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab2CTV4D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 17:56:03 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:47407 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117Ab2CTV4B (ORCPT
+	id S1758293Ab2CTV7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 17:59:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64958 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab2CTV7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 17:56:01 -0400
-Message-ID: <4F68FCE3.5090403@windriver.com>
-Date: Tue, 20 Mar 2012 16:55:47 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 20 Mar 2012 17:59:01 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Robert Lee <rob.lee@linaro.org>
+Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
+Date: Tue, 20 Mar 2012 21:58:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: len.brown@intel.com, akpm@linux-foundation.org, rjw@sisk.pl,
+        khilman@ti.com, robherring2@gmail.com, Baohua.Song@csr.com,
+        amit.kucheria@linaro.org, nicolas.ferre@atmel.com, linux@maxim.org.za,
+        kgene.kim@samsung.com, amit.kachhap@linaro.org, magnus.damm@gmail.com,
+        nsekhar@ti.com, daniel.lezcano@linaro.org, mturquette@linaro.org,
+        vincent.guittot@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, deepthi@linux.vnet.ibm.com,
+        broonie@opensource.wolfsonmicro.com, nicolas.pitre@linaro.org,
+        linux@arm.linux.org.uk, jean.pihet@newoldbits.com, venki@google.com,
+        ccross@google.com, g.trinabh@gmail.com, kernel@wantstofly.org,
+        lethal@linux-sh.org, jon-hunter@ti.com, tony@atomide.com,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
+In-Reply-To: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
 MIME-Version: 1.0
-To: Tim Bird <tim.bird@am.sony.com>
-CC: "kgdb-bugreport@lists.sourceforge.net" 
-	<kgdb-bugreport@lists.sourceforge.net>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kdb: Add message about CONFIG_DEBUG_RODATA on failure
- to install breakpoint
-References: <4E7A4413.5000307@am.sony.com> <4F68CD32.3040202@windriver.com> <4F68F731.1040908@am.sony.com>
-In-Reply-To: <4F68F731.1040908@am.sony.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203202158.08042.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:hhJb0Mw+2YTPwv110ooby54tMD0b7C02LCnFBP/mWt1
+ 0B6DBmJY9/93QO7rmajb9OHaHPfI/860Jy11o3EF+R3MYf4jOm
+ r3FPKbjQTbUNfi+Os8R5z6yfThoafKnFoHOklyR9hP4goJ8lD9
+ XpSChZdDxhU0z71hdA8NPZQLetyKDqjuZJZER9skmWTo+DF1NM
+ s3S1c4gU/6gctIU+IPf1l7rJrn/G3l5+bd2VQ1dYmjplQ9YMfA
+ rlK7iy/lUAv5/FjAPMZDYvaICPvTj7SPgAUpTF808zqP3EuKMQ
+ HQvFC5V14y7wp/ROsFkXUOehKxua2/Bm2w6CWXWpwz32I/3sMh
+ 9XP1r+RFVWNI5qWH0HCCTyq6lG+kgi2CpzTYLwHCX
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 04:31 PM, Tim Bird wrote:
-> On 03/20/2012 11:32 AM, Jason Wessel wrote:
->> On 09/21/2011 03:07 PM, Tim Bird wrote:
->>> On x86, if CONFIG_DEBUG_RODATA is set, one cannot set breakpoints
->>> via KDB.  Apparently this is a well-known problem, as at least one distribution
->>> now ships with both KDB enabled and CONFIG_DEBUG_RODATA=y for security reasons.
->>>
->>> This patch just adds an extra printk message to the breakpoint failure case,
->>> in order to provide some useful diagnostics to the user.
->>>
->> The patch is definitely the right idea.  I believe we should try and tell the whole story and only print the message for the type of breakpoint that fails.  It is absolutely the case that you can still use kdb/kdb without recompiling the kernel.
->>
->> I propose a slightly different implementation below.
-> The new patch looks fine.
+On Tuesday 20 March 2012, Robert Lee wrote:
+> This patch series moves various functionality duplicated in platform 
+> cpuidle drivers to the core cpuidle driver. Also, the platform irq
+> disabling was removed as it appears that all calls into 
+> cpuidle_call_idle will have already called local_irq_disable().
+> 
+> These changes have been pulled into linux-next.
+> 
+> Len, Andrew, can a request be made for Linus to pull these changes?
 
-Thanks.  Because you posed the question a while back about potentially changing this such that it works, I thought I might re-open the discussion around further integration with kgdb/kdb and kprobes.   Back in 2008 I explained you can "hack it" so as to use copy on write patches, just for the debugger in order to use software breakpoints.
+FWIW, Len seems to be rather inactive on the kernel mailing list right
+now and generally not very interested in anything outside of x86 and
+acpi. If he doesn't reply in the next few days and Andrew also isn't
+interested in handling these patches, I'd suggest you just send the pull
+request to Linus, with Len on Cc and explain that you tried to send
+them through him but gave up in the end.
 
-Something horrible like:
-
-@@ -42,11 +43,24 @@ EXPORT_SYMBOL_GPL(probe_kernel_read);
- long probe_kernel_write(void *dst, void *src, size_t size)
- {
-        long ret;
-+#ifdef CONFIG_X86
-+       unsigned int level;
-+       pte_t *pte = lookup_address((unsigned long)dst, &level);
-+       int unprotect = !pte_write(*pte);
-+#endif
-        mm_segment_t old_fs = get_fs();
-
-[...clipped rest of original hack...]
-
-Obviously we are not going to go down the horrible hack route, so I thought I might look at how the kprobe implementation works, because they do deal with read-only pages.   They created a function called text_poke() that is called from arch_arm_probe().
-
-It might be possible to take a short cut and use the arch_arm_probe() directly.  Ultimately I would like to consider just using kprobes instead for things like single stepping etc..., but it still has a few problems with atomic reservations.  This work had been shelved in back 2010, in favor of merging kdb.  I am not sure if anyone wants to take a look at it, but I do think it might warrant some experimentation.
-
-Jason.
+	Arnd
