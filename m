@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964937Ab2CTNUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:20:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58539 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab2CTNUv (ORCPT
+	id S1030191Ab2CTNVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:21:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63920 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab2CTNV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:20:51 -0400
+	Tue, 20 Mar 2012 09:21:28 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Jonas Bonn <jonas@southpole.se>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
         Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 05/20] openrisc/mm/fault.c: Port OOM changes to do_page_fault
-Date: Tue, 20 Mar 2012 09:20:15 -0400
-Message-Id: <1332249615-2712-1-git-send-email-consul.kautuk@gmail.com>
+Subject: [PATCH 06/20] mn10300/mm/fault.c: Port OOM changes to do_page_fault
+Date: Tue, 20 Mar 2012 09:20:54 -0400
+Message-Id: <1332249654-2747-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,46 +31,46 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to openrisc.
+Port these changes to mn10300.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/openrisc/mm/fault.c |   33 +++++++++++++++++++++++++++------
- 1 files changed, 27 insertions(+), 6 deletions(-)
+ arch/mn10300/mm/fault.c |   30 +++++++++++++++++++++++++-----
+ 1 files changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/arch/openrisc/mm/fault.c b/arch/openrisc/mm/fault.c
-index a5dce82..d5f56bc 100644
---- a/arch/openrisc/mm/fault.c
-+++ b/arch/openrisc/mm/fault.c
-@@ -54,6 +54,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long address,
- 	struct vm_area_struct *vma;
+diff --git a/arch/mn10300/mm/fault.c b/arch/mn10300/mm/fault.c
+index 0945409..f5111a1 100644
+--- a/arch/mn10300/mm/fault.c
++++ b/arch/mn10300/mm/fault.c
+@@ -125,6 +125,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long fault_code,
+ 	unsigned long page;
  	siginfo_t info;
- 	int fault;
+ 	int write, fault;
 +	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- 	tsk = current;
- 
-@@ -105,6 +106,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long address,
- 	if (in_interrupt() || !mm)
+ #ifdef CONFIG_GDBSTUB
+ 	/* handle GDB stub causing a fault */
+@@ -171,6 +172,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long fault_code,
+ 	if (in_atomic() || !mm)
  		goto no_context;
  
 +retry:
  	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, address);
  
-@@ -143,6 +145,7 @@ good_area:
- 	if (write_acc) {
+ 	vma = find_vma(mm, address);
+@@ -234,6 +236,7 @@ good_area:
  		if (!(vma->vm_flags & VM_WRITE))
  			goto bad_area;
+ 		write++;
 +		flags |= FAULT_FLAG_WRITE;
- 	} else {
- 		/* not present */
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
-@@ -159,7 +162,11 @@ good_area:
+ 		break;
+ 
+ 		/* read from protected page */
+@@ -252,7 +255,11 @@ good_area:
+ 	 * make sure we exit gracefully rather than endlessly redo
  	 * the fault.
  	 */
- 
--	fault = handle_mm_fault(mm, vma, address, write_acc);
+-	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
 +	fault = handle_mm_fault(mm, vma, address, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
@@ -78,22 +79,19 @@ index a5dce82..d5f56bc 100644
  	if (unlikely(fault & VM_FAULT_ERROR)) {
  		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -167,11 +174,25 @@ good_area:
+@@ -260,10 +267,23 @@ good_area:
  			goto do_sigbus;
  		BUG();
  	}
--	/*RGD modeled on Cris */
 -	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
+-		current->maj_flt++;
 -	else
--		tsk->min_flt++;
-+
+-		current->min_flt++;
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		/*RGD modeled on Cris */
 +		if (fault & VM_FAULT_MAJOR)
-+			tsk->maj_flt++;
++			current->maj_flt++;
 +		else
-+			tsk->min_flt++;
++			current->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
