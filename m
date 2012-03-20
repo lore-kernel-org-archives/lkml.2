@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011Ab2CTNvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:51:10 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36814 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758036Ab2CTNvH (ORCPT
+	id S1759989Ab2CTNvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:51:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40850 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab2CTNvG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:51:07 -0400
-Date: Tue, 20 Mar 2012 14:51:05 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] AMD64 EDAC fixes for 3.4
-Message-ID: <20120320135105.GA11343@aftab>
+	Tue, 20 Mar 2012 09:51:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1332245223.3329.5.camel@jlt3.sipsolutions.net>
+References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
+ <1332214021-9716-3-git-send-email-mcgrof@frijolero.org> <1332245223.3329.5.camel@jlt3.sipsolutions.net>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Tue, 20 Mar 2012 06:50:44 -0700
+X-Google-Sender-Auth: rmenNELNR4Vl4Qx6JX_iEutlS9M
+Message-ID: <CAB=NE6V4NuNc8Xr3qKAaXgs2og-2e6qusek=ZFdvQCq4JtKavQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] compat: backport work_busy()
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lf_driver_backport@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Mar 20, 2012 at 5:07 AM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Mon, 2012-03-19 at 20:26 -0700, Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+>>
+>> Best we can do is just tell the users of we are WORK_BUSY_PENDING
+>> for older kernels. The ckmake log:
+>
+> [...]
+>
+>> + * Test whether @work is currently pending or running.  There is no
+>> + * synchronization around this function and the test result is
+>> + * unreliable and only useful as advisory hints or for debugging.
+>> + * Especially for reentrant wqs, the pending state might hide the
+>> + * running state.
+>
+> What's this needed for? It seems if it's used only for hints/debugging
+> we should not need the function, or possibly simply return some
+> pointless combination like -1?
 
-please pull the following fixes for 3.4. I hope the signed tag commit
-message is verbose enough for the contents of the pull request.
+net/bluetooth/hci_core.c:1701:	if (work_busy(&hdev->le_scan))
 
-Thanks.
-
-The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
-
-  Linux 3.3 (2012-03-18 16:15:34 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/amd64-edac-updates-for-3.4
-
-for you to fetch changes up to ebe2aea86872622d4352cd71d55298fedf69a7bb:
-
-  MCE, AMD: Constify error tables (2012-03-19 12:06:26 +0100)
-
-----------------------------------------------------------------
-A bunch of fixes/updates for the AMD side of EDAC including
-
-* MCE decoding updates
-* tree-wide EDAC sweep making pci_device_ids __devinitconst
-* Scrub rate API correction
-* two amd64_edac corrections for K8 boxes and sysfs csrow nodes
-
-----------------------------------------------------------------
-Ashish Shenoy (1):
-      amd64_edac: Fix missing csrows sysfs nodes
-
-Borislav Petkov (8):
-      amd64_edac: Fix K8 revD and later chip select sizes
-      EDAC: Correct scrub rate API
-      MCE, AMD: Correct some MC0 error types
-      MCE, AMD: Correct ucode patch buffer description
-      MCE, AMD: Correct VB data error description
-      MCE, AMD: Rework NB MCE signatures
-      MCE, AMD: Correct bank 5 error signatures
-      MCE, AMD: Constify error tables
-
-Lionel Debroux (1):
-      EDAC: Make pci_device_id tables __devinitconst.
-
- Documentation/edac.txt         |    4 +-
- drivers/edac/amd64_edac.c      |   50 +++++++---
- drivers/edac/amd76x_edac.c     |    2 +-
- drivers/edac/e752x_edac.c      |    2 +-
- drivers/edac/e7xxx_edac.c      |    2 +-
- drivers/edac/edac_mc_sysfs.c   |    4 +-
- drivers/edac/i3000_edac.c      |    2 +-
- drivers/edac/i3200_edac.c      |    2 +-
- drivers/edac/i5000_edac.c      |    2 +-
- drivers/edac/i5100_edac.c      |    2 +-
- drivers/edac/i5400_edac.c      |    2 +-
- drivers/edac/i7300_edac.c      |    2 +-
- drivers/edac/i7core_edac.c     |    2 +-
- drivers/edac/i82443bxgx_edac.c |    2 +-
- drivers/edac/i82860_edac.c     |    2 +-
- drivers/edac/i82875p_edac.c    |    2 +-
- drivers/edac/i82975x_edac.c    |    2 +-
- drivers/edac/mce_amd.c         |  208 +++++++++++++---------------------------
- drivers/edac/mce_amd.h         |   13 ++-
- drivers/edac/r82600_edac.c     |    2 +-
- drivers/edac/sb_edac.c         |    2 +-
- drivers/edac/x38_edac.c        |    2 +-
- 22 files changed, 127 insertions(+), 186 deletions(-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+  Luis
