@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760478Ab2CTOuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:50:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760206Ab2CTOui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:50:38 -0400
-Date: Tue, 20 Mar 2012 16:50:41 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, mst@redhat.com,
-        nyh@il.ibm.com, nyh@math.technion.ac.il
-Subject: [PULL] vhost-net/virtio: fixes for 3.4
-Message-ID: <20120320145010.GA31570@redhat.com>
+	id S1760474Ab2CTOvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:51:50 -0400
+Received: from [89.21.227.130] ([89.21.227.130]:42955 "EHLO
+	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760253Ab2CTOvs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:51:48 -0400
+Message-ID: <4F689980.6030003@itdev.co.uk>
+Date: Tue, 20 Mar 2012 07:51:44 -0700
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>,
+        "Tiwari, Atul" <Atul.Tiwari@atmel.com>
+Subject: Re: [PATCH 06/20] Input: atmel_mxt_ts - allow writing to object sysfs
+ entry
+References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org> <1331640263-18935-7-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1331640263-18935-7-git-send-email-djkurtz@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
+Daniel Kurtz wrote:
+> Userspace can write a 24-bit value (encoded as a 6 character hex string)
+> to the 'object' sysfs entry to modify a single byte of the object table.
+> The hex string encodes a 3 bytes, in the following format:
+>  TTFFVV
+> 
+> Where:
+>  TT = object type
+>  FF = object offset
+>  VV = byte value
+> 
+> The object table is modified in device ram, which means the change is
+> volatile, and will be overwritten on the next device reset.  To make
+> changes permanent, the new settings should be persisted in the device's
+> Non-Voltatile Memory using the updatenv sysfs entry.
+> 
+> Also, since the device driver initializes itself by reading some values
+> from the object table, the entire driver may need to be unloaded and
+> reloaded after writing the values for the driver to stay in sync.  Whether
+> this is required depends on exactly which values were updated.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
+NAK. I have several concerns about this:
 
-are available in the git repository at:
+1) The object sysfs entry doesn't follow the sysfs guidelines, this is
+abusing it further.
+2) Object type can be larger than 1 byte in the future.
+3) Your interface restricts you to doing 1 byte writes. What about larger
+block sizes?
 
-  ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
+In short, I think exposing the entire register space as a binary attribute
+(the same way that regmap does) is a preferable solution to this
+requirement, and we already have user space tools which use it.
 
-  (ssh url as git.kernel.org seems down at the moment, when it comes up
-   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
-   should be the equivalent).
+cheers
 
-for you to fetch changes up to ea5d404655ba3b356d0c06d6a3c4f24112124522:
-
-  vhost: fix release path lockdep checks (2012-02-28 09:13:22 +0200)
-
-----------------------------------------------------------------
-vhost/virtio: fixes for 3.4
-
-This includes a couple of vhost-net bugfixes,
-and fixes tools/virtio making it useful again.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-----------------------------------------------------------------
-Michael S. Tsirkin (4):
-      tools/virtio: add linux/module.h stub
-      tools/virtio: add linux/hrtimer.h stub
-      tools/virtio: stub out strong barriers
-      vhost: fix release path lockdep checks
-
-Nadav Har'El (1):
-      vhost: don't forget to schedule()
-
- drivers/vhost/net.c         |    2 +-
- drivers/vhost/vhost.c       |   11 +++++++----
- drivers/vhost/vhost.h       |    2 +-
- tools/virtio/linux/virtio.h |    3 +++
- 4 files changed, 12 insertions(+), 6 deletions(-)
- create mode 100644 tools/virtio/linux/hrtimer.h
- create mode 100644 tools/virtio/linux/module.h
+-- 
+Nick Dyer
+Software Engineer, ITDev Ltd
+Hardware and Software Development Consultancy
+Website: http://www.itdev.co.uk
