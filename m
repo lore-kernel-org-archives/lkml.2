@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab2CTQsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:48:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756287Ab2CTQsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:48:02 -0400
-Date: Tue, 20 Mar 2012 12:47:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [RFC]blk: mark discard request sync
-Message-ID: <20120320164757.GG17071@redhat.com>
-References: <4F62EE5E.5070207@kernel.org>
+	id S1755793Ab2CTQtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:49:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43939 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062Ab2CTQtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 12:49:20 -0400
+Date: Tue, 20 Mar 2012 09:49:15 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rni@google.com, ctalbott@google.com
+Subject: Re: [PATCH 09/10] cgroup: introduce struct cfent
+Message-ID: <20120320164915.GF5684@google.com>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+ <1331940963-15756-10-git-send-email-tj@kernel.org>
+ <4F688EA9.8050905@parallels.com>
+ <20120320160228.GD5684@google.com>
+ <4F68AA37.80604@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F62EE5E.5070207@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F68AA37.80604@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 03:40:14PM +0800, Shaohua Li wrote:
+On Tue, Mar 20, 2012 at 08:03:03PM +0400, Glauber Costa wrote:
+> From 04604201411ab0a14fa1447072cd1b273d0774ed Mon Sep 17 00:00:00 2001
+> From: Glauber Costa <glommer@parallels.com>
+> Date: Tue, 20 Mar 2012 18:12:55 +0400
+> Subject: [PATCH] don't trigger warning when d_subdirs is not empty.
 > 
-> Subject: blk: mark discard request sync
+> It is never empty at this point, because of the self references.
+> a better test is to see if any of them gets d_inode set.
 > 
-> discard is called in jbd for example. If discard is slowed down, all
-> file operations could be impacted (eg, journal is full). And we always
-> wait for discard to finish. So looks we should mark discard as sync.
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  kernel/cgroup.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
 > 
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index cf7b298..b45a653 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -947,10 +947,16 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+>  static void cgroup_clear_directory(struct dentry *dir)
+>  {
+>  	struct cgroup *cgrp = __d_cgrp(dir);
+> +	struct list_head *child;
+>  
+>  	while (!list_empty(&cgrp->files))
+>  		cgroup_rm_file(cgrp, NULL);
+> -	WARN_ON_ONCE(!list_empty(&dir->d_subdirs));
+> +
+> +	list_for_each(child, &dir->d_subdirs) {
+> +		struct dentry *d;
+> +		d = list_entry(child, struct dentry, d_u.d_child);
+> +		WARN_ON_ONCE(d->d_inode);
+> +	}
 
-This one is tricky and I am not sure what's the right thing to do.
+This seems correct and I'll apply this but I still can't reproduce the
+warning at will before the patch.  How do I a get negative dentry on
+the d_subdirs when d_delete always returns 1?  Glauber, can you
+trigger the warning at will?
 
-Generally the philosophy seems to be that request is sync is somebody
-is waiting on it. To me even on async writes somebody is waiting (either
-file system or a writer which has been throttled). So if we don't do
-async writes in reasonable amount of time, we start getting "task blocked
-for more than 120 seconds" message.
+Thanks.
 
-Do you have some test cases to show how bad the problem is if we don't
-issue discard as SYNC request.
-
-Thanks
-Vivek
+-- 
+tejun
