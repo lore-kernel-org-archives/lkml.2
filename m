@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964922Ab2CTGNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 02:13:44 -0400
-Received: from mail-we0-f194.google.com ([74.125.82.194]:59215 "EHLO
-	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab2CTGNn (ORCPT
+	id S1030241Ab2CTGTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 02:19:35 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47148 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab2CTGTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 02:13:43 -0400
-Date: Tue, 20 Mar 2012 07:13:39 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] RCU changes for v3.4
-Message-ID: <20120320061339.GA27423@gmail.com>
-References: <20120319152317.GA3932@gmail.com>
- <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
- <20120320033300.GH2393@linux.vnet.ibm.com>
+	Tue, 20 Mar 2012 02:19:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120320033300.GH2393@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F681B78.9000207@gmail.com>
+References: <4F576FD5.2050208@gmail.com>
+	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
+	<4F577D9B.7020402@gmail.com>
+	<4F579A88.6030503@openwrt.org>
+	<4F61F551.5010608@gmail.com>
+	<4F639851.5080500@gmail.com>
+	<4F674616.8080103@gmail.com>
+	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
+	<4F674FF5.2060406@gmail.com>
+	<4F6751B2.1030809@openwrt.org>
+	<4F681B78.9000207@gmail.com>
+Date: Tue, 20 Mar 2012 11:49:32 +0530
+Message-ID: <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+ AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Linux-wireless <linux-wireless@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> (gdb) list *ath9k_tx+start+0x284
+> No symbol "start" in current context.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+hey, pls try l *(ath9k_tx_start+0x284), yesterday i did the same in
+the latest wireless testing tree it pointed to line 1929 of xmit.c
 
-> On Mon, Mar 19, 2012 at 05:18:21PM -0700, Linus Torvalds wrote:
-> > On Mon, Mar 19, 2012 at 8:23 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >
-> > > Please pull the latest core-rcu-for-linus git tree from:
-> > >
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-rcu-for-linus
-> > 
-> > So Ingo, Paul - I'd really have liked to have some high-level
-> > user-readable explanation of the changes that I could have put in the
-> > merge message.
+sc->tx.seq_no +=0x10;
 
-Yeah, good point - I distilled that list in the merge commit 
-itself (see commit bdd4431c8d071491a68a65d9457996f222b5ecd3) - 
-should have exported that to the pull request itself:
+also did few suspend/resume in my machine, nothing interesting happened
 
->From bdd4431c8d071491a68a65d9457996f222b5ecd3 Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@elte.hu>
-Date: Tue, 28 Feb 2012 10:16:01 +0100
-Subject: [PATCH] Merge branch 'rcu/next' of
- git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu into core/rcu
+>
+> before receiving the email to do the above code with gdb I had cleaned the
+> tree out with git clean -fx so rebuilding might have misalighned things(but
+> could be wrong)..
+>
 
-The major features of this series are:
 
- - making RCU more aggressive about entering dyntick-idle mode in order to
-   improve energy efficiency
 
- - converting a few more call_rcu()s to kfree_rcu()s
-
- - applying a number of rcutree fixes and cleanups to rcutiny
-
- - removing CONFIG_SMP #ifdefs from treercu
-
- - allowing RCU CPU stall times to be set via sysfs
-
- - adding CPU-stall capability to rcutorture
-
- - adding more RCU-abuse diagnostics
-
- - updating documentation
-
- - fixing yet more issues located by the still-ongoing top-to-bottom
-   inspection of RCU, this time with a special focus on the
-   CPU-hotplug code path.
-
-Thanks,
-
-	Ingo
+-- 
+thanks,
+shafi
