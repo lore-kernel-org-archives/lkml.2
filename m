@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760317Ab2CTOmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:42:16 -0400
-Received: from [89.21.227.130] ([89.21.227.130]:42993 "EHLO
-	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756463Ab2CTOmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:42:12 -0400
-Message-ID: <4F68951E.2020601@itdev.co.uk>
-Date: Tue, 20 Mar 2012 07:33:02 -0700
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Daniel Kurtz <djkurtz@chromium.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>,
-        "Bowens, Alan" <Alan.Bowens@atmel.com>,
-        "Tiwari, Atul" <Atul.Tiwari@atmel.com>
-Subject: Re: [PATCH 00/20] cleanup atmel_mxt_ts
-References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760261Ab2CTOlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:41:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13019 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760235Ab2CTOlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:41:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="141907402"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Ted Tso <tytso@mit.edu>
+Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v1 5/9] VFS: remove unused superblock helpers
+Date: Tue, 20 Mar 2012 16:41:25 +0200
+Message-Id: <1332254489-2300-6-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Kurtz wrote:
-> This patchset cleans up the atmel_mxt_ts touchscreen driver.
-> In particular, it addresses the following issues:
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Hi Daniel-
+Remove the 'sb_mark_dirty()', 'sb_mark_clean()' and 'sb_is_dirty()' helpers
+which are not used. I introduced them 2 years and the intention was to make
+all file-systems use them in order to be able to optimize 'sync_supers()'.
+However, Al Viro vetoed my patches at the end and asked me to push superblock
+management down to file-systems and get rid of the 's_dirt' flag completely,
+as well as kill 'sync_supers()' altogether. Thus, remove the helpers.
 
-Thanks for your work on this, some of it looks very useful. I will go
-through and review each patch in turn.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+---
+ include/linux/fs.h |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
 
-I have been working on Atmel's version of this driver. You can find most of
-that work on our github site: as you know we are intending to push it
-upstream as much as possible:
-https://github.com/atmel-maxtouch
-
-The main overlap between your changes and ours is in your approach to
-writing config from userspace. There is a lot of complexity in these chips
-and providing a sysfs node for each function would end up being a
-never-ending task.
-
-So we have implemented an interface using a sysfs binary attribute which I
-think is considerably more general and flexible than the interface that you
-suggest. You can find a set of utilities on the same github that uses our
-interface. I would argue that we should try and converge the mainline
-driver on our approach rather than inventing something new unless there are
-significant advantages.
-
-cheers
-
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 69cd5bb..68387e9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1870,19 +1870,6 @@ extern struct dentry *mount_pseudo(struct file_system_type *, char *,
+ 	const struct dentry_operations *dops,
+ 	unsigned long);
+ 
+-static inline void sb_mark_dirty(struct super_block *sb)
+-{
+-	sb->s_dirt = 1;
+-}
+-static inline void sb_mark_clean(struct super_block *sb)
+-{
+-	sb->s_dirt = 0;
+-}
+-static inline int sb_is_dirty(struct super_block *sb)
+-{
+-	return sb->s_dirt;
+-}
+-
+ /* Alas, no aliases. Too much hassle with bringing module.h everywhere */
+ #define fops_get(fops) \
+ 	(((fops) && try_module_get((fops)->owner) ? (fops) : NULL))
 -- 
-Nick Dyer
-Software Engineer, ITDev Ltd
-Hardware and Software Development Consultancy
-Website: http://www.itdev.co.uk
+1.7.7.6
+
