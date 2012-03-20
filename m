@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab2CTTsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 15:48:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37653 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756981Ab2CTTsH convert rfc822-to-8bit (ORCPT
+	id S1757176Ab2CTTsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:48:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:35707 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756887Ab2CTTsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 15:48:07 -0400
-Message-ID: <1332272870.18960.450.camel@twins>
-Subject: Re: [PATCH 1/1] Fix number of events displayed in header
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ashay Rane <ashay.r@gmail.com>, linux-perf-users@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Ashay Rane <ashay.rane@tacc.utexas.edu>
-Date: Tue, 20 Mar 2012 20:47:50 +0100
-In-Reply-To: <4F68DE88.1040301@gmail.com>
-References: <1332271396-21756-1-git-send-email-ashay.r@gmail.com>
-	 <20120320194241.GA24870@infradead.org> <4F68DE88.1040301@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 20 Mar 2012 15:48:50 -0400
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX18n2s5JyqwnQvsJU5tXyUTFNuUqO4Fcm0lkDoJOYt
+	7sHahjdQ2sT8tW
+Message-ID: <4F68D14B.60409@gmx.net>
+Date: Tue, 20 Mar 2012 19:49:47 +0100
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: bhelgaas@google.com, abelay@mit.edu
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] PNP: Allow PNP resources to be disabled (interface)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 13:46 -0600, David Ahern wrote:
-> 
-> Does not seem appropriate to change from number of sample events to 
-> period for all event types. This change assumes the event is cycles, 
-> cpu-clock or task-clock. 
+Hello everybody, 
 
-I'm not seeing that assumption. That said, I don't see the point of the
-change either.
+this simple patch series continues the work begun in commit 
+18fd470a48396c8795ba7256c5973e92ffa25cb3 where ACPI PNP resource templates 
+with empty/disabled resources are handled.  
+
+The aim of this patch series is to allow to set resources as "disabled" using 
+the "/sys/bus/pnp/devices/*/resources" interface.  Such "disabled" resources 
+are needed by some vintage IBM ThinkPads like the 600E where some resources 
+need to have their IRQs disabled in order to support all the devices the 600E
+has. 
+
+To this end, some preparatory work is done, simplifying the code and allowing 
+for more flexibility in the definition of these resources. 
+
+Here's a brief description of these patches. 
+
+[1/3] - Factor out common some code
+[2/3] - Perform the actual setting
+[3/3] - Generalize handling of resource flags
+
+The patches are applied against Linux 3.3.x. 
+
+Comments are, as always, welcome.  :-)
+
+
+--- Witold
+
