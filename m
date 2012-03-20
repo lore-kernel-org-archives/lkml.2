@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab2CTKGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:06:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63460 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab2CTKGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:06:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="173980313"
-X-IronPort-AV: E=Sophos;i="4.73,616,1325491200"; 
-   d="scan'208";a="177564896"
-Message-ID: <4F685690.5020102@qca.qualcomm.com>
-Date: Tue, 20 Mar 2012 12:06:08 +0200
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH wireless-next 3/3] ath6kl: Add __printf verification to
- ath6kl_printk
-References: <cover.1332116921.git.joe@perches.com> <a27a7b0fcddc2f2366ff5ab0968ca0ff78d420c5.1332116921.git.joe@perches.com>
-In-Reply-To: <a27a7b0fcddc2f2366ff5ab0968ca0ff78d420c5.1332116921.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
+	id S1758909Ab2CTKP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:15:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751910Ab2CTKP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 06:15:26 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4F66F359.4060203@pku.edu.cn>
+References: <4F66F359.4060203@pku.edu.cn> <1331868043.1971.10.camel@epip-laptop> <20120315205514.28759.58969.stgit@warthog.procyon.org.uk> <20120315205931.28759.81875.stgit@warthog.procyon.org.uk> <17897.1331889018@redhat.com>
+To: gxt@mprc.pku.edu.cn
+Cc: dhowells@redhat.com, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 27/38] Disintegrate asm/system.h for Unicore32 [ver #3]
+Date: Tue, 20 Mar 2012 10:15:14 +0000
+Message-ID: <28091.1332238514@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 02:30 AM, Joe Perches wrote:
-> Make sure printf formats and arguments match.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Guan Xueao <gxt@pku.edu.cn> wrote:
 
-Thanks, I have applied this to ath6kl.git. John, I hope this is ok for you.
+> > Do the upstream binutils and gcc support unicore32 targets?
+> >
+> > David
+> >
+> Not yet. Sorry for the inconvenience.
 
-Kalle
+Do you have patches I could apply to my cross-compiler RPMs?  I'm using
+gcc-4.7 and binutils-2.22.52.0.1.  See:
+
+	http://people.redhat.com/~dhowells/cross/
+
+David
