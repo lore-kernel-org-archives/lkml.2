@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2CTXTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 19:19:33 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:51839 "EHLO
+	id S1759508Ab2CTXYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 19:24:39 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:51971 "EHLO
 	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759454Ab2CTXT3 (ORCPT
+	with ESMTP id S1752835Ab2CTXYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 19:19:29 -0400
-Message-ID: <4F691059.30405@panasas.com>
-Date: Tue, 20 Mar 2012 16:18:49 -0700
+	Tue, 20 Mar 2012 19:24:38 -0400
+Message-ID: <4F691175.3020604@panasas.com>
+Date: Tue, 20 Mar 2012 16:23:33 -0700
 From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -25,62 +25,59 @@ CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCHSET 0/4] kmod: Optional timeout on the wait in call_usermodehelper_exec
+Subject: [PATCH 1/4] kmod: Un-export call_usermodehelper_freeinfo()
+References: <4F691059.30405@panasas.com>
+In-Reply-To: <4F691059.30405@panasas.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Hi
 
-I'm picking on you because I don't have any one else to pick on.
-The 3 first patches here, are just good for today. Please see if
-you would like to take them? or tell me who should take them?
+call_usermodehelper_freeinfo() is not used outside of kmod.c. So
+unexport it, and make it static to kmod.c
 
-The 4th patch is an RFC, which got me looking into this.
-
-My motivation is that I added yet another Kernel dependency on the
-call_usermodehelper() function and am not completely happy with the
-error case of having the user-mode program stuck forever. In such
-case I would like the Kernel part to timeout and properly error recover
-and clean up. So therefor the proposed 4th patch.
-
-It is still in RFC because it is only lightly tested. I have booted
-with this patch and tested my use of it, with the new timeout. I have
-also dprinted the new reference counting introduced, and it does not
-look like we have any reference leaks.
-Though I have not seen in dmesgs one of the three possible cases.
-
-If the General Idea is acceptable and there is a chance this gets
-accepted, I will conduct heavy unit testing of all the cases and
-will resubmit the 4th patch.
-
-So please review and tell me what you guys think.
-
-[I have CCed all these that scripts/get_maintainers.pl suggested
- so sorry for the noise for some]
-
-The list of patches:
-[PATCH 1/4] kmod: Unexport call_usermodehelper_freeinfo()
-[PATCH 2/4] kmod: kmod: Convert two call sites to call_usermodehelper_fns()
-[PATCH 3/4] kmod: kmod: Move call_usermodehelper_fns() to .c file and unexport it's helpers
-	
-	These 3 are good cleanups, regardless of any new fixtures
-
-[RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout() API
-
-	This patch is my motivation. Please review and comment on the
-	new API, as well as the implementation details.
-
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 ---
- fs/exec.c                   |    2 +-
- include/linux/kmod.h        |   47 +++++++++-----------------------
- kernel/kmod.c               |   62 +++++++++++++++++++++++++++++++++++-------
- kernel/sys.c                |   11 +------
- security/keys/request_key.c |   13 ++-------
- 5 files changed, 71 insertions(+), 64 deletions(-)
----
+ include/linux/kmod.h |    4 ----
+ kernel/kmod.c        |    3 +--
+ 2 files changed, 1 insertions(+), 6 deletions(-)
 
-Thanks
-Boaz
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 722f477..936d197 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -80,10 +80,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
+ /* Actually execute the sub-process */
+ int call_usermodehelper_exec(struct subprocess_info *info, enum umh_wait wait);
+ 
+-/* Free the subprocess_info. This is only needed if you're not going
+-   to call call_usermodehelper_exec */
+-void call_usermodehelper_freeinfo(struct subprocess_info *info);
+-
+ static inline int
+ call_usermodehelper_fns(char *path, char **argv, char **envp,
+ 			enum umh_wait wait,
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index a0a8854..c268f34 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -191,13 +191,12 @@ fail:
+ 	do_exit(0);
+ }
+ 
+-void call_usermodehelper_freeinfo(struct subprocess_info *info)
++static void call_usermodehelper_freeinfo(struct subprocess_info *info)
+ {
+ 	if (info->cleanup)
+ 		(*info->cleanup)(info);
+ 	kfree(info);
+ }
+-EXPORT_SYMBOL(call_usermodehelper_freeinfo);
+ 
+ /* Keventd can't block, but this (a child) can. */
+ static int wait_for_helper(void *data)
+-- 
+1.7.6.2
+
