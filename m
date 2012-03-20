@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030522Ab2CTQRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:17:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47397 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab2CTQRg (ORCPT
+	id S932373Ab2CTQR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:17:56 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56201 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932229Ab2CTQRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:17:36 -0400
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1 v2] um/kernel/trap.c: Port OOM changes to handle_page_fault
-Date: Tue, 20 Mar 2012 12:17:20 -0400
-Message-Id: <1332260240-2251-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 20 Mar 2012 12:17:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPiS6wCUgYDdbSmjCzMaMv8CkZCazGvg91fqiv23W=ZeUObtdA@mail.gmail.com>
+References: <CAPiS6wCUgYDdbSmjCzMaMv8CkZCazGvg91fqiv23W=ZeUObtdA@mail.gmail.com>
+Date: Tue, 20 Mar 2012 18:17:51 +0200
+Message-ID: <CAPiS6wDc8=7yZxDNph7g1hAT7Z81P_xLJKxo79TYhq6D4m_Q+Q@mail.gmail.com>
+Subject: Re: memcpy() crash on x86-64 (reproducible)
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Mon, Mar 19, 2012 at 11:42 AM, Paulius Zaleckas
+<paulius.zaleckas@gmail.com> wrote:
+> When dumping registers with 'ethtool -d <interface>' my PC freezes
+> (99% reproducible).
+> Only hard reset helps. My network card uses r8169 driver.
+> It uses memcpy_fromio() to copy PCI space registers to buffer.
+> If I change it to simple for(...) cycle with readl() it does NOT crash
+> and works as expected.
+>
+> This happens with my work PC and the same happens on my colleagues
+> identical PC with CPU:
+> Intel(R) Core(TM) i7-2700K CPU @ 3.50GHz
+>
+> However this crash does not happen on my home PC with AMD Phenom CPU.
+> It also has realtek network card and uses the same r8169 driver.
+>
+> I know how to compile :) and I am willing to help find and fix this bug.
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+I have tried different versions of memcpy available in kernel:
+__memcpy() - crashes
+memcpy_c() - crashes
+memcpy_c_e() - works as expected
+__inline_memcpy() - works as expected
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
-
-Port these changes to um.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/um/kernel/trap.c |   24 +++++++++++++++++++-----
- 1 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/arch/um/kernel/trap.c b/arch/um/kernel/trap.c
-index dafc947..76adb61 100644
---- a/arch/um/kernel/trap.c
-+++ b/arch/um/kernel/trap.c
-@@ -30,6 +30,8 @@ int handle_page_fault(unsigned long address, unsigned long ip,
- 	pmd_t *pmd;
- 	pte_t *pte;
- 	int err = -EFAULT;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				 (is_write ? FAULT_FLAG_WRITE : 0);
- 
- 	*code_out = SEGV_MAPERR;
- 
-@@ -40,6 +42,7 @@ int handle_page_fault(unsigned long address, unsigned long ip,
- 	if (in_atomic())
- 		goto out_nosemaphore;
- 
-+retry:
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, address);
- 	if (!vma)
-@@ -65,7 +68,11 @@ good_area:
- 	do {
- 		int fault;
- 
--		fault = handle_mm_fault(mm, vma, address, is_write ? FAULT_FLAG_WRITE : 0);
-+		fault = handle_mm_fault(mm, vma, address, flags);
-+
-+		if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+			goto out_nosemaphore;
-+
- 		if (unlikely(fault & VM_FAULT_ERROR)) {
- 			if (fault & VM_FAULT_OOM) {
- 				goto out_of_memory;
-@@ -75,10 +82,17 @@ good_area:
- 			}
- 			BUG();
- 		}
--		if (fault & VM_FAULT_MAJOR)
--			current->maj_flt++;
--		else
--			current->min_flt++;
-+		if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+			if (fault & VM_FAULT_MAJOR)
-+				current->maj_flt++;
-+			else
-+				current->min_flt++;
-+			if (fault & VM_FAULT_RETRY) {
-+				flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+				goto retry;
-+			}
-+		}
- 
- 		pgd = pgd_offset(mm, address);
- 		pud = pud_offset(pgd, address);
--- 
-1.7.5.4
-
+About crash: actually PC freezes for ~20s, then unfreezes, but
+responds very slowly and after ~1min freezes completely.
+One time I was able to see dmesg output and there was
+backtrace about some process stuck for too long and then
+it switched to some different timing source because hpet was
+unstable.
