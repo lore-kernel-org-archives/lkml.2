@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049Ab2CTNS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:18:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58787 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914Ab2CTNSz (ORCPT
+	id S1757379Ab2CTNTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:19:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47922 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab2CTNTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:18:55 -0400
+	Tue, 20 Mar 2012 09:19:12 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>,
+To: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>,
         "Mohd. Faris" <mohdfarisq2010@gmail.com>
-Subject: [PATCH 01/20] avr32/mm/fault.c: Port OOM changes to do_page_fault
-Date: Tue, 20 Mar 2012 09:18:21 -0400
-Message-Id: <1332249501-2576-1-git-send-email-consul.kautuk@gmail.com>
+Subject: [PATCH 02/20] alpha/mm/fault.c: Port OOM changes to do_page_fault
+Date: Tue, 20 Mar 2012 09:18:58 -0400
+Message-Id: <1332249538-2610-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,47 +33,41 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to AVR32.
+Port these changes to ALPHA.
 
 Signed-off-by: Mohd. Faris <mohdfarisq2010@gmail.com>
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/avr32/mm/fault.c |   31 ++++++++++++++++++++++++++-----
- 1 files changed, 26 insertions(+), 5 deletions(-)
+ arch/alpha/mm/fault.c |   37 +++++++++++++++++++++++++++++++------
+ 1 files changed, 31 insertions(+), 6 deletions(-)
 
-diff --git a/arch/avr32/mm/fault.c b/arch/avr32/mm/fault.c
-index f7040a1..9649dd5 100644
---- a/arch/avr32/mm/fault.c
-+++ b/arch/avr32/mm/fault.c
-@@ -65,6 +65,7 @@ asmlinkage void do_page_fault(unsigned long ecr, struct pt_regs *regs)
- 	long signr;
- 	int code;
- 	int fault;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+diff --git a/arch/alpha/mm/fault.c b/arch/alpha/mm/fault.c
+index fadd5f8..eb2bc6d 100644
+--- a/arch/alpha/mm/fault.c
++++ b/arch/alpha/mm/fault.c
+@@ -90,6 +90,8 @@ do_page_fault(unsigned long address, unsigned long mmcsr,
+ 	const struct exception_table_entry *fixup;
+ 	int fault, si_code = SEGV_MAPERR;
+ 	siginfo_t info;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++					(cause > 0 ? FAULT_FLAG_WRITE : 0);
  
- 	if (notify_page_fault(regs, ecr))
- 		return;
-@@ -86,6 +87,7 @@ asmlinkage void do_page_fault(unsigned long ecr, struct pt_regs *regs)
- 
- 	local_irq_enable();
+ 	/* As of EV6, a load into $31/$f31 is a prefetch, and never faults
+ 	   (or is suppressed by the PALcode).  Support that for older CPUs
+@@ -115,6 +117,7 @@ do_page_fault(unsigned long address, unsigned long mmcsr,
+ 		goto vmalloc_fault;
+ #endif
  
 +retry:
  	down_read(&mm->mmap_sem);
- 
  	vma = find_vma(mm, address);
-@@ -122,6 +124,7 @@ good_area:
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto bad_area;
- 		writeaccess = 1;
-+		flags |= FAULT_FLAG_WRITE;
- 		break;
- 	default:
- 		panic("Unhandled case %lu in do_page_fault!", ecr);
-@@ -132,7 +135,11 @@ good_area:
- 	 * sure we exit gracefully rather than endlessly redo the
- 	 * fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, address, writeaccess ? FAULT_FLAG_WRITE : 0);
+ 	if (!vma)
+@@ -145,8 +148,11 @@ do_page_fault(unsigned long address, unsigned long mmcsr,
+ 	/* If for any reason at all we couldn't handle the fault,
+ 	   make sure we exit gracefully rather than endlessly redo
+ 	   the fault.  */
+-	fault = handle_mm_fault(mm, vma, address, cause > 0 ? FAULT_FLAG_WRITE : 0);
+-	up_read(&mm->mmap_sem);
 +	fault = handle_mm_fault(mm, vma, address, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
@@ -80,20 +76,20 @@ index f7040a1..9649dd5 100644
  	if (unlikely(fault & VM_FAULT_ERROR)) {
  		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -140,10 +147,24 @@ good_area:
+@@ -154,10 +160,27 @@ do_page_fault(unsigned long address, unsigned long mmcsr,
  			goto do_sigbus;
  		BUG();
  	}
 -	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
+-		current->maj_flt++;
 -	else
--		tsk->min_flt++;
+-		current->min_flt++;
 +
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
 +		if (fault & VM_FAULT_MAJOR)
-+			tsk->maj_flt++;
++			current->maj_flt++;
 +		else
-+			tsk->min_flt++;
++			current->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
@@ -106,9 +102,27 @@ index f7040a1..9649dd5 100644
 +			goto retry;
 +		}
 +	}
- 
- 	up_read(&mm->mmap_sem);
++
++	up_read(&mm->mmap_sem);
++
  	return;
+ 
+ 	/* Something tried to access memory that isn't in our memory map.
+@@ -187,12 +210,14 @@ do_page_fault(unsigned long address, unsigned long mmcsr,
+ 	/* We ran out of memory, or some other thing happened to us that
+ 	   made us unable to handle the page fault gracefully.  */
+  out_of_memory:
++	up_read(&mm->mmap_sem);
+ 	if (!user_mode(regs))
+ 		goto no_context;
+ 	pagefault_out_of_memory();
+ 	return;
+ 
+  do_sigbus:
++	up_read(&mm->mmap_sem);
+ 	/* Send a sigbus, regardless of whether we were in kernel
+ 	   or user mode.  */
+ 	info.si_signo = SIGBUS;
 -- 
 1.7.5.4
 
