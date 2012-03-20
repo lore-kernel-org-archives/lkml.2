@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758526Ab2CTWBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 18:01:13 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:47755 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758439Ab2CTWBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 18:01:11 -0400
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Mar 2012 18:01:10 EDT
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH] REGULATOR: core add 3 new modes/statuses
-Date: Tue, 20 Mar 2012 21:50:58 +0000
-Message-Id: <1332280258-5044-2-git-send-email-gg@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1332280258-5044-1-git-send-email-gg@slimlogic.co.uk>
-References: <1332280258-5044-1-git-send-email-gg@slimlogic.co.uk>
+	id S1758453Ab2CTWCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:02:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50035 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab2CTWCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 18:02:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bernhard Walle <walle@corscience.de>
+Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
+Date: Tue, 20 Mar 2012 22:02:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+References: <1332262083-9375-1-git-send-email-walle@corscience.de>
+In-Reply-To: <1332262083-9375-1-git-send-email-walle@corscience.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203202202.12060.arnd@arndb.de>
+X-Provags-ID: V02:K0:ODCAL7OO5am8wVBEI52hDUrj0MnplABgej2KkaPOyaT
+ dxhtlSg8q2Z+vUUXU2Hzn31JTB//sY+N72z49/+twMW84A5Pdq
+ 8hmG+pbLa0mDlzAMsyvVMoUrehauJI8PVzXbsHvHbiBdiDSSys
+ 4GI7M8AVgWeUy0puv+vay9U8PqUTPaZD9wdrCTMTyAtw6Q/aic
+ H48kiQ1EL+5vj1dSuWMgbzwz6f1Xgf0vEu8HBaaqC2qMN6nTtw
+ ZlM1l/0Q1ocD6JTIeE0NYpsI81O9Pkq32J1iIqqUmeE1AzX9zL
+ Us3zCsTmjXdXTr088Dh35TewQsEH/REusmRuW2QAvdNzP8eQGD
+ W9DQbFPMN5N5QumdpDW4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds three new modes to the regulator core these are present
-in many TI PMICs and I expect ones by other manufecturers.
+On Tuesday 20 March 2012, Bernhard Walle wrote:
+> 
+> This PWM driver uses the PWM of the TWL4030. The driver for the TWL6030
+> PWM has been used as mode, but the PWM registers are different.
+> 
+> The driver can be used and has been tested in conjunction with
+> pwm-backlight to control a backlight LED of a LCD touch screen.
+> 
+> Signed-off-by: Bernhard Walle <walle@corscience.de>
 
-USBBOOST this effectively turns the regulator around instead of using
-the USB 5v and converting this down to power USB hardware the regulator
-instead takes the internal voltage and boosts it to 5v for USB. Most
-commonly used when a device goes into OTG host mode.
+Since it's too late for v3.4 now and we will get a new pwm
+subsystem in v3.5, I suggest you change the driver to work
+register with that subsystem instead of just using the old
+header file. Note that drivers/mfd is not really the right
+place anyway, because this is not a multifunction driver but
+just one device driver that happens to be a slave of an mfd.
 
-BYPASS the input voltage on the regulator is transferred directly to the
-output.
-
-TRACKING the regulator tracks another resource and produces the same
-voltage. This is commonly used where an switching power supply produces
-a voltage but a quality smoothed version of the same voltage produced
-by an LDO is required as well.
-
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
----
- drivers/regulator/core.c           |   15 +++++++++++++++
- include/linux/regulator/consumer.h |    3 +++
- include/linux/regulator/driver.h   |    3 +++
- 3 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index c056abd..a4e5da4 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -414,6 +414,15 @@ static ssize_t regulator_status_show(struct device *dev,
- 	case REGULATOR_STATUS_STANDBY:
- 		label = "standby";
- 		break;
-+	case REGULATOR_STATUS_USBBOOST:
-+		label = "usbboost";
-+		break;
-+	case REGULATOR_STATUS_BYPASS:
-+		label = "bypass";
-+		break;
-+	case REGULATOR_STATUS_TRACKING:
-+		label = "tracking";
-+		break;
- 	default:
- 		return -ERANGE;
- 	}
-@@ -2680,6 +2689,12 @@ int regulator_mode_to_status(unsigned int mode)
- 		return REGULATOR_STATUS_IDLE;
- 	case REGULATOR_STATUS_STANDBY:
- 		return REGULATOR_STATUS_STANDBY;
-+	case REGULATOR_MODE_USBBOOST:
-+		return REGULATOR_STATUS_USBBOOST;
-+	case REGULATOR_MODE_BYPASS:
-+		return REGULATOR_STATUS_BYPASS;
-+	case REGULATOR_MODE_TRACKING:
-+		return REGULATOR_STATUS_TRACKING;
- 	default:
- 		return 0;
- 	}
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index 4ed1b30..6d5c6ed 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -81,6 +81,9 @@ struct notifier_block;
- #define REGULATOR_MODE_NORMAL			0x2
- #define REGULATOR_MODE_IDLE			0x4
- #define REGULATOR_MODE_STANDBY			0x8
-+#define REGULATOR_MODE_USBBOOST			0x10
-+#define REGULATOR_MODE_BYPASS			0x20
-+#define REGULATOR_MODE_TRACKING			0x40
- 
- /*
-  * Regulator notifier events.
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index fa8b55b..594f0fe 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -31,6 +31,9 @@ enum regulator_status {
- 	REGULATOR_STATUS_NORMAL,
- 	REGULATOR_STATUS_IDLE,
- 	REGULATOR_STATUS_STANDBY,
-+	REGULATOR_STATUS_USBBOOST,
-+	REGULATOR_STATUS_BYPASS,
-+	REGULATOR_STATUS_TRACKING,
- };
- 
- /**
--- 
-1.7.5.4
-
+	Arnd
