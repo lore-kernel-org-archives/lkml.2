@@ -1,70 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759094Ab2CTWsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 18:48:53 -0400
-Received: from na3sys009aob129.obsmtp.com ([74.125.149.136]:38200 "EHLO
-	na3sys009amx259.postini.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758911Ab2CTWsv (ORCPT
+	id S1759181Ab2CTWud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 18:50:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33248 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758908Ab2CTWub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 18:48:51 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Robert Lee <rob.lee@linaro.org>, len.brown@intel.com,
-        akpm@linux-foundation.org, rjw@sisk.pl, robherring2@gmail.com,
-        Baohua.Song@csr.com, amit.kucheria@linaro.org, nicolas.ferre@atmel.com,
-        linux@maxim.org.za, kgene.kim@samsung.com, amit.kachhap@linaro.org,
-        magnus.damm@gmail.com, nsekhar@ti.com, daniel.lezcano@linaro.org,
-        mturquette@linaro.org, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
-        nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
-        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
-        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
-        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
-Organization: Texas Instruments, Inc.
-References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
-	<201203202158.08042.arnd.bergmann@linaro.org>
-Date: Tue, 20 Mar 2012 15:48:45 -0700
-In-Reply-To: <201203202158.08042.arnd.bergmann@linaro.org> (Arnd Bergmann's
-	message of "Tue, 20 Mar 2012 21:58:07 +0000")
-Message-ID: <873992zy5u.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 20 Mar 2012 18:50:31 -0400
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=VdKXIKFENfkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=VFjshNgO1W2xqlf29lQA:9 a=2Pp9E64oga76OzIoLsEA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332283828.23924.17.camel@gandalf.stny.rr.com>
+Subject: [PATCH][GIT PULL] tracing: Move the tracing_on/off() declarations
+ into CONFIG_TRACING
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 20 Mar 2012 18:50:28 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd.bergmann@linaro.org> writes:
 
-> On Tuesday 20 March 2012, Robert Lee wrote:
->> This patch series moves various functionality duplicated in platform 
->> cpuidle drivers to the core cpuidle driver. Also, the platform irq
->> disabling was removed as it appears that all calls into 
->> cpuidle_call_idle will have already called local_irq_disable().
->> 
->> These changes have been pulled into linux-next.
->> 
->> Len, Andrew, can a request be made for Linus to pull these changes?
->
-> FWIW, Len seems to be rather inactive on the kernel mailing list right
-> now and generally not very interested in anything outside of x86 and
-> acpi. If he doesn't reply in the next few days and Andrew also isn't
-> interested in handling these patches, I'd suggest you just send the pull
-> request to Linus, with Len on Cc and explain that you tried to send
-> them through him but gave up in the end.
+Ingo,
 
-FWIW, I have not had good luck getting response for proposed core
-CPUidle changes either:
+This fixes the bug you found with the config. I also added a test to my
+test suite, that includes that config combination of having RING_BUFFER
+enabled but TRACING not, to catch further bugs similar to this one.
 
-        http://lkml.org/lkml/2011/9/19/374
+-- Steve 
 
-Maybe it's time that drivers/cpuidle gets a maintainer.  With lots of
-discussions of scheduler changes that affect load estimation, I suspect
-we're all going to have a bit of CPUidle work to do in the
-not-so-distant future.
+Please pull the latest tip/perf/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
+
+Head SHA1: 93d68e52295fb8b65ded6db49e32e63b6a203e0b
+
+
+Steven Rostedt (1):
+      tracing: Move the tracing_on/off() declarations into CONFIG_TRACING
+
+----
+ include/linux/kernel.h |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+---------------------------
+commit 93d68e52295fb8b65ded6db49e32e63b6a203e0b
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Tue Mar 20 12:28:29 2012 -0400
+
+    tracing: Move the tracing_on/off() declarations into CONFIG_TRACING
+    
+    The tracing_on/off() declarations were under CONFIG_RING_BUFFER, but
+    the functions are now only defined under CONFIG_TRACING as they are
+    specific to ftrace and not the ring buffer.
+    
+    But the declarations were still defined under the ring buffer and
+    this caused the build to fail when CONFIG_RING_BUFFER was set but
+    CONFIG_TRACING was not.
+    
+    Reported-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e834342..51b9548 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -414,16 +414,10 @@ extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
+  * Most likely, you want to use tracing_on/tracing_off.
+  */
+ #ifdef CONFIG_RING_BUFFER
+-void tracing_on(void);
+-void tracing_off(void);
+ /* trace_off_permanent stops recording with no way to bring it back */
+ void tracing_off_permanent(void);
+-int tracing_is_on(void);
+ #else
+-static inline void tracing_on(void) { }
+-static inline void tracing_off(void) { }
+ static inline void tracing_off_permanent(void) { }
+-static inline int tracing_is_on(void) { return 0; }
+ #endif
  
-Kevin
+ enum ftrace_dump_mode {
+@@ -433,6 +427,10 @@ enum ftrace_dump_mode {
+ };
+ 
+ #ifdef CONFIG_TRACING
++void tracing_on(void);
++void tracing_off(void);
++int tracing_is_on(void);
++
+ extern void tracing_start(void);
+ extern void tracing_stop(void);
+ extern void ftrace_off_permanent(void);
+@@ -517,6 +515,11 @@ static inline void tracing_start(void) { }
+ static inline void tracing_stop(void) { }
+ static inline void ftrace_off_permanent(void) { }
+ static inline void trace_dump_stack(void) { }
++
++static inline void tracing_on(void) { }
++static inline void tracing_off(void) { }
++static inline int tracing_is_on(void) { return 0; }
++
+ static inline int
+ trace_printk(const char *fmt, ...)
+ {
+
+
