@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760082Ab2CTOD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:03:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40956 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759985Ab2CTOD0 convert rfc822-to-8bit (ORCPT
+	id S1760079Ab2CTOGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:06:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59134 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759284Ab2CTOGx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:03:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <op.wbgvn00x3l0zgt@mpn-glaptop>
-References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com>
-	<1332238884-6237-2-git-send-email-laijs@cn.fujitsu.com>
-	<op.wbgvn00x3l0zgt@mpn-glaptop>
-Date: Tue, 20 Mar 2012 16:03:24 +0200
-Message-ID: <CACVxJT_UVRjkSK+kieYVpO4R+D-4S2bXaoK-apxMkuFAYsgi_A@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/6] kenrel.h: add ALIGN_OF_LAST_BIT()
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Mar 2012 10:06:53 -0400
+Message-ID: <1332252387.18960.424.camel@twins>
+Subject: Re: [PATCH 04/20] powerpc/mm/fault.c: Port OOM changes to
+ do_page_fault
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Jimi Xenidis <jimix@pobox.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Christian Dietrich 
+	<christian.dietrich@informatik.uni-erlangen.de>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        "Mohd. Faris" <mohdfarisq2010@gmail.com>
+Date: Tue, 20 Mar 2012 15:06:27 +0100
+In-Reply-To: <1332249595-2678-1-git-send-email-consul.kautuk@gmail.com>
+References: <1332249595-2678-1-git-send-email-consul.kautuk@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 2:32 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
-> On Tue, 20 Mar 2012 11:21:19 +0100, Lai Jiangshan <laijs@cn.fujitsu.com>
-> wrote:
->
->> Get the biggest 2**y that x % (2**y) == 0 for the align value.
+On Tue, 2012-03-20 at 09:19 -0400, Kautuk Consul wrote:
+> +#ifd#ifdef CONFIG_PPC_SMLPAR
+> +                       if (firmware_has_feature(FW_FEATURE_CMO)) {
+> +                               preempt_disable();
+> +                               get_lppaca()->page_ins += (1 << PAGE_FACTOR);
+> +                               preempt_enable();
+> +                       }
+> +#end#endif 
 
->> --- a/include/linux/kernel.h
->> +++ b/include/linux/kernel.h
->> @@ -44,6 +44,8 @@
->>  #define PTR_ALIGN(p, a)                ((typeof(p))ALIGN((unsigned
->> long)(p), (a)))
->>  #define IS_ALIGNED(x, a)               (((x) & ((typeof(x))(a) - 1)) ==
->> 0)
->> +#define ALIGN_OF_LAST_BIT(x)   ((((x)^((x) - 1))>>1) + 1)
->
->
-> Wouldn't ALIGNMENT() be less confusing? After all, that's what this macro is
-> calculating, right? Alignment of given address.
-
-Bits do not have alignment because they aren't directly addressable.
-Can you hardcode this sequence with comment, because it looks too
-special for macro.
+That's curious CPP usage....
