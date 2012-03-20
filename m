@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab2CTDdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 23:33:09 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50068 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756981Ab2CTDdH (ORCPT
+	id S1759383Ab2CTDii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 23:38:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39231 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab2CTDih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 23:33:07 -0400
-Date: Mon, 19 Mar 2012 20:33:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] RCU changes for v3.4
-Message-ID: <20120320033300.GH2393@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120319152317.GA3932@gmail.com>
- <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032003-1780-0000-0000-000004194E21
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000258; HX=3.00000186; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00123544; UDB=6.00029630; UTC=2012-03-20
- 03:33:06
+	Mon, 19 Mar 2012 23:38:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="171631241"
+From: Saravana Kannan <skannan@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH 1/2] clk: Fix error handling in fixed clock hardware type register fn
+Date: Mon, 19 Mar 2012 20:38:25 -0700
+Message-Id: <1332214706-675-1-git-send-email-skannan@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 05:18:21PM -0700, Linus Torvalds wrote:
-> On Mon, Mar 19, 2012 at 8:23 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Please pull the latest core-rcu-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-rcu-for-linus
-> 
-> So Ingo, Paul - I'd really have liked to have some high-level
-> user-readable explanation of the changes that I could have put in the
-> merge message.
-> 
-> This is especially true for something like RCU, which (a) seems to be
-> continually growing and (b) has had cases of "oops, now it stopped
-> working" or "uhhuh, new rules due to new rcu implementations
-> interacting differently with spinlocks" etc.
-> 
-> So when the diffstat summary looks like this:
-> 
->   29 files changed, 2965 insertions(+), 642 deletions(-)
-> 
-> with basically 2000+ new lines (yes, many of them in Documebntation,
-> happily, but rcutree grew noticeably too), it really would have been
-> nice to have some blurb about what the heck actually happened, ok?
+If memory allocation for the parents array or the parent string fails, then
+fail the registration immediately instead of calling clk_register and
+hoping it fails there.
 
-Yep, 2072 of the net additions were in Documentation.
+Return -ENOMEM on failure.
 
-> I'm starting to get explanations in signed tags or in the "please
-> pull" messages from a fairly large number of maintainers now, and the
-> pulls from Ingo are beginning to look sad and unexplained in contrast.
+Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Jamie Iles <jamie@jamieiles.com>
+Cc: Richard Zhao <richard.zhao@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Deepak Saxena <dsaxena@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+---
+There are still some memory free issues when clk_register() fails, but I will
+fix it when I fixed the other register() fns to return ENOMEM of alloc
+failure instead of a NULL.
 
-Many of the change to rcutree.c were due to additions of checks for illegal
-use of RCU from idle or offlined CPUs, reworking of the CPU-offline code
-path, and fixes to allow use of RCU from idle CPUs (which has always been
-illegal, but many uses have nevertheless slipped in over the years).
+ drivers/clk/clk-fixed-rate.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-If it would help, I would be happy to put together an itemized list.
-I will of course do so for the next merge window.
-
-							Thanx, Paul
+diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
+index 90c79fb..6423ae9 100644
+--- a/drivers/clk/clk-fixed-rate.c
++++ b/drivers/clk/clk-fixed-rate.c
+@@ -61,22 +61,26 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+ 		parent_names = kmalloc(sizeof(char *), GFP_KERNEL);
+ 
+ 		if (! parent_names)
+-			goto out;
++			goto fail_ptr;
+ 
+ 		len = sizeof(char) * strlen(parent_name);
+ 
+ 		parent_names[0] = kmalloc(len, GFP_KERNEL);
+ 
+ 		if (!parent_names[0])
+-			goto out;
++			goto fail_str;
+ 
+ 		strncpy(parent_names[0], parent_name, len);
+ 	}
+ 
+-out:
+ 	return clk_register(dev, name,
+ 			&clk_fixed_rate_ops, &fixed->hw,
+ 			parent_names,
+ 			(parent_name ? 1 : 0),
+ 			flags);
++fail_str:
++	kfree(parent_names);
++fail_ptr:
++	kfree(fixed);
++	return ERR_PTR(-ENOMEM);
+ }
+-- 
+1.7.8.3
 
