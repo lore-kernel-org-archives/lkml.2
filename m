@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030417Ab2CTLuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 07:50:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59084 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab2CTLue (ORCPT
+	id S1759796Ab2CTMBB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 08:01:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61351 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759774Ab2CTMBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 07:50:34 -0400
-Date: Tue, 20 Mar 2012 12:50:25 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120320115025.GN7505@kernel.dk>
-References: <20120306135531.828ca78e.akpm@linux-foundation.org>
- <20120307145556.GA11262@redhat.com>
- <20120307150549.955d6f9c.akpm@linux-foundation.org>
- <20120308175708.GB22922@redhat.com>
- <20120308180833.GA25508@google.com>
- <20120308181125.GB25508@google.com>
- <20120308182245.GC22922@redhat.com>
- <20120308182712.GD25508@google.com>
- <20120315164800.GE3253@redhat.com>
- <20120315165906.GE32137@google.com>
+	Tue, 20 Mar 2012 08:01:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120315165906.GE32137@google.com>
+In-Reply-To: <1332208268.10843.1.camel@phoenix>
+References: <1332208268.10843.1.camel@phoenix>
+Date: Tue, 20 Mar 2012 13:00:59 +0100
+Message-ID: <CACRpkdayrqk40OkQMOfwm43NOE4GWYBNb1QxJJvuCuwPiPp1pA@mail.gmail.com>
+Subject: Re: [PATCH RFT] regulator: Convert ab8500 to set_voltage_sel
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        Sundar R Iyer <sundar.iyer@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15 2012, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Mar 15, 2012 at 12:48:00PM -0400, Vivek Goyal wrote:
-> > Your patches are in for-3.4/core branch of Jens's tree. So these indeed
-> > are going in 3.4 and not 3.5. I am confused.
-> 
-> Yeah, that's a bit confusing but they really aren't scheduled for the
-> upcoming merge window.  I suppose Jens just didn't want to create
-> for-3.5 branch at the moment.  Jens?
+On Tue, Mar 20, 2012 at 2:51 AM, Axel Lin <axel.lin@gmail.com> wrote:
 
-They are going into 3.5, I just need to shuffle the branches a bit.
+> Convert ab8500 to set_voltage_sel and then we can remove
+> ab8500_get_best_voltage_index function.
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
--- 
-Jens Axboe
+Tested on the U8500, works like a charm AFAICT.
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
+Thanks Axel!
+Linus Walleij
