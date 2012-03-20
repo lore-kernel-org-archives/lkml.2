@@ -1,97 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab2CTEjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 00:39:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58775 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2CTEjW (ORCPT
+	id S1751964Ab2CTE5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 00:57:33 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:36241 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab2CTE5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 00:39:22 -0400
-Date: Tue, 20 Mar 2012 15:39:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arun Murthy <arun.murthy@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: linux-next: build failure after merge of the battery tree
-Message-Id: <20120320153912.b97107ca4128d0692de17799@canb.auug.org.au>
-In-Reply-To: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
-References: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 20 Mar 2012 00:57:32 -0400
+Message-ID: <1332219449.2025.11.camel@shrek.rexursive.com>
+Subject: [PATCH v3]: Hibernation: lower/better control the amount of pages
+ used for buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 20 Mar 2012 15:57:29 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rafael,
 
-Hi Anton,
+First off, sorry about the spam. Unfortunately, my fancy binary shifting
+arithmetic in the v2 of the patch is not up to scratch (wanted to say
+8k, instead said 4k). So, this version just changes (1 << 12) to 8192,
+which is what I wanted to set LZO_READ_PAGES constant to. Otherwise the
+same as v2.
 
-On Thu, 15 Mar 2012 13:56:09 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the battery tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_batctrl_volt_to_r=
-es':
-> drivers/power/ab8500_btemp.c:142:2: error: implicit declaration of functi=
-on 'is_ab8500_1p1_or_earlier' [-Werror=3Dimplicit-function-declaration]
-> drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_templow_handler':
-> drivers/power/ab8500_btemp.c:619:2: error: implicit declaration of functi=
-on 'is_ab8500_2p0_or_earlier' [-Werror=3Dimplicit-function-declaration]
-> drivers/power/ab8500_charger.c: In function 'ab8500_charger_ac_en':
-> drivers/power/ab8500_charger.c:1126:3: error: implicit declaration of fun=
-ction 'is_ab8500_1p1_or_earlier' [-Werror=3Dimplicit-function-declaration]
-> drivers/power/ab8500_charger.c: In function 'ab8500_charger_remove':
-> drivers/power/ab8500_charger.c:2519:2: error: implicit declaration of fun=
-ction 'usb_unregister_notifier' [-Werror=3Dimplicit-function-declaration]
-> drivers/power/ab8500_charger.c:2520:2: error: implicit declaration of fun=
-ction 'usb_put_transceiver' [-Werror=3Dimplicit-function-declaration]
-> drivers/power/ab8500_charger.c: In function 'ab8500_charger_probe':
-> drivers/power/ab8500_charger.c:2688:2: error: implicit declaration of fun=
-ction 'usb_get_transceiver' [-Werror=3Dimplicit-function-declaration]
-> drivers/power/ab8500_charger.c:2688:14: warning: assignment makes pointer=
- from integer without a cast [enabled by default]
-> drivers/power/ab8500_charger.c:2695:2: error: implicit declaration of fun=
-ction 'usb_register_notifier' [-Werror=3Dimplicit-function-declaration]
->=20
-> Caused by commits 89449ac8d6d2 ("ab8500-charger: AB8500 charger driver")
-> and 20ac1aed6206 ("ab8500-btemp: AB8500 battery temperature driver").
->=20
-> I have used the battery tree form next-20120314 for today.
+---------------------------------------
+Hibernation/thaw improvements:
 
-Still getting this build failure.
+1. Set maximum number of pages for read buffering consistently, instead
+of inadvertently depending on the size of the sector type.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+2. Use at most one quarter of free pages for read buffering.
 
---Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ
-Content-Type: application/pgp-signature
+3. Require that number of free pages when writing the image never falls
+below half of total free pages available.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+---
+ kernel/power/swap.c |   26 +++++++++++++++-----------
+ 1 files changed, 15 insertions(+), 11 deletions(-)
 
-iQIcBAEBCAAGBQJPaAnwAAoJEECxmPOUX5FEThIQAI9ztS5zF5+X8wbFmPrWhxH+
-PrkLINLxe3YmGF5JAfD2jz5vxVqT8pg+FC8f1UypexM79aB4B3R+4gAqYWKzii8x
-pckXJ19/cRY9uuUvmsXaeQl9N1PVciJSSJzWvUYE3k4+jn9ldFACM1H/1nTZPHj8
-P2ZDGV/MZ936nAr/Jg3T3uznCcuScuqC/Jhw9Rgj+Y1oX3S537NMIPGJOpT8jUlk
-2OF9ka2YycyrUv2L1e7qSpQIVS8uawVWneiaeVdUC2Qi0UmPgax7B3d/ENLWW51c
-CArpU1wcyxBZ3w+D0ZMLqT2QaFtICyX+1h5O5LIPpJy/eroviLMHdRl4f2LP36Df
-ZSYyGTXs3bH12Mz38FCitqxODzKHqgWRqyFvFEwBHdE7DusU9uPsg9P07SkmAMPe
-7gFiCr63TsRbzcYjV4fI1RzgmEJEpedYGQqPdRbpWaVCwX0DA0IseBnEfin5lPDy
-NBuGKFak6ffkPFlr3BCWGicDhcjjA8LEhojcxJgW95ceiSPXgLzifFV1kW1sHGdE
-+13nKqXkE8Ka6kodQmWqBU9zxB2JCU6zefVjYudqiBgvQcNRw4cPXR7z6yWw9HzQ
-Hq1HQyaK8d+zWjKdG9+vo1ORkfNrjf9i/SH3dfCcHsQvDzW6EcGyTw0oOXpw/M+l
-HBqV+PoeYu+guwaR5P9i
-=L1er
------END PGP SIGNATURE-----
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 8742fd0..63b0cfa 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -72,7 +72,7 @@ struct swap_map_handle {
+ 	sector_t cur_swap;
+ 	sector_t first_sector;
+ 	unsigned int k;
+-	unsigned long nr_free_pages, written;
++	unsigned long reqd_free_pages;
+ 	u32 crc32;
+ };
+ 
+@@ -316,8 +316,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
+-	handle->nr_free_pages = nr_free_pages() >> 1;
+-	handle->written = 0;
++	handle->reqd_free_pages = nr_free_pages() >> 1;
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+ err_rel:
+@@ -352,11 +351,15 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+ 	}
+-	if (bio_chain && ++handle->written > handle->nr_free_pages) {
++	if (bio_chain && nr_free_pages() < handle->reqd_free_pages) {
+ 		error = hib_wait_on_bio_chain(bio_chain);
+ 		if (error)
+ 			goto out;
+-		handle->written = 0;
++		/*
++		 * Recalculate the number of required free pages, to make sure
++		 * we never take more than half.
++		 */
++		handle->reqd_free_pages = nr_free_pages() >> 1;
+ 	}
+  out:
+ 	return error;
+@@ -404,7 +407,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ #define LZO_THREADS	3
+ 
+ /* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++#define LZO_READ_PAGES	8192
+ 
+ 
+ /**
+@@ -615,10 +618,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
+ 	 */
+-	handle->nr_free_pages = nr_free_pages() >> 1;
++	handle->reqd_free_pages = nr_free_pages() >> 1;
+ 
+ 	/*
+ 	 * Start the CRC32 thread.
+@@ -1129,8 +1132,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 
+ 	/*
+ 	 * Adjust number of pages for read buffering, in case we are short.
++	 * Never take more than a quarter of all available pages.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
++	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 2;
+ 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+---------------------------------------
 
---Signature=_Tue__20_Mar_2012_15_39_12_+1100_kksWIIHFcyV6yQvQ--
+-- 
+Bojan
+
