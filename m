@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964825Ab2CTNIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:08:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37147 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab2CTNIQ (ORCPT
+	id S1755984Ab2CTNQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:16:52 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:58344 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752334Ab2CTNQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:08:16 -0400
-Date: Tue, 20 Mar 2012 14:08:05 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de,
-        fabio.estevam@freescale.com
-Subject: Re: [PATCH] ARM: i.MX35: Add set_rate and round_rate calls to csi_clk
-Message-ID: <20120320130805.GK3852@pengutronix.de>
-References: <1332239392-12639-1-git-send-email-alexg@meprolight.com>
+	Tue, 20 Mar 2012 09:16:51 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 RFC] rtc: Add ioctl to get/clear battery low voltage status
+Date: Tue, 20 Mar 2012 14:16:48 +0100
+Message-ID: <10044051.7oD69oyPfX@ws-stein>
+User-Agent: KMail/4.7.4 (Linux/3.2.1-gentoo-r2; KDE/4.7.4; x86_64; ; )
+In-Reply-To: <1329236025-31323-1-git-send-email-alexander.stein@systec-electronic.com>
+References: <1329236025-31323-1-git-send-email-alexander.stein@systec-electronic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332239392-12639-1-git-send-email-alexg@meprolight.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:04:14 up 128 days, 20:51, 97 users,  load average: 0.08, 0.04,
- 0.24
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 12:29:52PM +0200, Alex Gershgorin wrote:
-> This patch add set_rate and round_rate calls to csi_clk. This is needed
-> to give mx3-camera control over master clock rate to camera.
+Any news/feedback on these patches?
 
-The file you are patching is scheduled for removal in favour for the
-common clock framework, so you are flogging a dead horse here. I suggest
-that you wait some time until I finished the i.MX35 patches for this.
+Regards,
+Alexander
 
-> +static int csi_set_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	unsigned long div;
-> +	unsigned long parent_rate;
-> +	unsigned long pdr2 = __raw_readl(CCM_BASE + CCM_PDR2);
+Am Dienstag, 14. Februar 2012, 17:13:44 schrieb Alexander Stein:
+> Currently there is no generic way to get the RTC battery status within
+> an application. So add an ioctl to read the status bit.
+> The idea is that the bit is set once a low voltage is detected. It stays
+> there until it is reset using the RTC_VL_CLR ioctl.
+> 
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> ---
+>  include/linux/rtc.h |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+> index 93f4d03..1a6ec5f 100644
+> --- a/include/linux/rtc.h
+> +++ b/include/linux/rtc.h
+> @@ -91,6 +91,9 @@ struct rtc_pll_info {
+>  #define RTC_PLL_GET	_IOR('p', 0x11, struct rtc_pll_info)  /* Get PLL
+> correction */ #define RTC_PLL_SET	_IOW('p', 0x12, struct rtc_pll_info)  /*
+> Set PLL correction */
+> 
+> +#define RTC_VL_READ	_IOR('p', 0x13, int)	/* Voltage low detector */
+> +#define RTC_VL_CLR	_IO('p', 0x14)		/* Clear voltage low information 
+*/
 > +
-> +	if (pdr2 & (1 << 7))
-> +		parent_rate = get_rate_arm();
-> +	else
-> +		parent_rate = get_rate_ppll();
-> +
-> +	div = parent_rate / rate;
-> +
-> +	/* Set clock divider */
-> +	pdr2 |= ((div - 1) & 0x3f) << 16;
-
-btw you forget to clear the divider bits in pdr2 before
-setting the new values.
-
-Sascha
-
+>  /* interrupt flags */
+>  #define RTC_IRQF 0x80	/* Any of the following is active */
+>  #define RTC_PF 0x40	/* Periodic interrupt */
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Dipl.-Inf. Alexander Stein
+
+SYS TEC electronic GmbH
+August-Bebel-Str. 29
+D-07973 Greiz
+
+Tel: +49-3661-6279-0, Fax: +49-3661-6279-99
+eMail:    Alexander.Stein@systec-electronic.com
+Internet: http://www.systec-electronic.com
+
+Managing Director: Dipl.-Phys. Siegmar Schmidt
+Commercial registry: Amtsgericht Jena, HRB 205563
