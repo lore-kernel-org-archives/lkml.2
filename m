@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab2CTVDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 17:03:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35245 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab2CTVDS (ORCPT
+	id S932297Ab2CTVGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 17:06:55 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45475 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757729Ab2CTVGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 17:03:18 -0400
-Date: Tue, 20 Mar 2012 14:03:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next] mm: fix rcu-lock/unlock balance in
- vm_is_stack()
-Message-Id: <20120320140316.f52388bd.akpm@linux-foundation.org>
-In-Reply-To: <20120320205455.31285.23096.stgit@zurg>
-References: <20120320205455.31285.23096.stgit@zurg>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Mar 2012 17:06:53 -0400
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 131.252.102.37
+Date: Tue, 20 Mar 2012 14:06:44 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] checkpatch: Check for quoted strings broken across lines
+Message-ID: <20120320210644.GA2493@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 00:54:55 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+checkpatch already makes an exception to the 80-column rule for quoted
+strings, and Documentation/CodingStyle recommends not splitting quoted
+strings across lines, because it breaks the ability to grep for the
+string.  Rather than just permitting this, actively warn about quoted
+strings split across lines.
 
-> Fix bug introduced in "procfs: mark thread stack correctly in proc/<pid>/maps"
-> (patch in mm/linux-next)
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  mm/memory.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ee85fc4..cc08b86 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3932,13 +3932,12 @@ pid_t vm_is_stack(struct task_struct *task,
->  		while_each_thread(task, t) {
->  			if (vm_is_stack_for_task(t, vma)) {
->  				ret = t->pid;
-> -				goto done;
-> +				break;
->  			}
->  		}
-> +		rcu_read_unlock();
->  	}
->  
-> -done:
-> -	rcu_read_unlock();
->  	return ret;
->  }
->  
+Test case:
 
-Appears to have been fixed in v3:
-
-pid_t vm_is_stack(struct task_struct *task,
-		  struct vm_area_struct *vma, int in_group)
+void context(void)
 {
-	pid_t ret = 0;
-
-	if (vm_is_stack_for_task(task, vma))
-		return task->pid;
-
-	if (in_group) {
-		struct task_struct *t;
-		rcu_read_lock();
-		if (!pid_alive(task))
-			goto done;
-
-		t = task;
-		do {
-			if (vm_is_stack_for_task(t, vma)) {
-				ret = t->pid;
-				goto done;
-			}
-		} while_each_thread(task, t);
-done:
-		rcu_read_unlock();
-	}
-
-	return ret;
+	struct { unsigned magic; const char *strdata; } foo[] = {
+		{ 42, "these strings"
+		      "do not produce warnings" },
+		{ 256, "though perhaps"
+		       "they should" },
+	};
+	pr_err("this string"
+	       " should produce a warning\n");
+	pr_err("this multi-line string\n"
+	       "should not produce a warning\n");
+	asm ("this asm\n\t"
+	     "should not produce a warning");
 }
 
-I'm working on getting a -next update sent to Stephen today.
+Results of checkpatch on that test case:
+
+WARNING: quoted string split across lines
++	       " should produce a warning\n");
+
+total: 0 errors, 1 warnings, 15 lines checked
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+
+Resending now that the merge window has opened.
+
+ scripts/checkpatch.pl |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e3bfcbe..01a5e4b 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1737,6 +1737,21 @@ sub process {
+ 			     "line over 80 characters\n" . $herecurr);
+ 		}
+ 
++# Check for user-visible strings broken across lines, which breaks the ability
++# to grep for the string.  Limited to strings used as parameters (those
++# following an open parenthesis), which almost completely eliminates false
++# positives, as well as warning only once per parameter rather than once per
++# line of the string.  Make an exception when the previous string ends in a
++# newline (multiple lines in one string constant) or \n\t (common in inline
++# assembly to indent the instruction on the following line).
++		if ($line =~ /^\+\s*"/ &&
++		    $prevline =~ /"\s*$/ &&
++		    $prevline =~ /\(/ &&
++		    $prevrawline !~ /\\n(?:\\t)*"\s*$/) {
++			WARN("SPLIT_STRING",
++			     "quoted string split across lines\n" . $hereprev);
++		}
++
+ # check for spaces before a quoted newline
+ 		if ($rawline =~ /^.*\".*\s\\n/) {
+ 			WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
+-- 
+1.7.9
+
