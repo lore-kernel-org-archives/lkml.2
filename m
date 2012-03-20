@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759562Ab2CTKtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:49:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52741 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab2CTKtN convert rfc822-to-8bit (ORCPT
+	id S1759637Ab2CTKtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:49:55 -0400
+Received: from mail-we0-f194.google.com ([74.125.82.194]:46697 "EHLO
+	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759569Ab2CTKtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:49:13 -0400
-Message-ID: <1332240525.18960.403.camel@twins>
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Tue, 20 Mar 2012 11:48:45 +0100
-In-Reply-To: <4F685960.4080904@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	    <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>
-	   <4F671B90.3010209@redhat.com> <1332158992.18960.316.camel@twins>
-	  <4F672384.1030601@redhat.com> <1332187387.18960.389.camel@twins>
-	 <4F685960.4080904@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 20 Mar 2012 06:49:35 -0400
+Date: Tue, 20 Mar 2012 11:49:31 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Steffen Persvold <sp@numascale.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jack Steiner <steiner@sgi.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH REPOST] Added separate apic_id_valid() functions for
+ selected apic drivers.
+Message-ID: <20120320104931.GA22880@gmail.com>
+References: <CAE9FiQVxuVGe=m87fQKE+JjPk=Z83iOypQU+yQn5y-M-qVSArg@mail.gmail.com>
+ <1331925935-13372-1-git-send-email-sp@numascale.com>
+ <4F685EE8.5020708@numascale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F685EE8.5020708@numascale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 12:18 +0200, Avi Kivity wrote:
-> On 03/19/2012 10:03 PM, Peter Zijlstra wrote:
-> > On Mon, 2012-03-19 at 14:16 +0200, Avi Kivity wrote:
-> > > > Afaik we do not use dma engines for memory migration. 
-> > > 
-> > > We don't, but I think we should. 
-> >
-> > ISTR we (the community) had this discussion once. I also seem to
-> > remember the general consensus being that DMA engines would mostly
-> > likely not be worth the effort, although I can't really recall the
-> > specifics.
-> >
-> > Esp. for 4k pages the setup of the offload will likely be more expensive
-> > than actually doing the memcpy.
-> 
-> If you're copying a page, yes.  If you're copying a large vma, the
-> per-page setup cost is likely to be very low.
-> 
-> Especially if you're copying across nodes.
 
-But wouldn't you then have to wait for the entire copy to complete
-before accessing any of the memory? That sounds like a way worse latency
-hit than the per-page lazy-migrate.
+* Steffen Persvold <sp@numascale.com> wrote:
+
+> Ingo, any comments on this approach ? It should cover both 
+> cases as suggested by Suresh and Yinghai.
+
+Looks good in principle, but we are in the v3.4 merge window 
+right now - new patches will have to wait a bit.
+
+Thanks,
+
+	Ingo
