@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab2CTNXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:23:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37735 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757313Ab2CTNXr (ORCPT
+	id S1758994Ab2CTNYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:24:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56963 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758235Ab2CTNYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:23:47 -0400
+	Tue, 20 Mar 2012 09:24:02 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Richard Kuo <rkuo@codeaurora.org>, Linas Vepstas <linas@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 11/20] hexagon/mm/vm_fault.c: Port OOM changes to do_page_fault
-Date: Tue, 20 Mar 2012 09:23:33 -0400
-Message-Id: <1332249813-2970-1-git-send-email-consul.kautuk@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 12/20] frv/mm/fault.c: Port OOM changes to do_page_fault
+Date: Tue, 20 Mar 2012 09:23:48 -0400
+Message-Id: <1332249828-3004-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,63 +29,82 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to hexagon.
+Port these changes to frv.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/hexagon/mm/vm_fault.c |   22 +++++++++++++++++-----
- 1 files changed, 17 insertions(+), 5 deletions(-)
+ arch/frv/mm/fault.c |   30 +++++++++++++++++++++++++-----
+ 1 files changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/arch/hexagon/mm/vm_fault.c b/arch/hexagon/mm/vm_fault.c
-index c10b76f..06695cc 100644
---- a/arch/hexagon/mm/vm_fault.c
-+++ b/arch/hexagon/mm/vm_fault.c
-@@ -53,6 +53,8 @@ void do_page_fault(unsigned long address, long cause, struct pt_regs *regs)
- 	int si_code = SEGV_MAPERR;
+diff --git a/arch/frv/mm/fault.c b/arch/frv/mm/fault.c
+index a325d57..478e405 100644
+--- a/arch/frv/mm/fault.c
++++ b/arch/frv/mm/fault.c
+@@ -41,6 +41,7 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+ 	pte_t *pte;
+ 	int write;
  	int fault;
- 	const struct exception_table_entry *fixup;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				 (cause > 0 ? FAULT_FLAG_WRITE : 0);
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- 	/*
- 	 * If we're in an interrupt or have no user context,
-@@ -63,6 +65,7 @@ void do_page_fault(unsigned long address, long cause, struct pt_regs *regs)
- 
- 	local_irq_enable();
+ #if 0
+ 	const char *atxc[16] = {
+@@ -82,6 +83,7 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+ 	if (in_atomic() || !mm)
+ 		goto no_context;
  
 +retry:
  	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, address);
- 	if (!vma)
-@@ -96,14 +99,23 @@ good_area:
- 		break;
- 	}
  
--	fault = handle_mm_fault(mm, vma, address, (cause > 0));
-+	fault = handle_mm_fault(mm, vma, address, flags);
+ 	vma = find_vma(mm, ear0);
+@@ -142,6 +144,7 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+ 		if (!(vma->vm_flags & VM_WRITE))
+ 			goto bad_area;
+ 		write = 1;
++		flags |= FAULT_FLAG_WRITE;
+ 		break;
+ 
+ 		 /* handle read from protected page */
+@@ -163,7 +166,11 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+ 	 * make sure we exit gracefully rather than endlessly redo
+ 	 * the fault.
+ 	 */
+-	fault = handle_mm_fault(mm, vma, ear0, write ? FAULT_FLAG_WRITE : 0);
++	fault = handle_mm_fault(mm, vma, ear0, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
 +		return;
- 
- 	/* The most common case -- we are done. */
- 	if (likely(!(fault & VM_FAULT_ERROR))) {
--		if (fault & VM_FAULT_MAJOR)
--			current->maj_flt++;
--		else
--			current->min_flt++;
-+		if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+			if (fault & VM_FAULT_MAJOR)
-+				current->maj_flt++;
-+			else
-+				current->min_flt++;
-+			if (fault & VM_FAULT_RETRY) {
-+				flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+				goto retry;
-+			}
++
+ 	if (unlikely(fault & VM_FAULT_ERROR)) {
+ 		if (fault & VM_FAULT_OOM)
+ 			goto out_of_memory;
+@@ -171,10 +178,23 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+ 			goto do_sigbus;
+ 		BUG();
+ 	}
+-	if (fault & VM_FAULT_MAJOR)
+-		current->maj_flt++;
+-	else
+-		current->min_flt++;
++	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++		if (fault & VM_FAULT_MAJOR)
++			current->maj_flt++;
++		else
++			current->min_flt++;
++		if (fault & VM_FAULT_RETRY) {
++			flags &= ~FAULT_FLAG_ALLOW_RETRY;
++
++			/*
++			 * No need to up_read(&mm->mmap_sem) as we would
++			 * have already released it in __lock_page_or_retry
++			 * in mm/filemap.c.
++			 */
++
++			goto retry;
 +		}
++	}
  
- 		up_read(&mm->mmap_sem);
- 		return;
+ 	up_read(&mm->mmap_sem);
+ 	return;
 -- 
 1.7.5.4
 
