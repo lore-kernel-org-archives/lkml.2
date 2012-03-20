@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab2CTFqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 01:46:16 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54632 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab2CTFqO (ORCPT
+	id S1753664Ab2CTFyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 01:54:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47299 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab2CTFyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 01:46:14 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Joe Perches <joe@perches.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, David Miller <davem@davemloft.net>,
-        anca.emanuel@gmail.com, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-In-Reply-To: Your message of "Mon, 19 Mar 2012 20:02:54 PDT."
-             <1332212574.7847.49.camel@joe2Laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <20120319153133.GA2502@thunk.org> <CAJL_dMtC9fnOsY=4uDVJD=-h5u-qW=xjaf64gtDcgnKX2brhPw@mail.gmail.com> <20120319161425.GB2502@thunk.org> <20120319.141402.934377752041508724.davem@davemloft.net> <20120319183126.GA6031@thunk.org> <1332182773.3908.11.camel@joe2Laptop> <20120320010401.GA14363@thunk.org> <1332207202.7847.23.camel@joe2Laptop> <20120320014707.GD14363@thunk.org> <1332208741.7847.46.camel@joe2Laptop> <20120320025835.GE14363@thunk.org>
-            <1332212574.7847.49.camel@joe2Laptop>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1332222366_2016P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 20 Mar 2012 01:54:10 -0400
+Message-ID: <4F681B78.9000207@gmail.com>
+Date: Mon, 19 Mar 2012 22:54:00 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Linux-wireless <linux-wireless@vger.kernel.org>
+CC: Felix Fietkau <nbd@openwrt.org>, Mohammed Shafi <shafi.wireless@gmail.com>,
+        linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org>
+In-Reply-To: <4F6751B2.1030809@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Mar 2012 01:46:06 -0400
-Message-ID: <216818.1332222366@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4F6819A1.0056,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1332222366_2016P
-Content-Type: text/plain; charset=us-ascii
-
-On Mon, 19 Mar 2012 20:02:54 PDT, Joe Perches said:
-> On Mon, 2012-03-19 at 22:58 -0400, Ted Ts'o wrote:
+On 03/19/2012 08:33 AM, Felix Fietkau wrote:
+> On 2012-03-19 4:25 PM, Justin P. Mattock wrote:
+>> On 03/19/2012 08:20 AM, Mohammed Shafi wrote:
+>>> Hi Justin,
+>>>
+>>>> seems I got this when waking up from suspend, was trying to connect with NM
+>>>> then all of a sudden Xorg shut off and this appeared on the screen(image
+>>>> links below I could not save dmesg only pic)
+>>>> http://flic.kr/p/bEhf2K
+>>>> http://flic.kr/p/bEhf2x
+>>>> http://flic.kr/p/bEhf2n
+>>>> http://flic.kr/p/bEhf26
+>>>>
+>>>> I see ath9k in the image, but am unsure if its related.
+>>>> kernel is: 3.3.0-rc7-next-20120316
+>>>
+>>> this looks like some new issue  in ath9k, lets try to recreate it here
+>>>
+>>>>
+>>>> Justin P. Mattock
+>>>>
+>>>>
+>>>>
+>>>
+>>>
+>>>
+>>
+>> would be nice to recreate, then bisecting will be more accurate to do..
+>> I am trying userspace tweaks here and there but no luck(hostapd etc..)
+>> keep in mind this is for the RX DMA, the above just occured..
+>> as for writing a small app I still need to try, but my C skills only go
+>> so far(anything to trigger!).
+> Was your kernel compiled with debug info? If so, please run gdb on the
+> ath9k.ko module and enter this:
+> l *ath9k_tx+start+0x284
+> Then send me the output of that.
 >
-> [good stuff]
+> - Felix
 >
-> > Of course, the body of the message needs to be standardized too.  But
-> > that's orthogonal to the problem of passing the kernel structure which
-> > identifies the object which the log message is about.  That part is
-> > completely and utterly necessary if you're going to standardize the
-> > *first* part of the printable dmesg log, which contains the structured
-> > information.
->
-> All of what you say is true, but you're neglecting
-> the ability to scrape or notify a particular set of
-> per subsystem messages that pr_<level> could easily
-> provide that a bare printk could not.
 
-OK. Say I'm a scraper.  How do I distinguish between:
+I changed the Cc''s so hopefully its correct..
+  anyway I tried the above but might have gotten it wrong..:
 
-pr_info("foo");
-printk(KERN_INFO "foo");
+Reading symbols from 
+/home/kernel/linux-next/drivers/net/wireless/ath/ath9k/ath9k.o...done.
+(gdb) list *ath9k_tx+0xa3
+0x4673 is in ath9k_tx (drivers/net/wireless/ath/ath9k/main.c:1136).
+1131		memset(&txctl, 0, sizeof(struct ath_tx_control));
+1132		txctl.txq = sc->tx.txq_map[skb_get_queue_mapping(skb)];
+1133	
+1134		ath_dbg(common, XMIT, "transmitting packet, skb: %p\n", skb);
+1135	
+1136		if (ath_tx_start(hw, skb, &txctl) != 0) {
+1137			ath_dbg(common, XMIT, "TX failed\n");
+1138			goto exit;
+1139		}
+1140	
+(gdb) list *ath9k_tx+start+0x284
+No symbol "start" in current context.
 
-Oh my. seems that both result in exactly the same thing ending up in the
-dmesg buffer, so a scraper can't tell the difference because there isn't any...
-
-pr_<level> isn't currently providing any ability to scrap or notify that can't
-be done equally well by a printk.  Now if you fix things so there's actual
-advantage to or_<level>, then I'm sure Ted will be willing to listen.
-
-
---==_Exmh_1332222366_2016P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT2gZnQdmEQWDXROgAQJ1dQ//W6haObAbksK8sr6jO22uHQPsDhSGD5Xg
-oqAih9ekoePk2mtdm1UZRQorAq4NvLFZv6GD07S+iFaWlpHsd71sxeWlmnNrSIou
-zmYvYCsJVNBevVlxFbzkryJMhnu3KJz+cPNudxhei3NWsekWmJwD10Hmo7x8kJpd
-utW69jEGAyalO/Ra8xj+HNDihwkOVZOvaEcg4cDHZT/OQAOKDQFLrpKg+X7ZqFMI
-9i4Lqk3fxKcyqW/iVn+JjrJZehOMCgOTWCc3ugXTp6Az+9o85322KzPHyQ/ak1VU
-joI+CPpeketVs73QBi3qwkwWmyfE1y28MVA3AqzPWrOePzxXT/wlRhMLf1pfdmOB
-I6QyEoc7NxriLzONUmLFzRBCqTCks44OLZq884JJY2lclTk6kHt5Sch7xZiMd2Rq
-SaawrBM4cB+nlP++WxlnQNWo8xDzePBtOUKL6QNz/zkAI+PLJ9dQtBR6MOWTtYqW
-kWZ0EfTkAIh5/bijT2eW3N0g8zIv9tNEZshRUIsSDKH5Ec0LM+ZdWeXStMjwkpB+
-QfP9Vn9H8RMd+g4SuA9+WFKn5j7YoabQn20rzos20mCK0dBiwlB+32LGFkPfbu3V
-qcFJQUGQowlCStseAVsq+MjuoYR04AQck131nB2g1zHyAQpqokigik16Rq+gftsE
-rzqsmL0GXMw=
-=xLdu
------END PGP SIGNATURE-----
-
---==_Exmh_1332222366_2016P--
+before receiving the email to do the above code with gdb I had cleaned 
+the tree out with git clean -fx so rebuilding might have misalighned 
+things(but could be wrong)..
 
