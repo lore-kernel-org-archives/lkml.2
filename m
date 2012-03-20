@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758994Ab2CTNYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:24:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56963 "EHLO
+	id S1758942Ab2CTNYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:24:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39441 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758235Ab2CTNYC (ORCPT
+	with ESMTP id S1757951Ab2CTNYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:24:02 -0400
+	Tue, 20 Mar 2012 09:24:43 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 12/20] frv/mm/fault.c: Port OOM changes to do_page_fault
-Date: Tue, 20 Mar 2012 09:23:48 -0400
-Message-Id: <1332249828-3004-1-git-send-email-consul.kautuk@gmail.com>
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 13/20] cris/mm/fault.c: Port OOM changes to do_page_fault
+Date: Tue, 20 Mar 2012 09:24:05 -0400
+Message-Id: <1332249845-3038-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,47 +31,40 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to frv.
+Port these changes to CRIS.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/frv/mm/fault.c |   30 +++++++++++++++++++++++++-----
- 1 files changed, 25 insertions(+), 5 deletions(-)
+ arch/cris/mm/fault.c |   31 ++++++++++++++++++++++++++-----
+ 1 files changed, 26 insertions(+), 5 deletions(-)
 
-diff --git a/arch/frv/mm/fault.c b/arch/frv/mm/fault.c
-index a325d57..478e405 100644
---- a/arch/frv/mm/fault.c
-+++ b/arch/frv/mm/fault.c
-@@ -41,6 +41,7 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
- 	pte_t *pte;
- 	int write;
+diff --git a/arch/cris/mm/fault.c b/arch/cris/mm/fault.c
+index 9dcac8e..384890d 100644
+--- a/arch/cris/mm/fault.c
++++ b/arch/cris/mm/fault.c
+@@ -57,6 +57,8 @@ do_page_fault(unsigned long address, struct pt_regs *regs,
+ 	struct vm_area_struct * vma;
+ 	siginfo_t info;
  	int fault;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++				((writeaccess & 1) ? FAULT_FLAG_WRITE : 0);
  
- #if 0
- 	const char *atxc[16] = {
-@@ -82,6 +83,7 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+ 	D(printk(KERN_DEBUG
+ 		 "Page fault for %lX on %X at %lX, prot %d write %d\n",
+@@ -114,6 +116,7 @@ do_page_fault(unsigned long address, struct pt_regs *regs,
  	if (in_atomic() || !mm)
  		goto no_context;
  
 +retry:
  	down_read(&mm->mmap_sem);
- 
- 	vma = find_vma(mm, ear0);
-@@ -142,6 +144,7 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto bad_area;
- 		write = 1;
-+		flags |= FAULT_FLAG_WRITE;
- 		break;
- 
- 		 /* handle read from protected page */
-@@ -163,7 +166,11 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
- 	 * make sure we exit gracefully rather than endlessly redo
+ 	vma = find_vma(mm, address);
+ 	if (!vma)
+@@ -162,7 +165,11 @@ do_page_fault(unsigned long address, struct pt_regs *regs,
  	 * the fault.
  	 */
--	fault = handle_mm_fault(mm, vma, ear0, write ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, ear0, flags);
+ 
+-	fault = handle_mm_fault(mm, vma, address, (writeaccess & 1) ? FAULT_FLAG_WRITE : 0);
++	fault = handle_mm_fault(mm, vma, address, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
 +		return;
@@ -77,19 +72,20 @@ index a325d57..478e405 100644
  	if (unlikely(fault & VM_FAULT_ERROR)) {
  		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -171,10 +178,23 @@ asmlinkage void do_page_fault(int datammu, unsigned long esr0, unsigned long ear
+@@ -170,10 +177,24 @@ do_page_fault(unsigned long address, struct pt_regs *regs,
  			goto do_sigbus;
  		BUG();
  	}
 -	if (fault & VM_FAULT_MAJOR)
--		current->maj_flt++;
+-		tsk->maj_flt++;
 -	else
--		current->min_flt++;
+-		tsk->min_flt++;
++
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
 +		if (fault & VM_FAULT_MAJOR)
-+			current->maj_flt++;
++			tsk->maj_flt++;
 +		else
-+			current->min_flt++;
++			tsk->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
