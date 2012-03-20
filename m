@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760585Ab2CTQKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:10:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59542 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab2CTQKv (ORCPT
+	id S1760714Ab2CTQMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:12:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52764 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755219Ab2CTQMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:10:51 -0400
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, <paul.mckenney@linaro.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 16/20 v2] tile/mm/fault.c: Port OOM changes to handle_page_fault
-Date: Tue, 20 Mar 2012 12:10:30 -0400
-Message-Id: <1332259830-2150-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 20 Mar 2012 12:12:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH] USB: gadget driver for LPC32xx
+Date: Tue, 20 Mar 2012 13:01:49 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        srinivas.bakki@nxp.com
+References: <1332191930-2433-1-git-send-email-stigge@antcom.de> <201203192130.13583.arnd@arndb.de> <4F67B28D.3060500@antcom.de>
+In-Reply-To: <4F67B28D.3060500@antcom.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203201301.50159.arnd@arndb.de>
+X-Provags-ID: V02:K0:+eyL2XutZMTynwZltycqCMWGhRfba4YQrkmBmG4N8vV
+ O7wJndqxOUhGw+vigA8/impVDcmi1S1YDJrDRsjB911Uumj3XE
+ Ov1RtWO0uv6+UdqcC4wRUvcJ/GFQNljdWiWpnq2rbEaDlg1Lcz
+ 7qpOevTTEh7puZUe9DxVetT8QzZthCILvz3Ynz7LDySWlnWzaW
+ hUWbSrr1qQuOgv77CxWHHtMflZaJrtQ04TRWEl/LrJw+tD4EYu
+ C+XcITgEQaIMxk3I1Mr2tr2Dxb63sMqdxAwm63m6aDUrK1c/qX
+ BXDgsoaFaslP+HctbrOS/HHD4f+19wC6EK/rT7JSXbUIvS1NKI
+ hO2JrXnDXHz7SpACK9Pk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Monday 19 March 2012, Roland Stigge wrote:
+> Hi Arnd,
+> 
+> On 19/03/12 22:30, Arnd Bergmann wrote:
+> > There is already a driver for the isp1301 otg part in the kernel, I don't
+> > think we want to add another one.
+> > 
+> > From what I can tell, this shares a common ancestry with the omap version
+> > but has diverged quite a bit. The best solution would really be to
+> > bring the two back together and let them share a common base driver,
+> > with the lpc32xx and omap specific bits in another file.
+> 
+> Yes, it's a good idea to share code where possible and consolidate into
+> one driver.
+> 
+> Please consider:
+> 
+> The LPC32xx driver is actually using only 3 functions via isp1301:
+> 
+> isp1301_udc_configure()
+> isp1301_set_powerstate()
+> isp1301_pullup_set()
+> 
+> The first of those is LPC32xx specific. The power setting function is
+> also done differently in isp1301_omap's power_up()/power_down() ("board
+> specific"). For the pullups, there is not (yet?) a dedicated API in the
+> OMAP driver, but it's really only two small I2C commands.
+> 
+> Are you still sure it's worth it to use a common driver when there is
+> hardly shared code?
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+No, I guess I should have looked closed. I found a few common functions
+and assumed that this would be the same driver.
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
+> Maybe the right thing is a common low-level isp1301 interface defining
+> all the registers and providing low-level (I2C) access functions,
+> leaving all the "higher level"/"board specific" functions up to the
+> existing drivers?
+> 
+> (I guess you meant drivers/usb/otg/isp1301_omap.c ?)
 
-Port these changes to tile.
+Yes, that sounds like a very good idea. Can you describe which part of
+the function isp1301 does? It's not clear how the layering between
+that and the platform driver should end up.
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/tile/mm/fault.c |   31 ++++++++++++++++++++++++++-----
- 1 files changed, 26 insertions(+), 5 deletions(-)
-
-diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
-index c1eaaa1..a097631 100644
---- a/arch/tile/mm/fault.c
-+++ b/arch/tile/mm/fault.c
-@@ -267,6 +267,8 @@ static int handle_page_fault(struct pt_regs *regs,
- 	int si_code;
- 	int is_kernel_mode;
- 	pgd_t *pgd;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+						 (write ? FAULT_FLAG_WRITE : 0);
- 
- 	/* on TILE, protection faults are always writes */
- 	if (!is_page_fault)
-@@ -373,6 +375,8 @@ static int handle_page_fault(struct pt_regs *regs,
- 			vma = NULL;  /* happy compiler */
- 			goto bad_area_nosemaphore;
- 		}
-+
-+retry:
- 		down_read(&mm->mmap_sem);
- 	}
- 
-@@ -420,7 +424,11 @@ good_area:
- 	 * make sure we exit gracefully rather than endlessly redo
- 	 * the fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, address, write);
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
-+
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		if (fault & VM_FAULT_OOM)
- 			goto out_of_memory;
-@@ -428,10 +436,23 @@ good_area:
- 			goto do_sigbus;
- 		BUG();
- 	}
--	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
--	else
--		tsk->min_flt++;
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR)
-+			tsk->maj_flt++;
-+		else
-+			tsk->min_flt++;
-+		if (fault & VM_FAULT_RETRY) {
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+			/*
-+			 * No need to up_read(&mm->mmap_sem) as we would
-+			 * have already released it in __lock_page_or_retry
-+			 * in mm/filemap.c.
-+			 */
-+
-+			goto retry;
-+		}
-+	}
- 
- #if CHIP_HAS_TILE_DMA() || CHIP_HAS_SN_PROC()
- 	/*
--- 
-1.7.5.4
-
+	Arnd
