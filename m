@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab2CTNlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:41:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51863 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab2CTNlV convert rfc822-to-8bit (ORCPT
+	id S1759962Ab2CTNlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:41:35 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35168 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759466Ab2CTNld convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:41:21 -0400
-Message-ID: <1332250867.18960.423.camel@twins>
-Subject: Re: [PATCH] Fix the race between smp_call_function and CPU booting
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Tue, 20 Mar 2012 14:41:07 +0100
-In-Reply-To: <4F6882BA.2040000@linux.vnet.ibm.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
-	 <1331718197.18960.106.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-	 <1331808391.18960.160.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
-	 <1331891364.18960.221.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
-	 <1332151397.18960.252.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com>
-	 <1332245842.18960.413.camel@twins> <4F6882BA.2040000@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 20 Mar 2012 09:41:33 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Yongsul Oh" <yongsul96.oh@samsung.com>
+Cc: "Michal Nazarewicz" <mnazarewicz@gmail.com>,
+        "Sergei Shtylyov" <sshtylyov@mvista.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: Gadget: Composite: Added error handling codes to
+ prevent a memory leak case when the configuration's bind function failed
+References: <1332207518-24868-1-git-send-email-yongsul96.oh@samsung.com>
+Date: Tue, 20 Mar 2012 14:41:30 +0100
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wbg1ngqj3l0zgt@mpn-glaptop>
+In-Reply-To: <1332207518-24868-1-git-send-email-yongsul96.oh@samsung.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 18:44 +0530, Srivatsa S. Bhat wrote:
-> 
-> 
-> I don't think this patch would change anything, atleast it wouldn't get
-> rid of the warning that Liu reported. Because, he is running his stress
-> tests on a machine which has only 2 CPUs. So effectively, we are hotplugging
-> only CPU1 (since CPU0 can't be taken offline, on Intel boxes).
-> 
-> Also, CPU1 is removed from cpu_active_mask during CPU_DOWN_PREPARE time itself,
-> and migrate_tasks() comes much later (during CPU_DYING). And in any case,
-> dest_cpu will never be CPU1, because it is the CPU that is going down. So it
-> *has* to be CPU0 anyway.
-> 
-> So, I don't think changes to select_fallback_rq() to make it more careful is
-> going to make any difference in the particular scenario that Liu is testing.
-> 
-> That said, even I don't know what the root cause of the warning is.. :-(
+On Tue, 20 Mar 2012 02:38:38 +0100, Yongsul Oh <yongsul96.oh@samsung.com> wrote:
 
-Its a race in cpu-up, we set active before online, when we do a wakeup
-select_task_rq() will see !cpu_online(), we then call
-select_fallback_rq() to compute a new cpu, select_fallback_rq() computes
-a new cpu against cpu_active (which is set) and can thus return cpu 1,
-even though it is still offline.
+>  In some USB composite gadget drivers, the configuration's bind function
+>   called by the usb_add_config() calls multiple bind config functions.
+>   (for example cdc2 configuration bind function in the cdc_do_config()
+>   of the cdc2.c has two functionality bind config functions.
+>   - the ecm_bind_config() & the acm_bind_config())
+>
+>  In each functionality bind config function, new instance is allocated and
+>   finally added by the usb_add_function().
+>
+>  So if an error occurred during the second functionality bind config
+>   (for example an error occurred at the acm_bind_config() after succeeding of
+>   the ecm_bind_function()), the instance created by the acm_bind_config()
+>   cannot be freed creating a memory leak.
+>
+>  This patch fixes this issue.
+>
+> Signed-off-by: Yongsul Oh <yongsul96.oh@samsung.com>
 
-So we queue the task on cpu 1 and send a reschedule ipi, at which point
-we'll get the reported warning.
+Like before:
 
-My change modifies select_fallback_rq() to require online && active.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+
+> ---
+>  drivers/usb/gadget/composite.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+> index baaebf2..4cb1801 100644
+> --- a/drivers/usb/gadget/composite.c
+> +++ b/drivers/usb/gadget/composite.c
+> @@ -737,6 +737,19 @@ int usb_add_config(struct usb_composite_dev *cdev,
+> 	status = bind(config);
+>  	if (status < 0) {
+> +		while (!list_empty(&config->functions)) {
+> +			struct usb_function		*f;
+> +
+> +			f = list_first_entry(&config->functions,
+> +					struct usb_function, list);
+> +			list_del(&f->list);
+> +			if (f->unbind) {
+> +				DBG(cdev, "unbind function '%s'/%p\n",
+> +					f->name, f);
+> +				f->unbind(config, f);
+> +				/* may free memory for "f" */
+> +			}
+> +		}
+>  		list_del(&config->list);
+>  		config->cdev = NULL;
+>  	} else {
+
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
