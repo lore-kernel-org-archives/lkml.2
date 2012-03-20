@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652Ab2CTQAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:00:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab2CTQAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:00:52 -0400
-Date: Tue, 20 Mar 2012 12:00:44 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com,
-        rni@google.com
-Subject: Re: [PATCHSET] block: remove ioc_*_changed()
-Message-ID: <20120320160043.GD17071@redhat.com>
-References: <1332195059-2750-1-git-send-email-tj@kernel.org>
- <20120320155118.GC17071@redhat.com>
- <20120320155358.GB5684@google.com>
+	id S1760703Ab2CTQBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:01:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39265 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756186Ab2CTQB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 12:01:29 -0400
+Date: Tue, 20 Mar 2012 09:01:21 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com
+Subject: Re: [PATCH 07/10] cgroup: remove cgroup_add_file[s]()
+Message-ID: <20120320160121.GC5684@google.com>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+ <1331940963-15756-8-git-send-email-tj@kernel.org>
+ <87aa3bu094.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120320155358.GB5684@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87aa3bu094.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 08:53:58AM -0700, Tejun Heo wrote:
-> On Tue, Mar 20, 2012 at 11:51:18AM -0400, Vivek Goyal wrote:
-> > So this patch still breaks cic->cfqq association in asynchronous
-> > manner, when new request comes in. So it will still not solve the
-> > problem I reported where after doing IO a task changes cgroup and
-> > tries to delete the old cgroup and hangs forever as cic->cfqq is still
-> > holding a reference to cgroup?
+On Tue, Mar 20, 2012 at 02:17:51PM +0530, Aneesh Kumar K.V wrote:
+> Tejun Heo <tj@kernel.org> writes:
 > 
-> That one is gonna have to be fixed from cgroup side.  I already posted
-> a RFC patchset (you were cc'd there, I think).  At the moment, the
-> blocking thing is memcg's ->pre_destroy() usage.  I'll ping memcg
-> people once more and if modification there isn't feasible, will
-> implement a workaround in cgroup core.
+> > No controller is using cgroup_add_files[s]().  Unexport them, and
+> > convert cgroup_add_files() to handle NULL entry terminated array
+> > instead of taking count explicitly and continue creation on failure
+> > for internal use.
+> >
+> 
+> I am planning to use that in the HugeTLB extension of memcg.
+> 
+> http://article.gmane.org/gmane.linux.kernel.mm/75470
+> 
+> We need to have different limit and usage file for different HugeTLB
+> page size supported.
 
-Ok, now I remember that patchset. So the idea is to delete the cgroup and
-drop the creation reference. Internal blkcg object might still be around
-and will freed when all the references are gone. Makes sense. Thanks.
+Unless you have to alter available files cgroup-by-cgroup, you should
+be fine.  If you're trying to create different set of files depending
+on cgroup, it's confusing - change your interface.
 
-Vivek
+Thanks.
+
+-- 
+tejun
