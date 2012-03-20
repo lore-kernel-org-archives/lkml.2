@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758914Ab2CTAF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 20:05:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61892 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab2CTAFy convert rfc822-to-8bit (ORCPT
+	id S1030295Ab2CTAQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 20:16:29 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:52826 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758940Ab2CTAQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 20:05:54 -0400
+	Mon, 19 Mar 2012 20:16:25 -0400
+Message-ID: <307ecac228a1c44930e18777578cbfcd.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1332074448.3722.25.camel@edumazet-laptop>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+    <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+    <1331658828.4449.16.camel@edumazet-glaptop>
+    <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+    <1331704535.2456.37.camel@edumazet-laptop>
+    <3f56b0860272f4ca8925c0a249a30539.squirrel@webmail.greenhost.nl>
+    <1331712357.2456.58.camel@edumazet-laptop>
+    <7a1c4974e8fbc3b82ead0bfb18224d5b.squirrel@webmail.greenhost.nl>
+    <1331992184.2466.45.camel@edumazet-laptop>
+    <9a0230cb8db556cc9cf5d1f6b2439fb5.squirrel@webmail.greenhost.nl>
+    <1332074448.3722.25.camel@edumazet-laptop>
+Date: Tue, 20 Mar 2012 11:16:07 +1100
+Subject: [PATCH] net: bpf_jit: Document evilness of negative indirect loads
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "David Miller" <davem@davemloft.net>, "Will Drewry" <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        "Matt Evans" <matt@ozlabs.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <20120319202846.GA26555@gmail.com>
-References: <20120316144028.036474157@chello.nl> <4F670325.7080700@redhat.com>
- <1332155527.18960.292.camel@twins> <20120319130401.GI24602@redhat.com>
- <1332164371.18960.339.camel@twins> <20120319142046.GP24602@redhat.com>
- <alpine.DEB.2.00.1203191513110.23632@router.home> <20120319202846.GA26555@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 19 Mar 2012 17:05:33 -0700
-X-Google-Sender-Auth: WHLwPF-lBVRNeVWZWIJnLtHz01A
-Message-ID: <CA+55aFwa-81x2Dysk8WS8ez2WkYSbaQDyQvpH0qE7fGJgxTbUQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 00/26] sched/numa
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 9b84bad32751a42de3aa9e7877f1ca86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 1:28 PM, Ingo Molnar <mingo@kernel.org> wrote:
+On Sun, March 18, 2012 23:40, Eric Dumazet wrote:
+> Le dimanche 18 mars 2012 Ã  19:35 +1100, Indan Zupancic a Ã©crit :
 >
-> That having said PeterZ's numbers showed some pretty good
-> improvement for the streams workload:
+>> And in the 00.00001% case that the filter uses a computed negative
+>> offset the BPF JIT fails at runtime. So to not be buggy you need at
+>> least a call to __load_pointer() for the negative case.
 >
->  before: 512.8M
->  after: 615.7M
+> Please show me how and why a real (I mean useful one...) filter could
+> generate a dynamic negative value, and I'll change the code.
 >
-> i.e. a +20% improvement on a not very heavily NUMA box.
+>
+> Negative values are there to allow access to network/mac header
+> components. I cant see how a BPF code could have a valid use of dynamic
+> indexes in these headers.
 
-Well, streams really isn't a very interesting benchmark. It's the
-traditional single-threaded cpu-only thing that just accesses things
-linearly, and I'm not convinced the numbers should be taken to mean
-anything at all.
+E.g. when poking in a variable length IP header with a filter
+attached to a TCP/UDP socket. Still a bit far fetched though.
 
-The HPC people want to multi-thread things these days, and "cpu/memory
-affinity" is a lot less clear then.
+>
+> Right now we consider such code is evil and filter does "return 0"
+> saying so.
 
-So I can easily imagine that the performance improvement is real, but
-I really don't think "streams improves by X %" is all that
-interesting. Are there any more relevant loads that actually matter to
-people that we could show improvement on?
+I'm fine with that, but this should be documented somewhere I think.
 
-                     Linus
+Greetings,
+
+Indan
+
+
+[PATCH] net: bpf_jit: Document evilness of negative indirect loads
+
+Negative offsets are used to access ancillary data. In the case of
+SKF_NET_OFF and SKF_LL_OFF users may expect negative indirect loads
+to work. If BPF JIT is used then such loads will fail. In any case,
+negative indirect loads are considered evil and are not supported.
+
+---
+
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Indan Zupancic <indan@nul.nu>
+
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index 8eeb205..2bd4bbb 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -114,6 +114,9 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
+    We use them to reference ancillary data.
+    Unlike introduction new instructions, it does not break
+    existing compilers/optimizers.
++
++   Do not expect negative indirect loads to work, they are
++   considered evil.
+  */
+ #define SKF_AD_OFF    (-0x1000)
+ #define SKF_AD_PROTOCOL 0
+
+
