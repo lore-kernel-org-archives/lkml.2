@@ -1,112 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab2CTRtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:49:49 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:56550 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751930Ab2CTRtr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:49:47 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: melwyn lobo <linux.melwyn@gmail.com>
-Cc: "Chalhoub\, Nicole" <n-chalhoub@ti.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm\@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] CPUIdle: Reevaluate C-states under CPU load to favor deeper C-states
-Organization: Texas Instruments, Inc.
-References: <1316475315-5905-1-git-send-email-khilman@ti.com>
-	<87d3d75zo6.fsf@ti.com> <4EBA6046.2060305@linux.vnet.ibm.com>
-	<37CAE120BAE10B42A790DD1418C8021D0136C7@DNCE02.ent.ti.com>
-	<CAHSGOuuexpCDNoP1G1Gyge2DCep0rsPmUwrVyZFDQ1_tH+Du7Q@mail.gmail.com>
-Date: Tue, 20 Mar 2012 10:49:45 -0700
-In-Reply-To: <CAHSGOuuexpCDNoP1G1Gyge2DCep0rsPmUwrVyZFDQ1_tH+Du7Q@mail.gmail.com>
-	(melwyn lobo's message of "Tue, 20 Mar 2012 20:19:02 +0530")
-Message-ID: <878viv17t2.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753382Ab2CTR5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:57:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45224 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2CTR5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 13:57:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1330588483-30957-1-git-send-email-andrey.warkentin@gmail.com>
+References: <1330588483-30957-1-git-send-email-andrey.warkentin@gmail.com>
+Date: Tue, 20 Mar 2012 13:57:41 -0400
+Message-ID: <CANz0V+5ayWh3-xR1i4nCqTGF+6x+f7mOeokEhCCXhvG3a3pFhw@mail.gmail.com>
+Subject: Re: [PATCH] x86 NMI: Be smarter about invoking panic() inside NMI handler.
+From: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: kgdb-bugreport@lists.sourceforge.net, jason.wessel@windriver.com,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-melwyn lobo <linux.melwyn@gmail.com> writes:
+Hi,
 
-> Hey Kevin,
-> I would like to try out this patch in my platform see the benefits
-> that you are reporting. But there is one issue in this patch. You have
-> not initialized "hrtimer_timeout" variable.
-> This will always be 0 right ?.
-
-Correct.
-
-The generic code defaults to zero so that the default behavior with this
-patch is unchanged from previous behavior.  In order to use this
-feature, your platform-specific code which creates your C-states sets
-the per-C-state timer values.
-
-Kevin
-
-> Thanks,
-> -M
+2012/3/1 Andrei Warkentin <andrey.warkentin@gmail.com>:
+> If two (or more) unknown NMIs arrive on different CPUs, there
+> is a large chance both CPUs will wind up inside panic(). This
+> is fine, unless you want to enter KDB - KDB cannot round up
+> all CPUs, because some of them are stuck inside
+> panic_smp_self_stop with NMI latched. This is
+> easy to replicate with QEMU. Boot with -smp 4 and
+> send NMI using the monitor.
 >
-> On Wed, Nov 9, 2011 at 11:36 PM, Chalhoub, Nicole <n-chalhoub@ti.com> wrote:
->> Hi Deepthi,
->>
->>>
->> Texas Instruments France SA, 821 Avenue Jack Kilby, 06270 Villeneuve Loubet. 036 420 040 R.C.S Antibes. Capital de EUR 753.920
->>
->> -----Original Message-----
->>> From: Deepthi Dharwar [mailto:deepthi@linux.vnet.ibm.com]
->>> Sent: Wednesday, November 09, 2011 12:13 PM
->>> To: Hilman, Kevin
->>> Cc: linux-kernel@vger.kernel.org; Arjan van de Ven; linux-arm-
->>> kernel@lists.infradead.org; linux-omap@vger.kernel.org; linux-
->>> pm@lists.linux-foundation.org; Chalhoub, Nicole
->>> Subject: Re: [PATCH] CPUIdle: Reevaluate C-states under CPU load to favor
->>> deeper C-states
->>
->> [...]
->>> By setting timers when we enter non-deepest C-state possible, such that
->>> when it fires we
->>> can re-evaluate and try moving into deeper and deeper C-states enhancing
->>> the
->>> power savings is a good feature to have.
->>>
->>> Looking at the current implementation, is it possible to have it as
->>> configurable option
->>> where one can enable/disable this functionality through the backhand
->>> driver ?
->>
->> The timeout values of the c state timers are set in the backhand driver.
->> By setting the timeout to 0 the timers will not fire so you'll not have this functionality enabled
->>
->>> Also I am thinking, instead of having them in governor
->>> wouldnt it be a good idea to have it implemented in
->>> the backhand driver itself ?
->>> --Deepthi
->>
->>
->> In fact each C-state had its own configurable timer, so it is a parameter characterizing a C-state as it is for the exit_latency and target_residency parameters.
->> And we wanted the timer to fire only when we do not go in deep Cstate due to a high load. This decision is made in the CPU idle governor. So the functionality should be seen from the governor..
->>
->> Thanks and Regards
->> Nicole
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> Solution for this - attempt to enter panic() from NMI
+> handler. If panic() is already active in the system,
+> just exit out of the NMI handler. This lets KDB round
+> up CPUs.
 >
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+> ---
+
+Any feedback on this? Who are the right maintainers to bug about this?
+
+A
