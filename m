@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab2CTKAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:00:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42672 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904Ab2CTKAt (ORCPT
+	id S932295Ab2CTKGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:06:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63460 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab2CTKGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:00:49 -0400
+	Tue, 20 Mar 2012 06:06:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="173980313"
+X-IronPort-AV: E=Sophos;i="4.73,616,1325491200"; 
+   d="scan'208";a="177564896"
+Message-ID: <4F685690.5020102@qca.qualcomm.com>
+Date: Tue, 20 Mar 2012 12:06:08 +0200
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-In-Reply-To: <1331938267-13583-2-git-send-email-john.stultz@linaro.org>
-References: <1331938267-13583-1-git-send-email-john.stultz@linaro.org>
-	<1331938267-13583-2-git-send-email-john.stultz@linaro.org>
-Date: Tue, 20 Mar 2012 11:00:49 +0100
-Message-ID: <CAO6Zf6D_uREG5n=yZ04CicHkYsXQp_Zs1xJX2z6C9tyKrP=+Kg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [RFC] Range tree implementation
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH wireless-next 3/3] ath6kl: Add __printf verification to
+ ath6kl_printk
+References: <cover.1332116921.git.joe@perches.com> <a27a7b0fcddc2f2366ff5ab0968ca0ff78d420c5.1332116921.git.joe@perches.com>
+In-Reply-To: <a27a7b0fcddc2f2366ff5ab0968ca0ff78d420c5.1332116921.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On 03/19/2012 02:30 AM, Joe Perches wrote:
+> Make sure printf formats and arguments match.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-On 16 March 2012 23:51, John Stultz <john.stultz@linaro.org> wrote:
-> After Andrew suggested something like his mumbletree idea
-> to better store a list of ranges, I worked on a few different
-> approaches, and this is what I've finally managed to get working.
->
-> I suspect range-tree isn't a totally accurate name, but I
-> couldn't quite make out the difference between range trees
-> and interval trees, so I just picked one to call it. Do
-> let me know if you have a better name.
->
-> The idea of storing ranges in a tree is nice, but has a number
-> of complications. When adding a range, its possible that a
-> large range will consume and merge a number of smaller ranges.
+Thanks, I have applied this to ath6kl.git. John, I hope this is ok for you.
 
-Have you considered using 'prio_tree' (include/linux/prio_tree.h)? If
-we aim at addressing a wide range of possible use-cases (different
-patterns of adding/removing volatile ranges), then, at first glance,
-prio_tree looks like a better approach.
-
-e.g. for the "consume and merge a number of smaller ranges" scenario
-above, prio_tree gives O(log n) [ O(log n + m) ] behavior iso O(m log
-n) in your case.
-
---Dmitry
+Kalle
