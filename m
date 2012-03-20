@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760591Ab2CTPXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 11:23:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15489 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760576Ab2CTPX3 (ORCPT
+	id S1760576Ab2CTP2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 11:28:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33060 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759077Ab2CTP22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 11:23:29 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="171785107"
-X-IronPort-AV: E=Sophos;i="4.73,616,1325491200"; 
-   d="scan'208";a="229076619"
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+	Tue, 20 Mar 2012 11:28:28 -0400
+Date: Tue, 20 Mar 2012 11:23:54 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Noonan <steven@uplinklabs.net>, Ben Guthro <ben@guthro.net>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: bisected: 'perf top' causing soft lockups under Xen
+Message-ID: <20120320152354.GB29135@phenom.dumpdata.com>
+References: <CAKbGBLgVyWC3iuu8n+aQ8UhziSPnbpHVNGtQ=9m-PzvVA1kzdg@mail.gmail.com>
+ <1328894901.25989.20.camel@laptop>
+ <20120210190412.GB12975@phenom.dumpdata.com>
+ <CAOvdn6WcdrLHOPJc0Hv53+0trEFnU=RQJL5+xUMhAO3C3HWqbw@mail.gmail.com>
+ <20120212205016.GA2794@asmodeus>
+ <20120215085737.GA13722@asmodeus>
+ <1329297944.2293.36.camel@twins>
+ <20120215161741.GC4093@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <20328.41155.468698.30887@gargle.gargle.HOWL>
-Date: Tue, 20 Mar 2012 20:52:43 +0530
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, <linux-kernel@vger.kernel.org>,
-        Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-In-Reply-To: <4F6891F1.9010105@gmail.com>
-References: <4F576FD5.2050208@gmail.com>
-	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
-	<4F577D9B.7020402@gmail.com>
-	<4F579A88.6030503@openwrt.org>
-	<4F61F551.5010608@gmail.com>
-	<4F639851.5080500@gmail.com>
-	<4F674616.8080103@gmail.com>
-	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
-	<4F674FF5.2060406@gmail.com>
-	<4F6751B2.1030809@openwrt.org>
-	<4F681B78.9000207@gmail.com>
-	<CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
-	<4F68235C.5090701@gmail.com>
-	<CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com>
-	<4F682555.3020502@gmail.com>
-	<20328.16366.166909.255035@gargle.gargle.HOWL>
-	<4F6891F1.9010105@gmail.com>
-X-Mailer: VM 8.2.0a under 23.4.1 (x86_64-unknown-linux-gnu)
-X-Originating-IP: [172.30.39.5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120215161741.GC4093@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F68A210.00BF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin P. Mattock wrote:
-> both mohammed and sujith Thank you for the patches for this issue!
-> I really appreciate this..
+On Wed, Feb 15, 2012 at 11:17:41AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Wed, Feb 15, 2012 at 10:25:44AM +0100, Peter Zijlstra wrote:
+> > On Wed, 2012-02-15 at 00:57 -0800, Steven Noonan wrote:
+> > > It seems to me that there are two options for fixing this, but I'm
+> > > probably lacking the necessary context (or experience with Xen). Either:
+> > > 
+> > > - The patch provided by Ben needs to have additional work to specially
+> > >   handle IRQ_WORK_VECTOR, since it seems to be a special case where
+> > >   there's no event channel attached for it. Perhaps adding an event
+> > >   channel for this is the fix? Seems high-overhead, but I lack a good
+> > >   understanding of how interrupts are handled in Xen.
+> > 
+> > So that's a self-IPI, is Xen failing to implement this?
 > 
-> I went and applied the debug printk and added ath_node_attach as well to 
-> my linux-next clone, will run for a few days to see if I get anything..
-> full dmesg is here..: http://fpaste.org/jHSX/
+> It does have self-IPIs.
+> > 
+> > > or
+> > > 
+> > > - Perf needs to be "enlightened" about Xen and avoid sending an IPI in
+> > >   the first place.
+> > 
+> > Uhm, no. If anything Xen should simply not implement
+> > arch_irq_work_raise(). The callbacks are then ran from the timer
+> > interrupt.
+> 
+> Looks like that wouldn't be too difficult - meaning implement a similar
+> form of IRQ_WORKER that would call
+> 
+>  inc_irq_stat(apic_irq_work_irqs);
+>  irq_work_run();
+> 
+> .. along with the rest of the stuff from Ben's patch. Let me see if I can
+> prep a patch.
 
-Thanks for testing and please report if the issue is fixed.
+Peter,
 
-Sujith
+I am going to start cracking at this to see why the self-IPI don't seem to
+work, while the patch that was removed (so the NMI, would just check on its
+own CPU whether it was called without doing the NMI).
+
+But in the meantime, are there any good docs to look over to get a good idea
+of how the perf code works?
+
+Thanks.
