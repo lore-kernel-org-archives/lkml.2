@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab2CTUOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 16:14:53 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:57399 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756261Ab2CTUOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 16:14:51 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="174185466"
-Message-ID: <4F68E53B.7040800@codeaurora.org>
-Date: Tue, 20 Mar 2012 13:14:51 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1757594Ab2CTURL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 16:17:11 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:47870 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756308Ab2CTURJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 16:17:09 -0400
+Date: Tue, 20 Mar 2012 21:17:00 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: tochansky@tochlab.net
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: uio_pci_generic driver
+Message-ID: <20120320201659.GE4987@local>
+References: <60a33e825f0ab0e114e6d5a0ea4bda3d.squirrel@www.cloudless.ru>
+ <20120320180030.GB808@redhat.com>
+ <59b85bdc6223722b86c39a7a028de596.squirrel@www.cloudless.ru>
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
-        Shawn Guo <shawn.guo@freescale.com>, Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] clk: Move init fields from clk to clk_hw
-References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com> <1332214706-675-1-git-send-email-skannan@codeaurora.org> <1332214706-675-2-git-send-email-skannan@codeaurora.org> <20120320072018.GC32469@S2101-09.ap.freescale.net> <cbd6490459b9fd68875fec4a7c7de073.squirrel@www.codeaurora.org> <20120320094031.GI3852@pengutronix.de> <e22898bc8b69e85f1e6390d7d858f85c.squirrel@www.codeaurora.org> <20120320181441.GO3852@pengutronix.de>
-In-Reply-To: <20120320181441.GO3852@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <59b85bdc6223722b86c39a7a028de596.squirrel@www.cloudless.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 11:14 AM, Sascha Hauer wrote:
-> On Tue, Mar 20, 2012 at 03:17:10AM -0700, Saravana Kannan wrote:
->>
->> On Tue, March 20, 2012 2:40 am, Sascha Hauer wrote:
->>> On Tue, Mar 20, 2012 at 12:54:55AM -0700, Saravana Kannan wrote:
->>>>
->>> I am using these functions and don't need a static array, I just call
->>> the functions with the desired parameters.
->>
->> Sure, then let's leave it in. Curious, where do you get the desired
->> parameters from? Is it static date in code or is it from DT? You somehow
->> probe it?
->
-> It's not from DT. See this thread:
->
-> http://www.spinics.net/lists/arm-kernel/msg165839.html
+On Tue, Mar 20, 2012 at 10:48:25PM +0400, tochansky@tochlab.net wrote:
+> > On Tue, Mar 20, 2012 at 09:56:03PM +0400, tochansky@tochlab.net wrote:
+> >> Hello!
+> >> I have a question about uio_pci_generic driver. I'm trying to use it in
+> >> my
+> >> project, but have no luck.
+> >> There are very little information on the subject. If you have a few
+> >> minutes, I would like to ask a few questions.
+> >> I need to mmap() memory of my board to work with it. I did
+> >> # modprobe uio_pci_generic
+> >> # echo "xxxx xxxx" > /sys/bus/pci/drivers/uio_pci_generic/new_id
+> >>
+> >> Files in /sys/class/uio/uio0 appears, but there no directory named
+> >> /sys/class/uio/uio0/maps/.
+> >> Anyway I tryed to mmap with code:
+> >>
+> >> #include <sys/types.h>
+> >> #include <sys/stat.h>
+> >> #include <fcntl.h>
+> >>
+> >> #include <sys/mman.h>
+> >> #include <stdio.h>
+> >>
+> >> int main()
+> >> {
+> >>         int fd = open("/dev/uio0", O_RDWR | O_SYNC);
+> >>         printf("fd = %d\n", fd);
+> >>         void *addr = mmap(NULL, 1024, PROT_READ, MAP_SHARED, fd, 0);
+> >>         printf("addr = %p\n", addr);
+> >> }
+> >>
+> >> Ofcourse, mmap() failes with error "Invalid argument". Nothing criminal
+> >> in
+> >> dmesg and any other hints of error.
+> >>
+> >> --
+> >> Dmitriy
+> >
+> >
+> > Map memory through /sys/bus/pci/devices/......
+> >
+> > Also copy questions to mailing lists please.
+> >
+> Thanks, it works now.
+> 
+> #include <sys/types.h>
+> #include <sys/stat.h>
+> #include <fcntl.h>
+> 
+> #include <sys/mman.h>
+> #include <stdio.h>
+> 
+> int main() {
+>         int fd =
+> open("/sys/class/pci_bus/0000:03/device/0000:03:00.0/resource5",
+> O_RDWR | O_SYNC);
+>         printf("fd = %d\n", fd);
+>         void *addr = mmap(NULL, 512, PROT_READ, MAP_SHARED, fd, 0);
+>         if(addr == MAP_FAILED)  {
+>                 perror("mmap");
+>         }
+>         else {
+>                 printf("addr = %p\n", addr);
+>         }
+> }
+> 
+> May be its time to add some hints in documentation? :-)
 
-Ah, I see. That's a lot of functions calls. I think it would be much 
-more efficient if you just have an array and loop over it. With my 
-patch, you can just call a single register function for all these clocks.
-
->>
->>> Overall the clock framework was written in a way that we have to expose
->>> as little information about the internally used structs as necessary. It
->>> seems your patches are pulling in the opposite direction now.
->>
->> I'm not exposing anything that you don't already pass from the platform
->> driver. Also, you realize that this is very similar to what you suggested
->> with clk_initializer right? If there is a strong push, we can make a copy
->> of these inside the struct clk, but for these few init fields I don't see
->> a point (see earlier email).
->
-> The difference is that a struct clk_initializer is only used to
-> initialize a clock and not actively used by the clock framework. But as
-> you already mentioned using a copy inside the clock framework has the
-> same effect.
-
-My opinion on this is to follow a wait and watch approach on the "flags" 
-field. I really can't think of a safe way anyone can misuse it. If 
-people start doing that, we can just do the copy and let them deal with 
-their broken code. Until that happens, I don't want to waste time/space 
-by copying it. The rest of the fields aren't actively used by the common 
-clock code after init.
+Good idea. Michael, are you in the mood to hack something up for
+Documentation/DocBook/uio-howto.tmpl ?
 
 Thanks,
-Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Hans
