@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509Ab2CTIx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 04:53:57 -0400
-Received: from smtp5.tech.numericable.fr ([82.216.111.41]:38774 "EHLO
+	id S1759557Ab2CTIyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 04:54:17 -0400
+Received: from smtp5.tech.numericable.fr ([82.216.111.41]:39076 "EHLO
 	smtp5.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759337Ab2CTIx2 (ORCPT
+	with ESMTP id S964801Ab2CTIyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 04:53:28 -0400
+	Tue, 20 Mar 2012 04:54:06 -0400
 From: Corentin Chary <corentin.chary@gmail.com>
 To: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org, Chih-Wei Huang <cwhuang@linux.org.tw>,
-        Corentin Chary <corentincj@iksaif.net>,
-        acpi4asus-user@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/14] eeepc-wmi: add extra keymaps for EP121
-Date: Tue, 20 Mar 2012 09:53:03 +0100
-Message-Id: <1332233594-13099-4-git-send-email-corentin.chary@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/14] drivers, samsung-laptop: fix initialization of sabi_data in sabi_set_commandb
+Date: Tue, 20 Mar 2012 09:53:05 +0100
+Message-Id: <1332233594-13099-6-git-send-email-corentin.chary@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
 References: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-VR-SPAMSTATE: OK
 X-VR-SPAMSCORE: -100
 X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrgeejucetggdotefuucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddm
@@ -25,28 +27,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chih-Wei Huang <cwhuang@linux.org.tw>
+From: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Chih-Wei Huang <cwhuang@linux.org.tw>
+Fields d0, d1, d2, and d3 are members of an anonymous struct inside an
+anonymous union inside struct sabi_data.  Initialization must be done by
+wrapping the anonymous union and structs with brackets to avoid a build
+error:
+
+drivers/platform/x86/samsung-laptop.c: In function ‘sabi_set_commandb’:
+drivers/platform/x86/samsung-laptop.c:433: error: unknown field ‘d0’ specified in initializer
+drivers/platform/x86/samsung-laptop.c:433: warning: missing braces around initializer
+drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for ‘in.<anonymous>’)
+...
+
+Signed-off-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 ---
- drivers/platform/x86/eeepc-wmi.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-index 9f6e643..1d91eb2 100644
---- a/drivers/platform/x86/eeepc-wmi.c
-+++ b/drivers/platform/x86/eeepc-wmi.c
-@@ -84,6 +84,9 @@ static const struct key_entry eeepc_wmi_keymap[] = {
- 	{ KE_KEY, 0xed, { KEY_CAMERA_DOWN } },
- 	{ KE_KEY, 0xee, { KEY_CAMERA_LEFT } },
- 	{ KE_KEY, 0xef, { KEY_CAMERA_RIGHT } },
-+	{ KE_KEY, 0xf3, { KEY_MENU } },
-+	{ KE_KEY, 0xf5, { KEY_HOMEPAGE } },
-+	{ KE_KEY, 0xf6, { KEY_ESC } },
- 	{ KE_END, 0},
- };
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index 7d7109f..b7c67c8 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -430,7 +430,7 @@ exit:
+ static int sabi_set_commandb(struct samsung_laptop *samsung,
+ 			     u16 command, u8 data)
+ {
+-	struct sabi_data in = { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 };
++	struct sabi_data in = { { { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 } } };
  
+ 	in.data[0] = data;
+ 	return sabi_command(samsung, command, &in, NULL);
 -- 
 1.7.3.4
 
