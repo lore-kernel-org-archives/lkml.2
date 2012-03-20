@@ -1,32 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759598Ab2CTKnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:43:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52565 "EHLO
+	id S1759562Ab2CTKtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:49:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52741 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759537Ab2CTKnD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756332Ab2CTKtN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:43:03 -0400
-Message-ID: <1332240151.18960.401.camel@twins>
-Subject: Re: CPU Hotplug rework
+	Tue, 20 Mar 2012 06:49:13 -0400
+Message-ID: <1332240525.18960.403.camel@twins>
+Subject: Re: [RFC][PATCH 00/26] sched/numa
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+To: Avi Kivity <avi@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Tue, 20 Mar 2012 11:42:31 +0100
-In-Reply-To: <87aa3cqht9.fsf@rustcorp.com.au>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-	 <87aa3cqht9.fsf@rustcorp.com.au>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Tue, 20 Mar 2012 11:48:45 +0100
+In-Reply-To: <4F685960.4080904@redhat.com>
+References: <20120316144028.036474157@chello.nl>
+	    <4F670325.7080700@redhat.com> <1332155527.18960.292.camel@twins>
+	   <4F671B90.3010209@redhat.com> <1332158992.18960.316.camel@twins>
+	  <4F672384.1030601@redhat.com> <1332187387.18960.389.camel@twins>
+	 <4F685960.4080904@redhat.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -35,52 +39,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 10:12 +1030, Rusty Russell wrote:
-> On Mon, 19 Mar 2012 20:14:25 +0530, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> > Hi,
-> > 
-> > There had been some discussion on CPU Hotplug redesign/rework
-> > some time ago, but it was buried under a thread with a different
-> > subject.
-> > (http://thread.gmane.org/gmane.linux.kernel/1246208/focus=1246404)
-> > 
-> > So I am opening a new thread with an appropriate subject to discuss
-> > what needs to be done and how to go about it, as part of the rework.
-> > 
-> > Peter Zijlstra and Paul McKenney had come up with TODO lists for the
-> > rework, and here are their extracts from the previous discussion:
+On Tue, 2012-03-20 at 12:18 +0200, Avi Kivity wrote:
+> On 03/19/2012 10:03 PM, Peter Zijlstra wrote:
+> > On Mon, 2012-03-19 at 14:16 +0200, Avi Kivity wrote:
+> > > > Afaik we do not use dma engines for memory migration. 
+> > > 
+> > > We don't, but I think we should. 
+> >
+> > ISTR we (the community) had this discussion once. I also seem to
+> > remember the general consensus being that DMA engines would mostly
+> > likely not be worth the effort, although I can't really recall the
+> > specifics.
+> >
+> > Esp. for 4k pages the setup of the offload will likely be more expensive
+> > than actually doing the memcpy.
 > 
-> This is possible, but quite a lot of tricky auditing work.  There's an
-> underlying assumption that stop_machine is the slow part, since it feels
-> so heavy.
+> If you're copying a page, yes.  If you're copying a large vma, the
+> per-page setup cost is likely to be very low.
+> 
+> Especially if you're copying across nodes.
 
-Depends on the machine and the needs. For the regular desktop with a
-regular kernel, the stop_machine in hotplug isn't really a problem. For
-_BIG_ machines stop_machine is a problem, for -RT stop_machine is a
-problem.
-
-So if we're going to re-architect hotplug anyway, it would be very good
-to get rid of it, because I really don't see any hard reasons why we
-would need it.
-
-> Unfortunately, this doesn't seem to be the case in my testing.  The time
-> for hotplug seems to be moving all the threads around.  So how about:
-
-Agreed, the thread creation on online is the most expensive operation.
-
-> (1) Let's not shutdown per-cpu kthreads, just leave them there to run
->     if the CPU comes back.
-
-Wasn't as easy as it sounds, but should be doable.
-
-> (2) Do something more efficient with userspace threads than migrating
->     them one at a time.
-
-Sadly that can't really be done. We need to pick up every task
-(userspace, but also running kernel threads) and update their state.
-
-> Otherwise, we risk doing a great deal of work and gaining nothing
-> (cleanups aside, of course).
-
-I don't really think its possible to spend too much time cleaning up
-hotplug at this point :-)
+But wouldn't you then have to wait for the entire copy to complete
+before accessing any of the memory? That sounds like a way worse latency
+hit than the per-page lazy-migrate.
