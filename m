@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759554Ab2CTKa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:30:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52318 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886Ab2CTKaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:30:09 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH 1/3] spi: omap2-mcspi: make it behave as a module
-Date: Tue, 20 Mar 2012 15:59:47 +0530
-Message-ID: <1332239389-1897-2-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1332239389-1897-1-git-send-email-shubhrajyoti@ti.com>
-References: <1332239389-1897-1-git-send-email-shubhrajyoti@ti.com>
+	id S1759115Ab2CTKcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:32:10 -0400
+Received: from msa105.auone-net.jp ([61.117.18.165]:57138 "EHLO
+	msa105.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab2CTKcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 06:32:08 -0400
+X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Mar 2012 06:32:08 EDT
+Date: Tue, 20 Mar 2012 19:26:27 +0900
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] deb-pkg: Fix build error on read-only source
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20120320102628.02DC16FC039@msa105.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
+$ make O=/tmp/a V=1 deb-pkg
+...
+make -C /usr/src/linux O=/tmp/a/. headers_check
+set -e; : '  CHK     include/linux/version.h'; mkdir -p include/linux/;         (echo \#define LINUX_VERSION_CODE 197376; echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';) < /usr/src/linux/Makefile > include/linux/version.h.tmp; if [ -r include/linux/version.h ] && cmp -s include/linux/version.h include/linux/version.h.tmp; then rm -f include/linux/version.h.tmp; else : '  UPD     include/linux/version.h'; mv -f include/linux/version.h.tmp include/linux/version.h; fi
+/bin/sh: 1: cannot create include/linux/version.h.tmp: Read-only file system
+make[4]: *** [include/linux/version.h] Error 2
+make[3]: *** [all] Error 2
+make[2]: *** [deb-pkg] Error 2
+make[1]: *** [deb-pkg] Error 2
+make: *** [sub-make] Error 2
 
-move probe away from __init section and use
-platform_driver_register() instead of
-platform_driver_probe().
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
 ---
- drivers/spi/spi-omap2-mcspi.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ scripts/package/builddeb |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 0b0dfb7..5f4419e 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -1080,7 +1080,7 @@ static int omap_mcspi_runtime_resume(struct device *dev)
- }
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 3c6c0b1..ceb1de2 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -127,8 +127,8 @@ if grep -q '^CONFIG_MODULES=y' .config ; then
+ 	fi
+ fi
  
+-make headers_check
+-make headers_install INSTALL_HDR_PATH="$libc_headers_dir/usr"
++make KBUILD_SRC= headers_check
++make KBUILD_SRC= headers_install INSTALL_HDR_PATH="$libc_headers_dir/usr"
  
--static int __init omap2_mcspi_probe(struct platform_device *pdev)
-+static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- {
- 	struct spi_master	*master;
- 	struct omap2_mcspi_platform_config *pdata = pdev->dev.platform_data;
-@@ -1212,7 +1212,7 @@ free_master:
- 	return status;
- }
- 
--static int __exit omap2_mcspi_remove(struct platform_device *pdev)
-+static int __devexit omap2_mcspi_remove(struct platform_device *pdev)
- {
- 	struct spi_master	*master;
- 	struct omap2_mcspi	*mcspi;
-@@ -1287,13 +1287,14 @@ static struct platform_driver omap2_mcspi_driver = {
- 		.owner =	THIS_MODULE,
- 		.pm =		&omap2_mcspi_pm_ops
- 	},
--	.remove =	__exit_p(omap2_mcspi_remove),
-+	.probe =	omap2_mcspi_probe,
-+	.remove =	__devexit_p(omap2_mcspi_remove),
- };
- 
- 
- static int __init omap2_mcspi_init(void)
- {
--	return platform_driver_probe(&omap2_mcspi_driver, omap2_mcspi_probe);
-+	return platform_driver_register(&omap2_mcspi_driver);
- }
- subsys_initcall(omap2_mcspi_init);
- 
+ # Install the maintainer scripts
+ # Note: hook scripts under /etc/kernel are also executed by official Debian
 -- 
-1.7.1
+1.7.9.1
 
