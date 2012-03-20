@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760193Ab2CTOWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:22:44 -0400
-Received: from mail.windriver.com ([147.11.1.11]:39892 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab2CTOWn (ORCPT
+	id S1760045Ab2CTOZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:25:21 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43142 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab2CTOZU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:22:43 -0400
-Date: Tue, 20 Mar 2012 09:20:58 -0500
-From: Peter Seebach <peter.seebach@windriver.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH 1/6] kenrel.h: add ALIGN_OF_LAST_BIT()
-Message-ID: <20120320092058.1b3271a4@wrlaptop>
-In-Reply-To: <op.wbgvn00x3l0zgt@mpn-glaptop>
-References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com>
-	<1332238884-6237-2-git-send-email-laijs@cn.fujitsu.com>
-	<op.wbgvn00x3l0zgt@mpn-glaptop>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	Tue, 20 Mar 2012 10:25:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <07BBB2AAB1A10A488A2AD166C7CB8B0DF3EC27@nasanexd02b.na.qualcomm.com>
+References: <Acz7Xq9MjsyGPasdTvauqG8msmvJ7AAGDXAg> <07BBB2AAB1A10A488A2AD166C7CB8B0DF3EC27@nasanexd02b.na.qualcomm.com>
+From: Eric Miao <eric.miao@canonical.com>
+Date: Tue, 20 Mar 2012 22:24:59 +0800
+X-Google-Sender-Auth: SkU6xRhbE59xh-mZZrImuuS7OBA
+Message-ID: <CAMPhdO8c1FvnfCUxUODE7U_tmydfd235JXhq=KOx=x5urX84eA@mail.gmail.com>
+Subject: Re: [patch] ath3k-1.fw: Fix firmware issue
+To: "Yao, Costa" <cqyao@qca.qualcomm.com>
+Cc: "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Mar 2012 12:32:14 +0100
-Michal Nazarewicz <mina86@mina86.com> wrote:
+> From 5b3d3920ab3991b6450e6cc106666c1e10547824 Mon Sep 17 00:00:00 2001
+> From: Costa Yao <cqyao@qca.qualcomm.com>
+> Date: Tue, 6 Mar 2012 13:56:24 +0800
+> Subject: [PATCH] [patch]ath3k-1.fw: Fix firmware issue.
+>
+> Force the dangle to change the PID value after the downloading of ath3k-1.fw.
+>
+> Signed-off-by: Costa Yao <cqyao@qca.qualcomm.com>
 
-> >+#define ALIGN_OF_LAST_BIT(x)	((((x)^((x) - 1))>>1) + 1)  
-> 
-> Wouldn't ALIGNMENT() be less confusing? After all, that's what this
-> macro is calculating, right? Alignment of given address.
+Tested-by: Eric Miao <eric.miao@canonical.com>
 
-Why not just LAST_BIT(x)?  It's not particularly specific to pointer
-alignment, even though that's the context in which it apparently came
-up.  So far as I can tell, this isn't even meaningfully defined on
-pointer types as such; you'd have to convert.  So the implications for
-alignment seem a convenient side-effect, really.
+With DW1702, AR3011 Bluetooth module. After using this firmware
+blob, the AR3011 BT module changes its PID to 3005, and then
+btusb.ko can be working all right.
 
-It might be instructive to see some example proposed uses; the question
-of why I'd care what alignment something had, rather than whether it
-was aligned for a given type, is one that will doubtless keep me awake
-nights.
+Please refer to http://bugs.launchpad.net/bugs/714862 for details.
 
-I guess this feels like it answers a question that is usually the wrong
-question.  Imagine if you will a couple-page block of memory, full of
-unsigned shorts.  Iterate through the array, calculating
-ALIGN_OF_LAST_BIT(&a[i]).  Do we really *care* that it's PAGE_SIZE for
-some i, and 2 (I assume) for other i, and PAGE_SIZE*2 for either i==0 or
-i==PAGE_SIZE?  (Apologies if this is a silly question; maybe this is
-such a commonly-needed feature that it's obvious.)
 
--s
--- 
-Listen, get this.  Nobody with a good compiler needs to be justified.
+> ---
+>  WHENCE     |    2 +-
+>  ath3k-1.fw |  Bin 246804 -> 246804 bytes
+>  2 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/WHENCE b/WHENCE
+> index 01fa5ca..4cc9cbd 100644
+> --- a/WHENCE
+> +++ b/WHENCE
+> @@ -1209,7 +1209,7 @@ Driver: ath3k - DFU Driver for Atheros bluetooth chipset AR3011
+>  File: ath3k-1.fw
+>  Info: v1.0
+>
+> -Fix EEPROM radio table issue and change PID to 3005
+> +Fix firmware issue and force to change PID after downloading of ath3k-1.fw
+>
+>  Licence: Redistributable. See LICENCE.atheros_firmware for details
+>
+> diff --git a/ath3k-1.fw b/ath3k-1.fw
+> index 63aa9b9ad87d3d918e441d921ada9cad08687ae5..0f6335030a8541db35894a00ea607ae945f31947 100644
+> GIT binary patch
+> delta 101591
+> zcma%jd03Oj_VCP`g)A?Su!Jp05(xViP+Y2&AR;2Rpp~j!6f{(=tzvCmYOf@=ib`)u
+
+..... [snipped]
