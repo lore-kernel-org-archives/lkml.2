@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab2CTNWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:22:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46141 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756790Ab2CTNWx (ORCPT
+	id S1758417Ab2CTNXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:23:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56963 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758205Ab2CTNXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:22:53 -0400
+	Tue, 20 Mar 2012 09:23:12 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 08/20] m68k/mm/fault.c: Port OOM changes to do_page_fault
-Date: Tue, 20 Mar 2012 09:22:26 -0400
-Message-Id: <1332249746-2867-1-git-send-email-consul.kautuk@gmail.com>
+To: Hirokazu Takata <takata@linux-m32r.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 09/20] m32r/mm/fault.c: Port OOM changes to do_page_fault
+Date: Tue, 20 Mar 2012 09:22:55 -0400
+Message-Id: <1332249775-2902-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,50 +31,48 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to m68k.
+Port these changes to m32r.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/m68k/mm/fault.c |   31 ++++++++++++++++++++++++++-----
- 1 files changed, 26 insertions(+), 5 deletions(-)
+ arch/m32r/mm/fault.c |   33 ++++++++++++++++++++++++++++-----
+ 1 files changed, 28 insertions(+), 5 deletions(-)
 
-diff --git a/arch/m68k/mm/fault.c b/arch/m68k/mm/fault.c
-index 2db6099..27879bd 100644
---- a/arch/m68k/mm/fault.c
-+++ b/arch/m68k/mm/fault.c
-@@ -74,6 +74,7 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct * vma;
- 	int write, fault;
+diff --git a/arch/m32r/mm/fault.c b/arch/m32r/mm/fault.c
+index 2c9aeb4..cfc7e89 100644
+--- a/arch/m32r/mm/fault.c
++++ b/arch/m32r/mm/fault.c
+@@ -82,6 +82,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long error_code,
+ 	int write;
+ 	int fault;
+ 	siginfo_t info;
 +	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- #ifdef DEBUG
- 	printk ("do page fault:\nregs->sr=%#x, regs->pc=%#lx, address=%#lx, %ld, %p\n",
-@@ -88,6 +89,7 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
- 	if (in_atomic() || !mm)
- 		goto no_context;
- 
+ 	/*
+ 	 * If BPSW IE bit enable --> set PSW IE bit
+@@ -137,6 +138,8 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long error_code,
+ 		if ((error_code & ACE_USERMODE) == 0 &&
+ 		    !search_exception_tables(regs->psw))
+ 			goto bad_area_nosemaphore;
++
 +retry:
- 	down_read(&mm->mmap_sem);
+ 		down_read(&mm->mmap_sem);
+ 	}
  
- 	vma = find_vma(mm, address);
-@@ -126,6 +128,7 @@ good_area:
+@@ -175,6 +178,7 @@ good_area:
  			if (!(vma->vm_flags & VM_WRITE))
- 				goto acc_err;
+ 				goto bad_area;
  			write++;
 +			flags |= FAULT_FLAG_WRITE;
  			break;
- 		case 1:		/* read, present */
- 			goto acc_err;
-@@ -140,10 +143,14 @@ good_area:
- 	 * the fault.
+ 		case ACE_PROTECTION:	/* read, present */
+ 		case 0:		/* read, not present */
+@@ -195,7 +199,11 @@ good_area:
  	 */
- 
--	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, address, flags);
- #ifdef DEBUG
- 	printk("handle_mm_fault returns %d\n",fault);
- #endif
+ 	addr = (address & PAGE_MASK);
+ 	set_thread_fault_code(error_code);
+-	fault = handle_mm_fault(mm, vma, addr, write ? FAULT_FLAG_WRITE : 0);
++	fault = handle_mm_fault(mm, vma, addr, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
 +		return;
@@ -81,20 +80,20 @@ index 2db6099..27879bd 100644
  	if (unlikely(fault & VM_FAULT_ERROR)) {
  		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -151,10 +158,24 @@ good_area:
- 			goto bus_err;
+@@ -203,10 +211,25 @@ good_area:
+ 			goto do_sigbus;
  		BUG();
  	}
 -	if (fault & VM_FAULT_MAJOR)
--		current->maj_flt++;
+-		tsk->maj_flt++;
 -	else
--		current->min_flt++;
+-		tsk->min_flt++;
 +
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
 +		if (fault & VM_FAULT_MAJOR)
-+			current->maj_flt++;
++			tsk->maj_flt++;
 +		else
-+			current->min_flt++;
++			tsk->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
@@ -107,9 +106,10 @@ index 2db6099..27879bd 100644
 +			goto retry;
 +		}
 +	}
- 
++
+ 	set_thread_fault_code(0);
  	up_read(&mm->mmap_sem);
- 	return 0;
+ 	return;
 -- 
 1.7.5.4
 
