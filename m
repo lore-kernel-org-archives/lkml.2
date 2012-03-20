@@ -1,50 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab2CTTY7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 15:24:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55041 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab2CTTY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 15:24:57 -0400
-From: Ashay Rane <ashay.r@gmail.com>
-To: linux-perf-users@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Ashay Rane <ashay.rane@tacc.utexas.edu>
-Subject: [PATCH 1/1] Fix number of events displayed in header
-Date: Tue, 20 Mar 2012 14:23:16 -0500
-Message-Id: <1332271396-21756-1-git-send-email-ashay.r@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756757Ab2CTTlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 15:41:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756202Ab2CTTlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 15:41:50 -0400
+Date: Tue, 20 Mar 2012 20:34:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20120320193414.GA21277@redhat.com>
+References: <20120106182535.GJ9511@google.com> <20120111160730.GA24556@redhat.com> <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com> <20120113152010.GA19215@redhat.com> <20120113182750.GD18166@google.com> <20120114173648.GA32543@redhat.com> <20120118231742.GS18166@google.com> <20120119154522.GA14058@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120119154522.GA14058@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ashay Rane <ashay.rane@tacc.utexas.edu>
+OK, finally we should do something with this problem ;)
 
-Signed-off-by: Ashay Rane <ashay.rane@tacc.utexas.edu>
+On 01/19, Oleg Nesterov wrote:
+>
+> I'll try to investigate if we can remove
+>
+> 	leader->group_leader = tsk;
+>
+> from de_thread(). In fact I already thought about this change a long
+> ago without any connection to while_each_thread(). This assignment
+> looks "assymetrical" compared to other threads we kill. But we did
+> have a reason (reasons?). Hopefully, the only really important reason
+> was already removed by 087806b1.
+
+On the second thought, I think we should not do this.
+
+For example, do_prlimit() assumes that tsk->group_leader is correct
+under tasklist_lock.
+
+OK, lets return to the thread_group_leader() check. To ensure we do
+not visit the same thread twice we can check 'g', not 't'.
+
+This is what I am going to send, after I re-check once again...
+
+I have the problem with the changelog ;) Somehow it should explain
+that while_each_thread_rcu(g, t) can't race with do_group_exit().
+I think it can't, list_del_rcu(leader->thread_group) happens when
+this entry is already "empty", it should be the last thread in group.
+If the non-leader thread goes away from the least, we still have
+the "path" to reach the leader. But this is not easy to explain.
+
+As for the barrier. If de_thread() changes the leader it drops
+and re-acquires tasklist_lock (this implies mb) after it changes
+old_leader->exit_signal (used in thread_group_leader) and before
+__unhash_process() which does list_del_rcu().
+
+This means that if while_each_thread() sees the result of
+list_del_rcu(old_leader) it must also see that
+thread_group_leader(old_leader) != T.
+
+What do you think? Do you see any problems?
+
+Oleg.
 ---
- tools/perf/builtin-report.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25d34d4..58a20cf 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -202,11 +202,9 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 					      const char *evname, FILE *fp)
- {
- 	size_t ret;
--	char unit;
--	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	u64 total_period = self->stats.total_period;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7d379a6..f169bfd 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2323,9 +2323,24 @@ extern bool current_is_single_threaded(void);
+ #define do_each_thread(g, t) \
+ 	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
  
--	nr_events = convert_unit(nr_events, &unit);
--	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
-+	ret = fprintf(fp, "# Events: %llu", total_period);
- 	if (evname != NULL)
- 		ret += fprintf(fp, " %s", evname);
- 	return ret + fprintf(fp, "\n#\n");
--- 
-1.7.4.1
++/*
++ * needs tasklist_lock or ->siglock, or rcu if the caller ensures
++ * that 'g' can't exit or exec.
++ */
+ #define while_each_thread(g, t) \
+ 	while ((t = next_thread(t)) != g)
+ 
++/*
++ * rcu-safe, but should start at ->group_leader.
++ * thread_group_leader(g) protects against the race with exec which
++ * removes the leader from list.
++ * smp_rmb() pairs with implicit mb() implied by unlock + lock in
++ * de_thread()->release_task() path.
++ */
++#define while_each_thread_rcu(g, t)				\
++	while ((t = next_thread(t)) != g &&			\
++		({ smp_rmb(); thread_group_leader(g); }))
++
+ static inline int get_nr_threads(struct task_struct *tsk)
+ {
+ 	return tsk->signal->nr_threads;
 
