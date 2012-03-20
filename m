@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab2CTJoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 05:44:06 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:39913 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab2CTJoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 05:44:04 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH -V4 07/10] hugetlbfs: Add memcg control files for hugetlbfs
-In-Reply-To: <4F66E169.5000909@jp.fujitsu.com>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F66A059.20801@jp.fujitsu.com> <87wr6hjc58.fsf@linux.vnet.ibm.com> <4F66E169.5000909@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 20 Mar 2012 14:52:20 +0530
-Message-ID: <874ntjtynn.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12032009-5816-0000-0000-000001D448E3
+	id S1757066Ab2CTJoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 05:44:38 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58662 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753671Ab2CTJoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 05:44:37 -0400
+Message-ID: <1332236676.7847.83.camel@joe2Laptop>
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Valdis.Kletnieks@vt.edu, tytso@mit.edu, anca.emanuel@gmail.com,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Date: Tue, 20 Mar 2012 02:44:36 -0700
+In-Reply-To: <4F684407.1040807@suse.cz>
+References: <20120320025835.GE14363@thunk.org>
+	 <1332212574.7847.49.camel@joe2Laptop>
+	 <216818.1332222366@turing-police.cc.vt.edu>
+	 <20120320.031001.1532841232287663716.davem@davemloft.net>
+	 <4F684407.1040807@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Tue, 2012-03-20 at 09:47 +0100, Jiri Slaby wrote:
+> Joe writes: "notify a particular set of per subsystem messages that
+> pr_<level> could easily provide"
+> 
+> Maybe the concept is not explained well enough that we do not follow?
 
->
-> O.K. BTW, please read Tejun's recent post..
->
-> https://lkml.org/lkml/2012/3/16/522
->
-> Can you use his methods ?
->
-> I guess you can write...
->
-> CGROUP_SUBSYS_CFTYLES_COND(mem_cgroup_subsys,
-> 			hugetlb_cgroup_files,
-> 			if XXXXMB hugetlb is allowed);
->
+Basically, when pr_fmt(fmt) is #defined to something
+other than "#define pr_fmt(fmt) fmt", it could be used
+as a mechanism to do more than standardize prefixes.
 
-I may not be able to do CGROUP_SUBSYS_CFTYPES_COND(). But as long as we
-are able to dynamically add new control files, we should be ok.
+__builtin_strcmp is pretty useful.
 
--aneesh
+You can do things like:
+(I'm just typing, this may have errors)
+
+#define _first_macro_arg(arg1) arg1
+#define first_macro_arg(arg1, ...) _first_macro_arg(arg1)
+
+#define pr_info(fmt, ...)					\
+do {								\
+	if (!__builtin_strcmp(first_macro_arg(pr_fmt(fmt)),	\
+			      KBUILD_MODNAME ": " fmt)))	\
+		advanced_printk(fmt, ##__VA_ARGS__);		\
+	else							\
+		printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__);	\
+while (0)
+
+etc...
+
+Anyway, it's been a couple of years since I prototyped
+something like that and tested file sizes.
+
+The size delta of an allyesconfig was:
+
+-rwxr-xr-x 1 joe joe 926968471 2010-06-29 10:39 vmlinux.allyesconfig.printk_level_with_module
+-rwxr-xr-x 1 joe joe 927196127 2010-06-23 02:40 vmlinux.allyesconfig.pr_level
+
+It reduced an allyesconfig by .1%
+It wasn't a huge saving.
+
+I'll play with it again and send an rfc
+patch in a couple of days.
+
+Maybe I'll prototype a pr_notify mechanism too.
+
+cheers, Joe
 
