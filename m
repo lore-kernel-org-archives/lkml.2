@@ -1,127 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759540Ab2CTX2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 19:28:45 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:37475 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756717Ab2CTX2o (ORCPT
+	id S1759616Ab2CTX3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 19:29:09 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:52125 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759517Ab2CTX3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 19:28:44 -0400
-Message-ID: <4F691289.7080505@fb.com>
-Date: Tue, 20 Mar 2012 16:28:09 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 20 Mar 2012 19:29:05 -0400
+Message-ID: <4F6912A4.1000502@panasas.com>
+Date: Tue, 20 Mar 2012 16:28:36 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, "Paul Mackerras" <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Stephane Eranian" <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Tom Zanussi" <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v4)
-References: <1331746607-6706-1-git-send-email-asharma@fb.com> <20120315141402.GA550@somewhere.redhat.com> <4F622DCE.4090608@fb.com> <20120319155742.GF2660@somewhere>
-In-Reply-To: <20120319155742.GF2660@somewhere>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <keyrings@linux-nfs.org>,
+        <linux-security-module@vger.kernel.org>
+CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 3/4] kmod: Move call_usermodehelper_fns() to .c file and unexport
+ it's helpers
+References: <4F691059.30405@panasas.com>
+In-Reply-To: <4F691059.30405@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-20_10:2012-03-20,2012-03-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/19/12 8:57 AM, Frederic Weisbecker wrote:
 
->>> Each hist have a period of 1, but the total period is 1.
->>> So the end result should be (IIUC):
->>>
->>> 100%    foo     a
->>> 100%    foo     b
->>>                  |
->>>                  --- a
->>> 100%    foo     c
->>>                  |
->>>                  --- b
->>>                      |
->>>                      --- c
->>>
->>
->> That is correct. The first column no longer adds up to 100%.
->
-> So do we really want this?
->
+If we move call_usermodehelper_fns() to kmod.c file and EXPORT_SYMBOL it
+we can avoid exporting all it's helper functions:
+	call_usermodehelper_setup
+	call_usermodehelper_setfns
+	call_usermodehelper_exec
+And make all of them static to kmod.c
 
-I think so. It's a different way of presenting the data. Pie chart vs a 
-bar chart of OS market share where people may be using more than one OS.
+Since the optimizer will see all these as a single call site it will inline them
+inside call_usermodehelper_fns(). So we loose the call to _fns but gain 3
+calls to the helpers. (Not that it matters)
 
-I'll post some documentation updates.
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ include/linux/kmod.h |   30 ++----------------------------
+ kernel/kmod.c        |   25 ++++++++++++++++++++++---
+ 2 files changed, 24 insertions(+), 31 deletions(-)
 
->> If we don't do this, total_period will be inflated.
->
-> Yeah right I've just tried and callchains look right. I'm just puzzled
-> by the percentages:
->
-
-Thanks for testing this!
-
-> +  98,99%  [k] execve
-> +  98,99%  [k] stub_execve
-> +  98,99%  [k] do_execve
-> +  98,99%  [k] do_execve_common
-> +  98,99%  [k] sys_execve
-> +  53,12%  [k] __libc_start_main
-> +  53,12%  [k] cmd_record
-
-These look like they belong to the perf binary and are incorrectly 
-classified as kernel samples. Problem is that callchain_get() is not 
-populating the privilege level - it's simply propagating the privilege 
-level of the sample:
-
-
-+       for (i = 0; i < cursor->nr; i++) {
-+               struct addr_location al_child = *al;
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 936d197..5a89c00 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -67,37 +67,11 @@ struct subprocess_info {
+ 	void *data;
+ };
+ 
+-/* Allocate a subprocess_info structure */
+-struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+-						  char **envp, gfp_t gfp_mask);
+-
+-/* Set various pieces of state into the subprocess_info structure */
+-void call_usermodehelper_setfns(struct subprocess_info *info,
+-		    int (*init)(struct subprocess_info *info, struct cred *new),
+-		    void (*cleanup)(struct subprocess_info *info),
+-		    void *data);
+-
+-/* Actually execute the sub-process */
+-int call_usermodehelper_exec(struct subprocess_info *info, enum umh_wait wait);
+-
+-static inline int
++extern int
+ call_usermodehelper_fns(char *path, char **argv, char **envp,
+ 			enum umh_wait wait,
+ 			int (*init)(struct subprocess_info *info, struct cred *new),
+-			void (*cleanup)(struct subprocess_info *), void *data)
+-{
+-	struct subprocess_info *info;
+-	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+-
+-	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
+-
+-	if (info == NULL)
+-		return -ENOMEM;
+-
+-	call_usermodehelper_setfns(info, init, cleanup, data);
+-
+-	return call_usermodehelper_exec(info, wait);
+-}
++			void (*cleanup)(struct subprocess_info *), void *data);
+ 
+ static inline int
+ call_usermodehelper(char *path, char **argv, char **envp, enum umh_wait wait)
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index c268f34..3cb7457 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -378,6 +378,7 @@ static void helper_unlock(void)
+  * structure.  This should be passed to call_usermodehelper_exec to
+  * exec the process and free the structure.
+  */
++static
+ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+ 						  char **envp, gfp_t gfp_mask)
+ {
+@@ -393,7 +394,6 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+   out:
+ 	return sub_info;
+ }
+-EXPORT_SYMBOL(call_usermodehelper_setup);
+ 
+ /**
+  * call_usermodehelper_setfns - set a cleanup/init function
+@@ -411,6 +411,7 @@ EXPORT_SYMBOL(call_usermodehelper_setup);
+  * Function must be runnable in either a process context or the
+  * context in which call_usermodehelper_exec is called.
+  */
++static
+ void call_usermodehelper_setfns(struct subprocess_info *info,
+ 		    int (*init)(struct subprocess_info *info, struct cred *new),
+ 		    void (*cleanup)(struct subprocess_info *info),
+@@ -420,7 +421,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
+ 	info->init = init;
+ 	info->data = data;
+ }
+-EXPORT_SYMBOL(call_usermodehelper_setfns);
+ 
+ /**
+  * call_usermodehelper_exec - start a usermode application
+@@ -434,6 +434,7 @@ EXPORT_SYMBOL(call_usermodehelper_setfns);
+  * asynchronously if wait is not set, and runs as a child of keventd.
+  * (ie. it runs with full root capabilities).
+  */
++static
+ int call_usermodehelper_exec(struct subprocess_info *sub_info,
+ 			     enum umh_wait wait)
+ {
+@@ -464,7 +465,25 @@ unlock:
+ 	helper_unlock();
+ 	return retval;
+ }
+-EXPORT_SYMBOL(call_usermodehelper_exec);
 +
-+               err = callchain_get(&iter, &al_child);
++int call_usermodehelper_fns(char *path, char **argv, char **envp,
++			enum umh_wait wait,
++			int (*init)(struct subprocess_info *info, struct cred *new),
++			void (*cleanup)(struct subprocess_info *), void *data)
++{
++	struct subprocess_info *info;
++	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
++
++	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
++
++	if (info == NULL)
++		return -ENOMEM;
++
++	call_usermodehelper_setfns(info, init, cleanup, data);
++
++	return call_usermodehelper_exec(info, wait);
++}
++EXPORT_SYMBOL(call_usermodehelper_fns);
+ 
+ static int proc_cap_handler(struct ctl_table *table, int write,
+ 			 void __user *buffer, size_t *lenp, loff_t *ppos)
+-- 
+1.7.6.2
 
-Not all fields of al_child are populated by callchain_get().
-
-> +  53,12%  [k] T.101
-> +  53,12%  [k] main
-> +  53,12%  [k] run_builtin
-> +  52,11%  [k] perf_evlist__prepare_workload
-> +  52,09%  [k] T.1163
-
-The rest of them look ok to me. If something doesn't make sense, please 
-point me at the output of "perf script".
-
->
->>
->>> Also this feature reminds me a lot the -b option in perf report.
->>> Branch sorting and callchain inclusive sorting are a bit different in
->>> the way they handle the things but the core idea is the same. Callchains
->>> are branches as well.
->>>
->>
->> Yes - I kept asking why the branch stack stuff doesn't use the
->> existing callchain logic.
->
-> Because I fear that loops branches could make the tree representation useless.
->
-
-The loops could happen in callgraphs too right (eg: recursive programs)? 
-The other problem in branch stacks/LBR is that they're sampled branches. 
-Just because I got a sample with:
-
-a -> b
-b -> c
-
-doesn't necessarily mean that the callchain was a -> b -> c.
-
-I still don't have the branch stack setup working properly. But I'm now 
-more sympathetic to the view that last branch sampling and callchains 
-may have different representations in perf.
-
-  -Arun
