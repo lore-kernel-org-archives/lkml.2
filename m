@@ -1,161 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183Ab2CTOT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 10:19:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756497Ab2CTOTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 10:19:55 -0400
-Date: Tue, 20 Mar 2012 15:19:36 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH V2] x86: io_apic: Move and reenable irq only when
- CONFIG_GENERIC_PENDING_IRQ=y
-Message-ID: <20120320141935.GA24806@dhcp-26-207.brq.redhat.com>
+	id S1760181Ab2CTOV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 10:21:29 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:25788 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756497Ab2CTOV2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 10:21:28 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ysbdXlsVM1mwUOkQ2zwvkEkna4brcwmXkQbH6jo9NaK_crt
+ BHjRav358XlMpv1qqJlyfNu2EmG6Doxjm23leTYuGexW.t2C92CoJZaNDZhO
+ 4QfInLdwqdnOmdZoz.vdTHyv10t_15hqfK4iuYH2smAnF8LpU.jwWscyeeUB
+ maqOYNOxbRRltOrIfNuU944w4mp7W91nRjA_.LBdcvQx1v.I0A8qyE9AXSL7
+ nqkV7n.nZy2kfOJ1z.CNf5tBT8Nabh7Tn9Ae0QwYyamTQ0T5g5Gd7WhPTU54
+ pWuB_p_fTs0Mz.knq7TrYqjN.pg8Qry4FlfNKtyJY9O2.SiezabihHFEjlvI
+ NA4EtOmMG7frXxU2eTew6ncVKBuhVyI2GylvYakxJSEbZGEEp.dBZE4nV5Ud
+ O
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Mar 2012 09:21:24 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH 2/6] slub: add kmalloc_align()
+In-Reply-To: <alpine.DEB.2.00.1203200910030.19333@router.home>
+Message-ID: <alpine.DEB.2.00.1203200919520.19333@router.home>
+References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-3-git-send-email-laijs@cn.fujitsu.com> <alpine.DEB.2.00.1203200910030.19333@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_GENERIC_PENDING_IRQ=n irq move and reenable code is never
-get executed, nor do_unmask_irq variable updates its init value. Move
-the code under CONFIG_GENERIC_PENDING_IRQ macro.
+On Tue, 20 Mar 2012, Christoph Lameter wrote:
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/x86/kernel/apic/io_apic.c |  101 ++++++++++++++++++++++++----------------
- 1 files changed, 61 insertions(+), 40 deletions(-)
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 4907563..01cf99d 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -3238,7 +3238,7 @@ static struct kmem_cache *__init create_kmalloc_cache(const char *name,
+> >  	 * This function is called with IRQs disabled during early-boot on
+> >  	 * single CPU so there's no need to take slub_lock here.
+> >  	 */
+> > -	if (!kmem_cache_open(s, name, size, ARCH_KMALLOC_MINALIGN,
+> > +	if (!kmem_cache_open(s, name, size, ALIGN_OF_LAST_BIT(size),
+> >  								flags, NULL))
+> >  		goto panic;
+>
+> Why does the alignment of struct kmem_cache change? I'd rather have a
+> __alignof__(struct kmem_cache) here with alignment specified with the
+> struct definition.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index fb07275..8cd6360 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2512,21 +2512,73 @@ static void ack_apic_edge(struct irq_data *data)
- 
- atomic_t irq_mis_count;
- 
--static void ack_apic_level(struct irq_data *data)
--{
--	struct irq_cfg *cfg = data->chip_data;
--	int i, do_unmask_irq = 0, irq = data->irq;
--	unsigned long v;
--
--	irq_complete_move(cfg);
- #ifdef CONFIG_GENERIC_PENDING_IRQ
-+static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
-+{
- 	/* If we are moving the irq we need to mask it */
- 	if (unlikely(irqd_is_setaffinity_pending(data))) {
--		do_unmask_irq = 1;
- 		mask_ioapic(cfg);
-+		return true;
- 	}
-+	return false;
-+}
-+
-+static inline void ioapic_irqd_unmask(struct irq_data *data,
-+				      struct irq_cfg *cfg, bool masked)
-+{
-+	if (unlikely(masked)) {
-+		/* Only migrate the irq if the ack has been received.
-+		 *
-+		 * On rare occasions the broadcast level triggered ack gets
-+		 * delayed going to ioapics, and if we reprogram the
-+		 * vector while Remote IRR is still set the irq will never
-+		 * fire again.
-+		 *
-+		 * To prevent this scenario we read the Remote IRR bit
-+		 * of the ioapic.  This has two effects.
-+		 * - On any sane system the read of the ioapic will
-+		 *   flush writes (and acks) going to the ioapic from
-+		 *   this cpu.
-+		 * - We get to see if the ACK has actually been delivered.
-+		 *
-+		 * Based on failed experiments of reprogramming the
-+		 * ioapic entry from outside of irq context starting
-+		 * with masking the ioapic entry and then polling until
-+		 * Remote IRR was clear before reprogramming the
-+		 * ioapic I don't trust the Remote IRR bit to be
-+		 * completey accurate.
-+		 *
-+		 * However there appears to be no other way to plug
-+		 * this race, so if the Remote IRR bit is not
-+		 * accurate and is causing problems then it is a hardware bug
-+		 * and you can go talk to the chipset vendor about it.
-+		 */
-+		if (!io_apic_level_ack_pending(cfg))
-+			irq_move_masked_irq(data);
-+		unmask_ioapic(cfg);
-+	}
-+}
-+#else
-+static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
-+{
-+	return false;
-+}
-+static inline void ioapic_irqd_unmask(struct irq_data *data,
-+				      struct irq_cfg *cfg, bool masked)
-+{
-+}
- #endif
- 
-+static void ack_apic_level(struct irq_data *data)
-+{
-+	struct irq_cfg *cfg = data->chip_data;
-+	int i, irq = data->irq;
-+	unsigned long v;
-+	bool masked;
-+
-+	irq_complete_move(cfg);
-+	masked = ioapic_irqd_mask(data, cfg);
-+
- 	/*
- 	 * It appears there is an erratum which affects at least version 0x11
- 	 * of I/O APIC (that's the 82093AA and cores integrated into various
-@@ -2581,38 +2633,7 @@ static void ack_apic_level(struct irq_data *data)
- 		eoi_ioapic_irq(irq, cfg);
- 	}
- 
--	/* Now we can move and renable the irq */
--	if (unlikely(do_unmask_irq)) {
--		/* Only migrate the irq if the ack has been received.
--		 *
--		 * On rare occasions the broadcast level triggered ack gets
--		 * delayed going to ioapics, and if we reprogram the
--		 * vector while Remote IRR is still set the irq will never
--		 * fire again.
--		 *
--		 * To prevent this scenario we read the Remote IRR bit
--		 * of the ioapic.  This has two effects.
--		 * - On any sane system the read of the ioapic will
--		 *   flush writes (and acks) going to the ioapic from
--		 *   this cpu.
--		 * - We get to see if the ACK has actually been delivered.
--		 *
--		 * Based on failed experiments of reprogramming the
--		 * ioapic entry from outside of irq context starting
--		 * with masking the ioapic entry and then polling until
--		 * Remote IRR was clear before reprogramming the
--		 * ioapic I don't trust the Remote IRR bit to be
--		 * completey accurate.
--		 *
--		 * However there appears to be no other way to plug
--		 * this race, so if the Remote IRR bit is not
--		 * accurate and is causing problems then it is a hardware bug
--		 * and you can go talk to the chipset vendor about it.
--		 */
--		if (!io_apic_level_ack_pending(cfg))
--			irq_move_masked_irq(data);
--		unmask_ioapic(cfg);
--	}
-+	ioapic_irqd_unmask(data, cfg, masked);
- }
- 
- #ifdef CONFIG_IRQ_REMAP
--- 
-1.7.7.6
+Ok this aligns the data not the cache . Ok I see what is going on here.
+So the kmalloc array now has a higher alignment. That means you can align
+up to that limit within the structure.
 
