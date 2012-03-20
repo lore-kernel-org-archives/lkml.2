@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab2CTXlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 19:41:11 -0400
-Received: from gw.danplanet.com ([50.43.125.66]:40788 "EHLO mail.danplanet.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751275Ab2CTXlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 19:41:09 -0400
-From: Dan Smith <danms@us.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] AutoNUMA alpha6
-References: <20120316144028.036474157@chello.nl>
-	<20120316182511.GJ24602@redhat.com>
-Date: Tue, 20 Mar 2012 16:41:06 -0700
-In-Reply-To: <20120316182511.GJ24602@redhat.com> (Andrea Arcangeli's message
-	of "Fri, 16 Mar 2012 19:25:11 +0100")
-Message-ID: <87k42edenh.fsf@danplanet.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1030274Ab2CTXmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 19:42:10 -0400
+Received: from ozlabs.org ([203.10.76.45]:56581 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478Ab2CTXmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 19:42:09 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH] virtio-spec: clarify ro/rw bits and updating rule of virtio-net status field
+In-Reply-To: <20120320224805.GA4997@redhat.com>
+References: <20120320062020.12815.61342.stgit@jason-ThinkPad-T400> <87ty1jpm6p.fsf@rustcorp.com.au> <20120320224805.GA4997@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 21 Mar 2012 10:10:52 +1030
+Message-ID: <87ty1ializ.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AA> Could you try my two trivial benchmarks I sent on lkml too?
+On Wed, 21 Mar 2012 00:48:05 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Tue, Mar 20, 2012 at 09:35:18PM +1030, Rusty Russell wrote:
+> > On Tue, 20 Mar 2012 14:20:21 +0800, Jason Wang <jasowang@redhat.com> wrote:
+> > > This patch clarifies VIRTIO_NET_S_LINK_UP as a read-only bit and
+> > > VIRTIO_NET_S_ANNOUNCE as a read-writable bit. Also introduce the write 1 to
+> > > clear semantics for all read-writable bits of config status field. This could
+> > > help to reduce the config status field updating race between host and guest and
+> > > also simplify the implementation.
+> > > 
+> > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > 
+> > This approach assumes an active config field, which neither lguest nor
+> > S/390 have.
+> > 
+> > Thanks,
+> > Rusty.
+> 
+> What does 'active' mean in this context?
 
-I just got around to running your numa01 test on mainline, autonuma, and
-numasched.  This is on a 2-socket, 6-cores-per-socket,
-2-threads-per-core machine, with your test configured to run 24
-threads. I also ran Peter's modified stream_d on all three as well, with
-24 instances in parallel. I know it's already been pointed out that it's
-not the ideal or end-all benchmark, but I figured it was still
-worthwhile to see if the trend continued.
+It means you are assuming that writes to the config field trap to the
+host.
 
-On your numa01 test:
-
-  Autonuma is 22% faster than mainline
-  Numasched is 42% faster than mainline
-
-On Peter's modified stream_d test:
-
-  Autonuma is 35% *slower* than mainline
-  Numasched is 55% faster than mainline
-
-I know that the "real" performance guys here are going to be posting
-some numbers from more interesting benchmarks soon, but since nobody
-had answered Andrea's question, I figured I'd do it.
-
+Rusty.
 -- 
-Dan Smith
-IBM Linux Technology Center
-
+  How could I marry someone with more hair than me?  http://baldalex.org
