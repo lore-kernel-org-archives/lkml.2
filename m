@@ -1,77 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2CTRqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 13:46:16 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:27418 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab2CTRqM (ORCPT
+	id S1752450Ab2CTRou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 13:44:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57673 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab2CTRos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 13:46:12 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6654"; a="174123420"
-Message-ID: <efca11f1b68186dbf1771c09fe3a2f0a.squirrel@www.codeaurora.org>
-In-Reply-To: <20120320140220.GE32469@S2101-09.ap.freescale.net>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
-    <1331878280-2758-3-git-send-email-mturquette@linaro.org>
-    <20120320140220.GE32469@S2101-09.ap.freescale.net>
-Date: Tue, 20 Mar 2012 10:46:11 -0700 (PDT)
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Shawn Guo" <shawn.guo@linaro.org>
-Cc: "Mike Turquette" <mturquette@linaro.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Paul Walmsley" <paul@pwsan.com>,
-        "Linus Walleij" <linus.walleij@stericsson.com>, patches@linaro.org,
-        "Stephen Boyd" <sboyd@codeaurora.org>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Magnus Damm" <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        "Saravana Kannan" <skannan@codeaurora.org>,
-        linaro-dev@lists.linaro.org, "Jeremy Kerr" <jeremy.kerr@canonical.com>,
-        "Arnd Bergman" <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Tue, 20 Mar 2012 13:44:48 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: linus.walleij@linaro.org
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linus.walleij@stericsson.com, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
+        thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH V2 1/6] dt: add property iteration helpers
+Date: Tue, 20 Mar 2012 11:44:34 -0600
+Message-Id: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds macros of_property_for_each_u32() and
+of_property_for_each_string(), which iterate over an array of values
+within a device-tree property. Usage is for example:
 
-On Tue, March 20, 2012 7:02 am, Shawn Guo wrote:
-> On Thu, Mar 15, 2012 at 11:11:19PM -0700, Mike Turquette wrote:
-> ...
->> +struct clk_ops {
->> +	int		(*prepare)(struct clk_hw *hw);
->> +	void		(*unprepare)(struct clk_hw *hw);
->> +	int		(*enable)(struct clk_hw *hw);
->> +	void		(*disable)(struct clk_hw *hw);
->> +	int		(*is_enabled)(struct clk_hw *hw);
->> +	unsigned long	(*recalc_rate)(struct clk_hw *hw,
->> +					unsigned long parent_rate);
->
-> I believe I have heard people love the interface with parent_rate
-> passed in.  I love that too.  But I would like to ask the same thing
-> on .round_rate and .set_rate as well for the same reason why we have
-> it for .recalc_rate.
+struct property *prop;
+const __be32 *p;
+u32 u;
+of_property_for_each_u32(np, "propname", prop, p, u)
+	printk("U32 value: %x\n", u);
 
-In my case, for most clocks, set rate involves reparenting. So, what does
-passing parent_rate for these even mean? Passing parent_rate seems more
-apt for recalc_rate since it's called when the parent rate changes -- so,
-the actual parent itself is not expected to change.
+struct property *prop;
+const char *s;
+of_property_for_each_string(np, "propname", prop, s)
+	printk("String value: %s\n", s);
 
-I could ignore the parameter, but just wondering how many of the others
-see value in this. And if we do add this parameter, it shouldn't be made
-mandatory for the platform driver to use it (due to other assumptions the
-clock framework might make).
+Based on work by Rob Herring <robherring2@gmail.com>
 
--Saravana
+Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+---
+v2: Simplified the implementation per suggestion by Rob Herring.
+---
+ include/linux/of_iter_prop.h |  101 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 101 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/of_iter_prop.h
 
-
+diff --git a/include/linux/of_iter_prop.h b/include/linux/of_iter_prop.h
+new file mode 100644
+index 0000000..e3df23c
+--- /dev/null
++++ b/include/linux/of_iter_prop.h
+@@ -0,0 +1,101 @@
++/*
++ * Copyright (c) 2011-2012 NVIDIA CORPORATION. All rights reserved.
++ *
++ * Iterate over properties that store arrays.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __OF_ITER_PROP_H__
++#define __OF_ITER_PROP_H__
++
++#include <linux/of.h>
++
++#ifdef CONFIG_OF
++static inline const __be32 *of_prop_next_u32(struct property *prop,
++					     const __be32 *cur, u32 *pu)
++{
++	const void *curv = cur;
++
++	if (!prop)
++		return NULL;
++
++	if (!cur) {
++		curv = prop->value;
++		goto out_val;
++	}
++
++	curv += sizeof(*cur);
++	if (curv >= prop->value + prop->length)
++		return NULL;
++
++out_val:
++	*pu = be32_to_cpup(curv);
++	return curv;
++}
++
++/*
++ * struct property *prop;
++ * const __be32 *p;
++ * u32 u;
++ *
++ * of_property_for_each_u32(np, "propname", prop, p, u)
++ *         printk("U32 value: %x\n", u);
++ */
++#define of_property_for_each_u32(np, propname, prop, p, u)	\
++	for (prop = of_find_property(np, propname, NULL),	\
++		p = of_prop_next_u32(prop, NULL, &u);		\
++		p;						\
++		p = of_prop_next_u32(prop, p, &u))
++
++static inline const char *of_prop_next_string(struct property *prop,
++					      const char *cur)
++{
++	const void *curv = cur;
++
++	if (!prop)
++		return NULL;
++
++	if (!cur)
++		return prop->value;
++
++	curv += strlen(cur) + 1;
++	if (curv >= prop->value + prop->length)
++		return NULL;
++
++	return curv;
++}
++
++/*
++ * struct property *prop;
++ * const char *s;
++ *
++ * of_property_for_each_string(np, "propname", prop, s)
++ *         printk("String value: %s\n", s);
++ */
++#define of_property_for_each_string(np, propname, prop, s)	\
++	for (prop = of_find_property(np, propname, NULL),	\
++		s = of_prop_next_string(prop, NULL);		\
++		s;						\
++		s = of_prop_next_string(prop, s))
++
++#else
++
++#define of_property_for_each_u32(np, propname, prop, p, u) \
++	while (0)
++
++#define of_property_for_each_string(np, propname, prop, s) \
++	while (0)
++
++#endif /* CONFIG_OF */
++
++#endif /* __OF_ITER_PROP_H__ */
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+1.7.0.4
 
