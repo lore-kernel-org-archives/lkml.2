@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965114Ab2CTQDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:03:11 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41708 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110Ab2CTQDI (ORCPT
+	id S1756242Ab2CTQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:03:56 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52843 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab2CTQDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:03:08 -0400
-Date: Tue, 20 Mar 2012 16:03:03 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, Ike Pan <ike.pan@canonical.com>,
-        Yves-Alexis Perez <corsac@debian.org>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Dennis Chua <dennis.chua@canonical.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        James Ferguson <james.ferguson@canonical.com>
-Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: recognize Lenovo as
- version string in newer V-series BIOS
-Message-ID: <20120320160303.GA6192@srcf.ucam.org>
-References: <1331335944-4662-1-git-send-email-manoj.iyer@canonical.com>
- <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com>
- <20120310042844.GA14972@khazad-dum.debian.net>
- <1331387907.2833.33.camel@scapa>
- <20120310160609.GA6254@khazad-dum.debian.net>
- <alpine.DEB.2.02.1203121558340.3458@lazy>
- <20120312230213.GA20690@khazad-dum.debian.net>
- <alpine.DEB.2.02.1203121852500.6421@lazy>
- <alpine.DEB.2.02.1203131046540.4292@lazy>
- <20120313200744.GA3260@khazad-dum.debian.net>
+	Tue, 20 Mar 2012 12:03:55 -0400
+Date: Tue, 20 Mar 2012 09:03:47 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com
+Subject: Re: [PATCH 03/10] cgroup: implement cgroup_add_cftypes() and
+ friends
+Message-ID: <20120320160347.GE5684@google.com>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+ <1331940963-15756-4-git-send-email-tj@kernel.org>
+ <877gyfu025.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120313200744.GA3260@khazad-dum.debian.net>
+In-Reply-To: <877gyfu025.fsf@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 05:07:45PM -0300, Henrique de Moraes Holschuh wrote:
+Hello, Aneesh.
 
-> Matthew, can you please pick it?
+On Tue, Mar 20, 2012 at 02:22:02PM +0530, Aneesh Kumar K.V wrote:
+> Instead of using CGROUP_SUBSYS_CFTYPES_COND, are you ok if other
+> subsystem called cgroup_add_cftypes ?. I am looking at how this will
+> impact http://article.gmane.org/gmane.linux.kernel.mm/75470 . With
+> HugeTLB we cannot do the above. 
 
-Done.
+Yeah, sure.  Allowing dyanmic additions and removals of cftypes is the
+whole point of the patchset.
+
+Thanks.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+tejun
