@@ -1,161 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab2CTHIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 03:08:01 -0400
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:52083 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959Ab2CTHH7 (ORCPT
+	id S1756273Ab2CTHIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 03:08:38 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:59954 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab2CTHIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 03:07:59 -0400
-Date: Tue, 20 Mar 2012 08:07:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf events changes for v3.4
-Message-ID: <20120320070755.GB27423@gmail.com>
-References: <20120319155342.GA5113@gmail.com>
- <CA+55aFy5h1_ybF-7D9Jy-DW-3V+O8LxTWzEwHKORA+bqECWtOA@mail.gmail.com>
+	Tue, 20 Mar 2012 03:08:36 -0400
+Message-ID: <4F682CF0.2080206@gmail.com>
+Date: Tue, 20 Mar 2012 15:08:32 +0800
+From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFy5h1_ybF-7D9Jy-DW-3V+O8LxTWzEwHKORA+bqECWtOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, ubuntu.fan.2012@gmail.com
+Subject: [REQUEST] Request for Hosting My Xen and Linux Kernel HowTo/Tutorial/Documentation
+ on www.xen.org and Xen Wiki
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Admins,
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+I have spent several days writing my Xen and Linux Kernel 
+HowTo/Tutorial/Documentation and also testing the XL domain 
+configuration files to make sure they work. I have also verified that 
+creating virtual machines with Virtual Machine Manager/libvirt works. I 
+have done a lot of testing with my Xen and Linux Kernel documentation.
 
-> On Mon, Mar 19, 2012 at 8:53 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Please pull the latest perf-core-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-core-for-linus
-> 
-> This seems to be another pull request that really could have 
-> done with some high-level overview of what the changes are for 
-> 3.4
+There are 4 bugs with Xen 4.2-unstable changeset 25070:
 
-Yeah, you are right, will do that next time around for the 
-larger trees (or trees that are not obviously single-topic at 
-first sight).
+1. In Xen 4.2-unstable, xend service does not start the HTTP listening 
+service on port 8000, so Virtual Machine Manager/libvirt does not work 
+in Xen 4.2-unstable.
 
-Here is a short (and incomplete) high-level summary of the perf 
-events changes of the v3.4 cycle:
+2. In Xen 4.2-unstable, I am unable to start Linux PV guests. Linux PV 
+guests exit immediately after starting. But I am able to start Linux PV 
+guests successfully in Xen 4.1.3-rc1-pre. The bug is with xl.
 
- - New "hardware based branch profiling" feature both on the 
-   kernel and the tooling side, on CPUs that support it. (modern 
-   x86 Intel CPUs with the 'LBR' hardware feature currently.)
+3. Installing Ubuntu 12.04 Beta 1 amd64 HVM domU hangs at copying files.
 
-   This new feature is basically a sophisticated 'magnifying 
-   glass' for branch execution - something that is pretty 
-   difficult to extract from regular, function histogram centric 
-   profiles.
+4. (Xen 4.1.3-rc1-pre) The performance of Fedora 16 x86-64 
+paravirtualized domU is VERY POOR and VERY SLOW. Mouse cursor does not 
+show. Maybe XL configuration problem. usb=1 and usb="tablet"???
 
-   The simplest mode is activated via 'perf record -b', and the 
-   result looks like this in perf report:
+The title of my Xen and Linux Kernel documentation is:
 
-    $ perf record -b any_call,u -e cycles:u branchy
+Building and Installing Xen 4.x and Linux Kernel 3.x on Ubuntu and 
+Debian Linux
 
-    $ perf report -b --sort=symbol
-        52.34%  [.] main                   [.] f1
-        24.04%  [.] f1                     [.] f3
-        23.60%  [.] f1                     [.] f2
-         0.01%  [k] _IO_new_file_xsputn    [k] _IO_file_overflow
-         0.01%  [k] _IO_vfprintf_internal  [k] _IO_new_file_xsputn
-         0.01%  [k] _IO_vfprintf_internal  [k] strchrnul
-         0.01%  [k] __printf               [k] _IO_vfprintf_internal
-         0.01%  [k] main                   [k] __printf
+My Xen and Linux Kernel documentation includes the following topics:
 
-   This output shows from/to branch columns and shows the 
-   highest percentage (from,to) jump combinations - i.e. the 
-   most likely taken branches in the system. "branches" can also 
-   include function calls and any other synchronous and 
-   asynchronous transitions of the instruction pointer that are 
-   not 'next instruction' - such as system calls, traps, 
-   interrupts, etc.
+1. Building the latest Linux Kernel 3.x
 
-   This feature comes with (hopefully intuitive) flat ascii and 
-   TUI support in perf report.
+2. Building Xen 4.1.3 and Xen 4.2-unstable
 
- - Various 'perf annotate' visual improvements for us assembly
-   junkies. It will now recognize function calls in the TUI and
-   by hitting enter you can follow the call (recursively) and 
-   back, amongst other improvements.
+3. Installing Virtual Machine Manager/libvirt
 
- - Multiple threads/processes recording support in perf record,
-   perf stat, perf top - which is activated via a comma-list of 
-   PIDs:
+4. Shorewall Firewall Configuration for Xen networking
 
-     perf top -p 21483,21485
-     perf stat -p 21483,21485 -ddd
-     perf record -p 21483,21485
+5. XL Domain Configuration Files for Windows 8 Consumer Preview HVM, 
+Windows XP HVM, Fedora 16 PV domU, and Ubuntu 12.04 Precise Pangolin 
+Beta 1 HVM
 
- - Support for per UID views, via the --uid paramter to perf 
-   top, perf report, etc. For example 'perf top --uid mingo' 
-   will only show the tasks that I am running, excluding other 
-   users, root, etc.
+6. Brief overview on Xen VGA Passthrough (reference to David Techer's blog).
 
- - Jump label restructurings and improvements - this
-   includes the factoring out of the (hopefully much clearer)
-   include/linux/static_key.h generic facility:
+7. Linux Kernel Configuration Files for 3.3.0-rc7, 3.2.11, 3.3.0, and 
+3.2.12.
 
-	struct static_key key = STATIC_KEY_INIT_FALSE;
+I have finished writing my Xen and Linux Kernel documentation after 
+several days and the latest version of the HTML and PDF document is 
+version 1.3.
 
-	...
+Could you accede to my request by hosting my Xen and Linux Kernel HTML 
+and PDF documentation onwww.xen.org and the Xen Wiki?
 
-        if (static_key_false(&key))
-                do unlikely code
-        else
-                do likely code
+Download Links
+==========
 
-	...
-	static_key_slow_inc();
-	...
-	static_key_slow_inc();
-	...
+Version 1.0: 
+http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.0.pdf
 
-   The static_key_false() branch will be generated into the code 
-   with as little impact to the likely code path as possible.  
-   the static_key_slow_*() APIs flip the branch via live kernel 
-   code patching.
+Version 1.1: 
+http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.1.pdf
 
-   This facility can now be used more widely within the
-   kernel to micro-optimize hot branches whose likelihood 
-   matches the static-key usage and fast/slow cost patterns.
+Version 1.2: 
+http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.2.pdf
+**
+Version 1.3:
 
- - SW function tracer improvements: perf support and filtering
-   support.
+(a) 
+http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.3.pdf
 
- - Various hardenings of the perf.data ABI, to make older 
-   perf.data's smoother on newer tool versions, to make new 
-   features integrate more smoothly, to support cross-endian
-   recording/analyzing workflows better, etc.
+(b) 
+http://www.sgvideoman.com/xen/docs/Building%20and%20Installing%20Xen%204.x%20and%20Linux%20Kernel%203.x%20on%20Ubuntu%20and%20Debian%20Linux%20-%20Version%201.3.html
 
- - Restructuring of the kprobes code, the splitting out of 
-   'optprobes', and a corner case bugfix.
+Thank you very much for your consideration and kind assistance.
 
- - Allow the tracing of kernel console output (printk).
+Yours sincerely,
 
- - Improvements/fixes to user-space RDPMC support, allowing 
-   user-space self-profiling code to extract PMU counts without
-   performing any system calls, while playing nice with the 
-   kernel side.
+Teo En Ming (Zhang Enming)
 
- - 'perf bench' improvements
-
- - ... and lots of internal restructurings, cleanups and fixes 
-   that made these features possible. And, as usual this list is 
-   incomplete as there were also lots of other
-   improvements:
-
-     165 files changed, 6107 insertions(+), 1984 deletions(-)
-
-Thanks,
-
-	Ingo
