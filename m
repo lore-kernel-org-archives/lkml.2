@@ -1,111 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab2CTIx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 04:53:27 -0400
-Received: from smtp5.tech.numericable.fr ([82.216.111.41]:38739 "EHLO
-	smtp5.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758094Ab2CTIxY (ORCPT
+	id S1030589Ab2CTJA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 05:00:56 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39316 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965000Ab2CTJAx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 04:53:24 -0400
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org,
-        Corentin Chary <corentincj@iksaif.net>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/14] ACPI / Video: blacklist some samsung laptops
-Date: Tue, 20 Mar 2012 09:53:01 +0100
-Message-Id: <1332233594-13099-2-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
-References: <1332233594-13099-1-git-send-email-corentin.chary@gmail.com>
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrgeejucetggdotefuucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddm
+	Tue, 20 Mar 2012 05:00:53 -0400
+MIME-Version: 1.0
+Date: Tue, 20 Mar 2012 14:30:52 +0530
+Message-ID: <CAJrcCc0=aXe-us32KmkiBH9mdDyEcPYuSa6Ejj_LX0=1FNgoDQ@mail.gmail.com>
+Subject: __NR_create_module for arm
+From: Vivek Singh <vivek.siwan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corentin Chary <corentincj@iksaif.net>
+Hello There,
 
-On these laptops, the ACPI video is not functional, and very unlikely
-to be fixed by the vendor. Note that intel_backlight works for some
-of these laptops, and the backlight from samsung-laptop always work.
+While compiling tomoyo-tools for arm I  found that NR_create_module
+is not available in
+arch/arm/include/asm/unistd.h
 
-The good news is that newer laptops have functional ACPI video device
-and won't end up growing this list.
+#define __NR_sigprocmask
+  (__NR_SYSCALL_BASE+126)
+                                                       /* 127 was
+sys_create_module */
+#define __NR_init_module                (__NR_SYSCALL_BASE+128)
 
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 45d8097..66be45e 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
- }
- 
-+/* Force to use vendor driver when the ACPI device is known to be
-+ * buggy */
-+static int video_detect_force_vendor(const struct dmi_system_id *d)
-+{
-+	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-+	return 0;
-+}
-+
-+static struct dmi_system_id video_detect_dmi_table[] = {
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N145P/N250P/N260P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150/N210/N220",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "NF110/NF210/NF310",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
-+		DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
-+		},
-+	},
-+};
-+
- /*
-  * Returns the video capabilities of a specific ACPI graphics device
-  *
-@@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
- 		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
- 		 *}
- 		 */
-+
-+		dmi_check_system(video_detect_dmi_table);
- 	} else {
- 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
- 		if (ACPI_FAILURE(status)) {
--- 
-1.7.3.4
+But it is available in
 
+./arch/x68/include/asm/unistd_32.h
+
+#define __NR_sigprocmask        126
+#define __NR_create_module      127
+#define __NR_init_module        128
+
+is there any reason why it is not available for arm ?
+
+Thanks and regards
