@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759956Ab2CTNgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:36:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38926 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2CTNgI (ORCPT
+	id S1759741Ab2CTNio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:38:44 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44059 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638Ab2CTNim convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:36:08 -0400
+	Tue, 20 Mar 2012 09:38:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFPAmTSzV9mrkbP68p4PA-0i0o2Hz7JiBY=0A0V_myJEzWubjQ@mail.gmail.com>
-References: <CAFPAmTQs9dOpQTaXU=6Or66YU+my_CnPw33TE4h++YArBNa38g@mail.gmail.com>
-	<CAFLxGvwW2XcYSoidZZ0XF_a-pH3SwONqS+hCnpGUecQ__DLa_g@mail.gmail.com>
-	<CAFPAmTSzV9mrkbP68p4PA-0i0o2Hz7JiBY=0A0V_myJEzWubjQ@mail.gmail.com>
-Date: Tue, 20 Mar 2012 14:36:06 +0100
-Message-ID: <CAFLxGvyVbDndbu_2ZbUBwbrJCq+d4rRZW0ROxTpQxAvetRm=0w@mail.gmail.com>
-Subject: Re: [PATCH 0/20] mmu: arch/mm: Port OOM changes to arch page fault handlers.
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: linux-alpha@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux@openrisc.net, linux-am33-list@redhat.com,
-        microblaze-uclinux@itee.uq.edu.au, linux-m68k@vger.kernel.org,
-        linux-m32r-ja@ml.linux-m32r.org, linux-ia64@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-cris-kernel@axis.com,
-        linux-sh@vger.kernel.org, linux-parisc@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120313131616.f66dbdad.akpm@linux-foundation.org>
+References: <4F57A3EC.7070101@gmail.com>
+	<1331660076-32766-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<20120313131616.f66dbdad.akpm@linux-foundation.org>
+Date: Tue, 20 Mar 2012 19:08:39 +0530
+Message-ID: <CAAHN_R3mFzmtCey_0JEHp=EAGh1sb87szpsKD_JkFwwYLCnKug@mail.gmail.com>
+Subject: Re: [PATCH] -mm/linux-next: procfs: Mark thread stack correctly in proc/<pid>/maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-next <linux-next@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Matt Mackall <mpm@selenic.com>, Mike Frysinger <vapier@gentoo.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mark Salter <msalter@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 2:34 PM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
->>
->> What about arch/um/?
->> Does UML not need this change?
+On Wed, Mar 14, 2012 at 1:46 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 13 Mar 2012 23:04:36 +0530
+> Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
 >
-> Oh yes, extremely sorry I accidentally missed that one out.
-> Mind if I send it separately ?
+>> Following is the updated patch with requested changes incorporated.
+>
+> Boy, that's a lot of changes (below).  What does it all do?
+>
 
-No problem.
-handle_page_fault() is the function you want to patch. :)
+Hi,
+
+Since this patch was included in the -mm tree on March 14th, I assumed
+that linux-next would get the patch in today's merge, but it hasn't.
+Is there something I am missing? Does the patch need additional
+review/acks that I need to request for?
+
+Thanks,
+Siddhesh
+
+Thanks,
+Siddhesh
+
 
 -- 
-Thanks,
-//richard
+Siddhesh Poyarekar
+http://siddhesh.in
