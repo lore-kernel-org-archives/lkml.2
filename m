@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab2CTKtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 06:49:55 -0400
-Received: from mail-we0-f194.google.com ([74.125.82.194]:46697 "EHLO
-	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759569Ab2CTKtf (ORCPT
+	id S1759622Ab2CTKtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 06:49:52 -0400
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:57043
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759568Ab2CTKtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 06:49:35 -0400
-Date: Tue, 20 Mar 2012 11:49:31 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Steffen Persvold <sp@numascale.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jack Steiner <steiner@sgi.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH REPOST] Added separate apic_id_valid() functions for
- selected apic drivers.
-Message-ID: <20120320104931.GA22880@gmail.com>
-References: <CAE9FiQVxuVGe=m87fQKE+JjPk=Z83iOypQU+yQn5y-M-qVSArg@mail.gmail.com>
- <1331925935-13372-1-git-send-email-sp@numascale.com>
- <4F685EE8.5020708@numascale.com>
+	Tue, 20 Mar 2012 06:49:32 -0400
+Message-ID: <4F6860AF.5060404@compulab.co.il>
+Date: Tue, 20 Mar 2012 12:49:19 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20120201 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F685EE8.5020708@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
+References: <1331882917-27960-1-git-send-email-vbyravarasu@nvidia.com> <20120316200154.GU20524@sortiz-mobl> <D958900912E20642BCBC71664EFECE3E6DD3127A5D@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD3127A5D@BGMAIL02.nvidia.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/19/12 10:43, Venu Byravarasu wrote:
+> Thanks Mark and Samuel.
+> 
+>> -----Original Message-----
+>> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+>> Sent: Saturday, March 17, 2012 1:32 AM
+>> To: Venu Byravarasu
+>> Cc: linux-kernel@vger.kernel.org; jedu@slimlogic.co.uk; lrg@slimlogic.co.uk;
+>> broonie@opensource.wolfsonmicro.com; gg@slimlogic.co.uk
+>> Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
+>>
+>> Hi Venu,
+>>
+>> On Fri, Mar 16, 2012 at 12:58:37PM +0530, Venu Byravarasu wrote:
+>>> From: Venu Byravarasu <vbyravarasu@nvidia.com>
+>>>
+>>> Fix compilation error due to including TPS65910.h
+>> Probably too late for 3.3, but I applied this patch anyway.
 
-* Steffen Persvold <sp@numascale.com> wrote:
+Venu,
+Should this go also to stable?
 
-> Ingo, any comments on this approach ? It should cover both 
-> cases as suggested by Suresh and Yinghai.
+If it should then, Samuel, can you please add Cc: stable@vger.kernel.org?
 
-Looks good in principle, but we are in the v3.4 merge window 
-right now - new patches will have to wait a bit.
 
-Thanks,
-
-	Ingo
+-- 
+Regards,
+Igor.
