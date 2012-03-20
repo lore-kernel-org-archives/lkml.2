@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab2CTB4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Mar 2012 21:56:38 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:43612 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758799Ab2CTB4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Mar 2012 21:56:37 -0400
-Date: Mon, 19 Mar 2012 21:56:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Roland Stigge <stigge@antcom.de>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <w.sang@pengutronix.de>, <kevin.wells@nxp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <arm@kernel.org>,
-        <srinivas.bakki@nxp.com>
-Subject: Re: [PATCH] USB: gadget driver for LPC32xx
-In-Reply-To: <1332191930-2433-1-git-send-email-stigge@antcom.de>
-Message-ID: <Pine.LNX.4.44L0.1203192155150.24735-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S964925Ab2CTB7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Mar 2012 21:59:05 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42143 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756745Ab2CTB7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Mar 2012 21:59:02 -0400
+Message-ID: <1332208741.7847.46.camel@joe2Laptop>
+Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
+From: Joe Perches <joe@perches.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: David Miller <davem@davemloft.net>, anca.emanuel@gmail.com,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 Mar 2012 18:59:01 -0700
+In-Reply-To: <20120320014707.GD14363@thunk.org>
+References: <20120319153133.GA2502@thunk.org>
+	 <CAJL_dMtC9fnOsY=4uDVJD=-h5u-qW=xjaf64gtDcgnKX2brhPw@mail.gmail.com>
+	 <20120319161425.GB2502@thunk.org>
+	 <20120319.141402.934377752041508724.davem@davemloft.net>
+	 <20120319183126.GA6031@thunk.org> <1332182773.3908.11.camel@joe2Laptop>
+	 <20120320010401.GA14363@thunk.org> <1332207202.7847.23.camel@joe2Laptop>
+	 <20120320014707.GD14363@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012, Roland Stigge wrote:
+On Mon, 2012-03-19 at 21:47 -0400, Ted Ts'o wrote:
+> On Mon, Mar 19, 2012 at 06:33:22PM -0700, Joe Perches wrote:
+> > They _were_ doubly prefixed.
+> > from ext4#dev
+> > commit 2504a4a9c0c096e11bcc24691b85bf6d942df9fe
+> > Author: Joe Perches <joe@perches.com>
+> > Date:   Mon Mar 19 00:12:00 2012 -0400
+> >     ext4: remove redundant "EXT4-fs: " from uses of ext4_msg
+> >     ext4_msg adds "EXT4-fs: " to the messsage output.
+> Yes, and I accepted that patch.  I was referring to your complaints of
+> printk's such as this:
+> #ifdef EXT4FS_DEBUG
+> 			WARN_ON(ret <= 0);
+> 			printk(KERN_ERR "%s: ext4_ext_map_blocks "
+> 				    "returned error inode#%lu, block=%u, "
+> 				    "max_blocks=%u", __func__,
+> 				    inode->i_ino, map.m_lblk, max_blocks);
+> #endif
 
-> This patch adds a USB gadget driver.
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+and I was not.  Doubly prefixed was as I said, doubly prefixed.
+ext4_msg wasn't a consistently used interface.
 
-...
+> Changing to pr_err() is pointless, because it doesn't do anything
+> functional.  You *have* to have an interface like ext4_msg(sb, ...) if
+> you're going to send a semi-structured notification, or include
+> relevant information about which ext4 file system was responsible for
+> issuing the warning.
 
-> +static const struct usb_ep_ops lpc32xx_ep_ops = {
-> +	.enable		= lpc32xx_ep_enable,
-> +	.disable	= lpc32xx_ep_disable,
-> +	.alloc_request	= lpc32xx_ep_alloc_request,
-> +	.free_request	= lpc32xx_ep_free_request,
-> +	.queue		= lpc32xx_ep_queue,
-> +	.dequeue	= lpc32xx_ep_dequeue,
-> +	.set_halt	= lpc32xx_ep_set_halt,
-> +};
+Umm, ext4_msg does call printk.
 
-You have not implemented the set_wedge method, which is needed for the 
-file-storage gadgets.
+> If you're going to change huge numbers of lines of code, you might as
+> well do it in a way that significantly improves things.  The change to
+> pr_foo() is just syntactic sugar, and that's a whitespace-level change
+> in my book.  Adding a struct super * or or a struct block device *,
+> which gets passed to the notification functions?  That's ***far***
+> more interesting.
 
-Alan Stern
+It's hard to say that's true.
+Look at the the trace_<foo> mechanisms.
+Very useful stuff but once set, there's
+been a strong desire to set the output
+as an unchangeable ABI.
+
+So I think defining the output correctly
+_first_ is the most important element of
+any notification mechanism.  TLV use in
+the output generally isn't human parsable
+and there's value in that readability.
+
 
