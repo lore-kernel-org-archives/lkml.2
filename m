@@ -1,154 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab2CTLg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 07:36:26 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53480 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab2CTLgY convert rfc822-to-8bit (ORCPT
+	id S1759665Ab2CTLhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 07:37:22 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:33428 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab2CTLhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 07:36:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD2nsn10svpDFkpbkCtFMGFdqW9G0syWrhL3s-ApQH2bKt0P2g@mail.gmail.com>
-References: <4F576FD5.2050208@gmail.com>
-	<CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
-	<4F577D9B.7020402@gmail.com>
-	<4F579A88.6030503@openwrt.org>
-	<4F61F551.5010608@gmail.com>
-	<4F639851.5080500@gmail.com>
-	<4F674616.8080103@gmail.com>
-	<CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com>
-	<4F674FF5.2060406@gmail.com>
-	<4F6751B2.1030809@openwrt.org>
-	<4F681B78.9000207@gmail.com>
-	<CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com>
-	<4F68235C.5090701@gmail.com>
-	<CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com>
-	<4F682555.3020502@gmail.com>
-	<20328.16366.166909.255035@gargle.gargle.HOWL>
-	<CAD2nsn0JCKd4NnXOLfw4QXHTJdxrfepw9s6yYca=uSHwWXq3-A@mail.gmail.com>
-	<CAD2nsn10svpDFkpbkCtFMGFdqW9G0syWrhL3s-ApQH2bKt0P2g@mail.gmail.com>
-Date: Tue, 20 Mar 2012 17:06:23 +0530
-Message-ID: <CAD2nsn1SxhX3MZTF+XYN=cQEfHuD9bu5_TuLtVOCNmVBoZNJ2A@mail.gmail.com>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024
- AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        Linux-netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Mar 2012 07:37:19 -0400
+Date: Tue, 20 Mar 2012 12:37:12 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 3.4 merge window
+Message-ID: <20120320123712.3fa8527e@de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12032011-0342-0000-0000-00000135BDCA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 4:45 PM, Mohammed Shafi
-<shafi.wireless@gmail.com> wrote:
-> On Tue, Mar 20, 2012 at 3:07 PM, Mohammed Shafi
-> <shafi.wireless@gmail.com> wrote:
->> Hi Sujith/Justin,
->>
->> On Tue, Mar 20, 2012 at 1:59 PM, Sujith Manoharan
->> <c_manoha@qca.qualcomm.com> wrote:
->>> Justin P. Mattock wrote:
->>>> yeah this works:
->>>>
->>>> eading symbols from
->>>> /home/kernel/linux-next/drivers/net/wireless/ath/ath9k/ath9k.o...done.
->>>> (gdb) l *(ath_tx_start+0x284)
->>>> 0xcad4 is in ath_tx_start (drivers/net/wireless/ath/ath9k/xmit.c:1878).
->>>> 1873                  ieee80211_is_data_qos(hdr->frame_control)) {
->>>> 1874                  tidno = ieee80211_get_qos_ctl(hdr)[0] &
->>>> 1875                          IEEE80211_QOS_CTL_TID_MASK;
->>>> 1876                  tid = ATH_AN_2_TID(txctl->an, tidno);
->>>> 1877
->>>> 1878                  WARN_ON(tid->ac->txq != txctl->txq);
->>>> 1879          }
->>>> 1880
->>>> 1881          if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU) && tid) {
->>>> 1882                  /*
->>>> (gdb)
->>>
->>> Can you try this patch ?
->>
->> just found out that 'ht_supported' may not  be set, if assoc response
->> does not has ht_cap IE (or) if we could not parse it (why), then the
->> driver won't initialize those tid related structures ath_tx_node_init,
->> while we later access them in ath_tx_start. so this should fix the
->> issue.
->
-> now i was able to quite easily recreate this issue in wireless testing
-> even without suspend resume and with the patch the issue seems to get
-> fixed.
-> i was using 2ghz channel 6 and TKIP (no HT!).
+Hi Linus,
 
-i was keep on trying with 5ghz TKIP and it seems HT enable even with
-TKIP (need to see why this happens), thats why even i could not
-recreate this issue. mac80211 seems to disable HT, ht_supported false
-while in driver we go with ATH9K_HW_CAP HT
+please pull from 'for-linus' branch of
 
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
->
->
->>
->>>
->>> From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
->>> Date: Tue, 20 Mar 2012 13:51:26 +0530
->>> Subject: [PATCH] ath9k: Use HW HT capabilites properly
->>>
->>> The commit "ath9k: Remove aggregation flags" changed how
->>> nodes were being initialized. Use the HW HT cap bits
->>> to initialize/de-initialize nodes, else we would be
->>> accessing an uninitialized entry during a suspend/resume cycle,
->>> resulting in a panic.
->>>
->>> Reported-by: Justin P. Mattock <justinmattock@gmail.com>
->>> Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
->>> ---
->>>  drivers/net/wireless/ath/ath9k/main.c |    4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
->>> index 3879485..215eb25 100644
->>> --- a/drivers/net/wireless/ath/ath9k/main.c
->>> +++ b/drivers/net/wireless/ath/ath9k/main.c
->>> @@ -640,7 +640,7 @@ static void ath_node_attach(struct ath_softc *sc, struct ieee80211_sta *sta,
->>>        an->sta = sta;
->>>        an->vif = vif;
->>>
->>> -       if (sta->ht_cap.ht_supported) {
->>> +       if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
->>>                ath_tx_node_init(sc, an);
->>>                an->maxampdu = 1 << (IEEE80211_HT_MAX_AMPDU_FACTOR +
->>>                                     sta->ht_cap.ampdu_factor);
->>> @@ -659,7 +659,7 @@ static void ath_node_detach(struct ath_softc *sc, struct ieee80211_sta *sta)
->>>        an->sta = NULL;
->>>  #endif
->>>
->>> -       if (sta->ht_cap.ht_supported)
->>> +       if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT)
->>>                ath_tx_node_cleanup(sc, an);
->>>  }
->>>
->>> --
->>> 1.7.9.4
->>>
->>
->>
->>
->> --
->> thanks,
->> shafi
->
->
->
-> --
-> thanks,
-> shafi
+to receive the s390 changes for the 3.4 merge window. The biggest patch
+is the rework of the smp code, something I wanted to do for some time.
+There are some patches for our various dump methods and one new thing:
+z/VM LGR detection. LGR stands for linux-guest-relocation and is the
+guest migration feature of z/VM. For debugging purposes we keep a log
+of the systems where a specific guest has lived.
 
+Heiko Carstens (3):
+      [S390] irq: set __ARCH_IRQ_EXIT_IRQS_DISABLED
+      [S390] irq: external interrupt code passing
+      [S390] stack dump: fix indentation in output
 
+Holger Dengler (1):
+      [S390] Remove monolithic build option for zcrypt driver.
 
--- 
-thanks,
-shafi
+Martin Schwidefsky (3):
+      [S390] rename lowcore field
+      [S390] rework smp code
+      [S390] rework idle code
+
+Matt Fleming (1):
+      [S390] Use block_sigmask()
+
+Michael Holzheu (7):
+      [S390] Fix gcc 4.6.0 compile warning
+      [S390] Use copy_to_absolute_zero() instead of "stura/sturg"
+      [S390] zfcpdump: Implement async sdias event processing
+      [S390] kernel: Add z/VM LGR detection
+      [S390] kernel: Add OS info memory interface
+      [S390] Ensure that vmcore_info pointer is never accessed directly
+      [S390] kernel: Pass correct stack for smp_call_ipl_cpu()
+
+Stefan Haberland (1):
+      [S390] dasd: prevent validate server for offline devices
+
+ arch/s390/include/asm/cputime.h     |    9 +-
+ arch/s390/include/asm/debug.h       |    1 +
+ arch/s390/include/asm/hardirq.h     |    1 +
+ arch/s390/include/asm/ipl.h         |    1 +
+ arch/s390/include/asm/irq.h         |    7 +-
+ arch/s390/include/asm/lowcore.h     |  119 ++--
+ arch/s390/include/asm/os_info.h     |   50 ++
+ arch/s390/include/asm/sigp.h        |  132 ----
+ arch/s390/include/asm/smp.h         |   63 +--
+ arch/s390/include/asm/system.h      |   34 +
+ arch/s390/include/asm/timer.h       |    4 +-
+ arch/s390/include/asm/vdso.h        |    4 +-
+ arch/s390/kernel/Makefile           |    4 +-
+ arch/s390/kernel/asm-offsets.c      |   27 +-
+ arch/s390/kernel/compat_signal.c    |    6 +-
+ arch/s390/kernel/crash_dump.c       |   37 +-
+ arch/s390/kernel/debug.c            |   40 +-
+ arch/s390/kernel/early.c            |   22 +-
+ arch/s390/kernel/entry.S            |  159 +++---
+ arch/s390/kernel/entry.h            |   17 +-
+ arch/s390/kernel/entry64.S          |  139 +++--
+ arch/s390/kernel/ipl.c              |   99 ++--
+ arch/s390/kernel/irq.c              |   14 +-
+ arch/s390/kernel/lgr.c              |  200 ++++++
+ arch/s390/kernel/machine_kexec.c    |   52 +--
+ arch/s390/kernel/nmi.c              |    2 -
+ arch/s390/kernel/os_info.c          |  169 +++++
+ arch/s390/kernel/process.c          |    7 +-
+ arch/s390/kernel/setup.c            |   61 +-
+ arch/s390/kernel/signal.c           |    6 +-
+ arch/s390/kernel/smp.c              | 1147 ++++++++++++++++++-----------------
+ arch/s390/kernel/switch_cpu.S       |   58 --
+ arch/s390/kernel/switch_cpu64.S     |   51 --
+ arch/s390/kernel/swsusp_asm64.S     |   19 +-
+ arch/s390/kernel/time.c             |    4 +-
+ arch/s390/kernel/topology.c         |    8 +-
+ arch/s390/kernel/traps.c            |    6 +-
+ arch/s390/kernel/vdso.c             |   28 +-
+ arch/s390/kernel/vtime.c            |  168 ++----
+ arch/s390/kvm/interrupt.c           |    6 +-
+ arch/s390/lib/delay.c               |   31 +-
+ arch/s390/lib/spinlock.c            |   30 +-
+ arch/s390/mm/fault.c                |    4 +-
+ arch/s390/oprofile/hwsampler.c      |    6 +-
+ drivers/crypto/Kconfig              |    9 -
+ drivers/s390/block/dasd.c           |    4 +
+ drivers/s390/block/dasd_diag.c      |    8 +-
+ drivers/s390/block/dasd_eckd.c      |    8 +
+ drivers/s390/char/sclp.c            |    4 +-
+ drivers/s390/char/sclp_quiesce.c    |    1 -
+ drivers/s390/char/sclp_sdias.c      |  101 +++-
+ drivers/s390/char/zcore.c           |    1 -
+ drivers/s390/cio/cio.c              |    2 -
+ drivers/s390/cio/qdio_main.c        |    6 +
+ drivers/s390/crypto/Makefile        |   10 -
+ drivers/s390/crypto/ap_bus.c        |    2 -
+ drivers/s390/crypto/zcrypt_api.c    |    2 -
+ drivers/s390/crypto/zcrypt_cex2a.c  |    4 -
+ drivers/s390/crypto/zcrypt_mono.c   |  100 ---
+ drivers/s390/crypto/zcrypt_pcica.c  |    4 -
+ drivers/s390/crypto/zcrypt_pcicc.c  |    4 -
+ drivers/s390/crypto/zcrypt_pcixcc.c |    4 -
+ drivers/s390/kvm/kvm_virtio.c       |    6 +-
+ net/iucv/iucv.c                     |    2 +-
+ 64 files changed, 1701 insertions(+), 1633 deletions(-)
+ create mode 100644 arch/s390/include/asm/os_info.h
+ delete mode 100644 arch/s390/include/asm/sigp.h
+ create mode 100644 arch/s390/kernel/lgr.c
+ create mode 100644 arch/s390/kernel/os_info.c
+ delete mode 100644 arch/s390/kernel/switch_cpu.S
+ delete mode 100644 arch/s390/kernel/switch_cpu64.S
+ delete mode 100644 drivers/s390/crypto/zcrypt_mono.c
+
