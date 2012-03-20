@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab2CTNqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 09:46:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44560 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911Ab2CTNqP (ORCPT
+	id S1759952Ab2CTNs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 09:48:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5275 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab2CTNsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 09:46:15 -0400
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+	Tue, 20 Mar 2012 09:48:54 -0400
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=-21dhcYw4ikA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=u91xutOew97K9g1nNrIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332251333.23924.12.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/6] [GIT PULL] tracing: updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1] um/kernel/trap.c: Port OOM changes to handle_page_fault
-Date: Tue, 20 Mar 2012 09:45:59 -0400
-Message-Id: <1332251159-3582-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+Date: Tue, 20 Mar 2012 09:48:53 -0400
+In-Reply-To: <20120319144651.GA22223@gmail.com>
+References: <20120314162629.118638243@goodmis.org>
+	 <20120319105902.GA4154@gmail.com> <20120319144651.GA22223@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Mon, 2012-03-19 at 15:46 +0100, Ingo Molnar wrote:
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+> Causes this build failure:
+> 
+>  (.text+0x46f2): undefined reference to `tracing_off'
+>  debug_core.c:(.text+0xb418f): undefined reference to `tracing_is_on'
+>  debug_core.c:(.text+0xb41bb): undefined reference to `tracing_off'
+>  debug_core.c:(.text+0xb4394): undefined reference to `tracing_on'
+>  debug_core.c:(.text+0xb47b0): undefined reference to `tracing_on'
+>  make: *** [.tmp_vmlinux1] Error 1
+> 
+> config attached.
+> 
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
+Thanks, you just gave me a new config to add to my test suite :-)
 
-Port these changes to um.
+CONFIG_RING_BUFFER=y
+# CONFIG_FTRACE is not set
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/um/kernel/trap.c |   24 +++++++++++++++++++-----
- 1 files changed, 19 insertions(+), 5 deletions(-)
+I have a patch that fixes this, I'll just run it through the other tests
+to make sure it doesn't break anything else and push it to you.
 
-diff --git a/arch/um/kernel/trap.c b/arch/um/kernel/trap.c
-index dafc947..76adb61 100644
---- a/arch/um/kernel/trap.c
-+++ b/arch/um/kernel/trap.c
-@@ -30,6 +30,8 @@ int handle_page_fault(unsigned long address, unsigned long ip,
- 	pmd_t *pmd;
- 	pte_t *pte;
- 	int err = -EFAULT;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				 (is_write ? FAULT_FLAG_WRITE : 0);
- 
- 	*code_out = SEGV_MAPERR;
- 
-@@ -40,6 +42,7 @@ int handle_page_fault(unsigned long address, unsigned long ip,
- 	if (in_atomic())
- 		goto out_nosemaphore;
- 
-+retry:
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, address);
- 	if (!vma)
-@@ -65,7 +68,11 @@ good_area:
- 	do {
- 		int fault;
- 
--		fault = handle_mm_fault(mm, vma, address, is_write ? FAULT_FLAG_WRITE : 0);
-+		fault = handle_mm_fault(mm, vma, address, flags);
-+
-+		if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+			goto out;
-+
- 		if (unlikely(fault & VM_FAULT_ERROR)) {
- 			if (fault & VM_FAULT_OOM) {
- 				goto out_of_memory;
-@@ -75,10 +82,17 @@ good_area:
- 			}
- 			BUG();
- 		}
--		if (fault & VM_FAULT_MAJOR)
--			current->maj_flt++;
--		else
--			current->min_flt++;
-+		if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+			if (fault & VM_FAULT_MAJOR)
-+				current->maj_flt++;
-+			else
-+				current->min_flt++;
-+			if (fault & VM_FAULT_RETRY) {
-+				flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+				goto retry;
-+			}
-+		}
- 
- 		pgd = pgd_offset(mm, address);
- 		pud = pud_offset(pgd, address);
--- 
-1.7.5.4
+Thanks,
+
+-- Steve
 
