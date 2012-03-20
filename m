@@ -1,121 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633Ab2CTQJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 12:09:33 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50757 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab2CTQJb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 12:09:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332249981-3178-1-git-send-email-consul.kautuk@gmail.com>
-References: <1332249981-3178-1-git-send-email-consul.kautuk@gmail.com>
-Date: Tue, 20 Mar 2012 12:09:30 -0400
-Message-ID: <CAFPAmTSB_Xd9=aZFu4Y3zS0PA2yThC84Rk3J4qAaebqr6uxfqw@mail.gmail.com>
-Subject: Re: [PATCH 16/20] tile/mm/fault.c: Port OOM changes to handle_page_fault
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, paul.mckenney@linaro.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1760697Ab2CTQJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 12:09:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755219Ab2CTQJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 12:09:53 -0400
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-2y9w08IycFTcdTC0Lkob"
+Organization: Red Hat UK Ltd
+Date: Tue, 20 Mar 2012 16:10:09 +0000
+Message-ID: <1332259809.2764.52.camel@menhir>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
 
-There is a defect in this patch.
+--=-2y9w08IycFTcdTC0Lkob
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-So, Ill post a v2 to this right away.
+Hi,
 
-On Tue, Mar 20, 2012 at 9:26 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
->
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
->
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
->
-> Port these changes to tile.
->
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-> ---
->  arch/tile/mm/fault.c |   31 ++++++++++++++++++++++++++-----
->  1 files changed, 26 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
-> index c1eaaa1..a097631 100644
-> --- a/arch/tile/mm/fault.c
-> +++ b/arch/tile/mm/fault.c
-> @@ -267,6 +267,8 @@ static int handle_page_fault(struct pt_regs *regs,
->        int si_code;
->        int is_kernel_mode;
->        pgd_t *pgd;
-> +       unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-> +                                                (write ? FAULT_FLAG_WRITE : 0);
->
->        /* on TILE, protection faults are always writes */
->        if (!is_page_fault)
-> @@ -373,6 +375,8 @@ static int handle_page_fault(struct pt_regs *regs,
->                        vma = NULL;  /* happy compiler */
->                        goto bad_area_nosemaphore;
->                }
-> +
-> +retry:
->                down_read(&mm->mmap_sem);
->        }
->
-> @@ -420,7 +424,11 @@ good_area:
->         * make sure we exit gracefully rather than endlessly redo
->         * the fault.
->         */
-> -       fault = handle_mm_fault(mm, vma, address, write);
-> +       fault = handle_mm_fault(mm, vma, address, flags);
-> +
-> +       if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-> +               return;
+Please consider pulling the following changes. The only change since
+the initial patch posting is a three line bug fix from Bob Peterson,
 
-Incorrect!
-This function returns an int.
+Steve.
 
-> +
->        if (unlikely(fault & VM_FAULT_ERROR)) {
->                if (fault & VM_FAULT_OOM)
->                        goto out_of_memory;
-> @@ -428,10 +436,23 @@ good_area:
->                        goto do_sigbus;
->                BUG();
->        }
-> -       if (fault & VM_FAULT_MAJOR)
-> -               tsk->maj_flt++;
-> -       else
-> -               tsk->min_flt++;
-> +       if (flags & FAULT_FLAG_ALLOW_RETRY) {
-> +               if (fault & VM_FAULT_MAJOR)
-> +                       tsk->maj_flt++;
-> +               else
-> +                       tsk->min_flt++;
-> +               if (fault & VM_FAULT_RETRY) {
-> +                       flags &= ~FAULT_FLAG_ALLOW_RETRY;
-> +
-> +                       /*
-> +                        * No need to up_read(&mm->mmap_sem) as we would
-> +                        * have already released it in __lock_page_or_retry
-> +                        * in mm/filemap.c.
-> +                        */
-> +
-> +                       goto retry;
-> +               }
-> +       }
->
->  #if CHIP_HAS_TILE_DMA() || CHIP_HAS_SN_PROC()
->        /*
-> --
-> 1.7.5.4
->
+---------------------------------------------------------------------------=
+---
+The following changes since commit 891003abb0db6bfffd61b76ad0ed39bb7c3db8e1=
+:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes =
+(2012-02-28 09:17:31 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git mast=
+er
+
+Benjamin Marzinski (1):
+      GFS2: call gfs2_write_alloc_required for each chunk
+
+Bob Peterson (5):
+      GFS2: Sort the ordered write list
+      GFS2: Unlock rindex mutex on glock error
+      GFS2: Eliminate sd_rindex_mutex
+      GFS2: make sure rgrps are up to date in func gfs2_blk2rgrpd
+      GFS2: Change truncate page allocation to be GFP_NOFS
+
+Steven Whitehouse (7):
+      GFS2: glock statistics gathering
+      GFS2: Move two functions from log.c to lops.c
+      GFS2: FITRIM ioctl support
+      GFS2: Make bd_cmp() static
+      GFS2: Flush pending glock work when evicting an inode
+      GFS2: Remove a __GFP_NOFAIL allocation
+      GFS2: Clean up log flush header writing
+
+ fs/gfs2/bmap.c              |    4 +-
+ fs/gfs2/file.c              |   15 ++-
+ fs/gfs2/glock.c             |  210 +++++++++++++++++++++++++++++++++++--
+ fs/gfs2/incore.h            |   50 ++++++++-
+ fs/gfs2/inode.c             |    4 +-
+ fs/gfs2/lock_dlm.c          |  123 +++++++++++++++++++++-
+ fs/gfs2/log.c               |  244 +++++++++++++++------------------------=
+----
+ fs/gfs2/log.h               |    5 +-
+ fs/gfs2/lops.c              |   95 +++++++++++++++++-
+ fs/gfs2/main.c              |   18 +++
+ fs/gfs2/ops_fstype.c        |    9 ++-
+ fs/gfs2/quota.c             |    2 +-
+ fs/gfs2/rgrp.c              |  189 ++++++++++++++++++++++++++--------
+ fs/gfs2/rgrp.h              |   10 +-
+ fs/gfs2/super.c             |    3 +-
+ fs/gfs2/trace_gfs2.h        |   60 +++++++++++-
+ fs/gfs2/util.c              |    1 +
+ fs/gfs2/util.h              |    3 +
+ fs/gfs2/xattr.c             |    4 +-
+ include/linux/gfs2_ondisk.h |    1 +
+ 20 files changed, 805 insertions(+), 245 deletions(-)
+
+
+--=-2y9w08IycFTcdTC0Lkob
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPaKvTAAoJEMrg3m4a/8jSxXEP/ii321s0VbpPv9SEaKq9rAaW
+cjrjYLq9JVW0F8kzgoLD58eVEo8Jc8X/XUI5WUr88nBsMFQ2wMw0HyBOtAwv0sKJ
+6WvzypOxoAUVHuZ6Dk8pEd9s3wMadaLFaxrQl4bdfTAX8SuwgmPMInw3xsPo073C
+d3c/TBfZz3nqqEoYJiAW861hBP+5IAOdUDMuFSvK248+1vgDpMwJPzxJ5JWi4kuq
+C0ybtG6rKSUTvMOg/Ue5tVQpU36CZZNX5EjuDfQytyA0YFqYM/H/JuGuS82ImGsy
+FX9UWZJkOWnyHkUF7gL+wZQOU7pqopkJcM0ZX6RDridCdlT76aJdfn9tE8k6u1wq
+mGXyyHsTcH/GXaryNt1wtrtaQGRuFPCE7WC3sTEXQyuRvxtpMkeDjbYzPZdDU4Z0
+isSOKexnAA/Mpd0mvdsTm5Q3oTor1qNgp+D+PiNe+I1znN5NE1xrjciy1+TAcbku
+kDd/tcR6S4gyoSoVeBgEiQ3rgMsh11nSHGWAgpIiKvKxFt+mbYB+qcEP38wAcqGk
+R1/y/4civDr6TLemIW+dIaQfqtppMaIyKAvxfYWqDlwGcgoteADnUQfcSZMK9lCp
+kGQUW/frWwSqxLvKErQzA1OZW5w0ltkAHxsdvCn80b68rkEyb9LcqtAHZp2Bn7Xo
+pxz/MX1EN8MBw3fSBgwN
+=vRQ8
+-----END PGP SIGNATURE-----
+
+--=-2y9w08IycFTcdTC0Lkob--
+
