@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760211Ab2CUVSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:18:37 -0400
+	id S1760246Ab2CUVSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:18:46 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:63855 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758180Ab2CUVSc (ORCPT
+	with ESMTP id S1758965Ab2CUVSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:32 -0400
-Message-Id: <20120321211532.919982677@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:18:38 -0400
+Message-Id: <20120321211533.007810519@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:15:34 -0700
+Date: Wed, 21 Mar 2012 14:15:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
         David Howells <dhowells@redhat.com>
-Subject: [ 2/9] afs: Read of file returns EBADMSG
+Subject: [ 3/9] afs: Remote abort can cause BUG in rxrpc code
 In-Reply-To: <20120321211539.GA28899@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Blanchard <anton@samba.org>
 
-commit 2c724fb92732c0b2a5629eb8af74e82eb62ac947 upstream.
+commit c0173863528a8c9212c53e080d63a1aaae5ef4f4 upstream.
 
-A read of a large file on an afs mount failed:
+When writing files to afs I sometimes hit a BUG:
 
-# cat junk.file > /dev/null
-cat: junk.file: Bad message
+kernel BUG at fs/afs/rxrpc.c:179!
 
-Looking at the trace, call->offset wrapped since it is only an
-unsigned short. In afs_extract_data:
+With a backtrace of:
 
-        _enter("{%u},{%zu},%d,,%zu", call->offset, len, last, count);
-...
+	afs_free_call
+	afs_make_call
+	afs_fs_store_data
+	afs_vnode_store_data
+	afs_write_back_from_locked_page
+	afs_writepages_region
+	afs_writepages
 
-        if (call->offset < count) {
-                if (last) {
-                        _leave(" = -EBADMSG [%d < %zu]", call->offset, count);
-                        return -EBADMSG;
-                }
+The cause is:
 
-Which matches the trace:
+	ASSERT(skb_queue_empty(&call->rx_queue));
 
-[cat   ] ==> afs_extract_data({65132},{524},1,,65536)
-[cat   ] <== afs_extract_data() = -EBADMSG [0 < 65536]
+Looking at a tcpdump of the session the abort happens because we
+are exceeding our disk quota:
 
-call->offset went from 65132 to 0. Fix this by making call->offset an
-unsigned int.
+	rx abort fs reply store-data error diskquota exceeded (32)
+
+So the abort error is valid. We hit the BUG because we haven't
+freed all the resources for the call.
+
+By freeing any skbs in call->rx_queue before calling afs_free_call
+we avoid hitting leaking memory and avoid hitting the BUG.
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: David Howells <dhowells@redhat.com>
@@ -60,19 +64,27 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/afs/internal.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/afs/rxrpc.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -109,7 +109,7 @@ struct afs_call {
- 	unsigned		reply_size;	/* current size of reply */
- 	unsigned		first_offset;	/* offset into mapping[first] */
- 	unsigned		last_to;	/* amount of mapping[last] */
--	unsigned short		offset;		/* offset into received data store */
-+	unsigned		offset;		/* offset into received data store */
- 	unsigned char		unmarshall;	/* unmarshalling phase */
- 	bool			incoming;	/* T if incoming call */
- 	bool			send_pages;	/* T if data from mapping should be sent */
+--- a/fs/afs/rxrpc.c
++++ b/fs/afs/rxrpc.c
+@@ -314,6 +314,7 @@ int afs_make_call(struct in_addr *addr,
+ 	struct msghdr msg;
+ 	struct kvec iov[1];
+ 	int ret;
++	struct sk_buff *skb;
+ 
+ 	_enter("%x,{%d},", addr->s_addr, ntohs(call->port));
+ 
+@@ -380,6 +381,8 @@ int afs_make_call(struct in_addr *addr,
+ 
+ error_do_abort:
+ 	rxrpc_kernel_abort_call(rxcall, RX_USER_ABORT);
++	while ((skb = skb_dequeue(&call->rx_queue)))
++		afs_free_skb(skb);
+ 	rxrpc_kernel_end_call(rxcall);
+ 	call->rxcall = NULL;
+ error_kill_call:
 
 
