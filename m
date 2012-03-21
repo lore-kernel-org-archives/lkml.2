@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965184Ab2CUWVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:21:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65325 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab2CUWRw (ORCPT
+	id S1030241Ab2CUWXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:23:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49677 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520Ab2CUWXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:17:52 -0400
-From: Tejun Heo <tj@kernel.org>
-To: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/12] cgroup: move cgroup_clear_directory() call out of cgroup_populate_dir()
-Date: Wed, 21 Mar 2012 15:17:34 -0700
-Message-Id: <1332368265-21586-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
-References: <1332368265-21586-1-git-send-email-tj@kernel.org>
+	Wed, 21 Mar 2012 18:23:20 -0400
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH V2 0/3] introduce stmp-style devices
+Date: Wed, 21 Mar 2012 23:21:56 +0100
+Message-Id: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.5
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_populate_dir() currently clears all files and then repopulate
-the directory; however, the clearing part is only useful when it's
-called from cgroup_remount().  Relocate the invocation to
-cgroup_remount().
+This series makes support for a certain type of devices mach independant. We
+want that because such devices (having a special register layout) have been
+found in mach-mxs and mach-mx6 meanwhile. Please refer to patch 1/3 for a more
+detailed description.
 
-This is to prepare for further cgroup file handling updates.
+Patch 1/3 adds the basic support and is of main interest to get upstream.
+Patches 2/3 and 3/3 are usage examples and will be send to the relevant
+subsystems once the basic support is accepted.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Main changes since the V1:
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index deeab87..2e2f93b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1313,7 +1313,8 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
- 		goto out_unlock;
- 	}
- 
--	/* (re)populate subsystem files */
-+	/* clear out any existing files and repopulate subsystem files */
-+	cgroup_clear_directory(cgrp->dentry);
- 	cgroup_populate_dir(cgrp);
- 
- 	if (opts.release_agent)
-@@ -3648,9 +3649,6 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
- 	int err;
- 	struct cgroup_subsys *ss;
- 
--	/* First clear out any existing files */
--	cgroup_clear_directory(cgrp->dentry);
--
- 	err = cgroup_add_files(cgrp, NULL, files, ARRAY_SIZE(files));
- 	if (err < 0)
- 		return err;
+* moved stmp_device.c from drivers/base to lib/
+
+Main changes since the RFC:
+
+* renamed the macros to STMP_OFFSET_*
+* rebased to 3.3-rc6
+
+Tested with a TX28 board.
+
+Thanks,
+
+   Wolfram
+
+Wolfram Sang (3):
+  lib: add support for stmp-style devices
+  i2c: mxs: use global reset function
+  rtc: stmp3xxx: use global stmp_device functionality
+
+ drivers/i2c/busses/Kconfig   |    1 +
+ drivers/i2c/busses/i2c-mxs.c |    9 +----
+ drivers/rtc/Kconfig          |    1 +
+ drivers/rtc/rtc-stmp3xxx.c   |   29 +++++----------
+ include/linux/stmp_device.h  |   20 ++++++++++
+ lib/Kconfig                  |    3 ++
+ lib/Makefile                 |    2 +
+ lib/stmp_device.c            |   80 ++++++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 119 insertions(+), 26 deletions(-)
+ create mode 100644 include/linux/stmp_device.h
+ create mode 100644 lib/stmp_device.c
+
 -- 
-1.7.7.3
+1.7.2.5
 
