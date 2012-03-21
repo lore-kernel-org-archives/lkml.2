@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760290Ab2CUVUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:20:44 -0400
+	id S1760372Ab2CUVVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:21:07 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:63855 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab2CUVSm (ORCPT
+	with ESMTP id S1759014Ab2CUVSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:42 -0400
-Message-Id: <20120321211533.096465896@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:18:35 -0400
+Message-Id: <20120321211532.833932484@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:15:36 -0700
+Date: Wed, 21 Mar 2012 14:15:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Ahern <dsahern@gmail.com>,
-        Eric B Munson <emunson@mgebm.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 4/9] perf tools: Incorrect use of snprintf results in SEGV
+        alan@lxorguk.ukuu.org.uk, Slicky Devil <slicky.dvl@gmail.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [ 1/9] nilfs2: fix NULL pointer dereference in nilfs_load_super_block()
 In-Reply-To: <20120321211539.GA28899@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,64 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit b832796caa1fda8516464a003c8c7cc547bc20c2 upstream.
+commit d7178c79d9b7c5518f9943188091a75fc6ce0675 upstream.
 
-I have a workload where perf top scribbles over the stack and we SEGV.
-What makes it interesting is that an snprintf is causing this.
+According to the report from Slicky Devil, nilfs caused kernel oops at
+nilfs_load_super_block function during mount after he shrank the
+partition without resizing the filesystem:
 
-The workload is a c++ gem that has method names over 3000 characters
-long, but snprintf is designed to avoid overrunning buffers. So what
-went wrong?
+ BUG: unable to handle kernel NULL pointer dereference at 00000048
+ IP: [<d0d7a08e>] nilfs_load_super_block+0x17e/0x280 [nilfs2]
+ *pde = 00000000
+ Oops: 0000 [#1] PREEMPT SMP
+ ...
+ Call Trace:
+  [<d0d7a87b>] init_nilfs+0x4b/0x2e0 [nilfs2]
+  [<d0d6f707>] nilfs_mount+0x447/0x5b0 [nilfs2]
+  [<c0226636>] mount_fs+0x36/0x180
+  [<c023d961>] vfs_kern_mount+0x51/0xa0
+  [<c023ddae>] do_kern_mount+0x3e/0xe0
+  [<c023f189>] do_mount+0x169/0x700
+  [<c023fa9b>] sys_mount+0x6b/0xa0
+  [<c04abd1f>] sysenter_do_call+0x12/0x28
+ Code: 53 18 8b 43 20 89 4b 18 8b 4b 24 89 53 1c 89 43 24 89 4b 20 8b 43
+ 20 c7 43 2c 00 00 00 00 23 75 e8 8b 50 68 89 53 28 8b 54 b3 20 <8b> 72
+ 48 8b 7a 4c 8b 55 08 89 b3 84 00 00 00 89 bb 88 00 00 00
+ EIP: [<d0d7a08e>] nilfs_load_super_block+0x17e/0x280 [nilfs2] SS:ESP 0068:ca9bbdcc
+ CR2: 0000000000000048
 
-The problem is we assume snprintf returns the number of characters
-written:
+This turned out due to a defect in an error path which runs if the
+calculated location of the secondary super block was invalid.
 
-    ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
-...
-    ret += repsep_snprintf(bf + ret, size - ret, "%s", self->ms.sym->name);
+This patch fixes it and eliminates the reported oops.
 
-Unfortunately this is not how snprintf works. snprintf returns the
-number of characters that would have been written if there was enough
-space. In the above case, if the first snprintf returns a value larger
-than size, we pass a negative size into the second snprintf and happily
-scribble over the stack. If you have 3000 character c++ methods thats a
-lot of stack to trample.
-
-This patch fixes repsep_snprintf by clamping the value at size - 1 which
-is the maximum snprintf can write before adding the NULL terminator.
-
-I get the sinking feeling that there are a lot of other uses of snprintf
-that have this same bug, we should audit them all.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Link: http://lkml.kernel.org/r/20120307114249.44275ca3@kryten
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Reported-by: Slicky Devil <slicky.dvl@gmail.com>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Slicky Devil <slicky.dvl@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/sort.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nilfs2/the_nilfs.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -33,6 +33,9 @@ static int repsep_snprintf(char *bf, siz
- 		}
+--- a/fs/nilfs2/the_nilfs.c
++++ b/fs/nilfs2/the_nilfs.c
+@@ -515,6 +515,7 @@ static int nilfs_load_super_block(struct
+ 		brelse(sbh[1]);
+ 		sbh[1] = NULL;
+ 		sbp[1] = NULL;
++		valid[1] = 0;
+ 		swp = 0;
  	}
- 	va_end(ap);
-+
-+	if (n >= (int)size)
-+		return size - 1;
- 	return n;
- }
- 
+ 	if (!valid[swp]) {
 
 
