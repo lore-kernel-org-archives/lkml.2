@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab2CUMgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 08:36:51 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:39901 "EHLO
+	id S1758272Ab2CUMjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:39:07 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:37933 "EHLO
 	homiemail-a41.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757717Ab2CUMgu (ORCPT
+	by vger.kernel.org with ESMTP id S1757904Ab2CUMjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:36:50 -0400
+	Wed, 21 Mar 2012 08:39:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
 	:from:mime-version:to:cc:subject:references:in-reply-to
 	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=O+gHQm6r10m3NaB9+crVeweUp3Hilze9FTXxYG4b/AeehhMhjKcaXX0uDuoqc
-	rO6ankaTJQWMRUP0+q8V91LEatGUfMCYc1bpkirz/GbCgKLhDtuJu+C9u+UUMpaO
-	OYopB9v9uQX9cQHV/ZD0wOF1qnUeYCMoEx10qStkKJsZNk=
-Message-ID: <4F69CB5F.70002@shealevy.com>
-Date: Wed, 21 Mar 2012 08:36:47 -0400
+	 b=ioINHFH8oByndVMM16FvidSzRxBY1fpOYxhK2lw8kmrTRM5/8SU6GXodYVYeW
+	WJ5dEZxVdYWszqfTdcD3QzDwpy56cWZU8AkmRVYskOdN93H21qDnohZzRaBOzUHN
+	oclpRKILTmxoqnjvtYYEAnE8IPTjcgntlS5VUkG1nPAFHM=
+Message-ID: <4F69CBE6.5010604@shealevy.com>
+Date: Wed, 21 Mar 2012 08:39:02 -0400
 From: Shea Levy <shea@shealevy.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120321 Thunderbird/11.0
 MIME-Version: 1.0
@@ -56,10 +56,11 @@ A few questions:
      * I'm using nouveau, and with the gmux I have both gmux_backlight 
 and nv_backlight (which never worked) in /sys/class/backlight, is this 
 expected?
-     * Is there anything I can do to test the backlight interface in 
-addition to setting brightness levels?
+     * Is there anything I can do to test the sysfs backlight interface 
+besides setting the levels?
      * Besides the sysfs backlight interface, are there any other 
 userspace-visible changes your driver makes that I should test?
 
 Cheers,
 Shea Levy
+
