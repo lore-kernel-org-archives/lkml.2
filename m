@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab2CUPII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:08:08 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:38853 "EHLO mail.vyatta.com"
+	id S1755564Ab2CUPMS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 11:12:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759Ab2CUPIG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:08:06 -0400
-Date: Wed, 21 Mar 2012 08:08:01 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, arekm@maven.pl,
-        Jared <nitro@legroom.net>, dilieto@lineone.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [REGRESSION][PATCH] Fix an old sky2 WOL regression
-Message-ID: <20120321080801.55e4731b@nehalam.linuxnetplumber.net>
-In-Reply-To: <4F69BE2E.7070903@t-online.de>
-References: <4F69BE2E.7070903@t-online.de>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754722Ab2CUPMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 11:12:17 -0400
+Date: Wed, 21 Mar 2012 12:11:19 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
+Message-ID: <20120321151119.GC21163@infradead.org>
+References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
+ <1332267341-26338-4-git-send-email-jolsa@redhat.com>
+ <1332269081.18960.444.camel@twins>
+ <20120321104214.GB1632@m.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120321104214.GB1632@m.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 12:40:30 +0100
-Knut Petersen <Knut_Petersen@t-online.de> wrote:
+Em Wed, Mar 21, 2012 at 11:42:14AM +0100, Jiri Olsa escreveu:
+> On Tue, Mar 20, 2012 at 07:44:41PM +0100, Peter Zijlstra wrote:
+> > If so, we need some option like:
+> > 
+> >   perf record -e "{cpu-clock,cache-misses,cache-references}:1"
+> > 
+> > to mean, only sample on cpu-clock but use PERF_SAMPLE_READ and
+> > PERF_FORMAT_GROUP to read all siblings on every cpu-clock sample.
+> > 
+> > Now the disadvantage is that {} needs quotes on bash, the advantage is
+> > that its completely natural on how to construct groups, without weird
+> > --group/--group parsed. Also it provides a place for group modifiers.
+> 
+> how about '=group' keyword followed by ':' modifier
+>   perf record -e "cpu-clock,cache-misses,cache-references=group:1"
+> 
+> or '=$groupname' and use the group name in output like
+>   perf stat -e "task-clock,context-switches=krava:1" ls
+> 
+>      Performance counter stats for 'ls':
+> 
+>           1.003695 task-clock/krava          #    0.083 CPUs utilized          
+>                  0 context-switches/krava    #    0.000 K/sec                  
+> 
 
-> Sky2 Wake on LAN is broken since February 2010 on a number of systems.
-> Yes. More than two years.
-> 
-> We know about the problem and the cause since October 2010
-> (Bugzilla bug #19492). It´s commit 87b09f1f25cd1e01d7c50bf423c7fe33027d7511.
-> 
-> Stephen, David: You signed off that commit.
-> 
-> Andrew: You called it a regression in October 2010.
-> 
-> It has been proposed to revert the commit that caused the problem.
-> Nothing happened.
-> 
-> I proposed to re-establish the old code for dmi_match()ed systems.
-> Without success.
-> 
-> Now it is proposed to re-establish the old code as a configuration option.
-> If nothing happens again I will propose a module parameter ;-)
-> 
-> Stephen, I don´t want to be a pain in the neck, and it is not my intention
-> to offend you by my "attitude". But I simply cannot understand why this
-> know regression is not fixed. The bit we talk about is documented,
-> and in fact it was set for a number of kernel versions unconditionally.
-> Nobody complained about ruined hardware or minor problems.
-> 
-> The systems affected are old enough that no manufacturer cares about
-> them, but they are still quite usable for a lot of jobs (kernel 3.3 compile
-> time here is below 15 minutes).
-> 
-> If there is a problem in the kernel and if we do know an easy solution,
-> that solution should be commited to the kernel, no matter what is written
-> in some random documentation, no matter if we could blame some
-> BIOS authors. That´s the way Linux works - at least I thought so.
-> 
-> cu,
-> Knut
+Humm, interesting, perhaps putting the group name before the =event_list
+will be more intuitive?
 
-Config options don't work for distro's.
+I.e.:
+
+  perf stat -e "krava=task-clock,context-switches:1" ls
+
+- Arnaldo
