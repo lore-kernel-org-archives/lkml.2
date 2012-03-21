@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030846Ab2CUOMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:12:20 -0400
-Received: from seven.medozas.de ([188.40.89.202]:40783 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030317Ab2CUOMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:12:19 -0400
-From: Jan Engelhardt <jengelh@medozas.de>
-To: akpm@linux-foundation.org
-Cc: gorcunov@openvz.org, linux-kernel@vger.kernel.org, jengelh@medozas.de
-Subject: [PATCH] procfs: use more apprioriate types when dumping /proc/N/stat
-Date: Wed, 21 Mar 2012 15:12:16 +0100
-Message-Id: <1332339136-26022-1-git-send-email-jengelh@medozas.de>
-X-Mailer: git-send-email 1.7.7
+	id S1030963Ab2CUOOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:14:12 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12644 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030828Ab2CUOOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 10:14:10 -0400
+Date: Wed, 21 Mar 2012 15:13:57 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH] thermal: Fix for setting the thermal zone mode to
+ enable/disable
+Message-ID: <20120321151357.53fb86e4@endymion.delvare>
+In-Reply-To: <1332328201-21191-1-git-send-email-amit.kachhap@linaro.org>
+References: <1332328201-21191-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* field 14, 15: clock_t is a long
-* field 18, 19: task_nice/task_prio return int
-* field 24: get_mm_rss returns unsigned long
-* field 36, 37: always 0
+On Wed, 21 Mar 2012 16:40:01 +0530, Amit Daniel Kachhap wrote:
+> Basically without this patch changing the mode of thermal zone
+> is not possible as wrong string size is passed to strncmp.
 
-Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
----
- fs/proc/array.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+Actually it is possible,
+$ echo -n disabled > mode
+works fine. But it fails without the -n, your patch would fix that.
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index c602b8d..1451dd6 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -361,7 +361,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
- 			struct pid *pid, struct task_struct *task, int whole)
- {
- 	unsigned long vsize, eip, esp, wchan = ~0UL;
--	long priority, nice;
-+	int priority, nice;
- 	int tty_pgrp = -1, tty_nr = 0;
- 	sigset_t sigign, sigcatch;
- 	char state;
-@@ -463,8 +463,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
- 	start_time = nsec_to_clock_t(start_time);
- 
- 	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
--%lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
--%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
-+%lu %lu %lu %ld %ld %ld %ld %d %d %d 0 %llu %lu %lu %lu %lu %lu %lu %lu \
-+%lu %lu %lu %lu %lu %lu 0 0 %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
- 		pid_nr_ns(pid, ns),
- 		tcomm,
- 		state,
-@@ -503,8 +503,6 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
- 		sigign      .sig[0] & 0x7fffffffUL,
- 		sigcatch    .sig[0] & 0x7fffffffUL,
- 		wchan,
--		0UL,
--		0UL,
- 		task->exit_signal,
- 		task_cpu(task),
- 		task->rt_priority,
+Acked-by: Jean Delvare <khali@linux-fr.org>
+
+Note that a quick grep suggests that drivers/misc/ad525x_dpot.c,
+security/selinux/hooks.c and arch/m68k/sun3/prom/console.c suffer from
+the same issue, if you want to fix them too.
+
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> ---
+>  drivers/thermal/thermal_sys.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 220ce7e..96da1af 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -152,9 +152,9 @@ mode_store(struct device *dev, struct device_attribute *attr,
+>  	if (!tz->ops->set_mode)
+>  		return -EPERM;
+>  
+> -	if (!strncmp(buf, "enabled", sizeof("enabled")))
+> +	if (!strncmp(buf, "enabled", sizeof("enabled") - 1))
+>  		result = tz->ops->set_mode(tz, THERMAL_DEVICE_ENABLED);
+> -	else if (!strncmp(buf, "disabled", sizeof("disabled")))
+> +	else if (!strncmp(buf, "disabled", sizeof("disabled") - 1))
+>  		result = tz->ops->set_mode(tz, THERMAL_DEVICE_DISABLED);
+>  	else
+>  		result = -EINVAL;
+
+
 -- 
-1.7.7
-
+Jean Delvare
