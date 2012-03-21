@@ -1,186 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750990Ab2CUEGD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 00:06:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9310 "EHLO mx1.redhat.com"
+	id S1750775Ab2CUEQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 00:16:08 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:35022 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab2CUEGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 00:06:00 -0400
-Date: Wed, 21 Mar 2012 00:05:48 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: "Alasdair G. Kergon" <agk@redhat.com>
-cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] Fix I/O counts in vmstat
-Message-ID: <Pine.LNX.4.64.1203202336370.15617@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1750835Ab2CUEQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 00:16:02 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] [RFC] Range tree implementation
+Date: Tue, 20 Mar 2012 21:15:50 -0700
+Message-Id: <1332303351-16372-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1332303351-16372-1-git-send-email-john.stultz@linaro.org>
+References: <1332303351-16372-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032104-5112-0000-0000-0000065C5C99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+After Andrew suggested something like his mumbletree idea
+to better store a list of ranges, I worked on a few different
+approaches, and this is what I've finally managed to get working.
 
-This patch fixes I/O counting in vmstat. It makes us count only I/Os to 
-real physical I/O devices and avoids counting at intermediate drivers 
-that send the bio elsewhere.
+I suspect range-tree isn't a totally accurate name, but I
+couldn't quite make out the difference between range trees
+and interval trees, so I just picked one to call it. Do
+let me know if you have a better name.
 
-Mikulas
+The idea of storing ranges in a tree is nice, but has a number
+of complications. When adding a range, its possible that a
+large range will consume and merge a number of smaller ranges.
+When removing a range, its possible you may end up splitting an
+existing range, causing one range to become two. This makes it
+very difficult to provide generic list_head like behavior, as
+the parent structures would need to be duplicated and removed,
+and that has lots of memory ownership issues.
 
+So, this is a much simplified and more list_head like
+implementation. You can add a node to a tree, or remove a node
+to a tree, but the generic implementation doesn't do the
+merging or splitting for you. But it does provide helpers to
+find overlapping and adjacent ranges.
+
+Andrew also really wanted this range-tree implementation to be
+resuable so we don't duplicate the file locking logic. I'm not
+totally convinced that the requirements between the volatile
+ranges and file locking are really equivelent, but this reduced
+impelementation may make it possible.
+
+Do let me know what you think or if you have other ideas for
+better ways to do the same.
+
+Changelog:
+v2:
+* Reworked code to use an rbtree instead of splaying
+
+v3:
+* Added range_tree_next_in_range() to avoid having to start
+  lookups from the root every time.
+* Fixed some comments and return NULL instead of 0, as suggested
+  by Aneesh Kumar K.V
+
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Android Kernel Team <kernel-team@android.com>
+CC: Robert Love <rlove@google.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Hugh Dickins <hughd@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Rik van Riel <riel@redhat.com>
+CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Neil Brown <neilb@suse.de>
+CC: Andrea Righi <andrea@betterlinux.com>
+CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
+ include/linux/rangetree.h |   56 ++++++++++++++++++++
+ lib/Makefile              |    2 +-
+ lib/rangetree.c           |  124 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 181 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/rangetree.h
+ create mode 100644 lib/rangetree.c
 
-Fix I/O counts in vmstat
-
-Currently, there are two functions to submit a bio, submit_bio and
-generic_make_request. They both do the same thing, except that
-submit_bio increments the I/O counter (visible in vmstat) and
-generic_make_request doesn't.
-
-The decision whether bio is counted or not is made by the code that
-submits the bio. This leads to some problems:
-* when we write to dm-raid1 target with two raid legs, I/O is counted
-  three times (once on entry to dm-raid1 and once on each legs)
-* when dm-crypt target accepts large number of bios and sends them out,
-  the machine appears deadlocked (there is no I/O activity in vmstat and
-  processes are stuck in 'D' state). The machine is not really
-  deadlocked, I/Os are submitted by dm-crypt to the disk driver, but
-  they are not counted.
-
-This patch changes it so that the decision if the bio should or
-shouldn't be counted is made at the queue the bio is sent to. The bios
-are counted (regardless if the submitter uses submit_bio or
-generic_make_reuqest) unless the queue has a flag
-"QUEUE_FLAG_NO_IO_COUNT".
-
-QUEUE_FLAG_NO_IO_COUNT is sent on queues for md, dm and loop because
-these drivers forward the bio to some other device.
-
-Consequently, the I/O counts in vmstat are accurate, they measure the
-I/O throughput of physical block devices.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- block/blk-core.c       |   46 +++++++++++++++++++++++-----------------------
- drivers/block/loop.c   |    2 ++
- drivers/md/dm.c        |    1 +
- drivers/md/md.c        |    1 +
- include/linux/blkdev.h |    1 +
- 5 files changed, 28 insertions(+), 23 deletions(-)
-
-Index: linux-3.3-rc5-fast/block/blk-core.c
-===================================================================
---- linux-3.3-rc5-fast.orig/block/blk-core.c	2012-03-03 01:04:02.000000000 +0100
-+++ linux-3.3-rc5-fast/block/blk-core.c	2012-03-03 01:12:59.000000000 +0100
-@@ -1636,6 +1636,21 @@ void generic_make_request(struct bio *bi
- 		return;
+diff --git a/include/linux/rangetree.h b/include/linux/rangetree.h
+new file mode 100644
+index 0000000..c61ce7c
+--- /dev/null
++++ b/include/linux/rangetree.h
+@@ -0,0 +1,56 @@
++#ifndef _LINUX_RANGETREE_H
++#define _LINUX_RANGETREE_H
++
++#include <linux/types.h>
++#include <linux/rbtree.h>
++
++struct range_tree_node {
++	struct rb_node rb;
++	u64 start;
++	u64 end;
++};
++
++struct range_tree_root {
++	struct rb_root head;
++};
++
++static inline void range_tree_init(struct range_tree_root *root)
++{
++	root->head = RB_ROOT;
++}
++
++static inline void range_tree_node_init(struct range_tree_node *node)
++{
++	rb_init_node(&node->rb);
++	node->start = 0;
++	node->end = 0;
++}
++
++static inline int range_tree_empty(struct range_tree_root *root)
++{
++	return RB_EMPTY_ROOT(&root->head);
++}
++
++static inline
++struct range_tree_node *range_tree_root_node(struct range_tree_root *root)
++{
++	struct range_tree_node *ret;
++	ret = container_of(root->head.rb_node, struct range_tree_node, rb);
++	return ret;
++}
++
++extern struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_in_range_adjacent(
++						struct range_tree_root *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_next_in_range(
++						struct range_tree_node *node,
++						u64 start, u64 end);
++extern void range_tree_add(struct range_tree_root *root,
++						struct range_tree_node *node);
++extern void range_tree_remove(struct range_tree_root *root,
++						struct range_tree_node *node);
++#endif
++
++
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..f43ef0d 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o rangetree.o
  
- 	/*
-+	 * If it's a regular read/write or a barrier with data attached,
-+	 * go through the normal accounting stuff before submission.
-+	 */
-+	if (!test_bit(QUEUE_FLAG_NO_IO_COUNT, &bdev_get_queue(bio->bi_bdev)->queue_flags) &&
-+	    bio_has_data(bio) && !(bio->bi_rw & REQ_DISCARD)) {
-+		int count = bio_sectors(bio);
-+		if (bio->bi_rw & WRITE) {
-+			count_vm_events(PGPGOUT, count);
-+		} else {
-+			task_io_account_read(bio->bi_size);
-+			count_vm_events(PGPGIN, count);
-+		}
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/rangetree.c b/lib/rangetree.c
+new file mode 100644
+index 0000000..a42b28e
+--- /dev/null
++++ b/lib/rangetree.c
+@@ -0,0 +1,124 @@
++#include <linux/rangetree.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++
++
++/**
++ * range_tree_in_range - Returns the first node that overlaps with the
++ *                       given range
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
++						u64 start, u64 end)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct range_tree_node *candidate;
++
++	while (*p) {
++		candidate = rb_entry(*p, struct range_tree_node, rb);
++		if (end < candidate->start)
++			p = &(*p)->rb_left;
++		else if (start > candidate->end)
++			p = &(*p)->rb_right;
++		else
++			return candidate;
 +	}
 +
-+	/*
- 	 * We only want one ->make_request_fn to be active at a time, else
- 	 * stack usage with stacked devices could be a problem.  So use
- 	 * current->bio_list to keep a list of requests submited by a
-@@ -1690,31 +1705,16 @@ EXPORT_SYMBOL(generic_make_request);
-  */
- void submit_bio(int rw, struct bio *bio)
- {
--	int count = bio_sectors(bio);
--
- 	bio->bi_rw |= rw;
- 
--	/*
--	 * If it's a regular read/write or a barrier with data attached,
--	 * go through the normal accounting stuff before submission.
--	 */
--	if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
--		if (rw & WRITE) {
--			count_vm_events(PGPGOUT, count);
--		} else {
--			task_io_account_read(bio->bi_size);
--			count_vm_events(PGPGIN, count);
--		}
--
--		if (unlikely(block_dump)) {
--			char b[BDEVNAME_SIZE];
--			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
--			current->comm, task_pid_nr(current),
--				(rw & WRITE) ? "WRITE" : "READ",
--				(unsigned long long)bio->bi_sector,
--				bdevname(bio->bi_bdev, b),
--				count);
--		}
-+	if (unlikely(block_dump)) {
-+		char b[BDEVNAME_SIZE];
-+		printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
-+		current->comm, task_pid_nr(current),
-+			(rw & WRITE) ? "WRITE" : "READ",
-+			(unsigned long long)bio->bi_sector,
-+			bdevname(bio->bi_bdev, b),
-+			bio_sectors(bio));
- 	}
- 
- 	generic_make_request(bio);
-Index: linux-3.3-rc5-fast/include/linux/blkdev.h
-===================================================================
---- linux-3.3-rc5-fast.orig/include/linux/blkdev.h	2012-03-03 01:04:23.000000000 +0100
-+++ linux-3.3-rc5-fast/include/linux/blkdev.h	2012-03-03 01:12:59.000000000 +0100
-@@ -420,6 +420,7 @@ struct request_queue {
- #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
- #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
- #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
-+#define QUEUE_FLAG_NO_IO_COUNT 19	/* don't increase io request count */
- 
- #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
- 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
-Index: linux-3.3-rc5-fast/drivers/block/loop.c
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/block/loop.c	2012-03-03 01:04:03.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/block/loop.c	2012-03-03 01:12:59.000000000 +0100
-@@ -1633,6 +1633,8 @@ static int loop_add(struct loop_device *
- 	if (!lo->lo_queue)
- 		goto out_free_dev;
- 
-+	queue_flag_set_unlocked(QUEUE_FLAG_NO_IO_COUNT, lo->lo_queue);
++	return NULL;
++}
 +
- 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
- 	if (!disk)
- 		goto out_free_queue;
-Index: linux-3.3-rc5-fast/drivers/md/md.c
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/md/md.c	2012-03-03 01:04:06.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/md/md.c	2012-03-03 01:12:59.000000000 +0100
-@@ -4667,6 +4667,7 @@ static int md_alloc(dev_t dev, char *nam
- 
- 	blk_queue_make_request(mddev->queue, md_make_request);
- 	blk_set_stacking_limits(&mddev->queue->limits);
-+	queue_flag_set_unlocked(QUEUE_FLAG_NO_IO_COUNT, mddev->queue);
- 
- 	disk = alloc_disk(1 << shift);
- 	if (!disk) {
-Index: linux-3.3-rc5-fast/drivers/md/dm.c
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/md/dm.c	2012-03-03 01:11:47.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/md/dm.c	2012-03-03 01:12:59.000000000 +0100
-@@ -1803,6 +1803,7 @@ static void dm_init_md_queue(struct mapp
- 	 * This queue is new, so no concurrency on the queue_flags.
- 	 */
- 	queue_flag_clear_unlocked(QUEUE_FLAG_STACKABLE, md->queue);
-+	queue_flag_set_unlocked(QUEUE_FLAG_NO_IO_COUNT, md->queue);
- 
- 	md->queue->queuedata = md;
- 	md->queue->backing_dev_info.congested_fn = dm_any_congested;
++
++/**
++ * range_tree_in_range_adjacent - Returns the first node that overlaps or
++ *                                is adjacent with the given range.
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range_adjacent(
++					struct range_tree_root *root,
++					u64 start, u64 end)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct range_tree_node *candidate;
++
++	while (*p) {
++		candidate = rb_entry(*p, struct range_tree_node, rb);
++		if (end+1 < candidate->start)
++			p = &(*p)->rb_left;
++		else if (start > candidate->end + 1)
++			p = &(*p)->rb_right;
++		else
++			return candidate;
++	}
++	return NULL;
++}
++
++struct range_tree_node *range_tree_next_in_range(struct range_tree_node *node,
++							u64 start, u64 end)
++{
++	struct rb_node *next;
++	struct range_tree_node *candidate;
++	if (!node)
++		return NULL;
++	next = rb_next(&node->rb);
++	if (!next)
++		return NULL;
++
++	candidate = container_of(next, struct range_tree_node, rb);
++
++	if ((candidate->start > end) || (candidate->end < start))
++		return NULL;
++
++	return candidate;
++}
++
++/**
++ * range_tree_add - Add a node to a range tree
++ * @root: range tree to be added to
++ * @node: range_tree_node to be added
++ *
++ * Adds a node to the range tree.
++ */
++void range_tree_add(struct range_tree_root *root,
++					struct range_tree_node *node)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct range_tree_node *ptr;
++
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct range_tree_node, rb);
++		if (node->start < ptr->start)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->rb, parent, p);
++	rb_insert_color(&node->rb, &root->head);
++
++}
++
++
++/**
++ * range_tree_remove: Removes a given node from the tree
++ * @root: root of tree
++ * @node: Node to be removed
++ *
++ * Removes a node and splays the tree
++ */
++void range_tree_remove(struct range_tree_root *root,
++						struct range_tree_node *node)
++{
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
++
++	rb_erase(&node->rb, &root->head);
++	RB_CLEAR_NODE(&node->rb);
++}
+-- 
+1.7.3.2.146.gca209
+
