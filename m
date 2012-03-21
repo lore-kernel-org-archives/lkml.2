@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030623Ab2CUG5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:57:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53035 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965220Ab2CUG5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:57:47 -0400
-Message-ID: <4F697BD9.2040202@zytor.com>
-Date: Tue, 20 Mar 2012 23:57:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1030648Ab2CUG6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:58:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39114 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965024Ab2CUG5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 02:57:14 -0400
+Subject: [PATCH 14/16] mm/score: use vm_flags_t for vma flags
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lennox Wu <lennox.wu@gmail.com>, Chen Liqin <liqin.chen@sunplusct.com>
+Date: Wed, 21 Mar 2012 10:57:10 +0400
+Message-ID: <20120321065710.13852.36939.stgit@zurg>
+In-Reply-To: <20120321065140.13852.52315.stgit@zurg>
+References: <20120321065140.13852.52315.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 06/16] mm/x86: use vm_flags_t for vma flags
-References: <20120321065140.13852.52315.stgit@zurg> <20120321065637.13852.58447.stgit@zurg>
-In-Reply-To: <20120321065637.13852.58447.stgit@zurg>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 11:56 PM, Konstantin Khlebnikov wrote:
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
+---
+ arch/score/mm/cache.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Please put in a patch description.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+diff --git a/arch/score/mm/cache.c b/arch/score/mm/cache.c
+index b25e957..2288ffc 100644
+--- a/arch/score/mm/cache.c
++++ b/arch/score/mm/cache.c
+@@ -79,7 +79,7 @@ void __update_cache(struct vm_area_struct *vma, unsigned long address,
+ {
+ 	struct page *page;
+ 	unsigned long pfn, addr;
+-	int exec = (vma->vm_flags & VM_EXEC);
++	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
+ 
+ 	pfn = pte_pfn(pte);
+ 	if (unlikely(!pfn_valid(pfn)))
+@@ -172,7 +172,7 @@ void flush_cache_range(struct vm_area_struct *vma,
+ 		unsigned long start, unsigned long end)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+-	int exec = vma->vm_flags & VM_EXEC;
++	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
+ 	pgd_t *pgdp;
+ 	pud_t *pudp;
+ 	pmd_t *pmdp;
+@@ -210,7 +210,7 @@ void flush_cache_range(struct vm_area_struct *vma,
+ void flush_cache_page(struct vm_area_struct *vma,
+ 		unsigned long addr, unsigned long pfn)
+ {
+-	int exec = vma->vm_flags & VM_EXEC;
++	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
+ 	unsigned long kaddr = 0xa0000000 | (pfn << PAGE_SHIFT);
+ 
+ 	flush_dcache_range(kaddr, kaddr + PAGE_SIZE);
 
