@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030376Ab2CUBkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 21:40:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47155 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab2CUBkR (ORCPT
+	id S932358Ab2CUBlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 21:41:04 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55406 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757620Ab2CUBlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 21:40:17 -0400
-Date: Wed, 21 Mar 2012 12:40:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Durgin <josh.durgin@dreamhost.com>,
-        Alex Elder <elder@dreamhost.com>
-Subject: linux-next: build failure after merge of the ceph tree
-Message-Id: <20120321124007.e879c834619c7bb9298d5694@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Mar_2012_12_40_07_+1100_PI/b3PfWS986Rpiz"
+	Tue, 20 Mar 2012 21:41:02 -0400
+Date: Wed, 21 Mar 2012 09:40:50 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Michael J. Wang" <mjwang@broadcom.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Message-ID: <20120321014050.GA19766@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Mar_2012_12_40_07_+1100_PI/b3PfWS986Rpiz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 19, 2012 at 10:26:19PM +0000, Michael J. Wang wrote:
+> From: Michael J Wang <mjwang@broadcom.com>
+> 
+> Avoid extra work by continuing on to the next rt_rq if the highest prio task in current rt_rq is the same priority as our candidate task.
+> 
+> Signed-off-by: Michael J Wang <mjwang@broadcom.com>
+> 
+> ---
+> 
+> More detailed explanation:  if next is not NULL, then we have found a candidate task, and its priority is next->prio.  Now we are looking for an even higher priority task in the other rt_rq's.  idx is the highest priority in the current candidate rt_rq.  In the current 3.3 code, if idx is equal to next->prio, we would start scanning the tasks in that rt_rq and replace the current candidate task with a task from that rt_rq.  But the new task would only have a priority that is equal to our previous candidate task, so we have not advanced our goal of finding a higher prio task.  So we should avoid the extra work by continuing on to the next rt_rq if idx is equal to next->prio.
+> 
 
-Hi Sage,
+You should limit characters of each line to 80 if possible.
 
-After merging the ceph tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+And before sending you patch, linux-source/scripts/checkpatch.pl maybe
+give you some clues whether there is some warning/error. If there are,
+fix them.
 
-drivers/block/rbd.c: In function 'rbd_add':
-drivers/block/rbd.c:2384:2: error: 'struct rbd_image_header' has no member =
-named 'snap_rwsem'
+Only for what your patch wants to show:
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
 
-Caused by commit dd2a081fb58f ("rbd: move snap_rwsem to the device,
-rename to header_rwsem") interacting with commit 0e805a1d8577 ("rbd:
-initialize snap_rwsem in rbd_add()") from Linus' tree.
+Thanks,
+Yong
 
-I used the ceph tree from next-20120320 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> --- linux-3.3/kernel/sched/rt.c.orig	2012-03-18 16:15:34.000000000 -0700
+> +++ linux-3.3/kernel/sched/rt.c	2012-03-19 14:52:54.585391702 -0700
+> @@ -1403,7 +1403,7 @@ static struct task_struct *pick_next_hig
+>  next_idx:
+>  		if (idx >= MAX_RT_PRIO)
+>  			continue;
+> -		if (next && next->prio < idx)
+> +		if (next && next->prio <= idx)
+>  			continue;
+>  		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+>  			struct task_struct *p;
+> 
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---Signature=_Wed__21_Mar_2012_12_40_07_+1100_PI/b3PfWS986Rpiz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPaTF3AAoJEECxmPOUX5FEo8cP/0tAyD815UX3gg90B34tubfJ
-qq7DPnZiW9gPw7hlgN/ZKcN2eQDjpocj9PQWNvf6gihlleYulTJvqPFBSLR71VlI
-URLi0VD9c4VIRhxPVXmY0hp5vzJqrGquYwgxesYkcJ65vfT26VJjP1AK48p6YLQd
-KQME7kfqtKPSzc9vk7vEGF4xPRTQmVQNIb6CS3AODw5bv9n5pfYWihgGWWAXq5+i
-qrdsu/fdkzr+yVXtE6gRE1IWgwLcuYZ29JN6YC3+wVMPALAp6NbYMsJq1exxTi0q
-13NEXMuKc6bxxN0duM/R7TLFBb+lRqoxYbAR/ti5QVQeejU0shS+mD5OlfniXkE0
-gMPndZQrnxR44nQiW0FyIN7uQVdcbJ0giIBU88dZlpgr7yqwZcpoZw1TDZYgZxJ5
-hNNbPuo8ok8pJTr6OWjnROVtP6HI87NpSQK1niWcYfhCq9P2dfefbClHlIWZDec0
-xAHhevJ2VCHX9emUz7gfsVp9ZL1BvaiTTfwsFVtKGzB9zwiBDeETM2JfmrbJrHCK
-uFCw0Vb0hlc4PKwP5ooWFxSmfqiGzqtDNjoQ86WQUyKQaF4TzpViQZp2ocO8GOO4
-ZVGuMVKkMWEM0gA9v64vEJv9lOfqt+75bprXXLRPAYd9sgcM7H7uJ0fkf+C1l+Kr
-hATlp1RUXvna7xAr505Z
-=TOIM
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Mar_2012_12_40_07_+1100_PI/b3PfWS986Rpiz--
+-- 
+Only stand for myself
