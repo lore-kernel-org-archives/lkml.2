@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab2CULcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 07:32:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33694 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab2CULcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 07:32:00 -0400
-Date: Wed, 21 Mar 2012 12:31:55 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Bernhard Walle <bernhard@bwalle.de>,
-        Bernhard Walle <walle@corscience.de>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
-Message-ID: <20120321113155.GS3852@pengutronix.de>
-References: <1332262083-9375-1-git-send-email-walle@corscience.de>
- <201203210839.06258.arnd@arndb.de>
- <20120321084856.GA17472@avionic-0098.mockup.avionic-design.de>
- <201203211003.28019.arnd@arndb.de>
- <20120321102847.GA13630@avionic-0098.mockup.avionic-design.de>
+	id S1753952Ab2CULeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 07:34:17 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:20266
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751160Ab2CULeP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 07:34:15 -0400
+X-SpamScore: -15
+X-BigFish: VS-15(zzbb2dIc89bh1432N98dK1447Mzz1202hzz8275dhz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 21 Mar 2012 19:45:17 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Florian Fainelli <florian@openwrt.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        Tabi Timur-B04825 <B04825@freescale.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/1] net: phylib: add error checking if no phy found
+Message-ID: <20120321114516.GC4905@shlinux2.ap.freescale.net>
+References: <1331636302-18256-1-git-send-email-b29396@freescale.com>
+ <4F5F5ABF.5030103@openwrt.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20120321102847.GA13630@avionic-0098.mockup.avionic-design.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:30:10 up 129 days, 19:17, 69 users,  load average: 0.26, 2.19,
- 1.53
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4F5F5ABF.5030103@openwrt.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 11:28:47AM +0100, Thierry Reding wrote:
-> * Arnd Bergmann wrote:
-> > On Wednesday 21 March 2012, Thierry Reding wrote:
-> > > I don't have a public tree anywhere. Does anyone have a recommendation where
-> > > I could set one up? github or gitorious are the first to come to my mind.
-> > 
-> > They both work fine and are easy to set up, at least as a temporary location.
+On Tue, Mar 13, 2012 at 10:33:35PM +0800, Florian Fainelli wrote:
+> Hi,
 > 
-> Okay, I'll check both and will also investigate whether one can be setup on
-> our domain.
+> Le 03/13/12 11:58, Dong Aisheng a écrit :
+> > From: Dong Aisheng<dong.aisheng@linaro.org>
+> >
+> > Signed-off-by: Dong Aisheng<dong.aisheng@linaro.org>
+> > ---
+> >   drivers/net/phy/mdio_bus.c |   11 ++++++++++-
+> >   1 files changed, 10 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+> > index 88cc5db..d8e044d 100644
+> > --- a/drivers/net/phy/mdio_bus.c
+> > +++ b/drivers/net/phy/mdio_bus.c
+> > @@ -101,6 +101,7 @@ static struct class mdio_bus_class = {
+> >   int mdiobus_register(struct mii_bus *bus)
+> >   {
+> >   	int i, err;
+> > +	u32 phynum = 0;
+> >
+> >   	if (NULL == bus || NULL == bus->name ||
+> >   			NULL == bus->read ||
+> > @@ -134,12 +135,20 @@ int mdiobus_register(struct mii_bus *bus)
+> >   			if (IS_ERR(phydev)) {
+> >   				err = PTR_ERR(phydev);
+> >   				goto error;
+> > +			} else if (phydev != NULL) {
+> > +				phynum++;
+> >   			}
+> >   		}
+> >   	}
+> >
+> > +	if (!phynum) {
+> > +		err = -ENODEV;
+> > +		printk(KERN_ERR "%s: no phys found\n", bus->name);
+> > +		goto error;
+> > +	}
 > 
-> > If you want to have something more official in the long run, you could
-> > either set up your own git server on your employer's domain or if that
-> > is impractical, get an account on kernel.org or linaro.org. Both of those
-> > try to limit the amount of accounts they hand out to external people, but
-> > since you are going to be a subsystem maintainer, I don't see it as a
-> > problem.
+> I am not sure if this is a good idea to change it, especially if:
+> - the MII bus probing is also done later (quite some drivers do this)
+> - if we want to attach a fixed PHY because we could not probe one at 
+> registration time
 > 
-> Maybe Sascha should have a say in this (adding to Cc). He wrote the original
-> code and got the ball rolling, so I don't want to jump the queue. If he's
-> okay with it, though, I'd be happy to take over.
+You're correct.
+It seems keep it as before is the right solution right now.
+Thanks for the info.
 
-I'm okay with this. I only wanted to write code for pwm, not maintain it ;)
+Regards
+Dong Aisheng
 
-Sascha
-
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
