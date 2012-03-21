@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759173Ab2CUPff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:35:35 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33511 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab2CUPfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:35:32 -0400
-Date: Wed, 21 Mar 2012 12:35:27 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ashay Rane <ashay.r@gmail.com>
-Cc: linux-perf-users@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        David Daney <david.daney@cavium.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] perf report: Correct display of samples and events
- in header
-Message-ID: <20120321153527.GA25820@infradead.org>
-References: <1332292828-22656-1-git-send-email-ashay.r@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332292828-22656-1-git-send-email-ashay.r@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759223Ab2CUPgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 11:36:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53280 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752932Ab2CUPgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 11:36:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="142598093"
+Subject: Re: [PATCH v3 00/13] dmaengine: imx-dma: merge dma arch code into
+ dmaengine.
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, linux@arm.linux.org.uk,
+        kernel@pengutronix.de
+In-Reply-To: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Mar 2012 21:09:23 +0530
+Message-ID: <1332344363.19804.12.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 20, 2012 at 08:20:28PM -0500, Ashay Rane escreveu:
-> This patch prints the number of samples and the count of performance events separately. This allows comparing performance of different applications with each other. Previously, the sample count was displayed against an 'Events:' heading. With this patch, the header now reads (for example):
+On Fri, 2012-03-09 at 16:20 +0100, Javier Martin wrote:
+> The following series have to be applied on top of the following patches:
+> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
+> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
 > 
-> Samples: 5K of event 'instructions'
-> Event count (approx.): 2993026545
+> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
+> is deprecated and no new patches are accepted for it.
 > 
-> The patch covers both the stdio and the browser interface.
+> This series merges this code into the imx-dma.c dmaengine driver.
 > 
-> Signed-off-by: Ashay Rane <ashay.r@gmail.com>
+> Notes for v3:
+>  - I send the whole series again despite some patches being the same. I think
+>  this is more comfortable for Vinod than just sending those patches that have
+>  been modified.
+>  - I've generated my series with the following command this time:
+>  'git format-patch -s -13 -M -B --subject-prefix="PATCH v3"' as suggested by
+>  Sascha but still removing two files in 01/13 generates a lot of noisy diffs.
+>  Sorry about that.
+>  - I don't include Sascha's Tested-by since maybe he wants to test this last
+>  version.
+This doesn't apply for me (starting with 6th) on current slave-dma.next
+due to obvious changes which have gone into imx.
 
-Patches that are not bug fixes should be done on tip/perf/core, please
-do that and resubmit.
+Can you quickly rebase the series and resend.
 
-git remote add tip git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-git remote update tip
-git checkout -b perf/core tip/perf/core
+Also while at it please fix the checkpatch error
 
-:-)
+ERROR: space required after that ',' (ctx:VxV)
+#4143: FILE: drivers/dma/imx-dma.c:275:
++       dev_dbg(imxdma->dev,"%s channel %d\n", __func__, channel);
 
-- Arnaldo
 
- ---
->  tools/perf/builtin-report.c         |   11 +++++++----
->  tools/perf/util/ui/browsers/hists.c |    9 ++++++---
->  2 files changed, 13 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 8e91c6e..2ee7783 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -295,12 +295,15 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
->  {
->  	size_t ret;
->  	char unit;
-> -	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-> +	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
-> +	u64 nr_events = self->stats.total_period;
->  
-> -	nr_events = convert_unit(nr_events, &unit);
-> -	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
-> +	nr_samples = convert_unit(nr_samples, &unit);
-> +	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
->  	if (evname != NULL)
-> -		ret += fprintf(fp, " %s", evname);
-> +		ret += fprintf(fp, " of event '%s'", evname);
-> +
-> +	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
->  	return ret + fprintf(fp, "\n#\n");
->  }
->  
-> diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-> index fa530fc..d9ec415 100644
-> --- a/tools/perf/util/ui/browsers/hists.c
-> +++ b/tools/perf/util/ui/browsers/hists.c
-> @@ -837,10 +837,13 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
->  	int printed;
->  	const struct dso *dso = self->dso_filter;
->  	const struct thread *thread = self->thread_filter;
-> -	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-> +	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
-> +	u64 nr_events = self->stats.total_period;
->  
-> -	nr_events = convert_unit(nr_events, &unit);
-> -	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
-> +	nr_samples = convert_unit(nr_samples, &unit);
-> +	printed = scnprintf(bf, size,
-> +			    "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-> +			    nr_samples, unit, ev_name, nr_events);
->  
->  	if (self->uid_filter_str)
->  		printed += snprintf(bf + printed, size - printed,
-> -- 
-> 1.7.9.3
+-- 
+~Vinod
+
