@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2CUDtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 23:49:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43342 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2CUDtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 23:49:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1203202340160.15617@file.rdu.redhat.com>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
-	<Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
-	<20120306215947.GB27051@google.com>
-	<Pine.LNX.4.64.1203131742230.24876@file.rdu.redhat.com>
-	<20120320154159.GD27051@google.com>
-	<Pine.LNX.4.64.1203202045150.23255@file.rdu.redhat.com>
-	<Pine.LNX.4.64.1203202233250.6371@file.rdu.redhat.com>
-	<CACBanvrjZbDY+aUUyp9-YuG8KoEd9k-cn50kn8N=3DQxKf7QFA@mail.gmail.com>
-	<Pine.LNX.4.64.1203202340160.15617@file.rdu.redhat.com>
-Date: Tue, 20 Mar 2012 20:49:37 -0700
-X-Google-Sender-Auth: JC7Ovb2DpLUwhwJNE7234ukF2Lc
-Message-ID: <CACBanvqYb3MU=Zy7HNJ2oMekQE6FZY5ZtN7QAaAv0M=tVH=cXw@mail.gmail.com>
-Subject: Re: [dm-devel] [PATCH] dm: remake of the verity target
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Elly Jones <ellyjones@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
+	id S1750870Ab2CUECI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 00:02:08 -0400
+Received: from gw.danplanet.com ([50.43.125.66]:41998 "EHLO mail.danplanet.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750744Ab2CUECG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 00:02:06 -0400
+From: Dan Smith <danms@us.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] AutoNUMA alpha6
+References: <20120316144028.036474157@chello.nl>
+	<20120316182511.GJ24602@redhat.com> <87k42edenh.fsf@danplanet.com>
+	<20120321021239.GQ24602@redhat.com>
+Date: Tue, 20 Mar 2012 21:01:58 -0700
+In-Reply-To: <20120321021239.GQ24602@redhat.com> (Andrea Arcangeli's message
+	of "Wed, 21 Mar 2012 03:12:39 +0100")
+Message-ID: <87fwd2d2kp.fsf@danplanet.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 8:44 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->
->
-> On Tue, 20 Mar 2012, Mandeep Singh Baines wrote:
->
->> But we are hashing fixed-sized blocks so there is no possibility of extension.
->
-> If the first part of some block contains some security-sensitive data and
-> the last part of the same block can be attacker-controlled, he can use the
-> collision attack to change the security-sensitive data.
->
->> However, better safe than sorry. I guess we'll just have to deal with
->> backward incompatibility. So feel free to add my sign off to the new
->> patch also.
->>
->> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
->>
->> Regards,
->> Mandeep
->>
->> > Mikulas
->
-> I can introduce a switch to make it accept the old format. Do you want to?
->
+AA>         upstream autonuma numasched hard inverse
+AA> numa02  64       45       66        42   81
+AA> numa01  491      328      607       321  623 -D THREAD_ALLOC
+AA> numa01  305      207      338       196  378 -D NO_BIND_FORCE_SAME_NODE
 
-We can carry that as an out-of-tree patch until we migrate.
+AA> So give me a break... you must have made a real mess in your
+AA> benchmarking.
 
-On the other hand, it might be nice to support prepend or append.
+I'm just running what you posted, dude :)
 
-I don't too strong feelings but it might be nice to have
-prepend/append flag. Would definitely make our life easier.
+AA> numasched is always doing worse than upstream here, in fact two
+AA> times massively worse. Almost as bad as the inverse binds.
 
-> Mikulas
+Well, something clearly isn't right, because my numbers don't match
+yours at all. This time with THP disabled, and compared to the rest of
+the numbers from my previous runs:
+
+            autonuma   HARD   INVERSE   NO_BIND_FORCE_SAME_MODE
+
+numa01      366        335    356       377
+numa01THP   388        336    353       399
+
+That shows that autonuma is worse than inverse binds here. If I'm
+running your stuff incorrectly, please tell me and I'll correct
+it. However, I've now compiled the binary exactly as you asked, with THP
+disabled, and am seeing surprisingly consistent results.
+
+AA> Maybe you've more than 16g? I've 16G and that leaves 1G free on both
+AA> nodes at the peak load with AutoNUMA. That shall be enough for
+AA> numasched too (Peter complained me I waste 80MB on a 16G system, so
+AA> he can't possibly be intentionally wasting me 2GB).
+
+Yep, 24G here. Do I need to tweak the test?
+
+AA> In any case your results were already _obviously_ broken without me
+AA> having to benchmark numasched to verify, because it's impossible
+AA> numasched could be 20% faster than autonuma on numa01, because
+AA> otherwise it would mean that numasched is like 18% faster than hard
+AA> bindings which is mathematically impossible unless your hardware is
+AA> not NUMA or superNUMAbroken.
+
+How do you figure? I didn't post any hard binding numbers. In fact,
+numasched performed about equal to hard binding...definitely within your
+stated 2% error interval. That was with THP enabled, tomorrow I'll be
+glad to run them all again without THP.
+
+-- 
+Dan Smith
+IBM Linux Technology Center
