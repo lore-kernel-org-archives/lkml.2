@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2CUXnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 19:43:24 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46425 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab2CUXnW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 19:43:22 -0400
+	id S1754077Ab2CUXwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 19:52:21 -0400
+Received: from mail.tomasu.net ([64.85.170.232]:40447 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab2CUXwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 19:52:20 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: adam radford <aradford@gmail.com>
+Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
+Date: Wed, 21 Mar 2012 17:52:05 -0600
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+References: <201203211716.45418.thomas@fjellstrom.ca> <CAHtARFGL0ibTZ=ADOL+x4akVvF-d1LjWoqW-WAv8_AeX+O3RdA@mail.gmail.com>
+In-Reply-To: <CAHtARFGL0ibTZ=ADOL+x4akVvF-d1LjWoqW-WAv8_AeX+O3RdA@mail.gmail.com>
 MIME-Version: 1.0
-Date: Thu, 22 Mar 2012 01:43:22 +0200
-Message-ID: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
-Subject: [PATCH] perf: Fix RCU dereference check in perf_event_comm
-From: Ari Savolainen <ari.m.savolainen@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203211752.05576.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The warning below is printed when executing a command like
-sudo perf record su - user -c "echo hello"
+On Wed Mar 21, 2012, adam radford wrote:
+> On Wed, Mar 21, 2012 at 4:16 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> 
+wrote:
+> > I recently got an IBM M1015 (MegaRaid 9240-8i) card, and after getting a
+> > new motherboard, the system now boots, but the megaraid_sas driver seems
+> > to be getting stuck when trying to initialize the card.
+> > 
+> > Looking through the source, it seems to be stuck in the
+> > megasas_adp_reset_gen2 function, in the while loop at the end. Now,
+> > according to the code it can't actually get stuck there permanently, but
+> > it does take quite a while for the loop to finish, and the udev timeout
+> > messages to stop.
+> > 
+> > I've looked around quite a bit, but haven't found any solutions thus far.
+> > If anyone could point me in the right direction I'd appreciate it.
+> 
+> If you are getting controller resets during driver load, you must not
+> be getting interrupts or firmware is not responding to the inquiry
+> roll-call.  Make sure you have the latest firmware.
 
-It's fixed by moving the call of perf_event_comm to be protected
-by the task lock.
+I updated to the latest on LSI's site today before emailing. It changes the 
+behavior slightly. With the older firmware, it would not print any of the 
+initial reset messages, but would once udev decides to start killing modprobe. 
+With the new firmware, I get a:
 
-===============================
-[ INFO: suspicious RCU usage. ]
-3.3.0 #49 Not tainted
--------------------------------
-include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
+ADP_RESET_GEN2: HostDiag=a0
 
-other info that might help us debug this:
+followed by a bunch of:
 
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by su/3304:
- #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff8117af66>]
-prepare_bprm_creds+0x36/0x80
+RESET_GEN2: retry=%x, hostdiag=a4
 
-stack backtrace:
-Pid: 3304, comm: su Not tainted 3.3.0 #49
-Call Trace:
- [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
- [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
- [<ffffffff81144525>] ? remove_vma+0x65/0x80
- [<ffffffff810722e1>] ? get_parent_ip+0x11/0x50
- [<ffffffff814e6fad>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffff8117ae05>] set_task_comm+0x75/0x1a0
- [<ffffffff8102b945>] ? mmap_rnd+0x45/0x50
- [<ffffffff8117b6d2>] setup_new_exec+0xa2/0x340
- [<ffffffff811c98f7>] load_elf_binary+0x3c7/0x19d0
- [<ffffffff814e3275>] ? _raw_read_unlock+0x35/0x60
- [<ffffffff8117a313>] ? search_binary_handler+0x1c3/0x530
- [<ffffffff810722e1>] ? get_parent_ip+0x11/0x50
- [<ffffffff814e6fad>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffff814e6fad>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffff811c9530>] ? do_mmap+0x40/0x40
- [<ffffffff8117a2f0>] search_binary_handler+0x1a0/0x530
- [<ffffffff8117a1a7>] ? search_binary_handler+0x57/0x530
- [<ffffffff8117974d>] ? copy_strings.isra.32+0x1fd/0x230
- [<ffffffff8117b44f>] do_execve_common.isra.36+0x43f/0x570
- [<ffffffff8117b166>] ? do_execve_common.isra.36+0x156/0x570
- [<ffffffff81296837>] ? __strncpy_from_user+0x27/0x60
- [<ffffffff8117b59b>] do_execve+0x1b/0x20
- [<ffffffff8100c317>] sys_execve+0x47/0x70
- [<ffffffff814eb39c>] stub_execve+0x6c/0xc0
+Now I'm not sure the hostdiag should be different between the two. if this aN 
+identifier is similar to the aN identifiers in the MegaCli tool, then it would 
+mean its trying to reset a device that doesn't exist? I only have a single 
+M1015 card installed.
+ 
+> The code at the end of megasas_adp_reset_gen2() just looks for
+> DIAG_RESET_ADAPTER flag to clear on the host diag register when
+> issuing a controller reset... that should happen almost immediately
+> unless there is a hardware or firmware issue.
+> 
+> Are you sure your 'new' motherboard is actually good ?
 
-Signed-off-by: Ari Savolainen <ari.m.savolainen@gmail.com>
----
- fs/exec.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It boots and runs fine without the sas card installed. I haven't run any heavy 
+load tests, but it seems ok.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 153dee1..373ff93 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1067,8 +1067,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
- 	memset(tsk->comm, 0, TASK_COMM_LEN);
- 	wmb();
- 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
--	task_unlock(tsk);
- 	perf_event_comm(tsk);
-+	task_unlock(tsk);
- }
+> Can you move your megaraid 9240-8i into a 'known working' system and
+> re-test ?
 
- static void filename_to_taskname(char *tcomm, const char *fn, unsigned int len)
+Nope. This is the furthest I've gotten it to get with this card installed. The 
+old system would fail to boot into grub properly, let alone linux. These cards 
+seem to be /very/ picky about what motherboard you install them in.
+
+> -Adam
+
+
 -- 
-1.7.9.1
+Thomas Fjellstrom
+thomas@fjellstrom.ca
