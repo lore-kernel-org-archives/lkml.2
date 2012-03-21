@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab2CUKmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 06:42:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758188Ab2CUKmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 06:42:43 -0400
-Date: Wed, 21 Mar 2012 11:42:14 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
-Message-ID: <20120321104214.GB1632@m.brq.redhat.com>
-References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
- <1332267341-26338-4-git-send-email-jolsa@redhat.com>
- <1332269081.18960.444.camel@twins>
+	id S1758484Ab2CUKqa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 06:46:30 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:51760 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758278Ab2CUKq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 06:46:29 -0400
+Message-ID: <4F69B159.5030101@atmel.com>
+Date: Wed, 21 Mar 2012 11:45:45 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332269081.18960.444.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, ludovic.desroches@atmel.com,
+        mpm@selenic.com, herbert@gondor.hengli.com.au, vinod.koul@intel.com,
+        a.zummo@towertech.it
+Subject: Re: [PATCH 0/6] AT91 drivers Kconfig cleanup
+References: <cover.1331826095.git.nicolas.ferre@atmel.com> <7104123.IANagkT9hm@dtor-d630.eng.vmware.com>
+In-Reply-To: <7104123.IANagkT9hm@dtor-d630.eng.vmware.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 07:44:41PM +0100, Peter Zijlstra wrote:
-> On Tue, 2012-03-20 at 19:15 +0100, Jiri Olsa wrote:
-> > Examples (first event in brackets is group leader):
-> > 
-> >   # 1 group (cpu-clock,task-clock)
-> >   perf record --group -e cpu-clock,task-clock ls
-> >   perf record --group parsed -e cpu-clock,task-clock ls
-> > 
-> >   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
-> >   perf record --group parsed -e cpu-clock,task-clock \
-> >    -e minor-faults,major-faults ls
-> > 
-> >   # 1 group (cpu-clock,task-clock,minor-faults,major-faults)
-> >   perf record --group -e cpu-clock,task-clock \
-> >    -e minor-faults,major-faults ls
-> > 
-> >   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
-> >   perf record --group parsed -e cpu-clock,task-clock \
-> >    -e minor-faults,major-faults -e instructions ls
-> > 
-> >   # 1 group (cpu-clock,task-clock,minor-faults,major-faults,instructions)
-> >   perf record --group -e cpu-clock,task-clock \
-> >    -e minor-faults,major-faults -e instructions ls 
+On 03/15/2012 05:50 PM, Dmitry Torokhov :
+> On Thursday, March 15, 2012 04:57:16 PM Nicolas Ferre wrote:
+>> This is a series which deals with AT91 drivers Kconfig entries. Its goal is
+>> to remove too restrictive dependencies on SoC names.
+>> This will allow to add support for newer SoC seamlessly.
+>>
+>> One question remains: should I submit those patches through dedicated
+>> sub-maintainer's git trees or can I queue the whole series in arm-soc?
 > 
-> I can't help but dislike the --group/--group parsed thing...
-> 
-> How about something like:
-> 
->   event_group = "{", events, "}" , [ ":", event_group_mod ]
-> 
-> Such that you can write things like:
-> 
->   perf record -e "{cpu-clock,cache-misses,cache-references}"
-> 
->   perf stat -e "{cpu-clock,cycles},{cpu-clock,cache-misses,cache-references}"
->   perf stat -e "{cpu-clock,cycles}" -e "{cpu-clock,cache-misses,cache-references}"
-> 
-> I'm not sure what the current behaviour of --group is, if you create a
-> group like this, do they all sample?
-> 
-> If so, we need some option like:
-> 
->   perf record -e "{cpu-clock,cache-misses,cache-references}:1"
-> 
-> to mean, only sample on cpu-clock but use PERF_SAMPLE_READ and
-> PERF_FORMAT_GROUP to read all siblings on every cpu-clock sample.
-> 
-> Now the disadvantage is that {} needs quotes on bash, the advantage is
-> that its completely natural on how to construct groups, without weird
-> --group/--group parsed. Also it provides a place for group modifiers.
+> I'm fine if you queue input piece through arm-soc.
 
-how about '=group' keyword followed by ':' modifier
-  perf record -e "cpu-clock,cache-misses,cache-references=group:1"
+Ok, good: I have "Acknowledgement" by several maintainers: so yes, I
+will send this series via arm-soc.
 
-or '=$groupname' and use the group name in output like
-  perf stat -e "task-clock,context-switches=krava:1" ls
+Is this means that I can add your "Acked-by"?
 
-     Performance counter stats for 'ls':
-
-          1.003695 task-clock/krava          #    0.083 CPUs utilized          
-                 0 context-switches/krava    #    0.000 K/sec                  
-
-
-jirka
+Best regards,
+-- 
+Nicolas Ferre
