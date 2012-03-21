@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964869Ab2CUG4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:56:18 -0400
+	id S1030413Ab2CUG5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:57:00 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39114 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2CUG4R (ORCPT
+	with ESMTP id S1030281Ab2CUG45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:56:17 -0400
-Subject: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+	Wed, 21 Mar 2012 02:56:57 -0400
+Subject: [PATCH 10/16] mm/powerpc: use vm_flags_t for vma flags
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 10:56:07 +0400
-Message-ID: <20120321065140.13852.52315.stgit@zurg>
+Cc: linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Wed, 21 Mar 2012 10:56:54 +0400
+Message-ID: <20120321065653.13852.20099.stgit@zurg>
+In-Reply-To: <20120321065140.13852.52315.stgit@zurg>
+References: <20120321065140.13852.52315.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,96 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is good old tradition: every year somebody submit patches for extending
-vma->vm_flags upto 64-bits, because there no free bits left on 32-bit systems.
-
-previous attempts:
-https://lkml.org/lkml/2011/4/12/24	(KOSAKI Motohiro)
-https://lkml.org/lkml/2010/4/27/23	(Benjamin Herrenschmidt)
-https://lkml.org/lkml/2009/10/1/202	(Hugh Dickins)
-
-Here already exist special type for this: vm_flags_t, but not all code uses it.
-So, before switching vm_flags_t from unsinged long to u64 we must spread
-vm_flags_t everywhere and fix all possible type-casting problems.
-
-There is no functional changes in this patch set,
-it only prepares code for vma->vm_flags converting.
-
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
+ arch/powerpc/include/asm/mman.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Konstantin Khlebnikov (16):
-      mm: introduce NR_VMA_FLAGS
-      mm: use vm_flags_t for vma flags
-      mm/shmem: use vm_flags_t for vma flags
-      mm/nommu: use vm_flags_t for vma flags
-      mm/drivers: use vm_flags_t for vma flags
-      mm/x86: use vm_flags_t for vma flags
-      mm/arm: use vm_flags_t for vma flags
-      mm/unicore32: use vm_flags_t for vma flags
-      mm/ia64: use vm_flags_t for vma flags
-      mm/powerpc: use vm_flags_t for vma flags
-      mm/s390: use vm_flags_t for vma flags
-      mm/mips: use vm_flags_t for vma flags
-      mm/parisc: use vm_flags_t for vma flags
-      mm/score: use vm_flags_t for vma flags
-      mm: cast vm_flags_t to u64 before printing
-      mm: vm_flags_t strict type checking
+diff --git a/arch/powerpc/include/asm/mman.h b/arch/powerpc/include/asm/mman.h
+index d4a7f64..451de1c 100644
+--- a/arch/powerpc/include/asm/mman.h
++++ b/arch/powerpc/include/asm/mman.h
+@@ -44,7 +44,7 @@ static inline unsigned long arch_calc_vm_prot_bits(unsigned long prot)
+ }
+ #define arch_calc_vm_prot_bits(prot) arch_calc_vm_prot_bits(prot)
+ 
+-static inline pgprot_t arch_vm_get_page_prot(unsigned long vm_flags)
++static inline pgprot_t arch_vm_get_page_prot(vm_flags_t vm_flags)
+ {
+ 	return (vm_flags & VM_SAO) ? __pgprot(_PAGE_SAO) : __pgprot(0);
+ }
 
-
- arch/arm/include/asm/cacheflush.h                |    5 -
- arch/arm/kernel/asm-offsets.c                    |    6 +
- arch/arm/mm/fault.c                              |    2 
- arch/ia64/mm/fault.c                             |    9 +
- arch/mips/mm/c-r3k.c                             |    2 
- arch/mips/mm/c-r4k.c                             |    6 -
- arch/mips/mm/c-tx39.c                            |    2 
- arch/parisc/mm/fault.c                           |    4 -
- arch/powerpc/include/asm/mman.h                  |    2 
- arch/s390/mm/fault.c                             |    8 +
- arch/score/mm/cache.c                            |    6 -
- arch/sh/mm/tlbflush_64.c                         |    2 
- arch/unicore32/kernel/asm-offsets.c              |    6 +
- arch/unicore32/mm/fault.c                        |    2 
- arch/x86/mm/hugetlbpage.c                        |    4 -
- drivers/char/mem.c                               |    2 
- drivers/infiniband/hw/ipath/ipath_file_ops.c     |    6 +
- drivers/infiniband/hw/qib/qib_file_ops.c         |    6 +
- drivers/media/video/omap3isp/ispqueue.h          |    2 
- drivers/staging/android/ashmem.c                 |    2 
- drivers/staging/android/binder.c                 |   15 +-
- drivers/staging/tidspbridge/core/tiomap3430.c    |   13 +-
- drivers/staging/tidspbridge/rmgr/drv_interface.c |    4 -
- fs/binfmt_elf.c                                  |    2 
- fs/binfmt_elf_fdpic.c                            |   24 ++-
- fs/exec.c                                        |    2 
- fs/proc/nommu.c                                  |    3 
- fs/proc/task_nommu.c                             |   14 +-
- include/linux/backing-dev.h                      |    7 -
- include/linux/huge_mm.h                          |    4 -
- include/linux/ksm.h                              |    8 +
- include/linux/mm.h                               |  163 +++++++++++++++-------
- include/linux/mm_types.h                         |   11 +
- include/linux/mman.h                             |    4 -
- include/linux/rmap.h                             |    8 +
- include/linux/shmem_fs.h                         |    5 -
- kernel/bounds.c                                  |    2 
- kernel/events/core.c                             |    4 -
- kernel/fork.c                                    |    2 
- kernel/sys.c                                     |    4 -
- mm/backing-dev.c                                 |    4 +
- mm/huge_memory.c                                 |    2 
- mm/ksm.c                                         |    4 -
- mm/madvise.c                                     |    2 
- mm/memory.c                                      |    9 +
- mm/mlock.c                                       |    2 
- mm/mmap.c                                        |   36 ++---
- mm/mprotect.c                                    |    9 +
- mm/mremap.c                                      |    2 
- mm/nommu.c                                       |   19 +--
- mm/rmap.c                                        |   16 +-
- mm/shmem.c                                       |   54 ++++---
- mm/vmscan.c                                      |    4 -
- 53 files changed, 322 insertions(+), 224 deletions(-)
-
--- 
-Signature
