@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965016Ab2CUNn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:43:57 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16524 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab2CUNnw (ORCPT
+	id S1030196Ab2CUNpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:45:43 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:22574 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932214Ab2CUNpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:43:52 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Wed, 21 Mar 2012 14:43:46 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [GIT PULL] DMA-mapping framework updates for 3.4
-In-reply-to: <1332228283-29077-1-git-send-email-m.szyprowski@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Message-id: <079801cd0768$a3623d10$ea26b730$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: Ac0Gaoh/WBn+OB0fQva36xRWNNJUlQA5kGmQ
-References: <1332228283-29077-1-git-send-email-m.szyprowski@samsung.com>
+	Wed, 21 Mar 2012 09:45:41 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: tc9tLxAVM1m5lrFUBQwgfCh458NLZ5iR2nkhMon05b282OM
+ UdmoGpCu0Z3BZ32egUcNJym8v10Fg.qy58IOB4FWCWusfw_6wH5_69ySC5Vb
+ qTAuyFKQGwxVcY3MFxfImZftMeJutwwJEhGICN9NPaqA.ZLsYl.AcQ6PoJO1
+ IiPwH6qE57lLVVhlrEXUfftcx9_l.l9w3jUQbGAhFso7M6Af6AFZ7HaCR5Wn
+ xyC05Ok64MRRBGIdp0g1cO7OtH6FFnLOvl6pu.bbx5cEtpIdn1O._exTm2LV
+ IeWe5ON9lKuozN0y9nGtVTRUpDi7UUqB4Ojgv.eGuLHtMG7brlZ2yUoiUkhJ
+ c0nK8XvByrixNZ40XkSC.Qa.IoFfylD5iOACAUDAb2M9TTrjCKIxrrPJEmXY
+ GI_BEJdRr77QRaf0oPVFSr5LT_LGRDl5CbZ7Ds2U8jy.ORls-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 21 Mar 2012 08:45:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH 6/6] workqueue: use kmalloc_align() instead of
+ hacking
+In-Reply-To: <4F6944D9.5090002@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1203210842200.20382@router.home>
+References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com> <20120320154619.GA5684@google.com> <4F6944D9.5090002@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 21 Mar 2012, Lai Jiangshan wrote:
 
-On Tuesday, March 20, 2012 8:25 AM Marek Szyprowski wrote:
+> Yes, I don't want to build a complex kmalloc_align(). But after I found
+> that SLAB/SLUB's kmalloc-objects are natural/automatic aligned to
+> a proper big power of two. I will do nothing if I introduce kmalloc_align()
+> except just care the debugging.
 
-> Hi Linus,
-> 
-> Please pull the dma-mapping framework updates for v3.4 since commit
-> c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
-> 
->   Linux 3.3
-> 
-> with the top-most commit e749a9f707f1102735e02338fa564be86be3bb69
-> 
->   common: DMA-mapping: add NON-CONSISTENT attribute
-> 
-> from the git repository at:
-> 
->   git://git.infradead.org/users/kmpark/linux-samsung dma-mapping-next
-> 
-> Those patches introduce a new alloc method (with support for memory
-> attributes) in dma_map_ops structure, which will later replace
-> dma_alloc_coherent and dma_alloc_writecombine functions.
- 
-I've been pointed out that this summary is quite short and misses the main
-rationale for the proposed changes.
+They are not guaranteed to be aligned to the big power of two! There are
+kmalloc caches that are not power of two. Debugging and other
+necessary meta data may change alignment in both SLAB and SLUB. SLAB needs
+a metadata structure in each page even without debugging that may cause
+alignment issues.
 
-A few limitations have been identified in the current dma-mapping design and 
-its implementations for various architectures. There exist more than one function
-for allocating and freeing the buffers: currently these 3 are used dma_{alloc,
-free}_coherent, dma_{alloc,free}_writecombine, dma_{alloc,free}_noncoherent.
+> And kmalloc_align() can be used in the following case:
+> o	a type object need to be aligned with cache-line for it contains a frequent
+> 	update-part and a frequent read-part.
+> o	The total number of these objects in a given type is not much, creating
+> 	a new slab cache for a given type will be overkill.
+>
+> This is a RFC patch and it seems mm gurus don't like it. I'm sorry I
+> bother all of you.
 
-For most of the systems these calls are almost equivalent and can be interchanged.
-For others, especially the truly non-coherent ones (like ARM), the difference can
-be easily noticed in overall driver performance. Sadly not all architectures 
-provide implementations for all of them, so the drivers might need to be adapted 
-and cannot be easily shared between different architectures. The provided patches
-unify all these functions and hide the differences under the already existing
-dma attributes concept. The thread with more references is available here: 
-http://www.spinics.net/lists/linux-sh/msg09777.html
-
-These patches are also a prerequisite for unifying DMA-mapping implementation
-on ARM architecture with the common one provided by dma_map_ops structure and 
-extending it with IOMMU support. More information is available in the following 
-thread: http://thread.gmane.org/gmane.linux.kernel.cross-arch/12819
-
-More works on dma-mapping framework are planned, especially in the area of buffer
-sharing and managing the shared mappings (together with the recently introduced 
-dma_buf interface: commit d15bd7ee445d0702ad801fdaece348fdb79e6581 "dma-buf: 
-Introduce dma buffer sharing mechanism" ).
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Ideas are always welcome. Please do not get offended by our problems with
+your patch.
 
 
