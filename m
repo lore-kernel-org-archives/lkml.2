@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760647Ab2CUVh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:37:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54475 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760608Ab2CUVhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:37:55 -0400
-Message-ID: <1332365890.3858.26.camel@key-ThinkPad-W510>
-Subject: [PATCH 02/17] powerpc: Add pseries update notifier for OFDT prop
- changes
+	id S1760660Ab2CUVin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:38:43 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:35513 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760592Ab2CUVij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 17:38:39 -0400
+Message-ID: <1332365924.3858.30.camel@key-ThinkPad-W510>
+Subject: [PATCH 04/17] hwrng: pseries - PFO-based hwrng driver
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
         benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 16:38:10 -0500
+Date: Wed, 21 Mar 2012 16:38:44 -0500
 In-Reply-To: <1332365297.3858.5.camel@key-ThinkPad-W510>
 References: <1332365297.3858.5.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
@@ -21,85 +21,161 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032121-9360-0000-0000-000004BE9C8A
+x-cbid: 12032121-3352-0000-0000-0000037BC5A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
+From: Michael Neuling <mikey@neuling.org>
 
-This adds an update notifier mechanism for changes to properties in the
-device tree.  One use of this would be a device driver that needs to act
-on changes to it's properties in the device tree after a live migration
-or a dynamic activation that is triggered by updates to ofdt properties.
+Adds support for the Platform Facilities Option (PFO)-based hardware
+random number generator for POWER hardware.
 
+Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- arch/powerpc/include/asm/pSeries_reconfig.h |   12 ++++++++++++
- arch/powerpc/platforms/pseries/reconfig.c   |    7 +++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
+ drivers/char/hw_random/Kconfig       |   13 +++++
+ drivers/char/hw_random/Makefile      |    1 +
+ drivers/char/hw_random/pseries-rng.c |   99 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 113 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/hw_random/pseries-rng.c
 
-diff --git a/arch/powerpc/include/asm/pSeries_reconfig.h b/arch/powerpc/include/asm/pSeries_reconfig.h
-index 23cd6cc..c07edfe 100644
---- a/arch/powerpc/include/asm/pSeries_reconfig.h
-+++ b/arch/powerpc/include/asm/pSeries_reconfig.h
-@@ -13,6 +13,18 @@
- #define PSERIES_RECONFIG_REMOVE		0x0002
- #define PSERIES_DRCONF_MEM_ADD		0x0003
- #define PSERIES_DRCONF_MEM_REMOVE	0x0004
-+#define PSERIES_UPDATE_PROPERTY		0x0005
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index 0689bf6..9355347 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -250,3 +250,16 @@ config UML_RANDOM
+ 	  (check your distro, or download from
+ 	  http://sourceforge.net/projects/gkernel/).  rngd periodically reads
+ 	  /dev/hwrng and injects the entropy into /dev/random.
++
++config HW_RANDOM_PSERIES
++	tristate "pSeries HW Random Number Generator support"
++	depends on HW_RANDOM && PPC64 && IBMVIO
++	default HW_RANDOM
++	---help---
++	  This driver provides kernel-side support for the Random Number
++	  Generator hardware found on POWER7+ machines and above
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called pseries-rng.
++
++	  If unsure, say Y.
+diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
+index b2ff526..d901dfa 100644
+--- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_HW_RANDOM_OCTEON) += octeon-rng.o
+ obj-$(CONFIG_HW_RANDOM_NOMADIK) += nomadik-rng.o
+ obj-$(CONFIG_HW_RANDOM_PICOXCELL) += picoxcell-rng.o
+ obj-$(CONFIG_HW_RANDOM_PPC4XX) += ppc4xx-rng.o
++obj-$(CONFIG_HW_RANDOM_PSERIES) += pseries-rng.o
+diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
+new file mode 100644
+index 0000000..6ee70ca
+--- /dev/null
++++ b/drivers/char/hw_random/pseries-rng.c
+@@ -0,0 +1,99 @@
++/*
++ * Copyright (C) 2010 Michael Neuling IBM Corporation
++ *
++ * Driver for the pseries hardware RNG for POWER7+ and above
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ */
++
++#include <linux/module.h>
++#include <linux/hw_random.h>
++#include <asm/vio.h>
++
++#define MODULE_NAME "pseries-rng"
++
++static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
++{
++	if (plpar_hcall(H_RANDOM, (unsigned long *)data) != H_SUCCESS) {
++		printk(KERN_ERR "pseries rng hcall error\n");
++		return 0;
++	}
++	return 8;
++}
 +
 +/**
-+ * pSeries_reconfig_notify - Notifier value structure for OFDT property updates
++ * pseries_rng_get_desired_dma - Return desired DMA allocate for CMO operations
 + *
-+ * @node: Device tree node which owns the property being updated
-+ * @property: Updated property
++ * This is a required function for a driver to operate in a CMO environment
++ * but this device does not make use of DMA allocations, return 0.
++ *
++ * Return value:
++ *	Number of bytes of IO data the driver will need to perform well -> 0
 + */
-+struct pSeries_reconfig_prop_update {
-+	struct device_node *node;
-+	struct property *property;
++static unsigned long pseries_rng_get_desired_dma(struct vio_dev *vdev)
++{
++	return 0;
 +};
- 
- #ifdef CONFIG_PPC_PSERIES
- extern int pSeries_reconfig_notifier_register(struct notifier_block *);
-diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-index 168651a..7b3bf76 100644
---- a/arch/powerpc/platforms/pseries/reconfig.c
-+++ b/arch/powerpc/platforms/pseries/reconfig.c
-@@ -103,11 +103,13 @@ int pSeries_reconfig_notifier_register(struct notifier_block *nb)
- {
- 	return blocking_notifier_chain_register(&pSeries_reconfig_chain, nb);
- }
-+EXPORT_SYMBOL_GPL(pSeries_reconfig_notifier_register);
- 
- void pSeries_reconfig_notifier_unregister(struct notifier_block *nb)
- {
- 	blocking_notifier_chain_unregister(&pSeries_reconfig_chain, nb);
- }
-+EXPORT_SYMBOL_GPL(pSeries_reconfig_notifier_unregister);
- 
- int pSeries_reconfig_notify(unsigned long action, void *p)
- {
-@@ -426,6 +428,7 @@ static int do_remove_property(char *buf, size_t bufsize)
- static int do_update_property(char *buf, size_t bufsize)
- {
- 	struct device_node *np;
-+	struct pSeries_reconfig_prop_update upd_value;
- 	unsigned char *value;
- 	char *name, *end, *next_prop;
- 	int rc, length;
-@@ -454,6 +457,10 @@ static int do_update_property(char *buf, size_t bufsize)
- 		return -ENODEV;
- 	}
- 
-+	upd_value.node = np;
-+	upd_value.property = newprop;
-+	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
 +
- 	rc = prom_update_property(np, newprop, oldprop);
- 	if (rc)
- 		return rc;
++static struct hwrng pseries_rng = {
++	.name		= MODULE_NAME,
++	.data_read	= pseries_rng_data_read,
++};
++
++static int __init pseries_rng_probe(struct vio_dev *dev,
++		const struct vio_device_id *id)
++{
++	return hwrng_register(&pseries_rng);
++}
++
++static int __exit pseries_rng_remove(struct vio_dev *dev)
++{
++	hwrng_unregister(&pseries_rng);
++	return 0;
++}
++
++static struct vio_device_id pseries_rng_driver_ids[] = {
++	{ "ibm,random-v1", "ibm,random"},
++	{ "", "" }
++};
++MODULE_DEVICE_TABLE(vio, pseries_rng_driver_ids);
++
++static struct vio_driver pseries_rng_driver = {
++	.driver		= {
++		.name	= MODULE_NAME,
++		.owner	= THIS_MODULE,
++	},
++	.probe = pseries_rng_probe,
++	.remove = pseries_rng_remove,
++	.get_desired_dma = pseries_rng_get_desired_dma,
++	.id_table = pseries_rng_driver_ids
++};
++
++static int __init rng_init(void)
++{
++	printk(KERN_INFO "Registering IBM pSeries RNG driver\n");
++	return vio_register_driver(&pseries_rng_driver);
++}
++
++module_init(rng_init);
++
++static void __exit rng_exit(void)
++{
++	vio_unregister_driver(&pseries_rng_driver);
++}
++module_exit(rng_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Michael Neuling <mikey@neuling.org>");
++MODULE_DESCRIPTION("H/W RNG driver for IBM pSeries processors");
 -- 
 1.7.1
 
