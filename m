@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab2CUQWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:22:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34415 "EHLO mx1.redhat.com"
+	id S1759623Ab2CUQXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:23:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62084 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753142Ab2CUQWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:22:42 -0400
-Date: Wed, 21 Mar 2012 17:22:35 +0100
+	id S1757796Ab2CUQW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 12:22:58 -0400
+Date: Wed, 21 Mar 2012 17:22:54 +0100
 From: Alexander Gordeev <agordeev@redhat.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH 2/3] genirq: Get rid of unneeded force parameter in
- irq_finalize_oneshot()
-Message-ID: <20120321162234.GP24806@dhcp-26-207.brq.redhat.com>
+Subject: [RESEND PATCH 3/3] do_exit(): do not panic if exiting thread is not
+ serving an interrupt
+Message-ID: <20120321162253.GQ24806@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,67 +21,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only place irq_finalize_oneshot() is called with force parameter set
-is the threaded handler error exit path. But IRQTF_RUNTHREAD is dropped
-at this point and irq_wake_thread() is not going to reset it again,
-since PF_EXITING is set for this thread already. So irq_finalize_oneshot()
-will drop the thread's bit in threads_oneshot anyway and hence the force
-parameter is superfluous.
+Currently a crashed and killed forced oneshot threaded handler hits
+in_interrupt() check in do_exit() and panics. As result, the code that
+cleans up IRQ descriptor never not get called and IRQ line stays masked.
+
+Similarly non-forced oneshot threaded handlers that crashed while holding
+bh lock leave a IRQ line masked.
+
+Regular threaded handlers that crashed while holding bh simply panic,
+although they could have just terminate loudly.
+
+This fix allows IRQ threaded handlers get killed gracefully instead of
+panicking.
+
+Since introduction of SOFTIRQ_DISABLE_OFFSET in 75e1056 we can differ
+between bh being serviced and bh being disabled. Use this ability to
+avoid unnecessary crashes when a exiting thread explicitly disabled bh
+and is not serving any softirq. Still we will get the regular warning
+that exiting thread is in atomic context.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- kernel/irq/manage.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ include/linux/hardirq.h |    4 ++++
+ kernel/exit.c           |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index b0ccd1a..bf606a5 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -645,7 +645,7 @@ static int irq_wait_for_interrupt(struct irqaction *action)
-  * is marked MASKED.
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index bb7f309..93aca12 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -82,11 +82,15 @@
+  * Are we in a softirq context? Interrupt context?
+  * in_softirq - Are we currently processing softirq or have bh disabled?
+  * in_serving_softirq - Are we currently processing softirq?
++ * in_serving_interrupt - Are we currently processing softirq, nmi or
++ *                        hardware interrupt?
   */
- static void irq_finalize_oneshot(struct irq_desc *desc,
--				 struct irqaction *action, bool force)
-+				 struct irqaction *action)
- {
- 	if (!(desc->istate & IRQS_ONESHOT))
- 		return;
-@@ -679,7 +679,7 @@ again:
- 	 * we would clear the threads_oneshot bit of this thread which
- 	 * was just set.
- 	 */
--	if (!force && test_bit(IRQTF_RUNTHREAD, &action->thread_flags))
-+	if (test_bit(IRQTF_RUNTHREAD, &action->thread_flags))
- 		goto out_unlock;
+ #define in_irq()		(hardirq_count())
+ #define in_softirq()		(softirq_count())
+ #define in_interrupt()		(irq_count())
+ #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
++#define in_serving_interrupt()	(preempt_count() & (HARDIRQ_MASK \
++					 | SOFTIRQ_OFFSET | NMI_MASK))
  
- 	desc->threads_oneshot &= ~action->thread_mask;
-@@ -739,7 +739,7 @@ irq_forced_thread_fn(struct irq_desc *desc, struct irqaction *action)
+ /*
+  * Are we in NMI context?
+diff --git a/kernel/exit.c b/kernel/exit.c
+index ce5f758..c0aacdb 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -877,7 +877,7 @@ void do_exit(long code)
  
- 	local_bh_disable();
- 	ret = action->thread_fn(action->irq, action->dev_id);
--	irq_finalize_oneshot(desc, action, false);
-+	irq_finalize_oneshot(desc, action);
- 	local_bh_enable();
- 	return ret;
- }
-@@ -755,7 +755,7 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
- 	irqreturn_t ret;
+ 	WARN_ON(blk_needs_flush_plug(tsk));
  
- 	ret = action->thread_fn(action->irq, action->dev_id);
--	irq_finalize_oneshot(desc, action, false);
-+	irq_finalize_oneshot(desc, action);
- 	return ret;
- }
- 
-@@ -844,7 +844,7 @@ void exit_irq_thread(void)
- 		wake_threads_waitq(desc);
- 
- 	/* Prevent a stale desc->threads_oneshot */
--	irq_finalize_oneshot(desc, action, true);
-+	irq_finalize_oneshot(desc, action);
- }
- 
- static void irq_setup_forced_threading(struct irqaction *new)
+-	if (unlikely(in_interrupt()))
++	if (unlikely(in_serving_interrupt()))
+ 		panic("Aiee, killing interrupt handler!");
+ 	if (unlikely(!tsk->pid))
+ 		panic("Attempted to kill the idle task!");
 -- 
 1.7.7.6
 
