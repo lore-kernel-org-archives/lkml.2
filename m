@@ -1,168 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab2CUHU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 03:20:56 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60308 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab2CUHUZ (ORCPT
+	id S1754864Ab2CUH3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 03:29:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53061 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab2CUH3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 03:20:25 -0400
-Message-ID: <4F698134.9010104@openvz.org>
-Date: Wed, 21 Mar 2012 11:20:20 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Greg Ungerer <gerg@snapgear.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [PATCH 04/16] mm/nommu: use vm_flags_t for vma flags
-References: <20120321065140.13852.52315.stgit@zurg> <20120321065629.13852.5630.stgit@zurg> <4F697E7E.6090301@snapgear.com>
-In-Reply-To: <4F697E7E.6090301@snapgear.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 03:29:52 -0400
+Date: Wed, 21 Mar 2012 18:29:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Donggeun Kim <dg77.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: linux-next: build failure after merge of the final tree (mfd and
+ input trees related)
+Message-Id: <20120321182930.6f75199b7406044669891a14@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Mar_2012_18_29_30_+1100_HNfHShh=B.lskx=f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Ungerer wrote:
->
-> Hi Konstantin,
->
-> On 21/03/12 16:56, Konstantin Khlebnikov wrote:
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Cc: David Howells<dhowells@redhat.com>
->> Cc: Greg Ungerer<gerg@uclinux.org>
->> ---
->>    fs/proc/nommu.c      |    3 ++-
->>    fs/proc/task_nommu.c |   14 ++++++++------
->>    mm/nommu.c           |   19 ++++++++++---------
->>    3 files changed, 20 insertions(+), 16 deletions(-)
->>
->> diff --git a/fs/proc/nommu.c b/fs/proc/nommu.c
->> index b1822dd..cadc798 100644
->> --- a/fs/proc/nommu.c
->> +++ b/fs/proc/nommu.c
->> @@ -39,7 +39,8 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
->>    	unsigned long ino = 0;
->>    	struct file *file;
->>    	dev_t dev = 0;
->> -	int flags, len;
->> +	int len;
->> +	vm_flags_t vm_flags;
->>
->>    	flags = region->vm_flags;
->           ^^^^^
-> I think you want vm_flags here right?
-> There is other uses of "flags" in this function as well.
+--Signature=_Wed__21_Mar_2012_18_29_30_+1100_HNfHShh=B.lskx=f
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, I missed this.
+Hi all,
 
-Sorry for my cheating, I didn't check compiling for all possible targets =)
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
->
-> Regards
-> Greg
->
->
->>    	file = region->vm_file;
->> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
->> index 8aaba8c..9abbc66 100644
->> --- a/fs/proc/task_nommu.c
->> +++ b/fs/proc/task_nommu.c
->> @@ -142,10 +142,11 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
->>    	unsigned long ino = 0;
->>    	struct file *file;
->>    	dev_t dev = 0;
->> -	int flags, len;
->> +	int len;
->> +	vm_flags_t vm_flags;
->>    	unsigned long long pgoff = 0;
->>
->> -	flags = vma->vm_flags;
->> +	vm_flags = vma->vm_flags;
->>    	file = vma->vm_file;
->>
->>    	if (file) {
->> @@ -159,10 +160,11 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
->>    		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
->>    		   vma->vm_start,
->>    		   vma->vm_end,
->> -		   flags&   VM_READ ? 'r' : '-',
->> -		   flags&   VM_WRITE ? 'w' : '-',
->> -		   flags&   VM_EXEC ? 'x' : '-',
->> -		   flags&   VM_MAYSHARE ? flags&   VM_SHARED ? 'S' : 's' : 'p',
->> +		   vm_flags&   VM_READ ? 'r' : '-',
->> +		   vm_flags&   VM_WRITE ? 'w' : '-',
->> +		   vm_flags&   VM_EXEC ? 'x' : '-',
->> +		   vm_flags&   VM_MAYSHARE ?
->> +			vm_flags&   VM_SHARED ? 'S' : 's' : 'p',
->>    		   pgoff,
->>    		   MAJOR(dev), MINOR(dev), ino,&len);
->>
->> diff --git a/mm/nommu.c b/mm/nommu.c
->> index f59e170..33d0ab7 100644
->> --- a/mm/nommu.c
->> +++ b/mm/nommu.c
->> @@ -130,7 +130,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->>    		     int *retry)
->>    {
->>    	struct vm_area_struct *vma;
->> -	unsigned long vm_flags;
->> +	vm_flags_t vm_flags;
->>    	int i;
->>
->>    	/* calculate required read or write permissions.
->> @@ -658,13 +658,13 @@ static void put_nommu_region(struct vm_region *region)
->>    /*
->>     * update protection on a vma
->>     */
->> -static void protect_vma(struct vm_area_struct *vma, unsigned long flags)
->> +static void protect_vma(struct vm_area_struct *vma, vm_flags_t vm_flags)
->>    {
->>    #ifdef CONFIG_MPU
->>    	struct mm_struct *mm = vma->vm_mm;
->>    	long start = vma->vm_start&   PAGE_MASK;
->>    	while (start<   vma->vm_end) {
->> -		protect_page(mm, start, flags);
->> +		protect_page(mm, start, vm_flags);
->>    		start += PAGE_SIZE;
->>    	}
->>    	update_protections(mm);
->> @@ -1060,12 +1060,12 @@ static int validate_mmap_request(struct file *file,
->>     * we've determined that we can make the mapping, now translate what we
->>     * now know into VMA flags
->>     */
->> -static unsigned long determine_vm_flags(struct file *file,
->> -					unsigned long prot,
->> -					unsigned long flags,
->> -					unsigned long capabilities)
->> +static vm_flags_t determine_vm_flags(struct file *file,
->> +				     unsigned long prot,
->> +				     unsigned long flags,
->> +				     unsigned long capabilities)
->>    {
->> -	unsigned long vm_flags;
->> +	vm_flags_t vm_flags;
->>
->>    	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
->>    	/* vm_flags |= mm->def_flags; */
->> @@ -1243,7 +1243,8 @@ unsigned long do_mmap_pgoff(struct file *file,
->>    	struct vm_area_struct *vma;
->>    	struct vm_region *region;
->>    	struct rb_node *rb;
->> -	unsigned long capabilities, vm_flags, result;
->> +	unsigned long capabilities, result;
->> +	vm_flags_t vm_flags;
->>    	int ret;
->>
->>    	kenter(",%lx,%lx,%lx,%lx,%lx", addr, len, prot, flags, pgoff);
->>
->>
->>
->>
->
->
+In file included from drivers/leds/leds-max8997.c:18:0:
+include/linux/mfd/max8997.h:205:6: error: nested redefinition of 'enum max8=
+997_haptic_motor_type'
+include/linux/mfd/max8997.h:205:6: error: redeclaration of 'enum max8997_ha=
+ptic_motor_type'
+include/linux/mfd/max8997.h:134:6: note: originally defined here
+include/linux/mfd/max8997.h:206:2: error: redeclaration of enumerator 'MAX8=
+997_HAPTIC_ERM'
+include/linux/mfd/max8997.h:135:2: note: previous definition of 'MAX8997_HA=
+PTIC_ERM' was here
+include/linux/mfd/max8997.h:207:2: error: redeclaration of enumerator 'MAX8=
+997_HAPTIC_LRA'
+include/linux/mfd/max8997.h:136:2: note: previous definition of 'MAX8997_HA=
+PTIC_LRA' was here
+include/linux/mfd/max8997.h:210:6: error: nested redefinition of 'enum max8=
+997_haptic_pulse_mode'
+include/linux/mfd/max8997.h:210:6: error: redeclaration of 'enum max8997_ha=
+ptic_pulse_mode'
+include/linux/mfd/max8997.h:139:6: note: originally defined here
+include/linux/mfd/max8997.h:211:2: error: redeclaration of enumerator 'MAX8=
+997_EXTERNAL_MODE'
+include/linux/mfd/max8997.h:140:2: note: previous definition of 'MAX8997_EX=
+TERNAL_MODE' was here
+include/linux/mfd/max8997.h:212:2: error: redeclaration of enumerator 'MAX8=
+997_INTERNAL_MODE'
+include/linux/mfd/max8997.h:141:2: note: previous definition of 'MAX8997_IN=
+TERNAL_MODE' was here
+include/linux/mfd/max8997.h:215:6: error: nested redefinition of 'enum max8=
+997_haptic_pwm_divisor'
+include/linux/mfd/max8997.h:215:6: error: redeclaration of 'enum max8997_ha=
+ptic_pwm_divisor'
+include/linux/mfd/max8997.h:144:6: note: originally defined here
+include/linux/mfd/max8997.h:216:2: error: redeclaration of enumerator 'MAX8=
+997_PWM_DIVISOR_32'
+include/linux/mfd/max8997.h:145:2: note: previous definition of 'MAX8997_PW=
+M_DIVISOR_32' was here
+include/linux/mfd/max8997.h:217:2: error: redeclaration of enumerator 'MAX8=
+997_PWM_DIVISOR_64'
+include/linux/mfd/max8997.h:146:2: note: previous definition of 'MAX8997_PW=
+M_DIVISOR_64' was here
+include/linux/mfd/max8997.h:218:2: error: redeclaration of enumerator 'MAX8=
+997_PWM_DIVISOR_128'
+include/linux/mfd/max8997.h:147:2: note: previous definition of 'MAX8997_PW=
+M_DIVISOR_128' was here
+include/linux/mfd/max8997.h:219:2: error: redeclaration of enumerator 'MAX8=
+997_PWM_DIVISOR_256'
+include/linux/mfd/max8997.h:148:2: note: previous definition of 'MAX8997_PW=
+M_DIVISOR_256' was here
+include/linux/mfd/max8997.h:241:8: error: redefinition of 'struct max8997_h=
+aptic_platform_data'
+include/linux/mfd/max8997.h:170:8: note: originally defined here
 
+Caused by a bad merge of commits 104594b01ce7 ("Input: add driver support
+for MAX8997-haptic") from the input tree and 02b09703e7a4 ("mfd: Add
+platform data for MAX8997 haptic driver") from the mfd tree.
+
+I applied this patch for today (which effectively removes the mfd tree
+patch above):
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 21 Mar 2012 18:25:30 +1100
+Subject: [PATCH] fix up merge of include/linux/mfd/max8997.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/mfd/max8997.h |   49 ---------------------------------------=
+----
+ 1 files changed, 0 insertions(+), 49 deletions(-)
+
+diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
+index 4ec373e..28726dd 100644
+--- a/include/linux/mfd/max8997.h
++++ b/include/linux/mfd/max8997.h
+@@ -202,55 +202,6 @@ struct max8997_led_platform_data {
+ 	u8 brightness[2];
+ };
+=20
+-enum max8997_haptic_motor_type {
+-	MAX8997_HAPTIC_ERM,
+-	MAX8997_HAPTIC_LRA,
+-};
+-
+-enum max8997_haptic_pulse_mode {
+-	MAX8997_EXTERNAL_MODE,
+-	MAX8997_INTERNAL_MODE,
+-};
+-
+-enum max8997_haptic_pwm_divisor {
+-	MAX8997_PWM_DIVISOR_32,
+-	MAX8997_PWM_DIVISOR_64,
+-	MAX8997_PWM_DIVISOR_128,
+-	MAX8997_PWM_DIVISOR_256,
+-};
+-
+-/*
+- * max8997_haptic_platform_data
+- * @pwm_channel_id: channel number of PWM device
+- *		    valid for MAX8997_EXTERNAL_MODE
+- * @pwm_period: period in nano second for PWM device
+- *		valid for MAX8997_EXTERNAL_MODE
+- * @type: motor type
+- * @mode: pulse mode
+- *     MAX8997_EXTERNAL_MODE: external PWM device is used to control motor
+- *     MAX8997_INTERNAL_MODE: internal pulse generator is used to control =
+motor
+- * @pwm_divisor: divisor for external PWM device
+- * @internal_mode_pattern: internal mode pattern for internal mode
+- *     [0 - 3]: valid pattern number
+- * @pattern_cycle: the number of cycles of the waveform
+- *		   for the internal mode pattern
+- *     [0 - 15]: available cycles
+- * @pattern_signal_period: period of the waveform for the internal mode pa=
+ttern
+- *     [0 - 255]: available period
+- */
+-struct max8997_haptic_platform_data {
+-	int pwm_channel_id;
+-	int pwm_period;
+-
+-	enum max8997_haptic_motor_type type;
+-	enum max8997_haptic_pulse_mode mode;
+-	enum max8997_haptic_pwm_divisor pwm_divisor;
+-
+-	int internal_mode_pattern;
+-	int pattern_cycle;
+-	int pattern_signal_period;
+-};
+-
+ struct max8997_platform_data {
+ 	/* IRQ */
+ 	int irq_base;
+--=20
+1.7.9.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__21_Mar_2012_18_29_30_+1100_HNfHShh=B.lskx=f
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPaYNaAAoJEECxmPOUX5FE0nEP/RDTteZWL4rg5M3szvqpKz+O
+SWLxjT7p/XvQUfJdZwnCVLjD/fg0LUIy0kfkYMWQLsaCdoOC2ptity+M2CUIC47k
+abhIxO3uqZpbDjNRL6Kh1eAKS+L4cTdnB0PZxWNGfT1rObFajRY3Rj2QQs9+T/wy
+d+WUeWdM2kiEQdt+Q517JDUkVaMCnzhYKRQ+bPBLnRpyzXtju7/mA8LXjsa9FT5T
+NsgWkwaZi6lNOhP5sTz+nhKshSac5ii1hSCANSOrIY8ivV3GNYMDvpLXKTsK2dkX
+WEV+qOIKpzF8V3LviQ02QbAYBjvKUAWQQaDOnK7itCzudujSj1gzwwuVO0J913VH
+u0ljSS862HNpDGcm6ryS3fzycsp3LKwVuGYhMld9E9VDWgTR3VQMyXQOtqdR5H0j
+QOPs6KkGANKnp0gZNWYETdehBC/g0cVNIY2q5MioFrwCZBi7/jQwqME+3d5HiL09
+Cdi2kLnJwAyid2hiMwJJ9sN2r3CXIizHMCCwJkIZwQdm5RPksyg6aSOgJ00ISEn5
+Gc6YA0zVq83QMGdCWoD4C9I1tBU80Y7fJfZ183X/TQuSey24gIJ0YZDZTfyyYL65
+OyVvy7afQTd/Uyvjheuv330A6B8dDbw0K+83naIlCyMYtD3LN76vS9M4kj1CbXpa
+ZRfww11OTVPDMf9k6Lq6
+=kwF4
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Mar_2012_18_29_30_+1100_HNfHShh=B.lskx=f--
