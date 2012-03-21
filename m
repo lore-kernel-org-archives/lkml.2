@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab2CULnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 07:43:11 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:59348 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753724Ab2CULnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 07:43:09 -0400
-Date: Wed, 21 Mar 2012 13:42:49 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb gadget: fix a section mismatch when compiling g_ffs
- with CONFIG_USB_FUNCTIONFS_ETH
-Message-ID: <20120321114248.GB3092@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
- <1331474926-9237-1-git-send-email-LW@KARO-electronics.de>
- <20120321100402.GL3092@arwen.pp.htv.fi>
- <20329.46902.300917.811262@ipc1.ka-ro>
+	id S1756208Ab2CULpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 07:45:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48420 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754384Ab2CULps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 07:45:48 -0400
+Date: Wed, 21 Mar 2012 11:45:43 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: forbid lumpy-reclaim in shrink_active_list()
+Message-ID: <20120321114543.GD16573@suse.de>
+References: <20120319091821.17716.54031.stgit@zurg>
+ <4F676FA4.50905@redhat.com>
+ <4F6773CC.2010705@openvz.org>
+ <4F6774E8.2050202@redhat.com>
+ <alpine.LSU.2.00.1203191239570.3498@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7QsOHKuLbhbLTwLB"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20329.46902.300917.811262@ipc1.ka-ro>
+In-Reply-To: <alpine.LSU.2.00.1203191239570.3498@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 19, 2012 at 01:05:55PM -0700, Hugh Dickins wrote:
+> On Mon, 19 Mar 2012, Rik van Riel wrote:
+> > On 03/19/2012 01:58 PM, Konstantin Khlebnikov wrote:
+> > > Rik van Riel wrote:
+> > > > On 03/19/2012 05:18 AM, Konstantin Khlebnikov wrote:
+> > > > > This patch reset reclaim mode in shrink_active_list() to
+> > > > > RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC.
+> > > > > (sync/async sign is used only in shrink_page_list and does not affect
+> > > > > shrink_active_list)
+> > > > > 
+> > > > > Currenly shrink_active_list() sometimes works in lumpy-reclaim mode,
+> > > > > if RECLAIM_MODE_LUMPYRECLAIM left over from earlier
+> > > > > shrink_inactive_list().
+> > > > > Meanwhile, in age_active_anon() sc->reclaim_mode is totally zero.
+> > > > > So, current behavior is too complex and confusing, all this looks
+> > > > > like bug.
+> > > > > 
+> > > > > In general, shrink_active_list() populate inactive list for next
+> > > > > shrink_inactive_list().
+> > > > > Lumpy shring_inactive_list() isolate pages around choosen one from
+> > > > > both active and
+> > > > > inactive lists. So, there no reasons for lumpy-isolation in
+> > > > > shrink_active_list()
+> > > > > 
+> > > > > Proposed-by: Hugh Dickins<hughd@google.com>
+> > > > > Link: https://lkml.org/lkml/2012/3/15/583
+> > > > > Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> > > > 
+> > > > Confirmed, this is already done by commit
+> > > > 26f5f2f1aea7687565f55c20d69f0f91aa644fb8 in the
+> > > > linux-next tree.
+> > > > 
+> > > 
+> > > No, your patch fix this problem only if CONFIG_COMPACTION=y
+> > 
+> > True.
+> > 
+> > It was done that way, because Mel explained to me that deactivating
+> > a whole chunk of active pages at once is a desired feature that makes
+> > it more likely that a whole contiguous chunk of pages will eventually
+> > reach the end of the inactive list.
+> 
+> I'm rather sceptical about this: is there a test which demonstrates
+> a useful effect of that kind?
+> 
 
---7QsOHKuLbhbLTwLB
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Testing was done on this over a number of releases around the time that
+lumpy reclaim was merged. It made a measurable difference both to allocation
+success rates and latency. It is not something I have tested recently
+because the focus has been on compaction but it acted as expected once upon
+a time. This is why I asked Rik not to change the behaviour in his
+patch. My preference would be that lumpy reclaim be removed in the next
+cycle and it was on my TODO list to write the patch around 3.4-rc1 after
+the merge window closed.
 
-On Wed, Mar 21, 2012 at 12:10:46PM +0100, Lothar Wa=DFmann wrote:
-> Hi,
->=20
-> Felipe Balbi writes:
-> > Hi,
-> >=20
-> > On Sun, Mar 11, 2012 at 03:08:46PM +0100, Lothar Wa=DFmann wrote:
-> > > Hi,
-> > >=20
-> > > please ignore the previous message. I sent the patch out too early.
-> > > Here is a revised version.
-> > >=20
-> > >  commit 28824b18ac4705e876a282a15ea0de8fc957551f:
-> > >  |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> > >  |Date:   Wed May 5 12:53:13 2010 +0200
-> > >  |
-> > >  |    USB: gadget: __init and __exit tags removed
-> > >  |
-> > >  |    __init, __initdata and __exit tags have have been removed from
-> > >  |    various files to make it possible for gadgets that do not use
-> > >  |    the __init/__exit tags to use those.
-> > >  obviously missed (at least) this case leading to a section mismatch =
-in
-> > >  g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
-> > >=20
-> > > Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
-> >=20
-> > please send in proper patch format and while at that include any Acks
-> > you already got.
-> >=20
-> What's wrong with the format?
-> I used git-format-patch to create it, which should produce a properly
-> formatted patch AFAIK.
+> Lumpy movement from active won't help a lumpy allocation this time,
+> because lumpy reclaim from inactive doesn't care which lru the
+> surrounding pages come from anyway - and I argue that lumpy movement
+> from active actually reduces the number of choices which lumpy
+> reclaim will have, if they do near the bottom of inactive together.
+> 
 
-if I try to apply your patch I will have the below on the commit log.
+The behaviour at the time was that lumpy reclaim would move a number of
+hugepage-aligned regions including pages from the active list.  Lumpy reclaim
+would reclaim some these but as order-0 reclaim aged the other regions,
+it also tended to free pages in contiguous ranges.  In the event there
+was a burst of lumpy reclaim requests, the latency of the allocation was
+lower on average with this decision. This was disruptive of course but
+at the time this only happened if the hugepage pool was being resized or
+a large application was starting up using dynamic hugepage pool resizing
+so the disruption was relatively short lived.
 
-Hi,
+> So if lumpy movement from active (miscategorizing physically adjacent
+> pages as inactive too) is actually useful (the miscategorization turning
+> out to have been a good bet, since they're not activated again before
+> they reach the bottom of the inactive), and a nice buddyable group of
+> pages is later reclaimed from the inactive list because of it (without
+> any need for lumpy reclaim that time), then wouldn't we want to be
+> doing it more?
+> 
 
-please ignore the previous message. I sent the patch out too early.
-Here is a revised version.
+Possibly but there is little point in working on making lumpy reclaim
+more efficient right now.
 
---=20
-balbi
+> It should not be done only when inactive_is_low coincides with reclaim
+> for a high-order allocation: we would want to note that there's a load
+> which is making high-order requests, and do lumpy movement from active
+> whenever replenishing inactive while such a load is in force.
+> 
+> If it does more good than harm; but I'm sceptical about that.
+> 
 
---7QsOHKuLbhbLTwLB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+My preference at this point is not to merge this patch and instead remove
+lumpy reclaim in one go during the next cycle. If a user is really depending
+on it, it would then be slightly easier to revert. The only potential user
+I can think of is NOMMU but even then I'm skeptical they care.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPab64AAoJEIaOsuA1yqREpwgP/16BrC4844OrZ3tZanQ62mQo
-ouKHWbEbY+lV9GR4++jhqkKPxR8zuCe7CGfPx+loHeoacx6Ran0YGVQZcWzOIdim
-JNNpwgYNY9hzzETRigwQ/25TCzOH5sLnV82ABc2uhRC1P9B7rCaqyT8l9/naacni
-6Z/IdJjRmPeWkA3e7YmAe17KQuwyFgxWa9Y32A1sMgZpVsW+qAep8RbYFNrvcSsh
-7PxNQFTXvUt9syJAxDjU0RgNn9e8eLUWz45br7kcqDBjSxBEGkencU4+IxOnDvVu
-ZZGAauKwy/+98vhZz+LgZ+QrITYITMH2Xopa3nAQG6EXvdsHSewfCsU7OJZVdrTb
-JBakX8hTY/3WNi4Grj3wsHubij1x8QJr+XCkHvYHqdlHa2Wq1pZX2Owa0dKQ5r3w
-2c9cS8pESpdwmWp5w+W44EU244s2vf/Uy4z2JhlczSTWADCLrobs4atntmYW8z2q
-uE+xfnE0QFfErFEOSTmAXjK9ZN8lgYJOod7bGp5/nmLNh1lpfMBuX2jHx9WM92uM
-Z7+G3qkV3UrIKiYtcxZvcng0WEWNrUTTu6ydjhb/xzVlRw7FjALMHUKLOigf4MzW
-/Q4rvK7JZ3e2XK8Gz7yyW8HuOh7I9Uk0AhSe9hvLnmuDc4hlRrKDOZR76QTzpf5b
-eJBA4fcA66lg5cPCYl4j
-=pMha
------END PGP SIGNATURE-----
-
---7QsOHKuLbhbLTwLB--
+-- 
+Mel Gorman
+SUSE Labs
