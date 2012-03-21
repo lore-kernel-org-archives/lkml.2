@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab2CUItG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 04:49:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49250 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab2CUItC (ORCPT
+	id S1756166Ab2CUIva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 04:51:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58451 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752932Ab2CUIv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 04:49:02 -0400
-Date: Wed, 21 Mar 2012 09:48:56 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bernhard Walle <bernhard@bwalle.de>, Bernhard Walle <walle@corscience.de>,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
-Message-ID: <20120321084856.GA17472@avionic-0098.mockup.avionic-design.de>
-References: <1332262083-9375-1-git-send-email-walle@corscience.de>
- <201203202202.12060.arnd@arndb.de>
- <4F697201.1090206@bwalle.de>
- <201203210839.06258.arnd@arndb.de>
+	Wed, 21 Mar 2012 04:51:28 -0400
+Date: Wed, 21 Mar 2012 08:51:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Add TPS65090 regulator driver
+Message-ID: <20120321085125.GA10935@opensource.wolfsonmicro.com>
+References: <1332315326-11354-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
 Content-Disposition: inline
-In-Reply-To: <201203210839.06258.arnd@arndb.de>
+In-Reply-To: <1332315326-11354-1-git-send-email-vbyravarasu@nvidia.com>
+X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:O/m8mVbw43paPx6H2BHDAj3o9Jr5coU++u8MOvkTBIs
- b9WCz3lTgpj1hm/dgMaDHlEW1kUiyqD8i3gi6kbG857xOB/h4g
- 9yem3M40nkGQTDF6o5hcQ6FOj0oDaK2+LOVg0LGCBJmBCzJ+Uk
- Ngs+ZPFsA5b/zc+IAu1QkHvXYoQNbQ6GUexYG5YieypqGaGj/A
- qlLng7cZXgB7oidaPZhPZynbpvdKq187CpBs2jjwaFxhfmb33L
- RsAWL8n25KuI5C1dj/0AUhuUjz0TdKGDWYwmZNvVEi62irpS9/
- lVtLfbytq443v8MoRtN5P4Lda9/CVBQ60yM5tyxUKB0KOsADo8
- R0KXMx+vEJbvOBrCa+W7cBTgQkxSV+3kX4HyXsZku7RJavS7sX
- BgEcTiEvP9nUQh7fh5+Y9J4BJaiQXOPLNo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VbJkn9YxBvnuCH5J
+--u3/rZRmxL6MmkK24
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-* Arnd Bergmann wrote:
-> On Wednesday 21 March 2012, Bernhard Walle wrote:
-> > Am 20.03.12 23:02, schrieb Arnd Bergmann:
-> > > On Tuesday 20 March 2012, Bernhard Walle wrote:
-> > >>
-> > >> This PWM driver uses the PWM of the TWL4030. The driver for the TWL6=
-030
-> > >> PWM has been used as mode, but the PWM registers are different.
-> > >>
-> > >> The driver can be used and has been tested in conjunction with
-> > >> pwm-backlight to control a backlight LED of a LCD touch screen.
-> > >>
-> > >> Signed-off-by: Bernhard Walle <walle@corscience.de>
-> > >=20
-> > > Since it's too late for v3.4 now and we will get a new pwm
-> > > subsystem in v3.5, I suggest you change the driver to work
-> > > register with that subsystem instead of just using the old
-> > > header file. Note that drivers/mfd is not really the right
-> > > place anyway, because this is not a multifunction driver but
-> > > just one device driver that happens to be a slave of an mfd.
-> >=20
-> > Does that new subsystem already exist in some tree?
-> =20
-> Thierry Reding has been busily posting patches, so he probably has
-> one that you can use, but I couldn't find it now.
+On Wed, Mar 21, 2012 at 01:05:26PM +0530, Venu Byravarasu wrote:
 
-I don't have a public tree anywhere. Does anyone have a recommendation where
-I could set one up? github or gitorious are the first to come to my mind.
+> @@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
+>  obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
+>  obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
+>  obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
+> +obj-$(CONFIG_REGULATOR_TPS65090) += tps65090-regulator.o
+>  obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+>  obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
 
-Thierry
+This won't apply against current -next...
 
---VbJkn9YxBvnuCH5J
-Content-Type: application/pgp-signature
+> +       rdev = regulator_register(&ri->desc, &pdev->dev,
+> +                               &tps_pdata->regulator, ri);
+
+...and won't build either.
+
+Always submit against current development versions of the kernel.
+
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEARECAAYFAk9plfgACgkQZ+BJyKLjJp+oVwCgpj2ZSzvNTRmhsVW+1cmO07ek
-4oEAoIPHh/23A5nbbK95PetCskZVUSN+
-=gJls
+iQIcBAEBAgAGBQJPaZaGAAoJEBus8iNuMP3d6GUQAJud/vSrVOjPFAkr+yoXubmn
+J8uw66APlboIgm4Zri/+j0rf3Nd8gElcQODC1nyYXG+a4jdlB9mgikRkAfEPABS9
+VfIAt/bSwKFBAGGoIC4vRi21aeOIQ2rpmmnI7f2iN7w3n5htNkJXoCPrw/hPEZNx
+BFGBhoJQx52XpeANP6/Gf4+jLFAA6WKn+vmeyVNyCO5R8AVB4WnqsU4WpKZ/d+LA
+kOzovDpKsR/GiswpPMRQTjopt6yvLgJuKZeE2WGojmMVoGsz0NjK5chtvc7kP5ri
+qHOMg6j3lpa3LktqV6gwEvy95WQCnDfWu6GuiWj7uE10s2Lnk8+DutuPpIGKxJvE
+3S4YM5V9k4eFfP3n+P4dmlqfoBBFMV5p5nyUAv40vB6MbFhKMpYUtn6z8FwzRiEw
+s47wLFLX4g/da6F0eC/yks3mm+LioGDgPcQzF0GFFmpYVu2Qgs/ZSZPSm5EK4aSP
+Y0VNAUnbBeDox3bHfV+ExFqa/ymPd7i26b8fRlmZf3bguS/Noy6WuEvRUzGNeTWN
+FSklkbqa53IntiYP3NFDG4wDVJ4dwI8Y/TYvT+LNafY3vk3VRYeXxdrKEgUS/hMF
+rGki7QjlN2pQIQ+/uIvlTCCMZEu1qapfyLtGgqsukl2jxI480Q7CpOvMZFT2Jyn9
+sudqoZkoLmrladsjOh5e
+=HVyC
 -----END PGP SIGNATURE-----
 
---VbJkn9YxBvnuCH5J--
+--u3/rZRmxL6MmkK24--
