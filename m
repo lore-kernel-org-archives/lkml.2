@@ -1,129 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab2CUJmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:42:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15339 "EHLO mx1.redhat.com"
+	id S1757394Ab2CUJpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:45:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42639 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab2CUJmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:42:42 -0400
-Date: Wed, 21 Mar 2012 11:42:32 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
+	id S1752892Ab2CUJpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 05:45:53 -0400
+Date: Wed, 21 Mar 2012 10:45:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120321094232.GP22368@redhat.com>
-References: <4F58664D.1070800@cn.fujitsu.com>
- <4F66E14F.3040809@cn.fujitsu.com>
- <4F6854F4.3060703@cn.fujitsu.com>
- <20120320154517.GG27928@redhat.com>
- <4F692723.8050904@cn.fujitsu.com>
- <20120321091127.GO22368@redhat.com>
- <4F69A0F5.7050504@cn.fujitsu.com>
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: memcg-devel updated for v3.3
+Message-ID: <20120321094545.GA10450@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F69A0F5.7050504@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 05:35:49PM +0800, Wen Congyang wrote:
-> At 03/21/2012 05:11 PM, Gleb Natapov Wrote:
-> > On Wed, Mar 21, 2012 at 08:56:03AM +0800, Wen Congyang wrote:
-> >> At 03/20/2012 11:45 PM, Gleb Natapov Wrote:
-> >>> On Tue, Mar 20, 2012 at 05:59:16PM +0800, Wen Congyang wrote:
-> >>>> At 03/19/2012 03:33 PM, Wen Congyang Wrote:
-> >>>>> At 03/08/2012 03:57 PM, Wen Congyang Wrote:
-> >>>>>> We can know the guest is paniced when the guest runs on xen.
-> >>>>>> But we do not have such feature on kvm.
-> >>>>>>
-> >>>>>> Another purpose of this feature is: management app(for example:
-> >>>>>> libvirt) can do auto dump when the guest is crashed. If management
-> >>>>>> app does not do auto dump, the guest's user can do dump by hand if
-> >>>>>> he sees the guest is paniced.
-> >>>>>>
-> >>>>>> I touch the hypervisor instead of using virtio-serial, because
-> >>>>>> 1. it is simple
-> >>>>>> 2. the virtio-serial is an optional device, and the guest may
-> >>>>>>    not have such device.
-> >>>>>>
-> >>>>>> Changes from v2 to v3:
-> >>>>>> 1. correct spelling
-> >>>>>>
-> >>>>>> Changes from v1 to v2:
-> >>>>>> 1. split up host and guest-side changes
-> >>>>>> 2. introduce new request flag to avoid changing return values.
-> >>>>>> --
-> >>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>>>>> the body of a message to majordomo@vger.kernel.org
-> >>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>>>> Please read the FAQ at  http://www.tux.org/lkml/
-> >>>>>>
-> >>>>>
-> >>>>>
-> >>>>> Hi all:
-> >>>>>
-> >>>>> we neet this feature, but we don't decide how to implement it.
-> >>>>> We have two solution:
-> >>>>> 1. use vmcall
-> >>>>> 2. use virtio-serial.
-> >>>>>
-> >>>>> I will not change this patch set before we decide how to do it.
-> >>>>> Can we make a decision recent days?
-> >>>>
-> >>>> Anybody can decide which solution to use?
-> >>>>
-> >>> To make an informed decision we need to have at least raw idea how
-> >>> virtio-serial variant will look.
-> >>
-> >> Hmm, I think we can do this:
-> >> 1. reset the virtio-serial device or reset the port we use to notice
-> >>    the host that guest is panicked.
-> >> 2. write some specific messages to the port
-> >>
-> >> So the port should have fixed name. If this port is opened by the userspace
-> >> before the guest is paniced, I am not sure whether we can use it(because a
-> >> port only can be opened once at the same time).
-> > Yes, IMO we should dedicate one virtio-serial port for panic
-> > notifications. Just like we dedicate one for a console.
-> > 
-> >> We cannot call any function in the module, so we may need to write a simple
-> >> driver for virtio-serial(like diskdump's disk driver).
-> >>
-> > netconsole uses standard NIC drivers in polling mode to send OOPSes
-> > over the network and it mostly works. So I think using virtio-serial
-> > driver is not out of question, but with IRQ disabled of course.
-> 
-> The code for netconsole is in which file?
-drivers/net/netconsole.c naturally.
+[sorry for few days delay]
 
-> Another question: we cannot call the function in the module directly in the
-> kernel.
-True I think. netconsole and actual NIC driver have a layer of abstraction
-between them. Modules can call functions from other modules. Your
-module can register to panic_notifier_list (like IPMI does) and call
-functions from virtio-serial. Or panic handling can be added directly
-to virtio-serial since it will have to be modified anyway. Something
-like netpoll API will have to be added to it.
+Hi,
+The memcg-devel tree hosted at github[*] has been updated to 3.3. Like
+with the previous releases the current patch queue is sitting in the
+since-3.3 branch based on v3.3 linus tree.
 
-> > 
-> >> I donot know how to implement it now. But I guess that it may be complicated.
-> >>
-> > Look at drivers/char/ipmi/ipmi_msghandler.c. It has code to send panic
-> > event over IMPI. The code is pretty complex. Of course if we a going to
-> > implement something more complex than simple hypercall for panic
-> > notification we better do something more interesting with it than just
-> > saying "panic happened", like sending stack traces on all cpus for
-> > instance.
-> 
-> If we implement it by virtio-serial, I agree with passing more useful message
-> to host.
-> 
+We are currently at 37 patches comparing to 74 in the previous cycle
+which looks like a quite nice reduction.
 
---
-			Gleb.
+Andrew Morton (7):
+      memcg-clear-pc-mem_cgorup-if-necessary-fix
+      memcg-clear-pc-mem_cgorup-if-necessary-fix-2-fix
+      memcg-remove-pcg_cache-page_cgroup-flag-checkpatch-fixes
+      memcg-simplify-move_account-check-fix
+      memcg-use-new-logic-for-page-stat-accounting-fix
+      memcg-fix-performance-of-mem_cgroup_begin_update_page_stat-fix
+      mm/memcontrol.c: s/stealed/stolen/
+
+Anton Vorontsov (1):
+      mm/memcontrol.c: remove redundant BUG_ON() in mem_cgroup_usage_unregister_event()
+
+Hugh Dickins (15):
+      memcg-clear-pc-mem_cgorup-if-necessary-fix-2
+      memcg-clear-pc-mem_cgorup-if-necessary fix 3
+      memcg: fix page migration to reset_owner
+      memcg: replace MEM_CONT by MEM_RES_CTLR
+      memcg: replace mem and mem_cont stragglers
+      memcg: lru_size instead of MEM_CGROUP_ZSTAT
+      memcg: enum lru_list lru
+      memcg: remove redundant returns
+      idr: make idr_get_next() good for rcu_read_lock()
+      cgroup: revert ss_id_lock to spinlock
+      memcg: let css_get_next() rely upon rcu_read_lock()
+      memcg: remove PCG_CACHE page_cgroup flag fix
+      memcg: remove PCG_CACHE page_cgroup flag fix2
+      memcg: remove PCG_FILE_MAPPED fix cosmetic fix
+      memcg: fix GPF when cgroup removal races with last exit
+
+Jeff Liu (1):
+      mm/memcontrol.c: remove unnecessary 'break' in mem_cgroup_read()
+
+Johannes Weiner (1):
+      memcg-clear-pc-mem_cgorup-if-necessary-comments
+
+KAMEZAWA Hiroyuki (10):
+      memcg: clear pc->mem_cgorup if necessary.
+      memcg: remove unnecessary thp check in page stat accounting
+      memcg: remove PCG_CACHE page_cgroup flag
+      memcg: remove EXPORT_SYMBOL(mem_cgroup_update_page_stat)
+      memcg: simplify move_account() check
+      memcg: remove PCG_MOVE_LOCK flag from page_cgroup
+      memcg: use new logic for page stat accounting
+      memcg: remove PCG_FILE_MAPPED
+      memcg-remove-pcg_file_mapped-fix
+      memcg: fix performance of mem_cgroup_begin_update_page_stat()
+
+Konstantin Khlebnikov (1):
+      memcg: kill dead prev_priority stubs
+
+Li Zefan (1):
+      cgroup: remove cgroup_subsys argument from callbacks
+
+
+Happy hacking and have a lot of fun.
+
+Let me know if I missed any patches.
+
+---
+[*] git://github.com/mstsxfx/memcg-devel.git
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
