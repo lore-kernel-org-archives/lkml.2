@@ -1,282 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab2CUARs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 20:17:48 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23118 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758290Ab2CUARL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 20:17:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: suresh.b.siddha@intel.com, jwboyer@redhat.com, mingo@elte.hu,
-        hpa@zytor.com, yinghai@kernel.org, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/3] x86/apic_ops: Replace apic_ops with x86_apic_ops.
-Date: Tue, 20 Mar 2012 20:12:43 -0400
-Message-Id: <1332288764-10351-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
-References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
- <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090209.4F691DFF.0023,ss=1,re=0.000,fgs=0
+	id S1753907Ab2CUA1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 20:27:08 -0400
+Received: from soma.ebfe.org ([78.47.47.242]:34424 "EHLO soma.ebfe.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752404Ab2CUA1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 20:27:06 -0400
+Date: Wed, 21 Mar 2012 01:26:45 +0100
+From: Michael Gehring <mg@ebfe.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, Michael Gehring <mg@ebfe.org>
+Subject: [PATCH] tty/vt: handle bad user buffer in {G,P}IO_CMAP ioctl
+Message-ID: <20120321002645.GA1764@s755>
+Mail-Followup-To: Michael Gehring <mg@ebfe.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	linux-kernel@vger.kernel.org
+References: <1332200041-31052-1-git-send-email-mg@ebfe.org>
+ <20120319234839.GA26931@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120319234839.GA26931@kroah.com>
+User-Agent: Mutt/ (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. which makes the code fit within the rest of the x86_ops functions.
+set_get_cmap() ignored the result of {get,put}_user(), causing ioctl(vt,
+{G,P}IO_CMAP, 0xdeadbeef) to silently fail.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Another side effect of this: calling the PIO_CMAP ioctl with an invalid
+buffer would zero the default colormap and the palette for all vts (all
+colors set to black).
+
+Leave the default colormap intact and return -EFAULT when
+reading/writing to the userspace buffer fails.
+
+Signed-off-by: Michael Gehring <mg@ebfe.org>
 ---
- arch/x86/include/asm/io_apic.h  |   40 +++++++++++++++++++++--------
- arch/x86/include/asm/x86_init.h |    8 ++++++
- arch/x86/kernel/apic/io_apic.c  |   54 ++++----------------------------------
- arch/x86/kernel/setup.c         |    2 +-
- arch/x86/kernel/x86_init.c      |    8 ++++++
- 5 files changed, 52 insertions(+), 60 deletions(-)
+ drivers/tty/vt/vt.c |   68 ++++++++++++++++++++++++---------------------------
+ 1 file changed, 32 insertions(+), 36 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 190d8c2..bb876ce 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -5,6 +5,7 @@
- #include <asm/mpspec.h>
- #include <asm/apicdef.h>
- #include <asm/irq_vectors.h>
-+#include <asm/x86_init.h>
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index e716839..49c2dec 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3891,36 +3891,6 @@ static void set_palette(struct vc_data *vc)
+ 		vc->vc_sw->con_set_palette(vc, color_table);
+ }
  
- /*
-  * Intel IO-APIC support for SMP and UP systems.
-@@ -21,15 +22,6 @@
- #define IO_APIC_REDIR_LEVEL_TRIGGER	(1 << 15)
- #define IO_APIC_REDIR_MASKED		(1 << 16)
- 
--struct io_apic_ops {
--	void (*init)(void);
--	unsigned int (*read)(unsigned int apic, unsigned int reg);
--	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
--	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
--};
--
--void __init set_io_apic_ops(const struct io_apic_ops *);
--
- /*
-  * The structure of the IO-APIC:
-  */
-@@ -156,7 +148,6 @@ struct io_apic_irq_attr;
- extern int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr);
- void setup_IO_APIC_irq_extra(u32 gsi);
--extern void ioapic_and_gsi_init(void);
- extern void ioapic_insert_resources(void);
- 
- int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
-@@ -185,12 +176,35 @@ extern void mp_save_irq(struct mpc_intsrc *m);
- 
- extern void disable_ioapic_support(void);
- 
-+
-+void __init native_ioapic_init_mappings(void);
-+unsigned int native_ioapic_read(unsigned int apic, unsigned int reg);
-+void native_ioapic_write(unsigned int apic, unsigned int reg,
-+			 unsigned int val);
-+void native_ioapic_modify(unsigned int apic, unsigned int reg,
-+			  unsigned int val);
-+
-+static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-+{
-+	return x86_apic.read(apic, reg);
-+}
-+
-+static inline void io_apic_write(unsigned int apic, unsigned int reg,
-+				 unsigned int value)
-+{
-+	x86_apic.write(apic, reg, value);
-+}
-+
-+static inline void io_apic_modify(unsigned int apic, unsigned int reg,
-+				  unsigned int value)
-+{
-+	x86_apic.modify(apic, reg, value);
-+}
- #else  /* !CONFIG_X86_IO_APIC */
- 
- #define io_apic_assign_pci_irqs 0
- #define setup_ioapic_ids_from_mpc x86_init_noop
- static const int timer_through_8259 = 0;
--static inline void ioapic_and_gsi_init(void) { }
- static inline void ioapic_insert_resources(void) { }
- #define gsi_top (NR_IRQS_LEGACY)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
-@@ -212,6 +226,10 @@ static inline int restore_ioapic_entries(void)
- 
- static inline void mp_save_irq(struct mpc_intsrc *m) { };
- static inline void disable_ioapic_support(void) { }
-+#define native_ioapic_init_mappings NULL
-+#define native_ioapic_read NULL
-+#define native_ioapic_write NULL
-+#define native_ioapic_modify NULL
- #endif
- 
- #endif /* _ASM_X86_IO_APIC_H */
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 517d476..0fdf65b 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -182,10 +182,18 @@ struct x86_msi_ops {
- 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
- };
- 
-+struct x86_apic_ops {
-+	void (*init)(void);
-+	unsigned int (*read)(unsigned int apic, unsigned int reg);
-+	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
-+	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
-+};
-+
- extern struct x86_init_ops x86_init;
- extern struct x86_cpuinit_ops x86_cpuinit;
- extern struct x86_platform_ops x86_platform;
- extern struct x86_msi_ops x86_msi;
-+extern struct x86_apic_ops x86_apic;
- 
- extern void x86_init_noop(void);
- extern void x86_init_uint_noop(unsigned int unused);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index bf120234..9a15d4b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -67,25 +67,6 @@
- #define for_each_irq_pin(entry, head) \
- 	for (entry = head; entry; entry = entry->next)
- 
--static void __init __ioapic_init_mappings(void);
--static unsigned int __io_apic_read(unsigned int apic, unsigned int reg);
--static void __io_apic_write(unsigned int apic, unsigned int reg,
--			    unsigned int val);
--static void __io_apic_modify(unsigned int apic, unsigned int reg,
--			     unsigned int val);
--
--static struct io_apic_ops io_apic_ops = {
--	.init = __ioapic_init_mappings,
--	.read = __io_apic_read,
--	.write = __io_apic_write,
--	.modify = __io_apic_modify,
--};
--
--void __init set_io_apic_ops(const struct io_apic_ops *ops)
+-static int set_get_cmap(unsigned char __user *arg, int set)
 -{
--	io_apic_ops = *ops;
+-    int i, j, k;
+-
+-    WARN_CONSOLE_UNLOCKED();
+-
+-    for (i = 0; i < 16; i++)
+-	if (set) {
+-	    get_user(default_red[i], arg++);
+-	    get_user(default_grn[i], arg++);
+-	    get_user(default_blu[i], arg++);
+-	} else {
+-	    put_user(default_red[i], arg++);
+-	    put_user(default_grn[i], arg++);
+-	    put_user(default_blu[i], arg++);
+-	}
+-    if (set) {
+-	for (i = 0; i < MAX_NR_CONSOLES; i++)
+-	    if (vc_cons_allocated(i)) {
+-		for (j = k = 0; j < 16; j++) {
+-		    vc_cons[i].d->vc_palette[k++] = default_red[j];
+-		    vc_cons[i].d->vc_palette[k++] = default_grn[j];
+-		    vc_cons[i].d->vc_palette[k++] = default_blu[j];
+-		}
+-		set_palette(vc_cons[i].d);
+-	    }
+-    }
+-    return 0;
 -}
 -
  /*
-  *      Is the SiS APIC rmw bug present ?
-  *      -1 = don't know, 0 = no, 1 = yes
-@@ -313,24 +294,6 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
- 	irq_free_desc(at);
- }
+  * Load palette into the DAC registers. arg points to a colour
+  * map, 3 bytes per colour, 16 colours, range from 0 to 255.
+@@ -3928,24 +3898,50 @@ static int set_get_cmap(unsigned char __user *arg, int set)
  
--static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
--{
--	return io_apic_ops.read(apic, reg);
--}
--
--static inline void io_apic_write(unsigned int apic, unsigned int reg,
--				 unsigned int value)
--{
--	io_apic_ops.write(apic, reg, value);
--}
--
--static inline void io_apic_modify(unsigned int apic, unsigned int reg,
--				  unsigned int value)
--{
--	io_apic_ops.modify(apic, reg, value);
--}
--
--
- struct io_apic {
- 	unsigned int index;
- 	unsigned int unused[3];
-@@ -351,15 +314,15 @@ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
- 	writel(vector, &io_apic->eoi);
- }
- 
--static unsigned int __io_apic_read(unsigned int apic, unsigned int reg)
-+unsigned int native_ioapic_read(unsigned int apic, unsigned int reg)
+ int con_set_cmap(unsigned char __user *arg)
  {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(reg, &io_apic->index);
- 	return readl(&io_apic->data);
- }
- 
--static void __io_apic_write(unsigned int apic, unsigned int reg,
--			    unsigned int value)
-+void native_ioapic_write(unsigned int apic, unsigned int reg,
-+			 unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(reg, &io_apic->index);
-@@ -372,8 +335,8 @@ static void __io_apic_write(unsigned int apic, unsigned int reg,
-  *
-  * Older SiS APIC requires we rewrite the index register
-  */
--static void __io_apic_modify(unsigned int apic, unsigned int reg,
--			     unsigned int value)
-+void native_ioapic_modify(unsigned int apic, unsigned int reg,
-+			  unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 
-@@ -3910,12 +3873,7 @@ static struct resource * __init ioapic_setup_resources(int nr_ioapics)
- 	return res;
- }
- 
--void __init ioapic_and_gsi_init(void)
--{
--	io_apic_ops.init();
--}
--
--static void __init __ioapic_init_mappings(void)
-+void __init native_ioapic_init_mappings(void)
- {
- 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
- 	struct resource *ioapic_res;
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d7d5099..87a0fcd 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1016,7 +1016,7 @@ void __init setup_arch(char **cmdline_p)
- 	init_cpu_to_node();
- 
- 	init_apic_mappings();
--	ioapic_and_gsi_init();
-+	x86_apic.init();
- 
- 	kvm_guest_init();
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 947a06c..c5d0697 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -18,6 +18,7 @@
- #include <asm/e820.h>
- #include <asm/time.h>
- #include <asm/irq.h>
-+#include <asm/io_apic.h>
- #include <asm/pat.h>
- #include <asm/tsc.h>
- #include <asm/iommu.h>
-@@ -117,3 +118,10 @@ struct x86_msi_ops x86_msi = {
- 	.teardown_msi_irqs = default_teardown_msi_irqs,
- 	.restore_msi_irqs = default_restore_msi_irqs,
- };
+-	int rc;
++	int i, j, k;
++	unsigned char colormap[3*16];
 +
-+struct x86_apic_ops x86_apic = {
-+	.init = native_ioapic_init_mappings,
-+	.read = native_ioapic_read,
-+	.write = native_ioapic_write,
-+	.modify = native_ioapic_modify,
-+};
++	if (copy_from_user(colormap, arg, sizeof(colormap)))
++		return -EFAULT;
+ 
+ 	console_lock();
+-	rc = set_get_cmap (arg,1);
++	for (i = k = 0; i < 16; i++) {
++		default_red[i] = colormap[k++];
++		default_grn[i] = colormap[k++];
++		default_blu[i] = colormap[k++];
++	}
++	for (i = 0; i < MAX_NR_CONSOLES; i++) {
++		if (!vc_cons_allocated(i))
++			continue;
++		for (j = k = 0; j < 16; j++) {
++			vc_cons[i].d->vc_palette[k++] = default_red[j];
++			vc_cons[i].d->vc_palette[k++] = default_grn[j];
++			vc_cons[i].d->vc_palette[k++] = default_blu[j];
++		}
++		set_palette(vc_cons[i].d);
++	}
+ 	console_unlock();
+ 
+-	return rc;
++	return 0;
+ }
+ 
+ int con_get_cmap(unsigned char __user *arg)
+ {
+-	int rc;
++	int i, k;
++	unsigned char colormap[3*16];
+ 
+ 	console_lock();
+-	rc = set_get_cmap (arg,0);
++	for (i = k = 0; i < 16; i++) {
++		colormap[k++] = default_red[i];
++		colormap[k++] = default_grn[i];
++		colormap[k++] = default_blu[i];
++	}
+ 	console_unlock();
+ 
+-	return rc;
++	if (copy_to_user(arg, colormap, sizeof(colormap)))
++		return -EFAULT;
++
++	return 0;
+ }
+ 
+ void reset_palette(struct vc_data *vc)
 -- 
-1.7.7.5
+1.7.9.4
 
