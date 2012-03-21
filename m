@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab2CUMf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 08:35:59 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:64677 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757371Ab2CUMf6 (ORCPT
+	id S1758050Ab2CUMgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:36:51 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:39901 "EHLO
+	homiemail-a41.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757717Ab2CUMgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:35:58 -0400
-Message-ID: <20329.52008.668684.593695@ipc1.ka-ro>
-Date: Wed, 21 Mar 2012 13:35:52 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] usb gadget: fix a section mismatch when compiling g_ffs
- with CONFIG_USB_FUNCTIONFS_ETH
-In-Reply-To: <20120321114248.GB3092@arwen.pp.htv.fi>
-References: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
-	<1331474926-9237-1-git-send-email-LW@KARO-electronics.de>
-	<20120321100402.GL3092@arwen.pp.htv.fi>
-	<20329.46902.300917.811262@ipc1.ka-ro>
-	<20120321114248.GB3092@arwen.pp.htv.fi>
-X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
+	Wed, 21 Mar 2012 08:36:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=O+gHQm6r10m3NaB9+crVeweUp3Hilze9FTXxYG4b/AeehhMhjKcaXX0uDuoqc
+	rO6ankaTJQWMRUP0+q8V91LEatGUfMCYc1bpkirz/GbCgKLhDtuJu+C9u+UUMpaO
+	OYopB9v9uQX9cQHV/ZD0wOF1qnUeYCMoEx10qStkKJsZNk=
+Message-ID: <4F69CB5F.70002@shealevy.com>
+Date: Wed, 21 Mar 2012 08:36:47 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120321 Thunderbird/11.0
+MIME-Version: 1.0
+To: Seth Forshee <seth.forshee@canonical.com>
+CC: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] Add driver for Apple gmux device
+References: <1331926882-22979-1-git-send-email-seth.forshee@canonical.com>
+In-Reply-To: <1331926882-22979-1-git-send-email-seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Seth,
 
-Felipe Balbi writes:
-> On Wed, Mar 21, 2012 at 12:10:46PM +0100, Lothar Waßmann wrote:
-> > Hi,
-> > 
-> > Felipe Balbi writes:
-> > > Hi,
-> > > 
-> > > On Sun, Mar 11, 2012 at 03:08:46PM +0100, Lothar Waßmann wrote:
-> > > > Hi,
-> > > > 
-> > > > please ignore the previous message. I sent the patch out too early.
-> > > > Here is a revised version.
-> > > > 
-> > > >  commit 28824b18ac4705e876a282a15ea0de8fc957551f:
-> > > >  |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> > > >  |Date:   Wed May 5 12:53:13 2010 +0200
-> > > >  |
-> > > >  |    USB: gadget: __init and __exit tags removed
-> > > >  |
-> > > >  |    __init, __initdata and __exit tags have have been removed from
-> > > >  |    various files to make it possible for gadgets that do not use
-> > > >  |    the __init/__exit tags to use those.
-> > > >  obviously missed (at least) this case leading to a section mismatch in
-> > > >  g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
-> > > > 
-> > > > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > > 
-> > > please send in proper patch format and while at that include any Acks
-> > > you already got.
-> > > 
-> > What's wrong with the format?
-> > I used git-format-patch to create it, which should produce a properly
-> > formatted patch AFAIK.
-> 
-> if I try to apply your patch I will have the below on the commit log.
-> 
-> Hi,
-> 
-> please ignore the previous message. I sent the patch out too early.
-> Here is a revised version.
-> 
-Ah, OK ic.
-Will resubmit the patch.
+On 03/16/2012 03:41 PM, Seth Forshee wrote:
+> Apple laptops with hybrid graphics have a device named gmux that is used
+> for switching between GPUs and backlight control. On many models this is
+> the only reliable method for controlling the backlight.
+>
+> This series adds initial support for the gmux device, along with
+> anciallary support for disabling apple_bl when the gmux device is
+> detected. Initially only backlight control is supported.
+>
+>
 
+I've done some basic testing on my MBP 5,3 (just setting a few 
+brightness levels, nothing fancy), and it all works, so feel free to add 
+my basic
 
-Lothar Waßmann
--- 
-___________________________________________________________
+Tested-by: Shea Levy <shea@shealevy.com>
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+if you wish. Please let me know if you need testing for future gmux 
+features.
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+A few questions:
+     * I'm using nouveau, and with the gmux I have both gmux_backlight 
+and nv_backlight (which never worked) in /sys/class/backlight, is this 
+expected?
+     * Is there anything I can do to test the backlight interface in 
+addition to setting brightness levels?
+     * Besides the sysfs backlight interface, are there any other 
+userspace-visible changes your driver makes that I should test?
+
+Cheers,
+Shea Levy
