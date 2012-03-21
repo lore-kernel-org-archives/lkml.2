@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab2CUU5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 16:57:10 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42518 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab2CUU5H (ORCPT
+	id S1754090Ab2CUU7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 16:59:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39478 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750833Ab2CUU7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 16:57:07 -0400
-Date: Wed, 21 Mar 2012 16:56:36 -0400 (EDT)
-Message-Id: <20120321.165636.369272291402056641.davem@davemloft.net>
-To: shemminger@vyatta.com
-Cc: Knut_Petersen@t-online.de, torvalds@linux-foundation.org, arekm@maven.pl,
-        nitro@legroom.net, dilieto@lineone.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] sky2: override for PCI legacy power management
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120321083205.360a7a3b@nehalam.linuxnetplumber.net>
-References: <4F69BE2E.7070903@t-online.de>
-	<20120321083205.360a7a3b@nehalam.linuxnetplumber.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Mar 2012 13:56:39 -0700 (PDT)
+	Wed, 21 Mar 2012 16:59:10 -0400
+X-Sasl-enc: MXZ0hqilH4L0+9EvStV6DKwL/6SYICXpduiucBbkvIyA 1332363549
+Date: Wed, 21 Mar 2012 13:59:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Mate Soos <mate@srlabs.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Kernel Oops when unplugging USB
+Message-ID: <20120321205908.GA8456@kroah.com>
+References: <4F6747FF.1060005@srlabs.de>
+ <20120320135637.GA4634@kroah.com>
+ <4F6A3155.30603@srlabs.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6A3155.30603@srlabs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Hemminger <shemminger@vyatta.com>
-Date: Wed, 21 Mar 2012 08:32:05 -0700
-
-> Some BIOS's don't setup power management correctly (what else is
-> new) and don't allow use of PCI Express power control. Add a special
-> exception module parameter to allow working around this issue.
-> Based on slightly different patch by Knut Petersen.
+On Wed, Mar 21, 2012 at 08:51:49PM +0100, Mate Soos wrote:
+> Dear Greg,
 > 
-> Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
-> Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> On 03/20/2012 02:56 PM, Greg KH wrote:
+> > On Mon, Mar 19, 2012 at 03:51:43PM +0100, Mate Soos wrote:
+> >> [2.] Full description of the problem/report:
+> >> The kernel oops-ed when I pulled out an umounted 8GB USB key. This seems
+> >> to be visible in the "messages" file. All the data attached, except for
+> >> the "messages" has been produced after a reboot, since the system
+> >> hanged. Luckily, the "messages" got saved. The system after restart
+> >> should have exactly the same modules loaded as before.
+> >>
+> >> [3.] Keywords (i.e., modules, networking, kernel):
+> >> USB, Kernel Ooops, Watchdog
+> >>
+> >> [4.] Kernel version (from /proc/version):
+> >> $ cat
+> >>  /proc/version
+> >> Linux version 3.2.0-1-amd64 (Debian 3.2.4-1) (waldi@debian.org) (gcc
+> >> version 4.6.2 (Debian 4.6.2-12) ) #1 SMP Sun Feb 5 15:17:15 UTC 2012
+> > 
+> > Can you please try the 3.2.12 release, this should be resolved there
+> > already.
+> > 
+> > Or can you try 3.3?
+> 
+> Can you please indicate what you are suspecting to have fixed the
+> problem? Once verified, I could add it to the bugzilla entries at
 
-Applied and queued up for -stable.
+Look at the patches from 3.2.0 to 3.2.12, a number of them might have
+fixed this, previous reporters say that this problem is now gone, hence
+me asking if this is true here as well.
+
+thanks,
+
+greg k-h
