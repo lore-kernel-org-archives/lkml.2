@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760209Ab2CUWSC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:18:02 -0400
+	id S965066Ab2CUWU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:20:57 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:42808 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760082Ab2CUWR5 (ORCPT
+	with ESMTP id S1760124Ab2CUWSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:17:57 -0400
+	Wed, 21 Mar 2012 18:18:01 -0400
 From: Tejun Heo <tj@kernel.org>
 To: glommer@parallels.com, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
         ctalbott@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/12] cgroup: implement cgroup_add_cftypes() and friends
-Date: Wed, 21 Mar 2012 15:17:36 -0700
-Message-Id: <1332368265-21586-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/12] cgroup: relocate cftype and cgroup_subsys definitions in controllers
+Date: Wed, 21 Mar 2012 15:17:38 -0700
+Message-Id: <1332368265-21586-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
 References: <1332368265-21586-1-git-send-email-tj@kernel.org>
@@ -22,313 +22,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cgroup directories are populated by subsys->populate()
-callback explicitly creating files on each cgroup creation.  This
-level of flexibility isn't needed or desirable.  It provides largely
-unused flexibility which call for abuses while severely limiting what
-the core layer can do through the lack of structure and conventions.
+blk-cgroup, netprio_cgroup, cls_cgroup and tcp_memcontrol
+unnecessarily define cftype array and cgroup_subsys structures at the
+top of the file, which is unconventional and necessiates forward
+declaration of methods.
 
-Per each cgroup file type, the only distinction that cgroup users is
-making is whether a cgroup is root or not, which can easily be
-expressed with flags.
+This patch relocates those below the definitions of the methods and
+removes the forward declarations.  Note that forward declaration of
+tcp_files[] is added in tcp_memcontrol.c for tcp_init_cgroup().  This
+will be removed soon by another patch.
 
-This patch introduces cgroup_add_cftypes().  These deal with cftypes
-instead of individual files - controllers indicate that certain types
-of files exist for certain subsystem.  Newly added CFTYPE_*_ON_ROOT
-flags indicate whether a cftype should be excluded or created only on
-the root cgroup.
-
-cgroup_add_cftypes() can be called any time whether the target
-subsystem is currently attached or not.  cgroup core will create files
-on the existing cgroups as necessary.
-
-Also, cgroup_subsys->base_cftypes is added to ease registration of the
-base files for the subsystem.  If non-NULL on subsys init, the cftypes
-pointed to by ->base_cftypes are automatically registered on subsys
-init / load.
-
-Further patches will convert the existing users and remove the file
-based interface.  Note that this interface allows dynamic addition of
-files to an active controller.  This will be used for sub-controller
-modularity and unified hierarchy in the longer term.
-
-This patch implements the new mechanism but doesn't apply it to any
-user.
-
-v2: replaced DECLARE_CGROUP_CFTYPES[_COND]() with
-    cgroup_subsys->base_cftypes, which works better for cgroup_subsys
-    which is loaded as module.
+This patch doesn't introduce any functional change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h |   33 +++++++++++-
- kernel/cgroup.c        |  132 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 162 insertions(+), 3 deletions(-)
+ block/blk-cgroup.c        |   38 ++++++++++++-----------------
+ net/core/netprio_cgroup.c |   26 ++++++++------------
+ net/ipv4/tcp_memcontrol.c |   57 +++++++++++++++++++++-----------------------
+ net/sched/cls_cgroup.c    |   27 ++++++++------------
+ 4 files changed, 65 insertions(+), 83 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 908f26f..ff5b764 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -192,6 +192,7 @@ struct cgroup {
- 	struct list_head css_sets;
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 1359d63..c0cbe8b 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -28,34 +28,12 @@ static LIST_HEAD(blkio_list);
+ struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
  
- 	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
-+	struct list_head cft_q_node;	/* used during cftype add/rm */
+-static struct cgroup_subsys_state *blkiocg_create(struct cgroup *);
+-static int blkiocg_can_attach(struct cgroup *, struct cgroup_taskset *);
+-static void blkiocg_attach(struct cgroup *, struct cgroup_taskset *);
+-static void blkiocg_destroy(struct cgroup *);
+-static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
+-
+ /* for encoding cft->private value on file */
+ #define BLKIOFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+ /* What policy owns the file, proportional or throttle */
+ #define BLKIOFILE_POLICY(val)		(((val) >> 16) & 0xffff)
+ #define BLKIOFILE_ATTR(val)		((val) & 0xffff)
  
- 	/*
- 	 * Linked list running through all cgroups that can
-@@ -277,11 +278,17 @@ struct cgroup_map_cb {
-  *	- the 'cftype' of the file is file->f_dentry->d_fsdata
-  */
+-struct cgroup_subsys blkio_subsys = {
+-	.name = "blkio",
+-	.create = blkiocg_create,
+-	.can_attach = blkiocg_can_attach,
+-	.attach = blkiocg_attach,
+-	.destroy = blkiocg_destroy,
+-	.populate = blkiocg_populate,
+-#ifdef CONFIG_BLK_CGROUP
+-	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
+-	.subsys_id = blkio_subsys_id,
+-#endif
+-	.use_id = 1,
+-	.module = THIS_MODULE,
+-};
+-EXPORT_SYMBOL_GPL(blkio_subsys);
+-
+ static inline void blkio_policy_insert_node(struct blkio_cgroup *blkcg,
+ 					    struct blkio_policy_node *pn)
+ {
+@@ -1658,6 +1636,22 @@ static void blkiocg_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+ 	}
+ }
  
--#define MAX_CFTYPE_NAME 64
-+/* cftype->flags */
-+#define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
-+#define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create onp root cg */
++struct cgroup_subsys blkio_subsys = {
++	.name = "blkio",
++	.create = blkiocg_create,
++	.can_attach = blkiocg_can_attach,
++	.attach = blkiocg_attach,
++	.destroy = blkiocg_destroy,
++	.populate = blkiocg_populate,
++#ifdef CONFIG_BLK_CGROUP
++	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
++	.subsys_id = blkio_subsys_id,
++#endif
++	.use_id = 1,
++	.module = THIS_MODULE,
++};
++EXPORT_SYMBOL_GPL(blkio_subsys);
 +
-+#define MAX_CFTYPE_NAME		64
-+
- struct cftype {
- 	/*
- 	 * By convention, the name should begin with the name of the
--	 * subsystem, followed by a period
-+	 * subsystem, followed by a period.  Zero length string indicates
-+	 * end of cftype array.
- 	 */
- 	char name[MAX_CFTYPE_NAME];
- 	int private;
-@@ -297,6 +304,9 @@ struct cftype {
- 	 */
- 	size_t max_write_len;
+ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ {
+ 	spin_lock(&blkio_list_lock);
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 22036ab..c802613 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -23,21 +23,6 @@
+ #include <net/sock.h>
+ #include <net/netprio_cgroup.h>
  
-+	/* CFTYPE_* flags */
-+	unsigned int flags;
-+
- 	int (*open)(struct inode *inode, struct file *file);
- 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
- 			struct file *file,
-@@ -375,6 +385,16 @@ struct cftype {
- 			struct eventfd_ctx *eventfd);
- };
+-static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp);
+-static void cgrp_destroy(struct cgroup *cgrp);
+-static int cgrp_populate(struct cgroup_subsys *ss, struct cgroup *cgrp);
+-
+-struct cgroup_subsys net_prio_subsys = {
+-	.name		= "net_prio",
+-	.create		= cgrp_create,
+-	.destroy	= cgrp_destroy,
+-	.populate	= cgrp_populate,
+-#ifdef CONFIG_NETPRIO_CGROUP
+-	.subsys_id	= net_prio_subsys_id,
+-#endif
+-	.module		= THIS_MODULE
+-};
+-
+ #define PRIOIDX_SZ 128
  
-+/*
-+ * cftype_sets describe cftypes belonging to a subsystem and are chained at
-+ * cgroup_subsys->cftsets.  Each cftset points to an array of cftypes
-+ * terminated by zero length name.
-+ */
-+struct cftype_set {
-+	struct list_head		node;	/* chained at subsys->cftsets */
-+	const struct cftype		*cfts;
+ static unsigned long prioidx_map[PRIOIDX_SZ];
+@@ -263,6 +248,17 @@ static int cgrp_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ 	return cgroup_add_files(cgrp, ss, ss_files, ARRAY_SIZE(ss_files));
+ }
+ 
++struct cgroup_subsys net_prio_subsys = {
++	.name		= "net_prio",
++	.create		= cgrp_create,
++	.destroy	= cgrp_destroy,
++	.populate	= cgrp_populate,
++#ifdef CONFIG_NETPRIO_CGROUP
++	.subsys_id	= net_prio_subsys_id,
++#endif
++	.module		= THIS_MODULE
 +};
 +
- struct cgroup_scanner {
- 	struct cgroup *cg;
- 	int (*test_task)(struct task_struct *p, struct cgroup_scanner *scan);
-@@ -400,6 +420,8 @@ int cgroup_add_files(struct cgroup *cgrp,
- 			const struct cftype cft[],
- 			int count);
- 
-+int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
-+
- int cgroup_is_removed(const struct cgroup *cgrp);
- 
- int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen);
-@@ -502,6 +524,13 @@ struct cgroup_subsys {
- 	struct idr idr;
- 	rwlock_t id_lock;
- 
-+	/* list of cftype_sets */
-+	struct list_head cftsets;
-+
-+	/* base cftypes, automatically [de]registered with subsys itself */
-+	struct cftype *base_cftypes;
-+	struct cftype_set base_cftset;
-+
- 	/* should be defined only by modular subsystems */
- 	struct module *module;
- };
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index fceee52..fe7a5c2 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2627,8 +2627,14 @@ int cgroup_add_file(struct cgroup *cgrp,
- 	struct dentry *dentry;
- 	int error;
- 	umode_t mode;
--
- 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
-+
-+	/* does @cft->flags tell us to skip creation on @cgrp? */
-+	if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
-+		return 0;
-+	if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
-+		return 0;
-+
- 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
-@@ -2664,6 +2670,95 @@ int cgroup_add_files(struct cgroup *cgrp,
- }
- EXPORT_SYMBOL_GPL(cgroup_add_files);
- 
-+static DEFINE_MUTEX(cgroup_cft_mutex);
-+
-+static void cgroup_cfts_prepare(void)
-+	__acquires(&cgroup_cft_mutex) __acquires(&cgroup_mutex)
-+{
-+	/*
-+	 * Thanks to the entanglement with vfs inode locking, we can't walk
-+	 * the existing cgroups under cgroup_mutex and create files.
-+	 * Instead, we increment reference on all cgroups and build list of
-+	 * them using @cgrp->cft_q_node.  Grab cgroup_cft_mutex to ensure
-+	 * exclusive access to the field.
-+	 */
-+	mutex_lock(&cgroup_cft_mutex);
-+	mutex_lock(&cgroup_mutex);
-+}
-+
-+static void cgroup_cfts_commit(struct cgroup_subsys *ss,
-+			       const struct cftype *cfts)
-+	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
-+{
-+	LIST_HEAD(pending);
-+	struct cgroup *cgrp, *n;
-+	int count = 0;
-+
-+	while (cfts[count].name[0] != '\0')
-+		count++;
-+
-+	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
-+	if (cfts && ss->root != &rootnode) {
-+		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
-+			dget(cgrp->dentry);
-+			list_add_tail(&cgrp->cft_q_node, &pending);
-+		}
-+	}
-+
-+	mutex_unlock(&cgroup_mutex);
-+
-+	/*
-+	 * All new cgroups will see @cfts update on @ss->cftsets.  Add/rm
-+	 * files for all cgroups which were created before.
-+	 */
-+	list_for_each_entry_safe(cgrp, n, &pending, cft_q_node) {
-+		struct inode *inode = cgrp->dentry->d_inode;
-+
-+		mutex_lock(&inode->i_mutex);
-+		mutex_lock(&cgroup_mutex);
-+		if (!cgroup_is_removed(cgrp))
-+			cgroup_add_files(cgrp, ss, cfts, count);
-+		mutex_unlock(&cgroup_mutex);
-+		mutex_unlock(&inode->i_mutex);
-+
-+		list_del_init(&cgrp->cft_q_node);
-+		dput(cgrp->dentry);
-+	}
-+
-+	mutex_unlock(&cgroup_cft_mutex);
-+}
-+
-+/**
-+ * cgroup_add_cftypes - add an array of cftypes to a subsystem
-+ * @ss: target cgroup subsystem
-+ * @cfts: zero-length name terminated array of cftypes
-+ *
-+ * Register @cfts to @ss.  Files described by @cfts are created for all
-+ * existing cgroups to which @ss is attached and all future cgroups will
-+ * have them too.  This function can be called anytime whether @ss is
-+ * attached or not.
-+ *
-+ * Returns 0 on successful registration, -errno on failure.  Note that this
-+ * function currently returns 0 as long as @cfts registration is successful
-+ * even if some file creation attempts on existing cgroups fail.
-+ */
-+int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
-+{
-+	struct cftype_set *set;
-+
-+	set = kzalloc(sizeof(*set), GFP_KERNEL);
-+	if (!set)
-+		return -ENOMEM;
-+
-+	cgroup_cfts_prepare();
-+	set->cfts = cfts;
-+	list_add_tail(&set->node, &ss->cftsets);
-+	cgroup_cfts_commit(ss, cfts);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
-+
- /**
-  * cgroup_task_count - count the number of tasks in a cgroup.
-  * @cgrp: the cgroup in question
-@@ -3664,10 +3759,25 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
- 			return err;
- 	}
- 
-+	/* process cftsets of each subsystem */
- 	for_each_subsys(cgrp->root, ss) {
-+		struct cftype_set *set;
-+
- 		if (ss->populate && (err = ss->populate(ss, cgrp)) < 0)
- 			return err;
-+
-+		list_for_each_entry(set, &ss->cftsets, node) {
-+			const struct cftype *cft;
-+
-+			for (cft = set->cfts; cft->name[0] != '\0'; cft++) {
-+				err = cgroup_add_file(cgrp, ss, cft);
-+				if (err)
-+					pr_warning("cgroup_populate_dir: failed to create %s, err=%d\n",
-+						   cft->name, err);
-+			}
-+		}
- 	}
-+
- 	/* This cgroup is ready now */
- 	for_each_subsys(cgrp->root, ss) {
- 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
-@@ -4038,12 +4148,29 @@ again:
- 	return 0;
- }
- 
-+static void __init_or_module cgroup_init_cftsets(struct cgroup_subsys *ss)
-+{
-+	INIT_LIST_HEAD(&ss->cftsets);
-+
-+	/*
-+	 * base_cftset is embedded in subsys itself, no need to worry about
-+	 * deregistration.
-+	 */
-+	if (ss->base_cftypes) {
-+		ss->base_cftset.cfts = ss->base_cftypes;
-+		list_add_tail(&ss->base_cftset.node, &ss->cftsets);
-+	}
-+}
-+
- static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ static int netprio_device_event(struct notifier_block *unused,
+ 				unsigned long event, void *ptr)
  {
- 	struct cgroup_subsys_state *css;
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index e714c68..e0c5b4e 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -6,36 +6,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/module.h>
  
- 	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
+-static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft);
+-static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
+-			    const char *buffer);
+-static int tcp_cgroup_reset(struct cgroup *cont, unsigned int event);
+-
+-static struct cftype tcp_files[] = {
+-	{
+-		.name = "kmem.tcp.limit_in_bytes",
+-		.write_string = tcp_cgroup_write,
+-		.read_u64 = tcp_cgroup_read,
+-		.private = RES_LIMIT,
+-	},
+-	{
+-		.name = "kmem.tcp.usage_in_bytes",
+-		.read_u64 = tcp_cgroup_read,
+-		.private = RES_USAGE,
+-	},
+-	{
+-		.name = "kmem.tcp.failcnt",
+-		.private = RES_FAILCNT,
+-		.trigger = tcp_cgroup_reset,
+-		.read_u64 = tcp_cgroup_read,
+-	},
+-	{
+-		.name = "kmem.tcp.max_usage_in_bytes",
+-		.private = RES_MAX_USAGE,
+-		.trigger = tcp_cgroup_reset,
+-		.read_u64 = tcp_cgroup_read,
+-	},
+-};
++static struct cftype tcp_files[4];	/* XXX: will be removed soon */
  
-+	/* init base cftset */
-+	cgroup_init_cftsets(ss);
+ static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
+ {
+@@ -270,3 +241,29 @@ void tcp_prot_mem(struct mem_cgroup *memcg, long val, int idx)
+ 
+ 	tcp->tcp_prot_mem[idx] = val;
+ }
 +
- 	/* Create the top cgroup state for this subsystem */
- 	list_add(&ss->sibling, &rootnode.subsys_list);
- 	ss->root = &rootnode;
-@@ -4113,6 +4240,9 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 		return 0;
- 	}
++static struct cftype tcp_files[] = {
++	{
++		.name = "kmem.tcp.limit_in_bytes",
++		.write_string = tcp_cgroup_write,
++		.read_u64 = tcp_cgroup_read,
++		.private = RES_LIMIT,
++	},
++	{
++		.name = "kmem.tcp.usage_in_bytes",
++		.read_u64 = tcp_cgroup_read,
++		.private = RES_USAGE,
++	},
++	{
++		.name = "kmem.tcp.failcnt",
++		.private = RES_FAILCNT,
++		.trigger = tcp_cgroup_reset,
++		.read_u64 = tcp_cgroup_read,
++	},
++	{
++		.name = "kmem.tcp.max_usage_in_bytes",
++		.private = RES_MAX_USAGE,
++		.trigger = tcp_cgroup_reset,
++		.read_u64 = tcp_cgroup_read,
++	},
++};
+diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
+index 1afaa28..024df8a 100644
+--- a/net/sched/cls_cgroup.c
++++ b/net/sched/cls_cgroup.c
+@@ -22,22 +22,6 @@
+ #include <net/sock.h>
+ #include <net/cls_cgroup.h>
  
-+	/* init base cftset */
-+	cgroup_init_cftsets(ss);
+-static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp);
+-static void cgrp_destroy(struct cgroup *cgrp);
+-static int cgrp_populate(struct cgroup_subsys *ss, struct cgroup *cgrp);
+-
+-struct cgroup_subsys net_cls_subsys = {
+-	.name		= "net_cls",
+-	.create		= cgrp_create,
+-	.destroy	= cgrp_destroy,
+-	.populate	= cgrp_populate,
+-#ifdef CONFIG_NET_CLS_CGROUP
+-	.subsys_id	= net_cls_subsys_id,
+-#endif
+-	.module		= THIS_MODULE,
+-};
+-
+-
+ static inline struct cgroup_cls_state *cgrp_cls_state(struct cgroup *cgrp)
+ {
+ 	return container_of(cgroup_subsys_state(cgrp, net_cls_subsys_id),
+@@ -93,6 +77,17 @@ static int cgrp_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ 	return cgroup_add_files(cgrp, ss, ss_files, ARRAY_SIZE(ss_files));
+ }
+ 
++struct cgroup_subsys net_cls_subsys = {
++	.name		= "net_cls",
++	.create		= cgrp_create,
++	.destroy	= cgrp_destroy,
++	.populate	= cgrp_populate,
++#ifdef CONFIG_NET_CLS_CGROUP
++	.subsys_id	= net_cls_subsys_id,
++#endif
++	.module		= THIS_MODULE,
++};
 +
- 	/*
- 	 * need to register a subsys id before anything else - for example,
- 	 * init_cgroup_css needs it.
+ struct cls_cgroup_head {
+ 	u32			handle;
+ 	struct tcf_exts		exts;
 -- 
 1.7.7.3
 
