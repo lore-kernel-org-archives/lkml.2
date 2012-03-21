@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760455Ab2CUVoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:44:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49800 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759136Ab2CUVod (ORCPT
+	id S1757963Ab2CUVsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:48:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61034 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2CUVsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:44:33 -0400
-Date: Wed, 21 Mar 2012 14:44:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: axboe@kernel.dk, stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
-        linux-kernel@vger.kernel.org, thenzl@redhat.com
-Subject: Re: [PATCH] cciss: Initialize scsi host max_sectors for tape drive
- support
-Message-Id: <20120321144431.044d3af3.akpm@linux-foundation.org>
-In-Reply-To: <20120321213203.9277.11716.stgit@beardog.cce.hp.com>
-References: <20120321213203.9277.11716.stgit@beardog.cce.hp.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 21 Mar 2012 17:48:08 -0400
+Message-ID: <4F6A4C91.5040300@redhat.com>
+Date: Wed, 21 Mar 2012 22:48:01 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 0/2] block: align start sector of a discard request
+References: <1331745148-24885-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1331745148-24885-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 16:32:03 -0500
-"Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
-
-> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Il 14/03/2012 18:12, Paolo Bonzini ha scritto:
+> When a disk has a large discard_granularity, discards are not split with
+> optimal alignment; the pessimization gets bigger as discard_granularity
+> and max_discard_sectors become closer.
 > 
-> The default is too small
-
-So is the changelog.
-
-> (1024 blocks), use h->cciss_max_sectors (8192 blocks)
-
-What problem does this patch solve?  What might be the user-visible
-effects of the change?
-
-> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> ---
->  drivers/block/cciss_scsi.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> Take the limit case of discard_granularity == max_discard_sectors == 64.
+> Then, if a request is submitted for 256 sectors 2..257 it will be split
+> like this: 2..65, 66..129, 130..193, 194..257.  None of these requests
+> is aligned, so in fact you might end up with no discarded logical blocks
+> at all.  With this patch, the split will be 2..63, 64..127, 128..191,
+> 192..255, 256..257.  The patches also take the discard_alignment into
+> consideration.
 > 
-> diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
-> index e820b68..f510a9c 100644
-> --- a/drivers/block/cciss_scsi.c
-> +++ b/drivers/block/cciss_scsi.c
-> @@ -866,6 +866,7 @@ cciss_scsi_detect(ctlr_info_t *h)
->  	sh->can_queue = cciss_tape_cmds;
->  	sh->sg_tablesize = h->maxsgentries;
->  	sh->max_cmd_len = MAX_COMMAND_SIZE;
-> +	sh->max_sectors = h->cciss_max_sectors;
->  
->  	((struct cciss_scsi_adapter_data_t *) 
->  		h->scsi_ctlr)->scsi_host = sh;
+> Patch 1 adjusts the computation of the granularity-adjusted
+> max_discard_sectors so that it prepares for the new code in patch 2,
+> while patch 2 actually adjusts the split.
+> 
+> Paolo Bonzini (2):
+>   block: tweak rounding of max_discard_sectors
+>   block: split discard into aligned requests
+> 
+>  block/blk-lib.c    |   41 +++++++++++++++++++++++++++--------------
+>  1 files changed, 27 insertions(+), 14 deletions(-)
+> 
+
+Ping?
+
+Paolo
