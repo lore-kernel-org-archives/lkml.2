@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030946Ab2CUORx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:17:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60689 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab2CUORv (ORCPT
+	id S1031191Ab2CUOVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:21:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59764 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757656Ab2CUOVN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:17:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lubos Lunak <l.lunak@suse.cz>
-Subject: Re: [PATCH] do not export kernel's NULL #define to userspace
-Date: Wed, 21 Mar 2012 14:17:14 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <201203211408.25040.l.lunak@suse.cz> <201203211332.06018.arnd@arndb.de> <201203211509.27977.l.lunak@suse.cz>
-In-Reply-To: <201203211509.27977.l.lunak@suse.cz>
+	Wed, 21 Mar 2012 10:21:13 -0400
+Date: Wed, 21 Mar 2012 14:20:27 +0000
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Benjamin Segall <bsegall@google.com>,
+        Ranjit Manomohan <ranjitm@google.com>, Nikhil Rao <ncrao@google.com>,
+        "jmc@cs.unc.edu" <jmc@cs.unc.edu>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Abhishek Srivastava <a.srivastava.800@gmail.com>
+Subject: Re: [ANNOUNCE] LinSched for v3.3-rc7
+Message-ID: <20120321142026.GA29148@e103034-lin.cambridge.arm.com>
+References: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
+ <CAPhKKr-W+nh9Xzmwz83MUpzPuBfkj_TxjiZ+8NA5hndDUQB7bA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203211417.14306.arnd@arndb.de>
-X-Provags-ID: V02:K0:3YzuBxIsVI59Xaflq63UlBJzfHbxMJfCkFnUgu92PX4
- xfhDAHHCGI1Hvnj9lBtVTXZnE+imDIpnFwxtvIfrRptgkXWI4/
- 4VbkwFZRmG+qndEI1U9WYy6++ndYi69USa4238+JhUSyn1A3bW
- 6nGHOsJsLV7UfBcbL5Su1hlRW/GhEJbOrWqtNvD8VNNUP2mCXp
- 6PX7BqI4WNwNAD2ZpepWMbpSZtw/cb5wH3vLed5o58BxGZcLNL
- gshp503ib96ef0nqNkzYb+8LLXQFNuW6/4h6A6ihqOABzx1o0+
- yXzcRamUHCNJPvuGQqSyVvHH8sCDz/pf51YYdQHJY9i8bi8+Lu
- VzJV+qPfLJ70JvSTJXZg=
+In-Reply-To: <CAPhKKr-W+nh9Xzmwz83MUpzPuBfkj_TxjiZ+8NA5hndDUQB7bA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 21 Mar 2012 14:21:16.0260 (UTC) FILETIME=[E07B0240:01CD076D]
+X-MC-Unique: 112032114205019101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 March 2012, Lubos Lunak wrote:
-> > If so, we might have to replace it with a __KERNEL_NULL constant
-> > or something, like we do for the stuff in linux/types.h, so we
-> > don't accidentally break user applications that rely on the
-> > header files to be self-contained.
-> >
-> > I think there is at least a NULL usage in linux/wireless.h and some
-> > netfilter headers.
+Hi,
+
+On Thu, Mar 15, 2012 at 04:08:17AM +0000, Dhaval Giani wrote:
+> [Adding abhishek to the cc]
 > 
->  I see. How about the attached patch then?
+> On Wed, Mar 14, 2012 at 8:58 PM, Paul Turner <pjt@google.com> wrote:
+> > - Support for record and replay of application scheduling via perf.
+> > This is not yet well integrated, but under tests exist the tools to
+> > record an applications behavior using perf sched record, and then play
+> > it back in the simulator.
 
-Strictly speaking, you should not include standard headers from kernel
-provided headers, and the problems would be similar to those before
-your patch: anyone who currently doesn't include <stddef.h> but has
-their own definition of NULL will still get a conflict from including
-a kernel header that includes <linux/stddef.h>.
+I am interested in testing this feature and I could use a hint on how to
+get it working. tests/perf_replay.c seems to accept perf sched record
+traces which have been post-processed into .rlog traces. Where can I
+find a tool to generate rlogs from perf traces?
 
-	Arnd
+Thanks,
+Morten
+
