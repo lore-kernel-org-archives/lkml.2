@@ -1,199 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab2CUTww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 15:52:52 -0400
-Received: from win.srlabs.de ([46.4.89.15]:26859 "EHLO win.srlabs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab2CUTwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 15:52:51 -0400
-Message-ID: <4F6A3155.30603@srlabs.de>
-Date: Wed, 21 Mar 2012 20:51:49 +0100
-From: Mate Soos <mate@srlabs.de>
-Organization: Security Research Labs
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1757146Ab2CUT4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 15:56:40 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53977 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab2CUT4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 15:56:39 -0400
+Date: Wed, 21 Mar 2012 19:56:34 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: Constify parent name arrays
+Message-ID: <20120321195633.GB27778@sirena.org.uk>
+References: <1332357307-10693-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: PROBLEM: Kernel Oops when unplugging USB
-References: <4F6747FF.1060005@srlabs.de> <20120320135637.GA4634@kroah.com>
-In-Reply-To: <20120320135637.GA4634@kroah.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; protocol="application/pkcs7-signature";
-	micalg=sha1; boundary="------------ms010409010009070403060805"
-X-Originating-IP: [77.12.19.136]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332357307-10693-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Cookie: Steal this tagline.  I did.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------ms010409010009070403060805
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 21, 2012 at 07:15:07PM +0000, Mark Brown wrote:
+> Drivers should be able to declare their arrays of parent names as const
+> so the APIs need to accept const arguments.
 
-Dear Greg,
-
-On 03/20/2012 02:56 PM, Greg KH wrote:
-> On Mon, Mar 19, 2012 at 03:51:43PM +0100, Mate Soos wrote:
->> [2.] Full description of the problem/report:
->> The kernel oops-ed when I pulled out an umounted 8GB USB key. This see=
-ms
->> to be visible in the "messages" file. All the data attached, except fo=
-r
->> the "messages" has been produced after a reboot, since the system
->> hanged. Luckily, the "messages" got saved. The system after restart
->> should have exactly the same modules loaded as before.
->>
->> [3.] Keywords (i.e., modules, networking, kernel):
->> USB, Kernel Ooops, Watchdog
->>
->> [4.] Kernel version (from /proc/version):
->> $ cat
->>  /proc/version
->> Linux version 3.2.0-1-amd64 (Debian 3.2.4-1) (waldi@debian.org) (gcc
->> version 4.6.2 (Debian 4.6.2-12) ) #1 SMP Sun Feb 5 15:17:15 UTC 2012
->=20
-> Can you please try the 3.2.12 release, this should be resolved there
-> already.
->=20
-> Or can you try 3.3?
-
-Can you please indicate what you are suspecting to have fixed the
-problem? Once verified, I could add it to the bugzilla entries at
-
-https://bugzilla.kernel.org/show_bug.cgi?id=3D42963
-http://ati.cchtml.com/show_bug.cgi?id=3D465
-
-and we could close them as FIXED.
-
-Thanks,
-
-Mate
-
---=20
-Mate Soos
-Security Research Labs
-http://www.srlabs.de
-
-
---------------ms010409010009070403060805
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUXjCC
-BjQwggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDE1NVoXDTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOr
-lr6KMoOMpohBllVHrdRvEg/q6r8jR+EK75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSM
-zR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6
-qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxDz2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSD
-kOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr/+N2JLKutIxMYqQOJebr/f/h5t95
-m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFcfH6WNU7y1LhRgjAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqD
-CH14qywGXLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy
-6QMVQjbbMXltUfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPI
-zKKR9tQW8gGK+2+RHxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKf
-KSETEPrHh7p5shuuNktvsv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HOR
-z9v3vQwR4e3ksLc2JZOAFK+ssS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9
-sIPP7ON0fz095HdThKjiVJe6vofq+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCie
-uoBJ9OlqmsVWQvifIYf40dJPZkk9YgGTzWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7t
-w1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGqUp/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQ
-G2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb19mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t
-5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHDzCCBfegAwIBAgIDA3XdMA0GCSqGSIb3DQEB
-BQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
-U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
-Q2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcNMTExMjI5MDIwMTE1
-WhcNMTIxMjI5MDcwOTU0WjBaMSAwHgYDVQQNExc2MDM2NDAtdk9JNkVYMzh3QWJnajNoOTEX
-MBUGA1UEAwwObWF0ZUBzcmxhYnMuZGUxHTAbBgkqhkiG9w0BCQEWDm1hdGVAc3JsYWJzLmRl
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy34IQMIt7s+kkiFJPGs5LdAz/p/h
-N6m9TTEkq9bxDgFNgJU4VyEJ76hNuPNEhchZ4KDwGpmsmd71Zp7B2itq92tf3XyBi+75fO6Z
-mWkSv0Nr6tYkVYkwzSGUrzpXv977y6zPfIH+o5ZVssMpqK3XlLJaBezg3uYIjlNqK9UVZLXK
-LuwLJZNl89qFKQdYsM046grguyHlfVzv9jgqDxcBvIvH593T6TUYpOV53+1P2tnlYyGo+qIh
-KkgG2xqj/uxjifbpsu+qJ4IFHuyJ+SUjOLc7VmYnQjhGhtWgxzwwiklHjcpIoEaKNDWCL/qQ
-Py3DBabM4U+4hKFZtkVSVFRq6wIDAQABo4IDqTCCA6UwCQYDVR0TBAIwADALBgNVHQ8EBAMC
-BLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTI3pdodapXL5ph
-A705sPRZG/HigTAfBgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAZBgNVHREEEjAQ
-gQ5tYXRlQHNybGFicy5kZTCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/
-MC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsG
-AQUFBwIBFihodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3Bggr
-BgEFBQcCAjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+
-VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBW
-YWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxp
-YW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRo
-ZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYBBQUHAgIwgY8wJxYgU3RhcnRD
-b20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmlsaXR5IGFuZCB3YXJyYW50
-aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExpbWl0YXRpb25zIiBv
-ZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3Js
-LnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUF
-BzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYI
-KwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZI
-hvcNAQEFBQADggEBAHeHBdBPPObrXaZ+lQ47D/5oAMnUzc2WZbuzRFRCXvkCznNQieTPvA9+
-Qq6PHEhaQj2FOOtXpotspiowgtkilE9Ci+6w/WEQ0zOPDVkPtwoYrDlyedjVqykKG8eYDuH6
-6PFt97VB5VWR1wIsTQ+GEoJM7YGUZpx52EGfU1KnqUczaKerY5OakFKhCo5PI0mabgQElwRR
-OksLrg14WL2j6j71exvisZ7/XdxzVDOtWwW0OSZq1NHZ7oWbv60XcA1hC4u6XHlowEdTv5d2
-aAD8nA6aFFhokqgLtjsXRtjHFrs9L3w5O8GJdYgTAWVCGN5+ErBdtuitQLVEckOsDE4gAdUw
-ggcPMIIF96ADAgECAgMDdd0wDQYJKoZIhvcNAQEFBQAwgYwxCzAJBgNVBAYTAklMMRYwFAYD
-VQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0
-ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRp
-YXRlIENsaWVudCBDQTAeFw0xMTEyMjkwMjAxMTVaFw0xMjEyMjkwNzA5NTRaMFoxIDAeBgNV
-BA0TFzYwMzY0MC12T0k2RVgzOHdBYmdqM2g5MRcwFQYDVQQDDA5tYXRlQHNybGFicy5kZTEd
-MBsGCSqGSIb3DQEJARYObWF0ZUBzcmxhYnMuZGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
-ggEKAoIBAQDLfghAwi3uz6SSIUk8azkt0DP+n+E3qb1NMSSr1vEOAU2AlThXIQnvqE2480SF
-yFngoPAamayZ3vVmnsHaK2r3a1/dfIGL7vl87pmZaRK/Q2vq1iRViTDNIZSvOle/3vvLrM98
-gf6jllWywymordeUsloF7ODe5giOU2or1RVktcou7Aslk2Xz2oUpB1iwzTjqCuC7IeV9XO/2
-OCoPFwG8i8fn3dPpNRik5Xnf7U/a2eVjIaj6oiEqSAbbGqP+7GOJ9umy76onggUe7In5JSM4
-tztWZidCOEaG1aDHPDCKSUeNykigRoo0NYIv+pA/LcMFpszhT7iEoVm2RVJUVGrrAgMBAAGj
-ggOpMIIDpTAJBgNVHRMEAjAAMAsGA1UdDwQEAwIEsDAdBgNVHSUEFjAUBggrBgEFBQcDAgYI
-KwYBBQUHAwQwHQYDVR0OBBYEFMjel2h1qlcvmmEDvTmw9Fkb8eKBMB8GA1UdIwQYMBaAFFNy
-7ZKc4NrLAVx8fpY1TvLUuFGCMBkGA1UdEQQSMBCBDm1hdGVAc3JsYWJzLmRlMIICIQYDVR0g
-BIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEWImh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cuc3RhcnRz
-c2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0Q29tIENl
-cnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1
-ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
-ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlv
-bnMuMIGcBggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0
-eTADAgECGmRMaWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0
-aW9uICJMZWdhbCBhbmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ku
-MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5j
-cmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3Ns
-LmNvbS9zdWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFy
-dHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEAd4cF0E885utdpn6V
-DjsP/mgAydTNzZZlu7NEVEJe+QLOc1CJ5M+8D35Cro8cSFpCPYU461emi2ymKjCC2SKUT0KL
-7rD9YRDTM48NWQ+3ChisOXJ52NWrKQobx5gO4fro8W33tUHlVZHXAixND4YSgkztgZRmnHnY
-QZ9TUqepRzNop6tjk5qQUqEKjk8jSZpuBASXBFE6SwuuDXhYvaPqPvV7G+Kxnv9d3HNUM61b
-BbQ5JmrU0dnuhZu/rRdwDWELi7pceWjAR1O/l3ZoAPycDpoUWGiSqAu2OxdG2McWuz0vfDk7
-wYl1iBMBZUIY3n4SsF226K1AtURyQ6wMTiAB1TGCA9AwggPMAgEBMIGUMIGMMQswCQYDVQQG
-EwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwg
-Q2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5
-IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwN13TAJBgUrDgMCGgUAoIICEDAYBgkqhkiG9w0B
-CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMjAzMjExOTUxNDlaMCMGCSqGSIb3
-DQEJBDEWBBQcZghmIqXdTlX7ttyA49Wnz0cUFzBfBgkqhkiG9w0BCQ8xUjBQMAsGCWCGSAFl
-AwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4D
-AgcwDQYIKoZIhvcNAwICASgwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwx
-FjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRl
-cm1lZGlhdGUgQ2xpZW50IENBAgMDdd0wgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYD
-VQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0
-YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmlt
-YXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwN13TANBgkqhkiG9w0BAQEFAASCAQAbd6PL
-QO0fHBzmlSo2FrQnvOB130D2yG763p9LsGWSB3yRsnTqoEIw++ayzw0W7Trdyy1jBewNwfx3
-GOh1hVP44pgcAvYt66xRAjjFsMOAIGqCFWamVRNoLzGuPJPteyFTnLd2I/bQiATTAemvWkbw
-49GdxvaKqF2WJcfLKMMv6jdnJl7TAc25BSpFNU4ZuaL8VvmyXOYV8DA2hmJT0zP51tNPSEC/
-xl44beYDFoIhf2en6rYiYp8JBbj02zEHK+uoFJDRrdDHcNMwK068xS4uKvnROhca/3ZxvYId
-BMXrkTo9+eV1Dck7XKtdPK83Cs6033CWEqPuUN5Ga7x33aiiAAAAAAAA
---------------ms010409010009070403060805--
+Slight oversight in this one and the updates for the new API version
+were simpler than I thought so sending a new version shortly.
