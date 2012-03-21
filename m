@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab2CUGFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:05:55 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52312 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab2CUGFx (ORCPT
+	id S1756181Ab2CUGPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:15:36 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.99]:38303 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab2CUGPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:05:53 -0400
-X-Originating-IP: 217.70.178.129
-X-Originating-IP: 50.43.46.74
-Date: Tue, 20 Mar 2012 23:05:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Check for quoted strings broken across lines
-Message-ID: <20120321060544.GA2831@leaf>
-References: <20120320210644.GA2493@leaf>
- <1332293056.27711.12.camel@joe2Laptop>
- <20120321042805.GB1979@leaf>
- <1332304558.29403.17.camel@joe2Laptop>
+	Wed, 21 Mar 2012 02:15:34 -0400
+Message-ID: <4F697201.1090206@bwalle.de>
+Date: Wed, 21 Mar 2012 07:15:29 +0100
+From: Bernhard Walle <bernhard@bwalle.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120313 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332304558.29403.17.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel,gmane.linux.ports.arm.omap
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Bernhard Walle <walle@corscience.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
+References: <1332262083-9375-1-git-send-email-walle@corscience.de> <201203202202.12060.arnd@arndb.de>
+In-Reply-To: <201203202202.12060.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: YmVybmhhcmRAYndhbGxlLmRl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 09:35:58PM -0700, Joe Perches wrote:
-> On Tue, 2012-03-20 at 21:28 -0700, Josh Triplett wrote:
-> > The heuristics in the patch I submitted almost completely eliminate
-> > false positives, which makes my patch suitable for use without --strict.
+Am 20.03.12 23:02, schrieb Arnd Bergmann:
+> On Tuesday 20 March 2012, Bernhard Walle wrote:
+>>
+>> This PWM driver uses the PWM of the TWL4030. The driver for the TWL6030
+>> PWM has been used as mode, but the PWM registers are different.
+>>
+>> The driver can be used and has been tested in conjunction with
+>> pwm-backlight to control a backlight LED of a LCD touch screen.
+>>
+>> Signed-off-by: Bernhard Walle <walle@corscience.de>
 > 
-> Yup, this patch is better than the one I submitted.
+> Since it's too late for v3.4 now and we will get a new pwm
+> subsystem in v3.5, I suggest you change the driver to work
+> register with that subsystem instead of just using the old
+> header file. Note that drivers/mfd is not really the right
+> place anyway, because this is not a multifunction driver but
+> just one device driver that happens to be a slave of an mfd.
 
-OK.  Andrew, could you substitute my patch for Joe's in your tree?
+Does that new subsystem already exist in some tree?
 
-> One improvement might be to check for a line continuation \
-> on $prevline and still produce a warning in that case.
-
-I'd suggest doing that one as a separate check, "unnecessary line
-continuation", which should flag any use of a line continuation other
-than with a preprocessor directive.  I don't think combining that with
-the wrapped-string check makes sense.
-
-- Josh Triplett
+Regards,
+Bernhard
