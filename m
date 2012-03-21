@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031284Ab2CUOga (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:36:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45421 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031256Ab2CUOg0 convert rfc822-to-8bit (ORCPT
+	id S1031304Ab2CUOgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:36:39 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36188 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031287Ab2CUOgf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:36:26 -0400
+	Wed, 21 Mar 2012 10:36:35 -0400
 MIME-Version: 1.0
 In-Reply-To: <CAMXH7KH5kS=wPFdC8QrtnhE6_sZqmsJ8h=6Gs3kfHOTbeHjacA@mail.gmail.com>
 References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
 	<1332274969-15782-5-git-send-email-rob.lee@linaro.org>
 	<CAMXH7KH5kS=wPFdC8QrtnhE6_sZqmsJ8h=6Gs3kfHOTbeHjacA@mail.gmail.com>
-Date: Wed, 21 Mar 2012 09:36:20 -0500
-Message-ID: <CAMXH7KGCTP0=YGfSgEVYYJoFK22GOLt-KfShpa6CuDi=PQ1-Pw@mail.gmail.com>
+Date: Wed, 21 Mar 2012 16:36:29 +0200
+Message-ID: <CAP245DW9SdTYNc8XXwiuHzo5Y-aZrLc2qP0MekKkyAT2TosjbQ@mail.gmail.com>
 Subject: Re: [PATCH v8 4/8] ARM: davinci: Consolidate time keeping and irq enable
-From: Rob Lee <rob.lee@linaro.org>
-To: len.brown@intel.com, "Nori, Sekhar" <nsekhar@ti.com>,
-        Kevin Hilman <khilman@ti.com>
-Cc: akpm@linux-foundation.org, rjw@sisk.pl, robherring2@gmail.com,
-        Baohua.Song@csr.com, amit.kucheria@linaro.org, nicolas.ferre@atmel.com,
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: len.brown@intel.com, "Nori, Sekhar" <nsekhar@ti.com>,
+        Kevin Hilman <khilman@ti.com>, akpm@linux-foundation.org, rjw@sisk.pl,
+        robherring2@gmail.com, Baohua.Song@csr.com, nicolas.ferre@atmel.com,
         linux@maxim.org.za, kgene.kim@samsung.com, amit.kachhap@linaro.org,
         magnus.damm@gmail.com, daniel.lezcano@linaro.org,
         mturquette@linaro.org, vincent.guittot@linaro.org,
@@ -38,17 +38,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 9:28 AM, Rob Lee <rob.lee@linaro.org> wrote:
+Rob, you should start a new '3.4-fixes' branch containing such
+bugfixes that can be pushed to Len after -rc1.
+
+On Wed, Mar 21, 2012 at 4:28 PM, Rob Lee <rob.lee@linaro.org> wrote:
 > Sekhar tested this patch on Davinci last night and found a problem.  I
 > looked at the code again and found a mindless omission on my part (see
 > below).  Fix is trivial.  I've check all other platforms and confirmed
 > this problem does not exist for those.  Will resend a v9 of the
 > patchset shortly.
 >
-
-Kevin just informed me that Len already has v8 patchset queued so I'll
-just send this fix out as a separate patch.
-
 > On Tue, Mar 20, 2012 at 3:22 PM, Robert Lee <rob.lee@linaro.org> wrote:
 >> Enable core cpuidle timekeeping and irq enabling and remove that
 >> handling from this code.
