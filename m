@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964995Ab2CUVkE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:40:04 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56029 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964935Ab2CUVjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:39:53 -0400
-Message-ID: <1332366031.3858.44.camel@key-ThinkPad-W510>
-Subject: [PATCH 11/17] powerpc: crypto: AES-XCBC mode routines for nx
+	id S965046Ab2CUVkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:40:11 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:52588 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964924Ab2CUVjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 17:39:51 -0400
+Message-ID: <1332366041.3858.46.camel@key-ThinkPad-W510>
+Subject: [PATCH 12/17] powerpc: crypto: SHA256 hash routines for nx
  encryption
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
         benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 16:40:31 -0500
+Date: Wed, 21 Mar 2012 16:40:41 -0500
 In-Reply-To: <1332365297.3858.5.camel@key-ThinkPad-W510>
 References: <1332365297.3858.5.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
@@ -22,28 +21,28 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032121-5518-0000-0000-0000031FC5C4
+x-cbid: 12032121-8974-0000-0000-000007793937
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in XCBC mode on the Power7+ CPU's
+These routines add support for SHA-256 hashing on the Power7+ CPU's
 in-Nest accelerator driver.
 
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- arch/powerpc/crypto/nx/nx-aes-xcbc.c |  230 ++++++++++++++++++++++++++++++++++
- 1 files changed, 230 insertions(+), 0 deletions(-)
- create mode 100644 arch/powerpc/crypto/nx/nx-aes-xcbc.c
+ arch/powerpc/crypto/nx/nx-sha256.c |  240 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 240 insertions(+), 0 deletions(-)
+ create mode 100644 arch/powerpc/crypto/nx/nx-sha256.c
 
-diff --git a/arch/powerpc/crypto/nx/nx-aes-xcbc.c b/arch/powerpc/crypto/nx/nx-aes-xcbc.c
+diff --git a/arch/powerpc/crypto/nx/nx-sha256.c b/arch/powerpc/crypto/nx/nx-sha256.c
 new file mode 100644
-index 0000000..b25eb79
+index 0000000..38560d6
 --- /dev/null
-+++ b/arch/powerpc/crypto/nx/nx-aes-xcbc.c
-@@ -0,0 +1,230 @@
++++ b/arch/powerpc/crypto/nx/nx-sha256.c
+@@ -0,0 +1,240 @@
 +/**
-+ * AES XCBC routines supporting the Power 7+ Nest Accelerators driver
++ * SHA-256 routines supporting the Power 7+ Nest Accelerators driver
 + *
 + * Copyright (C) 2011-2012 International Business Machines Inc.
 + *
@@ -64,110 +63,68 @@ index 0000000..b25eb79
 + */
 +
 +#include <crypto/internal/hash.h>
-+#include <crypto/aes.h>
-+#include <crypto/algapi.h>
++#include <crypto/sha.h>
 +#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
 +#include <asm/vio.h>
 +
 +#include "nx_csbcpb.h"
 +#include "nx.h"
 +
 +
-+struct xcbc_state {
-+	u8 state[AES_BLOCK_SIZE];
-+	unsigned int count;
-+	u8 buffer[AES_BLOCK_SIZE];
-+};
-+
-+static int nx_xcbc_set_key(struct crypto_shash *desc,
-+			   const u8            *in_key,
-+			   unsigned int         key_len)
++static int nx_sha256_init(struct shash_desc *desc)
 +{
-+	struct nx_crypto_ctx *nx_ctx = crypto_shash_ctx(desc);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	memcpy(nx_ctx->priv.xcbc.key, in_key, key_len);
-+
-+	return 0;
-+}
-+
-+static int nx_xcbc_init(struct shash_desc *desc)
-+{
-+	struct xcbc_state *sctx = shash_desc_ctx(desc);
++	struct sha256_state *sctx = shash_desc_ctx(desc);
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
 +	struct nx_sg *out_sg;
 +
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
++	nx_ctx_init(nx_ctx, HCOP_FC_SHA);
 +
 +	memset(sctx, 0, sizeof *sctx);
 +
-+	csbcpb->cpb.hdr.key_size = NX_KS_AES_128;
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_XCBC_MAC;
++	nx_ctx->ap = &nx_ctx->props[NX_PROPS_SHA256];
 +
-+	memcpy(csbcpb->cpb.aes_xcbc.key, nx_ctx->priv.xcbc.key, AES_BLOCK_SIZE);
-+	memset(nx_ctx->priv.xcbc.key, 0, sizeof *nx_ctx->priv.xcbc.key);
-+
++	nx_ctx->csbcpb->cpb.hdr.digest_size = NX_DS_SHA256;
 +	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
-+				  AES_BLOCK_SIZE, nx_ctx->ap->sglen);
++				  SHA256_DIGEST_SIZE, nx_ctx->ap->sglen);
 +	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
 +
 +	return 0;
 +}
 +
-+static int nx_xcbc_update(struct shash_desc *desc,
-+			  const u8          *data,
-+			  unsigned int       len)
++static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
++			    unsigned int len)
 +{
-+	struct xcbc_state *sctx = shash_desc_ctx(desc);
++	struct sha256_state *sctx = shash_desc_ctx(desc);
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
 +	struct nx_sg *in_sg;
-+	u32 to_process, leftover;
++	u64 to_process, leftover;
 +	int rc;
 +
 +	if (csbcpb->cpb.hdr.fdm.continuation == 1) {
 +		/* we've hit the nx chip previously and we're updating again,
 +		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.aes_xcbc.cv,
-+		       csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
++		memcpy(csbcpb->cpb.sha256.input_partial_digest,
++		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
 +	}
 +
 +	/* 2 cases for total data len:
-+	 *  1: <= AES_BLOCK_SIZE: copy into state, return 0
-+	 *  2: > AES_BLOCK_SIZE: process X blocks, copy in leftover
++	 *  1: <= SHA256_BLOCK_SIZE: copy into state, return 0
++	 *  2: > SHA256_BLOCK_SIZE: process X blocks, copy in leftover
 +	 */
-+	if (len + sctx->count <= AES_BLOCK_SIZE) {
-+		memcpy(sctx->buffer + sctx->count, data, len);
++	if (len + sctx->count <= SHA256_BLOCK_SIZE) {
++		memcpy(sctx->buf + sctx->count, data, len);
 +		sctx->count += len;
 +		return 0;
 +	}
 +
-+	/* to_process: the AES_BLOCK_SIZE data chunk to process in this
++	/* to_process: the SHA256_BLOCK_SIZE data chunk to process in this
 +	 * update */
-+	to_process = (sctx->count + len) & ~(AES_BLOCK_SIZE - 1);
-+	leftover = (sctx->count + len) & (AES_BLOCK_SIZE - 1);
-+
-+	/* the hardware will not accept a 0 byte operation for this algorithm
-+	 * and the operation MUST be finalized to be correct. So if we happen
-+	 * to get an update that falls on a block sized boundary, we must
-+	 * save off the last block to finalize with later. */
-+	if (!leftover) {
-+		to_process -= AES_BLOCK_SIZE;
-+		leftover = AES_BLOCK_SIZE;
-+	}
++	to_process = (sctx->count + len) & ~(SHA256_BLOCK_SIZE - 1);
++	leftover = (sctx->count + len) & (SHA256_BLOCK_SIZE - 1);
 +
 +	if (sctx->count) {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, sctx->buffer,
++		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
 +					 sctx->count, nx_ctx->ap->sglen);
 +		in_sg = nx_build_sg_list(in_sg, (u8 *)data,
 +					 to_process - sctx->count,
@@ -175,8 +132,8 @@ index 0000000..b25eb79
 +		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
 +					sizeof(struct nx_sg);
 +	} else {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data, to_process,
-+					 nx_ctx->ap->sglen);
++		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data,
++					 to_process, nx_ctx->ap->sglen);
 +		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
 +					sizeof(struct nx_sg);
 +	}
@@ -190,11 +147,14 @@ index 0000000..b25eb79
 +	if (rc)
 +		goto out;
 +
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
++	atomic_inc(&(nx_ctx->stats->sha256_ops));
 +
 +	/* copy the leftover back into the state struct */
-+	memcpy(sctx->buffer, data + len - leftover, leftover);
++	memcpy(sctx->buf, data + len - leftover, leftover);
 +	sctx->count = leftover;
++
++	csbcpb->cpb.sha256.message_bit_length += (u64)
++		(csbcpb->cpb.sha256.spbc * 8);
 +
 +	/* everything after the first update is continuation */
 +	csbcpb->cpb.hdr.fdm.continuation = 1;
@@ -202,39 +162,31 @@ index 0000000..b25eb79
 +	return rc;
 +}
 +
-+static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
++static int nx_sha256_final(struct shash_desc *desc, u8 *out)
 +{
-+	struct xcbc_state *sctx = shash_desc_ctx(desc);
++	struct sha256_state *sctx = shash_desc_ctx(desc);
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
 +	struct nx_sg *in_sg, *out_sg;
-+	int rc = 0;
++	int rc;
 +
 +	if (csbcpb->cpb.hdr.fdm.continuation == 1) {
 +		/* we've hit the nx chip previously, now we're finalizing,
 +		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.aes_xcbc.cv,
-+		       csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
-+	} else if (sctx->count == 0) {
-+		/* we've never seen an update, so this is a 0 byte op. The
-+		 * hardware cannot handle a 0 byte op, so just copy out the
-+		 * known 0 byte result. This is cheaper than allocating a
-+		 * software context to do a 0 byte op */
-+		u8 data[] = { 0x75, 0xf0, 0x25, 0x1d, 0x52, 0x8a, 0xc0, 0x1c,
-+			      0x45, 0x73, 0xdf, 0xd5, 0x84, 0xd7, 0x9f, 0x29 };
-+		memcpy(out, data, sizeof(data));
-+		goto out;
++		memcpy(csbcpb->cpb.sha256.input_partial_digest,
++		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
 +	}
 +
 +	/* final is represented by continuing the operation and indicating that
 +	 * this is not an intermediate operation */
 +	csbcpb->cpb.hdr.fdm.intermediate = 0;
 +
-+	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buffer,
-+				 sctx->count, nx_ctx->ap->sglen);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, AES_BLOCK_SIZE,
-+				  nx_ctx->ap->sglen);
++	csbcpb->cpb.sha256.message_bit_length += (u64)(sctx->count * 8);
 +
++	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
++				 sctx->count, nx_ctx->ap->sglen);
++	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, SHA256_DIGEST_SIZE,
++				  nx_ctx->ap->sglen);
 +	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
 +	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
 +
@@ -245,30 +197,87 @@ index 0000000..b25eb79
 +	if (rc)
 +		goto out;
 +
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
++	atomic_inc(&(nx_ctx->stats->sha256_ops));
 +
-+	memcpy(out, csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
++	atomic64_add(csbcpb->cpb.sha256.message_bit_length,
++		     &(nx_ctx->stats->sha256_bytes));
++	memcpy(out, csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
 +out:
 +	return rc;
 +}
 +
-+struct shash_alg nx_shash_aes_xcbc_alg = {
-+	.digestsize = AES_BLOCK_SIZE,
-+	.init       = nx_xcbc_init,
-+	.update     = nx_xcbc_update,
-+	.final      = nx_xcbc_final,
-+	.setkey     = nx_xcbc_set_key,
-+	.descsize   = sizeof(struct xcbc_state),
-+	.statesize  = sizeof(struct xcbc_state),
++static int nx_sha256_export(struct shash_desc *desc, void *out)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++	struct sha256_state *octx = out;
++
++	octx->count = sctx->count +
++		      (csbcpb->cpb.sha256.message_bit_length / 8);
++	memcpy(octx->buf, sctx->buf, sizeof(octx->buf));
++
++	/* if no data has been processed yet, we need to export SHA256's
++	 * initial data, in case this context gets imported into a software
++	 * context */
++	if (csbcpb->cpb.sha256.message_bit_length)
++		memcpy(octx->state, csbcpb->cpb.sha256.message_digest,
++		       SHA256_DIGEST_SIZE);
++	else {
++		octx->state[0] = SHA256_H0;
++		octx->state[1] = SHA256_H1;
++		octx->state[2] = SHA256_H2;
++		octx->state[3] = SHA256_H3;
++		octx->state[4] = SHA256_H4;
++		octx->state[5] = SHA256_H5;
++		octx->state[6] = SHA256_H6;
++		octx->state[7] = SHA256_H7;
++	}
++
++	return 0;
++}
++
++static int nx_sha256_import(struct shash_desc *desc, const void *in)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++	const struct sha256_state *ictx = in;
++
++	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
++
++	sctx->count = ictx->count & 0x3f;
++	csbcpb->cpb.sha256.message_bit_length = (ictx->count & ~0x3f) * 8;
++
++	if (csbcpb->cpb.sha256.message_bit_length) {
++		memcpy(csbcpb->cpb.sha256.message_digest, ictx->state,
++		       SHA256_DIGEST_SIZE);
++
++		csbcpb->cpb.hdr.fdm.continuation = 1;
++		csbcpb->cpb.hdr.fdm.intermediate = 1;
++	}
++
++	return 0;
++}
++
++struct shash_alg nx_shash_sha256_alg = {
++	.digestsize = SHA256_DIGEST_SIZE,
++	.init       = nx_sha256_init,
++	.update     = nx_sha256_update,
++	.final      = nx_sha256_final,
++	.export     = nx_sha256_export,
++	.import     = nx_sha256_import,
++	.descsize   = sizeof(struct sha256_state),
++	.statesize  = sizeof(struct sha256_state),
 +	.base       = {
-+		.cra_name        = "xcbc(aes)",
-+		.cra_driver_name = "xcbc-aes-nx",
++		.cra_name        = "sha256",
++		.cra_driver_name = "sha256-nx",
 +		.cra_priority    = 300,
 +		.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize   = AES_BLOCK_SIZE,
++		.cra_blocksize   = SHA256_BLOCK_SIZE,
 +		.cra_module      = THIS_MODULE,
 +		.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+		.cra_init        = nx_crypto_ctx_aes_xcbc_init,
++		.cra_init        = nx_crypto_ctx_sha_init,
 +		.cra_exit        = nx_crypto_ctx_exit,
 +	}
 +};
