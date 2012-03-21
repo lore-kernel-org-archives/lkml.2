@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760602Ab2CUVhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:37:11 -0400
-Received: from broadrack.ru ([195.178.208.66]:49307 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757704Ab2CUVhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:37:08 -0400
-Date: Thu, 22 Mar 2012 01:37:04 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [take 3] pohmelfs: call for inclusion
-Message-ID: <20120321213704.GB16713@ioremap.net>
-References: <20120316121829.GA12685@ioremap.net>
- <1331904553.5406.34.camel@joe2Laptop>
- <20120316134314.GA19342@ioremap.net>
- <1331907127.5406.48.camel@joe2Laptop>
- <20120321202702.GA16713@ioremap.net>
- <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
- <20120321211835.GQ6589@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321211835.GQ6589@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932232Ab2CUVh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:37:29 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36543 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760607Ab2CUVhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 17:37:24 -0400
+Message-ID: <1332365854.3858.24.camel@key-ThinkPad-W510>
+Subject: [PATCH 01/17] powerpc: Add new hvcall constants to support PFO
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
+Date: Wed, 21 Mar 2012 16:37:34 -0500
+In-Reply-To: <1332365297.3858.5.camel@key-ThinkPad-W510>
+References: <1332365297.3858.5.camel@key-ThinkPad-W510>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032121-3534-0000-0000-000006CE729F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 09:18:35PM +0000, Al Viro (viro@ZenIV.linux.org.uk) wrote:
-> I think I've asked that question at least 3 times.  Never got anything
-> resembling an answer...  Is that misspelled dentry_path()?  Or is something
-> subtle going on and we really want different strings generated for
-> chrooted processes here?
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
 
-This is a special case which does bad things intentionally.
-http-compatibility was added in _this_ POHMELFS on demand from people
-who do want to access files by handle created from whole path. Not name
-or inode number, but whole path, since that's only what is available in
-http (or more generally via rest api)
+The Platform Facilities Option (PFO) adds several new h_calls and
+more return codes.
 
-It is limited, wrong and error-prone. It does not even support rename
-and hardlinks. But that's what people want.
-When I bind-remount part of the tree, things 'dissapear' from the tree.
-Yes, this is really an uglymoron, but it was created for _some_ limited
-case which rougly work in sandboxed environment only.
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/hvcall.h |   25 +++++++++++++++++++++++--
+ 1 files changed, 23 insertions(+), 2 deletions(-)
 
-The whole rest of the POHMELFS was completely rewritten with very
-different model, namely we do _not_ depend on pathes in general case.
-There are fair inodes which are indexed by 2^512 numbers, they are
-referenced from direntries and so forth.
+diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
+index 1c324ff..6122523 100644
+--- a/arch/powerpc/include/asm/hvcall.h
++++ b/arch/powerpc/include/asm/hvcall.h
+@@ -77,8 +77,27 @@
+ #define H_MR_CONDITION  -43
+ #define H_NOT_ENOUGH_RESOURCES -44
+ #define H_R_STATE       -45
+-#define H_RESCINDEND    -46
+-#define H_MULTI_THREADS_ACTIVE -9005
++#define H_RESCINDED     -46
++#define H_P2		-55
++#define H_P3		-56
++#define H_P4		-57
++#define H_P5		-58
++#define H_P6		-59
++#define H_P7		-60
++#define H_P8		-61
++#define H_P9		-62
++#define H_TOO_BIG	-64
++#define H_OVERLAP	-68
++#define H_INTERRUPT	-69
++#define H_BAD_DATA	-70
++#define H_NOT_ACTIVE	-71
++#define H_SG_LIST	-72
++#define H_OP_MODE	-73
++#define H_COP_HW	-74
++#define H_UNSUPPORTED_FLAG_START	-256
++#define H_UNSUPPORTED_FLAG_END		-511
++#define H_MULTI_THREADS_ACTIVE	-9005
++#define H_OUTSTANDING_COP_OPS	-9006
+ 
 
-So, again, treat http-compat mount option (which turns this
-path-based-lookups) as a ugly handler for those who /skipped by
-censorship in editor/ know what they are doing.
-
+ /* Long Busy is a condition that can be returned by the firmware
+@@ -240,6 +259,8 @@
+ #define H_GET_MPP		0x2D4
+ #define H_HOME_NODE_ASSOCIATIVITY 0x2EC
+ #define H_BEST_ENERGY		0x2F4
++#define H_RANDOM		0x300
++#define H_COP			0x304
+ #define H_GET_MPP_X		0x314
+ #define MAX_HCALL_OPCODE	H_GET_MPP_X
+ 
 -- 
-	Evgeniy Polyakov
+1.7.1
+
+
