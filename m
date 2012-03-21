@@ -1,206 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030420Ab2CUWX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:23:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49679 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202Ab2CUWXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:23:20 -0400
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH V2 1/3] lib: add support for stmp-style devices
-Date: Wed, 21 Mar 2012 23:21:57 +0100
-Message-Id: <1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
-References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1030467Ab2CUWYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:24:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55565 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756797Ab2CUWYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 18:24:00 -0400
+Date: Wed, 21 Mar 2012 23:23:57 +0100
+From: Jan Kara <jack@suse.cz>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        stable@vger.kernel.org, tytso@mit.edu
+Subject: Re: [PATCH] ext2: Don't export ext2_mask_flags() to user space
+Message-ID: <20120321222357.GB24330@quack.suse.cz>
+References: <1332366608-2695-1-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332366608-2695-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MX23/28 use IP cores which follow a register layout I have first seen on
-STMP3xxx SoCs. In this layout, every register actually has four u32:
+On Wed 21-03-12 22:50:07, Thierry Reding wrote:
+> Using the exported linux/ext2_fs.h header from user space is broken
+> since commit 0583fcc because the umode_t type is no longer exported.
+> This happens for example when compiling busybox' tune2fs applet. The
+> e2fsprogs package does not have this problem because it ships with
+> its own header and doesn't use the one exported by the Linux kernel.
+> 
+> However, since busybox doesn't use the ext2_mask_flags() function the
+> easiest fix is to just not export it and as a result the umode_t type
+> definition is longer needed.
+  Frankly, anybody seriously wanting to do anything with ext[2-4]
+filesystems should use header files as provided by libext2fs. So I wonder
+if just unexporting the whole file wouldn't be the best solution going
+forward. Ted, do you have opinion?
 
- 1.) to store a value directly
- 2.) a SET register where every 1-bit sets the corresponding bit,
-     others are unaffected
- 3.) same with a CLR register
- 4.) same with a TOG (toggle) register
+								Honza
 
-Also, the 2 MSBs in register 0 are always the same and can be used to reset
-the IP core.
 
-All this is strictly speaking not mach-specific (but IP core specific) and,
-thus, doesn't need to be in mach-mxs/include. At least, mx6 and mx50 also
-utilize IP cores following this stmp-style. So:
-
-Introduce a stmp-style device, put the code and defines for that in a public
-place (lib/), and let drivers for stmp-style devices select that code.
-To avoid regressions and ease reviewing, the actual code is simply copied from
-mach-mxs. It definately wants updates, but those need a seperate patch series.
-
-Voila, mach dependency gone, reusable code introduced. Note that I didn't
-remove the duplicated code from mach-mxs yet, first the drivers have to be
-converted.
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
----
- include/linux/stmp_device.h |   20 +++++++++++
- lib/Kconfig                 |    3 ++
- lib/Makefile                |    2 +
- lib/stmp_device.c           |   80 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 105 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/stmp_device.h
- create mode 100644 lib/stmp_device.c
-
-diff --git a/include/linux/stmp_device.h b/include/linux/stmp_device.h
-new file mode 100644
-index 0000000..6cf7ec9
---- /dev/null
-+++ b/include/linux/stmp_device.h
-@@ -0,0 +1,20 @@
-+/*
-+ * basic functions for devices following the "stmp" style register layout
-+ *
-+ * Copyright (C) 2011 Wolfram Sang, Pengutronix e.K.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef __STMP_DEVICE_H__
-+#define __STMP_DEVICE_H__
-+
-+#define STMP_OFFSET_REG_SET	0x4
-+#define STMP_OFFSET_REG_CLR	0x8
-+#define STMP_OFFSET_REG_TOG	0xc
-+
-+extern int stmp_reset_block(void __iomem *);
-+#endif /* __STMP_DEVICE_H__ */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 028aba9..d4af46f 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -29,6 +29,9 @@ config GENERIC_IOMAP
- 	bool
- 	select GENERIC_PCI_IOMAP
- 
-+config STMP_DEVICE
-+	bool
-+
- config CRC_CCITT
- 	tristate "CRC-CCITT functions"
- 	help
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..f78dbcd 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -123,6 +123,8 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
- 
- obj-$(CONFIG_CLZ_TAB) += clz_tab.o
- 
-+obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
-+
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
- 
-diff --git a/lib/stmp_device.c b/lib/stmp_device.c
-new file mode 100644
-index 0000000..8ac9bcc
---- /dev/null
-+++ b/lib/stmp_device.c
-@@ -0,0 +1,80 @@
-+/*
-+ * Copyright (C) 1999 ARM Limited
-+ * Copyright (C) 2000 Deep Blue Solutions Ltd
-+ * Copyright 2006-2007,2010 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
-+ * Copyright 2009 Ilya Yanok, Emcraft Systems Ltd, yanok@emcraft.com
-+ * Copyright (C) 2011 Wolfram Sang, Pengutronix e.K.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/errno.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/stmp_device.h>
-+
-+#define STMP_MODULE_CLKGATE	(1 << 30)
-+#define STMP_MODULE_SFTRST	(1 << 31)
-+
-+/*
-+ * Clear the bit and poll it cleared.  This is usually called with
-+ * a reset address and mask being either SFTRST(bit 31) or CLKGATE
-+ * (bit 30).
-+ */
-+static int stmp_clear_poll_bit(void __iomem *addr, u32 mask)
-+{
-+	int timeout = 0x400;
-+
-+	writel(mask, addr + STMP_OFFSET_REG_CLR);
-+	udelay(1);
-+	while ((readl(addr) & mask) && --timeout)
-+		/* nothing */;
-+
-+	return !timeout;
-+}
-+
-+int stmp_reset_block(void __iomem *reset_addr)
-+{
-+	int ret;
-+	int timeout = 0x400;
-+
-+	/* clear and poll SFTRST */
-+	ret = stmp_clear_poll_bit(reset_addr, STMP_MODULE_SFTRST);
-+	if (unlikely(ret))
-+		goto error;
-+
-+	/* clear CLKGATE */
-+	writel(STMP_MODULE_CLKGATE, reset_addr + STMP_OFFSET_REG_CLR);
-+
-+	/* set SFTRST to reset the block */
-+	writel(STMP_MODULE_SFTRST, reset_addr + STMP_OFFSET_REG_SET);
-+	udelay(1);
-+
-+	/* poll CLKGATE becoming set */
-+	while ((!(readl(reset_addr) & STMP_MODULE_CLKGATE)) && --timeout)
-+		/* nothing */;
-+	if (unlikely(!timeout))
-+		goto error;
-+
-+	/* clear and poll SFTRST */
-+	ret = stmp_clear_poll_bit(reset_addr, STMP_MODULE_SFTRST);
-+	if (unlikely(ret))
-+		goto error;
-+
-+	/* clear and poll CLKGATE */
-+	ret = stmp_clear_poll_bit(reset_addr, STMP_MODULE_CLKGATE);
-+	if (unlikely(ret))
-+		goto error;
-+
-+	return 0;
-+
-+error:
-+	pr_err("%s(%p): module reset timeout\n", __func__, reset_addr);
-+	return -ETIMEDOUT;
-+}
-+EXPORT_SYMBOL(stmp_reset_block);
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: linux-ext4@vger.kernel.org
+> Cc: stable@vger.kernel.org
+> ---
+>  include/linux/ext2_fs.h |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+> index 091ab48..20f8f33 100644
+> --- a/include/linux/ext2_fs.h
+> +++ b/include/linux/ext2_fs.h
+> @@ -209,10 +209,7 @@ struct ext2_group_desc
+>  #define EXT2_OTHER_FLMASK (EXT2_NODUMP_FL | EXT2_NOATIME_FL)
+>  
+>  /* Mask out flags that are inappropriate for the given type of inode. */
+> -#ifndef __KERNEL__
+> -typedef unsigned short umode_t;
+> -#endif
+> -
+> +#ifdef __KERNEL__
+>  static inline __u32 ext2_mask_flags(umode_t mode, __u32 flags)
+>  {
+>  	if (S_ISDIR(mode))
+> @@ -222,6 +219,7 @@ static inline __u32 ext2_mask_flags(umode_t mode, __u32 flags)
+>  	else
+>  		return flags & EXT2_OTHER_FLMASK;
+>  }
+> +#endif
+>  
+>  /*
+>   * ioctl commands
+> -- 
+> 1.7.9.4
+> 
 -- 
-1.7.2.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
