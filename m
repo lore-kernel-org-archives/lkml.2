@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab2CUNXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:23:54 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48634 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab2CUNXw (ORCPT
+	id S1758791Ab2CUN0O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:26:14 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:44158
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1754634Ab2CUN0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:23:52 -0400
-Date: Wed, 21 Mar 2012 09:23:44 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Paul Walmsley <paul@pwsan.com>
-cc: Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/3] Documentation: common clk API
-In-Reply-To: <alpine.DEB.2.00.1203210018260.30543@utopia.booyaka.com>
-Message-ID: <alpine.LFD.2.02.1203210855510.24151@xanadu.home>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <CAP245DXV5oE+-y+PQCcSM016h-J+UgTi1efmdrcyeQge4k1Cfw@mail.gmail.com> <201203161218.05125.arnd.bergmann@linaro.org> <201203162057.58706.arnd@arndb.de> <alpine.DEB.2.00.1203161509470.4395@utopia.booyaka.com>
- <20120316234706.GJ3852@pengutronix.de> <alpine.DEB.2.00.1203201611330.22974@utopia.booyaka.com> <alpine.LFD.2.02.1203202233340.24151@xanadu.home> <alpine.DEB.2.00.1203210018260.30543@utopia.booyaka.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 21 Mar 2012 09:26:12 -0400
+Date: Wed, 21 Mar 2012 14:26:06 +0100 (CET)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Randy Dunlap <rdunlap@xenotime.net>
+cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] Add design document for UBIFS secure deletion
+In-Reply-To: <4F68E420.30801@xenotime.net>
+Message-ID: <alpine.DEB.2.00.1203211413240.6054@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <1329152067.22240.214.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>  <alpine.DEB.2.00.1202231628360.13720@eristoteles.iwoars.net>
+ <1331277476.22872.2.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203191752300.22256@eristoteles.iwoars.net> <4F68E420.30801@xenotime.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012, Paul Walmsley wrote:
+Thanks for giving it a readover and finding a few errant remnants of the
+academic version of this design doc. With your suggestions, the update
+follows.
 
-> Hello Nico,
-> 
-> On Tue, 20 Mar 2012, Nicolas Pitre wrote:
-> 
-> > This common clk API has been under development for over *two* years 
-> > already, with several attempts to merge it.  And each previous merge 
-> > attempt aborted because someone came along at the last minute to do 
-> > exactly what you are doing i.e. underline all the flaws and call for a 
-> > redesign.  This is becoming a bad joke.
-> 
-> There is a misunderstanding.  I am not calling for a redesign.  I am 
-> simply stating that the current maturity level of the API and code should 
-> be documented in the Kconfig dependencies or description text before the 
-> code goes upstream.  The objectives are to make future changes easier, set 
-> expectations, and clearly disclose the extent to which the API and code 
-> will need to change.
+cheers,
+Joel Reardon
 
-Maybe there is no actual consensus on that extent.
+p.s., I'm new to this git; git format-patch gives me one patch per commit,
+which is a pity for a commit that e.g, fixes a typo. Format-patch
+doesn't obviously report how to produce unified patches. Creating a new
+branch, applying the patches, committing, and generating a new patch seems
+too much overkill but I've seen it proposed. Simpler way?
 
-> > The code will be easier to change once it is in mainline, simply due to 
-> > the fact that you can also change all its users at once.  And it is well 
-> > possible that most users won't have to deal with the same magnitude of 
-> > complexity as yours, again reducing the scope for resistance to changes.
-> 
-> I hope you are right.  To me, these conclusions seem unlikely.  It seems 
-> equally likely that these rationales will make it much more difficult to 
-> change the code once it's upstream and platforms are depending on it.  
+---
+ Documentation/filesystems/ubifsec.txt |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
 
-No code should go upstream if no one depends on it.  Therefore we change 
-code that many platforms depend on all the time.  What is killing us is 
-the need to synchronize with multiple external code bases scattered 
-around.
+diff --git a/Documentation/filesystems/ubifsec.txt b/Documentation/filesystems/ubifsec.txt
+index 4eb41fb..175f13d 100644
+--- a/Documentation/filesystems/ubifsec.txt
++++ b/Documentation/filesystems/ubifsec.txt
+@@ -10,9 +10,16 @@ Trivial secure deletion by overwriting the deleted data does not work for
+ flash memory, as there is a large difference between the size of the I/O unit
+ (page) and the erasure unit (erase block). UBIFSec encrypts each data node
+ with a distinct key and stores the keys colocated in a key storage area (KSA).
+-Secure deletion is achieved by atomically updating the (small) set of erase
+-blocks that constitute the KSA to remove keys corresponding to deleted data,
+-thereby deleting the data nodes they encrypted.
++Secure deletion is achieved by updating the (small) set of erase blocks that
++constitute the KSA to remove keys corresponding to deleted data, thereby
++deleting the data nodes they encrypted. The additional wear due to flash
++erasure is small, only the erase blocks containing the keys, and the operation
++of removing old keys---called purging---is done periodically so the actual
++increase in wear is controled by the user. Moreover, the use of UBI's logical
++erase block (LEB) interface means that the additional wear is evenly spread
++over the flash memory and the new version of a LEB containing the keys can be
++written using UBI's atomic update proceedure to ensure no keys are lost during
++an update.
 
-> Particularly given the ongoing sensitivity to reducing "churn" of mainline 
-> code, so publicly discussed.
+ Key Storage Area (KSA)
+ ======================
+@@ -83,7 +90,7 @@ node must be valid according to the index
+ the index.
 
-Please stop buying into that crap.  We congratulate ourselves every 
-merge cycles with the current process being able to deal with around 
-half a million of lines changed every 3 months or so.  It's pointless 
-churn that is frowned upon, not useful and incremental API changes.  I 
-don't think that "pointless" would apply here.
+ The operation of purging performed on a correct key state map guarantees
+-DNEFS's soundness: purging securely deletes any key in the KSA marked as
++soundness: purging securely deletes any key in the KSA marked as
+ deleted---afterwards, every key either decrypts one valid data node or nothing
+ at all and every valid data node can be decrypted.  A correct key state map
+ also guarantees the integrity of our data during purging, because no key that
+@@ -101,7 +108,7 @@ The key state map is built from a periodic checkpoint combined with a replay
+ of the most recent changes while mounting.  We checkpoint the current key
+ state map to the storage medium whenever the KSA is purged. After a purge,
+ every key is either unused or used, and so a checkpoint of this map can be
+-stored using one bit per key---less than 1\% of the KSA's size---which is then
++stored using one bit per key---less than 1% of the KSA's size---which is then
+ compressed.  A special LEB is used to store checkpoints, where each new
+ checkpoint is appended; when the erase block is full then the next checkpoint
+ is written at the beginning using an atomic update.
+@@ -148,13 +155,11 @@ purging---taken as correct by assumption.
+ Second, failure can occur after purging one, several, or indeed  all of the
+ KSA's LEBs. When remounting the device, the loaded checkpoint merged with the
+ replay data  reflects the state before the first purge, so some purged LEBs
+-contain new unused data while the key state map claims it is a deleted key. As
+-these are cryptographically-suitable random values, with high probability they
+-cannot successfully decrypt any existing valid data node.
++contain new unused data while the key state map claims it is a deleted key.
 
-> So it seems like a good idea to attempt to address these potential 
-> roadblocks and criticisms to major clock framework changes early.
-
-I understand your concern, however I don't think it is as serious as you 
-are making it.
-
-> One last comment to address which is orthogonal to the technical content 
-> of this discussion.
-> 
-> > Otherwise one might ask where were you during those development years if 
-> > you claim that the behavior and/or API of the common clock code still 
-> > need to change significantly?
-> 
-> One might ask this.  If one were to ask this, another might briefly 
-> outline the participation in public and private clock discussions at 
-> Linaro Connect in Budapest and Redwood Shores, at LPC in Santa Rosa, at 
-> ELCE/KS in Prague, at ELC in Redwood Shores, in conference calls, IRC 
-> sessions, and private E-mails with many of the people included in the 
-> header of this message, not to mention the list posts.
-
-Sure.  I was there too and came across you many times.  I just don't 
-understand why some apparent consensus was built around the current 
-submission, that people involved appeared to be highly satisfied at 
-last, given the emphasis you are giving to your present concern which 
-doesn't seem to be widely shared.  This is a bit surprising.
-
-> None of the concerns that have been described are new.  There has been an 
-> endeavour to discuss them with anyone who seemed even remotely interested.
-
-Let's change tactics then.  We've been discussing this code for over two 
-years and no one could really benefit from it during that time.  Maybe 
-future discussion could become more productive and concrete when some 
-code is merged _and_ used at last.
+ Third, failure can occur while writing to the checkpoint LEB.  When the
+ checkpoint is written using atomic updates, then failing during the operation
+-is equivalent to failing before it begins (cf. 2nd case).  Incomplete
++is equivalent to failing before it begins (compare the 2nd case).  Incomplete
+ checkpoints are detected and so the previous valid checkpoint is loaded
+ instead.  After replaying all the nodes, the key state map is equal to its
+ state immediately before purging the KSA. This means that all entries marked
+-- 
+1.7.0.4
 
 
-Nicolas
