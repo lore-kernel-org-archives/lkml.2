@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760158Ab2CUVQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:16:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34952 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757941Ab2CUVQr (ORCPT
+	id S1760232Ab2CUVRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:17:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61339 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759246Ab2CUVQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:16:47 -0400
-Message-Id: <20120321211448.865894139@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:16:49 -0400
+Message-Id: <20120321211448.946087610@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:14:55 -0700
+Date: Wed, 21 Mar 2012 14:14:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Eisserer <linuxhippy@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 7/8] iwl3945: fix possible il->txq NULL pointer dereference in delayed works
+        alan@lxorguk.ukuu.org.uk,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Adam Conrad <adconrad@ubuntu.com>
+Subject: [ 8/8] powerpc/pmac: Fix SMP kernels on pre-core99 UP machines
 In-Reply-To: <20120321211522.GA28233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 210787e82a0ac1ffb5d7be1c796f0c51050849ad upstream.
+commit 78c5c68a4cf4329d17abfa469345ddf323d4fd62 upstream.
 
-On il3945_down procedure we free tx queue data and nullify il->txq
-pointer. After that we drop mutex and then cancel delayed works. There
-is possibility, that after drooping mutex and before the cancel, some
-delayed work will start and crash while trying to send commands to
-the device. For example, here is reported crash in
-il3945_bg_reg_txpower_periodic():
-https://bugzilla.kernel.org/show_bug.cgi?id=42766#c10
+The code for "powersurge" SMP would kick in and cause a crash
+at boot due to the lack of a NULL test.
 
-Patch fix problem by adding il->txq check on works that send commands,
-hence utilize tx queue.
-
-Reported-by: Clemens Eisserer <linuxhippy@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Reported-by: Adam Conrad <adconrad@ubuntu.com>
+Tested-by: Adam Conrad <adconrad@ubuntu.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlegacy/iwl-3945.c     |    7 ++++---
- drivers/net/wireless/iwlegacy/iwl3945-base.c |    2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ arch/powerpc/platforms/powermac/smp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlegacy/iwl-3945.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-3945.c
-@@ -1872,11 +1872,12 @@ static void iwl3945_bg_reg_txpower_perio
- 	struct iwl_priv *priv = container_of(work, struct iwl_priv,
- 					     _3945.thermal_periodic.work);
+--- a/arch/powerpc/platforms/powermac/smp.c
++++ b/arch/powerpc/platforms/powermac/smp.c
+@@ -414,7 +414,7 @@ static struct irqaction psurge_irqaction
  
--	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
--		return;
--
- 	mutex_lock(&priv->mutex);
-+	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
-+		goto out;
-+
- 	iwl3945_reg_txpower_periodic(priv);
-+out:
- 	mutex_unlock(&priv->mutex);
- }
+ static void __init smp_psurge_setup_cpu(int cpu_nr)
+ {
+-	if (cpu_nr != 0)
++	if (cpu_nr != 0 || !psurge_start)
+ 		return;
  
---- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
-@@ -2763,7 +2763,7 @@ static void iwl3945_bg_alive_start(struc
- 	    container_of(data, struct iwl_priv, alive_start.work);
- 
- 	mutex_lock(&priv->mutex);
--	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
-+	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
- 		goto out;
- 
- 	iwl3945_alive_start(priv);
+ 	/* reset the entry point so if we get another intr we won't
 
 
