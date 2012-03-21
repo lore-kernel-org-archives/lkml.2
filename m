@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab2CUGhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:37:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab2CUGhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:37:40 -0400
-Date: Wed, 21 Mar 2012 08:37:46 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH] virtio-spec: clarify ro/rw bits and updating rule of
- virtio-net status field
-Message-ID: <20120321063746.GA6773@redhat.com>
-References: <20120320062020.12815.61342.stgit@jason-ThinkPad-T400>
- <87ty1jpm6p.fsf@rustcorp.com.au>
- <20120320224805.GA4997@redhat.com>
- <87ty1ializ.fsf@rustcorp.com.au>
+	id S964869Ab2CUG4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:56:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39114 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab2CUG4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 02:56:17 -0400
+Subject: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Wed, 21 Mar 2012 10:56:07 +0400
+Message-ID: <20120321065140.13852.52315.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ty1ializ.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 10:10:52AM +1030, Rusty Russell wrote:
-> On Wed, 21 Mar 2012 00:48:05 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Tue, Mar 20, 2012 at 09:35:18PM +1030, Rusty Russell wrote:
-> > > On Tue, 20 Mar 2012 14:20:21 +0800, Jason Wang <jasowang@redhat.com> wrote:
-> > > > This patch clarifies VIRTIO_NET_S_LINK_UP as a read-only bit and
-> > > > VIRTIO_NET_S_ANNOUNCE as a read-writable bit. Also introduce the write 1 to
-> > > > clear semantics for all read-writable bits of config status field. This could
-> > > > help to reduce the config status field updating race between host and guest and
-> > > > also simplify the implementation.
-> > > > 
-> > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > 
-> > > This approach assumes an active config field, which neither lguest nor
-> > > S/390 have.
-> > > 
-> > > Thanks,
-> > > Rusty.
-> > 
-> > What does 'active' mean in this context?
-> 
-> It means you are assuming that writes to the config field trap to the
-> host.
-> 
-> Rusty.
+There is good old tradition: every year somebody submit patches for extending
+vma->vm_flags upto 64-bits, because there no free bits left on 32-bit systems.
 
-Ah. Right, we need to trap for host to clear the bit.
-OK, so let's make the bit RO, and add
-VIRTIO_NET_CTRL_ANNOUNCED to acknowledge that we've
-seen VIRTIO_NET_S_ANNOUNCE using the control VQ?
+previous attempts:
+https://lkml.org/lkml/2011/4/12/24	(KOSAKI Motohiro)
+https://lkml.org/lkml/2010/4/27/23	(Benjamin Herrenschmidt)
+https://lkml.org/lkml/2009/10/1/202	(Hugh Dickins)
 
-If there's no ctrl VQ, we won't acknowledge the feature bit ...
+Here already exist special type for this: vm_flags_t, but not all code uses it.
+So, before switching vm_flags_t from unsinged long to u64 we must spread
+vm_flags_t everywhere and fix all possible type-casting problems.
 
-> -- 
->   How could I marry someone with more hair than me?  http://baldalex.org
+There is no functional changes in this patch set,
+it only prepares code for vma->vm_flags converting.
+
+---
+
+Konstantin Khlebnikov (16):
+      mm: introduce NR_VMA_FLAGS
+      mm: use vm_flags_t for vma flags
+      mm/shmem: use vm_flags_t for vma flags
+      mm/nommu: use vm_flags_t for vma flags
+      mm/drivers: use vm_flags_t for vma flags
+      mm/x86: use vm_flags_t for vma flags
+      mm/arm: use vm_flags_t for vma flags
+      mm/unicore32: use vm_flags_t for vma flags
+      mm/ia64: use vm_flags_t for vma flags
+      mm/powerpc: use vm_flags_t for vma flags
+      mm/s390: use vm_flags_t for vma flags
+      mm/mips: use vm_flags_t for vma flags
+      mm/parisc: use vm_flags_t for vma flags
+      mm/score: use vm_flags_t for vma flags
+      mm: cast vm_flags_t to u64 before printing
+      mm: vm_flags_t strict type checking
+
+
+ arch/arm/include/asm/cacheflush.h                |    5 -
+ arch/arm/kernel/asm-offsets.c                    |    6 +
+ arch/arm/mm/fault.c                              |    2 
+ arch/ia64/mm/fault.c                             |    9 +
+ arch/mips/mm/c-r3k.c                             |    2 
+ arch/mips/mm/c-r4k.c                             |    6 -
+ arch/mips/mm/c-tx39.c                            |    2 
+ arch/parisc/mm/fault.c                           |    4 -
+ arch/powerpc/include/asm/mman.h                  |    2 
+ arch/s390/mm/fault.c                             |    8 +
+ arch/score/mm/cache.c                            |    6 -
+ arch/sh/mm/tlbflush_64.c                         |    2 
+ arch/unicore32/kernel/asm-offsets.c              |    6 +
+ arch/unicore32/mm/fault.c                        |    2 
+ arch/x86/mm/hugetlbpage.c                        |    4 -
+ drivers/char/mem.c                               |    2 
+ drivers/infiniband/hw/ipath/ipath_file_ops.c     |    6 +
+ drivers/infiniband/hw/qib/qib_file_ops.c         |    6 +
+ drivers/media/video/omap3isp/ispqueue.h          |    2 
+ drivers/staging/android/ashmem.c                 |    2 
+ drivers/staging/android/binder.c                 |   15 +-
+ drivers/staging/tidspbridge/core/tiomap3430.c    |   13 +-
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |    4 -
+ fs/binfmt_elf.c                                  |    2 
+ fs/binfmt_elf_fdpic.c                            |   24 ++-
+ fs/exec.c                                        |    2 
+ fs/proc/nommu.c                                  |    3 
+ fs/proc/task_nommu.c                             |   14 +-
+ include/linux/backing-dev.h                      |    7 -
+ include/linux/huge_mm.h                          |    4 -
+ include/linux/ksm.h                              |    8 +
+ include/linux/mm.h                               |  163 +++++++++++++++-------
+ include/linux/mm_types.h                         |   11 +
+ include/linux/mman.h                             |    4 -
+ include/linux/rmap.h                             |    8 +
+ include/linux/shmem_fs.h                         |    5 -
+ kernel/bounds.c                                  |    2 
+ kernel/events/core.c                             |    4 -
+ kernel/fork.c                                    |    2 
+ kernel/sys.c                                     |    4 -
+ mm/backing-dev.c                                 |    4 +
+ mm/huge_memory.c                                 |    2 
+ mm/ksm.c                                         |    4 -
+ mm/madvise.c                                     |    2 
+ mm/memory.c                                      |    9 +
+ mm/mlock.c                                       |    2 
+ mm/mmap.c                                        |   36 ++---
+ mm/mprotect.c                                    |    9 +
+ mm/mremap.c                                      |    2 
+ mm/nommu.c                                       |   19 +--
+ mm/rmap.c                                        |   16 +-
+ mm/shmem.c                                       |   54 ++++---
+ mm/vmscan.c                                      |    4 -
+ 53 files changed, 322 insertions(+), 224 deletions(-)
+
+-- 
+Signature
