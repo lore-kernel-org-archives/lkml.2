@@ -1,245 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964950Ab2CUBPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 21:15:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46065 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758434Ab2CUBPP (ORCPT
+	id S1758736Ab2CUBWC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 21:22:02 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61092 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab2CUBWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 21:15:15 -0400
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH v8] sound/soc/lapis: add machine driver for ML7213 Carrier Board
-Date: Wed, 21 Mar 2012 10:15:17 +0900
-Message-Id: <1332292517-3411-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 20 Mar 2012 21:22:00 -0400
+From: Ashay Rane <ashay.r@gmail.com>
+To: linux-perf-users@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        David Daney <david.daney@cavium.com>
+Cc: linux-kernel@vger.kernel.org, Ashay Rane <ashay.r@gmail.com>
+Subject: [PATCH 1/1] perf report: Correct display of samples and events in header
+Date: Tue, 20 Mar 2012 20:20:28 -0500
+Message-Id: <1332292828-22656-1-git-send-email-ashay.r@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This machine driver is for
-LAPIS Semiconductor ML7213 Carrier Board + ML26124 Reference Board
+This patch prints the number of samples and the count of performance events separately. This allows comparing performance of different applications with each other. Previously, the sample count was displayed against an 'Events:' heading. With this patch, the header now reads (for example):
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
-v8
- - Delete redundant break
- - Use module_platform_driver
- - Delete redundant 'space'
- - Delete snd_soc_dapm_enable_pin()s
----
- sound/soc/lapis/Kconfig             |    7 ++
- sound/soc/lapis/Makefile            |    2 +
- sound/soc/lapis/ml7213ioh-machine.c |  169 +++++++++++++++++++++++++++++++++++
- 3 files changed, 178 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/lapis/ml7213ioh-machine.c
+Samples: 5K of event 'instructions'
+Event count (approx.): 2993026545
 
-diff --git a/sound/soc/lapis/Kconfig b/sound/soc/lapis/Kconfig
-index 551e385..9bc1b4d 100644
---- a/sound/soc/lapis/Kconfig
-+++ b/sound/soc/lapis/Kconfig
-@@ -2,3 +2,10 @@ config SND_SOC_ML7213_PLATFORM
- 	tristate "ML7213 IOH ASoC platform driver"
- 	help
- 	  This option enables support for the AC Link Controllers in ML7213 IOH SoC.
-+
-+config SND_SOC_ML7213_MACHINE
-+	tristate "ML7213 IOH ASoC machine driver"
-+	select SND_SOC_ML7213_PLATFORM
-+	select SND_SOC_ML26124
-+	help
-+	  This is ASoC machine driver for ML7213 IOH
-diff --git a/sound/soc/lapis/Makefile b/sound/soc/lapis/Makefile
-index aba1630..7ec4bea 100644
---- a/sound/soc/lapis/Makefile
-+++ b/sound/soc/lapis/Makefile
-@@ -1,4 +1,6 @@
- # Platform
-+snd-soc-ml7213-machine-objs := ml7213ioh-machine.o
- snd-soc-ml7213-plat-objs := ml7213ioh-plat.o
+The patch covers both the stdio and the browser interface.
+
+Signed-off-by: Ashay Rane <ashay.r@gmail.com>
+---
+ tools/perf/builtin-report.c         |   11 +++++++----
+ tools/perf/util/ui/browsers/hists.c |    9 ++++++---
+ 2 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8e91c6e..2ee7783 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -295,12 +295,15 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ {
+ 	size_t ret;
+ 	char unit;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 nr_events = self->stats.total_period;
  
- obj-$(CONFIG_SND_SOC_ML7213_PLATFORM) += snd-soc-ml7213-plat.o
-+obj-$(CONFIG_SND_SOC_ML7213_MACHINE) += snd-soc-ml7213-machine.o
-diff --git a/sound/soc/lapis/ml7213ioh-machine.c b/sound/soc/lapis/ml7213ioh-machine.c
-new file mode 100644
-index 0000000..14f83d2
---- /dev/null
-+++ b/sound/soc/lapis/ml7213ioh-machine.c
-@@ -0,0 +1,169 @@
-+/*
-+ * ml7213ioh-machine.c -- SoC Audio for LAPIS Semiconductor ML7213 IOH CRB
-+ *
-+ * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/soc.h>
-+#include <sound/pcm_params.h>
-+#include <linux/i2c.h>
-+#include "../codecs/ml26124.h"
-+#include "ioh_i2s.h"
+-	nr_events = convert_unit(nr_events, &unit);
+-	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
++	nr_samples = convert_unit(nr_samples, &unit);
++	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
+ 	if (evname != NULL)
+-		ret += fprintf(fp, " %s", evname);
++		ret += fprintf(fp, " of event '%s'", evname);
 +
-+static const struct snd_soc_dapm_widget ml7213_dapm_widgets[] = {
-+	SND_SOC_DAPM_SPK("Speaker", NULL),
-+	SND_SOC_DAPM_LINE("LINEOUT", NULL),
-+	SND_SOC_DAPM_LINE("LINEIN", NULL),
-+	SND_SOC_DAPM_MIC("AnalogMIC", NULL),
-+	SND_SOC_DAPM_MIC("DigitalMIC", NULL),
-+};
-+
-+static const struct snd_soc_dapm_route ml7213_routes[] = {
-+	{"Speaker", NULL, "SPOUT"},
-+	{"LINEOUT", NULL, "LOUT"},
-+	{"AnalogMIC", NULL, "MICBIAS"},
-+	{"MIN", NULL, "AnalogMIC"},
-+	{"MDIN", NULL, "DigitalMIC"},
-+	{"MIN", NULL, "LINEIN"},
-+};
-+
-+static int ml7213_hw_params(struct snd_pcm_substream *substream,
-+			    struct snd_pcm_hw_params *hw_params)
-+{
-+	int bclkfs;
-+	int mclkfs;
-+	unsigned int clk;
-+	int ret;
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-+	unsigned int channel_map[] = {5, 0, 1, 2, 3, 4};
-+
-+	/* set cpu DAI channel mapping */
-+	ret = snd_soc_dai_set_channel_map(cpu_dai, ARRAY_SIZE(channel_map),
-+		channel_map, ARRAY_SIZE(channel_map), channel_map);
-+	if (ret < 0)
-+		return ret;
-+
-+	switch (params_rate(hw_params)) {
-+	case 16000:
-+	case 32000:
-+	case 48000:
-+		clk = 12288000;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	mclkfs = clk / params_rate(hw_params);
-+
-+	switch (params_format(hw_params)) {
-+	case SNDRV_PCM_FORMAT_U8:
-+	case SNDRV_PCM_FORMAT_S16_LE:
-+		bclkfs = 32;
-+		break;
-+	case SNDRV_PCM_FORMAT_S32_LE:
-+		bclkfs = 64;
-+		break;
-+	default:
-+		pr_err("%s: Failed not support format\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	/* set the codec system clock for DAC and ADC */
-+	ret = snd_soc_dai_set_sysclk(codec_dai, ML26124_USE_PLLOUT, clk,
-+				     SND_SOC_CLOCK_IN);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set codec DAI configuration */
-+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
-+				 SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set cpu DAI configuration */
-+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
-+				 SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_ops ml7213_ops = {
-+	.hw_params = ml7213_hw_params,
-+};
-+
-+static struct snd_soc_dai_link ml7213crb_dai = {
-+	.name = "ml26124",
-+	.stream_name = "ML26124",
-+	.cpu_dai_name = "ml7213ioh",
-+	.codec_dai_name = "ml26124-hifi",
-+	.platform_name	= "ml7213-i2s-audio",
-+	.codec_name	= "ml26124.1-001a",
-+	.ops = &ml7213_ops,
-+};
-+
-+static struct snd_soc_card ml7213crb_card = {
-+	.name		= "LAPIS Semiconductor ML7213CRB",
-+	.dai_link	= &ml7213crb_dai,
-+	.num_links	= 1,
-+	.dapm_widgets	= ml7213_dapm_widgets,
-+	.num_dapm_widgets	= ARRAY_SIZE(ml7213_dapm_widgets),
-+	.dapm_routes	= ml7213_routes,
-+	.num_dapm_routes	= ARRAY_SIZE(ml7213_routes),
-+};
-+
-+static int __devinit lapis_ml7213_ml26124_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+
-+	ml7213crb_card.dev = &pdev->dev;
-+	ret = snd_soc_register_card(&ml7213crb_card);
-+	if (ret) {
-+		dev_err(&pdev->dev, "snd_soc_register_card failed %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devexit lapis_ml7213_ml26124_remove(struct platform_device *pdev)
-+{
-+	snd_soc_unregister_card(&ml7213crb_card);
-+	platform_set_drvdata(pdev, NULL);
-+	return 0;
-+}
-+
-+static struct platform_driver snd_ml7213crb_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "lapis-ml7213ioh-CRB",
-+	},
-+	.probe = lapis_ml7213_ml26124_probe,
-+	.remove = __devexit_p(lapis_ml7213_ml26124_remove),
-+};
-+
-+module_platform_driver(snd_ml7213crb_driver);
-+
-+MODULE_AUTHOR("Tomoya MORINAGA <tomoya.rohm@gmail.com>");
-+MODULE_DESCRIPTION("LAPIS Semiconductor ML7213 IOH ALSA SoC machine driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lapis-ml7213ioh-CRB");
++	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
+ 	return ret + fprintf(fp, "\n#\n");
+ }
+ 
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index fa530fc..d9ec415 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -837,10 +837,13 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
+ 	int printed;
+ 	const struct dso *dso = self->dso_filter;
+ 	const struct thread *thread = self->thread_filter;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 nr_events = self->stats.total_period;
+ 
+-	nr_events = convert_unit(nr_events, &unit);
+-	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
++	nr_samples = convert_unit(nr_samples, &unit);
++	printed = scnprintf(bf, size,
++			    "Samples: %lu%c of event '%s', Event count (approx.): %lu",
++			    nr_samples, unit, ev_name, nr_events);
+ 
+ 	if (self->uid_filter_str)
+ 		printed += snprintf(bf + printed, size - printed,
 -- 
-1.7.7.6
+1.7.9.3
 
