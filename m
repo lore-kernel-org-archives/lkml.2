@@ -1,66 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab2CUMjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 08:39:07 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:37933 "EHLO
-	homiemail-a41.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757904Ab2CUMjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:39:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=ioINHFH8oByndVMM16FvidSzRxBY1fpOYxhK2lw8kmrTRM5/8SU6GXodYVYeW
-	WJ5dEZxVdYWszqfTdcD3QzDwpy56cWZU8AkmRVYskOdN93H21qDnohZzRaBOzUHN
-	oclpRKILTmxoqnjvtYYEAnE8IPTjcgntlS5VUkG1nPAFHM=
-Message-ID: <4F69CBE6.5010604@shealevy.com>
-Date: Wed, 21 Mar 2012 08:39:02 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120321 Thunderbird/11.0
+	id S1758626Ab2CUMub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:50:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757586Ab2CUMua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 08:50:30 -0400
+Date: Wed, 21 Mar 2012 13:49:37 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dan Smith <danms@us.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] AutoNUMA alpha6
+Message-ID: <20120321124937.GX24602@redhat.com>
+References: <20120316144028.036474157@chello.nl>
+ <20120316182511.GJ24602@redhat.com>
+ <87k42edenh.fsf@danplanet.com>
+ <20120321021239.GQ24602@redhat.com>
+ <87fwd2d2kp.fsf@danplanet.com>
 MIME-Version: 1.0
-To: Seth Forshee <seth.forshee@canonical.com>
-CC: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] Add driver for Apple gmux device
-References: <1331926882-22979-1-git-send-email-seth.forshee@canonical.com>
-In-Reply-To: <1331926882-22979-1-git-send-email-seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fwd2d2kp.fsf@danplanet.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+Hi Dan,
 
-On 03/16/2012 03:41 PM, Seth Forshee wrote:
-> Apple laptops with hybrid graphics have a device named gmux that is used
-> for switching between GPUs and backlight control. On many models this is
-> the only reliable method for controlling the backlight.
->
-> This series adds initial support for the gmux device, along with
-> anciallary support for disabling apple_bl when the gmux device is
-> detected. Initially only backlight control is supported.
->
->
+On Tue, Mar 20, 2012 at 09:01:58PM -0700, Dan Smith wrote:
+> AA>         upstream autonuma numasched hard inverse
+> AA> numa02  64       45       66        42   81
+> AA> numa01  491      328      607       321  623 -D THREAD_ALLOC
+> AA> numa01  305      207      338       196  378 -D NO_BIND_FORCE_SAME_NODE
+> 
+> AA> So give me a break... you must have made a real mess in your
+> AA> benchmarking.
+> 
+> I'm just running what you posted, dude :)
 
-I've done some basic testing on my MBP 5,3 (just setting a few 
-brightness levels, nothing fancy), and it all works, so feel free to add 
-my basic
+Apologies if it felt like I was attacking you, that wasn't my
+intention, I actually appreciate your effort!
 
-Tested-by: Shea Levy <shea@shealevy.com>
+My exclamation was because I was shocked by the staggering difference
+in results, nothing else.
 
-if you wish. Please let me know if you need testing for future gmux 
-features.
+Here I still get the results I posted above from numasched. In fact
+even worse, now even -D THREAD_ALLOC wouldn't end (and I disabled
+lockdep just in case), I'll try to reboot some more time to see if I
+can get some number out of it again.
 
-A few questions:
-     * I'm using nouveau, and with the gmux I have both gmux_backlight 
-and nv_backlight (which never worked) in /sys/class/backlight, is this 
-expected?
-     * Is there anything I can do to test the sysfs backlight interface 
-besides setting the levels?
-     * Besides the sysfs backlight interface, are there any other 
-userspace-visible changes your driver makes that I should test?
+numa02 at least repeats at 66 sec reproducibly with numasched with or
+without lockdep.
 
-Cheers,
-Shea Levy
+> AA> numasched is always doing worse than upstream here, in fact two
+> AA> times massively worse. Almost as bad as the inverse binds.
+> 
+> Well, something clearly isn't right, because my numbers don't match
+> yours at all. This time with THP disabled, and compared to the rest of
+> the numbers from my previous runs:
+> 
+>             autonuma   HARD   INVERSE   NO_BIND_FORCE_SAME_MODE
+> 
+> numa01      366        335    356       377
+> numa01THP   388        336    353       399
+> 
+> That shows that autonuma is worse than inverse binds here. If I'm
+> running your stuff incorrectly, please tell me and I'll correct
+> it. However, I've now compiled the binary exactly as you asked, with THP
+> disabled, and am seeing surprisingly consistent results.
 
+HARD and INVERSE should be the min and max you get.
+
+I would ask you before you test AutoNUMA again, or numasched again, to
+repeat this "HARD" vs "INVERSE" vs "NO_BIND_FORCE_SAME_MODE"
+benchmark and be sure the above numbers are correct for the above
+three cases.
+
+On my hardware you can see on page 7 of my pdf what I get:
+
+http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma_bench-20120321.pdf
+
+numa01 -DHARD_BIND | -DNO_BIND_FORCE_SAME_NODE | -DINVERSE_BIND
+             196      305                        378
+
+You can do this benchmark on an upstream kernel 3.3-rc, no need of any
+patch to collect the above three numbers.
+
+For me this is always true: HARD_BIND <= NO_BIND_FORCE_SAME_NODE <= INVERSE_BIND.
+
+Checking if numa01 HARD_BIND and INVERSE_BIND cases are setting up
+your hardware topology correctly may be good idea too.
+
+If it's not a benchmarking error or a topology error in
+HARD_BIND/INVERSE_BIND, it may be the hardware you're using is very
+different. That would be bad news though, I thought you were using the
+same common 2 socket exacore setup that I'm using and I wouldn't have
+expected such a staggering difference in results (even for HARD vs
+INVERSE vs NO_BIND_FORCE_SAME_NODE, even before we put autonuma or
+numasched into the equation).
+
+> AA> Maybe you've more than 16g? I've 16G and that leaves 1G free on both
+> AA> nodes at the peak load with AutoNUMA. That shall be enough for
+> AA> numasched too (Peter complained me I waste 80MB on a 16G system, so
+> AA> he can't possibly be intentionally wasting me 2GB).
+> 
+> Yep, 24G here. Do I need to tweak the test?
+
+Well maybe you could try to repeat at 16G if you still see numasched
+performing great after running it with -DNO_BIND_FORCE_SAME_MODE.
+
+What -DNO_BIND_FORCE_SAME_MODE is meant to do, is to start the "NUMA
+migration" races from the worst possible condition.
+
+Imagine it like doing a hiking race consistently always from the
+_bottom_ of the mountain, and not randomly from the middle like it
+would happen without -DNO_BIND_FORCE_SAME_MODE.
+
+> How do you figure? I didn't post any hard binding numbers. In fact,
+> numasched performed about equal to hard binding...definitely within your
+> stated 2% error interval. That was with THP enabled, tomorrow I'll be
+> glad to run them all again without THP.
+
+Again thanks so much for your effort. I hope others will run more
+benchmarks too on both solution. And I repeat what I said yesterday
+clear and stright: if numasched will be shown to have the lead on the
+vast majority of workloads, I will be happy to "rm -r autonuma" to
+stop wasting time on an inferior dead project, and work on something
+else entirely or to contribute to numasched in case they will need
+help for something.
