@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2CUEos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 00:44:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35522 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab2CUEor (ORCPT
+	id S1753762Ab2CUEpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 00:45:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63073 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab2CUEpK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 00:44:47 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F695C3F.3000406@jp.fujitsu.com>
-Date: Wed, 21 Mar 2012 13:42:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 21 Mar 2012 00:45:10 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH 06/10] cgroup: convert memcg controller to the new cftype
- interface
-References: <1331940963-15756-1-git-send-email-tj@kernel.org> <1331940963-15756-7-git-send-email-tj@kernel.org> <4F66B55A.8020307@jp.fujitsu.com> <20120319161052.GC11069@google.com>
-In-Reply-To: <20120319161052.GC11069@google.com>
+In-Reply-To: <87wr6evmnn.fsf@ti.com>
+References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
+	<87wr6evmnn.fsf@ti.com>
+Date: Tue, 20 Mar 2012 23:45:04 -0500
+Message-ID: <CAMXH7KGs7TsgvVbaher2oMW=s=Y+5TMnQcffDG8kcdAfn7z8zg@mail.gmail.com>
+Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
+From: Rob Lee <rob.lee@linaro.org>
+To: Kevin Hilman <khilman@ti.com>
+Cc: len.brown@intel.com, akpm@linux-foundation.org, rjw@sisk.pl,
+        robherring2@gmail.com, Baohua.Song@csr.com, amit.kucheria@linaro.org,
+        nicolas.ferre@atmel.com, linux@maxim.org.za, kgene.kim@samsung.com,
+        amit.kachhap@linaro.org, magnus.damm@gmail.com, nsekhar@ti.com,
+        daniel.lezcano@linaro.org, mturquette@linaro.org,
+        vincent.guittot@linaro.org, arnd.bergmann@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
+        nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
+        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
+        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
+        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/20 1:10), Tejun Heo wrote:
-
-> Hello,
-> 
-> On Mon, Mar 19, 2012 at 01:26:02PM +0900, KAMEZAWA Hiroyuki wrote:
->>> +CGROUP_SUBSYS_CFTYPES_COND(mem_cgroup_subsys, memsw_cgroup_files,
->>> +			   really_do_swap_account);
+On Tue, Mar 20, 2012 at 7:10 PM, Kevin Hilman <khilman@ti.com> wrote:
+> Hi Rob,
+>
+> Robert Lee <rob.lee@linaro.org> writes:
+>
+>> This patch series moves various functionality duplicated in platform
+>> cpuidle drivers to the core cpuidle driver. Also, the platform irq
+>> disabling was removed as it appears that all calls into
+>> cpuidle_call_idle will have already called local_irq_disable().
 >>
+>> These changes have been pulled into linux-next.
 >>
->> I'm sorry but why you use really_do_swap_account instead of do_swap_account ?
-> 
-> Because do_swap_account is initialized too late.
-> CGROUP_SUBSYS_CFTYPES() are processed via fs_initcall().  AFAICS,
-> do_swap_account may not have been initialized by then.  Also, if memcg
-> as whole is disabled, it doesn't matter whether those files are
-> registered or not, right?  We probably need some comment there tho.
-> 
+>> Len, Andrew, can a request be made for Linus to pull these changes?
+>>
+>> Acked-by: Jean Pihet<j-pihet@ti.com>  (v6)
+>> Tested-by: Jean Pihet<j-pihet@ti.com>  (v6, omap3)
+>> Tested-by: Amit Daniel<amit.kachhap@linaro.org>  (v6, Exynos4)
+>> Tested-by: Robert Lee<rob.lee@linaro.org>  (imx51, imx6q)
+>
+> Note that there's a space missing between the name and email in these
+> tags (and for Deepthi's below also.)  That seems to exist in all the
+> patches.
+>
 
+Thanks.  This is now fixed in my pull tree.
 
-I think creating file based on really_do_swap_account is wrong.
-(I'm sorry for this complication.)
-
-How about creating this file unconditionally ? Returning -ENOTSUP in memcg's
-handler will work well...anyway it's configured, no reason to show them is bad.
-
-Thanks,
--Kame
-
+>> Reviewed-by: Kevin Hilman <khilman@ti.com>
+>
+> For my Reviewed-by, it only applies to the core code and the OMAP
+> changes.  I haven't reviewed the other platform-specific drivers.  I
+> believe the same applies to Jean Pihet who works with me on OMAP.
+>
+>> Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> Reviewed-by: Deepthi Dharwar<deepthi@linux.vnet.ibm.com> (core cpuidle only)
+>
+> Looks like you never heard from anyone actively working on at91,
+> shmobile, kirwood or davinci.
+>
+> I'm not sure we should merge those platform-specific changes without an
+> ack from those platform maintainers.
+>
+> For 3.4, maybe we should just merge the core code and the platforms that
+> have been reviewed/ack'd, and for 3.5, spent some time nagging the other
+> platform maintainers to review and test.
+>
+> Kevin
+>
