@@ -1,70 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab2CUKF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 06:05:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44033 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753660Ab2CUKFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 06:05:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="119930830"
-Subject: Re: [PATCH] dma: imx-sdma: Treat firmware messages as warnings
- instead of erros
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-In-Reply-To: <1331209599-23802-1-git-send-email-fabio.estevam@freescale.com>
-References: <1331209599-23802-1-git-send-email-fabio.estevam@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Mar 2012 15:39:21 +0530
-Message-ID: <1332324561.19804.0.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1030535Ab2CUKGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 06:06:12 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:45688 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab2CUKGK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 06:06:10 -0400
+Date: Wed, 21 Mar 2012 19:06:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>, linux@arm.linux.org.uk
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+Message-ID: <20120321100602.GA5522@barrios>
+References: <20120321065140.13852.52315.stgit@zurg>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120321065140.13852.52315.stgit@zurg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 09:26 -0300, Fabio Estevam wrote:
-> As the SDMA controller can operate without an external firmware being loaded,
-> treat the firmware related messages as warnings rather than errors.
+Hi Konstantin,
+
+It seems to be nice clean up to me and you are a volunteer we have been wanted
+for a long time. Thanks!
+I am one of people who really want to expand vm_flags to 64 bit but when KOSAKI
+tried it, Linus said his concerning, I guess you already saw that.
+
+He want to tidy vm_flags's usage up rather than expanding it.
+Without the discussion about that, just expanding vm_flags would make us use 
+it up easily so that we might need more space. 
+
+Readahead flags are good candidate to move into another space and arch-specific flags, I guess.
+Another candidate I think of is THP flag. It's just for only anonymous vma now
+(But I am not sure we have a plan to support it for file-backed pages in future)
+so we can move it to anon_vma or somewhere.
+I think other guys might find more somethings
+
+The point is that at least, we have to discuss about clean up current vm_flags's
+use cases before expanding it unconditionally.
+
+On Wed, Mar 21, 2012 at 10:56:07AM +0400, Konstantin Khlebnikov wrote:
+> There is good old tradition: every year somebody submit patches for extending
+> vma->vm_flags upto 64-bits, because there no free bits left on 32-bit systems.
 > 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Applied Thanks
+> previous attempts:
+> https://lkml.org/lkml/2011/4/12/24	(KOSAKI Motohiro)
+> https://lkml.org/lkml/2010/4/27/23	(Benjamin Herrenschmidt)
+> https://lkml.org/lkml/2009/10/1/202	(Hugh Dickins)
+> 
+> Here already exist special type for this: vm_flags_t, but not all code uses it.
+> So, before switching vm_flags_t from unsinged long to u64 we must spread
+> vm_flags_t everywhere and fix all possible type-casting problems.
+> 
+> There is no functional changes in this patch set,
+> it only prepares code for vma->vm_flags converting.
+> 
 > ---
->  drivers/dma/imx-sdma.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index c495882..3b7ebd4 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -1389,7 +1389,7 @@ static int __init sdma_probe(struct platform_device *pdev)
->  	if (pdata) {
->  		ret = sdma_get_firmware(sdma, pdata->fw_name);
->  		if (ret)
-> -			dev_err(&pdev->dev, "failed to get firmware from platform data\n");
-> +			dev_warn(&pdev->dev, "failed to get firmware from platform data\n");
->  	} else {
->  		/*
->  		 * Because that device tree does not encode ROM script address,
-> @@ -1399,11 +1399,11 @@ static int __init sdma_probe(struct platform_device *pdev)
->  		ret = of_property_read_string(np, "fsl,sdma-ram-script-name",
->  					      &fw_name);
->  		if (ret)
-> -			dev_err(&pdev->dev, "failed to get firmware name\n");
-> +			dev_warn(&pdev->dev, "failed to get firmware name\n");
->  		else {
->  			ret = sdma_get_firmware(sdma, fw_name);
->  			if (ret)
-> -				dev_err(&pdev->dev, "failed to get firmware from device tree\n");
-> +				dev_warn(&pdev->dev, "failed to get firmware from device tree\n");
->  		}
->  	}
->  
-
-
--- 
-~Vinod
-
+> Konstantin Khlebnikov (16):
+>       mm: introduce NR_VMA_FLAGS
+>       mm: use vm_flags_t for vma flags
+>       mm/shmem: use vm_flags_t for vma flags
+>       mm/nommu: use vm_flags_t for vma flags
+>       mm/drivers: use vm_flags_t for vma flags
+>       mm/x86: use vm_flags_t for vma flags
+>       mm/arm: use vm_flags_t for vma flags
+>       mm/unicore32: use vm_flags_t for vma flags
+>       mm/ia64: use vm_flags_t for vma flags
+>       mm/powerpc: use vm_flags_t for vma flags
+>       mm/s390: use vm_flags_t for vma flags
+>       mm/mips: use vm_flags_t for vma flags
+>       mm/parisc: use vm_flags_t for vma flags
+>       mm/score: use vm_flags_t for vma flags
+>       mm: cast vm_flags_t to u64 before printing
+>       mm: vm_flags_t strict type checking
+> 
+> 
+>  arch/arm/include/asm/cacheflush.h                |    5 -
+>  arch/arm/kernel/asm-offsets.c                    |    6 +
+>  arch/arm/mm/fault.c                              |    2 
+>  arch/ia64/mm/fault.c                             |    9 +
+>  arch/mips/mm/c-r3k.c                             |    2 
+>  arch/mips/mm/c-r4k.c                             |    6 -
+>  arch/mips/mm/c-tx39.c                            |    2 
+>  arch/parisc/mm/fault.c                           |    4 -
+>  arch/powerpc/include/asm/mman.h                  |    2 
+>  arch/s390/mm/fault.c                             |    8 +
+>  arch/score/mm/cache.c                            |    6 -
+>  arch/sh/mm/tlbflush_64.c                         |    2 
+>  arch/unicore32/kernel/asm-offsets.c              |    6 +
+>  arch/unicore32/mm/fault.c                        |    2 
+>  arch/x86/mm/hugetlbpage.c                        |    4 -
+>  drivers/char/mem.c                               |    2 
+>  drivers/infiniband/hw/ipath/ipath_file_ops.c     |    6 +
+>  drivers/infiniband/hw/qib/qib_file_ops.c         |    6 +
+>  drivers/media/video/omap3isp/ispqueue.h          |    2 
+>  drivers/staging/android/ashmem.c                 |    2 
+>  drivers/staging/android/binder.c                 |   15 +-
+>  drivers/staging/tidspbridge/core/tiomap3430.c    |   13 +-
+>  drivers/staging/tidspbridge/rmgr/drv_interface.c |    4 -
+>  fs/binfmt_elf.c                                  |    2 
+>  fs/binfmt_elf_fdpic.c                            |   24 ++-
+>  fs/exec.c                                        |    2 
+>  fs/proc/nommu.c                                  |    3 
+>  fs/proc/task_nommu.c                             |   14 +-
+>  include/linux/backing-dev.h                      |    7 -
+>  include/linux/huge_mm.h                          |    4 -
+>  include/linux/ksm.h                              |    8 +
+>  include/linux/mm.h                               |  163 +++++++++++++++-------
+>  include/linux/mm_types.h                         |   11 +
+>  include/linux/mman.h                             |    4 -
+>  include/linux/rmap.h                             |    8 +
+>  include/linux/shmem_fs.h                         |    5 -
+>  kernel/bounds.c                                  |    2 
+>  kernel/events/core.c                             |    4 -
+>  kernel/fork.c                                    |    2 
+>  kernel/sys.c                                     |    4 -
+>  mm/backing-dev.c                                 |    4 +
+>  mm/huge_memory.c                                 |    2 
+>  mm/ksm.c                                         |    4 -
+>  mm/madvise.c                                     |    2 
+>  mm/memory.c                                      |    9 +
+>  mm/mlock.c                                       |    2 
+>  mm/mmap.c                                        |   36 ++---
+>  mm/mprotect.c                                    |    9 +
+>  mm/mremap.c                                      |    2 
+>  mm/nommu.c                                       |   19 +--
+>  mm/rmap.c                                        |   16 +-
+>  mm/shmem.c                                       |   54 ++++---
+>  mm/vmscan.c                                      |    4 -
+>  53 files changed, 322 insertions(+), 224 deletions(-)
+> 
+> -- 
+> Signature
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
