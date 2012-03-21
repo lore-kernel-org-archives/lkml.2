@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430Ab2CUQQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:16:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3098 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759109Ab2CUQPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:15:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121560127"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/8] ext2: cleanup ext2_sync_super a bit
-Date: Wed, 21 Mar 2012 18:14:34 +0200
-Message-Id: <1332346475-1441-8-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332346475-1441-1-git-send-email-dedekind1@gmail.com>
-References: <1332346475-1441-1-git-send-email-dedekind1@gmail.com>
+	id S1759461Ab2CUQQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:16:20 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:14369 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759404Ab2CUQQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 12:16:07 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-10.tower-131.messagelabs.com!1332346564!16707139!5
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Mar 2012 11:15:57 -0500
+Subject: RE: [PATCH RFC] debugfs: rename, export, and use default_open() as
+ debugfs_default_open()
+Thread-Topic: [PATCH RFC] debugfs: rename, export, and use default_open() as
+ debugfs_default_open()
+Thread-Index: Ac0HNPCd5H9HTPOzSjSHeejniO+hzAASMm3Q
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020696D488A5@AUSP01VMBX24.collaborationhost.net>
+References: <201203201547.05656.hartleys@visionengravers.com>
+ <4F698452.1080102@codeaurora.org>
+In-Reply-To: <4F698452.1080102@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2LGGQDV012992
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Wednesday, March 21, 2012 12:34 AM, Stephen Boyd wrote:
+> On 3/20/2012 3:47 PM, H Hartley Sweeten wrote:
+>> Rename default_open() in fs/debugfs/file.c to debugfs_default_open()
+>> and export it for use by the many debugfs open() methods that simply
+>> do:
+>>
+>> static int foo_open(struct inode *inode, struct file *file)
+>> {
+>> 	file->private_data = inode->i_private;
+>> 	return 0;
+>> }
+>>
+>> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>>
+>> ---
+>>
+>
+> I sent a patch to introduce simple_open() which is this function ripped
+> from debugfs code. I also sent a patch to fixup all the callers
+>  (including the non-debugfs ones). Seems like we arrived at the same
+> thing. Andrew has picked it up and it is in -mm.
 
-We have many 'EXT2_SB()' in 'ext2_sync_super()' and I am going to introduce a
-new one. The code will be a bit nicer if I introduce an 'sbi' pointer instead.
-So this patch is just a tiny preparational cleanup.
+Thanks for the info. I had not seen your patch.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ext2/super.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 95dc25f..4eee017 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -1160,6 +1160,8 @@ static void ext2_clear_super_error(struct super_block *sb)
- static void ext2_sync_super(struct super_block *sb, struct ext2_super_block *es,
- 			    int wait)
- {
-+	struct ext2_sb_info *sbi = EXT2_SB(sb);
-+
- 	sb->s_dirt = 0;
- 	/*
- 	 * Make sure we first mark the superblock as clean and then start
-@@ -1168,15 +1170,15 @@ static void ext2_sync_super(struct super_block *sb, struct ext2_super_block *es,
- 	smp_wmb();
- 
- 	ext2_clear_super_error(sb);
--	spin_lock(&EXT2_SB(sb)->s_lock);
-+	spin_lock(&sbi->s_lock);
- 	es->s_free_blocks_count = cpu_to_le32(ext2_count_free_blocks(sb));
- 	es->s_free_inodes_count = cpu_to_le32(ext2_count_free_inodes(sb));
- 	es->s_wtime = cpu_to_le32(get_seconds());
- 	/* unlock before we do IO */
--	spin_unlock(&EXT2_SB(sb)->s_lock);
--	mark_buffer_dirty(EXT2_SB(sb)->s_sbh);
-+	spin_unlock(&sbi->s_lock);
-+	mark_buffer_dirty(sbi->s_sbh);
- 	if (wait)
--		sync_dirty_buffer(EXT2_SB(sb)->s_sbh);
-+		sync_dirty_buffer(sbi->s_sbh);
- }
- 
- /*
--- 
-1.7.7.6
-
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
