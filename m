@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2CUFYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:24:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41596 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab2CUFYs (ORCPT
+	id S1754914Ab2CUF0O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:26:14 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5433 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab2CUF0N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:24:48 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F6965AC.4070004@jp.fujitsu.com>
-Date: Wed, 21 Mar 2012 14:22:52 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 21 Mar 2012 01:26:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 20 Mar 2012 22:26:12 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Mar 2012 10:55:58 +0530
+Subject: RE: [PATCH] mfd: Add support for TPS65090
+Thread-Topic: [PATCH] mfd: Add support for TPS65090
+Thread-Index: Ac0GsP7RO87dBdnqSQyqGQDN/CHRIgAcgdUQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD3127DD1@BGMAIL02.nvidia.com>
+References: <1331876419-10478-1-git-send-email-vbyravarasu@nvidia.com>
+ <20120316204015.GW20524@sortiz-mobl>
+ <D958900912E20642BCBC71664EFECE3E6DD3127A5B@BGMAIL02.nvidia.com>
+ <20120320155708.GF17818@sortiz-mobl>
+In-Reply-To: <20120320155708.GF17818@sortiz-mobl>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org, mgorman@suse.de,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 04/10] memcg: Add HugeTLB extension
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F669C2E.1010502@jp.fujitsu.com> <874ntlkrp6.fsf@linux.vnet.ibm.com> <4F66D993.2080100@jp.fujitsu.com> <4F671AE6.5020204@parallels.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87obrqsgno.fsf@linux.vnet.ibm.com>
-In-Reply-To: <87obrqsgno.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/21 13:48), Aneesh Kumar K.V wrote:
+Thanks Samuel.
 
-> Glauber Costa <glommer@parallels.com> writes:
+> -----Original Message-----
+> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+> Sent: Tuesday, March 20, 2012 9:27 PM
+> To: Venu Byravarasu
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] mfd: Add support for TPS65090
 > 
->> On 03/19/2012 11:00 AM, KAMEZAWA Hiroyuki wrote:
->>> (2012/03/19 15:52), Aneesh Kumar K.V wrote:
->>>
->>>>
->>>>>> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
->>>>>> +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
->>>>>> +{
->>>>>> +	int idx;
->>>>>> +	for (idx = 0; idx<  hugetlb_max_hstate; idx++) {
->>>>>> +		if (memcg->hugepage[idx].usage>  0)
->>>>>> +			return 1;
->>>>>> +	}
->>>>>> +	return 0;
->>>>>> +}
->>>>>
->>>>>
->>>>> Please use res_counter_read_u64() rather than reading the value directly.
->>>>>
->>>>
->>>> The open-coded variant is mostly derived from mem_cgroup_force_empty. I
->>>> have updated the patch to use res_counter_read_u64.
->>>>
->>>
->>> Ah, ok. it's(maybe) my bad. I'll schedule a fix.
->>>
->> Kame,
->>
->> I actually have it ready here. I can submit it if you want.
->>
->> This one has bitten me as well when I was trying to experiment with the 
->> res_counter performance...
+> Hi Venu,
 > 
-> Do we really need memcg.res.usage to be accurate in that while loop ? If
-> we miss a zero update because we encountered a partial update; in the
-> next loop we will find it zero right ?
+> On Mon, Mar 19, 2012 at 02:08:31PM +0530, Venu Byravarasu wrote:
+> > Hi Samuel,
+> >
+> > Thanks for your prompt reply.
+> >
+> > > The patch looks good. Could you please provide me with a better description
+> > > for this device (sub devices, etc...) ?
+> >
+> > TPS65090 is a PMIC offered by TI. It contains:
+> > 	a. 3 Step-Down Converters:
+> > 	b. 2 Always On LDO's
+> > 	c. 7 Current Limited Load Switches
+> >
+> > With this patch adding basic PMIC functionality along with interrupt controller
+> support.
+> > Once this patch gets merged, will add regulator driver for this device.
+> Applied, thanks.
 > 
-
-At rmdir(), I assume there is no task in memcg. It means res->usage never
-increase and no other thread than force_empty will touch res->counter.
-So, I think memcg->res.usage > 0 never be wrong and we'll find correct comparison
-by continuing the loop.
-
-But recent kmem accounting at el may break the assumption (I'm not fully sure..)
-So, I think it will be good to use res_counter_u64(). This part is not important for
-performance, anyway.
-
-Thanks,
--Kame
-
-
-
+> Cheers,
+> Samuel.
+> 
+> --
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
