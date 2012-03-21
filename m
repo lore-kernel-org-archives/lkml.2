@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab2CUWFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:05:35 -0400
-Received: from gw.danplanet.com ([50.43.125.66]:47402 "EHLO mail.danplanet.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755001Ab2CUWFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:05:33 -0400
-From: Dan Smith <danms@us.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] AutoNUMA alpha6
-References: <20120316144028.036474157@chello.nl>
-	<20120316182511.GJ24602@redhat.com> <87k42edenh.fsf@danplanet.com>
-	<20120321021239.GQ24602@redhat.com> <87fwd2d2kp.fsf@danplanet.com>
-	<20120321124937.GX24602@redhat.com>
-Date: Wed, 21 Mar 2012 15:05:30 -0700
-Message-ID: <87limtboet.fsf@danplanet.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1758363Ab2CUWGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:06:46 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:36158 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755081Ab2CUWGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 18:06:45 -0400
+Date: Wed, 21 Mar 2012 17:06:52 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [GIT PULL] XFS update for 3.4-rc1
+Message-ID: <20120321220652.GJ8451@sgi.com>
+References: <20120321183613.2C93F426DA7@whiskey.americas.sgi.com> <CA+55aFyz5UWiJeeMbwZUZEscisZY5Jb0nADpJP6jWKwf3Uai1A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyz5UWiJeeMbwZUZEscisZY5Jb0nADpJP6jWKwf3Uai1A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AA> HARD and INVERSE should be the min and max you get.
+Hey Linus,
 
-AA> I would ask you before you test AutoNUMA again, or numasched again,
-AA> to repeat this "HARD" vs "INVERSE" vs "NO_BIND_FORCE_SAME_MODE"
-AA> benchmark and be sure the above numbers are correct for the above
-AA> three cases.
+On Wed, Mar 21, 2012 at 01:59:22PM -0700, Linus Torvalds wrote:
+> On Wed, Mar 21, 2012 at 11:36 AM, Ben Myers <bpm@sgi.com> wrote:
+> >
+> >   Please pull from git://oss.sgi.com/xfs/xfs for-linus
+> 
+> "Already up-to-date."
+> 
+> I'd assume you forgot to push, but in fact all the things you quote
+> there seem to have been in 3.3 already. So the whole pull request
+> seems stale.
+> 
+> Wazzup?
 
-I've always been running all three, knowing that hard and inverse should
-be the bounds. Not knowing (until today) what the third was, I wasn't
-sure where it was supposed to lie. However, I've yet to see the spread
-that you describe, regardless of the configuration. If that means
-something isn't right about my setup, point it out. I've even gone so
-far as to print debug from inside numa01 and numa02 to make sure the
--DFOO's are working.
+PEBKAC mostly.
 
-Re-running all the configurations with THP disabled seems to yield very
-similar results to what I reported before:
+xfs/master contains scalability improvements for dquots, log grant code
+cleanups, plus bugfixes and cleanups large and small.
 
-        mainline autonuma numasched hard inverse same_node
-numa01  483      366      335       335  483     483
+Unfortunately the stuff in:  git://oss.sgi.com/xfs/xfs master
 
-The inverse and same_node numbers above are on mainline, and both are
-lower on autonuma and numasched:
+Conflicts with the stuff in:  git://oss.sgi.com/xfs/xfs for-linus
 
-           numa01_hard numa01_inverse numa01_same_node
-mainline   335         483            483
-autonuma   335         356            377
-numasched  335         375            491
+I've resolved the conflict here:  git://oss.sgi.com/xfs/xfs for-linus-merged
 
-I also ran your numa02, which seems to correlate to your findings:
+I would like to figure out how to 
+1) send important bugfixes upstream after rc1, and
+2) not hold up development commits to xfs/master, while
+3) avoiding conflicts like this.
 
-        mainline autonuma numasched hard inverse
-numa02  54       42       55        37   53
+Our old strategy was to hold off on development commits for awhile after
+rc1, and I would like to avoid that.  It occured to me that
+fast-forwarding xfs/master immediately to an important bugfix once it
+has been pulled in to your tree might accomplish this, but clearly I
+didn't get that figured out.
 
-So, I'm not seeing the twofold penalty of running with numasched, and in
-fact, it seems to basically do no worse than current mainline (within
-the error interval). However, I hope the matching trend somewhat
-validates the fact that I'm running your stuff correctly.
+Thanks,
+Ben
 
-I also ran your numa01 with my system clamped to 16G and saw no change
-in the positioning of the metrics (i.e. same_node was still higher than
-inverse and everything was shifted slightly up linearly).
-
-AA> If it's not a benchmarking error or a topology error in
-AA> HARD_BIND/INVERSE_BIND, it may be the hardware you're using is very
-AA> different. That would be bad news though, I thought you were using
-AA> the same common 2 socket exacore setup that I'm using and I wouldn't
-AA> have expected such a staggering difference in results (even for HARD
-AA> vs INVERSE vs NO_BIND_FORCE_SAME_NODE, even before we put autonuma
-AA> or numasched into the equation).
-
-Well, it's bad in either case, because it means either it's too
-temperamental to behave the same on two similar but differently-sized
-machines, or that it doesn't properly balance the load for machines with
-differing topologies.
-
-I'll be glad to post details of the topology if you tell me specifically
-what you want (above and beyond what I've already posted).
-
-AA> I hope others will run more benchmarks too on both solution.
-
-Me too. Unless you have specific things for me to try, it's probably
-best to let someone else step in with more interesting and
-representative benchmarks, as all of my numbers seem to continue to
-point in the same direction...
-
-Thanks!
-
--- 
-Dan Smith
-IBM Linux Technology Center
