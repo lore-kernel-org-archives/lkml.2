@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758731Ab2CUM4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 08:56:15 -0400
-Received: from mail.parliament.gh ([196.29.125.26]:15809 "EHLO
-	mail.parliament.gh" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758656Ab2CUM4L convert rfc822-to-8bit (ORCPT
+	id S1758754Ab2CUM5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:57:40 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47935 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758538Ab2CUM5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:56:11 -0400
-X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Mar 2012 08:56:10 EDT
-Date: Wed, 21 Mar 2012 12:39:44 -0500 (CDT)
-From: "Mrs. Laora Fernandez" <howusu-agyemang@parliament.gh>
-Reply-To: "Mrs. Laora Fernandez" <howusu-agyemang@parliament.gh>
-Message-ID: <26056883.2992.1332351584125.JavaMail.root@mail>
-Subject: Easter Bonanza. (Congratulations)
+	Wed, 21 Mar 2012 08:57:38 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Jozef Vesely <vesely@gjh.sk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: possible bug (or not clear coding) in uvc_v4l2.c
+Date: Wed, 21 Mar 2012 13:58:05 +0100
+Message-ID: <1706556.vixMv5JEgY@avalon>
+User-Agent: KMail/4.8.0 (Linux/3.2.1-gentoo-r2; KDE/4.8.0; x86_64; ; )
+In-Reply-To: <20120320160251.GA79846@mail.kolej.mff.cuni.cz>
+References: <20120320160251.GA79846@mail.kolej.mff.cuni.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [81.35.184.246]
-X-Mailer: Zimbra 6.0.14_GA_2928 (ZimbraWebClient - FF3.0 (Win)/6.0.14_GA_2928)
-To: undisclosed-recipients:;
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jozef,
 
+On Tuesday 20 March 2012 17:02:51 Jozef Vesely wrote:
+> Good day,
+> 
+> I am sorry to disturb you, I have been reading through uvc driver source
+> and this caught my eye:
+> http://lxr.linux.no/#linux+v3.3/drivers/media/video/uvc/uvc_v4l2.c#L671
+> 
+> 678: int pin = 0;
+> ...
+> 689: } else if (pin < selector->bNrInPins) {
+> ...
+> 690: pin = selector->baSourceID[index];
+> 
+> pin is always 0 in the comparison, was this intended?
+> (wasn't the line 690 supposed to be before the comparison?
+> or the index to be compared  to bNrInPins?)
+> 
+> Please excuse me wasting your tine if it is a total nonsense.
 
-Sorteo 12, domingo, 18/03/2012 
+It's not a waste of time at all. Thank you for the report.
 
-ELGR/idsorteo.793205012 
+The following patch should fix the problem.
 
-ATTN: Lucky Winner, 
+commit 578ac85ae011ed5d1f3aeebcb511509c84792f23
+Author: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Date:   Wed Mar 21 13:50:36 2012 +0100
 
-This is to announce to you that your email attached to Elgordo De La Primitiva ticket number 1-13-26-29-54, Clave 4 won in the 2nd category balloting held 18/03/2012. Your category payout is €295.436,09 Euro. A copy of the ticket would be forwarded to you as evidence of play. 
+    uvcvideo: Fix ENUMINPUT handling
+    
+    Properly validate the user-supplied index against the number of inputs.
+    The code used the pin local variable instead of the index by mistake.
+    
+    Reported-by: Jozef Vesely <vesely@gjh.sk>
+    Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+    Cc: stable@vger.kernel.org
 
-View results here: http://www.loteriasyapuestas.es/index.php/mod.sorteos/mem.sorteos/juego.ELGR/idsorteo.793205012 
+diff --git a/drivers/media/video/uvc/uvc_v4l2.c b/drivers/media/video/uvc/uvc_v4l2.c
+index 111bfff..a6b9491 100644
+--- a/drivers/media/video/uvc/uvc_v4l2.c
++++ b/drivers/media/video/uvc/uvc_v4l2.c
+@@ -687,7 +687,7 @@ static long uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
+ 					break;
+ 			}
+ 			pin = iterm->id;
+-		} else if (pin < selector->bNrInPins) {
++		} else if (index < selector->bNrInPins) {
+ 			pin = selector->baSourceID[index];
+ 			list_for_each_entry(iterm, &chain->entities, chain) {
+ 				if (!UVC_ENTITY_IS_ITERM(iterm))
 
-Contact your Claims Representative: 
-Name: Mr. David Santiago 
-Email: elgordo_processing@aol.com 
-Tel: +34-686-902-277 
+I will push it to mainline.
 
-Congratulations. 
+> PS: I am looking for a reason why MJPEG stopped working on my cameras (long
+>> time ago), any hints?
 
-Regards, 
-Mrs Laora Fernandez 
-Coordinator. 
+Not as such. Could you please provide me with more information ? You can drop
+the linux-kernel CC and add linux-uvc-devel@lists.sourceforge.net
+(subscriber-only at the moment) or linux-media@vger.kernel.org instead.
 
+-- 
+Regards,
+
+Laurent Pinchart
 
