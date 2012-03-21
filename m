@@ -1,33 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab2CUJCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:02:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46230 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab2CUJC3 convert rfc822-to-8bit (ORCPT
+	id S1755956Ab2CUJHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:07:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49709 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2CUJHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:02:29 -0400
-Message-ID: <1332320519.18960.466.camel@twins>
-Subject: Re: CPU Hotplug rework
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Wed, 21 Mar 2012 10:01:59 +0100
-In-Reply-To: <874ntic1ze.fsf@rustcorp.com.au>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-	 <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins>
-	 <874ntic1ze.fsf@rustcorp.com.au>
+	Wed, 21 Mar 2012 05:07:20 -0400
+Message-ID: <1332320819.18960.468.camel@twins>
+Subject: RE: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael J. Wang" <mjwang@broadcom.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Date: Wed, 21 Mar 2012 10:06:59 +0100
+In-Reply-To: <2EF88150C0EF2C43A218742ED384C1BC0FC8438B@IRVEXCHMB08.corp.ad.broadcom.com>
+References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+	 <20120321014050.GA19766@zhy>
+	 <2EF88150C0EF2C43A218742ED384C1BC0FC84327@IRVEXCHMB08.corp.ad.broadcom.com>
+	 <20120321021229.GB19766@zhy>
+	 <2EF88150C0EF2C43A218742ED384C1BC0FC8438B@IRVEXCHMB08.corp.ad.broadcom.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -36,30 +30,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 09:30 +1030, Rusty Russell wrote:
-> > > (2) Do something more efficient with userspace threads than migrating
-> > >     them one at a time.
+On Wed, 2012-03-21 at 07:49 +0000, Michael J. Wang wrote:
+> > > Should I reformat my patch and send it again?
 > > 
-> > Sadly that can't really be done. We need to pick up every task
-> > (userspace, but also running kernel threads) and update their state.
+> > It'll be better, and I think Peter/Ingo will happy with it.
+> > 
 > 
-> What if we had an "orphan" runqueue which everyone pulled from?  Then we
-> could grab the lock, move them all to the fake rq, then let stuff happen
-> normally.
+> OK.  I will resend now.  Thanks for all your help!
 
-Well, we could simply let them sit where they are and fudge load-balance
-to consider it a source but not a destination until its empty, but it
-might be somewhat tricky to make it fast enough to not introduce
-noticable latencies. Also, you really don't want everyone to pull,
-that's a serialization/scalability problem.
+The resend didn't include the more details thing, so I fudged it by
+hand. The queued thing now looks like this:
 
-Also, since we really only move the currently runnable tasks it
-shouldn't be too many in the first place. Is it really that expensive?
+---
+Subject: sched, rt: Minor improvement to pick_next_highest_task_rt
+From: Michael J Wang <mjwang@broadcom.com>
+Date: Mon, 19 Mar 2012 22:26:19 +0000
 
-> Maybe that's crap, but at least we could move the migration out of the
-> hotplug callback somehow. 
+Avoid extra work by continuing on to the next rt_rq if the highest
+prio task in current rt_rq is the same priority as our candidate
+task.
 
-Thing is, if its really too much for some people, they can orchestrate
-it such that its not. Just move everybody in a cpuset, clear the to be
-offlined cpu from the cpuset's mask -- this will migrate everybody away.
-Then hotplug will find an empty runqueue and its fast, no?
+More detailed explanation:  if next is not NULL, then we have found a
+candidate task, and its priority is next->prio.  Now we are looking
+for an even higher priority task in the other rt_rq's.  idx is the
+highest priority in the current candidate rt_rq.  In the current 3.3
+code, if idx is equal to next->prio, we would start scanning the tasks
+in that rt_rq and replace the current candidate task with a task from
+that rt_rq.  But the new task would only have a priority that is equal
+to our previous candidate task, so we have not advanced our goal of
+finding a higher prio task.  So we should avoid the extra work by
+continuing on to the next rt_rq if idx is equal to next->prio.
+
+Signed-off-by: Michael J Wang <mjwang@broadcom.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com
+---
+ kernel/sched/rt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1428,7 +1428,7 @@ static struct task_struct *pick_next_hig
+ next_idx:
+ 		if (idx >= MAX_RT_PRIO)
+ 			continue;
+-		if (next && next->prio < idx)
++		if (next && next->prio <= idx)
+ 			continue;
+ 		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+ 			struct task_struct *p;
+
