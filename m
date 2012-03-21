@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab2CUQ0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:26:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17316 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab2CUQ0t convert rfc822-to-8bit (ORCPT
+	id S1759646Ab2CUQ1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:27:31 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43757 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759194Ab2CUQ13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:26:49 -0400
-Date: Wed, 21 Mar 2012 12:22:23 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: suresh.b.siddha@intel.com, jwboyer@redhat.com, mingo@elte.hu,
-        hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86/apic_ops: Replace apic_ops with x86_apic_ops.
-Message-ID: <20120321162223.GE13722@phenom.dumpdata.com>
-References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
- <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
- <1332288764-10351-3-git-send-email-konrad.wilk@oracle.com>
- <CAE9FiQVoSTB_zgZ7HeoFpFm6YrxwqRHDCMy3=+N8mf6FfdhNAg@mail.gmail.com>
+	Wed, 21 Mar 2012 12:27:29 -0400
+Date: Wed, 21 Mar 2012 16:27:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Adrian McMenamin <adrianmcmenamin@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Adrian McMenamin <lkmladrian@gmail.com>, viro@zeniv.linux.org.uk,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Linux-sh <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH] VMUFAT filesystem [1/4]
+Message-ID: <20120321162726.GA27778@sirena.org.uk>
+References: <CAN628AFKSgd2nKY5Ga7JqhVWqAySRW8OpeLyykOwocn4K_a-qQ@mail.gmail.com>
+ <20120321153317.GA30250@kroah.com>
+ <CACwZE5RbGARjgNRuJuLquDY_THjspH20JMEbKqsZVwj4jJtFhw@mail.gmail.com>
+ <CACwZE5TZdJoAUcB+BN2OB0UK0UajnuMPia0vgCZs8wM=3bNE7Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQVoSTB_zgZ7HeoFpFm6YrxwqRHDCMy3=+N8mf6FfdhNAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090206.4F6A013E.0003,ss=1,re=0.000,fgs=0
+In-Reply-To: <CACwZE5TZdJoAUcB+BN2OB0UK0UajnuMPia0vgCZs8wM=3bNE7Q@mail.gmail.com>
+X-Cookie: Steal this tagline.  I did.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 07:31:51PM -0700, Yinghai Lu wrote:
-> On Tue, Mar 20, 2012 at 5:12 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > . which makes the code fit within the rest of the x86_ops functions.
-> > +
-> > +struct x86_apic_ops x86_apic = {
-> > +       .init = native_ioapic_init_mappings,
-> > +       .read = native_ioapic_read,
-> > +       .write = native_ioapic_write,
-> > +       .modify = native_ioapic_modify,
-> > +};
-> 
-> x86_ioapic_ops and x86_ioapic would be better?
+On Thu, Mar 22, 2012 at 12:24:19AM +0800, Adrian McMenamin wrote:
 
-It certainly would. Thank you for the suggestion!
-> 
-> Yinghai
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I guess the complaint is that I didn't include this with each bit. So,
+> apologies for that, I cut it up by hand to avoid a 1700 line single
+> patch. But I won't post it this way again, obviously
+
+Nope, there's some other issues (like the signoff being after the ---).
+Check the document again, and compare your mail with other patches.
