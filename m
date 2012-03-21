@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031030Ab2CUOGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:06:08 -0400
+	id S1030992Ab2CUOGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:06:30 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:61813 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030880Ab2CUN7M (ORCPT
+	with ESMTP id S1030839Ab2CUN7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:59:12 -0400
+	Wed, 21 Mar 2012 09:59:07 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 06/32] nohz: Move next idle expiry time record into idle logic area
-Date: Wed, 21 Mar 2012 14:58:12 +0100
-Message-Id: <1332338318-5958-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 04/32] nohz: Move nohz load balancer selection into idle logic
+Date: Wed, 21 Mar 2012 14:58:10 +0100
+Message-Id: <1332338318-5958-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,12 +33,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next idle expiry time record and idle sleeps tracking are
-statistics that only concern idle.
+[ ** BUGGY PATCH: I need to put more thinking into this ** ]
 
-Since we want the nohz APIs to become usable further idle
-context, let's pull up the handling of these statistics to the
-callers in idle.
+We want the nohz load balancer to be an idle CPU, thus
+move that selection to strict dyntick idle logic.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -59,81 +57,50 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- kernel/time/tick-sched.c |   24 ++++++++++++++----------
- 1 files changed, 14 insertions(+), 10 deletions(-)
+ kernel/time/tick-sched.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 12ba932..0695e9d 100644
+index fc9f687..b79dea2 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -271,11 +271,11 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- }
- EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
- 
--static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
--				      ktime_t now, int cpu)
-+static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
-+					 ktime_t now, int cpu)
- {
- 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
--	ktime_t last_update, expires;
-+	ktime_t last_update, expires, ret = { .tv64 = 0 };
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 	u64 time_delta;
- 
-@@ -358,6 +358,8 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 		if (ts->tick_stopped && ktime_equal(expires, dev->next_event))
- 			goto out;
- 
-+		ret = expires;
-+
- 		/*
- 		 * nohz_stop_sched_tick can be called several times before
- 		 * the nohz_restart_sched_tick is called. This happens when
-@@ -370,11 +372,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
+@@ -398,8 +398,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts, ktime_t now)
+ 		 * the scheduler tick in nohz_restart_sched_tick.
+ 		 */
+ 		if (!ts->tick_stopped) {
+-			select_nohz_load_balancer(1);
+-
+ 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
  			ts->tick_stopped = 1;
  		}
+@@ -449,8 +447,10 @@ static void __tick_nohz_idle_enter(struct tick_sched *ts)
+ 	now = tick_nohz_start_idle(smp_processor_id(), ts);
+ 	tick_nohz_stop_sched_tick(ts, now);
  
--		ts->idle_sleeps++;
--
--		/* Mark expires */
--		ts->idle_expires = expires;
--
- 		/*
- 		 * If the expiration time == KTIME_MAX, then
- 		 * in this case we simply stop the tick timer.
-@@ -405,6 +402,8 @@ out:
- 	ts->next_jiffies = next_jiffies;
- 	ts->last_jiffies = last_jiffies;
- 	ts->sleep_length = ktime_sub(dev->next_event, now);
-+
-+	return ret;
+-	if (!was_stopped && ts->tick_stopped)
++	if (!was_stopped && ts->tick_stopped) {
+ 		ts->idle_jiffies = ts->last_jiffies;
++		select_nohz_load_balancer(1);
++	}
  }
  
- static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
-@@ -443,7 +442,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 
- static void __tick_nohz_idle_enter(struct tick_sched *ts)
+ /**
+@@ -552,7 +552,6 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
  {
--	ktime_t now;
-+	ktime_t now, expires;
- 	int cpu = smp_processor_id();
+ 	/* Update jiffies first */
+-	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
  
- 	now = tick_nohz_start_idle(cpu, ts);
-@@ -452,7 +451,12 @@ static void __tick_nohz_idle_enter(struct tick_sched *ts)
- 		int was_stopped = ts->tick_stopped;
+ 	touch_softlockup_watchdog();
+@@ -610,6 +609,7 @@ void tick_nohz_idle_exit(void)
+ 		tick_nohz_stop_idle(cpu, now);
  
- 		ts->idle_calls++;
--		tick_nohz_stop_sched_tick(ts, now, cpu);
-+
-+		expires = tick_nohz_stop_sched_tick(ts, now, cpu);
-+		if (expires.tv64 > 0LL) {
-+			ts->idle_sleeps++;
-+			ts->idle_expires = expires;
-+		}
- 
- 		if (!was_stopped && ts->tick_stopped) {
- 			ts->idle_jiffies = ts->last_jiffies;
+ 	if (ts->tick_stopped) {
++		select_nohz_load_balancer(0);
+ 		tick_nohz_restart_sched_tick(ts, now);
+ 		tick_nohz_account_idle_ticks(ts);
+ 	}
 -- 
 1.7.5.4
 
