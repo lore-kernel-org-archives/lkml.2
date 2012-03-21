@@ -1,201 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab2CUAOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 20:14:49 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46039 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758540Ab2CUAOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 20:14:46 -0400
-Message-ID: <1332288866.2982.33.camel@pasglop>
-Subject: Re: [PATCH] EEH: remove eeh device from OF node
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: sfr@canb.auug.org.au, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        paulus@samba.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 11:14:26 +1100
-In-Reply-To: <1331721086-4314-1-git-send-email-shangw@linux.vnet.ibm.com>
-References: <1331721086-4314-1-git-send-email-shangw@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758685Ab2CUARM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 20:17:12 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23111 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2CUARK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 20:17:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: suresh.b.siddha@intel.com, jwboyer@redhat.com, mingo@elte.hu,
+        hpa@zytor.com, yinghai@kernel.org, linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/3] xen/x86: Implement x86_apic_ops
+Date: Tue, 20 Mar 2012 20:12:44 -0400
+Message-Id: <1332288764-10351-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
+References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
+ <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090208.4F691DFF.001B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 18:31 +0800, Gavin Shan wrote:
-> Originally, the PCI sensitive OF node is tracing the eeh device
-> through struct device_node::edev. However, it was regarded as
-> bad idea.
-> 
-> The patch removes struct device_node::edev. In addition, the
-> global list of eeh devices is introduced, and do retrival of
-> eeh device according to the given OF node through the global
-> list.
+Or rather just implement one different function as opposed
+to the native one : the read function.
 
-So I'm not too happy with that. The main problem I see is that
-the code -constantly- calls of_node_to_eeh_dev.
+We synthesize the values.
 
-IE. On any MMIO that happens to return all 1's, we'll call
-eeh_check_failure() for example, which does that. In fact for a hot path
-it's pretty horrid, it will:
+Suggested-by:  Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/Makefile    |    2 +-
+ arch/x86/xen/apic.c      |   17 +++++++++++++++++
+ arch/x86/xen/enlighten.c |    2 ++
+ arch/x86/xen/xen-ops.h   |    4 ++++
+ 4 files changed, 24 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/xen/apic.c
 
- - Do an address cache lookup to get the pci_dev
- - Get the device-node frokm the pci_dev
- - Lookup your list to get the eeh_dev
-
-Shouldn't we instead change the address cache to contain eeh_dev
-instead ? And if you prefer keeping pci_dev, then it shouldn't be hard
-to stick a pointer to the eeh_dev in there via either struct archdata or
-maybe platform_data.
-
-The EEH code still, even after your rework, constantly pass "dn"'s as
-argument to functions just to convert it back to a struct eeh_dev rather
-than trying to pass the eeh_dev.
-
-So turning that into a list lookup will slow things down to a crawl.
-Also your patch never seems to remove anything from your list, which
-doesn't look right vs. hotplug.
-
-I suggest we fix that with a two phase approach:
-
- 1- ASAP so we can still get that into 3.4, move the eeh_dev pointer to
-struct pci_dn instead of struct device_node. This structure is
-accessible directly via dn->data and is ppc specific, that will be a
-better temporary solution and and adding stuff to the generic struct
-device_node.
-
- 2- Then, what we need to do is generalize the use of eeh_dev rather
-than device_node as the main object being worked on in the eeh layer and
-thus as the argument to most functions.
-
-Cheers,
-Ben.
-
-> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/include/asm/eeh.h           |    7 +++++++
->  arch/powerpc/platforms/pseries/eeh_dev.c |   29 ++++++++++++++++++++++++++++-
->  include/linux/of.h                       |   10 ----------
->  3 files changed, 35 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/eeh.h b/arch/powerpc/include/asm/eeh.h
-> index d60f998..591e0a1 100644
-> --- a/arch/powerpc/include/asm/eeh.h
-> +++ b/arch/powerpc/include/asm/eeh.h
-> @@ -56,6 +56,7 @@ struct eeh_dev {
->  	struct pci_controller *phb;	/* Associated PHB		*/
->  	struct device_node *dn;		/* Associated device node	*/
->  	struct pci_dev *pdev;		/* Associated PCI device	*/
-> +	struct list_head list;		/* Form the global link list	*/
->  };
->  
->  static inline struct device_node *eeh_dev_to_of_node(struct eeh_dev *edev)
-> @@ -115,6 +116,7 @@ extern int eeh_subsystem_enabled;
->   */
->  #define EEH_MAX_ALLOWED_FREEZES 5
->  
-> +struct eeh_dev *eeh_dev_from_of_node(struct device_node *dn);
->  void * __devinit eeh_dev_init(struct device_node *dn, void *data);
->  void __devinit eeh_dev_phb_init_dynamic(struct pci_controller *phb);
->  void __init eeh_dev_phb_init(void);
-> @@ -132,6 +134,11 @@ void eeh_add_device_tree_early(struct device_node *);
->  void eeh_add_device_tree_late(struct pci_bus *);
->  void eeh_remove_bus_device(struct pci_dev *);
->  
-> +static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
-> +{
-> +	return eeh_dev_from_of_node(dn);
-> +}
-> +
->  /**
->   * EEH_POSSIBLE_ERROR() -- test for possible MMIO failure.
->   *
-> diff --git a/arch/powerpc/platforms/pseries/eeh_dev.c b/arch/powerpc/platforms/pseries/eeh_dev.c
-> index f3aed7d..925d3a3 100644
-> --- a/arch/powerpc/platforms/pseries/eeh_dev.c
-> +++ b/arch/powerpc/platforms/pseries/eeh_dev.c
-> @@ -34,6 +34,7 @@
->  #include <linux/export.h>
->  #include <linux/gfp.h>
->  #include <linux/init.h>
-> +#include <linux/list.h>
->  #include <linux/kernel.h>
->  #include <linux/pci.h>
->  #include <linux/string.h>
-> @@ -41,6 +42,30 @@
->  #include <asm/pci-bridge.h>
->  #include <asm/ppc-pci.h>
->  
-> +/* eeh device list */
-> +static LIST_HEAD(eeh_dev_list);
-> +
-> +/**
-> + * eeh_dev_from_of_node - Retrieve EEH device according to OF node
-> + * @dn: OF node
-> + *
-> + * All existing eeh devices have been put into the global list.
-> + * In addition, the eeh device is tracing the corresponding
-> + * OF node. The function is used to retrieve the corresponding
-> + * eeh device according to the given OF node.
-> + */
-> +struct eeh_dev *eeh_dev_from_of_node(struct device_node *dn)
-> +{
-> +	struct eeh_dev *edev = NULL;
-> +
-> +	list_for_each_entry(edev, &eeh_dev_list, list) {
-> +		if (edev->dn && edev->dn == dn)
-> +			return edev;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
->  /**
->   * eeh_dev_init - Create EEH device according to OF node
->   * @dn: device node
-> @@ -62,10 +87,12 @@ void * __devinit eeh_dev_init(struct device_node *dn, void *data)
->  	}
->  
->  	/* Associate EEH device with OF node */
-> -	dn->edev  = edev;
->  	edev->dn  = dn;
->  	edev->phb = phb;
->  
-> +	/* Add to global list */
-> +	list_add_tail(&edev->list, &eeh_dev_list);
-> +
->  	return NULL;
->  }
->  
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 3e710d8..a75a831 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -58,9 +58,6 @@ struct device_node {
->  	struct	kref kref;
->  	unsigned long _flags;
->  	void	*data;
-> -#if defined(CONFIG_EEH)
-> -	struct eeh_dev *edev;
-> -#endif
->  #if defined(CONFIG_SPARC)
->  	char	*path_component_name;
->  	unsigned int unique_id;
-> @@ -75,13 +72,6 @@ struct of_phandle_args {
->  	uint32_t args[MAX_PHANDLE_ARGS];
->  };
->  
-> -#if defined(CONFIG_EEH)
-> -static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
-> -{
-> -	return dn->edev;
-> -}
-> -#endif
-> -
->  #if defined(CONFIG_SPARC) || !defined(CONFIG_OF)
->  /* Dummy ref counting routines - to be implemented later */
->  static inline struct device_node *of_node_get(struct device_node *node)
-
+diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+index add2c2d..96ab2c0 100644
+--- a/arch/x86/xen/Makefile
++++ b/arch/x86/xen/Makefile
+@@ -20,5 +20,5 @@ obj-$(CONFIG_EVENT_TRACING) += trace.o
+ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+ obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
+-obj-$(CONFIG_XEN_DOM0)		+= vga.o
++obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
+ obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
+diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
+new file mode 100644
+index 0000000..c53b3ef
+--- /dev/null
++++ b/arch/x86/xen/apic.c
+@@ -0,0 +1,17 @@
++#include <linux/init.h>
++#include <asm/x86_init.h>
++
++unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
++{
++	if (reg == 0x1)
++		return 0x00170020;
++	else if (reg == 0x0)
++		return 0x00000000;
++
++	return 0xfd;
++}
++
++void __init xen_init_apic(void)
++{
++	x86_apic.read = xen_io_apic_read;
++}
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 0732326..591ee69 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1381,6 +1381,8 @@ asmlinkage void __init xen_start_kernel(void)
+ 		pci_request_acs();
+ 
+ 		xen_acpi_sleep_register();
++
++		xen_init_apic();
+ 	}
+ 		
+ 
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index b095739..45c0c06 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -92,11 +92,15 @@ struct dom0_vga_console_info;
+ 
+ #ifdef CONFIG_XEN_DOM0
+ void __init xen_init_vga(const struct dom0_vga_console_info *, size_t size);
++void __init xen_init_apic(void);
+ #else
+ static inline void __init xen_init_vga(const struct dom0_vga_console_info *info,
+ 				       size_t size)
+ {
+ }
++static inline void __init xen_init_apic(void)
++{
++}
+ #endif
+ 
+ /* Declare an asm function, along with symbols needed to make it
+-- 
+1.7.7.5
 
