@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab2CUWES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:04:18 -0400
-Received: from broadrack.ru ([195.178.208.66]:38480 "EHLO tservice.net.ru"
+	id S1758205Ab2CUWFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:05:35 -0400
+Received: from gw.danplanet.com ([50.43.125.66]:47402 "EHLO mail.danplanet.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751150Ab2CUWEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:04:16 -0400
-Date: Thu, 22 Mar 2012 02:04:15 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [take 3] pohmelfs: call for inclusion
-Message-ID: <20120321220415.GA22315@ioremap.net>
-References: <20120316121829.GA12685@ioremap.net>
- <1331904553.5406.34.camel@joe2Laptop>
- <20120316134314.GA19342@ioremap.net>
- <1331907127.5406.48.camel@joe2Laptop>
- <20120321202702.GA16713@ioremap.net>
- <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
- <20120321211835.GQ6589@ZenIV.linux.org.uk>
- <20120321213704.GB16713@ioremap.net>
- <20120321215432.GR6589@ZenIV.linux.org.uk>
+	id S1755001Ab2CUWFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 18:05:33 -0400
+From: Dan Smith <danms@us.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] AutoNUMA alpha6
+References: <20120316144028.036474157@chello.nl>
+	<20120316182511.GJ24602@redhat.com> <87k42edenh.fsf@danplanet.com>
+	<20120321021239.GQ24602@redhat.com> <87fwd2d2kp.fsf@danplanet.com>
+	<20120321124937.GX24602@redhat.com>
+Date: Wed, 21 Mar 2012 15:05:30 -0700
+Message-ID: <87limtboet.fsf@danplanet.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321215432.GR6589@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 09:54:32PM +0000, Al Viro (viro@ZenIV.linux.org.uk) wrote:
-> IDGI.  Again, you are getting different strings for different processes,
-> so that one inside a chroot generates shorter pathnames.  I'm not asking
-> about races with rename() et.al. - it's obviously racy, but that's a
+AA> HARD and INVERSE should be the min and max you get.
 
-http_compat ugly mount options forbids rename
-It cuts fair amount of functionality present for 'normal' pohmelfs
+AA> I would ask you before you test AutoNUMA again, or numasched again,
+AA> to repeat this "HARD" vs "INVERSE" vs "NO_BIND_FORCE_SAME_MODE"
+AA> benchmark and be sure the above numbers are correct for the above
+AA> three cases.
 
-> separate problem.  Details, please - as far as I can tell, that code
-> looks like a reimplementation of dentry_path() in a curiously broken
-> way; what demands that particular breakage?  Again, the question of
-> pathname stability, uniqueness, etc. is a separate story; why this specific
-> weirdness?  Note that you are passing a to d_path() a vfsmount/dentry
-> pair that violates all kinds of assertions - dentry->d_sb != mnt->mnt_sb
-> more often than not, to start with.
+I've always been running all three, knowing that hard and inverse should
+be the bounds. Not knowing (until today) what the third was, I wasn't
+sure where it was supposed to lie. However, I've yet to see the spread
+that you describe, regardless of the configuration. If that means
+something isn't right about my setup, point it out. I've even gone so
+far as to print debug from inside numa01 and numa02 to make sure the
+-DFOO's are working.
 
-Details are pretty simple - we want to allow external applications to
-get to filesystem and grab data via single requests, since it is
-stateless and can not hold dentry structure. They do not connect to
-server which runs on top of filesystem, but insted directly to storage,
-which hosts raw data.
+Re-running all the configurations with THP disabled seems to yield very
+similar results to what I reported before:
 
-Applications know they uploadede data via /whatever/path/was/to/the/file
-And they want to get that data from server via single 'get'. Obviously
-they can not store mapping from all filenames to inode number, and they
-can not request dozen of directory lookups, since it takes time and has
-to maintain state.
+        mainline autonuma numasched hard inverse same_node
+numa01  483      366      335       335  483     483
 
-When object was written via remounted path, then it is a problem for
-those who made a setup - this ugly hack only 'works' in specially
-crafted environment, which provides its pros and requires fair price of
-cons.
+The inverse and same_node numbers above are on mainline, and both are
+lower on autonuma and numasched:
 
-Generic POHMELFS does not require this compatibility mode.
+           numa01_hard numa01_inverse numa01_same_node
+mainline   335         483            483
+autonuma   335         356            377
+numasched  335         375            491
+
+I also ran your numa02, which seems to correlate to your findings:
+
+        mainline autonuma numasched hard inverse
+numa02  54       42       55        37   53
+
+So, I'm not seeing the twofold penalty of running with numasched, and in
+fact, it seems to basically do no worse than current mainline (within
+the error interval). However, I hope the matching trend somewhat
+validates the fact that I'm running your stuff correctly.
+
+I also ran your numa01 with my system clamped to 16G and saw no change
+in the positioning of the metrics (i.e. same_node was still higher than
+inverse and everything was shifted slightly up linearly).
+
+AA> If it's not a benchmarking error or a topology error in
+AA> HARD_BIND/INVERSE_BIND, it may be the hardware you're using is very
+AA> different. That would be bad news though, I thought you were using
+AA> the same common 2 socket exacore setup that I'm using and I wouldn't
+AA> have expected such a staggering difference in results (even for HARD
+AA> vs INVERSE vs NO_BIND_FORCE_SAME_NODE, even before we put autonuma
+AA> or numasched into the equation).
+
+Well, it's bad in either case, because it means either it's too
+temperamental to behave the same on two similar but differently-sized
+machines, or that it doesn't properly balance the load for machines with
+differing topologies.
+
+I'll be glad to post details of the topology if you tell me specifically
+what you want (above and beyond what I've already posted).
+
+AA> I hope others will run more benchmarks too on both solution.
+
+Me too. Unless you have specific things for me to try, it's probably
+best to let someone else step in with more interesting and
+representative benchmarks, as all of my numbers seem to continue to
+point in the same direction...
+
+Thanks!
 
 -- 
-	Evgeniy Polyakov
+Dan Smith
+IBM Linux Technology Center
