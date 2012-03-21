@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab2CUQLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:11:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38251 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757073Ab2CUQLv (ORCPT
+	id S1758686Ab2CUQN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:13:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43204 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab2CUQN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:11:51 -0400
-Date: Wed, 21 Mar 2012 16:11:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v8] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120321161148.GG3226@opensource.wolfsonmicro.com>
-References: <1332292517-3411-1-git-send-email-tomoya.rohm@gmail.com>
+	Wed, 21 Mar 2012 12:13:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nhYGnrYv1PEJ5gA2"
-Content-Disposition: inline
-In-Reply-To: <1332292517-3411-1-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120321153317.GA30250@kroah.com>
+References: <CAN628AFKSgd2nKY5Ga7JqhVWqAySRW8OpeLyykOwocn4K_a-qQ@mail.gmail.com>
+	<20120321153317.GA30250@kroah.com>
+Date: Thu, 22 Mar 2012 00:13:26 +0800
+Message-ID: <CACwZE5RbGARjgNRuJuLquDY_THjspH20JMEbKqsZVwj4jJtFhw@mail.gmail.com>
+Subject: Re: [PATCH] VMUFAT filesystem [1/4]
+From: Adrian McMenamin <adrianmcmenamin@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Adrian McMenamin <lkmladrian@gmail.com>, viro@zeniv.linux.org.uk,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Linux-sh <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21 March 2012 23:33, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Mar 21, 2012 at 12:30:36PM +0800, Adrian McMenamin wrote:
+>> >From d587b09573c06309bb2c3ef12223b77fffc3a922 Mon Sep 17 00:00:00 2001
+>> From: Adrian McMenamin <adrianmcmenamin@gmail.com>
+>> Date: Wed, 21 Mar 2012 12:17:51 +0800
+>> Subject: [PATCH] Add vmufat filesystem
+>>
+>> ---
+>
+> Hint, read Documentation/SubmittingPatches for how to properly create
+> patches that could be applied, if they were in mergable state (you
+> forgot the changelog entry, signed-off-by line, and probably a few other
+> things...)
+>
 
---nhYGnrYv1PEJ5gA2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Mar 21, 2012 at 10:15:17AM +0900, Tomoya MORINAGA wrote:
-
-> This machine driver is for
-> LAPIS Semiconductor ML7213 Carrier Board + ML26124 Reference Board
-
-This looks good but obviously needs the platform before it can be
-merged.  One fairly minor thing:
-
-> +	mclkfs = clk / params_rate(hw_params);
-
-> +		bclkfs = 32;
-
-You no longer use either mclkfs or bclkfs so you could just delete the
-code that calculates them - the DAI drivers will work this stuff out for
-you now so the machine driver doesn't need to.
-
---nhYGnrYv1PEJ5gA2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPaf2/AAoJEBus8iNuMP3dZ8UQAJ6hVNFoEAi3IELDXPXoQ/RU
-lsNbZezgKUPNqI6WhIt6tYWfndCqS+M12qBFUXx3m8eo9FIsgVlt+NwLC1N07ZYI
-pw2RbLT0/AXDJlPQ/NDG03EJf0CbmD4j5VIgidnB4hEGCDdveJKw0GQHBKOWSsXQ
-SbW9MnGJASG+7HC9GLnMrmMwr68rJefLlkApIi7X03kJyp8LaVVUbcUatjfe4eCk
-rfKWpsSsNBGm+uZmdZtkRbII1UdInHQ3Pol8Q/yBfcLnMKOOrERwIV0lrGqPHSfl
-2wesMhhDgPf+NH7s+49fXg8q75J9I3P81526r+JhZ2PkHBAY/rg711S9SXx2j3ge
-jIubUfqDoqPlawTAHn9uLXsV+7seyiFVyrtNyrkc+q6N3+qoqbxODRhcBnIEOHhf
-Ldtt0d1Ad4F188M97csiVEXnWNCUrPOlh7/4nj1uIdFmcerZ6uSqKfSS/3kdY/Ru
-cHHaDTW95DSyzNl5x2i9x3WJSMCXku9s/cezA48+KTEhPGRSTp8FqBtia7PgjspD
-0Lv2DDTTfeeskLFcXgRtWHeRBZxY0HZneYaL/XQzuP8hiO9X8FgUWDvnndgpLR3y
-Z64Kutlk41hSSx0h5mSiBoppgtVIsLF6++aYbBX9VcJ9oXz60e0+1R2sIiSNYsVn
-lrEV7mAQ8XCT6wrVr1fC
-=jnuo
------END PGP SIGNATURE-----
-
---nhYGnrYv1PEJ5gA2--
+In fact a changelog and a signed-off-by line are in the email marked
+1/4 - which plainly made it to the lkml even if some subscribers would
+appear not to have seen it: https://lkml.org/lkml/2012/3/21/10
