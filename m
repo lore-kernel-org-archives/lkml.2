@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031154Ab2CUOAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:00:34 -0400
+	id S1031168Ab2CUOAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:00:48 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:42977 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031134Ab2CUOA1 (ORCPT
+	with ESMTP id S1031146Ab2CUOAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:00:27 -0400
+	Wed, 21 Mar 2012 10:00:33 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 30/32] rcu: Switch to extended quiescent state in userspace from nohz cpuset
-Date: Wed, 21 Mar 2012 14:58:36 +0100
-Message-Id: <1332338318-5958-32-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 32/32] nohz/cpuset: Disable under some configs
+Date: Wed, 21 Mar 2012 14:58:38 +0100
+Message-Id: <1332338318-5958-34-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,27 +33,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we switch to adaptive nohz mode and we run in userspace,
-we can still receive IPIs from the RCU core if a grace period
-has been started by another CPU because we need to take part
-of its completion.
+This shows the various things that are not yet handled by
+the nohz cpusets: perf events, irq work, irq time accounting.
 
-However running in userspace is similar to that of running in
-idle because we don't make use of RCU there, thus we can be
-considered as running in RCU extended quiescent state. The
-benefit when running into that mode is that we are not
-anymore disturbed by needless IPIs coming from the RCU core.
-
-To perform this, we just to use the RCU extended quiescent state
-APIs on the following points:
-
-- kernel exit or tick stop in userspace: here we switch to extended
-quiescent state because we run in userspace without the tick.
-
-- kernel entry or tick restart: here we exit the extended quiescent
-state because either we enter the kernel and we may make use of RCU
-read side critical section anytime, or we need the timer tick for some
-reason and that takes care of RCU grace period in a traditional way.
+But there are further things that have yet to be handled:
+sched clock tick, runqueue clock, sched_class::task_tick(),
+rq clock, cpu load, complete handling of cputimes, ...
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -74,113 +59,22 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- include/linux/tick.h     |    3 +++
- kernel/time/tick-sched.c |   27 +++++++++++++++++++++++++--
- 2 files changed, 28 insertions(+), 2 deletions(-)
+ init/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 3c31d6e..e2a49ad 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -153,6 +153,8 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
- # endif /* !NO_HZ */
+diff --git a/init/Kconfig b/init/Kconfig
+index 7cdb8be..3080b16 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -640,7 +640,7 @@ config PROC_PID_CPUSET
  
- #ifdef CONFIG_CPUSETS_NO_HZ
-+DECLARE_PER_CPU(int, nohz_task_ext_qs);
-+
- extern void tick_nohz_enter_kernel(void);
- extern void tick_nohz_exit_kernel(void);
- extern void tick_nohz_enter_exception(struct pt_regs *regs);
-@@ -160,6 +162,7 @@ extern void tick_nohz_exit_exception(struct pt_regs *regs);
- extern void tick_nohz_check_adaptive(void);
- extern void tick_nohz_pre_schedule(void);
- extern void tick_nohz_post_schedule(void);
-+extern void tick_nohz_cpu_exit_qs(void);
- extern bool tick_nohz_account_tick(void);
- extern void tick_nohz_flush_current_times(bool restart_tick);
- #else /* !CPUSETS_NO_HZ */
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 4b9bdfb..6c66977 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -565,10 +565,13 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
- 
- 	if (!was_stopped && ts->tick_stopped) {
- 		WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_NONE);
--		if (user)
-+		if (user) {
- 			ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
--		else if (!current->mm)
-+			__get_cpu_var(nohz_task_ext_qs) = 1;
-+			rcu_user_enter_irq();
-+		} else if (!current->mm) {
- 			ts->saved_jiffies_whence = JIFFIES_SAVED_SYS;
-+		}
- 
- 		ts->saved_jiffies = jiffies;
- 		set_thread_flag(TIF_NOHZ);
-@@ -897,6 +900,8 @@ void tick_check_idle(int cpu)
- }
- 
- #ifdef CONFIG_CPUSETS_NO_HZ
-+DEFINE_PER_CPU(int, nohz_task_ext_qs);
-+
- void tick_nohz_exit_kernel(void)
- {
- 	unsigned long flags;
-@@ -920,6 +925,9 @@ void tick_nohz_exit_kernel(void)
- 	ts->saved_jiffies = jiffies;
- 	ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
- 
-+	__get_cpu_var(nohz_task_ext_qs) = 1;
-+	rcu_user_enter();
-+
- 	local_irq_restore(flags);
- }
- 
-@@ -938,6 +946,11 @@ void tick_nohz_enter_kernel(void)
- 		return;
- 	}
- 
-+	if (__get_cpu_var(nohz_task_ext_qs) == 1) {
-+		__get_cpu_var(nohz_task_ext_qs) = 0;
-+		rcu_user_exit();
-+	}
-+
- 	WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_USER);
- 
- 	delta_jiffies = jiffies - ts->saved_jiffies;
-@@ -949,6 +962,14 @@ void tick_nohz_enter_kernel(void)
- 	local_irq_restore(flags);
- }
- 
-+void tick_nohz_cpu_exit_qs(void)
-+{
-+	if (__get_cpu_var(nohz_task_ext_qs)) {
-+		rcu_user_exit_irq();
-+		__get_cpu_var(nohz_task_ext_qs) = 0;
-+	}
-+}
-+
- void tick_nohz_enter_exception(struct pt_regs *regs)
- {
- 	if (user_mode(regs))
-@@ -984,6 +1005,7 @@ static void tick_nohz_restart_adaptive(void)
- 	tick_nohz_flush_current_times(true);
- 	tick_nohz_restart_sched_tick();
- 	clear_thread_flag(TIF_NOHZ);
-+	tick_nohz_cpu_exit_qs();
- }
- 
- void tick_nohz_check_adaptive(void)
-@@ -1021,6 +1043,7 @@ void tick_nohz_pre_schedule(void)
- 	if (ts->tick_stopped) {
- 		tick_nohz_flush_current_times(true);
- 		clear_thread_flag(TIF_NOHZ);
-+		/* FIXME: warn if we are in RCU idle mode */
- 	}
- }
- 
+ config CPUSETS_NO_HZ
+        bool "Tickless cpusets"
+-       depends on CPUSETS && HAVE_CPUSETS_NO_HZ && NO_HZ && HIGH_RES_TIMERS
++       depends on CPUSETS && HAVE_CPUSETS_NO_HZ && NO_HZ && HIGH_RES_TIMERS && !IRQ_TIME_ACCOUNTING
+        help
+          This options let you apply a nohz property to a cpuset such
+ 	 that the periodic timer tick tries to be avoided when possible on
 -- 
 1.7.5.4
 
