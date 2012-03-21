@@ -1,208 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2CUHUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 03:20:08 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:12018
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753084Ab2CUHUF (ORCPT
+	id S1755809Ab2CUHU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 03:20:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60308 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755574Ab2CUHUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 03:20:05 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 21 Mar 2012 15:31:17 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sjg@chromium.org" <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 3/6] pinctrl: core device tree mapping table parsing
- support
-Message-ID: <20120321073116.GE3191@shlinux2.ap.freescale.net>
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
- <1332265479-1260-3-git-send-email-swarren@wwwdotorg.org>
+	Wed, 21 Mar 2012 03:20:25 -0400
+Message-ID: <4F698134.9010104@openvz.org>
+Date: Wed, 21 Mar 2012 11:20:20 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1332265479-1260-3-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+To: Greg Ungerer <gerg@snapgear.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [PATCH 04/16] mm/nommu: use vm_flags_t for vma flags
+References: <20120321065140.13852.52315.stgit@zurg> <20120321065629.13852.5630.stgit@zurg> <4F697E7E.6090301@snapgear.com>
+In-Reply-To: <4F697E7E.6090301@snapgear.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 01:44:36AM +0800, Stephen Warren wrote:
-> During pinctrl_get(), if the client device has a device tree node, look
-> for the common pinctrl properties there. If found, parse the referenced
-> device tree nodes, with the help of the pinctrl drivers, and generate
-> mapping table entries from them.
-> 
-> During pinctrl_put(), free any results of device tree parsing.
-> 
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
-> v2: Place most code into new file devicetree.c
-Much clearer.:)
+Greg Ungerer wrote:
+>
+> Hi Konstantin,
+>
+> On 21/03/12 16:56, Konstantin Khlebnikov wrote:
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> Cc: David Howells<dhowells@redhat.com>
+>> Cc: Greg Ungerer<gerg@uclinux.org>
+>> ---
+>>    fs/proc/nommu.c      |    3 ++-
+>>    fs/proc/task_nommu.c |   14 ++++++++------
+>>    mm/nommu.c           |   19 ++++++++++---------
+>>    3 files changed, 20 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/fs/proc/nommu.c b/fs/proc/nommu.c
+>> index b1822dd..cadc798 100644
+>> --- a/fs/proc/nommu.c
+>> +++ b/fs/proc/nommu.c
+>> @@ -39,7 +39,8 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
+>>    	unsigned long ino = 0;
+>>    	struct file *file;
+>>    	dev_t dev = 0;
+>> -	int flags, len;
+>> +	int len;
+>> +	vm_flags_t vm_flags;
+>>
+>>    	flags = region->vm_flags;
+>           ^^^^^
+> I think you want vm_flags here right?
+> There is other uses of "flags" in this function as well.
 
-> + * struct pinctrl_dt_map - mapping table chunk parsed from device tree
-> + * @node: list node for struct pinctrl's @dt_maps field
-> + * @pctldev: the pin controller that allocated this struct, and will free it
-> + * @maps: the mapping table entries
-> + */
-> +struct pinctrl_dt_map {
-> +	struct list_head node;
-> +	struct pinctrl_dev *pctldev;
-> +	struct pinctrl_map *map;
-> +	unsigned num_maps;
-> +};
-> +
-> +static void dt_free_map(struct pinctrl_dev *pctldev,
-> +		     struct pinctrl_map *map, unsigned num_maps)
-> +{
-> +	if (pctldev) {
-> +		struct pinctrl_ops *ops = pctldev->desc->pctlops;
-> +		ops->dt_free_map(pctldev, map, num_maps);
-> +	} else {
-I remember for hog on functions the pctldev becomes pinctrl devices itself,
-so in which case pctldev can be NULL?
+Right, I missed this.
 
-> +static struct pinctrl_dev *find_pinctrl_by_of_node(struct device_node *np)
-> +{
-> +	struct pinctrl_dev *pctldev;
-> +
-> +	list_for_each_entry(pctldev, &pinctrldev_list, node)
-> +		if (pctldev->dev->of_node == np)
-> +			return pctldev;
-> +
-> +	return NULL;
-> +}
-> +
-> +static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
-> +				struct device_node *np_config)
-> +{
-> +	struct device_node *np_pctldev;
-> +	struct pinctrl_dev *pctldev;
-> +	struct pinctrl_ops *ops;
-> +	int ret;
-> +	struct pinctrl_map *map;
-> +	unsigned num_maps;
-> +
-> +	/* Find the pin controller containing np_config */
-> +	np_pctldev = of_node_get(np_config);
-It seems the np_config node is already got when call of_find_node_by_phandle.
-So do we still need this line?
+Sorry for my cheating, I didn't check compiling for all possible targets =)
 
-> +int pinctrl_dt_to_map(struct pinctrl *p)
-> +{
-> +	struct device_node *np = p->dev->of_node;
-> +	int state, ret;
-> +	char *propname;
-> +	struct property *prop;
-> +	const char *statename;
-> +	const __be32 *list;
-> +	int size, config;
-> +	phandle phandle;
-> +	struct device_node *np_config;
-> +	struct pinctrl_dt_map *dt_map;
-> +
-Add NULL np checking?
-
-> +	/* We may store pointers to property names within the node */
-> +	of_node_get(np);
-> +
-> +	/* For each defined state ID */
-> +	for (state = 0; ; state++) {
-> +		/* Retrieve the pinctrl-* property */
-> +		propname = kasprintf(GFP_KERNEL, "pinctrl-%d", state);
-> +		prop = of_find_property(np, propname, &size);
-> +		kfree(propname);
-> +		if (!prop)
-> +			break;
-> +		list = prop->value;
-> +		size /= sizeof(*list);
-> +
-> +		/* Determine whether pinctrl-names property names the state */
-> +		ret = of_property_read_string_index(np, "pinctrl-names",
-> +						    state, &statename);
-> +		/*
-> +		 * If not, statename is just the integer state ID. But rather
-> +		 * than dynamically allocate it and have to free it later,
-> +		 * just point part way into the property name for the string.
-> +		 */
-> +		if (ret < 0) {
-> +			/* strlen("pinctrl-") == 8 */
-> +			if (strlen(prop->name) < 8) {
-Do we really need this extra checking?
-It seems the prop->name is the "pinctrl-%d" you searched above, so the
-strlen(prop->name) must not < 8, right?
-
-> +				dev_err(p->dev, "prop %s inconsistent length\n",
-> +					prop->name);
-> +				ret = -EINVAL;
-> +				goto err;
-> +			}
-> +			statename = prop->name + 8;
->From this code, it seems actually we provide user the option by chance to define
-state as pinctrl-syspend which is out of our binding doc.
-
-> +		}
-> +
-> +		/* For every referenced pin configuration node in it */
-> +		for (config = 0; config < size; config++) {
-> +			phandle = be32_to_cpup(list++);
-> +
-> +			/* Look up the pin configuration node */
-> +			np_config = of_find_node_by_phandle(phandle);
-One option is using of_parse_phandle, then we do not need calculate
-the phandle offset by ourselves.
-Like:
-np_config = of_parse_phandle(propname , config);
-
-> +			if (!np_config) {
-> +				dev_err(p->dev,
-> +					"prop %s index %i invalid phandle\n",
-> +					prop->name, config);
-> +				ret = -EINVAL;
-> +				goto err;
-> +			}
-> +
-> +			/* Parse the node */
-> +			ret = dt_to_map_one_config(p, statename, np_config);
-> +			of_node_put(np_config);
-> +			if (ret < 0)
-> +				goto err;
-> +		}
-> +
-> +		/* No entries in DT? Generate a dummy state table entry */
-> +		if (!size) {
-> +			ret = dt_remember_dummy_state(p, statename);
-> +			if (ret < 0)
-> +				goto err;
-> +		}
-> +	}
-> +
-> +	list_for_each_entry(dt_map, &p->dt_maps, node) {
-> +		ret = pinctrl_register_map(dt_map->map, dt_map->num_maps,
-> +					   false, true);
-> +		if (ret < 0)
-> +			goto err;
-> +	}
-What's main purpose of differing the map registration and introduce a
-intermediate pinctrl_dt_map(dt_remember_or_free_map)?
-What about directly register maps once it's parsed?
-
-Regards
-Dong Aisheng
+>
+> Regards
+> Greg
+>
+>
+>>    	file = region->vm_file;
+>> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+>> index 8aaba8c..9abbc66 100644
+>> --- a/fs/proc/task_nommu.c
+>> +++ b/fs/proc/task_nommu.c
+>> @@ -142,10 +142,11 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+>>    	unsigned long ino = 0;
+>>    	struct file *file;
+>>    	dev_t dev = 0;
+>> -	int flags, len;
+>> +	int len;
+>> +	vm_flags_t vm_flags;
+>>    	unsigned long long pgoff = 0;
+>>
+>> -	flags = vma->vm_flags;
+>> +	vm_flags = vma->vm_flags;
+>>    	file = vma->vm_file;
+>>
+>>    	if (file) {
+>> @@ -159,10 +160,11 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+>>    		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+>>    		   vma->vm_start,
+>>    		   vma->vm_end,
+>> -		   flags&   VM_READ ? 'r' : '-',
+>> -		   flags&   VM_WRITE ? 'w' : '-',
+>> -		   flags&   VM_EXEC ? 'x' : '-',
+>> -		   flags&   VM_MAYSHARE ? flags&   VM_SHARED ? 'S' : 's' : 'p',
+>> +		   vm_flags&   VM_READ ? 'r' : '-',
+>> +		   vm_flags&   VM_WRITE ? 'w' : '-',
+>> +		   vm_flags&   VM_EXEC ? 'x' : '-',
+>> +		   vm_flags&   VM_MAYSHARE ?
+>> +			vm_flags&   VM_SHARED ? 'S' : 's' : 'p',
+>>    		   pgoff,
+>>    		   MAJOR(dev), MINOR(dev), ino,&len);
+>>
+>> diff --git a/mm/nommu.c b/mm/nommu.c
+>> index f59e170..33d0ab7 100644
+>> --- a/mm/nommu.c
+>> +++ b/mm/nommu.c
+>> @@ -130,7 +130,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>>    		     int *retry)
+>>    {
+>>    	struct vm_area_struct *vma;
+>> -	unsigned long vm_flags;
+>> +	vm_flags_t vm_flags;
+>>    	int i;
+>>
+>>    	/* calculate required read or write permissions.
+>> @@ -658,13 +658,13 @@ static void put_nommu_region(struct vm_region *region)
+>>    /*
+>>     * update protection on a vma
+>>     */
+>> -static void protect_vma(struct vm_area_struct *vma, unsigned long flags)
+>> +static void protect_vma(struct vm_area_struct *vma, vm_flags_t vm_flags)
+>>    {
+>>    #ifdef CONFIG_MPU
+>>    	struct mm_struct *mm = vma->vm_mm;
+>>    	long start = vma->vm_start&   PAGE_MASK;
+>>    	while (start<   vma->vm_end) {
+>> -		protect_page(mm, start, flags);
+>> +		protect_page(mm, start, vm_flags);
+>>    		start += PAGE_SIZE;
+>>    	}
+>>    	update_protections(mm);
+>> @@ -1060,12 +1060,12 @@ static int validate_mmap_request(struct file *file,
+>>     * we've determined that we can make the mapping, now translate what we
+>>     * now know into VMA flags
+>>     */
+>> -static unsigned long determine_vm_flags(struct file *file,
+>> -					unsigned long prot,
+>> -					unsigned long flags,
+>> -					unsigned long capabilities)
+>> +static vm_flags_t determine_vm_flags(struct file *file,
+>> +				     unsigned long prot,
+>> +				     unsigned long flags,
+>> +				     unsigned long capabilities)
+>>    {
+>> -	unsigned long vm_flags;
+>> +	vm_flags_t vm_flags;
+>>
+>>    	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
+>>    	/* vm_flags |= mm->def_flags; */
+>> @@ -1243,7 +1243,8 @@ unsigned long do_mmap_pgoff(struct file *file,
+>>    	struct vm_area_struct *vma;
+>>    	struct vm_region *region;
+>>    	struct rb_node *rb;
+>> -	unsigned long capabilities, vm_flags, result;
+>> +	unsigned long capabilities, result;
+>> +	vm_flags_t vm_flags;
+>>    	int ret;
+>>
+>>    	kenter(",%lx,%lx,%lx,%lx,%lx", addr, len, prot, flags, pgoff);
+>>
+>>
+>>
+>>
+>
+>
 
