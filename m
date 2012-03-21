@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760660Ab2CUVin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:38:43 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35513 "EHLO
+	id S1760679Ab2CUViv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:38:51 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:35692 "EHLO
 	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760592Ab2CUVij (ORCPT
+	with ESMTP id S1760663Ab2CUVir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:38:39 -0400
-Message-ID: <1332365924.3858.30.camel@key-ThinkPad-W510>
-Subject: [PATCH 04/17] hwrng: pseries - PFO-based hwrng driver
+	Wed, 21 Mar 2012 17:38:47 -0400
+Message-ID: <1332365968.3858.34.camel@key-ThinkPad-W510>
+Subject: [PATCH 06/17] powerpc: crypto: AES-CBC mode routines for nx
+ encryption
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
         benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 16:38:44 -0500
+Date: Wed, 21 Mar 2012 16:39:28 -0500
 In-Reply-To: <1332365297.3858.5.camel@key-ThinkPad-W510>
 References: <1332365297.3858.5.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
@@ -21,70 +22,34 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032121-3352-0000-0000-0000037BC5A0
+x-cbid: 12032121-3352-0000-0000-0000037BC6B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Neuling <mikey@neuling.org>
+These routines add support for AES in CBC mode on the Power7+ CPU's
+in-Nest accelerator driver.
 
-Adds support for the Platform Facilities Option (PFO)-based hardware
-random number generator for POWER hardware.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- drivers/char/hw_random/Kconfig       |   13 +++++
- drivers/char/hw_random/Makefile      |    1 +
- drivers/char/hw_random/pseries-rng.c |   99 ++++++++++++++++++++++++++++++++++
- 3 files changed, 113 insertions(+), 0 deletions(-)
- create mode 100644 drivers/char/hw_random/pseries-rng.c
+ arch/powerpc/crypto/nx/nx-aes-cbc.c |  135 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 135 insertions(+), 0 deletions(-)
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-cbc.c
 
-diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
-index 0689bf6..9355347 100644
---- a/drivers/char/hw_random/Kconfig
-+++ b/drivers/char/hw_random/Kconfig
-@@ -250,3 +250,16 @@ config UML_RANDOM
- 	  (check your distro, or download from
- 	  http://sourceforge.net/projects/gkernel/).  rngd periodically reads
- 	  /dev/hwrng and injects the entropy into /dev/random.
-+
-+config HW_RANDOM_PSERIES
-+	tristate "pSeries HW Random Number Generator support"
-+	depends on HW_RANDOM && PPC64 && IBMVIO
-+	default HW_RANDOM
-+	---help---
-+	  This driver provides kernel-side support for the Random Number
-+	  Generator hardware found on POWER7+ machines and above
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called pseries-rng.
-+
-+	  If unsure, say Y.
-diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
-index b2ff526..d901dfa 100644
---- a/drivers/char/hw_random/Makefile
-+++ b/drivers/char/hw_random/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_HW_RANDOM_OCTEON) += octeon-rng.o
- obj-$(CONFIG_HW_RANDOM_NOMADIK) += nomadik-rng.o
- obj-$(CONFIG_HW_RANDOM_PICOXCELL) += picoxcell-rng.o
- obj-$(CONFIG_HW_RANDOM_PPC4XX) += ppc4xx-rng.o
-+obj-$(CONFIG_HW_RANDOM_PSERIES) += pseries-rng.o
-diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
+diff --git a/arch/powerpc/crypto/nx/nx-aes-cbc.c b/arch/powerpc/crypto/nx/nx-aes-cbc.c
 new file mode 100644
-index 0000000..6ee70ca
+index 0000000..01fa5cb
 --- /dev/null
-+++ b/drivers/char/hw_random/pseries-rng.c
-@@ -0,0 +1,99 @@
-+/*
-+ * Copyright (C) 2010 Michael Neuling IBM Corporation
++++ b/arch/powerpc/crypto/nx/nx-aes-cbc.c
+@@ -0,0 +1,135 @@
++/**
++ * AES CBC routines supporting the Power 7+ Nest Accelerators driver
 + *
-+ * Driver for the pseries hardware RNG for POWER7+ and above
++ * Copyright (C) 2011-2012 International Business Machines Inc.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 only.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -93,89 +58,125 @@ index 0000000..6ee70ca
 + *
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ * Author: Kent Yoder <yoder1@us.ibm.com>
 + */
 +
++#include <crypto/aes.h>
++#include <crypto/algapi.h>
 +#include <linux/module.h>
-+#include <linux/hw_random.h>
++#include <linux/types.h>
++#include <linux/crypto.h>
 +#include <asm/vio.h>
 +
-+#define MODULE_NAME "pseries-rng"
++#include "nx_csbcpb.h"
++#include "nx.h"
 +
-+static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
++
++static int cbc_aes_nx_set_key(struct crypto_tfm *tfm,
++			      const u8          *in_key,
++			      unsigned int       key_len)
 +{
-+	if (plpar_hcall(H_RANDOM, (unsigned long *)data) != H_SUCCESS) {
-+		printk(KERN_ERR "pseries rng hcall error\n");
-+		return 0;
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
++	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++
++	nx_ctx_init(nx_ctx, HCOP_FC_AES);
++
++	switch (key_len) {
++	case AES_KEYSIZE_128:
++		csbcpb->cpb.hdr.key_size = NX_KS_AES_128;
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
++		break;
++	case AES_KEYSIZE_192:
++		csbcpb->cpb.hdr.key_size = NX_KS_AES_192;
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
++		break;
++	case AES_KEYSIZE_256:
++		csbcpb->cpb.hdr.key_size = NX_KS_AES_256;
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
++		break;
++	default:
++		return -EINVAL;
 +	}
-+	return 8;
-+}
 +
-+/**
-+ * pseries_rng_get_desired_dma - Return desired DMA allocate for CMO operations
-+ *
-+ * This is a required function for a driver to operate in a CMO environment
-+ * but this device does not make use of DMA allocations, return 0.
-+ *
-+ * Return value:
-+ *	Number of bytes of IO data the driver will need to perform well -> 0
-+ */
-+static unsigned long pseries_rng_get_desired_dma(struct vio_dev *vdev)
-+{
-+	return 0;
-+};
++	csbcpb->cpb.hdr.mode = NX_MODE_AES_CBC;
++	memcpy(csbcpb->cpb.aes_cbc.key, in_key, key_len);
 +
-+static struct hwrng pseries_rng = {
-+	.name		= MODULE_NAME,
-+	.data_read	= pseries_rng_data_read,
-+};
-+
-+static int __init pseries_rng_probe(struct vio_dev *dev,
-+		const struct vio_device_id *id)
-+{
-+	return hwrng_register(&pseries_rng);
-+}
-+
-+static int __exit pseries_rng_remove(struct vio_dev *dev)
-+{
-+	hwrng_unregister(&pseries_rng);
 +	return 0;
 +}
 +
-+static struct vio_device_id pseries_rng_driver_ids[] = {
-+	{ "ibm,random-v1", "ibm,random"},
-+	{ "", "" }
-+};
-+MODULE_DEVICE_TABLE(vio, pseries_rng_driver_ids);
-+
-+static struct vio_driver pseries_rng_driver = {
-+	.driver		= {
-+		.name	= MODULE_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe = pseries_rng_probe,
-+	.remove = pseries_rng_remove,
-+	.get_desired_dma = pseries_rng_get_desired_dma,
-+	.id_table = pseries_rng_driver_ids
-+};
-+
-+static int __init rng_init(void)
++static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
++			    struct scatterlist    *dst,
++			    struct scatterlist    *src,
++			    unsigned int           nbytes,
++			    int                    enc)
 +{
-+	printk(KERN_INFO "Registering IBM pSeries RNG driver\n");
-+	return vio_register_driver(&pseries_rng_driver);
++	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
++	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	int rc;
++
++	if (nbytes > nx_ctx->ap->databytelen)
++		return -EINVAL;
++
++	csbcpb->cpb.hdr.fdm.ende = enc;
++
++	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes,
++			       csbcpb->cpb.aes_cbc.iv);
++	if (rc)
++		goto out;
++
++	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen)
++		return -EINVAL;
++
++	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
++	if (rc)
++		goto out;
++
++	atomic_inc(&(nx_ctx->stats->aes_ops));
++	atomic64_add(csbcpb->csb.processed_byte_count,
++		     &(nx_ctx->stats->aes_bytes));
++out:
++	return rc;
 +}
 +
-+module_init(rng_init);
-+
-+static void __exit rng_exit(void)
++static int cbc_aes_nx_encrypt(struct blkcipher_desc *desc,
++			      struct scatterlist    *dst,
++			      struct scatterlist    *src,
++			      unsigned int           nbytes)
 +{
-+	vio_unregister_driver(&pseries_rng_driver);
++	return cbc_aes_nx_crypt(desc, dst, src, nbytes, 1);
 +}
-+module_exit(rng_exit);
 +
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Michael Neuling <mikey@neuling.org>");
-+MODULE_DESCRIPTION("H/W RNG driver for IBM pSeries processors");
++static int cbc_aes_nx_decrypt(struct blkcipher_desc *desc,
++			      struct scatterlist    *dst,
++			      struct scatterlist    *src,
++			      unsigned int           nbytes)
++{
++	return cbc_aes_nx_crypt(desc, dst, src, nbytes, 0);
++}
++
++struct crypto_alg nx_cbc_aes_alg = {
++	.cra_name        = "cbc(aes)",
++	.cra_driver_name = "cbc-aes-nx",
++	.cra_priority    = 300,
++	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize   = AES_BLOCK_SIZE,
++	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
++	.cra_type        = &crypto_blkcipher_type,
++	.cra_module      = THIS_MODULE,
++	.cra_list        = LIST_HEAD_INIT(nx_cbc_aes_alg.cra_list),
++	.cra_init        = nx_crypto_ctx_aes_cbc_init,
++	.cra_exit        = nx_crypto_ctx_exit,
++	.cra_blkcipher = {
++		.min_keysize = AES_MIN_KEY_SIZE,
++		.max_keysize = AES_MAX_KEY_SIZE,
++		.ivsize      = AES_BLOCK_SIZE,
++		.setkey      = cbc_aes_nx_set_key,
++		.encrypt     = cbc_aes_nx_encrypt,
++		.decrypt     = cbc_aes_nx_decrypt,
++	}
++};
 -- 
 1.7.1
 
