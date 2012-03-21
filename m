@@ -1,150 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab2CUS6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:58:11 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55935 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754371Ab2CUS6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:58:07 -0400
+	id S1755463Ab2CUS61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:58:27 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47454 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065Ab2CUS6W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 14:58:22 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Subject: [PATCH v3 11/12] ima: add support for different security.ima data types
-Date: Wed, 21 Mar 2012 14:54:16 -0400
-Message-Id: <1332356057-3356-12-git-send-email-zohar@linux.vnet.ibm.com>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v3 06/12] ima: allocating iint improvements
+Date: Wed, 21 Mar 2012 14:54:11 -0400
+Message-Id: <1332356057-3356-7-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032118-5806-0000-0000-000013A3F438
+x-cbid: 12032118-5518-0000-0000-0000031EAF8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMA-appraisal currently verifies the integrity of a file based on a
-known 'good' measurement value.  This patch reserves the first byte
-of 'security.ima' as a place holder for the type of method used for
-verifying file data integrity.
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-Changelog v1:
-- Use the newly defined 'struct evm_ima_xattr_data'
+With IMA-appraisal's removal of the iint mutex and taking the i_mutex
+instead, allocating the iint becomes a lot simplier, as we don't need
+to be concerned with two processes racing to allocate the iint. This
+patch cleans up and improves performance for allocating the iint.
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+- removed redundant double i_mutex locking
+- combined iint allocation with tree search
+
+Changelog v2:
+- removed the rwlock/read_lock changes from this patch
+
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- security/integrity/ima/ima_api.c      |    6 +++---
- security/integrity/ima/ima_appraise.c |   23 +++++++++++++----------
- security/integrity/integrity.h        |    2 +-
- 3 files changed, 17 insertions(+), 14 deletions(-)
+ include/linux/integrity.h         |    7 +++--
+ security/integrity/iint.c         |   45 +++++++++++++++---------------------
+ security/integrity/ima/ima_main.c |   13 +++-------
+ 3 files changed, 27 insertions(+), 38 deletions(-)
 
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 55deeb1..b5cbef5 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -147,8 +147,8 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	if (!(iint->flags & IMA_COLLECTED)) {
- 		u64 i_version = file->f_dentry->d_inode->i_version;
+diff --git a/include/linux/integrity.h b/include/linux/integrity.h
+index a0c4125..66c5fe9 100644
+--- a/include/linux/integrity.h
++++ b/include/linux/integrity.h
+@@ -22,13 +22,14 @@ enum integrity_status {
  
--		memset(iint->digest, 0, IMA_DIGEST_SIZE);
--		result = ima_calc_hash(file, iint->digest);
-+		iint->ima_xattr.type = IMA_XATTR_DIGEST;
-+		result = ima_calc_hash(file, iint->ima_xattr.digest);
- 		if (!result) {
- 			iint->version = i_version;
- 			iint->flags |= IMA_COLLECTED;
-@@ -196,7 +196,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 		return;
- 	}
- 	memset(&entry->template, 0, sizeof(entry->template));
--	memcpy(entry->template.digest, iint->digest, IMA_DIGEST_SIZE);
-+	memcpy(entry->template.digest, iint->ima_xattr.digest, IMA_DIGEST_SIZE);
- 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+ /* List of EVM protected security xattrs */
+ #ifdef CONFIG_INTEGRITY
+-extern int integrity_inode_alloc(struct inode *inode);
++extern struct integrity_iint_cache *integrity_inode_get(struct inode *inode);
+ extern void integrity_inode_free(struct inode *inode);
  
- 	result = ima_store_template(entry, violation, inode);
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index a100a3c..f275d3f 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -46,9 +46,9 @@ int ima_must_appraise(struct inode *inode, enum ima_hooks func, int mask)
- static void ima_fix_xattr(struct dentry *dentry,
- 			  struct integrity_iint_cache *iint)
+ #else
+-static inline int integrity_inode_alloc(struct inode *inode)
++static inline struct integrity_iint_cache *
++				integrity_inode_get(struct inode *inode)
  {
--	iint->digest[0] = IMA_XATTR_DIGEST;
--	__vfs_setxattr_noperm(dentry, XATTR_NAME_IMA,
--			      iint->digest, IMA_DIGEST_SIZE + 1, 0);
-+	iint->ima_xattr.type = IMA_XATTR_DIGEST;
-+	__vfs_setxattr_noperm(dentry, XATTR_NAME_IMA, (u8 *)&iint->ima_xattr,
-+			      sizeof iint->ima_xattr, 0);
+-	return 0;
++	return NULL;
  }
  
- /*
-@@ -64,7 +64,7 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ static inline void integrity_inode_free(struct inode *inode)
+diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+index e600986..c91a436 100644
+--- a/security/integrity/iint.c
++++ b/security/integrity/iint.c
+@@ -80,24 +80,26 @@ static void iint_free(struct integrity_iint_cache *iint)
+ }
+ 
+ /**
+- * integrity_inode_alloc - allocate an iint associated with an inode
++ * integrity_inode_get - find or allocate an iint associated with an inode
+  * @inode: pointer to the inode
++ * @return: allocated iint
++ *
++ * Caller must lock i_mutex
+  */
+-int integrity_inode_alloc(struct inode *inode)
++struct integrity_iint_cache *integrity_inode_get(struct inode *inode)
  {
- 	struct dentry *dentry = file->f_dentry;
- 	struct inode *inode = dentry->d_inode;
--	u8 xattr_value[IMA_DIGEST_SIZE];
-+	struct evm_ima_xattr_data xattr_value;
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
- 	const char *op = "appraise_data";
- 	char *cause = "unknown";
-@@ -78,8 +78,8 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- 	if (iint->flags & IMA_APPRAISED)
- 		return iint->ima_status;
+ 	struct rb_node **p;
+-	struct rb_node *new_node, *parent = NULL;
+-	struct integrity_iint_cache *new_iint, *test_iint;
+-	int rc;
++	struct rb_node *node, *parent = NULL;
++	struct integrity_iint_cache *iint, *test_iint;
  
--	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, xattr_value,
--				   IMA_DIGEST_SIZE);
-+	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
-+				   sizeof xattr_value);
- 	if (rc <= 0) {
- 		if (rc && rc != -ENODATA)
- 			goto out;
-@@ -90,7 +90,8 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- 		goto out;
+-	new_iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
+-	if (!new_iint)
+-		return -ENOMEM;
++	iint = integrity_iint_find(inode);
++	if (iint)
++		return iint;
+ 
+-	new_iint->inode = inode;
+-	new_node = &new_iint->rb_node;
++	iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
++	if (!iint)
++		return NULL;
+ 
+-	mutex_lock(&inode->i_mutex);	/* i_flags */
+ 	spin_lock(&integrity_iint_lock);
+ 
+ 	p = &integrity_iint_tree.rb_node;
+@@ -105,29 +107,20 @@ int integrity_inode_alloc(struct inode *inode)
+ 		parent = *p;
+ 		test_iint = rb_entry(parent, struct integrity_iint_cache,
+ 				     rb_node);
+-		rc = -EEXIST;
+ 		if (inode < test_iint->inode)
+ 			p = &(*p)->rb_left;
+-		else if (inode > test_iint->inode)
+-			p = &(*p)->rb_right;
+ 		else
+-			goto out_err;
++			p = &(*p)->rb_right;
  	}
  
--	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
-+	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
-+				 rc, iint);
- 	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
- 		if ((status == INTEGRITY_NOLABEL)
- 		    || (status == INTEGRITY_NOXATTRS))
-@@ -100,14 +101,16 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- 		goto out;
- 	}
++	iint->inode = inode;
++	node = &iint->rb_node;
+ 	inode->i_flags |= S_IMA;
+-	rb_link_node(new_node, parent, p);
+-	rb_insert_color(new_node, &integrity_iint_tree);
++	rb_link_node(node, parent, p);
++	rb_insert_color(node, &integrity_iint_tree);
  
--	rc = memcmp(xattr_value, iint->digest, IMA_DIGEST_SIZE);
-+	rc = memcmp(xattr_value.digest, iint->ima_xattr.digest,
-+		    IMA_DIGEST_SIZE);
- 	if (rc) {
- 		status = INTEGRITY_FAIL;
- 		cause = "invalid-hash";
- 		print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
--				     xattr_value, IMA_DIGEST_SIZE);
-+				     &xattr_value, sizeof xattr_value);
- 		print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
--				     iint->digest, IMA_DIGEST_SIZE);
-+				     (u8 *)&iint->ima_xattr,
-+				     sizeof iint->ima_xattr);
- 		goto out;
- 	}
- 	status = INTEGRITY_PASS;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 295702d..c145331 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -39,7 +39,7 @@ struct integrity_iint_cache {
- 	struct inode *inode;	/* back pointer to inode in question */
- 	u64 version;		/* track inode changes */
- 	unsigned char flags;
--	u8 digest[SHA1_DIGEST_SIZE];
-+	struct evm_ima_xattr_data ima_xattr;
- 	enum integrity_status ima_status;
- 	enum integrity_status evm_status;
- };
+ 	spin_unlock(&integrity_iint_lock);
+-	mutex_unlock(&inode->i_mutex);	/* i_flags */
+-
+-	return 0;
+-out_err:
+-	spin_unlock(&integrity_iint_lock);
+-	mutex_unlock(&inode->i_mutex);	/* i_flags */
+-	iint_free(new_iint);
+-
+-	return rc;
++	return iint;
+ }
+ 
+ /**
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index fba2f7b..9fe0597 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -145,19 +145,14 @@ static int process_measurement(struct file *file, const unsigned char *filename,
+ 	if (!action)
+ 		return 0;
+ 
+-retry:
+-	iint = integrity_iint_find(inode);
+-	if (!iint) {
+-		rc = integrity_inode_alloc(inode);
+-		if (!rc || rc == -EEXIST)
+-			goto retry;
+-		return rc;
+-	}
+-
+ 	must_appraise = action & IMA_APPRAISE;
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
++	iint = integrity_inode_get(inode);
++	if (!iint)
++		goto out;
++
+ 	/* Determine if already appraised/measured based on bitmask
+ 	 * (IMA_MEASURE, IMA_MEASURED, IMA_APPRAISE, IMA_APPRAISED) */
+ 	iint->flags |= action;
 -- 
 1.7.6.5
 
