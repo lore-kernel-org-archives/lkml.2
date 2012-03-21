@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760713Ab2CUVjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:39:13 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35579 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760357Ab2CUVil (ORCPT
+	id S1760746Ab2CUVj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:39:29 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33935 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760719Ab2CUVjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:38:41 -0400
-Message-ID: <1332365949.3858.32.camel@key-ThinkPad-W510>
-Subject: [PATCH 05/17] pseries: Enabled the PFO-based RNG accelerator
+	Wed, 21 Mar 2012 17:39:23 -0400
+Message-ID: <1332366010.3858.40.camel@key-ThinkPad-W510>
+Subject: [PATCH 09/17] powerpc: crypto: AES-ECB mode routines for nx
+ encryption
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
         benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 16:39:09 -0500
+Date: Wed, 21 Mar 2012 16:40:10 -0500
 In-Reply-To: <1332365297.3858.5.camel@key-ThinkPad-W510>
 References: <1332365297.3858.5.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
@@ -21,61 +22,159 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032121-3352-0000-0000-0000037BC635
+x-cbid: 12032121-7282-0000-0000-0000078FEA13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
+These routines add support for AES in ECB mode on the Power7+ CPU's
+in-Nest accelerator driver.
 
-This patch adds the cas bits to advertise support for the Platform
-Facilities Option (PFO) based random number generator accerator.
-The pseries-rng driver provides support for this hardware feature.
-
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- arch/powerpc/kernel/prom_init.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ arch/powerpc/crypto/nx/nx-aes-ecb.c |  133 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 133 insertions(+), 0 deletions(-)
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-ecb.c
 
-diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
-index eca626e..6691077 100644
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -710,6 +710,12 @@ static void __init early_cmdline_parse(void)
- #define OV5_XCMO			0x00
- #endif
- #define OV5_TYPE1_AFFINITY	0x80	/* Type 1 NUMA affinity */
-+#if defined(CONFIG_HW_RANDOM_PSERIES) || \
-+	defined(CONFIG_HW_RANDOM_PSERIES_MODULE)
-+#define OV5_PFO_HW_RNG		0x80	/* PFO Random Number Generator */
-+#else
-+#define OV5_PFO_HW_RNG		0x00
-+#endif
- 
- /* Option Vector 6: IBM PAPR hints */
- #define OV6_LINUX		0x02	/* Linux is our OS */
-@@ -757,7 +763,7 @@ static unsigned char ibm_architecture_vec[] = {
- 	0,				/* don't halt */
- 
- 	/* option vector 5: PAPR/OF options */
--	13 - 2,				/* length */
-+	18 - 2,				/* length */
- 	0,				/* don't ignore, don't halt */
- 	OV5_LPAR | OV5_SPLPAR | OV5_LARGE_PAGES | OV5_DRCONF_MEMORY |
- 	OV5_DONATE_DEDICATE_CPU | OV5_MSI,
-@@ -773,6 +779,11 @@ static unsigned char ibm_architecture_vec[] = {
- 	 */
- #define IBM_ARCH_VEC_NRCORES_OFFSET	100
- 	W(NR_CPUS),			/* number of cores supported */
-+	0,
-+	0,
-+	0,
-+	0,
-+	OV5_PFO_HW_RNG,
- 
- 	/* option vector 6: IBM PAPR hints */
- 	4 - 2,				/* length */
+diff --git a/arch/powerpc/crypto/nx/nx-aes-ecb.c b/arch/powerpc/crypto/nx/nx-aes-ecb.c
+new file mode 100644
+index 0000000..7ceef65
+--- /dev/null
++++ b/arch/powerpc/crypto/nx/nx-aes-ecb.c
+@@ -0,0 +1,133 @@
++/**
++ * AES ECB routines supporting the Power 7+ Nest Accelerators driver
++ *
++ * Copyright (C) 2011-2012 International Business Machines Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 only.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ * Author: Kent Yoder <yoder1@us.ibm.com>
++ */
++
++#include <crypto/aes.h>
++#include <crypto/algapi.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/crypto.h>
++#include <asm/vio.h>
++
++#include "nx_csbcpb.h"
++#include "nx.h"
++
++
++static int ecb_aes_nx_set_key(struct crypto_tfm *tfm,
++			      const u8          *in_key,
++			      unsigned int       key_len)
++{
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++
++	nx_ctx_init(nx_ctx, HCOP_FC_AES);
++
++	switch (key_len) {
++	case AES_KEYSIZE_128:
++		csbcpb->cpb.hdr.key_size = NX_KS_AES_128;
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
++		break;
++	case AES_KEYSIZE_192:
++		csbcpb->cpb.hdr.key_size = NX_KS_AES_192;
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
++		break;
++	case AES_KEYSIZE_256:
++		csbcpb->cpb.hdr.key_size = NX_KS_AES_256;
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	csbcpb->cpb.hdr.mode = NX_MODE_AES_ECB;
++	memcpy(csbcpb->cpb.aes_ecb.key, in_key, key_len);
++
++	return 0;
++}
++
++static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
++			    struct scatterlist    *dst,
++			    struct scatterlist    *src,
++			    unsigned int           nbytes,
++			    int                    enc)
++{
++	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
++	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	int rc;
++
++	if (nbytes > nx_ctx->ap->databytelen)
++		return -EINVAL;
++
++	csbcpb->cpb.hdr.fdm.ende = enc;
++
++	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes, NULL);
++	if (rc)
++		goto out;
++
++	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen)
++		return -EINVAL;
++
++	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
++	if (rc)
++		goto out;
++
++	atomic_inc(&(nx_ctx->stats->aes_ops));
++	atomic64_add(csbcpb->csb.processed_byte_count,
++		     &(nx_ctx->stats->aes_bytes));
++out:
++	return rc;
++}
++
++static int ecb_aes_nx_encrypt(struct blkcipher_desc *desc,
++			      struct scatterlist    *dst,
++			      struct scatterlist    *src,
++			      unsigned int           nbytes)
++{
++	return ecb_aes_nx_crypt(desc, dst, src, nbytes, 1);
++}
++
++static int ecb_aes_nx_decrypt(struct blkcipher_desc *desc,
++			      struct scatterlist    *dst,
++			      struct scatterlist    *src,
++			      unsigned int           nbytes)
++{
++	return ecb_aes_nx_crypt(desc, dst, src, nbytes, 0);
++}
++
++struct crypto_alg nx_ecb_aes_alg = {
++	.cra_name        = "ecb(aes)",
++	.cra_driver_name = "ecb-aes-nx",
++	.cra_priority    = 300,
++	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize   = AES_BLOCK_SIZE,
++	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
++	.cra_type        = &crypto_blkcipher_type,
++	.cra_module      = THIS_MODULE,
++	.cra_list        = LIST_HEAD_INIT(nx_ecb_aes_alg.cra_list),
++	.cra_init        = nx_crypto_ctx_aes_ecb_init,
++	.cra_exit        = nx_crypto_ctx_exit,
++	.cra_blkcipher = {
++		.min_keysize = AES_MIN_KEY_SIZE,
++		.max_keysize = AES_MAX_KEY_SIZE,
++		.setkey      = ecb_aes_nx_set_key,
++		.encrypt     = ecb_aes_nx_encrypt,
++		.decrypt     = ecb_aes_nx_decrypt,
++	}
++};
 -- 
 1.7.1
 
