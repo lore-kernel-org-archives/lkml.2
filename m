@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758850Ab2CUVQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:16:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61339 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759861Ab2CUVQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760158Ab2CUVQx (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 21 Mar 2012 17:16:53 -0400
-Message-Id: <20120321211448.584861997@linuxfoundation.org>
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34952 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757941Ab2CUVQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 17:16:47 -0400
+Message-Id: <20120321211448.865894139@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:14:52 -0700
+Date: Wed, 21 Mar 2012 14:14:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Ahern <dsahern@gmail.com>,
-        Eric B Munson <emunson@mgebm.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 4/8] perf tools: Incorrect use of snprintf results in SEGV
+        alan@lxorguk.ukuu.org.uk, Clemens Eisserer <linuxhippy@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 7/8] iwl3945: fix possible il->txq NULL pointer dereference in delayed works
 In-Reply-To: <20120321211522.GA28233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,64 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit b832796caa1fda8516464a003c8c7cc547bc20c2 upstream.
+commit 210787e82a0ac1ffb5d7be1c796f0c51050849ad upstream.
 
-I have a workload where perf top scribbles over the stack and we SEGV.
-What makes it interesting is that an snprintf is causing this.
+On il3945_down procedure we free tx queue data and nullify il->txq
+pointer. After that we drop mutex and then cancel delayed works. There
+is possibility, that after drooping mutex and before the cancel, some
+delayed work will start and crash while trying to send commands to
+the device. For example, here is reported crash in
+il3945_bg_reg_txpower_periodic():
+https://bugzilla.kernel.org/show_bug.cgi?id=42766#c10
 
-The workload is a c++ gem that has method names over 3000 characters
-long, but snprintf is designed to avoid overrunning buffers. So what
-went wrong?
+Patch fix problem by adding il->txq check on works that send commands,
+hence utilize tx queue.
 
-The problem is we assume snprintf returns the number of characters
-written:
+Reported-by: Clemens Eisserer <linuxhippy@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-    ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
-...
-    ret += repsep_snprintf(bf + ret, size - ret, "%s", self->ms.sym->name);
 
-Unfortunately this is not how snprintf works. snprintf returns the
-number of characters that would have been written if there was enough
-space. In the above case, if the first snprintf returns a value larger
-than size, we pass a negative size into the second snprintf and happily
-scribble over the stack. If you have 3000 character c++ methods thats a
-lot of stack to trample.
-
-This patch fixes repsep_snprintf by clamping the value at size - 1 which
-is the maximum snprintf can write before adding the NULL terminator.
-
-I get the sinking feeling that there are a lot of other uses of snprintf
-that have this same bug, we should audit them all.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Link: http://lkml.kernel.org/r/20120307114249.44275ca3@kryten
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/sort.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/iwlegacy/iwl-3945.c     |    7 ++++---
+ drivers/net/wireless/iwlegacy/iwl3945-base.c |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -122,6 +122,9 @@ static int repsep_snprintf(char *bf, siz
- 		}
- 	}
- 	va_end(ap);
+--- a/drivers/net/wireless/iwlegacy/iwl-3945.c
++++ b/drivers/net/wireless/iwlegacy/iwl-3945.c
+@@ -1872,11 +1872,12 @@ static void iwl3945_bg_reg_txpower_perio
+ 	struct iwl_priv *priv = container_of(work, struct iwl_priv,
+ 					     _3945.thermal_periodic.work);
+ 
+-	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+-		return;
+-
+ 	mutex_lock(&priv->mutex);
++	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
++		goto out;
 +
-+	if (n >= (int)size)
-+		return size - 1;
- 	return n;
+ 	iwl3945_reg_txpower_periodic(priv);
++out:
+ 	mutex_unlock(&priv->mutex);
  }
  
+--- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
++++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+@@ -2763,7 +2763,7 @@ static void iwl3945_bg_alive_start(struc
+ 	    container_of(data, struct iwl_priv, alive_start.work);
+ 
+ 	mutex_lock(&priv->mutex);
+-	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
++	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
+ 		goto out;
+ 
+ 	iwl3945_alive_start(priv);
 
 
