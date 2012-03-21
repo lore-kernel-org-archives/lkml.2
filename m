@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab2CUP4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:56:22 -0400
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:61287 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab2CUP4V (ORCPT
+	id S1756926Ab2CUP4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 11:56:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55834 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754788Ab2CUP4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:56:21 -0400
-Message-ID: <4F69FA20.2080906@gmail.com>
-Date: Wed, 21 Mar 2012 23:56:16 +0800
-From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 21 Mar 2012 11:56:38 -0400
+Date: Wed, 21 Mar 2012 15:56:35 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Add support for spi regmap
+Message-ID: <20120321155635.GE3226@opensource.wolfsonmicro.com>
+References: <1332345170.21744.10.camel@matrix>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, ubuntu.fan.2012@gmail.com
-Subject: [SUCCESS REPORT] Xen VGA Passthrough to Windows 8 Consumer Preview
- HVM domU and Windows XP Home Edition HVM domU with Xen 4.2-unstable Changeset
- 25070 in Ubuntu 11.10 amd64 Dom0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kA1LkgxZ0NN7Mz3A"
+Content-Disposition: inline
+In-Reply-To: <1332345170.21744.10.camel@matrix>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: Xen VGA Passthrough to Windows 8 Consumer Preview HVM domU and 
-Windows XP Home Edition HVM domU with Xen 4.2-unstable Changeset 25070 
-in Ubuntu 11.10 amd64 Dom0
 
-Dear All,
+--kA1LkgxZ0NN7Mz3A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-For more information, please read the following threads:
+On Wed, Mar 21, 2012 at 09:22:50PM +0530, Ashish Chavan wrote:
 
-http://lists.xen.org/archives/html/xen-users/2012-03/msg00476.html
+> +#if defined(CONFIG_SPI_MASTER)
+> +	/* Dummy read to give two pulses over nCS */
+> +	regmap_read(da7210->regmap, DA7210_STATUS, &val);
+> +	regmap_read(da7210->regmap, DA7210_STATUS, &val);
+> +	regmap_read(da7210->regmap, DA7210_STATUS, &val);
+> +#endif
 
-http://lists.xen.org/archives/html/xen-devel/2012-03/msg01777.html
+This ifdef stuff should all be runtime configured based on the bus type,
+unless the cost of the reads is considered immaterial in which case it
+should be unconditional.
 
-_Subject: Xen VGA Passthrough to Windows 8 Consumer Preview 64-bit 
-English HVM domU and Windows XP Home Edition SP3 HVM domU with Xen 
-4.2-unstable Changeset 25070 in
-Ubuntu 11.10 oneiric ocelot amd64 Final Release Dom0_
+> +#if defined(CONFIG_SPI_MASTER)
+> +	snd_soc_write(codec, 0x00, 0x80);
+> +#endif
 
-Dear All,
+Hrm?
 
-I have with great success passthrough my Palit NVIDIA Geforce 8400 GS 
-PCI Express x16 graphics card to Windows 8 Consumer Preview HVM domU and 
-Windows XP Home Edition SP3 HVM domU with Xen 4.2-unstable Changeset 
-25070 in Ubuntu 11.10 oneiric ocelot amd64 Final Release dom0.
+>  	/* unlock */
+>  	regmap_write(da7210->regmap, DA7210_A_HID_UNLOCK,	0x8B);
+> @@ -1035,6 +1056,10 @@ static int da7210_probe(struct snd_soc_codec *codec)
+>  	regmap_write(da7210->regmap, DA7210_A_HID_UNLOCK,	0x00);
+>  	regmap_write(da7210->regmap, DA7210_A_TEST_UNLOCK,	0x00);
 
-_My Hardware Specifications_
+I also note that you've not yet updated this to use a regmap patch as
+was previously requested.
 
-Motherboard: Intel DQ45CB
-Processor: Intel Pentium Dual Core E6300 2.8 GHz
-Memory: 6 GB
-VT-x: YES
-VT-d: YES
+> +#if defined(CONFIG_SPI_MASTER)
+> +static int __devinit da7210_spi_probe(struct spi_device *spi)
+> +{
+> +	struct da7210_priv *da7210;
+> +	int ret;
+> +
+> +	da7210 = kzalloc(sizeof(struct da7210_priv), GFP_KERNEL);
+> +	if (!da7210)
+> +		return -ENOMEM;
 
-Please refer to my attached "Xen VGA Passthrough - Version 1.1.pdf" 
-documentation which I have written for the past 2 days. If you want to 
-follow all the steps in the PDF file documentation which I have written, 
-I can guarantee you great success to Xen VGA Passthrough with Windows 8 
-Consumer Preview HVM domU.
+devm_kzalloc().
 
-Please read my attached PDF file in this very email carefully. If you 
-have any questions pertaining to Xen VGA Passthrough with the latest and 
-greatest Xen 4.2-unstable changeset 25070, please feel free to ask me 
-anytime 24 hours a day.
+> +	da7210_regmap.read_flag_mask = 0x01;
+> +	da7210_regmap.write_flag_mask = 0x00;
 
-Thank you very much for your kind attention.
+Just have a second, static, regmap variable.  The regmap should be
+declared const.
 
+> +	da7210->regmap = regmap_init_spi(spi, &da7210_regmap);
 
+devm_regmap_init_spi() (will come in in the merge window).
 
+> +static struct spi_driver da7210_spi_driver = {
+> +	.driver = {
+> +		.name = "da7210-codec",
 
+No -codec.
 
-Yours sincerely,
+--kA1LkgxZ0NN7Mz3A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Teo En Ming (Zhang Enming)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPafosAAoJEBus8iNuMP3dD8IP/33tE8Trbvwiq1TQVyd4DBUZ
+KrRux/vH7nR42sKUx6mtDILRzslfeqDgUbVQCrukCHUcSVBxsi9bue4N+9L+2+P4
+XL+5CtKA5R25gGwjxLZbFrBpgu2IR5er1zwu0njP7FeUI+K46uSQyiC+sQsX+k72
+FCCL0GsXZxbcJiNw1WTT6qJrmRr0KN5zYLHVgbDPyO+j3tL0Yvz6KLgpaxW4A1hL
+Tt+tC8LmI04pVt9gsRqrXzwwjzC2j0f1fejLCwxcokgRa2t0lHYkjjtchSKVnqLY
+XJaL7Rs6yZokcM/70sF3kIg2XYFt1o2tkb5Rc3IvDpMA2xcbmFogWLj0lOcn7aVG
+6gx5NGyjg3Ot7Sxnbqp3EiD7SfAPxZtuX1T6sqkShDWYUbGVFRQLO3jj+KfpEBLt
+IBadUr4oII/qHTyAzDJn9/CHXssIpGwZCgQkuqfsPqsMp9aaU2dyHOXcfLKGlVjw
+SJruYWVfEYS9dUu5wZKlI/7SCbmpQdlQBRiLrsMVaaewkjK6RKFHaRmB9iZmagWm
+Pf6/O+XdJ4ouimHQggoS+y4RcrnFPBOuB2amj9bB5hGmWquaHLunLa27lQT6muDA
+kVSB6Jg9ysnDxfQzIayIV1s0u6QQVZI1qzWADyt8gcWBP2rVFxbjGYGFovQnj9Br
+FhW8Ut5n9Pkr55kpbyIW
+=UZgT
+-----END PGP SIGNATURE-----
 
-
+--kA1LkgxZ0NN7Mz3A--
