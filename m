@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031145Ab2CUOBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:01:47 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:43376 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031062Ab2CUOAU (ORCPT
+	id S1031195Ab2CUOCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:02:18 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34760 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031114Ab2CUOAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:00:20 -0400
+	Wed, 21 Mar 2012 10:00:09 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 28/32] rcu: New rcu_user_enter() and rcu_user_exit() APIs
-Date: Wed, 21 Mar 2012 14:58:34 +0100
-Message-Id: <1332338318-5958-30-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 24/32] x86: Syscall hooks for nohz cpusets
+Date: Wed, 21 Mar 2012 14:58:30 +0100
+Message-Id: <1332338318-5958-26-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,18 +33,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two APIs are provided to help the implementation
-of an adaptive tickless kernel (cf: nohz cpusets). We need
-to run into RCU extended quiescent state when we are in
-userland so that a tickless CPU is not involved in the
-global RCU state machine and can shutdown its tick safely.
-
-These APIs are called from syscall and exception entry/exit
-points and can't be called from interrupt.
-
-They are essentially the same than rcu_idle_enter() and
-rcu_idle_exit() minus the checks that ensure the CPU is
-running the idle task.
+Add syscall hooks to notify syscall entry and exit on
+CPUs running in adative nohz mode.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -65,202 +55,89 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- include/linux/rcupdate.h |    5 ++
- kernel/rcutree.c         |  107 ++++++++++++++++++++++++++++++++-------------
- 2 files changed, 81 insertions(+), 31 deletions(-)
+ arch/x86/include/asm/thread_info.h |   10 +++++++---
+ arch/x86/kernel/ptrace.c           |   10 ++++++++++
+ 2 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index e06639e..6539290 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -191,6 +191,11 @@ extern void rcu_idle_exit(void);
- extern void rcu_irq_enter(void);
- extern void rcu_irq_exit(void);
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index cfd8144..0c1724e 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -88,6 +88,7 @@ struct thread_info {
+ #define TIF_NOTSC		16	/* TSC is not accessible in userland */
+ #define TIF_IA32		17	/* 32bit process */
+ #define TIF_FORK		18	/* ret_from_fork */
++#define TIF_NOHZ		19	/* in nohz userspace mode */
+ #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
+ #define TIF_DEBUG		21	/* uses debug registers */
+ #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
+@@ -110,6 +111,7 @@ struct thread_info {
+ #define _TIF_NOTSC		(1 << TIF_NOTSC)
+ #define _TIF_IA32		(1 << TIF_IA32)
+ #define _TIF_FORK		(1 << TIF_FORK)
++#define _TIF_NOHZ		(1 << TIF_NOHZ)
+ #define _TIF_DEBUG		(1 << TIF_DEBUG)
+ #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
+ #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
+@@ -120,12 +122,13 @@ struct thread_info {
+ /* work to do in syscall_trace_enter() */
+ #define _TIF_WORK_SYSCALL_ENTRY	\
+ 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
+-	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
++	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
++	 _TIF_NOHZ)
  
-+#ifdef CONFIG_CPUSETS_NO_HZ
-+void rcu_user_enter(void);
-+void rcu_user_exit(void);
-+#endif
-+
- /*
-  * Infrastructure to implement the synchronize_() primitives in
-  * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index b8d300c..cba1332 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -357,16 +357,8 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
+ /* work to do in syscall_trace_leave() */
+ #define _TIF_WORK_SYSCALL_EXIT	\
+ 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
+-	 _TIF_SYSCALL_TRACEPOINT)
++	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
  
- #endif /* #ifdef CONFIG_SMP */
+ /* work to do on interrupt/exception return */
+ #define _TIF_WORK_MASK							\
+@@ -135,7 +138,8 @@ struct thread_info {
  
--/*
-- * rcu_idle_enter_common - inform RCU that current CPU is moving towards idle
-- *
-- * If the new value of the ->dynticks_nesting counter now is zero,
-- * we really have entered idle, and must do the appropriate accounting.
-- * The caller must have disabled interrupts.
-- */
--static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
-+static void rcu_check_idle_enter(long long oldval)
+ /* work to do on any return to user space */
+ #define _TIF_ALLWORK_MASK						\
+-	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
++	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
++	_TIF_NOHZ)
+ 
+ /* Only used for 64 bit */
+ #define _TIF_DO_NOTIFY_MASK						\
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 5026738..2966791 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -21,6 +21,7 @@
+ #include <linux/signal.h>
+ #include <linux/perf_event.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/tick.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -1369,6 +1370,9 @@ long syscall_trace_enter(struct pt_regs *regs)
  {
--	trace_rcu_dyntick("Start", oldval, 0);
- 	if (!is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
+ 	long ret = 0;
  
-@@ -376,6 +368,18 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
-+}
++	/* Notify nohz task syscall early so the rest can use rcu */
++	tick_nohz_enter_kernel();
 +
-+/*
-+ * rcu_idle_enter_common - inform RCU that current CPU is moving towards idle
-+ *
-+ * If the new value of the ->dynticks_nesting counter now is zero,
-+ * we really have entered idle, and must do the appropriate accounting.
-+ * The caller must have disabled interrupts.
-+ */
-+static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
-+{
-+	trace_rcu_dyntick("Start", oldval, 0);
- 	rcu_prepare_for_idle(smp_processor_id());
- 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
- 	smp_mb__before_atomic_inc();  /* See above. */
-@@ -384,6 +388,22 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
- 	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
+ 	/*
+ 	 * If we stepped into a sysenter/syscall insn, it trapped in
+ 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
+@@ -1427,4 +1431,10 @@ void syscall_trace_leave(struct pt_regs *regs)
+ 			!test_thread_flag(TIF_SYSCALL_EMU);
+ 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall_exit(regs, step);
++
++	/*
++	 * Notify nohz task exit syscall at last so the rest can
++	 * use rcu.
++	 */
++	tick_nohz_exit_kernel();
  }
- 
-+static long long __rcu_idle_enter(void)
-+{
-+	unsigned long flags;
-+	long long oldval;
-+	struct rcu_dynticks *rdtp;
-+
-+	local_irq_save(flags);
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	oldval = rdtp->dynticks_nesting;
-+	rdtp->dynticks_nesting = 0;
-+	rcu_idle_enter_common(rdtp, oldval);
-+	local_irq_restore(flags);
-+
-+	return oldval;
-+}
-+
- /**
-  * rcu_idle_enter - inform RCU that current CPU is entering idle
-  *
-@@ -398,16 +418,15 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
-  */
- void rcu_idle_enter(void)
- {
--	unsigned long flags;
- 	long long oldval;
--	struct rcu_dynticks *rdtp;
- 
--	local_irq_save(flags);
--	rdtp = &__get_cpu_var(rcu_dynticks);
--	oldval = rdtp->dynticks_nesting;
--	rdtp->dynticks_nesting = 0;
--	rcu_idle_enter_common(rdtp, oldval);
--	local_irq_restore(flags);
-+	oldval = __rcu_idle_enter();
-+	rcu_check_idle_enter(oldval);
-+}
-+
-+void rcu_user_enter(void)
-+{
-+	__rcu_idle_enter();
- }
- 
- /**
-@@ -437,6 +456,7 @@ void rcu_irq_exit(void)
- 	oldval = rdtp->dynticks_nesting;
- 	rdtp->dynticks_nesting--;
- 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
-+
- 	if (rdtp->dynticks_nesting)
- 		trace_rcu_dyntick("--=", oldval, rdtp->dynticks_nesting);
- 	else
-@@ -444,6 +464,20 @@ void rcu_irq_exit(void)
- 	local_irq_restore(flags);
- }
- 
-+static void rcu_check_idle_exit(struct rcu_dynticks *rdtp, long long oldval)
-+{
-+	if (!is_idle_task(current)) {
-+		struct task_struct *idle = idle_task(smp_processor_id());
-+
-+		trace_rcu_dyntick("Error on exit: not idle task",
-+				  oldval, rdtp->dynticks_nesting);
-+		ftrace_dump(DUMP_ALL);
-+		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-+			  current->pid, current->comm,
-+			  idle->pid, idle->comm); /* must be idle task! */
-+	}
-+}
-+
- /*
-  * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
-  *
-@@ -460,16 +494,18 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
- 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
- 	rcu_cleanup_after_idle(smp_processor_id());
- 	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
--	if (!is_idle_task(current)) {
--		struct task_struct *idle = idle_task(smp_processor_id());
-+}
- 
--		trace_rcu_dyntick("Error on exit: not idle task",
--				  oldval, rdtp->dynticks_nesting);
--		ftrace_dump(DUMP_ALL);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
-+static long long __rcu_idle_exit(struct rcu_dynticks *rdtp)
-+{
-+	long long oldval;
-+
-+	oldval = rdtp->dynticks_nesting;
-+	WARN_ON_ONCE(oldval != 0);
-+	rdtp->dynticks_nesting = LLONG_MAX / 2;
-+	rcu_idle_exit_common(rdtp, oldval);
-+
-+	return oldval;
- }
- 
- /**
-@@ -485,16 +521,25 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
-  */
- void rcu_idle_exit(void)
- {
-+	long long oldval;
-+	struct rcu_dynticks *rdtp;
- 	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	oldval = __rcu_idle_exit(rdtp);
-+	rcu_check_idle_exit(rdtp, oldval);
-+	local_irq_restore(flags);
-+}
-+
-+void rcu_user_exit(void)
-+{
- 	struct rcu_dynticks *rdtp;
--	long long oldval;
-+	unsigned long flags;
- 
- 	local_irq_save(flags);
- 	rdtp = &__get_cpu_var(rcu_dynticks);
--	oldval = rdtp->dynticks_nesting;
--	WARN_ON_ONCE(oldval != 0);
--	rdtp->dynticks_nesting = DYNTICK_TASK_NESTING;
--	rcu_idle_exit_common(rdtp, oldval);
-+	 __rcu_idle_exit(rdtp);
- 	local_irq_restore(flags);
- }
- 
 -- 
 1.7.5.4
 
