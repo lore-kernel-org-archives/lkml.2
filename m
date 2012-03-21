@@ -1,137 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759977Ab2CUTAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 15:00:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48673 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445Ab2CUTAK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 15:00:10 -0400
-Date: Wed, 21 Mar 2012 11:59:55 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120321185955.GK27051@google.com>
-References: <20120111160730.GA24556@redhat.com>
- <20120112003102.GB9511@google.com>
- <20120112170728.GA25717@redhat.com>
- <20120112175725.GD9511@google.com>
- <20120113152010.GA19215@redhat.com>
- <20120113182750.GD18166@google.com>
- <20120114173648.GA32543@redhat.com>
- <20120118231742.GS18166@google.com>
- <20120119154522.GA14058@redhat.com>
- <20120320193414.GA21277@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120320193414.GA21277@redhat.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760003Ab2CUTAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 15:00:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:45634 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754445Ab2CUTAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 15:00:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="121623345"
+Subject: Re: [PATCH 3/3] xen/x86: Implement x86_apic_ops
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: jwboyer@redhat.com, mingo@elte.hu, hpa@zytor.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 Mar 2012 12:01:32 -0700
+In-Reply-To: <20120321164124.GB16441@phenom.dumpdata.com>
+References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
+	 <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
+	 <1332288764-10351-4-git-send-email-konrad.wilk@oracle.com>
+	 <1332293497.16101.90.camel@sbsiddha-desk.sc.intel.com>
+	 <20120321164124.GB16441@phenom.dumpdata.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1332356492.16101.102.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov (oleg@redhat.com) wrote:
-> OK, finally we should do something with this problem ;)
+On Wed, 2012-03-21 at 12:41 -0400, Konrad Rzeszutek Wilk wrote:
+> > > +unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
+> > > +{
+> > > +	if (reg == 0x1)
+> > > +		return 0x00170020;
+> > > +	else if (reg == 0x0)
+> > > +		return 0x00000000;
+> > 
+> > For IO-APIC ID register (0), you can probably use the argument 'apic' to
+> > set the ID bits in the returned register.
 > 
-> On 01/19, Oleg Nesterov wrote:
-> >
-> > I'll try to investigate if we can remove
-> >
-> > 	leader->group_leader = tsk;
-> >
-> > from de_thread(). In fact I already thought about this change a long
-> > ago without any connection to while_each_thread(). This assignment
-> > looks "assymetrical" compared to other threads we kill. But we did
-> > have a reason (reasons?). Hopefully, the only really important reason
-> > was already removed by 087806b1.
+> ok, that would be just
+> return 0x0000000 | apic
 > 
-> On the second thought, I think we should not do this.
-> 
-> For example, do_prlimit() assumes that tsk->group_leader is correct
-> under tasklist_lock.
-> 
-> OK, lets return to the thread_group_leader() check. To ensure we do
-> not visit the same thread twice we can check 'g', not 't'.
-> 
-> This is what I am going to send, after I re-check once again...
-> 
-> I have the problem with the changelog ;) Somehow it should explain
-> that while_each_thread_rcu(g, t) can't race with do_group_exit().
-> I think it can't, list_del_rcu(leader->thread_group) happens when
-> this entry is already "empty", it should be the last thread in group.
-> If the non-leader thread goes away from the least, we still have
-> the "path" to reach the leader. But this is not easy to explain.
-> 
-> As for the barrier. If de_thread() changes the leader it drops
-> and re-acquires tasklist_lock (this implies mb) after it changes
-> old_leader->exit_signal (used in thread_group_leader) and before
-> __unhash_process() which does list_del_rcu().
-> 
-> This means that if while_each_thread() sees the result of
-> list_del_rcu(old_leader) it must also see that
-> thread_group_leader(old_leader) != T.
-> 
-> What do you think? Do you see any problems?
-> 
-> Oleg.
-> ---
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 7d379a6..f169bfd 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2323,9 +2323,24 @@ extern bool current_is_single_threaded(void);
->  #define do_each_thread(g, t) \
->  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
->  
-> +/*
-> + * needs tasklist_lock or ->siglock, or rcu if the caller ensures
-> + * that 'g' can't exit or exec.
-> + */
->  #define while_each_thread(g, t) \
->  	while ((t = next_thread(t)) != g)
->  
-> +/*
-> + * rcu-safe, but should start at ->group_leader.
-> + * thread_group_leader(g) protects against the race with exec which
-> + * removes the leader from list.
-> + * smp_rmb() pairs with implicit mb() implied by unlock + lock in
-> + * de_thread()->release_task() path.
-> + */
-> +#define while_each_thread_rcu(g, t)				\
-> +	while ((t = next_thread(t)) != g &&			\
-> +		({ smp_rmb(); thread_group_leader(g); }))
-> +
+> right? Since the last 8 bits are the apic value?
 
-Couldn't you miss the exec_thread if:
+It is the most significant 8 bits.
 
-t = exec_thread && !thread_group_leader(g)
+So you need to return (apic << 24);
 
-i.e. if you just passed (leader->group_leader = tsk;) in de_thread().
+thanks,
+suresh
 
-Could we change do_prlimit()? Especially since its slow path.
-
-I really like you're earlier solution (ignoring barrier):
-
-#define while_each_thread(g, t) \
-	while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
-
-Regards,
-Mandeep
-
->  static inline int get_nr_threads(struct task_struct *tsk)
->  {
->  	return tsk->signal->nr_threads;
-> 
