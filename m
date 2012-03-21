@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2CUE7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 00:59:41 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:57978 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab2CUE7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 00:59:40 -0400
-Message-ID: <4F696011.7080409@linaro.org>
-Date: Tue, 20 Mar 2012 21:58:57 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1754300Ab2CUFIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:08:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49958 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab2CUFIu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 01:08:50 -0400
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Ajeet Yadav <ajeet.yadav.77@gmail.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com> <20120319130445.GN15988@n2100.arm.linux.org.uk> <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com> <20120319132623.GO15988@n2100.arm.linux.org.uk>
-In-Reply-To: <20120319132623.GO15988@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032104-1976-0000-0000-00000BA18296
+In-Reply-To: <4F695C3F.3000406@jp.fujitsu.com>
+References: <1331940963-15756-1-git-send-email-tj@kernel.org>
+	<1331940963-15756-7-git-send-email-tj@kernel.org>
+	<4F66B55A.8020307@jp.fujitsu.com>
+	<20120319161052.GC11069@google.com>
+	<4F695C3F.3000406@jp.fujitsu.com>
+Date: Tue, 20 Mar 2012 22:08:49 -0700
+X-Google-Sender-Auth: 7H7z3O6njgwiXtU4mA9yz35zwuc
+Message-ID: <CAOS58YOwtmOG5tDuMtFCw=sHV-aeU-Ok+KXzR81Aix+OZqMpUA@mail.gmail.com>
+Subject: Re: [PATCH 06/10] cgroup: convert memcg controller to the new cftype interface
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2012 06:26 AM, Russell King - ARM Linux wrote:
-> On Mon, Mar 19, 2012 at 06:49:34PM +0530, Ajeet Yadav wrote:
->> Therefore our target configuration with 2.6 kernel was
->> GENERIC_CLOCKEVENTS=y, ARCH_USES_GETTIMEOFFSET=y,
-> It's absolutely absurd to have a platform converted to use clockevents
-> and clocksources, and then select ARCH_USES_GETTIMEOFFSET.  That's saying
-> "I provide the new infrastructure, but I want the dodgy old compatibility
-> which doesn't work properly with a set of other features as well".
+Hello,
+
+On Tue, Mar 20, 2012 at 9:42 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> I think creating file based on really_do_swap_account is wrong.
+> (I'm sorry for this complication.)
 >
->> I conclude that GENERIC_CLOCKEVENTS is supported, hence I must set
->> ARCH_USES_GETTIMEOFFSET=n, in order to use NO_HZ, HIGH_RES_TIMERS,
->> IRQSOFF_TRACER, PREEMPT_TRACER
-> Correct.  If you're using clockevents and clocksources, you should not
-> select ARCH_USES_GETTIMEOFFSET.
->
+> How about creating this file unconditionally ? Returning -ENOTSUP in memcg's
+> handler will work well...anyway it's configured, no reason to show them is bad.
 
-Hey Ajeet,
-     As Russell pointed out, it looks like you're confused as to the use 
-of ARCH_USES_GETTIMEOFFSET. That option is only for legacy systems that 
-don't provide continuous clocksources that can be used for timekeeping.
+That works for me. Then, I can also remove the _COND thing which isn't
+pretty anyway. I'll update the patchset.
 
-In the past, time was incremented by one tick every timer interrupt.  
-Some systems could use the timer hardware (usually PIT style 
-decrementer) to calculate inter-tick times. Its only for this style of 
-hardware, that either wraps or resets each tick, that GETTIMEOFFSET is 
-needed.  If you have a continuous counter that doesn't wrap for a 
-reasonable number of ticks, you want to use the clocksource abstraction 
-to represent that hardware. That has the benefits of allowing high res 
-timers and nohz, since we don't need to keep a constant tick-beat to 
-keep time (and also avoids lost-ticks and a host of problems that tick 
-based timekeeping can run into).
+Thanks.
 
-So I suspect you probably want to verify your hardware supports a 
-clocksource and disable ARCH_USES_GETTIMEOFFSET.
-
-Sorry for any confusion!
-
-thanks
--john
-
+-- 
+tejun
