@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2CUGdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:33:07 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5912 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890Ab2CUGdG (ORCPT
+	id S1755405Ab2CUGeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:34:06 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52431 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2CUGeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:33:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6655"; a="172026760"
-Message-ID: <82f47abcdd341a5071f8c0a178d52310.squirrel@www.codeaurora.org>
-In-Reply-To: <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
-References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
-    <1332214706-675-1-git-send-email-skannan@codeaurora.org>
-    <20120320071957.GH3852@pengutronix.de>
-    <348585ed29fb3ff171267c03658e6c0d.squirrel@www.codeaurora.org>
-    <CAJOA=zO=wp9oyuBZONk2oCRYdWU1c4qanKJik-8-sFg51p27MQ@mail.gmail.com>
-    <4F693DD8.7070305@codeaurora.org>
-    <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
-Date: Tue, 20 Mar 2012 23:33:05 -0700 (PDT)
-Subject: Re: [PATCH 1/2] clk: Fix error handling in fixed clock hardware 
-     type register fn
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: "Saravana Kannan" <skannan@codeaurora.org>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>,
-        "Andrew Lunn" <andrew@lunn.ch>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        "Jamie Iles" <jamie@jamieiles.com>,
-        "Jeremy Kerr" <jeremy.kerr@canonical.com>,
-        "Magnus Damm" <magnus.damm@gmail.com>,
-        "Deepak Saxena" <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "Arnd Bergman" <arnd.bergmann@linaro.org>,
-        linux-arm-msm@vger.kernel.org, "Rob Herring" <rob.herring@calxeda.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Richard Zhao" <richard.zhao@linaro.org>,
-        "Shawn Guo" <shawn.guo@freescale.com>,
-        "Paul Walmsley" <paul@pwsan.com>,
-        "Linus Walleij" <linus.walleij@stericsson.com>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Stephen Boyd" <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        "Amit Kucheria" <amit.kucheria@linaro.org>
-User-Agent: SquirrelMail/1.4.17
+	Wed, 21 Mar 2012 02:34:03 -0400
+X-Originating-IP: 217.70.178.138
+X-Originating-IP: 50.43.46.74
+Date: Tue, 20 Mar 2012 23:33:51 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kvm-intel: Auto-load on CPUs with VMX.
+Message-ID: <20120321063350.GA3468@leaf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Enable x86 feature-based autoloading for the kvm-intel module on CPUs
+with X86_FEATURE_VMX.
 
-On Tue, March 20, 2012 10:45 pm, Turquette, Mike wrote:
-> IIRC, that discussion was with respect to the .parent member of struct
-> clk.  It was decided that having .parent = NULL does not imply that a
-> clock is a root clock, but instead we rely on the CLK_IS_ROOT flag.  I
-> can't think of any other instance where a NULL clk when returned from
-> a registration function would be useful.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
 
-I wasn't referring to a discussion with regards to this patch series. I'm
-referring to what I believe was a discussion with Russell King on whether
-a NULL from clk_get() should be considered a clock and whether it should
-be usable as a "clock" with the clock APIs. That's the reason clk_get()
-returns -ENOENT instead of NULL.
+I've tested this and it works correctly.  I can also supply the obvious
+equivalent patch for kvm-amd on AMD CPUs with SVM, but I don't have any
+such CPUs to test that on.
 
--Saravana
+ arch/x86/kvm/vmx.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 3b4c8d8..bb3bcff 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -27,6 +27,7 @@
+ #include <linux/highmem.h>
+ #include <linux/sched.h>
+ #include <linux/moduleparam.h>
++#include <linux/mod_devicetable.h>
+ #include <linux/ftrace_event.h>
+ #include <linux/slab.h>
+ #include <linux/tboot.h>
+@@ -51,6 +52,12 @@
+ MODULE_AUTHOR("Qumranet");
+ MODULE_LICENSE("GPL");
+ 
++static const struct x86_cpu_id vmx_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_VMX),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, vmx_cpu_id);
++
+ static bool __read_mostly enable_vpid = 1;
+ module_param_named(vpid, enable_vpid, bool, 0444);
+ 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+1.7.9.1
 
