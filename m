@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759607Ab2CUSF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:05:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52580 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754Ab2CUSFX (ORCPT
+	id S1759702Ab2CUSGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:06:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52988 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758943Ab2CUSGH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:05:23 -0400
-Subject: Re: Patch workqueue: create new slab cache instead of hacking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1203211253520.21932@router.home>
-References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com>
-	 <20120320154619.GA5684@google.com> <4F6944D9.5090002@cn.fujitsu.com>
-	 <CAOS58YPydFUap4HjuRATxza6VZgyrXmQHVxR83G7GRJL50ZTRQ@mail.gmail.com>
-	 <alpine.DEB.2.00.1203210910450.20482@router.home>
-	 <1332341381.7893.17.camel@edumazet-glaptop>
-	 <alpine.DEB.2.00.1203210959500.21932@router.home>
-	 <1332345859.5330.8.camel@edumazet-glaptop>
-	 <alpine.DEB.2.00.1203211253520.21932@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Mar 2012 11:05:19 -0700
-Message-ID: <1332353119.9433.2.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 14:06:07 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Robert Lee <rob.lee@linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>
+CC: "Hilman, Kevin" <khilman@ti.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] ARM: davinci: Fix for cpuidle consolidation changes
+Thread-Topic: [PATCH] ARM: davinci: Fix for cpuidle consolidation changes
+Thread-Index: AQHNB4Ka3xiqAO2EBUWunPzTMkAf1pZ1Cy+w
+Date: Wed, 21 Mar 2012 18:05:54 +0000
+Message-ID: <DF0F476B391FA8409C78302C7BA518B631800C76@DBDE01.ent.ti.com>
+References: <1332348505-28780-1-git-send-email-rob.lee@linaro.org>
+In-Reply-To: <1332348505-28780-1-git-send-email-rob.lee@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 12:54 -0500, Christoph Lameter wrote:
-> On Wed, 21 Mar 2012, Eric Dumazet wrote:
+On Wed, Mar 21, 2012 at 22:18:25, Robert Lee wrote:
+> The recent cpuidle consolidation changes erroneously omitted one
+> critical line of code.
 > 
-> > On Wed, 2012-03-21 at 10:03 -0500, Christoph Lameter wrote:
-> > > On Wed, 21 Mar 2012, Eric Dumazet wrote:
-> > >
-> > > > Creating a dedicated cache for few objects ? Thats a lot of overhead, at
-> > > > least for SLAB (no merges of caches)
-> > >
-> > > Its some overhead for SLAB (a lot is what? If you tune down the per cpu
-> > > caches it should be a couple of pages) but its none for SLUB.
-> >
-> > SLAB overhead per cache is O(CPUS * nr_node_ids)  (unless alien caches
-> > are disabled)
-> 
-> nr_node_ids==2 in the standard case these days. Alien caches are minimal.
+> Signed-off-by: Robert Lee <rob.lee@linaro.org>
 
+Tested this on a DA850 EVM.
 
-Thats not true. Some machines use lots of nodes (fake nodes) for various
-reasons.
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
-And they cant disable alien caches for performance reasons.
-
-
+Thanks,
+Sekhar
 
