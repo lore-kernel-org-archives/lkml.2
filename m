@@ -1,127 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab2CUKt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 06:49:58 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:38690 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758141Ab2CUKt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 06:49:57 -0400
-Message-ID: <4F69B254.1000603@slimlogic.co.uk>
-Date: Wed, 21 Mar 2012 10:49:56 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1758590Ab2CUKzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 06:55:06 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:20573
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758454Ab2CUKzB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 06:55:01 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(zz9371Ic89bhfb6I1432N98dKzz1202hzz8275bhz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 21 Mar 2012 19:06:15 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Dong Aisheng <dongas86@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120321110613.GA4905@shlinux2.ap.freescale.net>
+References: <20120315105927.GE13022@shlinux2.ap.freescale.net>
+ <20321.53468.310199.875966@ipc1.ka-ro>
+ <20120316030134.GA5161@shlinux2.ap.freescale.net>
+ <20120318184749.BB15D3E07BF@localhost>
+ <20326.55337.249575.289067@ipc1.ka-ro>
+ <20120319150601.B783A3E05A5@localhost>
+ <20327.25470.723875.916422@ipc1.ka-ro>
+ <20120319220224.ABF5A3E0A04@localhost>
+ <CAA+hA=R8hLZMyRASRim28MNzX4jyE3nsaJ3DPzgxDtUmqtH62w@mail.gmail.com>
+ <20328.33660.472382.117901@ipc1.ka-ro>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org, lrg@ti.com
-Subject: Re: [PATCH] REGULATOR: core add 3 new modes/statuses
-References: <1332280258-5044-1-git-send-email-gg@slimlogic.co.uk> <1332280258-5044-2-git-send-email-gg@slimlogic.co.uk> <20120321002939.GA8567@opensource.wolfsonmicro.com>
-In-Reply-To: <20120321002939.GA8567@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20328.33660.472382.117901@ipc1.ka-ro>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/03/2012 00:29, Mark Brown wrote:
-> On Tue, Mar 20, 2012 at 09:50:58PM +0000, Graeme Gregory wrote:
->> This patch adds three new modes to the regulator core these are present
->> in many TI PMICs and I expect ones by other manufecturers.
-> I'm not sure these are really modes, the framework essentially thinks as
-> modes as regulation quality but except in the case of bypass that's not
-> really what's going on here.
-Your comments below do echo some of the doubts I had with this, why I
-sent as an RFC before I went changing the driver to use them.
+On Tue, Mar 20, 2012 at 09:17:48PM +0800, Lothar Waﬂmann wrote:
+> Hi,
+> 
+> Dong Aisheng writes:
+> > On Mon, Mar 19, 2012 at 3:02 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > > On Mon, 19 Mar 2012 17:49:02 +0100, Lothar Waﬂmann <LW@KARO-electronics.de> wrote:
+> > >> Hi,
+> > >>
+> > >> Grant Likely writes:
+> > >> > On Mon, 19 Mar 2012 07:54:33 +0100, Lothar Waﬂmann <LW@KARO-electronics.de> wrote:
+> > >> > > Grant Likely writes:
+> > >> > > > On Fri, 16 Mar 2012 11:01:35 +0800, Dong Aisheng <aisheng.dong@freescale.com> wrote:
+> > >> > > > > On Thu, Mar 15, 2012 at 07:22:04PM +0800, Lothar Waﬂmann wrote:
+> > >> > > > > > Dong Aisheng writes:
+> > >> > > > > > > On Thu, Mar 15, 2012 at 02:53:29PM +0800, Lothar Waﬂmann wrote:
+> > >> > > > > > Anyway there is no definite spec how the MAC address(es) are stored
+> > >> > > > > > in the fuse map. Thus reading the MAC from there is more or less
+> > >> > > > > > platform specific.
+> > >> > > > > >
+> > >> > > > > It's just provide one more option since there are customers storing the MAC
+> > >> > > > > in the fuse map.
+> > >> > > >
+> > >> > > > That should be straight forward to support; have a property that
+> > >> > > > specifies the method used for fetching/calculating the MAC.
+> > >> > > >
+> > >> > > Executable code stored inside a DT blob? ;)
+> > >> >
+> > >> > I know you're joking here, but I'm going to answer seriously
+> > >> > anyway... Absolutely not. †What I'm suggesting is a property that
+> > >> > specifies the method used to determine the mac address. †Something
+> > >> > like (off the top of my head):
+> > >> >
+> > >> > † † local-mac-address = [01 02 03 00 00 00];
+> > >> > † † local-mac-mask = [0xff 0xff 0xff 0 0 0];
+> > >> > † † mac-encoding = "append-serial-number";
+> > >> >
+> > >> That still does not specify where the remaining part of the MAC is
+> > >> stored and how it should be retrieved.
+> > >
+> > > I'm suggesting that you define a string that means something specific;
+> > > that hopefully can be shared by multiple platforms. †For example,
+> > > "append-serial-number" might mean start with the values selected by
+> > > AND of local-mac-address and local-mac-mask, and OR in the board's
+> > > serial number. †You would need to define something that worked if this
+> > > was the solution you used.
+> > >
+> > I'm intend to Grant's this suggestion.
+> > This can be shared by all other imx platforms which stores mac address in
+> > fuse map and this is commonly used by customer.
+> > Then we do not need keep writing repeat code for different platforms
+> > via platform
+> > data.
+> > 
+> > For Lothar's question, we can add a property fuse_mac_offset to indicate
+> > read mac from fuse map and where to read it.
+> >
+> That's not really enough. The format (big-endian vs. little-endian)
+> may also differ. But it's not really necessary, if the solution with
+> prom_update_property() works, since then platform code has full
+> control over the MAC.
+> 
+> > For how many bytes to read, we can calculate it from the local-mac-mask.
+> > For example, local-mac-mask = [0xff 0xff 0xff 0 0 0], we can get the size
+> > as 3 bypes.
+> > 
+> > Then we have three properties:
+> > local-mac-address = [01 02 03 00 00 00];
+> > local-mac-mask = [0xff 0xff 0xff 0 0 0];
+> > fuse_mac_offset = <1>;
+> > 
+> > In fec driver, the final mac address can be got by:
+> > local-mac-address & local-mac-mask | (read_fuse(1) & 0xffffff)
+> > 
+> > Lathar,
+> > Do you think if this is ok?
+> >
+> No. IMO the FEC driver itself should not read any fuses.
+> Reading fuses is a SoC specific thing and the FEC driver should not
+> depend on the idiosyncrasies of some SoC wrt. anything else but the
+> implementation of the FEC itself.
+> 
+Yes, i think i'm agree with this point.
+Okay, i will do that with prom_update_property.
+Thanks for suggestion.
 
->> USBBOOST this effectively turns the regulator around instead of using
->> the USB 5v and converting this down to power USB hardware the regulator
->> instead takes the internal voltage and boosts it to 5v for USB. Most
->> commonly used when a device goes into OTG host mode.
-> In theory this could be done by other things so we should probably have
-> a better name, though in practice I'd be surprised to see many others.
-> It does totally break the idea of a mode, though - it's a massive change
-> in what the regulator does.
-Im not attached to the name, I just chose it as BOOST is a type of SMPS
-as well as being the common name for this function within TI. I do see
-what you mean by it not really fitting the "mode" descriptor well!
-
->> BYPASS the input voltage on the regulator is transferred directly to the
->> output.
-> This one I've actually been thinking about myself - we do want it for
-> low power states but I think we should consider splitting it since while
-> it does kind of look like a mode if you look at it funny (really it's
-> just very, very low quality regulation) it seems like we should be able
-> to do interesting things with it in the framework like turning off
-> regulation if the parent regulator can directly satisfy the children.
-> As a mode it's relatively limited if drivers won't select the mode
-> explicitly since if regulation weren't required some of the time it's
-> unlikely that the regulator would be in the picture at all.
->
-> This is all rather like the mode selection stuff so it might well be
-> that that's the best way of delivering the feature but I'm a bit nervous
-> of just doing that partly because it's a bit of a jump for a consumer to
-> go from "I want low current" to "I don't care so much what my input
-> voltage is" (though often a valid one) and partly because we're not
-> actually using the automatic mode selection logic since nobody is
-> providing the current numbers since that's a bit sensitive.  This second
-> issue with getting the information to deploy the feature is what's
-> swaying me, at the minute nobody's providing the information needed
-> except for some of the out of tree Qualcomm drivers.
->
-> What I'd envisage for a feature specific API would be something like a
-> call consumers could make to indicate that they're OK with bypass mode
-> paired with a constraint flag that lets the core pay attention - if all
-> the consumers vote for bypass it can get turned on.  Probably this could
-> be tied in with disable too so that a consumer that wasn't enabled would
-> automatically get set as voting for bypass, relying on the constraints
-> to disable the feature when not appropriate.
->
-> A further extension would be to allow boards to also automatically
-> enable bypass if the voltages requested by the consumers can be
-> satisfied directly from the parent regulator, though that's got some
-> rather obvious pitfalls.
->
-> Like I say I'm not entirely clear here, I keep meaning to try coding up
-> the custom API and see how it feels using it in a system - any thoughts?
-> Probably won't take me that long...
-This Im not really sure on, I don't see much info on the actual use of
-bypass mode in real devices yet. twl6035 uses it to power LDOUSB direct
-from USB bus intead of using the internal SMPS. But so far that is the
-only usecase I know of. Which of course means in bypass mode we not only
-have to change parent to some non existent virtual regulator but also
-enabled bypass mode.
-
->> TRACKING the regulator tracks another resource and produces the same
->> voltage. This is commonly used where an switching power supply produces
->> a voltage but a quality smoothed version of the same voltage produced
->> by an LDO is required as well.
-> You also get this for ganging multiple regulators together to give a
-> higher power output, though normally you want variability so this has to
-> be handled at the hardware level.  This one also has an impact on how we
-> handle voltage changes, it'd be good if we could arrange things so that
-> get_voltage() and set_voltage() work through/with a regulator that's
-> tracking.
-I could see this also working if you set a parent regulator with a
-TRACKING flag so the framework knows the link. The other thing to
-consider is the twl6035 when you disable the parent SMPS on the LDO in
-tracking mode the LDO then switches to non tracking mode and uses its
-own configuration. When you turn SMPS back on it switch back to tracking
-mode.
->>  #define REGULATOR_MODE_NORMAL                  0x2
->>  #define REGULATOR_MODE_IDLE                    0x4
->>  #define REGULATOR_MODE_STANDBY                 0x8
->> +#define REGULATOR_MODE_USBBOOST                        0x10
->> +#define REGULATOR_MODE_BYPASS                  0x20
->> +#define REGULATOR_MODE_TRACKING                        0x40
-> Note that the existing modes are all sorted in order of quality and the
-> framework does use that...
-Yes I can see that now, didnt notice it at first.
-
-Altogether it looks like adding these features requires a lot more work
-than I had originally hoped :-(
-
-I guess the best way for me to proceed is to start to think about each
-of these "modes" individually and see what support I actually need from
-regulator framework to get them implemented.
-
-Graeme
+Regards
+Dong Aisheng
 
