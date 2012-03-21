@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759998Ab2CUSjC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:39:02 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23440 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759882Ab2CUSi7 (ORCPT
+	id S1754491Ab2CUSpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:45:34 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:20492 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab2CUSpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:38:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174506205"
-Message-ID: <4F6A2042.9030302@codeaurora.org>
-Date: Wed, 21 Mar 2012 11:38:58 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Wed, 21 Mar 2012 14:45:33 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-160.messagelabs.com!1332355496!1803590!52
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fs/notify/notification.c: make subsys_initcall function static
+Date: Wed, 21 Mar 2012 11:45:17 -0700
+User-Agent: KMail/1.9.9
+CC: <akpm@linux-foundation.org>, <eric.dumazet@gmail.com>, <vapier@gentoo.org>,
+        <asharma@fb.com>
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/3] Documentation: common clk API
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <CAP245DXV5oE+-y+PQCcSM016h-J+UgTi1efmdrcyeQge4k1Cfw@mail.gmail.com> <201203161218.05125.arnd.bergmann@linaro.org> <201203162057.58706.arnd@arndb.de> <alpine.DEB.2.00.1203161509470.4395@utopia.booyaka.com> <20120316234706.GJ3852@pengutronix.de> <alpine.DEB.2.00.1203201611330.22974@utopia.booyaka.com> <alpine.LFD.2.02.1203202233340.24151@xanadu.home> <4F694A6A.4050706@codeaurora.org> <alpine.DEB.2.00.1203210130520.30543@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1203210130520.30543@utopia.booyaka.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201203211145.17416.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2012 12:44 AM, Paul Walmsley wrote:
-> Hello Saravana,
->
-> On Tue, 20 Mar 2012, Saravana Kannan wrote:
->
->> To add a few more thoughts, while I agree with Paul that there is room for
->> improvement in the APIs, I think the difference in opinion comes when we ask
->> the question:
->>
->> "When we eventually refine the APIs in the future to be more expressive, do we
->> think that the current APIs can or cannot be made as wrappers around the new
->> more expressive APIs?"
->>
->> Absolutes are almost never right, so I can't give an absolute answer.
->> But I'm strongly leaning towards "we can" as the answer to the question.
->> That combined with the reasons Nicholas mentioned is why I think the
->> APIs should not be marked as experimental in anyway.
->
-> The resistance to documenting that the clock interface is not
-> well-defined, and that therefore it is likely to change, and that users
-> should not expect it to be stable, is perplexing to me.
->
-> Certainly a Kconfig help text change seems trivial enough.  But even the
-> resistance to CONFIG_EXPERIMENTAL has been quite surprising to me, given
-> that every single defconfig in arch/arm/defconfig sets it:
->
-> $ find arch/arm/configs -type f  | wc -l
-> 122
-> $ fgrep -r CONFIG_EXPERIMENTAL=y arch/arm/configs | wc -l
-> 122
-> $
->
-> (that includes iMX, by the way...)
->
-> Certainly, neither Kconfig change is going to prevent us on OMAP from
-> figuring out what else is needed to convert our platform to the common
-> clock code.  And given the level of enthusiasm on the lists,
+subsys_initcall functions should be marked static.
 
-I think the enthusiasm we are seeing are from the clock driver 
-developers. And for good reasons. Everyone is tired of having to write 
-or rewrite their own implementation.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Arun Sharma <asharma@fb.com>
 
-> I don't think
-> it's going to prevent many of the other ARM platforms from experimenting
-> with the conversion, either.
->
-> So it would be interesting to know more about why you (or anyone else)
-> perceive that the Kconfig changes would be harmful.
+---
 
-But the enthusiasm of the clock driver developers doesn't necessarily 
-translate to users of the clock APIs (other driver devs). My worry with 
-marking it as experimental in Kconfig and to a certain extent in the 
-documentation is that it will discourage the driver devs from switching 
-to the new APIs. If no one is using the new APIs, then platforms can't 
-switch to the common clock framework either. If a lot of platform don't 
-convert to the common clock framework, the effort to get it merged in 
-now is not also very meaningful.
+diff --git a/fs/notify/notification.c b/fs/notify/notification.c
+index ee18815..c887b13 100644
+--- a/fs/notify/notification.c
++++ b/fs/notify/notification.c
+@@ -447,7 +447,7 @@ struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask,
+ 	return event;
+ }
+ 
+-__init int fsnotify_notification_init(void)
++static __init int fsnotify_notification_init(void)
+ {
+ 	fsnotify_event_cachep = KMEM_CACHE(fsnotify_event, SLAB_PANIC);
+ 	fsnotify_event_holder_cachep = KMEM_CACHE(fsnotify_event_holder, SLAB_PANIC);
+@@ -461,4 +461,3 @@ __init int fsnotify_notification_init(void)
+ 	return 0;
+ }
+ subsys_initcall(fsnotify_notification_init);
+-
 
-Also, at the rate at which we come to an agreement on new APIs, I think 
-these new APIs should be considered quite stable :-) It's certainly 
-better than what we have today. We should encourage driver devs to move 
-to these new APIs and get the benefits while we go on another 2 yr cycle 
-to agree on the next set of APIs improvements.
-
-And as I said before, I think it's much less likely that we will break 
-backward source compatibility when we do the next improvement. We could 
-have mostly avoid this large scale change by calling the APIs 
-prepare/unprepare/gate/ungate (or whatever) and make clk_enable/disable 
-similar to clk_prepare_enable/clk_disable_unprepare(). That would have 
-avoid a lot of drivers from having to mess with their clock calls. But 
-we didn't think about that in the excitement for improved APIs. I think 
-this will still be seared in our minds enough to make sure we don't 
-repeat that in the future.
-
-That covers all I have to say on this topic.
-
--Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
