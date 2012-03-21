@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030586Ab2CUG5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:57:16 -0400
+	id S965161Ab2CUG4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:56:51 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39114 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030431Ab2CUG5F (ORCPT
+	with ESMTP id S965127Ab2CUG4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:57:05 -0400
-Subject: [PATCH 12/16] mm/mips: use vm_flags_t for vma flags
+	Wed, 21 Mar 2012 02:56:49 -0400
+Subject: [PATCH 08/16] mm/unicore32: use vm_flags_t for vma flags
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Date: Wed, 21 Mar 2012 10:57:02 +0400
-Message-ID: <20120321065702.13852.81639.stgit@zurg>
+Cc: linux-mm@kvack.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 Mar 2012 10:56:46 +0400
+Message-ID: <20120321065645.13852.83925.stgit@zurg>
 In-Reply-To: <20120321065140.13852.52315.stgit@zurg>
 References: <20120321065140.13852.52315.stgit@zurg>
 User-Agent: StGit/0.15
@@ -24,70 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
----
- arch/mips/mm/c-r3k.c  |    2 +-
- arch/mips/mm/c-r4k.c  |    6 +++---
- arch/mips/mm/c-tx39.c |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+The same magic like in arm: assembler code wants to test VM_EXEC,
+but for big-endian we should get upper word for this.
 
-diff --git a/arch/mips/mm/c-r3k.c b/arch/mips/mm/c-r3k.c
-index 0765583..0ae0684 100644
---- a/arch/mips/mm/c-r3k.c
-+++ b/arch/mips/mm/c-r3k.c
-@@ -239,7 +239,7 @@ static void r3k_flush_cache_page(struct vm_area_struct *vma,
- 				 unsigned long addr, unsigned long pfn)
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/kernel/asm-offsets.c |    6 +++++-
+ arch/unicore32/mm/fault.c           |    2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/unicore32/kernel/asm-offsets.c b/arch/unicore32/kernel/asm-offsets.c
+index ffcbe75..e3199b5 100644
+--- a/arch/unicore32/kernel/asm-offsets.c
++++ b/arch/unicore32/kernel/asm-offsets.c
+@@ -87,9 +87,13 @@ int main(void)
+ 	DEFINE(S_FRAME_SIZE,	sizeof(struct pt_regs));
+ 	BLANK();
+ 	DEFINE(VMA_VM_MM,	offsetof(struct vm_area_struct, vm_mm));
++#if defined(CONFIG_CPU_BIG_ENDIAN) && (NR_VMA_FLAGS > 32)
++	DEFINE(VMA_VM_FLAGS,	offsetof(struct vm_area_struct, vm_flags) + 4);
++#else
+ 	DEFINE(VMA_VM_FLAGS,	offsetof(struct vm_area_struct, vm_flags));
++#endif
+ 	BLANK();
+-	DEFINE(VM_EXEC,		VM_EXEC);
++	DEFINE(VM_EXEC,		(__force unsigned int)VM_EXEC);
+ 	BLANK();
+ 	DEFINE(PAGE_SZ,		PAGE_SIZE);
+ 	BLANK();
+diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
+index 283aa4b..9137996 100644
+--- a/arch/unicore32/mm/fault.c
++++ b/arch/unicore32/mm/fault.c
+@@ -158,7 +158,7 @@ void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+  */
+ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
  {
- 	unsigned long kaddr = KSEG0ADDR(pfn << PAGE_SHIFT);
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
- 	struct mm_struct *mm = vma->vm_mm;
- 	pgd_t *pgdp;
- 	pud_t *pudp;
-diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
-index c97087d..94b2b89 100644
---- a/arch/mips/mm/c-r4k.c
-+++ b/arch/mips/mm/c-r4k.c
-@@ -394,7 +394,7 @@ static void r4k__flush_cache_vunmap(void)
- static inline void local_r4k_flush_cache_range(void * args)
- {
- 	struct vm_area_struct *vma = args;
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
+-	unsigned int mask = VM_READ | VM_WRITE | VM_EXEC;
++	vm_flags_t mask = VM_READ | VM_WRITE | VM_EXEC;
  
- 	if (!(has_valid_asid(vma->vm_mm)))
- 		return;
-@@ -407,7 +407,7 @@ static inline void local_r4k_flush_cache_range(void * args)
- static void r4k_flush_cache_range(struct vm_area_struct *vma,
- 	unsigned long start, unsigned long end)
- {
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
- 
- 	if (cpu_has_dc_aliases || (exec && !cpu_has_ic_fills_f_dc))
- 		r4k_on_each_cpu(local_r4k_flush_cache_range, vma);
-@@ -457,7 +457,7 @@ static inline void local_r4k_flush_cache_page(void *args)
- 	struct vm_area_struct *vma = fcp_args->vma;
- 	unsigned long addr = fcp_args->addr;
- 	struct page *page = pfn_to_page(fcp_args->pfn);
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
- 	struct mm_struct *mm = vma->vm_mm;
- 	int map_coherent = 0;
- 	pgd_t *pgdp;
-diff --git a/arch/mips/mm/c-tx39.c b/arch/mips/mm/c-tx39.c
-index a43c197c..1227670 100644
---- a/arch/mips/mm/c-tx39.c
-+++ b/arch/mips/mm/c-tx39.c
-@@ -169,7 +169,7 @@ static void tx39_flush_cache_range(struct vm_area_struct *vma,
- 
- static void tx39_flush_cache_page(struct vm_area_struct *vma, unsigned long page, unsigned long pfn)
- {
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
- 	struct mm_struct *mm = vma->vm_mm;
- 	pgd_t *pgdp;
- 	pud_t *pudp;
+ 	if (!(fsr ^ 0x12))	/* write? */
+ 		mask = VM_WRITE;
 
