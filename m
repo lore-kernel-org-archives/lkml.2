@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2CUEsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 00:48:24 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:33053
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752889Ab2CUEsU (ORCPT
+	id S1754111Ab2CUEtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 00:49:01 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49840 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab2CUEs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 00:48:20 -0400
-X-SpamScore: -6
-X-BigFish: VPS-6(zcb8kz1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M17XCC-01-5FE-02
-X-M-MSG: 
-Date: Wed, 21 Mar 2012 12:48:06 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 5/8] libata-acpi: add ata port runtime D3Cold
- support
-Message-ID: <20120321044806.GA6910@localhost.amd.com>
-References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
- <1330592577-16546-6-git-send-email-ming.m.lin@intel.com>
- <20120319033616.GA32695@localhost.amd.com>
- <1332134820.17875.17.camel@minggr>
- <20120319063544.GA2707@localhost.amd.com>
- <1332140620.17875.35.camel@minggr>
+	Wed, 21 Mar 2012 00:48:59 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 04/10] memcg: Add HugeTLB extension
+In-Reply-To: <4F671AE6.5020204@parallels.com>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F669C2E.1010502@jp.fujitsu.com> <874ntlkrp6.fsf@linux.vnet.ibm.com> <4F66D993.2080100@jp.fujitsu.com> <4F671AE6.5020204@parallels.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 21 Mar 2012 10:18:43 +0530
+Message-ID: <87obrqsgno.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1332140620.17875.35.camel@minggr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 21 Mar 2012 04:48:06.0977 (UTC) FILETIME=[CEDEDB10:01CD071D]
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12032104-4790-0000-0000-000001E228CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 03:03:40PM +0800, Lin Ming wrote:
-> > 
-> > Sorry I didn't make it clear.
-> > The problem here is, we are going to set the device power state to D3
-> > cold, and current OSPM has no support for it.
-> > 
-> > Another patch of yours solved this problem by defining:
-> > 1 Device supports D3 cold if it has _PR3;
-> > 2 For a device to be put to D3 cold, power off all the power resources
-> > referenced in its _PR3.
-> > 
-> > Since this can't work for AMD's platform(there is no _PR3 for the sata
-> > acpi device), I would like to change this a little bit:
-> > 1 Device supports D3 cold if it has _PR3 or _PS3;
-> 
-> _PS3 may only mean D3Hot support for other device.
-> 
-> You mentioned that AMD platform defined a special device, named ODDZ.
-> 
-> How about device supports D3 cold if
-> 
-> _PR3 or (is ODDZ and ODDZ._PS3)?
+Glauber Costa <glommer@parallels.com> writes:
 
-Sounds good, I'll do this, thanks.
+> On 03/19/2012 11:00 AM, KAMEZAWA Hiroyuki wrote:
+>> (2012/03/19 15:52), Aneesh Kumar K.V wrote:
+>>
+>>>
+>>>>> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+>>>>> +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+>>>>> +{
+>>>>> +	int idx;
+>>>>> +	for (idx = 0; idx<  hugetlb_max_hstate; idx++) {
+>>>>> +		if (memcg->hugepage[idx].usage>  0)
+>>>>> +			return 1;
+>>>>> +	}
+>>>>> +	return 0;
+>>>>> +}
+>>>>
+>>>>
+>>>> Please use res_counter_read_u64() rather than reading the value directly.
+>>>>
+>>>
+>>> The open-coded variant is mostly derived from mem_cgroup_force_empty. I
+>>> have updated the patch to use res_counter_read_u64.
+>>>
+>>
+>> Ah, ok. it's(maybe) my bad. I'll schedule a fix.
+>>
+> Kame,
+>
+> I actually have it ready here. I can submit it if you want.
+>
+> This one has bitten me as well when I was trying to experiment with the 
+> res_counter performance...
 
-> 
-> > 2 For a device to be put to D3 cold, execute _PS3 first if available and
-> > then deal with _PR3 as above.
-> 
-> __acpi_bus_set_power(...) has done this.
-> 
+Do we really need memcg.res.usage to be accurate in that while loop ? If
+we miss a zero update because we encountered a partial update; in the
+next loop we will find it zero right ?
 
-Actually not, current implementation of __acpi_bus_set_power will call
-_PS4 ;-)
-I'll need to think of a way to handle the D3 cold case.
-
--Aaron
-
+-aneesh
 
