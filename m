@@ -1,117 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab2CUIRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 04:17:10 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39908 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133Ab2CUIRG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 04:17:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
-References: <5535e246-b7c0-4f69-a27b-1abbadd42db0@zmail14.collab.prod.int.phx2.redhat.com>
-	<65a23329-d843-4859-8b7b-430f12882492@zmail14.collab.prod.int.phx2.redhat.com>
-	<CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
-Date: Wed, 21 Mar 2012 16:17:03 +0800
-Message-ID: <CABqxG0eF2=PJPMLGm3uzr-D-BSEneB0tnOAzg0zEmMBszs0i1A@mail.gmail.com>
-Subject: Re: crash dump memory reservation regression
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: CAI Qian <caiqian@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753494Ab2CUIYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 04:24:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57487 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753263Ab2CUIYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 04:24:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="131393779"
+Message-ID: <1332318411.14983.4.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 7/9] ext4: stop using VFS for dirty superblock
+ management
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ted Tso <tytso@mit.edu>
+Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Mar 2012 10:26:51 +0200
+In-Reply-To: <1332254489-2300-8-git-send-email-dedekind1@gmail.com>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <1332254489-2300-8-git-send-email-dedekind1@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZOG/P0njyzNfG5WVqdWr"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 1:31 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sun, Mar 11, 2012 at 8:00 PM, CAI Qian <caiqian@redhat.com> wrote:
->> commit 3661ca66a42e306aaf53246fb75aec1ea01be0f0
->> x86, memblock: Fix crashkernel allocation
->>
->> introduced a regression that crashkernel=512M
->> according to bisecting will fail like this,
->>
->> crashkernel reservation failed - No suitable area found.
->> The full dmesg can be found here.
->>
->> http://people.redhat.com/qcai/dmesg.bad
->
-> The reason is: we put pagetable for [0,2g) just blow 512M.
->
-> Later we have other patches that will put pagetable for [0,2g) just
-> below 2g. even at that time we only can access 512M, because we use
-> early_ioremap to access page table.
->
-> But that good_end part get reverted in following because it cause s4
-> resume fail.
->
-> So there will be pagetable around just below 512M again. So you have
-> no chance to get 512M below 768M.
->
-> Solution will be:
-> 1.  remove the good_end setting for 64 bit again. and root cause S4 resume.
 
-Takashi, could you check if latest kernel without the good_end patch
-below works for you?
+--=-ZOG/P0njyzNfG5WVqdWr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> 2.  get page low?
-> 3.  fix kdump, and make kdump could take two ranges, one is small
-> segment below 512M, other part could be more than 4G.
->
-> Thanks
->
-> Yinghai
->
->
-> commit 8548c84da2f47e71bbbe300f55edb768492575f7
-> Author: Takashi Iwai <tiwai@suse.de>
-> Date:   Sun Oct 23 23:19:12 2011 +0200
->
->    x86: Fix S4 regression
->
->    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
->    regression since 2.6.39, namely the machine reboots occasionally at S4
->    resume.  It doesn't happen always, overall rate is about 1/20.  But,
->    like other bugs, once when this happens, it continues to happen.
->
->    This patch fixes the problem by essentially reverting the memory
->    assignment in the older way.
->
->    Signed-off-by: Takashi Iwai <tiwai@suse.de>
->    Cc: <stable@kernel.org>
->    Cc: Rafael J. Wysocki <rjw@sisk.pl>
->    Cc: Yinghai Lu <yinghai.lu@oracle.com>
->    [ We'll hopefully find the real fix, but that's too late for 3.1 now ]
->    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 3032644..87488b9 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -63,9 +63,8 @@ static void __init find_early_table_space(unsigned
-> long end, int use_pse,
->  #ifdef CONFIG_X86_32
->        /* for fixmap */
->        tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
-> -
-> -       good_end = max_pfn_mapped << PAGE_SHIFT;
->  #endif
-> +       good_end = max_pfn_mapped << PAGE_SHIFT;
->
->        base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
->        if (base == MEMBLOCK_ERROR)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Tue, 2012-03-20 at 16:41 +0200, Artem Bityutskiy wrote:
+> +       INIT_DELAYED_WORK(&sbwork->dwork, write_super);
+> +       sbwork->sb =3D sb;
+> +       delay =3D msecs_to_jiffies(dirty_writeback_interval * 10);
+> +       queue_delayed_work(sbi->dio_unwritten_wq, &sbwork->dwork, delay);=
+=20
 
+I've just realized that the side-effect of using DIO workqueue is that
+'syncfs()' will also synchronize the superblock because it flushes the
+workqueue:
 
+static int ext4_sync_fs(struct super_block *sb, int wait)
+{
+ 	...
+        flush_workqueue(sbi->dio_unwritten_wq);
+	...
+}
 
--- 
-Regards
-Dave
+But before my change, it seems the superblock was not flushed on
+'syncfs()', at least I do no see how this would be done. However, I
+think it is OK because I think it is correct to write the dirty
+superblock out on 'syncfs()', right?
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-ZOG/P0njyzNfG5WVqdWr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPaZDLAAoJECmIfjd9wqK0ilsP/12GqiQABuWbxgXJGR4lSgJF
+VdzQDBJTMfnTuA4TAmwW3zHUNS4yE5jPShiIIXqfvYOMay3MXjJytvjTgbaprDdL
+up87SoXy9YoKnsHM2w1BgJ6hHU2t+jPb9w1q779QIKDC7yhFHq9OLbAufx6VwYkR
+sGDC27e2/wlXFPkYTIa43iRhXupZliMIKZU+N2af3XZZQjV15mBRFIZ4e2tEmxnH
+Jz0Mrvc6HSR9mw/VOJ4MmVWUrN5fcfJJGUsmQM/vBY4+QIt+GgqnSyUx6GHzb3YY
+FDhFvZ7bjiRMNPPn/GKFg8jV3+gFBX7qP0yUukLEvwTPmSQbqRe3L4katMe/GmFL
+o8kTpgGTNDp4iLeebOn0awEOCWaDE4L7R8tIwF2wQW293l46WE3HU1yR1LbHNZ8A
+xshVMPRvUUmoPIMCY+iphL3PnzYfNKTwB49BMTvyM1pbqfJSjNVWBJhB0Sx9klM2
+fRHabqbNk7JGddZ+NqvMlzjiEp6cfsJzNBDxfbJHIb8wJutWZi4ayiXehjMwkUcD
+SVbdVPtGa9GH/SWEXj17hkXm5eRveFDNzH4jUMLaoAjVq47q2X1RFCwdjUXnskn9
+wt4+B2XcjhwEKWmsegj4ZHldIjfj+YmPimCfNQ9G0SaepDXLn9JMAejEOTvwtPjk
+oO3xxou86KzxD2l31Kbs
+=81ES
+-----END PGP SIGNATURE-----
+
+--=-ZOG/P0njyzNfG5WVqdWr--
+
