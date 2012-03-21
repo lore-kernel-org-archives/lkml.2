@@ -1,54 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759816Ab2CUSPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:15:08 -0400
-Received: from corrreo.puertomontt.cl ([200.55.198.147]:54588 "HELO
-	respaldo.puertomontt.cl" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754352Ab2CUSPG (ORCPT
+	id S1759876Ab2CUSR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:17:59 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45805 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759792Ab2CUSR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:15:06 -0400
-X-Greylist: delayed 1816 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Mar 2012 14:14:55 EDT
-From: "CyberOne" <webmail@cyberone.com.au>
-Reply-To: adminz@blumail.org
-Subject: Confirm Email Update
-Date: Wed, 21 Mar 2012 14:45:23 -0400
-Message-Id: <20120321184501.M30965@cyberone.com.au>
-X-Mailer: OpenWebMail 2.52 20060502
-X-OriginatingIP: 115.67.32.145 (edmundo.alvarez)
+	Wed, 21 Mar 2012 14:17:56 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174499030"
+X-IronPort-AV: E=Sophos;i="4.73,624,1325491200"; 
+   d="scan'208";a="288926069"
+Date: Wed, 21 Mar 2012 11:17:53 -0700
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+To: Arend van Spriel <arend@broadcom.com>
+CC: Seth Forshee <seth.forshee@canonical.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Michael Green <green@qca.qualcomm.com>,
+        David Quan <dquan@qca.qualcomm.com>,
+        Henry Ptasinski <henry@logout.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: Problems with regulatory domain support and BCM43224
+Message-ID: <20120321181753.GC24075@tux>
+References: <CAB=NE6U04a0XNrvt6HLCwqbHMtGL8CWh8No_=Bx0mwQZYEgGxQ@mail.gmail.com>
+ <4B96CD77D9161244899852B5F20DB5B70125BC94@nasanexd02d.na.qualcomm.com>
+ <CAB=NE6X9c1m63xayNsEf9XZ3AgPZDV2SiRivg3SV2Day83fPQA@mail.gmail.com>
+ <20120308200734.GC28133@ubuntu-macmini>
+ <4F591E14.4010000@broadcom.com>
+ <CAB=NE6XnorRDEu976uMkPFNKHQjhRT0Craf3ZjL9dYysPjmQng@mail.gmail.com>
+ <20120320220706.GA17272@thinkpad-t410>
+ <4F69B604.4030303@broadcom.com>
+ <20120321141916.GA23643@thinkpad-t410>
+ <4F6A1514.9090907@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F6A1514.9090907@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message was sent automatically by a program on Webmail which 
-periodically checks the size of inboxes, where new messages are received. The
-program is run weekly to ensure no one's inbox grows too large.
+Adding Michael and David just for their information. I know Henry
+is not with Broadcom any more but hey, hey may be interested.
 
-If your inbox becomes too large, you will be unable to receive new email. Just
-before this message was sent, you had 18 Megabytes (MB) or more of messages
-stored in your inbox on your Webmail To help us re-set your SPACE on our
-database prior to maintain your INBOX, you  must reply to this e-mail and
-enter your:
+On Wed, Mar 21, 2012 at 06:51:16PM +0100, Arend van Spriel wrote:
+> On 03/21/2012 03:19 PM, Seth Forshee wrote:
+> >On Wed, Mar 21, 2012 at 12:05:40PM +0100, Arend van Spriel wrote:
+> >>On 03/20/2012 11:07 PM, Seth Forshee wrote:
+> >>>On Thu, Mar 08, 2012 at 01:06:57PM -0800, Luis R. Rodriguez wrote:
+> >>>>>Hi, Seth
+> >>>>>
+> >>>>>Noticed your email yesterday, but did not get to chime into the
+> >>>>>conversation. brcmsmac does indeed provide a regulatory hint, which is
+> >>>>>either from SPROM or hard-coded to "US". Since "X0" is not a known
+> >>>>>regulatory domain for crda it does not make sense to pass it as a regulatory
+> >>>>>hint. However, the "full" story is told on linuxwireless.org (see [1]).
+> >>>>
+> >>>>The Linux kernel allows you to define custom regulatory domains, the
+> >>>>ath module uses these, it defines 13 of them. You can review that code
+> >>>>for an example of how to use them. So your X0 can still be used, you
+> >>>>just have to define the data structure.
+> >>>
+> >>>I took a shot at implementing custom regulatory domain support for
+> >>>brcmsmac. I've got it working to the point of letting me see APs on the
+> >>>DFS channels at least. The patch is below. A number of issues
+> >>>undoubtedly remain to be resolved. Some that I can think of:
+> >>
+> >>Hi Seth,
+> >>
+> >>Thanks for looking into this. I also did some tinkering over here,
+> >>but not sure which way to go here, ie. 1) define and use custom
+> >>regulatory domains, or 2) be happy with world regulatory domain as
+> >>is and do not pass the custom codes if found in sprom.
+> >
+> >For 2 I think you also have to set WIPGHY_FLAG_CUSTOM_REGULATORY or else
+> >the default world domain will still be applied. That certainly seems to
+> >be the quick-and-easy fix, but I'm not sure about what's preferable.
+> >
+> >However, I do think that passing up the custom codes as hints doesn't
+> >make sense, and the patch I sent only passes it up if it's not known to
+> >be one of the custom domains.
+> 
+> Ok. so the wiphy_apply_custom_regulatory() does not make the custom
+> domains known by their code (.alpha2).
+> 
+> >>>  - I set up two custom domains, X0 and X2, which are identical. I'm not
+> >>>    sure precisely how each needs to be set up, but I took a reasonable
+> >>>    guess.
+> >>
+> >>There are 9 custom domains in the proprietary driver. X0 only allows
+> >>using channels 1-11. X2 allows 1-13. There are other parameters like
+> >>rates and txpower that may differ.
+> >
+> >That's the kind if information I would need to make this patch viable.
+> >I'll go ahead and update the patch to remove channels 12-13 from X0, and
+> >14 from both. Are the 5 GHz rules correct?
+> 
+> 5G channels are all considered passive by brcmsmac. Not sure whether
+> that should be made explicit in the rules. Also the driver does not
+> support IBSS so those flags are redundant now, but it is good to
+> have it already in place.
+> 
+> >Are the custom domains named X[0-8]? If that's the case I can simplify
+> >some of the code.
+> 
+> Unfortunately, no.
+> 
+> >>>  - I tried to integrate with the existing X2 domain support, but this
+> >>>    could probably be improved. I avoided making large changes because
+> >>>    there's some complexity in the current code that doesn't seem to
+> >>>    serve a purpose currently, but I assume it's there for a reason.
+> >>
+> >>The code in channel.c was taken from our proprietary driver.
+> >>Basically, the LOCALES hold the same information as the rules in
+> >>regdomain.
+> >
+> >I assumed as much, but I haven't made much of an effort to understand it
+> >yet.
+> >
+> >But the complexity I'm referring to is really the infrastructure to
+> >support multiple locales and revisions that just isn't used right now. I
+> >can only assume that there are plans to use additional locales and
+> >revisions at some point.
+> 
+> Understood. The proprietary driver (which is not a mac80211 driver)
+> supports a lot of locales, which are selected on country code and
+> regulatory revision (both read from sprom). I suspect this is done
+> to support the regulatory rules for which the device was certified.
+> Revisiting channel.c is on our work list, but it would mean more
+> moving toward using the regdomain approach you started on instead of
+> locales.
 
-Username: {     }
+Let me first explain a little on how Atheros' regulatory mapping works, hope
+this helps you.
 
-and Password: {      }
+If companies have a map of a regdomain to an alpha2 then the country alpha2
+approach makes sense. For Atheros it just so happens that some EEPROM codes map
+to a direct alpha2, which is a direct map. In other cases we have an EEPROM
+code map to a region, but such region allows usage of a card in set of
+different countries -- these countries all happen to have the same regulatory
+domain, which is why for these regions we just ask for the first alphabetical
+alpha2. Regardless of the country in the region the regulatory domain in CRDA
+is expected to be the same. Then we have 12 custom world regulatory domains
+which are exactly for that -- world roaming. In these cases we have 12 custom
+regulatory domains and disable initiating radiation on them until we know where
+we are through a country IE. We also take advantage of the beacon regulatory
+hints in this case. The custom regulatory domains should be used only if you
+really cannot map a region code to any alpha2, but consider the case of
+grouping countries together if you know the assumption was that different
+countries had the same regulatory domain. This can help simoplify your
+implementation. For more details please read:
 
-You will continue to receive this warning message periodically, If  your inbox
-size grows to 20 MB, then a program on Bates Webmail will  move your oldest
-email to a folder in your home directory to ensure that you will continue to
-be able to receive in coming email.
+http://wireless.kernel.org/en/users/Drivers/ath#Regulatory
+http://wireless.kernel.org/en/developers/Regulatory/processing_rules
 
-You will be notified by email that this has taken place. If your inbox  grows
-to 25 MB, you will be unable to receive new email as it will be returned to
-the sender.
+One idea that occcurs to me to help simplify this even further is --
+for us to consider mapping a region to a set of different alpha2s, then
+send a custom regdomain building request to userspace based on these
+group of alpha2s, userpace could respond with an intersection of the
+alpha2s. CRDA already implements the capability to intersect regulatory
+domains, so the code is already there, we'd just need the hooks for
+the kernel if this is deemed desirable. This is just and idea and
+worth considering for the revamp of regulatory code.
 
-After you read a message, it is best to REPLY and SAVE a copy.
+More and more I see things like this getting complicated by the
+years, perhaps its a good time to review the possibility of getting
+together and sticking to something simple for the better or simplicity.
+I realize that the difficulty lies here in supporting other OSes, which
+is why we have worked hard at ensuring we permissively license all
+regulatory code and recently we even relicensed cfg80211's reg.c
+and other regulatory components. To help with this even further I
+have also started a userspace regulatory simulator [0] complete permissively
+licensed which allows us to simulate and engineer regulatory solutions
+completley in userspace and if we are happy later adapt the code to
+kernelspace / firmware / proprietary software / whatever.
 
-Thank
-you for your cooperation.
-Page Design by David Irwin Updates by David Cherry
-Copyright (C) CyberOne TransACT Customer. reserved .
+So -- please consider all these things when implmenting your solution
+on the Broadcom driver. Keep in mind the ways to improve regulatory
+and current work and design considreations.
+
+[0] git://github.com/mcgrof/regsim.git
+
+  Luis
