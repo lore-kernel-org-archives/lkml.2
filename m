@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab2CUPTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:19:07 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:1539 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab2CUPTF (ORCPT
+	id S1759177Ab2CUPYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 11:24:31 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:8405 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759137Ab2CUPYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:19:05 -0400
-Date: Wed, 21 Mar 2012 16:18:51 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lenb@kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH] thermal: Fix for setting the thermal zone mode to
- enable/disable
-Message-ID: <20120321161851.2f072204@endymion.delvare>
-In-Reply-To: <CACLa4pts46gZmx=cGWF9UuHh-VpeoG9e2MmJR=xTn7sFxiFyjw@mail.gmail.com>
-References: <1332328201-21191-1-git-send-email-amit.kachhap@linaro.org>
-	<20120321151357.53fb86e4@endymion.delvare>
-	<CACLa4pts46gZmx=cGWF9UuHh-VpeoG9e2MmJR=xTn7sFxiFyjw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 11:24:30 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03b.oce.net;RD:smtp02.oce.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [PATCH] Support M95040 SPI EEPROM
+Date: Wed, 21 Mar 2012 16:24:05 +0100
+Message-ID: <1332343445-17104-1-git-send-email-meltedpianoman@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 21 Mar 2012 15:24:07.0705 (UTC) FILETIME=[A86FD890:01CD0776]
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: oce.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Updated the generic SPI EEPROM driver AT25 for support of address bit A8
+in the instruction byte. Certain EEPROMS (like M95040 from ST) have a 512
+Byte size but use only one address byte (A0 to A7) for addressing. For the
+extra address bit A8 bit 3 of the instruction byte is used. This instruction
+bit is threated as don't care for other AT25 like chips
 
-On Wed, 21 Mar 2012 10:47:52 -0400, Eric Paris wrote:
-> On Wed, Mar 21, 2012 at 10:13 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> > Note that a quick grep suggests that drivers/misc/ad525x_dpot.c,
-> > security/selinux/hooks.c and arch/m68k/sun3/prom/console.c suffer from
-> > the same issue, if you want to fix them too.
-> 
-> I do see that we use sizeof() for strings in the selinux code, but I
-> don't see a place that it is a bug.  If you see a bug let me know and
-> I'd be happy to fix it!
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+---
+ drivers/misc/eeprom/at25.c |   31 ++++++++++++++++++++++++++++---
+ 1 files changed, 28 insertions(+), 3 deletions(-)
 
-My suspect is in sb_finish_set_opts():
-
-	if (strncmp(sb->s_type->name, "sysfs", sizeof("sysfs")) == 0)
-
-If sb->s_type->name is exactly "sysfs", it will work, but if it only
-starts with "sysfs" it won't. And if only exact matches are expected,
-then strncmp is overkill and strcmp should be used instead.
-
-Note that I don't know anything about the code so I might as well be
-totally wrong.
-
+diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
+index c627e41..907aecc 100644
+--- a/drivers/misc/eeprom/at25.c
++++ b/drivers/misc/eeprom/at25.c
+@@ -50,6 +50,7 @@ struct at25_data {
+ #define	AT25_SR_BP1	0x08
+ #define	AT25_SR_WPEN	0x80		/* writeprotect enable */
+ 
++#define	AT25_INSTR_A8	0x08		/* Address bit 8 in instruction */
+ 
+ #define EE_MAXADDRLEN	3		/* 24 bit addresses, up to 2 MBytes */
+ 
+@@ -75,6 +76,7 @@ at25_ee_read(
+ 	ssize_t			status;
+ 	struct spi_transfer	t[2];
+ 	struct spi_message	m;
++	u8			instr;
+ 
+ 	if (unlikely(offset >= at25->bin.size))
+ 		return 0;
+@@ -84,7 +86,18 @@ at25_ee_read(
+ 		return count;
+ 
+ 	cp = command;
+-	*cp++ = AT25_READ;
++
++	/*
++	 * Certain EEPROMS (like M95040 from ST) have a 512 Byte size
++	 * but use only one address byte (A0 to A7) for addressing. For
++	 * the extra address bit A8 bit 3 of the instruction byte is
++	 * used. This instruction bit is threated as don't care for
++	 * other AT25 like chips.
++	 */
++	instr = AT25_READ;
++	if ((at25->addrlen == 1) && (offset >= 256))
++		instr |= AT25_INSTR_A8;
++	*cp++ = instr;
+ 
+ 	/* 8/16/24-bit address is written MSB first */
+ 	switch (at25->addrlen) {
+@@ -167,14 +180,14 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
+ 	/* For write, rollover is within the page ... so we write at
+ 	 * most one page, then manually roll over to the next page.
+ 	 */
+-	bounce[0] = AT25_WRITE;
+ 	mutex_lock(&at25->lock);
+ 	do {
+ 		unsigned long	timeout, retries;
+ 		unsigned	segment;
+ 		unsigned	offset = (unsigned) off;
+-		u8		*cp = bounce + 1;
++		u8		*cp = bounce;
+ 		int		sr;
++		u8		instr;
+ 
+ 		*cp = AT25_WREN;
+ 		status = spi_write(at25->spi, cp, 1);
+@@ -184,6 +197,18 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
+ 			break;
+ 		}
+ 
++		/*
++		 * Certain EEPROMS (like M95040 from ST) have a 512 Byte size
++		 * but use only one address byte (A0 to A7) for addressing. For
++		 * the extra address bit A8 bit 3 of the instruction byte is
++		 * used. This instruction bit is threated as don't care for
++		 * other AT25 like chips.
++		 */
++		instr = AT25_WRITE;
++		if ((at25->addrlen == 1) && (offset >= 256))
++			instr |= AT25_INSTR_A8;
++		*cp++ = instr;
++
+ 		/* 8/16/24-bit address is written MSB first */
+ 		switch (at25->addrlen) {
+ 		default:	/* case 3 */
 -- 
-Jean Delvare
+1.7.0.4
+
+
