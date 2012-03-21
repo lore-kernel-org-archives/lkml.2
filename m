@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab2CUAnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 20:43:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40027 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab2CUAnx (ORCPT
+	id S1758424Ab2CUAoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 20:44:44 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:7190 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757105Ab2CUAon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 20:43:53 -0400
-Date: Wed, 21 Mar 2012 09:43:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: use global_dirty_limit in throttle_vm_writeout()
-Message-ID: <20120321004344.GC14584@barrios>
-References: <20120302061451.GA6468@localhost>
+	Tue, 20 Mar 2012 20:44:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAKIjaU95LbP2/2dsb2JhbABEtm+BCIIJAQEEATocIwULCAMOCi4UJQMhE4gFBLcgE5BuBJVdkCiCe4FCFw
+Date: Wed, 21 Mar 2012 11:44:39 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        xfs-masters@oss.sgi.com
+Subject: Re: [PATCH 05/11] XFS: Fix lock ASSERT on UP
+Message-ID: <20120321004439.GU5091@dastard>
+References: <1331924464-18023-1-git-send-email-andi@firstfloor.org>
+ <1331924464-18023-6-git-send-email-andi@firstfloor.org>
+ <20120319224753.GC3592@dastard>
+ <20120320022812.GA30406@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120302061451.GA6468@localhost>
+In-Reply-To: <20120320022812.GA30406@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wu,
-
-Sorry for late response.
-I have a question.
-
-On Fri, Mar 02, 2012 at 02:14:51PM +0800, Fengguang Wu wrote:
-> When starting a memory hog task, a desktop box w/o swap is found to go
-> unresponsive for a long time. It's solely caused by lots of congestion
-> waits in throttle_vm_writeout():
+On Mon, Mar 19, 2012 at 07:28:12PM -0700, Andi Kleen wrote:
+> > So this means we only ever check that the spinlock is held when
+> > lockdep is turned on instead of whenever CONFIG_XFS_DEBUG is set?
 > 
->  gnome-system-mo-4201 553.073384: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
->  gnome-system-mo-4201 553.073386: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
->            gtali-4237 553.080377: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
->            gtali-4237 553.080378: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
->             Xorg-3483 553.103375: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
->             Xorg-3483 553.103377: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
+> You should regularly test with lockdep anyways.
+
+I do. Once or twice a release cycle I'll do a test cycle with
+lockdep enabled. i don't use it on day-to-day tst cycles because of
+it's overhead, and well, I understand the lock ordering of most of
+the code I'm modifying....
+
+> If you don't you clearly
+> have a testing gap. lockdep is likely to find many more locking bugs
+> than any of your very sparse manual annotations.
+
+That's not true. Lockdep validates lock order but it doesn't find
+race conditions. Nor does lockdep tell us that the correct lock is
+held when entering the function. Nor does it tell us that the state
+of a RCU freed object is correct when it is reallocated out of the
+kmem_cache it belongs to. These things need manual annotations, and
+they find more problems during development than lockdep does.
+
+Not to mention that we have to annotate our read/write locks with
+extra state when CONFIG_XFS_DEBUG is enabled to ensure that the lock
+mode is correct because rwsems can't tell us the difference between
+a read hold and a write hold.
+
+Hell, we only check the inode lock state in about 40 different
+locations via xfs_isilocked(), but many of these locations have
+multiple callers. e.g.  there's a check in xfs_trans_ijoin(), and it
+has about 60 callers.  So the "very sparse manual annotations" for
+locking behaviour in XFS are far more comprehensive than you claim
+and catch many more problems early in development under
+CONFIG_XFS_DEBUG than lockdep is even aware exists....
+
+> > That means it will rarely get checked during development instead of
+> > all the time. That's not an improvement IMO....
 > 
-> The root cause is, the dirty threshold is knocked down a lot by the
-> memory hog task. Fixed by using global_dirty_limit which decreases
+> It's an improvement that an !CONFIG_SMP && CONFIG_XFS_DEBUG kernel
+> will not blow up anymore.
 
-AFAIUC, memory hog task, you mean it consumes lots of anon pages, not file-backed pages.
-So global_dirty_limits would get small available_memory by global_reclaimable_pages
-so that it ends up dirty threshold is knocked down.
+<shrug>
 
-Could you confirm my understanding?
+Whatever, it's not worth arguing over. There's only two places that
+XFS uses spin_is_locked(), and there are other checks around it that
+will catch the same race conditions with CONFIG_XFS_DEBUG enabled,
+so go ahead and use lockdep for them.
 
-Thanks.
+Cheers,
 
-> gradually on such events and can guarantee we stay above (the also
-> decreasing) nr_dirty in the progress of following down to the new
-> dirty threshold.
-> 
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  mm/page-writeback.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux.orig/mm/page-writeback.c	2012-03-02 14:05:01.633763187 +0800
-> +++ linux/mm/page-writeback.c	2012-03-02 14:11:52.929772962 +0800
-> @@ -1472,6 +1472,7 @@ void throttle_vm_writeout(gfp_t gfp_mask
->  
->          for ( ; ; ) {
->  		global_dirty_limits(&background_thresh, &dirty_thresh);
-> +		dirty_thresh = hard_dirty_limit(dirty_thresh);
->  
->                  /*
->                   * Boost the allowable dirty threshold a bit for page
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
