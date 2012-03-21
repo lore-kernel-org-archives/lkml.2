@@ -1,70 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab2CUCYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 22:24:03 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35985 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759240Ab2CUCYB (ORCPT
+	id S1759681Ab2CUCYi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 22:24:38 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65325 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab2CUCYh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 22:24:01 -0400
-Date: Tue, 20 Mar 2012 22:23:53 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Amit Kucheria <amit.kucheria@linaro.org>
-cc: Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Robert Lee <rob.lee@linaro.org>, len.brown@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>, rjw@sisk.pl,
-        robherring2@gmail.com, Baohua.Song@csr.com, nicolas.ferre@atmel.com,
-        linux@maxim.org.za, kgene.kim@samsung.com, amit.kachhap@linaro.org,
-        magnus.damm@gmail.com, nsekhar@ti.com, daniel.lezcano@linaro.org,
-        mturquette@linaro.org, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
-        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
-        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
-In-Reply-To: <CAP245DXwhCMOJaspW8SY7jtqsA3d5SK4Ctr+JvS+cw4yHfL-mw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1203202146131.24151@xanadu.home>
-References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org> <201203202158.08042.arnd.bergmann@linaro.org> <873992zy5u.fsf@ti.com> <CAP245DXwhCMOJaspW8SY7jtqsA3d5SK4Ctr+JvS+cw4yHfL-mw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 20 Mar 2012 22:24:37 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1729038486-1332296636=:24151"
+In-Reply-To: <CANejiEUDmDzGirBZRwKh5MTHvXX308JTHmmH_U0JfnPJkpvHJQ@mail.gmail.com>
+References: <20120316073213.656519005@fusionio.com>
+	<alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de>
+	<CANejiEWeaF44Rbgt5jhf_bnafF4yoTTZAYsqoD2+greJ07c-_A@mail.gmail.com>
+	<alpine.LRH.2.02.1203200839120.29880@diagnostix.dwd.de>
+	<CANejiEVWbP53QVKZQBS2xKtaqdX6jdW_mjZxJ9q5=cxKNk6_dg@mail.gmail.com>
+	<CANejiEUDmDzGirBZRwKh5MTHvXX308JTHmmH_U0JfnPJkpvHJQ@mail.gmail.com>
+Date: Tue, 20 Mar 2012 23:24:36 -0300
+X-Google-Sender-Auth: nlcIkjeN9Vemo33Gj25z51nrtyw
+Message-ID: <CABYL=TpzjJcg=P7Jtwcg3Pdido1H0_p13DC64o14b=4+_+dQ1Q@mail.gmail.com>
+Subject: Re: [patch v2 0/6] Add TRIM support for raid linear/0/1/10
+From: Roberto Spadim <roberto@spadim.com.br>
+To: Shaohua Li <shli@kernel.org>
+Cc: Holger Kiehl <Holger.Kiehl@dwd.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid <linux-raid@vger.kernel.org>, neilb@suse.de,
+        axboe@kernel.dk, vgoyal@redhat.com, martin.petersen@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+=/ well maybe with a sas disk it could be faster? maybe a pciexpress disk too?
 
---8323328-1729038486-1332296636=:24151
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Em 20 de março de 2012 23:08, Shaohua Li <shli@kernel.org> escreveu:
+> 2012/3/20 Shaohua Li <shli@kernel.org>:
+>> 2012/3/20 Holger Kiehl <Holger.Kiehl@dwd.de>:
+>>> Hello,
+>>>
+>>>
+>>> On Tue, 20 Mar 2012, Shaohua Li wrote:
+>>>
+>>>> 2012/3/20 Holger Kiehl <Holger.Kiehl@dwd.de>:
+>>>>>
+>>>>> Hello,
+>>>>>
+>>>>>
+>>>>> On Fri, 16 Mar 2012, Shaohua Li wrote:
+>>>>>
+>>>>>> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM
+>>>>>> support
+>>>>>> for
+>>>>>> raid 4/5/6 later. The implementation is pretty straightforward and
+>>>>>> self-explained.
+>>>>>>
+>>>>>> v1->v2:
+>>>>>> 1. fixed a checking issue
+>>>>>> 2. dropped discard request plug and replace it with no discard merege,
+>>>>>> because
+>>>>>> current SCSI layer can't handle discard request merge.
+>>>>>>
+>>>>> Have tested TRIM patches on three different systems with the following
+>>>>> hardware/ setup:
+>>>>>
+>>>>>   1) root mounted on a raid1 over two SAS SSD's (200GB) and /home
+>>>>> partition
+>>>>>      on a raid0 over a fusionio ioDrive Duo. Is very new and seen very
+>>>>>      little usage.
+>>>>>
+>>>>>   2) root and /home mounted on a raid0 over two Intel X25 Postville
+>>>>>      (160GB) connected to a Intel P55 Express chipset. Has seen very
+>>>>>      heavy usage for approx. 2 years.
+>>>>>
+>>>>>   3) root and /home mounted on a raid0 over three OCZ-VERTEX2 (120GB)
+>>>>>      connected via ICH7 south bridge. Has seen mild usage for approx.
+>>>>>      1.5 years.
+>>>>>
+>>>>> Made the following observations when running my own benchmark which
+>>>>> copies around a lot of small files and deletes them. The benchmark on
+>>>>> all systems was always run only on the /home partition ie. on a raid0.
+>>>>>
+>>>>> For system 1) there is hardly any measurable differnce whether discard
+>>>>> is enabled or not (~29000 files per second).
+>>>>>
+>>>>> On system 2) the performance drops from 6500->3700 files per second,
+>>>>> but under normal usage one does not notice any difference.
+>>>>
+>>>> do you have the blktrace data when the benchmark is running, especially
+>>>> when doing file deletion. I'd like to check the latency of discard in this
+>>>> case.
+>>>>
+>>> It is uploaded on ftp://ftp.dwd.de/pub/afd/test/trim
+>> Thanks, I'll check it.
+> Thanks for the testing. The trace data is very helpful. In the intel
+> SSD, trace data
+> shows a discard request uses about 1 ~ 3 ms. The filesystem suffers from
+> fragmentation too, so lots of small discard requests. When ext4 starts doing
+> discard, it usually uses more than 1 minutes. That's too bad.
+> If just looking one disk's trace data, there are some extra latencies between
+> two discard requests. The combined trace data of two disks show the latency
+> comes from waiting for another disk, so nothing abnormal. I thought we could
+> do an optimization for this case in the future.
+> So in summary, discard from the SSDs is slow. When your filesystem is
+> fragmented, the performance will be terrible.
+>
+> Thanks,
+> Shaohua
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-raid" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On Wed, 21 Mar 2012, Amit Kucheria wrote:
-
-> On Wed, Mar 21, 2012 at 12:48 AM, Kevin Hilman <khilman@ti.com> wrote:
-> > Maybe it's time that drivers/cpuidle gets a maintainer.  With lots of
-> > discussions of scheduler changes that affect load estimation, I suspect
-> > we're all going to have a bit of CPUidle work to do in the
-> > not-so-distant future.
-> >
-> 
-> I don't mean to be piling on to Len here, but Daniel Lezcano too has a
-> bunch of clean ups that didn't get any maintainer review for over two
-> months. He has now refreshed them for 3.3 and is getting ready to send
-> them out again. We (Linaro) expect to be spending a lot of time on
-> cpuidle in the future and would be glad to help review, test and
-> collect patches into a tree for Linus/Andrew to pull while we wait for
-> Len to respond or another maintainer to emerge.
-
-As I advised recently, it is usually a good idea for the person/group 
-who is working the most on a subsystem to simply take the lead and 
-become the new maintainer.  Waiting for another maintainer to emerge 
-could be compared to cowardice.
 
 
-Nicolas
---8323328-1729038486-1332296636=:24151--
+-- 
+Roberto Spadim
+Spadim Technology / SPAEmpresarial
