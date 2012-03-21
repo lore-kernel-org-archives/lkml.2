@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab2CUPOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:14:49 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47182 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab2CUPOr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:14:47 -0400
+	id S1757168Ab2CUPO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 11:14:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756172Ab2CUPO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 11:14:56 -0400
+Date: Wed, 21 Mar 2012 16:14:49 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: dri-devel@lists.freedesktop.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        rjw@sisk.pl, davej@redhat.com
+Subject: Re: hibernate random memory corruption, workaround i915.modeset=0
+Message-ID: <20120321151448.GA7924@redhat.com>
+References: <20120227124243.GG4104@redhat.com>
+ <20120319145349.GG6169@redhat.com>
+ <86r4wobj6v.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <20120321151357.53fb86e4@endymion.delvare>
-References: <1332328201-21191-1-git-send-email-amit.kachhap@linaro.org>
-	<20120321151357.53fb86e4@endymion.delvare>
-Date: Wed, 21 Mar 2012 16:14:46 +0100
-X-Google-Sender-Auth: rLafDXpDDt2qb5P9BFU7CTpmxUY
-Message-ID: <CAMuHMdUFh=kRJFGP3sxHCqERSVcrWGD40iYzhrFMRxDNFvounA@mail.gmail.com>
-Subject: Re: [PATCH] thermal: Fix for setting the thermal zone mode to enable/disable
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lenb@kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86r4wobj6v.fsf@sumi.keithp.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 15:13, Jean Delvare <khali@linux-fr.org> wrote:
-> On Wed, 21 Mar 2012 16:40:01 +0530, Amit Daniel Kachhap wrote:
->> Basically without this patch changing the mode of thermal zone
->> is not possible as wrong string size is passed to strncmp.
->
-> Actually it is possible,
-> $ echo -n disabled > mode
-> works fine. But it fails without the -n, your patch would fix that.
+On Mon, Mar 19, 2012 at 10:21:28AM -0700, Keith Packard wrote:
+> <#part sign=pgpmime>
+> On Mon, 19 Mar 2012 15:53:54 +0100, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> 
+> > Keith, is there a chance that this bug can be fixed by i915 team?
+> 
+> Yes, I'm working on figuring out how to actually reproduce this and then
+> work on a few work-arounds.
 
-Now it ignores any extra characters. Are they always newlines?
+This must be hardware dependent then, yesterday and today I tried to
+reproduce on Lenovo T60 with:
 
-Now "echo -n disabledx > mode" will also "succeed".
+00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller [8086:27a2] (rev 03)
 
-> Acked-by: Jean Delvare <khali@linux-fr.org>
->
-> Note that a quick grep suggests that drivers/misc/ad525x_dpot.c,
-> security/selinux/hooks.c and arch/m68k/sun3/prom/console.c suffer from
-> the same issue, if you want to fix them too.
+and there is no sign of corruption, I double checked if slab poisoning
+is enabled.
 
-W.r.t. the Sun-3 code, those strings don't come from the user, but from the
-firmware. But the code (copied from SPARC, which has the right firmware,
-unlike Sun-3) is commented out anyway.
+> > If not, can we disable hibernate on i915 with modeset=1 and add
+> > module option, which enable it for those who want to risk?
+> 
+> I'd love to know if disabling modeset on just the booting kernel helps;
+> leaving the resuming kernel with modeset=1. I haven't been able to
+> reproduce this locally yet to test this theory though.
 
-Gr{oetje,eeting}s,
+On Lenovo T500 with:
 
-                        Geert
+00:02.1 Display controller [0380]: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller [8086:2a43] (rev 07)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+that is the case. Script attached on previous email trigger corruption
+with modeset=1 (on various older and newer kernels) in less then 20
+iterations. There is no corruption after 100 iterations if
+i915.modeset=0 parameter is used. Some users on RH bugzilla confirmed
+that workaround as well.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+If you want list of more i915 adapters where the problem happens, I can
+check in our bugzilla and provide it.
+
+Thanks
+Stanislaw 
