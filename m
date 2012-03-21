@@ -1,58 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab2CUSJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:09:30 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:44393 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753625Ab2CUSJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:09:29 -0400
-Message-ID: <1332353243.32717.207.camel@groeck-laptop>
-Subject: Re: [GIT PULL] hwmon updates for 3.4
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Wed, 21 Mar 2012 11:07:23 -0700
-In-Reply-To: <CA+55aFzEQ-undQpx_Q_5+scP5EN9KxJ9m-1O-8O0h+EbZE2mMw@mail.gmail.com>
-References: <20120320162358.GA5189@ericsson.com>
-	 <CA+55aFzEQ-undQpx_Q_5+scP5EN9KxJ9m-1O-8O0h+EbZE2mMw@mail.gmail.com>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
+	id S1759772Ab2CUSMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:12:38 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39773 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab2CUSMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 14:12:36 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 21 Mar 2012 23:38:11 +0530
+Message-Id: <20120321180811.22773.5801.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 1/2] uprobes/core: slot allocation.
+x-cbid: 12032108-1396-0000-0000-000000D93EDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 13:40 -0400, Linus Torvalds wrote:
-> On Tue, Mar 20, 2012 at 9:23 AM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> >
-> > Please pull hwmon updates for Linux 3.4 from tag:
-> >
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-> >
-> > Mostly cleanup. No new drivers this time around, but support for several chips
-> > added to existing drivers: TPS40400, TPS40422, MTD040, MAX34446, ZL9101M,
-> > ZL9117M, and LM96080. Also added watchdog support for SCH56xx, plus additional
-> > sysfs attributes for a couple of drivers.
-> 
-> Btw, please don't put that "git log --oneline" generated data into the
-> tag - there's no real point. It doesn't add anything human-readable to
-> anything, and for any automation you can get the data better directly
-> from git instead.
-> 
-> So the tag-message shouldn't contain anything auto-generated, since
-> any auto-generated data is better just generated later on the fly.
-> Just do the human-readable "this is the high-level overview of that
-> the pull request contains" into the tag message.
-> 
->                        Linus
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Ok. Sorry for the noise, and thanks for pulling the changes.
+Uprobes executes the original instruction at a probed location out of
+line. For this, we allocate a page (per mm) upon the first uprobe hit,
+in the process' user address space, divide it into slots that are used
+to store the actual instructions to be singlestepped.
 
-Guenter
+Care is taken to ensure that the allocation is in an unmapped area as
+close to the top of the user address space as possible, with appropriate
+permission settings to keep selinux like frameworks happy.
+
+Upon a uprobe hit, a free slot is acquired, and is released after the
+singlestep completes.
+
+[ Folded a fix for build issue on powerpc fixed and reported by Stephen
+Rothwell]
+
+Lots of improvements courtesy suggestions/inputs from Peter and Oleg.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+
+Changelog:
+ (v5)
+ - no more spin lock needed for slot allocation.
+ - use install_special_mapping to add a vma. (previous approach used
+   init_creds)
+ - set uprobes_xol_area while holding map_sem exclusively.
+
+ include/linux/mm_types.h |    4 +
+ include/linux/uprobes.h  |   30 ++++++
+ kernel/events/uprobes.c  |  215 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/fork.c            |    2 
+ 4 files changed, 251 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 3cc3062..9ade86e 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -12,6 +12,7 @@
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+ #include <linux/page-debug-flags.h>
++#include <linux/uprobes.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
+ 
+@@ -388,6 +389,9 @@ struct mm_struct {
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+ 	struct cpumask cpumask_allocation;
+ #endif
++#ifdef CONFIG_UPROBES
++	struct uprobes_xol_area *uprobes_xol_area;
++#endif
+ };
+ 
+ static inline void mm_init_cpumask(struct mm_struct *mm)
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 5ec778f..cc1310f 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -28,6 +28,8 @@
+ #include <linux/rbtree.h>
+ 
+ struct vm_area_struct;
++struct mm_struct;
++struct inode;
+ 
+ #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
+ # include <asm/uprobes.h>
+@@ -76,6 +78,26 @@ struct uprobe_task {
+ 	unsigned long			vaddr;
+ };
+ 
++/*
++ * On a breakpoint hit, thread contests for a slot.  It frees the
++ * slot after singlestep. Currently a fixed number of slots are
++ * allocated.
++ */
++
++struct uprobes_xol_area {
++	wait_queue_head_t 	wq;		/* if all slots are busy */
++	atomic_t 		slot_count;	/* number of in-use slots */
++	unsigned long 		*bitmap;	/* 0 = free slot */
++	struct page 		*page;
++
++	/*
++	 * We keep the vma's vm_start rather than a pointer to the vma
++	 * itself.  The probed process or a naughty kernel module could make
++	 * the vma go away, and we must handle that reasonably gracefully.
++	 */
++	unsigned long 		vaddr;		/* Page(s) of instruction slots */
++};
++
+ extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+ extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
+ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+@@ -90,6 +112,8 @@ extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+ extern void uprobe_notify_resume(struct pt_regs *regs);
+ extern bool uprobe_deny_signal(void);
+ extern bool __weak arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
++extern void uprobe_free_xol_area(struct mm_struct *mm);
++extern void uprobe_reset_xol_area(struct mm_struct *mm);
+ #else /* !CONFIG_UPROBES */
+ static inline int
+ uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
+@@ -121,5 +145,11 @@ static inline void uprobe_free_utask(struct task_struct *t)
+ static inline void uprobe_copy_process(struct task_struct *t)
+ {
+ }
++static inline void uprobe_free_xol_area(struct mm_struct *mm)
++{
++}
++static inline void uprobe_reset_xol_area(struct mm_struct *mm)
++{
++}
+ #endif /* !CONFIG_UPROBES */
+ #endif	/* _LINUX_UPROBES_H */
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index b807d15..cdad57f 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -35,6 +35,9 @@
+ 
+ #include <linux/uprobes.h>
+ 
++#define UINSNS_PER_PAGE			(PAGE_SIZE/UPROBE_XOL_SLOT_BYTES)
++#define MAX_UPROBE_XOL_SLOTS		UINSNS_PER_PAGE
++
+ static struct srcu_struct uprobes_srcu;
+ static struct rb_root uprobes_tree = RB_ROOT;
+ 
+@@ -1042,6 +1045,213 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	return ret;
+ }
+ 
++/* Slot allocation for XOL */
++static int xol_add_vma(struct uprobes_xol_area *area)
++{
++	struct mm_struct *mm;
++	int ret;
++
++	area->page = alloc_page(GFP_HIGHUSER);
++	if (!area->page)
++		return -ENOMEM;
++
++	ret = -EALREADY;
++	mm = current->mm;
++
++	down_write(&mm->mmap_sem);
++	if (mm->uprobes_xol_area)
++		goto fail;
++
++	ret = -ENOMEM;
++
++	/* Try to map as high as possible, this is only a hint. */
++	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE, PAGE_SIZE, 0, 0);
++	if (area->vaddr & ~PAGE_MASK) {
++		ret = area->vaddr;
++		goto fail;
++	}
++
++	ret = install_special_mapping(mm, area->vaddr, PAGE_SIZE,
++				VM_EXEC|VM_MAYEXEC|VM_DONTCOPY|VM_IO, &area->page);
++	if (ret)
++		goto fail;
++
++	smp_wmb();	/* pairs with get_uprobes_xol_area() */
++	mm->uprobes_xol_area = area;
++	ret = 0;
++
++fail:
++	up_write(&mm->mmap_sem);
++	if (ret)
++		__free_page(area->page);
++
++	return ret;
++}
++
++static struct uprobes_xol_area *get_uprobes_xol_area(struct mm_struct *mm)
++{
++	struct uprobes_xol_area *area;
++
++	area = mm->uprobes_xol_area;
++	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
++
++	return area;
++}
++
++/*
++ * xol_alloc_area - Allocate process's uprobes_xol_area.
++ * This area will be used for storing instructions for execution out of
++ * line.
++ *
++ * Returns the allocated area or NULL.
++ */
++static struct uprobes_xol_area *xol_alloc_area(void)
++{
++	struct uprobes_xol_area *area;
++
++	area = kzalloc(sizeof(*area), GFP_KERNEL);
++	if (unlikely(!area))
++		return NULL;
++
++	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long), GFP_KERNEL);
++
++	if (!area->bitmap)
++		goto fail;
++
++	init_waitqueue_head(&area->wq);
++	if (!xol_add_vma(area))
++		return area;
++
++fail:
++	kfree(area->bitmap);
++	kfree(area);
++
++	return get_uprobes_xol_area(current->mm);
++}
++
++/*
++ * uprobe_free_xol_area - Free the area allocated for slots.
++ */
++void uprobe_free_xol_area(struct mm_struct *mm)
++{
++	struct uprobes_xol_area *area = mm->uprobes_xol_area;
++
++	if (!area)
++		return;
++
++	put_page(area->page);
++	kfree(area->bitmap);
++	kfree(area);
++}
++
++/*
++ * uprobe_reset_xol_area - Free the area allocated for slots.
++ */
++void uprobe_reset_xol_area(struct mm_struct *mm)
++{
++	mm->uprobes_xol_area = NULL;
++}
++
++/*
++ *  - search for a free slot.
++ */
++static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
++{
++	unsigned long slot_addr;
++	int slot_nr;
++
++	do {
++		slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
++		if (slot_nr < UINSNS_PER_PAGE) {
++			if (!test_and_set_bit(slot_nr, area->bitmap))
++				break;
++
++			slot_nr = UINSNS_PER_PAGE;
++			continue;
++		}
++		wait_event(area->wq, (atomic_read(&area->slot_count) < UINSNS_PER_PAGE));
++	} while (slot_nr >= UINSNS_PER_PAGE);
++
++	slot_addr = area->vaddr + (slot_nr * UPROBE_XOL_SLOT_BYTES);
++	atomic_inc(&area->slot_count);
++
++	return slot_addr;
++}
++
++/*
++ * xol_get_insn_slot - If was not allocated a slot, then
++ * allocate a slot.
++ * Returns the allocated slot address or 0.
++ */
++static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot_addr)
++{
++	struct uprobes_xol_area *area;
++	unsigned long offset;
++	void *vaddr;
++
++	area = get_uprobes_xol_area(current->mm);
++	if (!area) {
++		area = xol_alloc_area();
++		if (!area)
++			return 0;
++	}
++	current->utask->xol_vaddr = xol_take_insn_slot(area);
++
++	/*
++	 * Initialize the slot if xol_vaddr points to valid
++	 * instruction slot.
++	 */
++	if (unlikely(!current->utask->xol_vaddr))
++		return 0;
++
++	current->utask->vaddr = slot_addr;
++	offset = current->utask->xol_vaddr & ~PAGE_MASK;
++	vaddr = kmap_atomic(area->page);
++	memcpy(vaddr + offset, uprobe->arch.insn, MAX_UINSN_BYTES);
++	kunmap_atomic(vaddr);
++
++	return current->utask->xol_vaddr;
++}
++
++/*
++ * xol_free_insn_slot - If slot was earlier allocated by
++ * @xol_get_insn_slot(), make the slot available for
++ * subsequent requests.
++ */
++static void xol_free_insn_slot(struct task_struct *tsk)
++{
++	struct uprobes_xol_area *area;
++	unsigned long vma_end;
++	unsigned long slot_addr;
++
++	if (!tsk->mm || !tsk->mm->uprobes_xol_area || !tsk->utask)
++		return;
++
++	slot_addr = tsk->utask->xol_vaddr;
++
++	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
++		return;
++
++	area = tsk->mm->uprobes_xol_area;
++	vma_end = area->vaddr + PAGE_SIZE;
++	if (area->vaddr <= slot_addr && slot_addr < vma_end) {
++		unsigned long offset;
++		int slot_nr;
++
++		offset = slot_addr - area->vaddr;
++		slot_nr = offset / UPROBE_XOL_SLOT_BYTES;
++		if (slot_nr >= UINSNS_PER_PAGE)
++			return;
++
++		clear_bit(slot_nr, area->bitmap);
++		atomic_dec(&area->slot_count);
++		if (waitqueue_active(&area->wq))
++			wake_up(&area->wq);
++
++		tsk->utask->xol_vaddr = 0;
++	}
++}
++
+ /**
+  * uprobe_get_swbp_addr - compute address of swbp given post-swbp regs
+  * @regs: Reflects the saved state of the task after it has hit a breakpoint
+@@ -1070,6 +1280,7 @@ void uprobe_free_utask(struct task_struct *t)
+ 	if (utask->active_uprobe)
+ 		put_uprobe(utask->active_uprobe);
+ 
++	xol_free_insn_slot(t);
+ 	kfree(utask);
+ 	t->utask = NULL;
+ }
+@@ -1108,6 +1319,9 @@ static struct uprobe_task *add_utask(void)
+ static int
+ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long vaddr)
+ {
++	if (xol_get_insn_slot(uprobe, vaddr) && !arch_uprobe_pre_xol(uprobe, regs))
++		return 0;
++
+ 	return -EFAULT;
+ }
+ 
+@@ -1252,6 +1466,7 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
+ 	utask->active_uprobe = NULL;
+ 	utask->state = UTASK_RUNNING;
+ 	user_disable_single_step(current);
++	xol_free_insn_slot(current);
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	recalc_sigpending(); /* see uprobe_deny_signal() */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 2b4e25f..41bc33e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -554,6 +554,7 @@ void mmput(struct mm_struct *mm)
+ 	might_sleep();
+ 
+ 	if (atomic_dec_and_test(&mm->mm_users)) {
++		uprobe_free_xol_area(mm);
+ 		exit_aio(mm);
+ 		ksm_exit(mm);
+ 		khugepaged_exit(mm); /* must run before exit_mmap */
+@@ -788,6 +789,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+ #endif
++	uprobe_reset_xol_area(mm);
+ 
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
 
 
