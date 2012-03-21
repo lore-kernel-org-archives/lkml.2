@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab2CUWYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:24:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35255 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202Ab2CUWYw (ORCPT
+	id S932324Ab2CUW03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:26:29 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49747 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240Ab2CUW02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:24:52 -0400
-Date: Wed, 21 Mar 2012 23:25:28 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Rebecca Schultz Zavin <rebecca@android.com>
-Cc: Rob Clark <rob.clark@linaro.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [PATCH] [RFC] dma-buf: mmap support
-Message-ID: <20120321222528.GA20712@phenom.ffwll.local>
-Mail-Followup-To: Rebecca Schultz Zavin <rebecca@android.com>,
-	Rob Clark <rob.clark@linaro.org>, linaro-mm-sig@lists.linaro.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	linux-media@vger.kernel.org
-References: <1332276785-1440-1-git-send-email-daniel.vetter@ffwll.ch>
- <CAF6AEGsBZ5BBBBGKZ5VSJOr70=9Qpp1pq+2m4d_vgsveW+3Atw@mail.gmail.com>
- <CALJcvx5+g2+tZPp-2PJg04AOzYuv0eZyih542M+ghjQLFeBmFg@mail.gmail.com>
+	Wed, 21 Mar 2012 18:26:28 -0400
+Date: Wed, 21 Mar 2012 23:26:22 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] clk: wm831x: Add initial WM831x clock driver
+Message-ID: <20120321222622.GG29317@pengutronix.de>
+References: <1332360082-25092-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1332360082-25092-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALJcvx5+g2+tZPp-2PJg04AOzYuv0eZyih542M+ghjQLFeBmFg@mail.gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
+In-Reply-To: <1332360082-25092-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:53:49 up 130 days,  5:40, 39 users,  load average: 0.08, 0.09,
+ 0.09
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 10:46:14AM -0700, Rebecca Schultz Zavin wrote:
-> I want to make sure I understand how this would work.  I've been planning
-> on making cache maintenance implicit, and most of the corresponding
-> userspace components I've seen for android expect to do implicit cache
-> maintenance on these buffers if they need cached mappings.  The android
-> framework has a logical place for this maintenance to take place.  I assume
-> that you'd detect a buffer leaving the cpu domain by using the
-> dma_data_direction passed to dma_buf_map_attachment?  We're definitely
-> pushing a bunch of complexity into the exporter, that at least on android
-> could easily be covered by an explicit api.  I'm not dead set against it, I
-> just want to make sure I get it right if we go down this road.
+On Wed, Mar 21, 2012 at 08:01:22PM +0000, Mark Brown wrote:
+> The WM831x and WM832x series of PMICs contain a flexible clocking
+> subsystem intended to provide always on and system core clocks.  It
+> features:
+> 
+> - A 32.768kHz crystal oscillator which can optionally be used to pass
+>   through an externally generated clock.
+> - A FLL which can be clocked from either the 32.768kHz oscillator or
+>   the CLKIN pin.
+> - A CLKOUT pin which can bring out either the oscillator or the FLL
+>   output.
+> - The 32.768kHz clock can also optionally be brought out on the GPIO
+>   pins of the device.
+> 
+> This driver fully supports the 32.768kHz oscillator and CLKOUT.  The FLL
+> is supported only in AUTO mode, the full flexibility of the FLL cannot
+> currently be used.
+> 
+> Due to a lack of access to systems where the core SoC has been converted
+> to use the generic clock API this driver has been compile tested only.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
 
-Hm, you're talking about implicit cache management, which I read as: The
-kernel does some magic so that userspace doesn't have to care. But I guess
-you mean what I'd call explicit cache management, where userspace tells
-the kernel which ranges to invalidate/flush?
+[...]
 
-The idea is that the exporter would invalidate cpu caches at fault time.
-And when a dma-device wants to read from it (using the direction argument
-of dma_buf_map_attachement) it would shoot down the mappings, flush caches
-and then allow the dma op to happen. Note that this is obvously only
-required if the mapping is not coherent (uc/wc on arm).
+> +
+> +static unsigned long wm831x_clkout_recalc_rate(struct clk_hw *hw,
+> +					       unsigned long parent_rate)
+> +{
+> +	return parent_rate;
+> +}
 
-I agree that for cached mappings this will suck, but to get dma-buf of the
-ground I prefer a simpler interface at the beginning, which could get
-extended later on. The issue is that I expect that a few importers simply
-can't hanlde cache management with explicit flush/invalidate ioctl calls
-from userspace and we hence need coherently-looking mappings anyway.
+You should be able to drop this. The clock framework will use the parent
+rate automatically if recalc_rate is not present.
 
-Imo the best way to enable cached mappings is to later on extend dma-buf
-(as soon as we have some actual exporters/importers in the mainline
-kernel) with an optional cached_mmap interface which requires explict
-prepare_mmap_access/finish_mmap_acces calls. Then if both exporter and
-importer support this, it could get used - otherwise the dma-buf layer
-could transparently fall back to coherent mappings.
+> +
+> +static int wm831x_clkout_set_parent(struct clk_hw *hw, u8 parent)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  clkout_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +
+> +	if (parent > ARRAY_SIZE(wm831x_clkout_parents))
+> +		return -EINVAL;
 
-Cheers, Daniel
+Unless you mistrust the clock framework isn't necessary. The framework
+checks this already.
+
+> +
+> +static __devinit int wm831x_clk_probe(struct platform_device *pdev)
+> +{
+> +	struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
+> +	struct wm831x_clk *clkdata;
+> +	int ret;
+> +
+> +	clkdata = devm_kzalloc(&pdev->dev, sizeof(*clkdata), GFP_KERNEL);
+> +	if (!clkdata)
+> +		return -ENOMEM;
+> +
+> +	/* XTAL_ENA can only be set via OTP/InstantConfig so just read once */
+> +	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +			ret);
+> +		return ret;
+> +	}
+> +	clkdata->xtal_ena = ret & WM831X_XTAL_ENA;
+> +
+> +	if (!clk_register(&pdev->dev, "xtal", &wm831x_xtal_ops,
+> +			  &clkdata->xtal_hw, NULL, 0, CLK_IS_ROOT))
+> +		return -EINVAL;
+
+The clock names are unique identifiers for the clock, so clocks in
+drivers should probably have dev_name encoded into them.
+
+You could also use the fixed rate generic clock here.
+
+Sascha
+
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
