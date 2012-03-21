@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2CUTEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 15:04:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45253 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2CUTEh (ORCPT
+	id S1760023Ab2CUTHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 15:07:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44872 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757313Ab2CUTHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 15:04:37 -0400
-Message-ID: <4F6A2642.1060107@redhat.com>
-Date: Wed, 21 Mar 2012 14:04:34 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 21 Mar 2012 15:07:45 -0400
+Date: Wed, 21 Mar 2012 19:07:42 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Paul Walmsley <paul@pwsan.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 1/3] Documentation: common clk API
+Message-ID: <20120321190741.GL3226@opensource.wolfsonmicro.com>
+References: <4F6A2042.9030302@codeaurora.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Qemu-devel] [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com> <4F5DBC26.7060204@cn.fujitsu.com> <4F5DD0FD.9070904@redhat.com> <20120313091843.GB3800@redhat.com> <4F5F25BF.7060100@redhat.com>
-In-Reply-To: <4F5F25BF.7060100@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qo7zVO9a9OQ5oQtr"
+Content-Disposition: inline
+In-Reply-To: <4F6A2042.9030302@codeaurora.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 05:47 AM, Avi Kivity wrote:
-> On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
->> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
->>> On 03/12/2012 11:04 AM, Wen Congyang wrote:
->>>> Do you have any other comments about this patch?
->>>>
->>>
->>> Not really, but I'm not 100% convinced the patch is worthwhile.  It's
->>> likely to only be used by Linux, which has kexec facilities, and you can
->>> put talk to management via virtio-serial and describe the crash in more
->>> details than a simple hypercall.
->>
->> As mentioned before, I don't think virtio-serial is a good fit for this.
->> We want something that is simple&  guaranteed always available. Using
->> virtio-serial requires significant setup work on both the host and guest.
->
-> So what?  It needs to be done anyway for the guest agent.
->
->> Many management application won't know to make a vioserial device available
->> to all guests they create.
->
-> Then they won't know to deal with the panic event either.
->
->> Most administrators won't even configure kexec,
->> let alone virtio serial on top of it.
->
-> It should be done by the OS vendor, not the individual admin.
->
->> The hypercall requires zero host
->> side config, and zero guest side config, which IMHO is what we need for
->> this feature.
->
-> If it was this one feature, yes.  But we keep getting more and more
-> features like that and we bloat the hypervisor.  There's a reason we
-> have a host-to-guest channel, we should use it.
 
-The problem is that virtio-serial sucks for something like this.
+--qo7zVO9a9OQ5oQtr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We have two options I think:
+On Wed, Mar 21, 2012 at 11:38:58AM -0700, Saravana Kannan wrote:
 
-1) We could reserve a portion of the hypercall space to be deferred to userspace 
-for stuff like this.
+> >So it would be interesting to know more about why you (or anyone else)
+> >perceive that the Kconfig changes would be harmful.
 
-2) We could invent a new hypercall like facility that was less bloated than 
-virtio-serial for stuff like this using MMIO/PIO.
+> But the enthusiasm of the clock driver developers doesn't
+> necessarily translate to users of the clock APIs (other driver
+> devs). My worry with marking it as experimental in Kconfig and to a
+> certain extent in the documentation is that it will discourage the
+> driver devs from switching to the new APIs. If no one is using the
+> new APIs, then platforms can't switch to the common clock framework
 
-Regards,
+These aren't new APIs, the clock API has been around since forever.
+For driver authors working on anything that isn't platform specific the
+issue has been that it's not implemented at all on the overwhelming
+majority of architectures and those that do all have their own random
+implementations with their own random quirks and with no ability for
+anything except the platform to even try to do incredibly basic stuff
+like register a new clock.
 
-Anthony Liguori
+Simply having something, anything, in place even if it's going to churn
+is a massive step forward here for people working with clocks.
 
->
+--qo7zVO9a9OQ5oQtr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPaibGAAoJEBus8iNuMP3dIVMP/36TADmR0rj2A+LkfBqA+QE2
+K/+IO+gX8K1Hl0j2DxasF7kDVici6nsgtD7fVpBDnuJQyNd9JHM/a/nA8HW9TX14
+wQ1OPB4jOlx0/8SI/4a4fz+FDG/MjLiZTMHej8p8uP1ElC+OSdbwZ3lg86MZoLTJ
+8Ld6hr3+rIWj7+/a/R0gcBL7DndIHX66xQ8qOSIi0UhE/JI04v0WduIUZkgRxJAN
+mlARobneDCNQAwLlaPXrWxuKs1uiVwqRzbizC+YbaW/NsE6v6beUCvkeWThN8T/g
+piEu4dYg7S1R0qhebnVZujln4bG1WkqMIRv28rsC64YxoNas8qCjBwHUyUDq3cP1
+h+06e8yJUS7b8x/9l/1QzAO8NK2M6vT1BW1WNgbTeUjCh3uIyG74ftHKmV10YawW
+fv6t+L+d/3EayZch9o0no/jWt4kTVWHKujRK7vFiqlCYtxQm1VicGkzY4TqmlvMT
+wCUitBglQoAhXU3GH3mKfilrw2M2esd68S6a2bQMrM5U+GFKcrEEL7tAC1bbRSUo
+zaWswHf6b6UTeAz/7o4Xya4TmdYv23ZlQcb4rTf9XQB81msml8kc8g+nDnfrcbPX
+bN35B9WLH/+fhHzsERbvBll8dvyLGOZuTOukMEC5pdZcbHERmHCdJDCxcxBjmu3D
+D3m1SLPZX/aKztHTyU+2
+=C+lG
+-----END PGP SIGNATURE-----
+
+--qo7zVO9a9OQ5oQtr--
