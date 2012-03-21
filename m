@@ -1,122 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2CUWpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:45:44 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50953 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab2CUWpl (ORCPT
+	id S1753028Ab2CUWrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:47:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51341 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab2CUWrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:45:41 -0400
-Message-ID: <1332369965.3858.68.camel@key-ThinkPad-W510>
-Subject: Re: [PATCH 15/17] powerpc: crypto: sysfs routines and docs for the
- nx device driver
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        rcj@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 17:46:05 -0500
-In-Reply-To: <20120321221122.GA30748@kroah.com>
-References: <1332365297.3858.5.camel@key-ThinkPad-W510>
-	 <1332366080.3858.52.camel@key-ThinkPad-W510>
-	 <20120321221122.GA30748@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 18:47:23 -0400
+Date: Wed, 21 Mar 2012 15:47:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] thp: add HPAGE_PMD_* definitions for
+ !CONFIG_TRANSPARENT_HUGEPAGE
+Message-Id: <20120321154721.3b8884bd.akpm@linux-foundation.org>
+In-Reply-To: <CAP=VYLoGSckJH+2GytZN0V0P3Uuv-PiVneKbFsVb5kQa3kcTCQ@mail.gmail.com>
+References: <1331591456-20769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1331591456-20769-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<CAP=VYLoGSckJH+2GytZN0V0P3Uuv-PiVneKbFsVb5kQa3kcTCQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032122-2398-0000-0000-000005390B64
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, 21 Mar 2012 18:07:41 -0400
+Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-On Wed, 2012-03-21 at 15:11 -0700, Greg KH wrote:
-> On Wed, Mar 21, 2012 at 04:41:20PM -0500, Kent Yoder wrote:
-> > These routines add sysfs files supporting the Power7+ in-Nest encryption
-> > accelerator driver.
-> > 
-> > Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-> > ---
-> >  Documentation/powerpc/pfo-nx-crypto.txt |   52 ++++++++
+> On Mon, Mar 12, 2012 at 6:30 PM, Naoya Horiguchi
+> <n-horiguchi@ah.jp.nec.com> wrote:
+> > These macros will be used in later patch, where all usage are expected
+> > to be optimized away without #ifdef CONFIG_TRANSPARENT_HUGEPAGE.
+> > But to detect unexpected usages, we convert existing BUG() to BUILD_BUG().
 > 
-> Please put sysfs file information in Documentation/ABI/ where it
-> belongs.
+> Just a heads up that this showed up in linux-next today as the
+> cause of a new build failure for an ARM board:
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/5930053/
 
-  Will do, I see debugfs docs in there too.
+The internet started working again.
 
-> Shouldn't the first just be debugfs files, as no "normal" user will ever
-> care about such a thing?
-> 
-> Actually, why are these sysfs files at all, how about all of this going
-> into debugfs?
+mm/pgtable-generic.c: In function 'pmdp_clear_flush_young':
+mm/pgtable-generic.c:76: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
 
-  Yes, that's fine.  These really are just for checking 'am I really
-doing hardware encryption' and debugging any return codes that may come
-back from the hcall. The error return is probably more easily dev_err'd
-though.
+I guess we shouldn't be evaluating HPAGE_PMD_MASK at all if
+!CONFIG_TRANSPARENT_HUGEPAGE, so...
 
-> 
-> > +Error Detection
-> > +===============
-> 
-> <snip>
-> 
-> What can anyone do with any of these files?  What use are they to users?
-> 
-> > +Device Use
-> > +==========
-> 
-> Again, what does a user care about these items for?
-> 
-> > +int
-> > +nx_sysfs_init(struct device_driver *drv)
-> > +{
-> > +	int rc;
-> > +
-> > +	rc = driver_create_file(drv, &driver_attr_aes_ops);
-> > +	if (rc)
-> > +		goto out;
-> 
-> <snip>
-> 
-> Oh, ${DIETY}, no.  Please don't create files one by one, we do have
-> functions that do all of this for you automatically, why aren't you
-> using them?
-
-  Ok, I'll go look for some debugfs wrappers.
-
-> > +void
-> > +nx_sysfs_fini(struct device_driver *drv)
-> > +{
-> > +	driver_remove_file(drv, &driver_attr_sync_ops);
-> > +	driver_remove_file(drv, &driver_attr_aes_bytes);
-> > +	driver_remove_file(drv, &driver_attr_aes_ops);
-> > +	driver_remove_file(drv, &driver_attr_sha256_bytes);
-> > +	driver_remove_file(drv, &driver_attr_sha256_ops);
-> > +	driver_remove_file(drv, &driver_attr_sha512_bytes);
-> > +	driver_remove_file(drv, &driver_attr_sha512_ops);
-> 
-> Same here, don't do this, do it all at once.
-> 
-> > +}
-> 
-> Who is calling these functions?  Where in the device lifecycle are the
-> files being created?  Did you just race userspace with how they are
-> created, or are you doing it "properly"?  (hint, odds are, as you are
-> trying to manually create and remove these by hand, you aren't doing it
-> properly...)
-
-  We're not racing here, other than with cat.  Just so an admin can see
-his workload is getting offloaded.
-
-Thanks,
-Kent
-
-> thanks,
-> 
-> greg k-h
-> 
-
+--- a/mm/pgtable-generic.c~thp-add-hpage_pmd_-definitions-for-config_transparent_hugepage-fix
++++ a/mm/pgtable-generic.c
+@@ -70,10 +70,11 @@ int pmdp_clear_flush_young(struct vm_are
+ 			   unsigned long address, pmd_t *pmdp)
+ {
+ 	int young;
+-#ifndef CONFIG_TRANSPARENT_HUGEPAGE
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
++#else
+ 	BUG();
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+-	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+ 	young = pmdp_test_and_clear_young(vma, address, pmdp);
+ 	if (young)
+ 		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
+_
 
