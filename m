@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab2CUGDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:03:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35798 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754359Ab2CUGDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:03:32 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] spi: omap2_mcspi: Make the runtime functions depend on CONFIG_PM_RUNTIME
-Date: Wed, 21 Mar 2012 11:33:15 +0530
-Message-ID: <1332309795-5075-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756591Ab2CUGFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:05:55 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52312 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab2CUGFx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 02:05:53 -0400
+X-Originating-IP: 217.70.178.129
+X-Originating-IP: 50.43.46.74
+Date: Tue, 20 Mar 2012 23:05:44 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Check for quoted strings broken across lines
+Message-ID: <20120321060544.GA2831@leaf>
+References: <20120320210644.GA2493@leaf>
+ <1332293056.27711.12.camel@joe2Laptop>
+ <20120321042805.GB1979@leaf>
+ <1332304558.29403.17.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332304558.29403.17.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes the function omap_mcspi_runtime_resume depend on CONFIG_PM_RUNTIME.
+On Tue, Mar 20, 2012 at 09:35:58PM -0700, Joe Perches wrote:
+> On Tue, 2012-03-20 at 21:28 -0700, Josh Triplett wrote:
+> > The heuristics in the patch I submitted almost completely eliminate
+> > false positives, which makes my patch suitable for use without --strict.
+> 
+> Yup, this patch is better than the one I submitted.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |   41 +++++++++++++++++++++++------------------
- 1 files changed, 23 insertions(+), 18 deletions(-)
+OK.  Andrew, could you substitute my patch for Joe's in your tree?
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index cb2c0e3..f9d694d 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -248,23 +248,6 @@ static void omap2_mcspi_set_master_mode(struct spi_master *master)
- 	omap2_mcspi_ctx[master->bus_num - 1].modulctrl = l;
- }
- 
--static void omap2_mcspi_restore_ctx(struct omap2_mcspi *mcspi)
--{
--	struct spi_master *spi_cntrl;
--	struct omap2_mcspi_cs *cs;
--	spi_cntrl = mcspi->master;
--
--	/* McSPI: context restore */
--	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_MODULCTRL,
--			omap2_mcspi_ctx[spi_cntrl->bus_num - 1].modulctrl);
--
--	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_WAKEUPENABLE,
--			omap2_mcspi_ctx[spi_cntrl->bus_num - 1].wakeupenable);
--
--	list_for_each_entry(cs, &omap2_mcspi_ctx[spi_cntrl->bus_num - 1].cs,
--			node)
--		__raw_writel(cs->chconf0, cs->base + OMAP2_MCSPI_CHCONF0);
--}
- static void omap2_mcspi_disable_clocks(struct omap2_mcspi *mcspi)
- {
- 	pm_runtime_put_sync(mcspi->dev);
-@@ -1066,6 +1049,26 @@ static int __init omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static void omap2_mcspi_restore_ctx(struct omap2_mcspi *mcspi)
-+{
-+	struct spi_master *spi_cntrl;
-+	struct omap2_mcspi_cs *cs;
-+
-+	spi_cntrl = mcspi->master;
-+
-+	/* McSPI: context restore */
-+	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_MODULCTRL,
-+			omap2_mcspi_ctx[spi_cntrl->bus_num - 1].modulctrl);
-+
-+	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_WAKEUPENABLE,
-+			omap2_mcspi_ctx[spi_cntrl->bus_num - 1].wakeupenable);
-+
-+	list_for_each_entry(cs, &omap2_mcspi_ctx[spi_cntrl->bus_num - 1].cs,
-+			node)
-+		__raw_writel(cs->chconf0, cs->base + OMAP2_MCSPI_CHCONF0);
-+}
-+
- static int omap_mcspi_runtime_resume(struct device *dev)
- {
- 	struct omap2_mcspi	*mcspi;
-@@ -1077,7 +1080,9 @@ static int omap_mcspi_runtime_resume(struct device *dev)
- 
- 	return 0;
- }
--
-+#else
-+#define	omap_mcspi_runtime_resume	NULL
-+#endif
- 
- static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- {
--- 
-1.7.1
+> One improvement might be to check for a line continuation \
+> on $prevline and still produce a warning in that case.
 
+I'd suggest doing that one as a separate check, "unnecessary line
+continuation", which should flag any use of a line continuation other
+than with a preprocessor directive.  I don't think combining that with
+the wrapped-string check makes sense.
+
+- Josh Triplett
