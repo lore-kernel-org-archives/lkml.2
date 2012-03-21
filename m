@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566Ab2CUQVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:21:09 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41039 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759357Ab2CUQVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:21:06 -0400
-Message-ID: <4F69FFEF.4030007@xenotime.net>
-Date: Wed, 21 Mar 2012 09:21:03 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1759535Ab2CUQW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:22:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756059Ab2CUQWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 12:22:25 -0400
+Date: Wed, 21 Mar 2012 17:22:13 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH 1/3] genirq: Minor readablity improvement in
+ irq_wake_thread()
+Message-ID: <20120321162212.GO24806@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-CC: tiwai@suse.de, kay.sievers@vrfy.org, mchehab@infradead.org, perex@perex.cz,
-        hjlipp@web.de, davem@davemloft.net, w.sang@pengutronix.de,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHES v2 2/2] Remove references to /etc/modprobe.conf
-References: <s5hwr6ksfm7.wl%tiwai@suse.de> <1331964860-25608-1-git-send-email-lucas.demarchi@profusion.mobi> <CAMOw1v6oVQ2BM8JC4GxB3zm49Sn9AsDEtYZ7RVKF16e=PWLewQ@mail.gmail.com>
-In-Reply-To: <CAMOw1v6oVQ2BM8JC4GxB3zm49Sn9AsDEtYZ7RVKF16e=PWLewQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 10:45 AM, Lucas De Marchi wrote:
+exit_irq_thread() clears IRQTF_RUNTHREAD flag and drops the thread's bit in
+desc->threads_oneshot then. The bit must not be set again in between and it
+does not, since irq_wake_thread() sees PF_EXITING flag first and returns.
 
-> On Sat, Mar 17, 2012 at 3:14 AM, Lucas De Marchi
-> <lucas.demarchi@profusion.mobi> wrote:
->> Usage of /etc/modprobe.conf file was deprecated by module-init-tools and
->> is no longer parsed by new kmod tool. References to this file are
->> replaced in Documentation, comments and Kconfig according to the
->> context.
->>
->> There are also some references to the old /etc/modules.conf from 2.4
->> kernels that are being removed.
->>
->> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
->> ---
->>  Documentation/aoe/aoe.txt                       |    2 +-
->>  Documentation/aoe/autoload.sh                   |    4 +--
->>  Documentation/blockdev/floppy.txt               |    2 +-
->>  Documentation/fb/intel810.txt                   |    2 +-
->>  Documentation/fb/intelfb.txt                    |    2 +-
->>  Documentation/i2c/busses/scx200_acb             |    2 +-
->>  Documentation/ide/ide.txt                       |    2 +-
->>  Documentation/isdn/README.gigaset               |   16 ++++-----
->>  Documentation/laptops/sonypi.txt                |    2 +-
->>  Documentation/mono.txt                          |    8 ++---
->>  Documentation/networking/baycom.txt             |    2 +-
->>  Documentation/networking/bonding.txt            |   43 ++++++++++-------------
->>  Documentation/networking/dl2k.txt               |   11 +++---
->>  Documentation/networking/e100.txt               |    6 ++--
->>  Documentation/networking/ipv6.txt               |    6 ++--
->>  Documentation/networking/ixgb.txt               |    6 ++--
->>  Documentation/networking/ltpc.txt               |    2 +-
->>  Documentation/networking/vortex.txt             |    6 ++--
->>  Documentation/parport.txt                       |   13 ++++---
->>  Documentation/s390/3270.txt                     |   21 ++++++-----
->>  Documentation/scsi/aic79xx.txt                  |    2 +-
->>  Documentation/scsi/aic7xxx.txt                  |    2 +-
->>  Documentation/scsi/osst.txt                     |    2 +-
->>  Documentation/serial/computone.txt              |    8 ++---
->>  Documentation/serial/rocket.txt                 |    2 +-
->>  Documentation/serial/stallion.txt               |    4 +--
->>  Documentation/sound/alsa/ALSA-Configuration.txt |   10 +++---
->>  Documentation/sound/alsa/Audiophile-Usb.txt     |    4 +--
->>  Documentation/sound/alsa/MIXART.txt             |    6 ++--
->>  Documentation/sound/alsa/OSS-Emulation.txt      |    2 +-
->>  Documentation/sound/oss/AudioExcelDSP16         |    6 ++--
->>  Documentation/sound/oss/CMI8330                 |    5 ++-
->>  Documentation/sound/oss/Introduction            |   10 +++---
->>  Documentation/sound/oss/Opti                    |    8 ++---
->>  Documentation/sound/oss/PAS16                   |    4 +--
->>  Documentation/sound/oss/README.modules          |    8 ++---
->>  Documentation/usb/power-management.txt          |    3 +-
->>  Documentation/video4linux/CQcam.txt             |   14 ++------
->>  Documentation/video4linux/Zoran                 |    2 +-
->>  Documentation/video4linux/bttv/Modules.conf     |    2 +-
->>  Documentation/video4linux/meye.txt              |    2 +-
->>  drivers/net/wan/Kconfig                         |    4 +--
->>  drivers/scsi/aic7xxx/aic79xx_osm.c              |    8 ++---
->>  drivers/scsi/aic7xxx/aic7xxx_osm.c              |    8 ++---
->>  drivers/staging/asus_oled/README                |    2 +-
->>  drivers/tty/isicom.c                            |    2 +-
->>  drivers/usb/serial/ftdi_sio.c                   |    3 +-
->>  drivers/usb/storage/Kconfig                     |    2 +-
->>  sound/core/seq/seq_dummy.c                      |    2 +-
->>  sound/drivers/Kconfig                           |    3 +-
->>  50 files changed, 138 insertions(+), 160 deletions(-)
-> 
-> I'm not sure who would take this patch. Changes are mostly in Documentation.
-> 
-> Randy, could you take this? Or do you want this patch to be split and
-> go through each subsystem maintainer?
-> 
-> Takahashi, any objections on the new version?
-> 
-> 
-> Lucas De Marchi
+Due to above the order or checking PF_EXITING and IRQTF_RUNTHREAD flags in
+irq_wake_thread() is important. This fix just makes it more visible in the
+source code.
 
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ kernel/irq/handle.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
 
-Yes, I'll apply it.  Thanks.
-
-
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 6ff84e6..bdb1803 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -54,14 +54,18 @@ static void warn_no_thread(unsigned int irq, struct irqaction *action)
+ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	/*
+-	 * Wake up the handler thread for this action. In case the
+-	 * thread crashed and was killed we just pretend that we
+-	 * handled the interrupt. The hardirq handler has disabled the
+-	 * device interrupt, so no irq storm is lurking. If the
++	 * In case the thread crashed and was killed we just pretend that
++	 * we handled the interrupt. The hardirq handler has disabled the
++	 * device interrupt, so no irq storm is lurking.
++	 */
++	if (action->thread->flags & PF_EXITING)
++		return;
++
++	/*
++	 * Wake up the handler thread for this action. If the
+ 	 * RUNTHREAD bit is already set, nothing to do.
+ 	 */
+-	if ((action->thread->flags & PF_EXITING) ||
+-	    test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags))
++	if (test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags))
+ 		return;
+ 
+ 	/*
 -- 
-~Randy
+1.7.7.6
+
