@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab2CUVDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:03:06 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:41236 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab2CUVDF (ORCPT
+	id S1754942Ab2CUVLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:11:13 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33057 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab2CUVLJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:03:05 -0400
+	Wed, 21 Mar 2012 17:11:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120321202702.GA16713@ioremap.net>
-References: <20120316121829.GA12685@ioremap.net> <1331904553.5406.34.camel@joe2Laptop>
- <20120316134314.GA19342@ioremap.net> <1331907127.5406.48.camel@joe2Laptop> <20120321202702.GA16713@ioremap.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 21 Mar 2012 14:02:43 -0700
-X-Google-Sender-Auth: 5iSyFTKN7QkuK3292fQQ1MdJ8HU
-Message-ID: <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
-Subject: Re: [take 3] pohmelfs: call for inclusion
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Joe Perches <joe@perches.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <1332181985-15209-1-git-send-email-dev@snitselaar.org>
+References: <1332181985-15209-1-git-send-email-dev@snitselaar.org>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Wed, 21 Mar 2012 14:10:47 -0700
+Message-ID: <CAPtuhTgRpCNBVc5u5Us05wT1tNyAqUM0sAAhyXox8ccA53vr4w@mail.gmail.com>
+Subject: Re: [PATCH] drivers/clk: add prompt for menuconfig entry
+To: Gerard Snitselaar <dev@snitselaar.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 1:27 PM, Evgeniy Polyakov <zbr@ioremap.net> wrote:
+On Mon, Mar 19, 2012 at 11:33 AM, Gerard Snitselaar <dev@snitselaar.org> wrote:
+> Building next-20120319 gives the following warning:
 >
-> I'm cooking up a tree hosted on ioremap.net for tomorrow, which will be
-> rebased against current tree. It will incorporate your -next pohmelfs patches.
+> drivers/clk/Kconfig:22: warning: menuconfig statement without prompt
+>
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
 
-Please don't rebase. Or if you want to make sure it's in clean form,
-at least rebase it on top of something *stable*, like the v3.3
-release. Not whatever random current state during the merge window.
+Hello Gerard,
 
-> Then I will send next pull request to Linus "always-keeping-silence" Torvalds
+Thanks for the patch!  This issue was resolved in the following thread:
+http://article.gmane.org/gmane.linux.kernel.next/21493
 
-I mainly just curse at people when they do something horribly bad.
-It's how I vent.
+Regards,
+Mike
 
-I can't really say that I tend to care deeply about the innards of
-some unusual filesystem that hopefully cannot possibly impact anything
-else. So as long as you keep people like Al happy (or at least not
-overly unhappy), I'm unlikely to worry too much.
-
-                       Linus
+> ---
+>  drivers/clk/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 82bcfbd..d857235 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -10,7 +10,7 @@ config HAVE_MACH_CLKDEV
+>        bool
+>
+>  menuconfig COMMON_CLK
+> -       bool
+> +       bool "Use common clock framework"
+>        select HAVE_CLK_PREPARE
+>        ---help---
+>          The common clock framework is a single definition of struct
+> --
+> 1.7.7.6
+>
