@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759646Ab2CUQ1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:27:31 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43757 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759194Ab2CUQ13 (ORCPT
+	id S1759450Ab2CUQas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:30:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53633 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758412Ab2CUQaq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:27:29 -0400
-Date: Wed, 21 Mar 2012 16:27:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Adrian McMenamin <adrianmcmenamin@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Adrian McMenamin <lkmladrian@gmail.com>, viro@zeniv.linux.org.uk,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Linux-sh <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH] VMUFAT filesystem [1/4]
-Message-ID: <20120321162726.GA27778@sirena.org.uk>
-References: <CAN628AFKSgd2nKY5Ga7JqhVWqAySRW8OpeLyykOwocn4K_a-qQ@mail.gmail.com>
- <20120321153317.GA30250@kroah.com>
- <CACwZE5RbGARjgNRuJuLquDY_THjspH20JMEbKqsZVwj4jJtFhw@mail.gmail.com>
- <CACwZE5TZdJoAUcB+BN2OB0UK0UajnuMPia0vgCZs8wM=3bNE7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACwZE5TZdJoAUcB+BN2OB0UK0UajnuMPia0vgCZs8wM=3bNE7Q@mail.gmail.com>
-X-Cookie: Steal this tagline.  I did.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 21 Mar 2012 12:30:46 -0400
+Message-ID: <1332347432.18960.497.camel@twins>
+Subject: Re: Regression in v3.4-rc0 " BUG: soft lockup - CPU#0 stuck for
+ 29s! [migration/0:6]..[<ffffffff810d3b8b>] stop_machine_cpu_stop+0x7b/0xf"
+From: Peter Zijlstra <peterz@infradead.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        gregkh@linuxfoundation.org, rjw@sisk.pl
+Date: Wed, 21 Mar 2012 17:30:32 +0100
+In-Reply-To: <1332345420.18960.495.camel@twins>
+References: <20120320235322.GA5416@phenom.dumpdata.com>
+	 <20120321152649.GA32737@phenom.dumpdata.com>
+	 <1332345420.18960.495.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 12:24:19AM +0800, Adrian McMenamin wrote:
+On Wed, 2012-03-21 at 16:57 +0100, Peter Zijlstra wrote:
+> On Wed, 2012-03-21 at 11:26 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Mar 20, 2012 at 07:53:22PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > Seeing this in v3.4-rc0 tree and didn't see that with v3.3:
+> > 
+> > Hey Peter,
+> > 
+> > Git bisection points this to the fault of
+> > 5fbd036b552f633abb394a319f7c62a5c86a9cd7 " sched: Cleanup cpu_active madness"
+> > 
+> > thoughts? (also attaching the .config) 
+> 
+> Argh.. so when is this? boot? No that's somewhat unexpected. I have one
+> report of funnies during a hotplug bash that I'm looking into, but I
+> haven't actually been able to reproduce that report myself either.
 
-> I guess the complaint is that I didn't include this with each bit. So,
-> apologies for that, I cut it up by hand to avoid a 1700 line single
-> patch. But I won't post it this way again, obviously
+is arch/x86/xen/smp.c:cpu_bringup() missing a call to
+notify_cpu_starting() before doing set_cpu_online()?
 
-Nope, there's some other issues (like the signoff being after the ---).
-Check the document again, and compare your mail with other patches.
+Also, shouldn't that also take the ipi_call_lock() around setting the
+cpu online?
