@@ -1,84 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab2CUJHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:07:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49709 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2CUJHU convert rfc822-to-8bit (ORCPT
+	id S1756813Ab2CUJIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:08:10 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:50124
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753270Ab2CUJIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:07:20 -0400
-Message-ID: <1332320819.18960.468.camel@twins>
-Subject: RE: [PATCH 1/1] scheduler: minor improvement to
- pick_next_highest_task_rt in linux-3.3
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael J. Wang" <mjwang@broadcom.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+	Wed, 21 Mar 2012 05:08:07 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 21 Mar 2012 17:19:20 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "sjg@chromium.org" <sjg@chromium.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-Date: Wed, 21 Mar 2012 10:06:59 +0100
-In-Reply-To: <2EF88150C0EF2C43A218742ED384C1BC0FC8438B@IRVEXCHMB08.corp.ad.broadcom.com>
-References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
-	 <20120321014050.GA19766@zhy>
-	 <2EF88150C0EF2C43A218742ED384C1BC0FC84327@IRVEXCHMB08.corp.ad.broadcom.com>
-	 <20120321021229.GB19766@zhy>
-	 <2EF88150C0EF2C43A218742ED384C1BC0FC8438B@IRVEXCHMB08.corp.ad.broadcom.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2 5/6] dt: Document Tegra20/30 pinctrl binding
+Message-ID: <20120321091919.GA18592@shlinux2.ap.freescale.net>
+References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
+ <1332265479-1260-5-git-send-email-swarren@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1332265479-1260-5-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 07:49 +0000, Michael J. Wang wrote:
-> > > Should I reformat my patch and send it again?
-> > 
-> > It'll be better, and I think Peter/Ingo will happy with it.
-> > 
+On Wed, Mar 21, 2012 at 01:44:38AM +0800, Stephen Warren wrote:
+> Define a new binding for the Tegra pin controller, which is capable of
+> defining all aspects of desired pin multiplexing and pin configuration.
+> This is all based on the new common pinctrl bindings.
 > 
-> OK.  I will resend now.  Thanks for all your help!
+> Add Tegra30 binding based on Tegra20 binding.
+> 
+> Add some basic stuff that was missing before:
+> * How many and what reg property entries must be provided.
+> * An example.
+> 
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+> ---
+........
+> +Example board file extract:
+> +
+> +	pinctrl@70000000 {
+> +		sdio4_default {
+> +			atb {
+> +				nvidia,pins = "atb", "gma", "gme";
+> +				nvidia,function = "sdio4";
+> +				nvidia,pull = <0>;
+> +				nvidia,tristate = <0>;
+> +			};
+> +		};
+> +	};
+> +
+> +	sdhci@c8000600 {
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&sdio4_default>;
+A typo error? sdio4_default is not a phandle.
 
-The resend didn't include the more details thing, so I fudged it by
-hand. The queued thing now looks like this:
+> +Example board file extract:
+> +
+> +	pinctrl@70000000 {
+> +		sdmmc4_default: pinmux {
+> +			sdmmc4_clk_pcc4 {
+> +				nvidia,pins =	"sdmmc4_clk_pcc4",
+> +						"sdmmc4_rst_n_pcc3";
+> +				nvidia,function = "sdmmc4";
+> +				nvidia,pull = <0>;
+> +				nvidia,tristate = <0>;
+> +			};
+> +			sdmmc4_dat0_paa0 {
+> +				nvidia,pins =	"sdmmc4_dat0_paa0",
+> +						"sdmmc4_dat1_paa1",
+> +						"sdmmc4_dat2_paa2",
+> +						"sdmmc4_dat3_paa3",
+> +						"sdmmc4_dat4_paa4",
+> +						"sdmmc4_dat5_paa5",
+> +						"sdmmc4_dat6_paa6",
+> +						"sdmmc4_dat7_paa7";
+> +				nvidia,function = "sdmmc4";
+> +				nvidia,pull = <2>;
+> +				nvidia,tristate = <0>;
+It seems it does not support per pin config for tegra30 and we have to
+separate them in different nodes with same group config value, right?
 
----
-Subject: sched, rt: Minor improvement to pick_next_highest_task_rt
-From: Michael J Wang <mjwang@broadcom.com>
-Date: Mon, 19 Mar 2012 22:26:19 +0000
-
-Avoid extra work by continuing on to the next rt_rq if the highest
-prio task in current rt_rq is the same priority as our candidate
-task.
-
-More detailed explanation:  if next is not NULL, then we have found a
-candidate task, and its priority is next->prio.  Now we are looking
-for an even higher priority task in the other rt_rq's.  idx is the
-highest priority in the current candidate rt_rq.  In the current 3.3
-code, if idx is equal to next->prio, we would start scanning the tasks
-in that rt_rq and replace the current candidate task with a task from
-that rt_rq.  But the new task would only have a priority that is equal
-to our previous candidate task, so we have not advanced our goal of
-finding a higher prio task.  So we should avoid the extra work by
-continuing on to the next rt_rq if idx is equal to next->prio.
-
-Signed-off-by: Michael J Wang <mjwang@broadcom.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com
----
- kernel/sched/rt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1428,7 +1428,7 @@ static struct task_struct *pick_next_hig
- next_idx:
- 		if (idx >= MAX_RT_PRIO)
- 			continue;
--		if (next && next->prio < idx)
-+		if (next && next->prio <= idx)
- 			continue;
- 		list_for_each_entry(rt_se, array->queue + idx, run_list) {
- 			struct task_struct *p;
+Regards
+Dong Aisheng
 
