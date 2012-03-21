@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030940Ab2CUN7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:59:22 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:48256 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030533Ab2CUN7Q (ORCPT
+	id S1030905Ab2CUN7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:59:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61813 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030533Ab2CUN7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:59:16 -0400
+	Wed, 21 Mar 2012 09:59:09 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 07/32] cpuset: Set up interface for nohz flag
-Date: Wed, 21 Mar 2012 14:58:13 +0100
-Message-Id: <1332338318-5958-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/32] nohz: Move ts->idle_calls incrementation into strict idle logic
+Date: Wed, 21 Mar 2012 14:58:11 +0100
+Message-Id: <1332338318-5958-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,16 +33,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare the interface to implement the nohz cpuset flag.
-This flag, once set, will tell the system to try to
-shutdown the periodic timer tick when possible.
+Since we want to prepare for making the nohz API to work further
+the idle case, we need to pull ts->idle_calls incrementation up to
+the callers in idle.
 
-We use here a per cpu refcounter. As long as a CPU
-is contained into at least one cpuset that has the
-nohz flag set, it is part of the set of CPUs that
-run into adaptive nohz mode.
-
-[ include build fix from Zen Lin ]
+To perform this, we split tick_nohz_stop_sched_tick() switch in two
+parts, a first that checks if we can really stop the tick for idle,
+and another that actually stops it. Then from the callers in idle,
+we check if we can stop the tick and only then we increment idle_calls
+and finally relay to the nohz API that doesn't care about these details
+anymore.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -63,191 +63,127 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- arch/Kconfig           |    3 ++
- include/linux/cpuset.h |   25 +++++++++++++++++++++++
- init/Kconfig           |    8 +++++++
- kernel/cpuset.c        |   52 ++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 88 insertions(+), 0 deletions(-)
+ kernel/time/tick-sched.c |   88 +++++++++++++++++++++++++---------------------
+ 1 files changed, 48 insertions(+), 40 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 4f55c73..a0710f6 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -177,6 +177,9 @@ config HAVE_ARCH_JUMP_LABEL
- 	bool
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index b79dea2..12ba932 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -271,47 +271,15 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
  
- config HAVE_ARCH_MUTEX_CPU_RELAX
-+       bool
-+
-+config HAVE_CPUSETS_NO_HZ
- 	bool
+-static void tick_nohz_stop_sched_tick(struct tick_sched *ts, ktime_t now)
++static void tick_nohz_stop_sched_tick(struct tick_sched *ts,
++				      ktime_t now, int cpu)
+ {
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
+ 	ktime_t last_update, expires;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 	u64 time_delta;
+-	int cpu;
+-
+-	cpu = smp_processor_id();
+-	ts = &per_cpu(tick_cpu_sched, cpu);
+-
+-	/*
+-	 * If this cpu is offline and it is the one which updates
+-	 * jiffies, then give up the assignment and let it be taken by
+-	 * the cpu which runs the tick timer next. If we don't drop
+-	 * this here the jiffies might be stale and do_timer() never
+-	 * invoked.
+-	 */
+-	if (unlikely(!cpu_online(cpu))) {
+-		if (cpu == tick_do_timer_cpu)
+-			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+-	}
+-
+-	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
+-		return;
+-
+-	if (need_resched())
+-		return;
  
- config HAVE_RCU_TABLE_FREE
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index e9eaec5..5510708 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -244,4 +244,29 @@ static inline void put_mems_allowed(void)
+-	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
+-		static int ratelimit;
+-
+-		if (ratelimit < 10) {
+-			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
+-			       (unsigned int) local_softirq_pending());
+-			ratelimit++;
+-		}
+-		return;
+-	}
  
- #endif /* !CONFIG_CPUSETS */
- 
-+#ifdef CONFIG_CPUSETS_NO_HZ
-+
-+DECLARE_PER_CPU(int, cpu_adaptive_nohz_ref);
-+
-+static inline bool cpuset_cpu_adaptive_nohz(int cpu)
-+{
-+	if (per_cpu(cpu_adaptive_nohz_ref, cpu) > 0)
-+		return true;
-+
-+	return false;
-+}
-+
-+static inline bool cpuset_adaptive_nohz(void)
-+{
-+	if (__get_cpu_var(cpu_adaptive_nohz_ref) > 0)
-+		return true;
-+
-+	return false;
-+}
-+#else
-+static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
-+static inline bool cpuset_adaptive_nohz(void) { return false; }
-+
-+#endif /* CONFIG_CPUSETS_NO_HZ */
-+
- #endif /* _LINUX_CPUSET_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index 3f42cd6..43f7687 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -638,6 +638,14 @@ config PROC_PID_CPUSET
- 	depends on CPUSETS
- 	default y
- 
-+config CPUSETS_NO_HZ
-+       bool "Tickless cpusets"
-+       depends on CPUSETS && HAVE_CPUSETS_NO_HZ
-+       help
-+         This options let you apply a nohz property to a cpuset such
-+	 that the periodic timer tick tries to be avoided when possible on
-+	 the concerned CPUs.
-+
- config CGROUP_CPUACCT
- 	bool "Simple CPU accounting cgroup subsystem"
- 	help
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index a09ac2b..5a28cf8 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -145,6 +145,7 @@ typedef enum {
- 	CS_SCHED_LOAD_BALANCE,
- 	CS_SPREAD_PAGE,
- 	CS_SPREAD_SLAB,
-+	CS_ADAPTIVE_NOHZ,
- } cpuset_flagbits_t;
- 
- /* convenient tests for these bits */
-@@ -183,6 +184,11 @@ static inline int is_spread_slab(const struct cpuset *cs)
- 	return test_bit(CS_SPREAD_SLAB, &cs->flags);
+-	ts->idle_calls++;
+ 	/* Read jiffies and the time when jiffies were updated last */
+ 	do {
+ 		seq = read_seqbegin(&xtime_lock);
+@@ -439,17 +407,57 @@ out:
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
  }
  
-+static inline int is_adaptive_nohz(const struct cpuset *cs)
++static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
 +{
-+	return test_bit(CS_ADAPTIVE_NOHZ, &cs->flags);
-+}
-+
- static struct cpuset top_cpuset = {
- 	.flags = ((1 << CS_CPU_EXCLUSIVE) | (1 << CS_MEM_EXCLUSIVE)),
- };
-@@ -1211,6 +1217,31 @@ static void cpuset_change_flag(struct task_struct *tsk,
- 	cpuset_update_task_spread_flag(cgroup_cs(scan->cg), tsk);
- }
- 
-+#ifdef CONFIG_CPUSETS_NO_HZ
-+
-+DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
-+
-+static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
-+{
-+	int cpu;
-+	int val;
-+
-+	if (is_adaptive_nohz(old_cs) == is_adaptive_nohz(cs))
-+		return;
-+
-+	for_each_cpu(cpu, cs->cpus_allowed) {
-+		if (is_adaptive_nohz(cs))
-+			per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
-+		else
-+			per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
++	/*
++	 * If this cpu is offline and it is the one which updates
++	 * jiffies, then give up the assignment and let it be taken by
++	 * the cpu which runs the tick timer next. If we don't drop
++	 * this here the jiffies might be stale and do_timer() never
++	 * invoked.
++	 */
++	if (unlikely(!cpu_online(cpu))) {
++		if (cpu == tick_do_timer_cpu)
++			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
 +	}
-+}
-+#else
-+static inline void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
-+{
-+}
-+#endif
 +
- /*
-  * update_tasks_flags - update the spread flags of tasks in the cpuset.
-  * @cs: the cpuset in which each task's spread flags needs to be changed
-@@ -1276,6 +1307,8 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
- 	spread_flag_changed = ((is_spread_slab(cs) != is_spread_slab(trialcs))
- 			|| (is_spread_page(cs) != is_spread_page(trialcs)));
- 
-+	update_nohz_cpus(cs, trialcs);
++	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
++		return false;
 +
- 	mutex_lock(&callback_mutex);
- 	cs->flags = trialcs->flags;
- 	mutex_unlock(&callback_mutex);
-@@ -1488,6 +1521,7 @@ typedef enum {
- 	FILE_MEMORY_PRESSURE,
- 	FILE_SPREAD_PAGE,
- 	FILE_SPREAD_SLAB,
-+	FILE_ADAPTIVE_NOHZ,
- } cpuset_filetype_t;
++	if (need_resched())
++		return false;
++
++	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
++		static int ratelimit;
++
++		if (ratelimit < 10) {
++			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
++			       (unsigned int) local_softirq_pending());
++			ratelimit++;
++		}
++		return false;
++	}
++
++	return true;
++}
++
+ static void __tick_nohz_idle_enter(struct tick_sched *ts)
+ {
+ 	ktime_t now;
+-	int was_stopped = ts->tick_stopped;
++	int cpu = smp_processor_id();
  
- static int cpuset_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
-@@ -1527,6 +1561,11 @@ static int cpuset_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
- 	case FILE_SPREAD_SLAB:
- 		retval = update_flag(CS_SPREAD_SLAB, cs, val);
- 		break;
-+#ifdef CONFIG_CPUSETS_NO_HZ
-+	case FILE_ADAPTIVE_NOHZ:
-+		retval = update_flag(CS_ADAPTIVE_NOHZ, cs, val);
-+		break;
-+#endif
- 	default:
- 		retval = -EINVAL;
- 		break;
-@@ -1686,6 +1725,10 @@ static u64 cpuset_read_u64(struct cgroup *cont, struct cftype *cft)
- 		return is_spread_page(cs);
- 	case FILE_SPREAD_SLAB:
- 		return is_spread_slab(cs);
-+#ifdef CONFIG_CPUSETS_NO_HZ
-+	case FILE_ADAPTIVE_NOHZ:
-+		return is_adaptive_nohz(cs);
-+#endif
- 	default:
- 		BUG();
+-	now = tick_nohz_start_idle(smp_processor_id(), ts);
+-	tick_nohz_stop_sched_tick(ts, now);
++	now = tick_nohz_start_idle(cpu, ts);
+ 
+-	if (!was_stopped && ts->tick_stopped) {
+-		ts->idle_jiffies = ts->last_jiffies;
+-		select_nohz_load_balancer(1);
++	if (can_stop_idle_tick(cpu, ts)) {
++		int was_stopped = ts->tick_stopped;
++
++		ts->idle_calls++;
++		tick_nohz_stop_sched_tick(ts, now, cpu);
++
++		if (!was_stopped && ts->tick_stopped) {
++			ts->idle_jiffies = ts->last_jiffies;
++			select_nohz_load_balancer(1);
++		}
  	}
-@@ -1794,6 +1837,15 @@ static struct cftype files[] = {
- 		.write_u64 = cpuset_write_u64,
- 		.private = FILE_SPREAD_SLAB,
- 	},
-+
-+#ifdef CONFIG_CPUSETS_NO_HZ
-+	{
-+		.name = "adaptive_nohz",
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_ADAPTIVE_NOHZ,
-+	},
-+#endif
- };
+ }
  
- static struct cftype cft_memory_pressure_enabled = {
 -- 
 1.7.5.4
 
