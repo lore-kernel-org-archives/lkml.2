@@ -1,106 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760045Ab2CUWRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:17:55 -0400
+	id S1760353Ab2CUWSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:18:07 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:65325 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab2CUWRv (ORCPT
+	with ESMTP id S1758332Ab2CUWRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:17:51 -0400
+	Wed, 21 Mar 2012 18:17:54 -0400
 From: Tejun Heo <tj@kernel.org>
 To: glommer@parallels.com, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com
-Subject: [PATCHSET] cgroup: cftype based file interface, take #2
-Date: Wed, 21 Mar 2012 15:17:33 -0700
-Message-Id: <1332368265-21586-1-git-send-email-tj@kernel.org>
+        ctalbott@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/12] cgroup: build list of all cgroups under a given cgroupfs_root
+Date: Wed, 21 Mar 2012 15:17:35 -0700
+Message-Id: <1332368265-21586-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
+References: <1332368265-21586-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Build a list of all cgroups anchored at cgroupfs_root->allcg_list and
+going through cgroup->allcg_node.  The list is protected by
+cgroup_mutex and will be used to improve cgroup file handling.
 
-This is the second take at improving cgroup file addition/removal
-interface.  Changes from the last take[L] are,
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/cgroup.h |    2 ++
+ kernel/cgroup.c        |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-* CGROUP_SUBSYS_CFTYPES[_COND]() dropped and
-  cgroup_subsys->base_cftypes is added instead.  This works better for
-  subsystems implemented as module.  tcp_memcontrol now uses an
-  explicit __initcall() to register its cftypes.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 501adb1..908f26f 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -191,6 +191,8 @@ struct cgroup {
+ 	 */
+ 	struct list_head css_sets;
+ 
++	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
++
+ 	/*
+ 	 * Linked list running through all cgroups that can
+ 	 * potentially be reaped by the release agent. Protected by
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 2e2f93b..fceee52 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -127,6 +127,9 @@ struct cgroupfs_root {
+ 	/* A list running through the active hierarchies */
+ 	struct list_head root_list;
+ 
++	/* All cgroups on this root, cgroup_mutex protected */
++	struct list_head allcg_list;
++
+ 	/* Hierarchy-specific flags */
+ 	unsigned long flags;
+ 
+@@ -1350,11 +1353,14 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ static void init_cgroup_root(struct cgroupfs_root *root)
+ {
+ 	struct cgroup *cgrp = &root->top_cgroup;
++
+ 	INIT_LIST_HEAD(&root->subsys_list);
+ 	INIT_LIST_HEAD(&root->root_list);
++	INIT_LIST_HEAD(&root->allcg_list);
+ 	root->number_of_cgroups = 1;
+ 	cgrp->root = root;
+ 	cgrp->top_cgroup = cgrp;
++	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+ 	init_cgroup_housekeeping(cgrp);
+ }
+ 
+@@ -3794,6 +3800,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	/* The cgroup directory was pre-locked for us */
+ 	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
+ 
++	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
++
+ 	err = cgroup_populate_dir(cgrp);
+ 	/* If err < 0, we have a half-filled directory - oh well ;) */
+ 
+@@ -4002,6 +4010,8 @@ again:
+ 	list_del_init(&cgrp->sibling);
+ 	cgroup_unlock_hierarchy(cgrp->root);
+ 
++	list_del_init(&cgrp->allcg_node);
++
+ 	d = dget(cgrp->dentry);
+ 
+ 	cgroup_d_remove_dir(d);
+-- 
+1.7.7.3
 
-* 0005-cgroup-relocate-cftype-and-cgroup_subsys-definitions.patch
-  added as cleanup.
-
-* 0007-memcg-always-create-memsw-files-if-CONFIG_CGROUP_MEM.patch
-  added so that memsw files are always created if enabled in config as
-  suggested by KAMEZAWA.
-
-This patch replaces cgroup file interface with cftype based one which
-allows dynamic additions and removals of cftype arrays whether the
-target subsystem is attached or not.  This can be used to make subsys
-rebinding via remount work properly but I intentionally avoided doing
-that at the moment.
-
-This makes cgroup population simpler for controllers and will be used
-to allow controllers to be more dynamic.  e.g. blkio subsys has
-sub-policies which may come and go while blkio subsys is attached and
-it currently uses fixed set of files which stays blank if not in use.
-This will also be useful for implementing unified hierarchy.
-
-This patchset contains the following patches.
-
- 0001-cgroup-move-cgroup_clear_directory-call-out-of-cgrou.patch
- 0002-cgroup-build-list-of-all-cgroups-under-a-given-cgrou.patch
- 0003-cgroup-implement-cgroup_add_cftypes-and-friends.patch
- 0004-cgroup-merge-cft_release_agent-cftype-array-into-the.patch
- 0005-cgroup-relocate-cftype-and-cgroup_subsys-definitions.patch
- 0006-cgroup-convert-all-non-memcg-controllers-to-the-new-.patch
- 0007-memcg-always-create-memsw-files-if-CONFIG_CGROUP_MEM.patch
- 0008-cgroup-convert-memcg-controller-to-the-new-cftype-in.patch
- 0009-cgroup-remove-cgroup_add_file-s.patch
- 0010-cgroup-relocate-__d_cgrp-and-__d_cft.patch
- 0011-cgroup-introduce-struct-cfent.patch
- 0012-cgroup-implement-cgroup_rm_cftypes.patch
-
-and is on top of
-
-  cgroup/for-3.4 3ce3230a0cff484e5130153f244d4fb8a56b3a8b
-+ [1] cgroup: deprecate remount option changes mount option
-
-and is also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup-cftype
-
-Glauber, I think the cftypes registration for tcp_memcontrol is fine
-as is in this patchset and we just need to move the init to the tail
-of ->create().  Let's worry about memcg for module-loadable protocols
-whey they are added.  Can you please send a patch to move init to
-->create()?
-
-If nobody objects && after Li comes back and acks the changes, I'll
-route these through cgroup/for-3.5.
-
-diffstat follows.
-
- block/blk-cgroup.c        |   45 ++---
- include/linux/cgroup.h    |   51 ++++--
- kernel/cgroup.c           |  359 +++++++++++++++++++++++++++++++++++-----------
- kernel/cgroup_freezer.c   |   11 -
- kernel/cpuset.c           |   31 +--
- kernel/sched/core.c       |   16 --
- mm/memcontrol.c           |   77 ++++-----
- net/core/netprio_cgroup.c |   30 +--
- net/ipv4/tcp_memcontrol.c |   71 ++++-----
- net/sched/cls_cgroup.c    |   31 +--
- security/device_cgroup.c  |   10 -
- 11 files changed, 437 insertions(+), 295 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] http://thread.gmane.org/gmane.linux.kernel.containers/22623
-[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/1192/focus=22611
