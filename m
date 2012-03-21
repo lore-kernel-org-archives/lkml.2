@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031195Ab2CUOCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:02:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34760 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031114Ab2CUOAJ (ORCPT
+	id S1031172Ab2CUOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:02:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42977 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031072Ab2CUOAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:00:09 -0400
+	Wed, 21 Mar 2012 10:00:11 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 24/32] x86: Syscall hooks for nohz cpusets
-Date: Wed, 21 Mar 2012 14:58:30 +0100
-Message-Id: <1332338318-5958-26-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 25/32] x86: Exception hooks for nohz cpusets
+Date: Wed, 21 Mar 2012 14:58:31 +0100
+Message-Id: <1332338318-5958-27-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,8 +33,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add syscall hooks to notify syscall entry and exit on
-CPUs running in adative nohz mode.
+Add necessary hooks to x86 exception for nohz cpusets
+support. It includes traps, page fault, debug exceptions,
+etc...
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -55,89 +56,145 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- arch/x86/include/asm/thread_info.h |   10 +++++++---
- arch/x86/kernel/ptrace.c           |   10 ++++++++++
- 2 files changed, 17 insertions(+), 3 deletions(-)
+ arch/x86/Kconfig        |    1 +
+ arch/x86/kernel/traps.c |   20 ++++++++++++++------
+ arch/x86/mm/fault.c     |   13 +++++++++++--
+ 3 files changed, 26 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index cfd8144..0c1724e 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -88,6 +88,7 @@ struct thread_info {
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* 32bit process */
- #define TIF_FORK		18	/* ret_from_fork */
-+#define TIF_NOHZ		19	/* in nohz userspace mode */
- #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
- #define TIF_DEBUG		21	/* uses debug registers */
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-@@ -110,6 +111,7 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
-+#define _TIF_NOHZ		(1 << TIF_NOHZ)
- #define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-@@ -120,12 +122,13 @@ struct thread_info {
- /* work to do in syscall_trace_enter() */
- #define _TIF_WORK_SYSCALL_ENTRY	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
--	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
-+	 _TIF_NOHZ)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..0d3116c 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -82,6 +82,7 @@ config X86
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
++	select HAVE_CPUSETS_NO_HZ
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
--	 _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 4bbe04d..977d0b9 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -26,6 +26,7 @@
+ #include <linux/sched.h>
+ #include <linux/timer.h>
+ #include <linux/init.h>
++#include <linux/tick.h>
+ #include <linux/bug.h>
+ #include <linux/nmi.h>
+ #include <linux/mm.h>
+@@ -301,15 +302,17 @@ gp_in_kernel:
+ /* May run on IST stack. */
+ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+ {
++	tick_nohz_enter_exception(regs);
++
+ #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+ 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
+ 			== NOTIFY_STOP)
+-		return;
++		goto exit;
+ #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
  
- /* work to do on interrupt/exception return */
- #define _TIF_WORK_MASK							\
-@@ -135,7 +138,8 @@ struct thread_info {
+ 	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
+ 			== NOTIFY_STOP)
+-		return;
++		goto exit;
  
- /* work to do on any return to user space */
- #define _TIF_ALLWORK_MASK						\
--	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
-+	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
-+	_TIF_NOHZ)
+ 	/*
+ 	 * Let others (NMI) know that the debug stack is in use
+@@ -320,6 +323,8 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+ 	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
+ 	preempt_conditional_cli(regs);
+ 	debug_stack_usage_dec();
++exit:
++	tick_nohz_exit_exception(regs);
+ }
  
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 5026738..2966791 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -21,6 +21,7 @@
- #include <linux/signal.h>
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
+ #ifdef CONFIG_X86_64
+@@ -380,6 +385,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	unsigned long dr6;
+ 	int si_code;
+ 
++	tick_nohz_enter_exception(regs);
++
+ 	get_debugreg(dr6, 6);
+ 
+ 	/* Filter out all the reserved bits which are preset to 1 */
+@@ -395,7 +402,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 
+ 	/* Catch kmemcheck conditions first of all! */
+ 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
+-		return;
++		goto exit;
+ 
+ 	/* DR6 may or may not be cleared by the CPU */
+ 	set_debugreg(0, 6);
+@@ -410,7 +417,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 
+ 	if (notify_die(DIE_DEBUG, "debug", regs, PTR_ERR(&dr6), error_code,
+ 							SIGTRAP) == NOTIFY_STOP)
+-		return;
++		goto exit;
+ 
+ 	/*
+ 	 * Let others (NMI) know that the debug stack is in use
+@@ -426,7 +433,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 				error_code, 1);
+ 		preempt_conditional_cli(regs);
+ 		debug_stack_usage_dec();
+-		return;
++		goto exit;
+ 	}
+ 
+ 	/*
+@@ -447,7 +454,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	preempt_conditional_cli(regs);
+ 	debug_stack_usage_dec();
+ 
+-	return;
++exit:
++	tick_nohz_exit_exception(regs);
+ }
+ 
+ /*
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index f0b4caf..6c4c983 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -13,6 +13,7 @@
+ #include <linux/perf_event.h>		/* perf_sw_event		*/
+ #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+ #include <linux/prefetch.h>		/* prefetchw			*/
 +#include <linux/tick.h>
  
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -1369,6 +1370,9 @@ long syscall_trace_enter(struct pt_regs *regs)
+ #include <asm/traps.h>			/* dotraplinkage, ...		*/
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+@@ -1000,8 +1001,8 @@ static int fault_in_kernel_space(unsigned long address)
+  * and the problem, and then passes it off to one of the appropriate
+  * routines.
+  */
+-dotraplinkage void __kprobes
+-do_page_fault(struct pt_regs *regs, unsigned long error_code)
++static void __kprobes
++__do_page_fault(struct pt_regs *regs, unsigned long error_code)
  {
- 	long ret = 0;
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -1209,3 +1210,11 @@ good_area:
  
-+	/* Notify nohz task syscall early so the rest can use rcu */
-+	tick_nohz_enter_kernel();
-+
- 	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
- 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
-@@ -1427,4 +1431,10 @@ void syscall_trace_leave(struct pt_regs *regs)
- 			!test_thread_flag(TIF_SYSCALL_EMU);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
-+
-+	/*
-+	 * Notify nohz task exit syscall at last so the rest can
-+	 * use rcu.
-+	 */
-+	tick_nohz_exit_kernel();
+ 	up_read(&mm->mmap_sem);
  }
++
++dotraplinkage void __kprobes
++do_page_fault(struct pt_regs *regs, unsigned long error_code)
++{
++	tick_nohz_enter_exception(regs);
++	__do_page_fault(regs, error_code);
++	tick_nohz_exit_exception(regs);
++}
 -- 
 1.7.5.4
 
