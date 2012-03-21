@@ -1,90 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab2CULeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 07:34:17 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:20266
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751160Ab2CULeP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 07:34:15 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dIc89bh1432N98dK1447Mzz1202hzz8275dhz2dh2a8h668h839hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 21 Mar 2012 19:45:17 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Florian Fainelli <florian@openwrt.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/1] net: phylib: add error checking if no phy found
-Message-ID: <20120321114516.GC4905@shlinux2.ap.freescale.net>
-References: <1331636302-18256-1-git-send-email-b29396@freescale.com>
- <4F5F5ABF.5030103@openwrt.org>
+	id S1754699Ab2CULkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 07:40:42 -0400
+Received: from mailout07.t-online.de ([194.25.134.83]:43621 "EHLO
+	mailout07.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab2CULkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 07:40:40 -0400
+Message-ID: <4F69BE2E.7070903@t-online.de>
+Date: Wed, 21 Mar 2012 12:40:30 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <4F5F5ABF.5030103@openwrt.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>, arekm@maven.pl,
+        Jared <nitro@legroom.net>, dilieto@lineone.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [REGRESSION][PATCH] Fix an old sky2 WOL regression
+Content-Type: multipart/mixed;
+ boundary="------------040100010800030605090509"
+X-ID: rPJ6ycZbZh+biriUBUr2NbIE-x7nwT9zEz7jsQvdZi115k3Q5oqJ3Mw8ko1eJn+w+k
+X-TOI-MSGID: 7f25fb76-4116-4a88-967e-012d2bd8d982
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 10:33:35PM +0800, Florian Fainelli wrote:
-> Hi,
-> 
-> Le 03/13/12 11:58, Dong Aisheng a �crit :
-> > From: Dong Aisheng<dong.aisheng@linaro.org>
-> >
-> > Signed-off-by: Dong Aisheng<dong.aisheng@linaro.org>
-> > ---
-> >   drivers/net/phy/mdio_bus.c |   11 ++++++++++-
-> >   1 files changed, 10 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> > index 88cc5db..d8e044d 100644
-> > --- a/drivers/net/phy/mdio_bus.c
-> > +++ b/drivers/net/phy/mdio_bus.c
-> > @@ -101,6 +101,7 @@ static struct class mdio_bus_class = {
-> >   int mdiobus_register(struct mii_bus *bus)
-> >   {
-> >   	int i, err;
-> > +	u32 phynum = 0;
-> >
-> >   	if (NULL == bus || NULL == bus->name ||
-> >   			NULL == bus->read ||
-> > @@ -134,12 +135,20 @@ int mdiobus_register(struct mii_bus *bus)
-> >   			if (IS_ERR(phydev)) {
-> >   				err = PTR_ERR(phydev);
-> >   				goto error;
-> > +			} else if (phydev != NULL) {
-> > +				phynum++;
-> >   			}
-> >   		}
-> >   	}
-> >
-> > +	if (!phynum) {
-> > +		err = -ENODEV;
-> > +		printk(KERN_ERR "%s: no phys found\n", bus->name);
-> > +		goto error;
-> > +	}
-> 
-> I am not sure if this is a good idea to change it, especially if:
-> - the MII bus probing is also done later (quite some drivers do this)
-> - if we want to attach a fixed PHY because we could not probe one at 
-> registration time
-> 
-You're correct.
-It seems keep it as before is the right solution right now.
-Thanks for the info.
+This is a multi-part message in MIME format.
+--------------040100010800030605090509
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Regards
-Dong Aisheng
+Sky2 Wake on LAN is broken since February 2010 on a number of systems.
+Yes. More than two years.
 
+We know about the problem and the cause since October 2010
+(Bugzilla bug #19492). It´s commit 87b09f1f25cd1e01d7c50bf423c7fe33027d7511.
+
+Stephen, David: You signed off that commit.
+
+Andrew: You called it a regression in October 2010.
+
+It has been proposed to revert the commit that caused the problem.
+Nothing happened.
+
+I proposed to re-establish the old code for dmi_match()ed systems.
+Without success.
+
+Now it is proposed to re-establish the old code as a configuration option.
+If nothing happens again I will propose a module parameter ;-)
+
+Stephen, I don´t want to be a pain in the neck, and it is not my intention
+to offend you by my "attitude". But I simply cannot understand why this
+know regression is not fixed. The bit we talk about is documented,
+and in fact it was set for a number of kernel versions unconditionally.
+Nobody complained about ruined hardware or minor problems.
+
+The systems affected are old enough that no manufacturer cares about
+them, but they are still quite usable for a lot of jobs (kernel 3.3 compile
+time here is below 15 minutes).
+
+If there is a problem in the kernel and if we do know an easy solution,
+that solution should be commited to the kernel, no matter what is written
+in some random documentation, no matter if we could blame some
+BIOS authors. That´s the way Linux works - at least I thought so.
+
+cu,
+Knut
+
+--------------040100010800030605090509
+Content-Type: text/x-patch;
+ name="0001-Fix-an-old-sky2-WOL-regression.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-Fix-an-old-sky2-WOL-regression.patch"
+
+>From 7fae2839363277835a0ac1f3f75a788aa299e0a1 Mon Sep 17 00:00:00 2001
+From: Knut Petersen <Knut_Petersen@t-online.de>
+Date: Wed, 21 Mar 2012 07:42:20 +0100
+Subject: [PATCH] Fix an old sky2 WOL regression
+
+Commit 87b09f1f25cd1e01d7c50bf423c7fe33027d7511 removed
+code to enable legacy power management mode during wake
+on lan initialization. According to the documentation
+this was the right thing to do, but it definitely broke
+wake on lan on a number of systems.
+
+The regression and the cause of the problem has been
+reported more than _18_ months ago, see Bugzilla bug
+19492. We should fix it now.
+
+This patch introduces a kernel configuration option that
+allows to select inclusion of code to set legacy PM mode
+during wake on lan init.
+
+Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
+---
+ drivers/net/ethernet/marvell/Kconfig |   10 ++++++++++
+ drivers/net/ethernet/marvell/sky2.c  |   11 ++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index 0029934..4f97020 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -98,6 +98,16 @@ config SKY2
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called sky2.  This is recommended.
+ 
++config SKY2_PME_LEGACY
++	bool "WOL support for broken BIOSes"
++	depends on SKY2 && DEBUG_FS
++	---help---
++	  If this option is set, Yukon 2 legacy power management mode will
++	  be enabled during wake on lan setup. Some BIOS implementations
++	  need this for actual WOL support.
++
++	  If unsure, say N.
++
+ config SKY2_DEBUG
+ 	bool "Debugging interface"
+ 	depends on SKY2 && DEBUG_FS
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index 760c2b1..832589c 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -814,7 +814,9 @@ static void sky2_wol_init(struct sky2_port *sky2)
+ 	unsigned port = sky2->port;
+ 	enum flow_control save_mode;
+ 	u16 ctrl;
+-
++#ifdef CONFIG_SKY2_PME_LEGACY
++	u32 reg1;
++#endif
+ 	/* Bring hardware out of reset */
+ 	sky2_write16(hw, B0_CTST, CS_RST_CLR);
+ 	sky2_write16(hw, SK_REG(port, GMAC_LINK_CTRL), GMLC_RST_CLR);
+@@ -867,6 +869,13 @@ static void sky2_wol_init(struct sky2_port *sky2)
+ 	/* Disable PiG firmware */
+ 	sky2_write16(hw, B0_CTST, Y2_HW_WOL_OFF);
+ 
++#ifdef CONFIG_SKY2_PME_LEGACY
++	/* Needed by some broken BIOSes*/
++	reg1 = sky2_pci_read32(hw, PCI_DEV_REG1);
++	reg1 |= PCI_Y2_PME_LEGACY;
++	sky2_pci_write32(hw, PCI_DEV_REG1, reg1);
++#endif
++
+ 	/* block receiver */
+ 	sky2_write8(hw, SK_REG(port, RX_GMF_CTRL_T), GMF_RST_SET);
+ 	sky2_read32(hw, B0_CTST);
+-- 
+1.7.9.2
+
+
+
+
+--------------040100010800030605090509--
