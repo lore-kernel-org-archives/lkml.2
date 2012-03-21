@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964772Ab2CUFwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:52:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56153 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab2CUFwG (ORCPT
+	id S964896Ab2CUFwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:52:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53099 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964802Ab2CUFwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:52:06 -0400
-MIME-Version: 1.0
-Date: Wed, 21 Mar 2012 11:22:05 +0530
-Message-ID: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
-Subject: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
-From: Rajesh Bhagat <rajesh.lnx@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Mar 2012 01:52:14 -0400
+Date: Wed, 21 Mar 2012 16:52:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Azael Avalos <coproscefalo@gmail.com>
+Subject: linux-next: build failure after merge of the drivers-x86 tree
+Message-Id: <20120321165204.3b9e1995dc363b685d8018dc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Mar_2012_16_52_04_+1100_nO+2m1wjTc5QHH7r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 60ec8a88ba671fa0b424f7b4467dba3ea8a2a2c8 Mon Sep 17 00:00:00 2001
-From: Rajesh Bhagat <rajesh.lnx@gmail.com>
-Date: Tue, 20 Mar 2012 10:35:59 +0530
-Subject: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
+--Signature=_Wed__21_Mar_2012_16_52_04_+1100_nO+2m1wjTc5QHH7r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch resets the trace_array using tracing_reset_online_cpus, if same
-tracer is set again instead of just returning from funtion tracing_set_tracer.
+Hi Matthew,
 
-problem description
--------------------
-once function tracer is set, set_ftrace_filter not working.
-/debug/tracing # echo function > current_tracer
-/debug/tracing # echo schedule > set_ftrace_filter
-/debug/tracing # echo function > current_tracer
-/debug/tracing #  cat trace
-# tracer: function
-#
-#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-#              | |       |          |         |
-          <idle>-0     [000]    21.997778: irq_enter <-handle_IRQ
-          <idle>-0     [000]    21.997785: idle_cpu <-irq_enter
-          <idle>-0     [000]    21.997794: local_bh_disable <-irq_enter
-          <idle>-0     [000]    21.997800: tick_check_idle <-irq_enter
-          <idle>-0     [000]    21.997807:
-tick_check_oneshot_broadcast <-tick_check_idle
-          <idle>-0     [000]    21.997814: _local_bh_enable <-irq_enter
+After merging the drivers-x86 tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-After applying this patch, only filtered functions are traced.
+drivers/platform/x86/toshiba_acpi.c:141:1: error: unknown type name 'sturct'
+drivers/platform/x86/toshiba_acpi.c:141:32: error: expected '=3D', ',', ';'=
+, 'asm' or '__attribute__' before '*' token
+drivers/platform/x86/toshiba_acpi.c: In function 'toshiba_acpi_i8042_filter=
+':
+drivers/platform/x86/toshiba_acpi.c:877:18: error: 'toshiba_acpi' undeclare=
+d (first use in this function)
+drivers/platform/x86/toshiba_acpi.c:877:18: note: each undeclared identifie=
+r is reported only once for each function it appears in
+drivers/platform/x86/toshiba_acpi.c: In function 'toshiba_acpi_remove':
+drivers/platform/x86/toshiba_acpi.c:1050:6: error: 'toshiba_acpi' undeclare=
+d (first use in this function)
+drivers/platform/x86/toshiba_acpi.c: In function 'toshiba_acpi_add':
+drivers/platform/x86/toshiba_acpi.c:1083:6: error: 'toshiba_acpi' undeclare=
+d (first use in this function)
 
-Signed-off-by: Rajesh Bhagat <rajesh.lnx@gmail.com>
----
- kernel/trace/trace.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Caused by commit 5ea3879c8e16 ("toshiba_acpi: Support alternate hotkey inte=
+rfaces").
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a3f1bc5..f4fb190 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3058,8 +3058,10 @@ static int tracing_set_tracer(const char *buf)
-        ret = -EINVAL;
-        goto out;
-    }
--   if (t == current_trace)
-+   if (t == current_trace) {
-+       tracing_reset_online_cpus(tr);
-        goto out;
-+   }
+Please build test this stuff :-(
 
-    trace_branch_disable();
-    if (current_trace && current_trace->reset)
--- 
-1.7.6
+I have used the drivers-x86 tree from next-20120320 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__21_Mar_2012_16_52_04_+1100_nO+2m1wjTc5QHH7r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPaWyEAAoJEECxmPOUX5FEqb0QAIdqfmCoSS2zwIBC4dNdOJbx
+v13lizZFBPmR9EaWbbGI3hyPG64s5pZoKEqmlMtIl7h1r5yWLWbmlNvey+ZsiNfh
+/s0WGdwJyEiX/nYAdYsznAnbcILAUbPZR6sid5+7FPJdqrS9Kq8JxPDwT4zU9BTM
+Sgs2AY45o+mEu3AsYcLx3b/lG0s6g4KtaIGp7/HYZNQC+aPlIJ33R1Dp/uziB0Vg
+00CvNnOnjnaPQlD2tEkGBnW7hIWY5l1eUm6jh+wgbqIzSl4iS6cxgkjT/wmu+kVq
+7nTTxReD/VUngxALcu65xUACK4dT9bIr2NImb/sGeAQ1q9QjuhURSYD2eqlRrC1O
+syMbf+Ytn8S/JwbEgnJ/jM41tILgd8ELyHafICk3anVth/hmyqBVLg31p8ROW1/X
+9R2kCBnkyw1bdqGITcSGf+tS0Sdox30Lkd08kfxFD/sbCWYVd20sTtO9tn2gA5A1
+ho7YVmBmvY93B4nmfLJY0O40UlKRTXFOX91kN55syW9q6vpUTM5k6UZtdUSjMdij
+cyy/Fj8v6l6mu9gz1NiQry6NEoflQaN97SDWSPoXW9pKlQJEp/yLPyEXES5Kcwrf
+owPlADeQST3l3iYWq54kj8tE3PCZajTYHbwElqW650TsbcFw3sO7EKanvOtCgQ0k
+gAsz/gpkyJPegNMpKx/8
+=/poY
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Mar_2012_16_52_04_+1100_nO+2m1wjTc5QHH7r--
