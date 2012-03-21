@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2CUMSI (ORCPT <rfc822;w@1wt.eu>);
+	id S1756781Ab2CUMSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:18:11 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50272 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756502Ab2CUMSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Mar 2012 08:18:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab2CUMSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:18:06 -0400
-Date: Wed, 21 Mar 2012 13:17:03 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Dan Smith <danms@us.ibm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] AutoNUMA alpha6
-Message-ID: <20120321121703.GW24602@redhat.com>
-References: <20120316144028.036474157@chello.nl>
- <20120316182511.GJ24602@redhat.com>
- <87k42edenh.fsf@danplanet.com>
- <20120321075349.GB24997@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321075349.GB24997@gmail.com>
+Date: Wed, 21 Mar 2012 12:19:54 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20120321121954.5052ccf2@pyramind.ukuu.org.uk>
+In-Reply-To: <20120321090038.06c65f50bd0329df8705f2cd@canb.auug.org.au>
+References: <20120308152110.12c805f59c45251d79bcb24b@canb.auug.org.au>
+	<20120308180048.GC26516@kroah.com>
+	<20120321090038.06c65f50bd0329df8705f2cd@canb.auug.org.au>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 08:53:49AM +0100, Ingo Molnar wrote:
-> My impression is that while threading is on the rise due to its 
-> ease of use, many threaded HPC workloads still fall into the 
-> second category.
+On Wed, 21 Mar 2012 09:00:38 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-This is why after Peter's initial complains that a threaded
-application had to be handled perfectly by AutoNUMA even if it had
-more threads than CPU in a node, I had to take a break, and rewrite
-part of AutoNUMA to handle this scenario automatically, by introducing
-the numa hinting page faults. Before Peter complains I only had the
-pagetable scanner. So I appreciate his criticism for having convinced
-me that AutoNUMA had to have this working immediately.
+> Hi all,
+> 
+> On Thu, 8 Mar 2012 10:00:48 -0800 Greg KH <greg@kroah.com> wrote:
+> >
+> > On Thu, Mar 08, 2012 at 03:21:10PM +1100, Stephen Rothwell wrote:
+> > > 
+> > > After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+> > > failed like this:
+> > > 
+> > > drivers/staging/sep/sep_driver.c:55:32: fatal error: linux/rar_register.h: No such file or directory
+> > > 
+> > > Caused by commit 33e9970add94 ("x86/mid: Kill off Moorestown").
+> > > 
+> > > Following previous instructions, I have disabled the staging tree driver
+> > > using this patch (pending a fix in the tip tree):
+> > 
+> > Looks good to me.  Alan, care to send me an update that fixes this
+> > driver for real?
+> 
+> Was this ever fixed?
 
-Perhaps somebody remembers what I told at KVMForum on stage about
-this, back then I was planning to automatically handle only processes
-that fit in a node. So the talk with Peter has been fundamental to add
-one more gear to the design or I wouldn't be able to compete with his
-syscalls.
+We don't even have a sep_driver.c any more. The massive rework of the SEP
+driver dealt with this.
 
-> In fact they are often explicitly *turned* into the second 
-> category at the application level by duplicating shared global 
-> data explicitly and turning it into per thread local data.
-
-per-thread local data is the best case of AutoNUMA. AutoNUMA already
-detects and reacts to false sharing putting all false-sharing threads
-in the same node statistically over time. It also cancels pending
-migration pages queued, and requires two more consecutive hits from
-threads in the same node before re-allowing migration. There's quite a
-bit of work I did to make false sharing handled properly. But the
-absolute best case is per-thread local storage (both numa01
--DTHREAD_ALLOC and numa02, numa02 spans over the whole system with the
-same process, numa01 has two processes, where each fit in a node, with
-local thread storage).
-
-> And to default-enable any of this on stock kernels we'd need to 
-> even more testing and widespread, feel-good speedups in almost 
-> every key Linux workload... I don't see that happening though, 
-> so the best we can get are probably some easy and flexible knobs 
-> for HPC.
-
-This is a very good point. We can merge AutoNUMA in a disabled way. It
-won't ever do anything unless explicitly enabled, and even more
-important if you disable it (echo 0 >enabled) it will deactivate
-completely and everything will settle down like if has never run, it
-will leave zero signs in the VM and scheduler.
-
-There are three gears, if the pagetable scanner never runs (first
-gear), all other gears never activates and it is a complete bypass (noop).
-
-There are environments like virt that are quite memory static and
-predictable, so if demonstrated it would work for them, it would be
-real easy for virt admin to echo 1 >/sys/kernel/mm/autonuma/enabled .
+Alan
