@@ -1,223 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760733Ab2CUVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:39:26 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42126 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760700Ab2CUVjM (ORCPT
+	id S1760455Ab2CUVoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:44:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49800 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759136Ab2CUVod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:39:12 -0400
-Message-ID: <1332366001.3858.38.camel@key-ThinkPad-W510>
-Subject: [PATCH 08/17] powerpc: crypto: AES-CTR mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 21 Mar 2012 16:40:01 -0500
-In-Reply-To: <1332365297.3858.5.camel@key-ThinkPad-W510>
-References: <1332365297.3858.5.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 17:44:33 -0400
+Date: Wed, 21 Mar 2012 14:44:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: axboe@kernel.dk, stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, thenzl@redhat.com
+Subject: Re: [PATCH] cciss: Initialize scsi host max_sectors for tape drive
+ support
+Message-Id: <20120321144431.044d3af3.akpm@linux-foundation.org>
+In-Reply-To: <20120321213203.9277.11716.stgit@beardog.cce.hp.com>
+References: <20120321213203.9277.11716.stgit@beardog.cce.hp.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032121-2398-0000-0000-00000538B9DF
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in CTR mode on the Power7+ CPU's
-in-Nest accelerator driver.
+On Wed, 21 Mar 2012 16:32:03 -0500
+"Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- arch/powerpc/crypto/nx/nx-aes-ctr.c |  175 +++++++++++++++++++++++++++++++++++
- 1 files changed, 175 insertions(+), 0 deletions(-)
- create mode 100644 arch/powerpc/crypto/nx/nx-aes-ctr.c
+> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> 
+> The default is too small
 
-diff --git a/arch/powerpc/crypto/nx/nx-aes-ctr.c b/arch/powerpc/crypto/nx/nx-aes-ctr.c
-new file mode 100644
-index 0000000..a1ea44e
---- /dev/null
-+++ b/arch/powerpc/crypto/nx/nx-aes-ctr.c
-@@ -0,0 +1,175 @@
-+/**
-+ * AES CTR routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/aes.h>
-+#include <crypto/ctr.h>
-+#include <crypto/algapi.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int ctr_aes_nx_set_key(struct crypto_tfm *tfm,
-+			      const u8          *in_key,
-+			      unsigned int       key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		csbcpb->cpb.hdr.key_size = NX_KS_AES_128;
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	case AES_KEYSIZE_192:
-+		csbcpb->cpb.hdr.key_size = NX_KS_AES_192;
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
-+		break;
-+	case AES_KEYSIZE_256:
-+		csbcpb->cpb.hdr.key_size = NX_KS_AES_256;
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_CTR;
-+	memcpy(csbcpb->cpb.aes_ctr.key, in_key, key_len);
-+
-+	return 0;
-+}
-+
-+static int ctr3686_aes_nx_set_key(struct crypto_tfm *tfm,
-+				  const u8          *in_key,
-+				  unsigned int       key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
-+
-+	if (key_len < CTR_RFC3686_NONCE_SIZE)
-+		return -EINVAL;
-+
-+	memcpy(nx_ctx->priv.ctr.iv,
-+	       in_key + key_len - CTR_RFC3686_NONCE_SIZE,
-+	       CTR_RFC3686_NONCE_SIZE);
-+
-+	key_len -= CTR_RFC3686_NONCE_SIZE;
-+
-+	return ctr_aes_nx_set_key(tfm, in_key, key_len);
-+}
-+
-+static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
-+			    struct scatterlist    *dst,
-+			    struct scatterlist    *src,
-+			    unsigned int           nbytes)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	int rc;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes,
-+			       csbcpb->cpb.aes_ctr.iv);
-+	if (rc)
-+		goto out;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen)
-+		return -EINVAL;
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+out:
-+	return rc;
-+}
-+
-+static int ctr3686_aes_nx_crypt(struct blkcipher_desc *desc,
-+				struct scatterlist    *dst,
-+				struct scatterlist    *src,
-+				unsigned int           nbytes)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
-+	u8 *iv = nx_ctx->priv.ctr.iv;
-+
-+	memcpy(iv + CTR_RFC3686_NONCE_SIZE,
-+	       desc->info, CTR_RFC3686_IV_SIZE);
-+	iv[15] = 1;
-+
-+	desc->info = nx_ctx->priv.ctr.iv;
-+
-+	return ctr_aes_nx_crypt(desc, dst, src, nbytes);
-+}
-+
-+struct crypto_alg nx_ctr_aes_alg = {
-+	.cra_name        = "ctr(aes)",
-+	.cra_driver_name = "ctr-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_blkcipher_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ctr_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ctr_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_blkcipher = {
-+		.min_keysize = AES_MIN_KEY_SIZE,
-+		.max_keysize = AES_MAX_KEY_SIZE,
-+		.ivsize      = AES_BLOCK_SIZE,
-+		.setkey      = ctr_aes_nx_set_key,
-+		.encrypt     = ctr_aes_nx_crypt,
-+		.decrypt     = ctr_aes_nx_crypt,
-+	}
-+};
-+
-+struct crypto_alg nx_ctr3686_aes_alg = {
-+	.cra_name        = "rfc3686(ctr(aes))",
-+	.cra_driver_name = "rfc3686-ctr-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_blkcipher_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ctr3686_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ctr_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_blkcipher = {
-+		.min_keysize = AES_MIN_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
-+		.max_keysize = AES_MAX_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
-+		.ivsize      = CTR_RFC3686_IV_SIZE,
-+		.geniv       = "seqiv",
-+		.setkey      = ctr3686_aes_nx_set_key,
-+		.encrypt     = ctr3686_aes_nx_crypt,
-+		.decrypt     = ctr3686_aes_nx_crypt,
-+	}
-+};
--- 
-1.7.1
+So is the changelog.
 
+> (1024 blocks), use h->cciss_max_sectors (8192 blocks)
 
+What problem does this patch solve?  What might be the user-visible
+effects of the change?
+
+> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> ---
+>  drivers/block/cciss_scsi.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+> index e820b68..f510a9c 100644
+> --- a/drivers/block/cciss_scsi.c
+> +++ b/drivers/block/cciss_scsi.c
+> @@ -866,6 +866,7 @@ cciss_scsi_detect(ctlr_info_t *h)
+>  	sh->can_queue = cciss_tape_cmds;
+>  	sh->sg_tablesize = h->maxsgentries;
+>  	sh->max_cmd_len = MAX_COMMAND_SIZE;
+> +	sh->max_sectors = h->cciss_max_sectors;
+>  
+>  	((struct cciss_scsi_adapter_data_t *) 
+>  		h->scsi_ctlr)->scsi_host = sh;
