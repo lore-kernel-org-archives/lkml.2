@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab2CUIjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 04:39:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57337 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab2CUIjN (ORCPT
+	id S1756080Ab2CUIjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 04:39:39 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54870 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab2CUIje convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 04:39:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bernhard Walle <bernhard@bwalle.de>
-Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
-Date: Wed, 21 Mar 2012 08:39:06 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Bernhard Walle <walle@corscience.de>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>
-References: <1332262083-9375-1-git-send-email-walle@corscience.de> <201203202202.12060.arnd@arndb.de> <4F697201.1090206@bwalle.de>
-In-Reply-To: <4F697201.1090206@bwalle.de>
+	Wed, 21 Mar 2012 04:39:34 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203210839.06258.arnd@arndb.de>
-X-Provags-ID: V02:K0:zwAiJQnRMo3AyuGHZvQOCbLiEQUVrJLHOy3RvWpRUG0
- SfwVW6CVQJWTf0+dDN19I/YCQ/1tSbabCutuqNjVQq2h7I3NiL
- ClvkXjTMIRfHO5bO3oy5Adv+l/OMN/UH8uIR26jeVWVo7hQ9AN
- kefltg0Rn0u3omeF4Dm1yADv2CtlDlArNe66wSUVH+X+h8UmVD
- HVNWhm7oAHPxFydwDR/zg6L0rFzDgpeCwPwxGWZVyN0Y2yQVMz
- o0uGMijneJ3i9QNVPfSbGtO3ow3LncV5meUlUqwW2u4bK5afa5
- 45bDQkm3kzdBDSwNtJy/9BYoQNWZnlYZMkeex2aIISv+0i8Z/O
- e1wEgFJaChiUk0UX06Vs=
+In-Reply-To: <alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
+References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
+	<af9b876508ebc83431312aef67b3ae920780bd5c.1319025009.git.dmitry.kasatkin@intel.com>
+	<alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
+Date: Wed, 21 Mar 2012 09:39:32 +0100
+X-Google-Sender-Auth: 7XCdQDm8BejkSdl4FVM9Grv0QPo
+Message-ID: <CAMuHMdWLixmQ-iSiShRjFHgxPp9MZxUQDA=oYasdZd3WwmqGYg@mail.gmail.com>
+Subject: Re: [PATCH v2.2 2/7] crypto: GnuPG based MPI lib - header files (part 2)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        zohar@linux.vnet.ibm.com, dhowells@redhat.com,
+        herbert@gondor.hengli.com.au,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 March 2012, Bernhard Walle wrote:
-> Am 20.03.12 23:02, schrieb Arnd Bergmann:
-> > On Tuesday 20 March 2012, Bernhard Walle wrote:
-> >>
-> >> This PWM driver uses the PWM of the TWL4030. The driver for the TWL6030
-> >> PWM has been used as mode, but the PWM registers are different.
-> >>
-> >> The driver can be used and has been tested in conjunction with
-> >> pwm-backlight to control a backlight LED of a LCD touch screen.
-> >>
-> >> Signed-off-by: Bernhard Walle <walle@corscience.de>
-> > 
-> > Since it's too late for v3.4 now and we will get a new pwm
-> > subsystem in v3.5, I suggest you change the driver to work
-> > register with that subsystem instead of just using the old
-> > header file. Note that drivers/mfd is not really the right
-> > place anyway, because this is not a multifunction driver but
-> > just one device driver that happens to be a slave of an mfd.
-> 
-> Does that new subsystem already exist in some tree?
- 
-Thierry Reding has been busily posting patches, so he probably has
-one that you can use, but I couldn't find it now.
+Ping?
 
-	Arnd
+On Sun, Mar 11, 2012 at 10:55, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Wed, 19 Oct 2011, Dmitry Kasatkin wrote:
+>> Adds the multi-precision-integer maths library which was originally taken
+>> from GnuPG and ported to the kernel by (among others) David Howells.
+>> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
+>> The difference is that checkpatch reported errors and warnings have been fixed.
+>>
+>> This library is used to implemenet RSA digital signature verification
+>> used in IMA/EVM integrity protection subsystem.
+>
+>> --- /dev/null
+>> +++ b/lib/mpi/longlong.h
+>
+>> +     /* If udiv_qrnnd was not defined for this processor, use __udiv_qrnnd_c.  */
+>> +#if !defined(udiv_qrnnd)
+>> +#define UDIV_NEEDS_NORMALIZATION 1
+>> +#define udiv_qrnnd __udiv_qrnnd_c
+>> +#endif
+>> +
+>> +#undef count_leading_zeros
+>
+> Why is this #undef here? It's not present in mpi/longlong.h from Ubuntu's
+> gnupg-1.4.10, and causing ...
+>
+>> +#if !defined(count_leading_zeros)
+>> +     extern
+>> +#ifdef __STDC__
+>> +                     const
+>> +#endif
+>> +                     unsigned char __clz_tab[];
+>> +#define count_leading_zeros(count, x) \
+>> +do { \
+>> +     UWtype __xr = (x); \
+>> +     UWtype __a; \
+>> +     \
+>> +     if (W_TYPE_SIZE <= 32) { \
+>> +             __a = __xr < ((UWtype) 1 << 2*__BITS4) \
+>> +             ? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
+>> +             : (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
+>> +     } \
+>> +     else { \
+>> +             for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
+>> +                     if (((__xr >> __a) & 0xff) != 0) \
+>> +                             break; \
+>> +     } \
+>> +     \
+>> +     (count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
+>> +} while (0)
+>> +     /* This version gives a well-defined value for zero. */
+>> +#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
+>
+> lib/mpi/longlong.h:1483:1: warning: "COUNT_LEADING_ZEROS_0" redefined
+> lib/mpi/longlong.h:610:1: warning: this is the location of the previous definition
+>
+> on m68k/allmodconfig.
+>
+> I'm also wondering why this warning is not seen on other arches, e.g. PPC
+> #defines COUNT_LEADING_ZEROS_0 to 32, just like m68k.
+>
+>> +#endif
+>
+> I suppose the plan is to clean up this header file, as lots of its
+> functionality is already present in the kernel sources in some other way
+> (e.g. arch/m68k/lib/muldi3.c)?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
