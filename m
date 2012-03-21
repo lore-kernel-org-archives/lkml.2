@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab2CUKed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 06:34:33 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35847 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757904Ab2CUKec convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 06:34:32 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>, linux-mm@kvack.org,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>, linux-media@vger.kernel.org
-Subject: Re: [PATCH 05/16] mm/drivers: use vm_flags_t for vma flags
-Date: Wed, 21 Mar 2012 11:34:56 +0100
-Message-ID: <3319224.gEMkjEgmG9@avalon>
-User-Agent: KMail/4.8.0 (Linux/3.2.1-gentoo-r2; KDE/4.8.0; x86_64; ; )
-In-Reply-To: <20120321065633.13852.11903.stgit@zurg>
-References: <20120321065140.13852.52315.stgit@zurg> <20120321065633.13852.11903.stgit@zurg>
+	id S1758384Ab2CUKmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 06:42:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758188Ab2CUKmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 06:42:43 -0400
+Date: Wed, 21 Mar 2012 11:42:14 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
+Message-ID: <20120321104214.GB1632@m.brq.redhat.com>
+References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
+ <1332267341-26338-4-git-send-email-jolsa@redhat.com>
+ <1332269081.18960.444.camel@twins>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332269081.18960.444.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konstantin,
-
-Thanks for the patch.
-
-On Wednesday 21 March 2012 10:56:33 Konstantin Khlebnikov wrote:
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: linux-media@vger.kernel.org
-> Cc: devel@driverdev.osuosl.org
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: "Arve Hjønnevåg" <arve@android.com>
-> ---
->  drivers/media/video/omap3isp/ispqueue.h |    2 +-
-
-For the OMAP3 ISP driver,
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
->  drivers/staging/android/ashmem.c        |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+On Tue, Mar 20, 2012 at 07:44:41PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-03-20 at 19:15 +0100, Jiri Olsa wrote:
+> > Examples (first event in brackets is group leader):
+> > 
+> >   # 1 group (cpu-clock,task-clock)
+> >   perf record --group -e cpu-clock,task-clock ls
+> >   perf record --group parsed -e cpu-clock,task-clock ls
+> > 
+> >   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
+> >   perf record --group parsed -e cpu-clock,task-clock \
+> >    -e minor-faults,major-faults ls
+> > 
+> >   # 1 group (cpu-clock,task-clock,minor-faults,major-faults)
+> >   perf record --group -e cpu-clock,task-clock \
+> >    -e minor-faults,major-faults ls
+> > 
+> >   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
+> >   perf record --group parsed -e cpu-clock,task-clock \
+> >    -e minor-faults,major-faults -e instructions ls
+> > 
+> >   # 1 group (cpu-clock,task-clock,minor-faults,major-faults,instructions)
+> >   perf record --group -e cpu-clock,task-clock \
+> >    -e minor-faults,major-faults -e instructions ls 
 > 
-> diff --git a/drivers/media/video/omap3isp/ispqueue.h
-> b/drivers/media/video/omap3isp/ispqueue.h index 92c5a12..908dfd7 100644
-> --- a/drivers/media/video/omap3isp/ispqueue.h
-> +++ b/drivers/media/video/omap3isp/ispqueue.h
-> @@ -90,7 +90,7 @@ struct isp_video_buffer {
->  	void *vaddr;
+> I can't help but dislike the --group/--group parsed thing...
 > 
->  	/* For userspace buffers. */
-> -	unsigned long vm_flags;
-> +	vm_flags_t vm_flags;
->  	unsigned long offset;
->  	unsigned int npages;
->  	struct page **pages;
-> diff --git a/drivers/staging/android/ashmem.c
-> b/drivers/staging/android/ashmem.c index 9f1f27e..4511420 100644
-> --- a/drivers/staging/android/ashmem.c
-> +++ b/drivers/staging/android/ashmem.c
-> @@ -269,7 +269,7 @@ out:
->  	return ret;
->  }
+> How about something like:
 > 
-> -static inline unsigned long calc_vm_may_flags(unsigned long prot)
-> +static inline vm_flags_t calc_vm_may_flags(unsigned long prot)
->  {
->  	return _calc_vm_trans(prot, PROT_READ,  VM_MAYREAD) |
->  	       _calc_vm_trans(prot, PROT_WRITE, VM_MAYWRITE) |
+>   event_group = "{", events, "}" , [ ":", event_group_mod ]
 > 
+> Such that you can write things like:
+> 
+>   perf record -e "{cpu-clock,cache-misses,cache-references}"
+> 
+>   perf stat -e "{cpu-clock,cycles},{cpu-clock,cache-misses,cache-references}"
+>   perf stat -e "{cpu-clock,cycles}" -e "{cpu-clock,cache-misses,cache-references}"
+> 
+> I'm not sure what the current behaviour of --group is, if you create a
+> group like this, do they all sample?
+> 
+> If so, we need some option like:
+> 
+>   perf record -e "{cpu-clock,cache-misses,cache-references}:1"
+> 
+> to mean, only sample on cpu-clock but use PERF_SAMPLE_READ and
+> PERF_FORMAT_GROUP to read all siblings on every cpu-clock sample.
+> 
+> Now the disadvantage is that {} needs quotes on bash, the advantage is
+> that its completely natural on how to construct groups, without weird
+> --group/--group parsed. Also it provides a place for group modifiers.
 
--- 
-Regards,
+how about '=group' keyword followed by ':' modifier
+  perf record -e "cpu-clock,cache-misses,cache-references=group:1"
 
-Laurent Pinchart
+or '=$groupname' and use the group name in output like
+  perf stat -e "task-clock,context-switches=krava:1" ls
 
+     Performance counter stats for 'ls':
+
+          1.003695 task-clock/krava          #    0.083 CPUs utilized          
+                 0 context-switches/krava    #    0.000 K/sec                  
+
+
+jirka
