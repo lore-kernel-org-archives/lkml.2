@@ -1,65 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030196Ab2CUNpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:45:43 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:22574 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932214Ab2CUNpl (ORCPT
+	id S1030251Ab2CUNt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:49:26 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:61082 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964786Ab2CUNtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:45:41 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: tc9tLxAVM1m5lrFUBQwgfCh458NLZ5iR2nkhMon05b282OM
- UdmoGpCu0Z3BZ32egUcNJym8v10Fg.qy58IOB4FWCWusfw_6wH5_69ySC5Vb
- qTAuyFKQGwxVcY3MFxfImZftMeJutwwJEhGICN9NPaqA.ZLsYl.AcQ6PoJO1
- IiPwH6qE57lLVVhlrEXUfftcx9_l.l9w3jUQbGAhFso7M6Af6AFZ7HaCR5Wn
- xyC05Ok64MRRBGIdp0g1cO7OtH6FFnLOvl6pu.bbx5cEtpIdn1O._exTm2LV
- IeWe5ON9lKuozN0y9nGtVTRUpDi7UUqB4Ojgv.eGuLHtMG7brlZ2yUoiUkhJ
- c0nK8XvByrixNZ40XkSC.Qa.IoFfylD5iOACAUDAb2M9TTrjCKIxrrPJEmXY
- GI_BEJdRr77QRaf0oPVFSr5LT_LGRDl5CbZ7Ds2U8jy.ORls-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 21 Mar 2012 08:45:38 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH 6/6] workqueue: use kmalloc_align() instead of
- hacking
-In-Reply-To: <4F6944D9.5090002@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1203210842200.20382@router.home>
-References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com> <20120320154619.GA5684@google.com> <4F6944D9.5090002@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 21 Mar 2012 09:49:24 -0400
+X-IronPort-AV: E=Sophos;i="4.73,624,1325462400"; 
+   d="scan'208";a="11445312"
+Message-ID: <4F69DC68.6080200@citrix.com>
+Date: Wed, 21 Mar 2012 13:49:28 +0000
+From: Attilio Rao <attilio.rao@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH RFC V6 1/11]  x86/spinlock: replace pv spinlocks with
+ pv ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <20120321102052.473.40193.sendpatchset@codeblue.in.ibm.com> <4F69D1D9.9080107@citrix.com> <2425963.NBpIGX9T40@chlor>
+In-Reply-To: <2425963.NBpIGX9T40@chlor>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012, Lai Jiangshan wrote:
-
-> Yes, I don't want to build a complex kmalloc_align(). But after I found
-> that SLAB/SLUB's kmalloc-objects are natural/automatic aligned to
-> a proper big power of two. I will do nothing if I introduce kmalloc_align()
-> except just care the debugging.
-
-They are not guaranteed to be aligned to the big power of two! There are
-kmalloc caches that are not power of two. Debugging and other
-necessary meta data may change alignment in both SLAB and SLUB. SLAB needs
-a metadata structure in each page even without debugging that may cause
-alignment issues.
-
-> And kmalloc_align() can be used in the following case:
-> o	a type object need to be aligned with cache-line for it contains a frequent
-> 	update-part and a frequent read-part.
-> o	The total number of these objects in a given type is not much, creating
-> 	a new slab cache for a given type will be overkill.
+On 21/03/12 13:22, Stephan Diestelhorst wrote:
+> On Wednesday 21 March 2012, 13:04:25 Attilio Rao wrote:
+>    
+>> On 21/03/12 10:20, Raghavendra K T wrote:
+>>      
+>>> From: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+>>>
+>>> Rather than outright replacing the entire spinlock implementation in
+>>> order to paravirtualize it, keep the ticket lock implementation but add
+>>> a couple of pvops hooks on the slow patch (long spin on lock, unlocking
+>>> a contended lock).
+>>>
+>>> Ticket locks have a number of nice properties, but they also have some
+>>> surprising behaviours in virtual environments.  They enforce a strict
+>>> FIFO ordering on cpus trying to take a lock; however, if the hypervisor
+>>> scheduler does not schedule the cpus in the correct order, the system can
+>>> waste a huge amount of time spinning until the next cpu can take the lock.
+>>>
+>>> (See Thomas Friebel's talk "Prevent Guests from Spinning Around"
+>>> http://www.xen.org/files/xensummitboston08/LHP.pdf  for more details.)
+>>>
+>>> To address this, we add two hooks:
+>>>    - __ticket_spin_lock which is called after the cpu has been
+>>>      spinning on the lock for a significant number of iterations but has
+>>>      failed to take the lock (presumably because the cpu holding the lock
+>>>      has been descheduled).  The lock_spinning pvop is expected to block
+>>>      the cpu until it has been kicked by the current lock holder.
+>>>    - __ticket_spin_unlock, which on releasing a contended lock
+>>>      (there are more cpus with tail tickets), it looks to see if the next
+>>>      cpu is blocked and wakes it if so.
+>>>
+>>> When compiled with CONFIG_PARAVIRT_SPINLOCKS disabled, a set of stub
+>>> functions causes all the extra code to go away.
+>>>
+>>>        
+>> I've made some real world benchmarks based on this serie of patches
+>> applied on top of a vanilla Linux-3.3-rc6 (commit
+>> 4704fe65e55fb088fbcb1dc0b15ff7cc8bff3685), with both
+>> CONFIG_PARAVIRT_SPINLOCK=y and n, which means essentially 4 versions
+>> compared:
+>> * vanilla - CONFIG_PARAVIRT_SPINLOCK - patch
+>> * vanilla + CONFIG_PARAVIRT_SPINLOCK - patch
+>> * vanilla - CONFIG_PARAVIRT_SPINLOCK + patch
+>> * vanilla + CONFIG_PARAVIRT_SPINLOCK + patch
+>>
+>>      
+> [...]
+>    
+>> == Results
+>> This test points in the direction that Jeremy's rebased patches don't
+>> introduce a peformance penalty at all, but also that we could likely
+>> consider CONFIG_PARAVIRT_SPINLOCK option removal, or turn it on by
+>> default and suggest disabling just on very old CPUs (assuming a
+>> performance regression can be proven there).
+>>      
+> Very interesting results, in particular knowing that in the one guest
+> case things do not get (significantly) slower due to the added logic
+> and LOCKed RMW in the unlock path.
 >
-> This is a RFC patch and it seems mm gurus don't like it. I'm sorry I
-> bother all of you.
+> AFAICR, the problem really became apparent when running multiple guests
+> time sharing the physical CPUs, i.e., two guests with eight vCPUs each
+> on an eight core machine.  Did you look at this setup with your tests?
+>
+>    
 
-Ideas are always welcome. Please do not get offended by our problems with
-your patch.
+Please note that my tests are made on native Linux, without XEN involvement.
 
+You maybe meant that the spinlock paravirtualization became generally 
+useful in the case you mentioned? (2 guests, 8vpcu + 8vcpu)?
 
+Attilio
