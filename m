@@ -1,124 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759948Ab2CUTB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 15:01:26 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36678 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab2CUTBW (ORCPT
+	id S1760014Ab2CUTBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 15:01:43 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46842 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092Ab2CUS6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 15:01:22 -0400
-Message-ID: <4F6A257E.20600@redhat.com>
-Date: Wed, 21 Mar 2012 14:01:18 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        qemu-devel <qemu-devel@nongnu.org>, Gleb Natapov <gleb@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Qemu-devel] [RESEND][PATCH 2/2 v3] deal with guest panicked
- event
-References: <4F58664D.1070800@cn.fujitsu.com> <4F5868C4.2090509@cn.fujitsu.com> <4F5886C4.7040100@cn.fujitsu.com> <4F5897F8.6090503@redhat.com> <20120308113607.GC25529@redhat.com> <4F589D8D.4030105@redhat.com> <20120308115656.GD25529@redhat.com> <20120309222256.GA24975@amt.cnet>
-In-Reply-To: <20120309222256.GA24975@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 14:58:25 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: [PATCH v3 00/12] ima: appraisal extension
+Date: Wed, 21 Mar 2012 14:54:05 -0400
+Message-Id: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032118-6148-0000-0000-000004700D87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2012 04:22 PM, Marcelo Tosatti wrote:
-> On Thu, Mar 08, 2012 at 11:56:56AM +0000, Daniel P. Berrange wrote:
->> On Thu, Mar 08, 2012 at 01:52:45PM +0200, Avi Kivity wrote:
->>> On 03/08/2012 01:36 PM, Daniel P. Berrange wrote:
->>>> On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
->>>>> On 03/08/2012 12:15 PM, Wen Congyang wrote:
->>>>>> When the host knows the guest is panicked, it will set
->>>>>> exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
->>>>>> this exit_reason, we can send a event to tell management
->>>>>> application that the guest is panicked and set the guest
->>>>>> status to RUN_STATE_PANICKED.
->>>>>>
->>>>>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
->>>>>> ---
->>>>>>   kvm-all.c        |    5 +++++
->>>>>>   monitor.c        |    3 +++
->>>>>>   monitor.h        |    1 +
->>>>>>   qapi-schema.json |    2 +-
->>>>>>   qmp.c            |    3 ++-
->>>>>>   vl.c             |    1 +
->>>>>>   6 files changed, 13 insertions(+), 2 deletions(-)
->>>>>>
->>>>>> diff --git a/kvm-all.c b/kvm-all.c
->>>>>> index 77eadf6..b3c9a83 100644
->>>>>> --- a/kvm-all.c
->>>>>> +++ b/kvm-all.c
->>>>>> @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
->>>>>>                       (uint64_t)run->hw.hardware_exit_reason);
->>>>>>               ret = -1;
->>>>>>               break;
->>>>>> +        case KVM_EXIT_GUEST_PANICKED:
->>>>>> +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
->>>>>> +            vm_stop(RUN_STATE_PANICKED);
->>>>>> +            ret = -1;
->>>>>> +            break;
->>>>>>
->>>>>
->>>>> If the management application is not aware of this event, then it will
->>>>> never resume the guest, so it will appear hung.
->>>>
->>>> Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
->>>> still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
->>>> know the guest CPUs have been stopped, even if it isn't aware of the
->>>> reason why, which seems fine to me.
->>>
->>> No.  The guest is stopped, and there's no reason to suppose that the
->>> management app will restart it.  Behaviour has changed.
->>>
->>> Suppose the guest has reboot_on_panic set; now the behaviour change is
->>> even more visible - service will stop completely instead of being
->>> interrupted for a bit while the guest reboots.
->>
->> Hmm, so this calls for a new command line argument to control behaviour,
->> similar to what we do for disk werror, eg something like
->>
->>    --onpanic "report|pause|stop|..."
->>
->> where
->>
->>   report - emit QEVENT_GUEST_PANICKED only
->
-> Should be the default.
+IMA currently maintains an integrity measurement list used to assert the
+integrity of the running system to a third party.  The IMA-appraisal
+extension adds local integrity validation and enforcement of the
+measurement against a "good" value stored as an extended attribute
+'security.ima'.  The initial methods for validating 'security.ima' are
+hashed based, which provides file data integrity, and digital signature
+based, which in addition to providing file data integrity, provides
+authenticity.
 
-Should we just have a mechanism to stop the guest on certain types of QMP 
-events?  For instance:
+New hooks:
+ima_inode_setxattr(), ima_inode_removexattr(), ima_inode_post_setattr(),
+and ima_defer_fput()
 
--stop-on guest-panicked,block-ioerror
+IMA-appraisal extends the measurement policy ABI with two new keywords:
+appraise/dont_appraise and adds a new boot parameter 'ima_appraise_tcb'
+to appraise all files owned by root.  Like the ima_tcb measurement policy,
+the ima_appraise_tcb policy does not appraise pseudo filesystem files
+(eg. debugfs, tmpfs, securityfs, selinuxfs or ramfs.)
 
-Likewise, we could have a:
+Additional rules can be added to the default IMA measurement/appraisal
+policy, which take advantage of the SELinux labels, for a more fine
+grained policy.
 
--quit-on guest-panicked.
+Locking changes:
 
-In the very least, we should make what we use for rerror,werror an enumeration 
-that's shared here.
+The ima-appraisal extension maintains the file integrity measurement as
+an extended attribute 'security.ima'.  ima_file_free(), called on __fput(),
+updates 'security.ima' to reflect any changes made to the file.  In fix
+mode, process_measurement() writes 'security.ima' to reflect the current
+file hash.  Writing extended attributes and other file metadata (eg. chmod),
+requires taking the i_mutex.  Both ima_file_free() and process_measurement()
+took the iint->mutex and then the i_mutex, while chmod() took the locks in
+reverse order.  To resolve the potential lock inversion deadlock, the
+redundant iint->mutex was eliminated.
 
-Regards,
+Writing 'security.ima' from __fput() caused an mmap_sem/i_mutex lockdep,
+when an mmapped file was closed before it was munmapped.  To resolve this
+lockdep, ima_defer_fput() defers the __fput, by incrementing the f_count
+and creating/adding it to the workqueue.
 
-Anthony Liguori
+Prereqs:
+   vfs: fix IMA lockdep circular locking dependency
+   vfs: iversion truncate bug fix
 
->
->>   pause  - emit QEVENT_GUEST_PANICKED and pause VM
->>   stop   - emit QEVENT_GUEST_PANICKED and quit VM
->
-> "quit" is a better name than "stop".
->
->> This would map fairly well into libvirt, where we already have config
->> parameters for controlling what todo with a guest when it panics.
->>
->> Regards,
->> Daniel
->
->
+Changelog v3:
+- defined the boot command line parameter 'ima_appraise_tcb' to permit
+  measuring without appraising, and appraising without measuring.
+- use slab mempool to defer __fput() work
+- change appraisal default for filesystems without xattr support to fail
+
+Changelog v2:
+- Split the "ima: allocating iint improvements" patch, making the
+  spinlock to rwlock/read_lock change into a separate patch.
+- Removed the "vfs: Correctly set the dir i_mutex lockdep class" dependency.
+- New: "ima: delay calling __fput()"
+- Minor changes listed in individual patch descriptions
+
+Changelog v1:
+- Initial posting of the IMA-appraisal patches, separately from EVM.
+ 
+Mimi
+
+Dmitry Kasatkin (3):
+  ima: free securityfs violations file
+  ima: allocating iint improvements
+  ima: digital signature verification support
+
+Mimi Zohar (9):
+  vfs: extend vfs_removexattr locking
+  vfs: move ima_file_free before releasing the file
+  ima: integrity appraisal extension
+  ima: add appraise action keywords and default rules
+  ima: replace iint spinlock with rwlock/read_lock
+  ima: add inode_post_setattr call
+  ima: add ima_inode_setxattr/removexattr function and calls
+  ima: defer calling __fput()
+  ima: add support for different security.ima data types
+
+ Documentation/ABI/testing/ima_policy  |   25 ++-
+ Documentation/kernel-parameters.txt   |    8 +
+ fs/attr.c                             |    2 +
+ fs/file_table.c                       |    2 +-
+ fs/xattr.c                            |    6 +-
+ include/linux/ima.h                   |   32 +++
+ include/linux/integrity.h             |    7 +-
+ include/linux/xattr.h                 |    3 +
+ mm/mmap.c                             |    1 +
+ security/integrity/evm/evm_main.c     |    3 +
+ security/integrity/iint.c             |   64 +++----
+ security/integrity/ima/Kconfig        |   15 ++
+ security/integrity/ima/Makefile       |    2 +
+ security/integrity/ima/ima.h          |   37 ++++-
+ security/integrity/ima/ima_api.c      |   56 ++++--
+ security/integrity/ima/ima_appraise.c |  347 +++++++++++++++++++++++++++++++++
+ security/integrity/ima/ima_crypto.c   |    8 +-
+ security/integrity/ima/ima_fs.c       |    1 +
+ security/integrity/ima/ima_main.c     |   89 ++++++---
+ security/integrity/ima/ima_policy.c   |  181 +++++++++++++-----
+ security/integrity/integrity.h        |   11 +-
+ security/security.c                   |    6 +
+ 22 files changed, 757 insertions(+), 149 deletions(-)
+ create mode 100644 security/integrity/ima/ima_appraise.c
+
+-- 
+1.7.6.5
 
