@@ -1,142 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab2CUMub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 08:50:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757586Ab2CUMua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:50:30 -0400
-Date: Wed, 21 Mar 2012 13:49:37 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Dan Smith <danms@us.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] AutoNUMA alpha6
-Message-ID: <20120321124937.GX24602@redhat.com>
-References: <20120316144028.036474157@chello.nl>
- <20120316182511.GJ24602@redhat.com>
- <87k42edenh.fsf@danplanet.com>
- <20120321021239.GQ24602@redhat.com>
- <87fwd2d2kp.fsf@danplanet.com>
+	id S932191Ab2CUMxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:53:12 -0400
+Received: from 42.7.be.static.xlhost.com ([209.190.7.66]:36742 "EHLO
+	NS1.HOSTTHAISEOVDO.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758538Ab2CUMxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 08:53:09 -0400
+X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Mar 2012 08:53:09 EDT
+Date: Wed, 21 Mar 2012 08:53:06 -0400
+To: linux-kernel@vger.kernel.org
+From: Mr Frank Taylor <franktaylor@anzbanklondon.com>
+Reply-To: franktaylor444@gmail.com
+Subject: Zelo zelo nujno prosim !!!
+Message-ID: <7a9905de7f72f7f5a350edc520c04269@1094thanart.co.cc>
+X-Priority: 3
+X-Mailer: PHPMailer (phpmailer.sourceforge.net) [version ]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fwd2d2kp.fsf@danplanet.com>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - NS1.HOSTTHAISEOVDO.COM
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [774 772] / [47 12]
+X-AntiAbuse: Sender Address Domain - NS1.HOSTTHAISEOVDO.COM
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Od: Mr.Frank Taylor. 
+Tel: +44 704 574 7992. 
 
-On Tue, Mar 20, 2012 at 09:01:58PM -0700, Dan Smith wrote:
-> AA>         upstream autonuma numasched hard inverse
-> AA> numa02  64       45       66        42   81
-> AA> numa01  491      328      607       321  623 -D THREAD_ALLOC
-> AA> numa01  305      207      338       196  378 -D NO_BIND_FORCE_SAME_NODE
-> 
-> AA> So give me a break... you must have made a real mess in your
-> AA> benchmarking.
-> 
-> I'm just running what you posted, dude :)
 
-Apologies if it felt like I was attacking you, that wasn't my
-intention, I actually appreciate your effort!
+Sprejmi moje iskreno opravi&#269;ilo, &#269;e moj mail ne ustreza vašim personalethics. 
 
-My exclamation was because I was shocked by the staggering difference
-in results, nothing else.
+Bom se predstavim kot Mr.Frank Taylor, jaz sem državljan Deviški otoki 
+Britanski režiser prebivajo v London.A pri vodenju ra&#269;unov 
+oddelku, spremljanje finan&#269;no mrežo tukaj v Združenem kraljestvu. 
 
-Here I still get the results I posted above from numasched. In fact
-even worse, now even -D THREAD_ALLOC wouldn't end (and I disabled
-lockdep just in case), I'll try to reboot some more time to see if I
-can get some number out of it again.
+To je podrobnost o tem, kaj ho&#269;em, da mi pomagajo pri doing.One naših ra&#269;unov 
+ z gospodarstva, bilance funtov 20,500,000.00 (dvajset milijonov petsto tiso&#269; funtov) 
+je v mirujo&#269;em stanju in ni deloval v zadnjih dvanajstih (12) let. 
 
-numa02 at least repeats at 66 sec reproducibly with numasched with or
-without lockdep.
+Iz mojih raziskav in potrditev, lastnik thisaccount, 
+Tujec z imenom Ost Bob) je umrl 31. januarja 2000. 
 
-> AA> numasched is always doing worse than upstream here, in fact two
-> AA> times massively worse. Almost as bad as the inverse binds.
-> 
-> Well, something clearly isn't right, because my numbers don't match
-> yours at all. This time with THP disabled, and compared to the rest of
-> the numbers from my previous runs:
-> 
->             autonuma   HARD   INVERSE   NO_BIND_FORCE_SAME_MODE
-> 
-> numa01      366        335    356       377
-> numa01THP   388        336    353       399
-> 
-> That shows that autonuma is worse than inverse binds here. If I'm
-> running your stuff incorrectly, please tell me and I'll correct
-> it. However, I've now compiled the binary exactly as you asked, with THP
-> disabled, and am seeing surprisingly consistent results.
+glej to: http://aviation.crosswindlanding.com/accidents/alaska_261.htm 
 
-HARD and INVERSE should be the min and max you get.
+In od takrat se nih&#269;e ni naredil ni&#269;esar v zvezi z zahtevo po tem 
+denar, ker je nima družinskih &#269;lanov, ki se zavedajo obstoja 
+ne upošteva niti sredstev. 
 
-I would ask you before you test AutoNUMA again, or numasched again, to
-repeat this "HARD" vs "INVERSE" vs "NO_BIND_FORCE_SAME_MODE"
-benchmark and be sure the above numbers are correct for the above
-three cases.
+Sem iskati vaše privoljenje, da vam predstavi kot ožjih sorodnikov / bo upravi&#269;enec do 
+umrlega, tako da se izkupi&#269;ek od tega ra&#269;una vrednotijo &#8203;&#8203;na 20,5 milijonov funtov funtov 
+lahko pla&#269;a (prenos) na vaš ra&#269;un v vaši državi. 
 
-On my hardware you can see on page 7 of my pdf what I get:
 
-http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma_bench-20120321.pdf
+To bo izpla&#269;ana ali delijo v teh odstotkih, 60% za mene in 40% za vas. 
+vse potrebne pravne dokumente, ki se lahko uporabljajo za nazaj do tega zahtevka smo kar bo zagotovljeno. 
 
-numa01 -DHARD_BIND | -DNO_BIND_FORCE_SAME_NODE | -DINVERSE_BIND
-             196      305                        378
+Prosim, da mi naslednje, kot smo 7 dni te&#269;i, da through.This je zelo zelo NUJNO prosim. 
+  
+1. Ime in priimek. 
+2. Vaš Direct Mobile številka. 
+3. Vaš kontaktni naslov. 
+4. Vaš Age. 
+5. Vaš poklic. 
+  
+S spoštovanjem, 
+Mr.Frank Taylor 
+Tel: +44 704 574 7992. 
 
-You can do this benchmark on an upstream kernel 3.3-rc, no need of any
-patch to collect the above three numbers.
 
-For me this is always true: HARD_BIND <= NO_BIND_FORCE_SAME_NODE <= INVERSE_BIND.
 
-Checking if numa01 HARD_BIND and INVERSE_BIND cases are setting up
-your hardware topology correctly may be good idea too.
+............................................................................................................................................................
 
-If it's not a benchmarking error or a topology error in
-HARD_BIND/INVERSE_BIND, it may be the hardware you're using is very
-different. That would be bad news though, I thought you were using the
-same common 2 socket exacore setup that I'm using and I wouldn't have
-expected such a staggering difference in results (even for HARD vs
-INVERSE vs NO_BIND_FORCE_SAME_NODE, even before we put autonuma or
-numasched into the equation).
+From: Mr.Frank Taylor.
+Tel: +44 704 574 7992.
 
-> AA> Maybe you've more than 16g? I've 16G and that leaves 1G free on both
-> AA> nodes at the peak load with AutoNUMA. That shall be enough for
-> AA> numasched too (Peter complained me I waste 80MB on a 16G system, so
-> AA> he can't possibly be intentionally wasting me 2GB).
-> 
-> Yep, 24G here. Do I need to tweak the test?
 
-Well maybe you could try to repeat at 16G if you still see numasched
-performing great after running it with -DNO_BIND_FORCE_SAME_MODE.
+Accept my sincere apologies if my mail does not meet your personalethics.
 
-What -DNO_BIND_FORCE_SAME_MODE is meant to do, is to start the "NUMA
-migration" races from the worst possible condition.
+I will introduce myself as Mr.Frank Taylor, I am a citizen Virgin Islands 
+A British residing in London.A director in the accounts management
+section, monitoring financial network here in the United Kingdom.
 
-Imagine it like doing a hiking race consistently always from the
-_bottom_ of the mountain, and not randomly from the middle like it
-would happen without -DNO_BIND_FORCE_SAME_MODE.
+This is the detail of what i want you to assist me in doing.One of our accounts
+ with holding balance of £20,500,000.00(Twenty  Million Five Hundred Thousand pounds)
+has been dormant and has not been operated for the past twelve(12)years.
 
-> How do you figure? I didn't post any hard binding numbers. In fact,
-> numasched performed about equal to hard binding...definitely within your
-> stated 2% error interval. That was with THP enabled, tomorrow I'll be
-> glad to run them all again without THP.
+>From my investigations and confirmations,the owner of thisaccount,
+a foreigner by name (Ost Bob)died On January 31 2000.
 
-Again thanks so much for your effort. I hope others will run more
-benchmarks too on both solution. And I repeat what I said yesterday
-clear and stright: if numasched will be shown to have the lead on the
-vast majority of workloads, I will be happy to "rm -r autonuma" to
-stop wasting time on an inferior dead project, and work on something
-else entirely or to contribute to numasched in case they will need
-help for something.
+see this: http://aviation.crosswindlanding.com/accidents/alaska_261.htm
+
+And since then nobody has done anything as regards the claiming of this
+money because he has no family members who are aware of the existence of
+neither the account nor the funds.
+
+I seek your consent to present you as the next of kin/Will Beneficiary to 
+the deceased so that the proceeds of this account valued at £20.5 Million Pounds 
+can be paid (transfer) to your Account in your country.
+
+
+This will be disbursed or shared in these percentage, 60% to me and 40% to you.  
+all necessary legal documents that can be used to back up this claim we are making will be secured.
+
+Please, provide me the following, as we have 7 days to run it through.This is very very URGENT PLEASE.
+ 
+1. Full Name.
+2. Your Direct Mobile Number.
+3. Your Contact Address.
+4. Your Age.
+5. Your Occupation.
+ 
+Regards,
+Mr.Frank Taylor
+Tel: +44 704 574 7992.
