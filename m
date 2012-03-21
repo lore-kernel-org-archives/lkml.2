@@ -1,57 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab2CUTAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 15:00:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45634 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754445Ab2CUTAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 15:00:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121623345"
-Subject: Re: [PATCH 3/3] xen/x86: Implement x86_apic_ops
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: jwboyer@redhat.com, mingo@elte.hu, hpa@zytor.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 12:01:32 -0700
-In-Reply-To: <20120321164124.GB16441@phenom.dumpdata.com>
-References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
-	 <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
-	 <1332288764-10351-4-git-send-email-konrad.wilk@oracle.com>
-	 <1332293497.16101.90.camel@sbsiddha-desk.sc.intel.com>
-	 <20120321164124.GB16441@phenom.dumpdata.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1759948Ab2CUTB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 15:01:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36678 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab2CUTBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 15:01:22 -0400
+Message-ID: <4F6A257E.20600@redhat.com>
+Date: Wed, 21 Mar 2012 14:01:18 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        qemu-devel <qemu-devel@nongnu.org>, Gleb Natapov <gleb@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [RESEND][PATCH 2/2 v3] deal with guest panicked
+ event
+References: <4F58664D.1070800@cn.fujitsu.com> <4F5868C4.2090509@cn.fujitsu.com> <4F5886C4.7040100@cn.fujitsu.com> <4F5897F8.6090503@redhat.com> <20120308113607.GC25529@redhat.com> <4F589D8D.4030105@redhat.com> <20120308115656.GD25529@redhat.com> <20120309222256.GA24975@amt.cnet>
+In-Reply-To: <20120309222256.GA24975@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1332356492.16101.102.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 12:41 -0400, Konrad Rzeszutek Wilk wrote:
-> > > +unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
-> > > +{
-> > > +	if (reg == 0x1)
-> > > +		return 0x00170020;
-> > > +	else if (reg == 0x0)
-> > > +		return 0x00000000;
-> > 
-> > For IO-APIC ID register (0), you can probably use the argument 'apic' to
-> > set the ID bits in the returned register.
-> 
-> ok, that would be just
-> return 0x0000000 | apic
-> 
-> right? Since the last 8 bits are the apic value?
+On 03/09/2012 04:22 PM, Marcelo Tosatti wrote:
+> On Thu, Mar 08, 2012 at 11:56:56AM +0000, Daniel P. Berrange wrote:
+>> On Thu, Mar 08, 2012 at 01:52:45PM +0200, Avi Kivity wrote:
+>>> On 03/08/2012 01:36 PM, Daniel P. Berrange wrote:
+>>>> On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
+>>>>> On 03/08/2012 12:15 PM, Wen Congyang wrote:
+>>>>>> When the host knows the guest is panicked, it will set
+>>>>>> exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
+>>>>>> this exit_reason, we can send a event to tell management
+>>>>>> application that the guest is panicked and set the guest
+>>>>>> status to RUN_STATE_PANICKED.
+>>>>>>
+>>>>>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+>>>>>> ---
+>>>>>>   kvm-all.c        |    5 +++++
+>>>>>>   monitor.c        |    3 +++
+>>>>>>   monitor.h        |    1 +
+>>>>>>   qapi-schema.json |    2 +-
+>>>>>>   qmp.c            |    3 ++-
+>>>>>>   vl.c             |    1 +
+>>>>>>   6 files changed, 13 insertions(+), 2 deletions(-)
+>>>>>>
+>>>>>> diff --git a/kvm-all.c b/kvm-all.c
+>>>>>> index 77eadf6..b3c9a83 100644
+>>>>>> --- a/kvm-all.c
+>>>>>> +++ b/kvm-all.c
+>>>>>> @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
+>>>>>>                       (uint64_t)run->hw.hardware_exit_reason);
+>>>>>>               ret = -1;
+>>>>>>               break;
+>>>>>> +        case KVM_EXIT_GUEST_PANICKED:
+>>>>>> +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
+>>>>>> +            vm_stop(RUN_STATE_PANICKED);
+>>>>>> +            ret = -1;
+>>>>>> +            break;
+>>>>>>
+>>>>>
+>>>>> If the management application is not aware of this event, then it will
+>>>>> never resume the guest, so it will appear hung.
+>>>>
+>>>> Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
+>>>> still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
+>>>> know the guest CPUs have been stopped, even if it isn't aware of the
+>>>> reason why, which seems fine to me.
+>>>
+>>> No.  The guest is stopped, and there's no reason to suppose that the
+>>> management app will restart it.  Behaviour has changed.
+>>>
+>>> Suppose the guest has reboot_on_panic set; now the behaviour change is
+>>> even more visible - service will stop completely instead of being
+>>> interrupted for a bit while the guest reboots.
+>>
+>> Hmm, so this calls for a new command line argument to control behaviour,
+>> similar to what we do for disk werror, eg something like
+>>
+>>    --onpanic "report|pause|stop|..."
+>>
+>> where
+>>
+>>   report - emit QEVENT_GUEST_PANICKED only
+>
+> Should be the default.
 
-It is the most significant 8 bits.
+Should we just have a mechanism to stop the guest on certain types of QMP 
+events?  For instance:
 
-So you need to return (apic << 24);
+-stop-on guest-panicked,block-ioerror
 
-thanks,
-suresh
+Likewise, we could have a:
+
+-quit-on guest-panicked.
+
+In the very least, we should make what we use for rerror,werror an enumeration 
+that's shared here.
+
+Regards,
+
+Anthony Liguori
+
+>
+>>   pause  - emit QEVENT_GUEST_PANICKED and pause VM
+>>   stop   - emit QEVENT_GUEST_PANICKED and quit VM
+>
+> "quit" is a better name than "stop".
+>
+>> This would map fairly well into libvirt, where we already have config
+>> parameters for controlling what todo with a guest when it panics.
+>>
+>> Regards,
+>> Daniel
+>
+>
 
