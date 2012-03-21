@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030852Ab2CULK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 07:10:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57943 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab2CULKY (ORCPT
+	id S1030874Ab2CULKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 07:10:54 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:58340 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab2CULKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 07:10:24 -0400
-From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
-        khali@linux-fr.org, linaro-dev@lists.linaro.org,
-        amit.kachhap@linaro.org, patches@linaro.org
-Subject: [PATCH] thermal: Fix for setting the thermal zone mode to enable/disable
-Date: Wed, 21 Mar 2012 16:40:01 +0530
-Message-Id: <1332328201-21191-1-git-send-email-amit.kachhap@linaro.org>
-X-Mailer: git-send-email 1.7.1
+	Wed, 21 Mar 2012 07:10:52 -0400
+Message-ID: <20329.46902.300917.811262@ipc1.ka-ro>
+Date: Wed, 21 Mar 2012 12:10:46 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] usb gadget: fix a section mismatch when compiling g_ffs
+ with CONFIG_USB_FUNCTIONFS_ETH
+In-Reply-To: <20120321100402.GL3092@arwen.pp.htv.fi>
+References: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
+	<1331474926-9237-1-git-send-email-LW@KARO-electronics.de>
+	<20120321100402.GL3092@arwen.pp.htv.fi>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basically without this patch changing the mode of thermal zone
-is not possible as wrong string size is passed to strncmp.
+Hi,
 
-Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
----
- drivers/thermal/thermal_sys.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Felipe Balbi writes:
+> Hi,
+> 
+> On Sun, Mar 11, 2012 at 03:08:46PM +0100, Lothar Waßmann wrote:
+> > Hi,
+> > 
+> > please ignore the previous message. I sent the patch out too early.
+> > Here is a revised version.
+> > 
+> >  commit 28824b18ac4705e876a282a15ea0de8fc957551f:
+> >  |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> >  |Date:   Wed May 5 12:53:13 2010 +0200
+> >  |
+> >  |    USB: gadget: __init and __exit tags removed
+> >  |
+> >  |    __init, __initdata and __exit tags have have been removed from
+> >  |    various files to make it possible for gadgets that do not use
+> >  |    the __init/__exit tags to use those.
+> >  obviously missed (at least) this case leading to a section mismatch in
+> >  g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
+> > 
+> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> 
+> please send in proper patch format and while at that include any Acks
+> you already got.
+> 
+What's wrong with the format?
+I used git-format-patch to create it, which should produce a properly
+formatted patch AFAIK.
 
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 220ce7e..96da1af 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -152,9 +152,9 @@ mode_store(struct device *dev, struct device_attribute *attr,
- 	if (!tz->ops->set_mode)
- 		return -EPERM;
- 
--	if (!strncmp(buf, "enabled", sizeof("enabled")))
-+	if (!strncmp(buf, "enabled", sizeof("enabled") - 1))
- 		result = tz->ops->set_mode(tz, THERMAL_DEVICE_ENABLED);
--	else if (!strncmp(buf, "disabled", sizeof("disabled")))
-+	else if (!strncmp(buf, "disabled", sizeof("disabled") - 1))
- 		result = tz->ops->set_mode(tz, THERMAL_DEVICE_DISABLED);
- 	else
- 		result = -EINVAL;
+
+Lothar Waßmann
 -- 
-1.7.1
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
