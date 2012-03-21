@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab2CUIva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 04:51:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58451 "EHLO
+	id S1756257Ab2CUIyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 04:54:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36593 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752932Ab2CUIv2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752932Ab2CUIyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 04:51:28 -0400
-Date: Wed, 21 Mar 2012 08:51:26 +0000
+	Wed, 21 Mar 2012 04:54:07 -0400
+Date: Wed, 21 Mar 2012 08:54:05 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Add TPS65090 regulator driver
-Message-ID: <20120321085125.GA10935@opensource.wolfsonmicro.com>
-References: <1332315326-11354-1-git-send-email-vbyravarasu@nvidia.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] regulator: max8952: Simplify the logic to get vid[0|1]
+ status
+Message-ID: <20120321085405.GB10935@opensource.wolfsonmicro.com>
+References: <1331772468.2981.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
+	protocol="application/pgp-signature"; boundary="kXdP64Ggrk/fb43R"
 Content-Disposition: inline
-In-Reply-To: <1332315326-11354-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1331772468.2981.1.camel@phoenix>
 X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,49 +30,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---u3/rZRmxL6MmkK24
+--kXdP64Ggrk/fb43R
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Mar 21, 2012 at 01:05:26PM +0530, Venu Byravarasu wrote:
+On Thu, Mar 15, 2012 at 08:47:48AM +0800, Axel Lin wrote:
+> The syntax "(((vid >> 1) % 2) == 1)" is inefficient and also hard to read.
+> Use bitwidse AND operator instead.
 
-> @@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
->  obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
->  obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
->  obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
-> +obj-$(CONFIG_REGULATOR_TPS65090) += tps65090-regulator.o
->  obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
->  obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+Applied, thanks.
 
-This won't apply against current -next...
-
-> +       rdev = regulator_register(&ri->desc, &pdev->dev,
-> +                               &tps_pdata->regulator, ri);
-
-...and won't build either.
-
-Always submit against current development versions of the kernel.
-
---u3/rZRmxL6MmkK24
+--kXdP64Ggrk/fb43R
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPaZaGAAoJEBus8iNuMP3d6GUQAJud/vSrVOjPFAkr+yoXubmn
-J8uw66APlboIgm4Zri/+j0rf3Nd8gElcQODC1nyYXG+a4jdlB9mgikRkAfEPABS9
-VfIAt/bSwKFBAGGoIC4vRi21aeOIQ2rpmmnI7f2iN7w3n5htNkJXoCPrw/hPEZNx
-BFGBhoJQx52XpeANP6/Gf4+jLFAA6WKn+vmeyVNyCO5R8AVB4WnqsU4WpKZ/d+LA
-kOzovDpKsR/GiswpPMRQTjopt6yvLgJuKZeE2WGojmMVoGsz0NjK5chtvc7kP5ri
-qHOMg6j3lpa3LktqV6gwEvy95WQCnDfWu6GuiWj7uE10s2Lnk8+DutuPpIGKxJvE
-3S4YM5V9k4eFfP3n+P4dmlqfoBBFMV5p5nyUAv40vB6MbFhKMpYUtn6z8FwzRiEw
-s47wLFLX4g/da6F0eC/yks3mm+LioGDgPcQzF0GFFmpYVu2Qgs/ZSZPSm5EK4aSP
-Y0VNAUnbBeDox3bHfV+ExFqa/ymPd7i26b8fRlmZf3bguS/Noy6WuEvRUzGNeTWN
-FSklkbqa53IntiYP3NFDG4wDVJ4dwI8Y/TYvT+LNafY3vk3VRYeXxdrKEgUS/hMF
-rGki7QjlN2pQIQ+/uIvlTCCMZEu1qapfyLtGgqsukl2jxI480Q7CpOvMZFT2Jyn9
-sudqoZkoLmrladsjOh5e
-=HVyC
+iQIcBAEBAgAGBQJPaZcGAAoJEBus8iNuMP3d5tcP/RXe9tNNUPIIPWizzrAVZy8I
+uKOPGoNyppxX4z50buofKusBliNR5hO940O146zBCBBrzh3PWt69jmd82jhcL82u
+N6z4tQODvL1eYzScFWuAbnJ+G9JSSvUE97SPw2v2th/SKD0l4KsjZ+PvxdY2ae1O
+ismVdcHT/4FS3D22+egvvepwpKOITAseFYQP5K5qTNKEOKyiMirFD5vtxsuBzVKY
+O1YW1ndxoR1DoaRQO3xAIiglcKpBNRjDAqPIcNDTyk3tMZvivu0c8utQecmhz/qJ
+gIj0xbeCkwCSifctwhRkvpQEDpBEwnbG2pAhdl3cWgkhuBQLBsZhs+29hk8tNpRL
+qAE7R5/lZAeSjppNJw4bTLoyFAFAr2NsmOg2AJLupOF5PLsUETuotQNKCzTF/laJ
+QplLdXHD843B9h4vLdab0RYcm6mqweCzdHMW0fcWAXFYw8FNm81l/vJmnBglzq3m
+qdh847obdvC5krKL6pOIrfsAXNu/+rWxBSiWBzMI0i6hKIdQvr3y5LvS5lexrRS9
+SWR2gZectEGgj6g+AkGsp7m/Qe6SdieKc5sI9ileW443FIHn44LL62RmLCsKuYGH
+BZn+3BlIcxI8+44do1grBZ4o8ROEV1MYxuDovuFV9kBU4xrJK+OyU3Rt/AkT9zvv
+Eag1Vuy4X3Gtts0pTnGW
+=Ybra
 -----END PGP SIGNATURE-----
 
---u3/rZRmxL6MmkK24--
+--kXdP64Ggrk/fb43R--
