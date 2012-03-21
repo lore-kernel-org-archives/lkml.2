@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987Ab2CUShw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:37:52 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:44497 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759882Ab2CUShu (ORCPT
+	id S1759998Ab2CUSjC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:39:02 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:23440 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759882Ab2CUSi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:37:50 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+VYmxtC9WVWm2oR3aLXe62DkbUC/4c7/EA19SRbv
-	bmhZsq60x3QeKJ
-Message-ID: <4F6A1FE0.8040808@gmx.de>
-Date: Wed, 21 Mar 2012 18:37:20 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	Wed, 21 Mar 2012 14:38:59 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174506205"
+Message-ID: <4F6A2042.9030302@codeaurora.org>
+Date: Wed, 21 Mar 2012 11:38:58 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+To: Paul Walmsley <paul@pwsan.com>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] drivers/video/pvr2fb.c: ensure arguments to request_irq
- and free_irq are compatible
-References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr> <1331494587-12196-2-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1331494587-12196-2-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v7 1/3] Documentation: common clk API
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <CAP245DXV5oE+-y+PQCcSM016h-J+UgTi1efmdrcyeQge4k1Cfw@mail.gmail.com> <201203161218.05125.arnd.bergmann@linaro.org> <201203162057.58706.arnd@arndb.de> <alpine.DEB.2.00.1203161509470.4395@utopia.booyaka.com> <20120316234706.GJ3852@pengutronix.de> <alpine.DEB.2.00.1203201611330.22974@utopia.booyaka.com> <alpine.LFD.2.02.1203202233340.24151@xanadu.home> <4F694A6A.4050706@codeaurora.org> <alpine.DEB.2.00.1203210130520.30543@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1203210130520.30543@utopia.booyaka.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2012 07:36 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Convert calls to free_irq so that the second argument is the same as the
-> last argument of the corresponding call to request_irq.  Without this
-> property, free_irq does nothing.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+On 03/21/2012 12:44 AM, Paul Walmsley wrote:
+> Hello Saravana,
+>
+> On Tue, 20 Mar 2012, Saravana Kannan wrote:
+>
+>> To add a few more thoughts, while I agree with Paul that there is room for
+>> improvement in the APIs, I think the difference in opinion comes when we ask
+>> the question:
+>>
+>> "When we eventually refine the APIs in the future to be more expressive, do we
+>> think that the current APIs can or cannot be made as wrappers around the new
+>> more expressive APIs?"
+>>
+>> Absolutes are almost never right, so I can't give an absolute answer.
+>> But I'm strongly leaning towards "we can" as the answer to the question.
+>> That combined with the reasons Nicholas mentioned is why I think the
+>> APIs should not be marked as experimental in anyway.
+>
+> The resistance to documenting that the clock interface is not
+> well-defined, and that therefore it is likely to change, and that users
+> should not expect it to be stable, is perplexing to me.
+>
+> Certainly a Kconfig help text change seems trivial enough.  But even the
+> resistance to CONFIG_EXPERIMENTAL has been quite surprising to me, given
+> that every single defconfig in arch/arm/defconfig sets it:
+>
+> $ find arch/arm/configs -type f  | wc -l
+> 122
+> $ fgrep -r CONFIG_EXPERIMENTAL=y arch/arm/configs | wc -l
+> 122
+> $
+>
+> (that includes iMX, by the way...)
+>
+> Certainly, neither Kconfig change is going to prevent us on OMAP from
+> figuring out what else is needed to convert our platform to the common
+> clock code.  And given the level of enthusiasm on the lists,
 
-Applied.
+I think the enthusiasm we are seeing are from the clock driver 
+developers. And for good reasons. Everyone is tired of having to write 
+or rewrite their own implementation.
 
+> I don't think
+> it's going to prevent many of the other ARM platforms from experimenting
+> with the conversion, either.
+>
+> So it would be interesting to know more about why you (or anyone else)
+> perceive that the Kconfig changes would be harmful.
 
-Thanks,
+But the enthusiasm of the clock driver developers doesn't necessarily 
+translate to users of the clock APIs (other driver devs). My worry with 
+marking it as experimental in Kconfig and to a certain extent in the 
+documentation is that it will discourage the driver devs from switching 
+to the new APIs. If no one is using the new APIs, then platforms can't 
+switch to the common clock framework either. If a lot of platform don't 
+convert to the common clock framework, the effort to get it merged in 
+now is not also very meaningful.
 
-Florian Tobias Schandinat
+Also, at the rate at which we come to an agreement on new APIs, I think 
+these new APIs should be considered quite stable :-) It's certainly 
+better than what we have today. We should encourage driver devs to move 
+to these new APIs and get the benefits while we go on another 2 yr cycle 
+to agree on the next set of APIs improvements.
 
-> 
-> ---
-> Not tested.
-> 
->  drivers/video/pvr2fb.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/video/pvr2fb.c b/drivers/video/pvr2fb.c
-> index 3a3fdc6..bcd44c3 100644
-> --- a/drivers/video/pvr2fb.c
-> +++ b/drivers/video/pvr2fb.c
-> @@ -895,7 +895,7 @@ static int __init pvr2fb_dc_init(void)
->  
->  #ifdef CONFIG_PVR2_DMA
->  	if (request_dma(pvr2dma, "pvr2") != 0) {
-> -		free_irq(HW_EVENT_VSYNC, 0);
-> +		free_irq(HW_EVENT_VSYNC, fb_info);
->  		return -EBUSY;
->  	}
->  #endif
-> @@ -914,7 +914,7 @@ static void __exit pvr2fb_dc_exit(void)
->  		currentpar->mmio_base = 0;
->  	}
->  
-> -	free_irq(HW_EVENT_VSYNC, 0);
-> +	free_irq(HW_EVENT_VSYNC, fb_info);
->  #ifdef CONFIG_PVR2_DMA
->  	free_dma(pvr2dma);
->  #endif
-> 
-> 
+And as I said before, I think it's much less likely that we will break 
+backward source compatibility when we do the next improvement. We could 
+have mostly avoid this large scale change by calling the APIs 
+prepare/unprepare/gate/ungate (or whatever) and make clk_enable/disable 
+similar to clk_prepare_enable/clk_disable_unprepare(). That would have 
+avoid a lot of drivers from having to mess with their clock calls. But 
+we didn't think about that in the excitement for improved APIs. I think 
+this will still be seared in our minds enough to make sure we don't 
+repeat that in the future.
 
+That covers all I have to say on this topic.
+
+-Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
