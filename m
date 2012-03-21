@@ -1,188 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab2CUS67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:58:59 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39718 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756330Ab2CUS6r (ORCPT
+	id S1757432Ab2CUS7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:59:19 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:48439 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab2CUS7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:58:47 -0400
+	Wed, 21 Mar 2012 14:59:13 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         David Safford <safford@linux.vnet.ibm.com>,
         Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Matt Helsley <matt.helsley@gmail.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v3 10/12] ima: defer calling __fput()
-Date: Wed, 21 Mar 2012 14:54:15 -0400
-Message-Id: <1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v3 07/12] ima: replace iint spinlock with rwlock/read_lock
+Date: Wed, 21 Mar 2012 14:54:12 -0400
+Message-Id: <1332356057-3356-8-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032118-7408-0000-0000-0000039EA398
+x-cbid: 12032118-3352-0000-0000-0000037ABA7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a file is closed before it is munmapped, __fput() is called with
-the mmap_sem taken.  With IMA-appraisal enabled, this results in an
-mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count
-to defer __fput() being called until after the mmap_sem is released.
+For performance, replace the iint spinlock with rwlock/read_lock.
 
-Changelog v3:
-- use slab mempool (suggested by Dmitry Kasatkin)
-- renamed a few functions based on Matt Helsley's review
-- define ima_fput_mempool as static (fix sparse error)
-- fix ima_defer_fput() stub definition
+Eric Paris questioned this change, from spinlocks to rwlocks, saying
+"rwlocks have been shown to actually be slower on multi processor
+systems in a number of cases due to the cache line bouncing required."
+
+Based on performance measurements compiling the kernel on a cold
+boot with multiple jobs with/without this patch, Dmitry Kasatkin
+and I found that rwlocks performed better than spinlocks, but very
+insignificantly.  For example with total compilation time around 6
+minutes, with rwlocks time was 1 - 3 seconds shorter... but always
+like that.
 
 Changelog v2:
-- based on discussions with: Tyler Hicks (use workqueues),
-  Dave Hansen (defer only IMA related files), and
-  Dmitry Kasatkin (add new IMA hook)
-- use slab memory for allocating work
+- new patch taken from the 'allocating iint improvements' patch
 
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- include/linux/ima.h                   |    5 ++
- mm/mmap.c                             |    1 +
- security/integrity/ima/ima_appraise.c |   84 +++++++++++++++++++++++++++++++++
- 3 files changed, 90 insertions(+), 0 deletions(-)
+ security/integrity/iint.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 2c7223d..af8cb3b 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -47,6 +47,7 @@ extern void ima_inode_post_setattr(struct dentry *dentry);
- extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		       const void *xattr_value, size_t xattr_value_len);
- extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
-+extern void ima_defer_fput(struct file *file);
- #else
- static inline void ima_inode_post_setattr(struct dentry *dentry)
- {
-@@ -66,5 +67,9 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
- {
- 	return 0;
+diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+index c91a436..d82a5a1 100644
+--- a/security/integrity/iint.c
++++ b/security/integrity/iint.c
+@@ -22,7 +22,7 @@
+ #include "integrity.h"
+ 
+ static struct rb_root integrity_iint_tree = RB_ROOT;
+-static DEFINE_SPINLOCK(integrity_iint_lock);
++static DEFINE_RWLOCK(integrity_iint_lock);
+ static struct kmem_cache *iint_cache __read_mostly;
+ 
+ int iint_initialized;
+@@ -35,8 +35,6 @@ static struct integrity_iint_cache *__integrity_iint_find(struct inode *inode)
+ 	struct integrity_iint_cache *iint;
+ 	struct rb_node *n = integrity_iint_tree.rb_node;
+ 
+-	assert_spin_locked(&integrity_iint_lock);
+-
+ 	while (n) {
+ 		iint = rb_entry(n, struct integrity_iint_cache, rb_node);
+ 
+@@ -63,9 +61,9 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode)
+ 	if (!IS_IMA(inode))
+ 		return NULL;
+ 
+-	spin_lock(&integrity_iint_lock);
++	read_lock(&integrity_iint_lock);
+ 	iint = __integrity_iint_find(inode);
+-	spin_unlock(&integrity_iint_lock);
++	read_unlock(&integrity_iint_lock);
+ 
+ 	return iint;
  }
-+static inline void ima_defer_fput(struct file *file)
-+{
-+	return;
-+}
- #endif /* CONFIG_IMA_APPRAISE_H */
- #endif /* _LINUX_IMA_H */
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 4c16a0a..c1accd4 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -232,6 +232,7 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
- 	if (vma->vm_ops && vma->vm_ops->close)
- 		vma->vm_ops->close(vma);
- 	if (vma->vm_file) {
-+		ima_defer_fput(vma->vm_file); /* drop mmap_sem first */
- 		fput(vma->vm_file);
- 		if (vma->vm_flags & VM_EXECUTABLE)
- 			removed_exe_file_vma(vma->vm_mm);
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index becc7e0..a100a3c 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/file.h>
- #include <linux/fs.h>
-+#include <linux/mempool.h>
- #include <linux/xattr.h>
- #include <linux/magic.h>
- #include <linux/ima.h>
-@@ -226,3 +227,86 @@ int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
- 	}
- 	return result;
+@@ -100,7 +98,7 @@ struct integrity_iint_cache *integrity_inode_get(struct inode *inode)
+ 	if (!iint)
+ 		return NULL;
+ 
+-	spin_lock(&integrity_iint_lock);
++	write_lock(&integrity_iint_lock);
+ 
+ 	p = &integrity_iint_tree.rb_node;
+ 	while (*p) {
+@@ -119,7 +117,7 @@ struct integrity_iint_cache *integrity_inode_get(struct inode *inode)
+ 	rb_link_node(node, parent, p);
+ 	rb_insert_color(node, &integrity_iint_tree);
+ 
+-	spin_unlock(&integrity_iint_lock);
++	write_unlock(&integrity_iint_lock);
+ 	return iint;
  }
-+
-+struct ima_fput_req {
-+	struct file *file;
-+	struct work_struct work;
-+};
-+static struct kmem_cache *ima_fput_slab;
-+static mempool_t *ima_fput_mempool;
-+
-+static void ima_deferred_fput(struct work_struct *work)
-+{
-+	struct ima_fput_req *deferred = container_of(work, struct ima_fput_req,
-+						     work);
-+
-+	fput(deferred->file);
-+	mempool_free(deferred, ima_fput_mempool);
-+}
-+
-+/**
-+ * ima_defer_fput - defer calling __fput() for mmaped files
-+ * @file: pointer to file structure to be freed
-+ *
-+ * The i_mutex is taken by ima_file_free(), called on  __fput(), to
-+ * update 'security.ima' to reflect the current file data hash.  When
-+ * a file is closed before it is munmapped, __fput() is called with
-+ * the mmap_sem taken, resulting in an mmap_sem/i_mutex lockdep.
-+ * This function defers calling __fput() until after the mmap_sem is
-+ * released.
-+ */
-+void ima_defer_fput(struct file *file)
-+{
-+	struct dentry *dentry = file->f_path.dentry;
-+	struct inode *inode = dentry->d_inode;
-+	struct ima_fput_req *defer;
-+	int rc;
-+
-+	if (!IS_IMA(inode))
-+		return;
-+
-+	defer = mempool_alloc(ima_fput_mempool, GFP_NOIO);
-+	if (!defer)
-+		return;
-+
-+	get_file(file);
-+
-+	defer->file = file;
-+	INIT_WORK(&defer->work, ima_deferred_fput);
-+	rc = schedule_work(&defer->work);
-+	if (rc == 0) {
-+		pr_info("ima: schedule work failed\n");
-+		mempool_free(defer, ima_fput_mempool);
-+		fput_atomic(file);
-+	}
-+}
-+
-+static int __init ima_fput_mempool_create(void)
-+{
-+	ima_fput_slab = kmem_cache_create("ima_fput",
-+					   sizeof(struct ima_fput_req),
-+					   0, 0, NULL);
-+	if (!ima_fput_slab) {
-+		pr_info("ima: failed kmem_cache_create\n");
-+		goto err_out;
-+	}
-+
-+	ima_fput_mempool = mempool_create_slab_pool(1, ima_fput_slab);
-+	if (!ima_fput_mempool)  {
-+		pr_info("ima: failed mempool_create_slab_pool\n");
-+		goto free_slab;
-+	}
-+	return 0;
-+
-+free_slab:
-+	kmem_cache_destroy(ima_fput_slab);
-+err_out:
-+	return -ENOMEM;
-+}
-+
-+static void __exit ima_fput_mempool_destroy(void)
-+{
-+	mempool_destroy(ima_fput_mempool);
-+	kmem_cache_destroy(ima_fput_slab);
-+}
-+security_initcall(ima_fput_mempool_create);
+ 
+@@ -136,10 +134,10 @@ void integrity_inode_free(struct inode *inode)
+ 	if (!IS_IMA(inode))
+ 		return;
+ 
+-	spin_lock(&integrity_iint_lock);
++	write_lock(&integrity_iint_lock);
+ 	iint = __integrity_iint_find(inode);
+ 	rb_erase(&iint->rb_node, &integrity_iint_tree);
+-	spin_unlock(&integrity_iint_lock);
++	write_unlock(&integrity_iint_lock);
+ 
+ 	iint_free(iint);
+ }
 -- 
 1.7.6.5
 
