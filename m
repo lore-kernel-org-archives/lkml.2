@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758851Ab2CUW1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:27:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46998 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757655Ab2CUW1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:27:50 -0400
-Date: Wed, 21 Mar 2012 23:27:24 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
-Message-ID: <20120321222724.GA1835@m.redhat.com>
-References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
- <1332267341-26338-4-git-send-email-jolsa@redhat.com>
- <1332269081.18960.444.camel@twins>
- <20120321104214.GB1632@m.brq.redhat.com>
- <20120321151119.GC21163@infradead.org>
+	id S1752434Ab2CUW2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:28:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38995 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab2CUW2X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 18:28:23 -0400
+Date: Wed, 21 Mar 2012 22:28:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [take 3] pohmelfs: call for inclusion
+Message-ID: <20120321222812.GS6589@ZenIV.linux.org.uk>
+References: <20120316121829.GA12685@ioremap.net>
+ <1331904553.5406.34.camel@joe2Laptop>
+ <20120316134314.GA19342@ioremap.net>
+ <1331907127.5406.48.camel@joe2Laptop>
+ <20120321202702.GA16713@ioremap.net>
+ <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
+ <20120321211835.GQ6589@ZenIV.linux.org.uk>
+ <20120321213704.GB16713@ioremap.net>
+ <20120321215432.GR6589@ZenIV.linux.org.uk>
+ <20120321220415.GA22315@ioremap.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120321151119.GC21163@infradead.org>
+In-Reply-To: <20120321220415.GA22315@ioremap.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 12:11:19PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Mar 21, 2012 at 11:42:14AM +0100, Jiri Olsa escreveu:
-> > On Tue, Mar 20, 2012 at 07:44:41PM +0100, Peter Zijlstra wrote:
-> > > If so, we need some option like:
-> > > 
-> > >   perf record -e "{cpu-clock,cache-misses,cache-references}:1"
-> > > 
-> > > to mean, only sample on cpu-clock but use PERF_SAMPLE_READ and
-> > > PERF_FORMAT_GROUP to read all siblings on every cpu-clock sample.
-> > > 
-> > > Now the disadvantage is that {} needs quotes on bash, the advantage is
-> > > that its completely natural on how to construct groups, without weird
-> > > --group/--group parsed. Also it provides a place for group modifiers.
-> > 
-> > how about '=group' keyword followed by ':' modifier
-> >   perf record -e "cpu-clock,cache-misses,cache-references=group:1"
-> > 
-> > or '=$groupname' and use the group name in output like
-> >   perf stat -e "task-clock,context-switches=krava:1" ls
-> > 
-> >      Performance counter stats for 'ls':
-> > 
-> >           1.003695 task-clock/krava          #    0.083 CPUs utilized          
-> >                  0 context-switches/krava    #    0.000 K/sec                  
-> > 
+On Thu, Mar 22, 2012 at 02:04:15AM +0400, Evgeniy Polyakov wrote:
+
+> Details are pretty simple - we want to allow external applications to
+> get to filesystem and grab data via single requests, since it is
+> stateless and can not hold dentry structure. They do not connect to
+> server which runs on top of filesystem, but insted directly to storage,
+> which hosts raw data.
 > 
-> Humm, interesting, perhaps putting the group name before the =event_list
-> will be more intuitive?
-> 
-> I.e.:
-> 
->   perf stat -e "krava=task-clock,context-switches:1" ls
+> Applications know they uploadede data via /whatever/path/was/to/the/file
+> And they want to get that data from server via single 'get'. Obviously
+> they can not store mapping from all filenames to inode number, and they
+> can not request dozen of directory lookups, since it takes time and has
+> to maintain state.
 
-yep, I put it at the end because of the ':' modifier stuff.
-We have it for each event, and it'd be in conflict having
-it at the end..
+Sigh... I wish it hadn't been an English-speaking maillist; mat is hard to
+translate properly...
 
-maybe we could put it like:
-   perf stat -e "krava:1=task-clock,context-switches" ls
+OK, let me try for a printable version: suppose we replace that d_path()
+call with dentry_path() and leave everything else as is; what exactly
+will be broken and how will it break?
 
-or put some other separator instead of ':' ... but ':' is the best ;)
+> When object was written via remounted path, then it is a problem for
+> those who made a setup - this ugly hack only 'works' in specially
+> crafted environment, which provides its pros and requires fair price of
+> cons.
 
-jirka
+_What_ remounted path?  I'm not talking about bindings at all...
