@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760333Ab2CUVTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:19:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44688 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760247Ab2CUVSz (ORCPT
+	id S1760410Ab2CUVTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:19:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35643 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759125Ab2CUVSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:55 -0400
-Message-Id: <20120321211533.461417061@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:18:52 -0400
+Message-Id: <20120321211533.367387452@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:15:40 -0700
+Date: Wed, 21 Mar 2012 14:15:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Eisserer <linuxhippy@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 8/9] iwl3945: fix possible il->txq NULL pointer dereference in delayed works
+        alan@lxorguk.ukuu.org.uk, "RongQing.Li" <roy.qing.li@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 7/9] ipv6: Dont dev_hold(dev) in ip6_mc_find_dev_rcu.
 In-Reply-To: <20120321211539.GA28899@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 210787e82a0ac1ffb5d7be1c796f0c51050849ad upstream.
+From: RongQing.Li <roy.qing.li@gmail.com>
 
-On il3945_down procedure we free tx queue data and nullify il->txq
-pointer. After that we drop mutex and then cancel delayed works. There
-is possibility, that after drooping mutex and before the cancel, some
-delayed work will start and crash while trying to send commands to
-the device. For example, here is reported crash in
-il3945_bg_reg_txpower_periodic():
-https://bugzilla.kernel.org/show_bug.cgi?id=42766#c10
+[ Upstream commit c577923756b7fe9071f28a76b66b83b306d1d001 ]
 
-Patch fix problem by adding il->txq check on works that send commands,
-hence utilize tx queue.
+ip6_mc_find_dev_rcu() is called with rcu_read_lock(), so don't
+need to dev_hold().
+With dev_hold(), not corresponding dev_put(), will lead to leak.
 
-Reported-by: Clemens Eisserer <linuxhippy@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ bug introduced in 96b52e61be1 (ipv6: mcast: RCU conversions) ]
 
-
-
+Signed-off-by: RongQing.Li <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wireless/iwlegacy/iwl-3945.c     |    7 ++++---
- drivers/net/wireless/iwlegacy/iwl3945-base.c |    2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ net/ipv6/mcast.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/wireless/iwlegacy/iwl-3945.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-3945.c
-@@ -1870,11 +1870,12 @@ static void iwl3945_bg_reg_txpower_perio
- 	struct iwl_priv *priv = container_of(work, struct iwl_priv,
- 					     _3945.thermal_periodic.work);
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -257,7 +257,6 @@ static struct inet6_dev *ip6_mc_find_dev
  
--	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
--		return;
--
- 	mutex_lock(&priv->mutex);
-+	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
-+		goto out;
-+
- 	iwl3945_reg_txpower_periodic(priv);
-+out:
- 	mutex_unlock(&priv->mutex);
- }
- 
---- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
-@@ -2513,7 +2513,7 @@ static void iwl3945_bg_alive_start(struc
- 	    container_of(data, struct iwl_priv, alive_start.work);
- 
- 	mutex_lock(&priv->mutex);
--	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
-+	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
- 		goto out;
- 
- 	iwl3945_alive_start(priv);
+ 		if (rt) {
+ 			dev = rt->rt6i_dev;
+-			dev_hold(dev);
+ 			dst_release(&rt->dst);
+ 		}
+ 	} else
 
 
