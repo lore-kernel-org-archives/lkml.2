@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab2CUPRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:17:00 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:36662 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab2CUPQ6 (ORCPT
+	id S1757814Ab2CUPTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 11:19:07 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:1539 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab2CUPTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:16:58 -0400
-Date: Wed, 21 Mar 2012 16:16:56 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/20] cris/mm/fault.c: Port OOM changes to
-	do_page_fault
-Message-ID: <20120321151655.GM549@axis.com>
-References: <1332249845-3038-1-git-send-email-consul.kautuk@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332249845-3038-1-git-send-email-consul.kautuk@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 21 Mar 2012 11:19:05 -0400
+Date: Wed, 21 Mar 2012 16:18:51 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH] thermal: Fix for setting the thermal zone mode to
+ enable/disable
+Message-ID: <20120321161851.2f072204@endymion.delvare>
+In-Reply-To: <CACLa4pts46gZmx=cGWF9UuHh-VpeoG9e2MmJR=xTn7sFxiFyjw@mail.gmail.com>
+References: <1332328201-21191-1-git-send-email-amit.kachhap@linaro.org>
+	<20120321151357.53fb86e4@endymion.delvare>
+	<CACLa4pts46gZmx=cGWF9UuHh-VpeoG9e2MmJR=xTn7sFxiFyjw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 02:24:05PM +0100, Kautuk Consul wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
+Hi Eric,
+
+On Wed, 21 Mar 2012 10:47:52 -0400, Eric Paris wrote:
+> On Wed, Mar 21, 2012 at 10:13 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> > Note that a quick grep suggests that drivers/misc/ad525x_dpot.c,
+> > security/selinux/hooks.c and arch/m68k/sun3/prom/console.c suffer from
+> > the same issue, if you want to fix them too.
 > 
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
-> 
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
-> 
-> Port these changes to CRIS.
+> I do see that we use sizeof() for strings in the selinux code, but I
+> don't see a place that it is a bug.  If you see a bug let me know and
+> I'd be happy to fix it!
 
-Looks good!
+My suspect is in sb_finish_set_opts():
 
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+	if (strncmp(sb->s_type->name, "sysfs", sizeof("sysfs")) == 0)
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+If sb->s_type->name is exactly "sysfs", it will work, but if it only
+starts with "sysfs" it won't. And if only exact matches are expected,
+then strncmp is overkill and strcmp should be used instead.
 
-/^JN - Jesper Nilsson
+Note that I don't know anything about the code so I might as well be
+totally wrong.
+
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Jean Delvare
