@@ -1,110 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758913Ab2CUNW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:22:28 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:23756
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756907Ab2CUNW0 (ORCPT
+	id S1758678Ab2CUNXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:23:54 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48634 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab2CUNXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:22:26 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dI1432N98dK4015Izz1202hzz8275bh8275dh5eeeKz2dh668h839h93fhd2bh)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M18L4Z-01-33X-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-To: Attilio Rao <attilio.rao@citrix.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [PATCH RFC V6 1/11]  x86/spinlock: replace pv spinlocks with pv ticketlocks
-Date: Wed, 21 Mar 2012 14:22:09 +0100
-Message-ID: <2425963.NBpIGX9T40@chlor>
-Organization: AMD OSRC
-User-Agent: KMail/4.8.0 (Linux/3.0.0-17-generic; KDE/4.8.1; x86_64; ; )
-In-Reply-To: <4F69D1D9.9080107@citrix.com>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <20120321102052.473.40193.sendpatchset@codeblue.in.ibm.com> <4F69D1D9.9080107@citrix.com>
+	Wed, 21 Mar 2012 09:23:52 -0400
+Date: Wed, 21 Mar 2012 09:23:44 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Paul Walmsley <paul@pwsan.com>
+cc: Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 1/3] Documentation: common clk API
+In-Reply-To: <alpine.DEB.2.00.1203210018260.30543@utopia.booyaka.com>
+Message-ID: <alpine.LFD.2.02.1203210855510.24151@xanadu.home>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <CAP245DXV5oE+-y+PQCcSM016h-J+UgTi1efmdrcyeQge4k1Cfw@mail.gmail.com> <201203161218.05125.arnd.bergmann@linaro.org> <201203162057.58706.arnd@arndb.de> <alpine.DEB.2.00.1203161509470.4395@utopia.booyaka.com>
+ <20120316234706.GJ3852@pengutronix.de> <alpine.DEB.2.00.1203201611330.22974@utopia.booyaka.com> <alpine.LFD.2.02.1203202233340.24151@xanadu.home> <alpine.DEB.2.00.1203210018260.30543@utopia.booyaka.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 March 2012, 13:04:25 Attilio Rao wrote:
-> On 21/03/12 10:20, Raghavendra K T wrote:
-> > From: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> >
-> > Rather than outright replacing the entire spinlock implementation in
-> > order to paravirtualize it, keep the ticket lock implementation but add
-> > a couple of pvops hooks on the slow patch (long spin on lock, unlocking
-> > a contended lock).
-> >
-> > Ticket locks have a number of nice properties, but they also have some
-> > surprising behaviours in virtual environments.  They enforce a strict
-> > FIFO ordering on cpus trying to take a lock; however, if the hypervisor
-> > scheduler does not schedule the cpus in the correct order, the system can
-> > waste a huge amount of time spinning until the next cpu can take the lock.
-> >
-> > (See Thomas Friebel's talk "Prevent Guests from Spinning Around"
-> > http://www.xen.org/files/xensummitboston08/LHP.pdf  for more details.)
-> >
-> > To address this, we add two hooks:
-> >   - __ticket_spin_lock which is called after the cpu has been
-> >     spinning on the lock for a significant number of iterations but has
-> >     failed to take the lock (presumably because the cpu holding the lock
-> >     has been descheduled).  The lock_spinning pvop is expected to block
-> >     the cpu until it has been kicked by the current lock holder.
-> >   - __ticket_spin_unlock, which on releasing a contended lock
-> >     (there are more cpus with tail tickets), it looks to see if the next
-> >     cpu is blocked and wakes it if so.
-> >
-> > When compiled with CONFIG_PARAVIRT_SPINLOCKS disabled, a set of stub
-> > functions causes all the extra code to go away.
-> >    
+On Wed, 21 Mar 2012, Paul Walmsley wrote:
+
+> Hello Nico,
 > 
-> I've made some real world benchmarks based on this serie of patches 
-> applied on top of a vanilla Linux-3.3-rc6 (commit 
-> 4704fe65e55fb088fbcb1dc0b15ff7cc8bff3685), with both 
-> CONFIG_PARAVIRT_SPINLOCK=y and n, which means essentially 4 versions 
-> compared:
-> * vanilla - CONFIG_PARAVIRT_SPINLOCK - patch
-> * vanilla + CONFIG_PARAVIRT_SPINLOCK - patch
-> * vanilla - CONFIG_PARAVIRT_SPINLOCK + patch
-> * vanilla + CONFIG_PARAVIRT_SPINLOCK + patch
+> On Tue, 20 Mar 2012, Nicolas Pitre wrote:
 > 
-[...]
-> == Results
-> This test points in the direction that Jeremy's rebased patches don't 
-> introduce a peformance penalty at all, but also that we could likely 
-> consider CONFIG_PARAVIRT_SPINLOCK option removal, or turn it on by 
-> default and suggest disabling just on very old CPUs (assuming a 
-> performance regression can be proven there).
+> > This common clk API has been under development for over *two* years 
+> > already, with several attempts to merge it.  And each previous merge 
+> > attempt aborted because someone came along at the last minute to do 
+> > exactly what you are doing i.e. underline all the flaws and call for a 
+> > redesign.  This is becoming a bad joke.
+> 
+> There is a misunderstanding.  I am not calling for a redesign.  I am 
+> simply stating that the current maturity level of the API and code should 
+> be documented in the Kconfig dependencies or description text before the 
+> code goes upstream.  The objectives are to make future changes easier, set 
+> expectations, and clearly disclose the extent to which the API and code 
+> will need to change.
 
-Very interesting results, in particular knowing that in the one guest
-case things do not get (significantly) slower due to the added logic
-and LOCKed RMW in the unlock path.
+Maybe there is no actual consensus on that extent.
 
-AFAICR, the problem really became apparent when running multiple guests
-time sharing the physical CPUs, i.e., two guests with eight vCPUs each
-on an eight core machine.  Did you look at this setup with your tests?
+> > The code will be easier to change once it is in mainline, simply due to 
+> > the fact that you can also change all its users at once.  And it is well 
+> > possible that most users won't have to deal with the same magnitude of 
+> > complexity as yours, again reducing the scope for resistance to changes.
+> 
+> I hope you are right.  To me, these conclusions seem unlikely.  It seems 
+> equally likely that these rationales will make it much more difficult to 
+> change the code once it's upstream and platforms are depending on it.  
 
-Thanks,
-  Stephan
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719  (AMD: 29-719)
+No code should go upstream if no one depends on it.  Therefore we change 
+code that many platforms depend on all the time.  What is killing us is 
+the need to synchronize with multiple external code bases scattered 
+around.
+
+> Particularly given the ongoing sensitivity to reducing "churn" of mainline 
+> code, so publicly discussed.
+
+Please stop buying into that crap.  We congratulate ourselves every 
+merge cycles with the current process being able to deal with around 
+half a million of lines changed every 3 months or so.  It's pointless 
+churn that is frowned upon, not useful and incremental API changes.  I 
+don't think that "pointless" would apply here.
+
+> So it seems like a good idea to attempt to address these potential 
+> roadblocks and criticisms to major clock framework changes early.
+
+I understand your concern, however I don't think it is as serious as you 
+are making it.
+
+> One last comment to address which is orthogonal to the technical content 
+> of this discussion.
+> 
+> > Otherwise one might ask where were you during those development years if 
+> > you claim that the behavior and/or API of the common clock code still 
+> > need to change significantly?
+> 
+> One might ask this.  If one were to ask this, another might briefly 
+> outline the participation in public and private clock discussions at 
+> Linaro Connect in Budapest and Redwood Shores, at LPC in Santa Rosa, at 
+> ELCE/KS in Prague, at ELC in Redwood Shores, in conference calls, IRC 
+> sessions, and private E-mails with many of the people included in the 
+> header of this message, not to mention the list posts.
+
+Sure.  I was there too and came across you many times.  I just don't 
+understand why some apparent consensus was built around the current 
+submission, that people involved appeared to be highly satisfied at 
+last, given the emphasis you are giving to your present concern which 
+doesn't seem to be widely shared.  This is a bit surprising.
+
+> None of the concerns that have been described are new.  There has been an 
+> endeavour to discuss them with anyone who seemed even remotely interested.
+
+Let's change tactics then.  We've been discussing this code for over two 
+years and no one could really benefit from it during that time.  Maybe 
+future discussion could become more productive and concrete when some 
+code is merged _and_ used at last.
 
 
+Nicolas
