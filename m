@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab2CUNQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:16:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48980 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758098Ab2CUNQL (ORCPT
+	id S1758881Ab2CUNRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:17:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43860 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758794Ab2CUNRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:16:11 -0400
-Message-ID: <4F69D496.2040509@openvz.org>
-Date: Wed, 21 Mar 2012 17:16:06 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Wed, 21 Mar 2012 09:17:15 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-References: <20120321065140.13852.52315.stgit@zurg> <20120321100602.GA5522@barrios>
-In-Reply-To: <20120321100602.GA5522@barrios>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Marti Raudsepp <marti@juffo.org>
+Date: Wed, 21 Mar 2012 15:16:34 +0200
+Message-ID: <CABRT9RB1L4vKmD5tZoQuoZyPmsaniwwFmZjsgGkrwoqz83954g@mail.gmail.com>
+Subject: ext4 startup kernel oops in kernel 3.3.0
+To: Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan Kim wrote:
-> Hi Konstantin,
->
-> It seems to be nice clean up to me and you are a volunteer we have been wanted
-> for a long time. Thanks!
-> I am one of people who really want to expand vm_flags to 64 bit but when KOSAKI
-> tried it, Linus said his concerning, I guess you already saw that.
->
-> He want to tidy vm_flags's usage up rather than expanding it.
-> Without the discussion about that, just expanding vm_flags would make us use
-> it up easily so that we might need more space.
+Hi,
 
-Strictly speaking, my pachset does not expands vm_flags, it just prepares to this.
-Anyway vm_flags_t looks better than hard-coded "unsigned long" and messy type-casts around it.
+I'm using kernel 3.3.0 on one of my VMs and recently it oopsed in ext4
+during startup. Before this crash, I did a package update, followed
+quickly by a reboot.
 
->
-> Readahead flags are good candidate to move into another space and arch-specific flags, I guess.
-> Another candidate I think of is THP flag. It's just for only anonymous vma now
-> (But I am not sure we have a plan to support it for file-backed pages in future)
-> so we can move it to anon_vma or somewhere.
-> I think other guys might find more somethings
->
-> The point is that at least, we have to discuss about clean up current vm_flags's
-> use cases before expanding it unconditionally.
+Things went wrong early enough in the boot process that there are no
+log entries of the system's startup. Yet the fact that it crashed at
+12 seconds is weird -- usually this machine boots in under 3 seconds.
 
-Seems like we can easily remove VM_EXECUTABLE
-(count in mm->num_exe_file_vmas amount of vmas with vma->vm_file == mm->exe_file
-instead of vmas with VM_EXECUTABLE bit)
+Strangely enough, after another reboot, things were OK again.
 
-And probably VM_CAN_NONLINEAR...
+I'm using Arch Linux with systemd, x86_64 VM under QEMU/KVM. virtio
+storage using QEMU's "threads" I/O mode. ext4 with the only mount
+option "noatime".
 
->
-> On Wed, Mar 21, 2012 at 10:56:07AM +0400, Konstantin Khlebnikov wrote:
->> There is good old tradition: every year somebody submit patches for extending
->> vma->vm_flags upto 64-bits, because there no free bits left on 32-bit systems.
->>
->> previous attempts:
->> https://lkml.org/lkml/2011/4/12/24	(KOSAKI Motohiro)
->> https://lkml.org/lkml/2010/4/27/23	(Benjamin Herrenschmidt)
->> https://lkml.org/lkml/2009/10/1/202	(Hugh Dickins)
->>
->> Here already exist special type for this: vm_flags_t, but not all code uses it.
->> So, before switching vm_flags_t from unsinged long to u64 we must spread
->> vm_flags_t everywhere and fix all possible type-casting problems.
->>
->> There is no functional changes in this patch set,
->> it only prepares code for vma->vm_flags converting.
->>
+Here's a picture of the oops: http://ompldr.org/vZDNnNg
+
+Since all I have is this screenshot, I'll have to type in the stack
+trace. The oops message itself was lost thanks to kernel's brilliant
+debugging tools (Shift+PgUp didn't work).
+
+Process: flush-254:0 (pid 299)
+
+Call Trace:
+? pagevec_lookup_tag
+? write_cache_pages_da [ext4]
+mpage_da_map_and_submit [ext4]
+? ext4_da_writepages [ext4]
+ext4_da_writepages [ext4]
+do_writepages
+writeback_single_inode
+writeback_sb_inodes
+__writeback_inodes_wb
+wb_writeback
+? prop_fraction_percpu
+wb_do_writeback
+? schedule_timeout
+bdi_writeback_thread
+? wb_do_writeback
+kthread
+kernel_thread_helper
+? kthread_freezable_should_stop
+? gs_change
+
+RIP mpage_da_submit_io [ext4]
+
+Regards,
+Marti
