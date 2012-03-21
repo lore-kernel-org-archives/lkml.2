@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab2CUEUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 00:20:10 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37795 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2CUEUI (ORCPT
+	id S1751361Ab2CUEYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 00:24:12 -0400
+Received: from mail.hq.newdream.net ([66.33.206.127]:34961 "EHLO
+	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab2CUEYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 00:20:08 -0400
+	Wed, 21 Mar 2012 00:24:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=dreamhost.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=dreamhost.com;
+	 b=Cuy9VKrS1UeeNnndBLcLDHItgOjxPOaWB0en4rEU7TVFNWyuU9xx9ncGvNAvG
+	jtrIA+e7BAaVBZ+Y3dNK+8Dd0sGUo126sYGOLD4Gi/pJTDRnyjonklaqvUGJqvSZ
+	tZn+tz63Qq1LxZDIvSLsEsHNK6YIjLPCD0Iurt64pJwK6c=
+Message-ID: <4F6957EB.5030309@dreamhost.com>
+Date: Tue, 20 Mar 2012 23:24:11 -0500
+From: Alex Elder <elder@dreamhost.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAG-aW06hebVsVrFZvTMMuS6v6VNGf65H8h1X3eMaNXZo_QmbBQ@mail.gmail.com>
-References: <1331603857.3436.24.camel@minggr>
-	<CAG-aW06hebVsVrFZvTMMuS6v6VNGf65H8h1X3eMaNXZo_QmbBQ@mail.gmail.com>
-Date: Wed, 21 Mar 2012 12:20:06 +0800
-X-Google-Sender-Auth: BaaS2RXglu3XkI7NhRQMBnkLTGw
-Message-ID: <CAF1ivSYx9ScOTM3a-WAqGuyLTZgRoD6yuQF7FrzFAh6e1OvZqw@mail.gmail.com>
-Subject: Re: [PATCH v2] libata: disable runtime pm for hotpluggable port
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: Matt <jackdachef@gmail.com>, linux-ide@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, jslaby@suse.cz, cwillu@cwillu.com,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Sage Weil <sage@newdream.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Durgin <josh.durgin@dreamhost.com>
+Subject: Re: linux-next: build failure after merge of the ceph tree
+References: <20120321124007.e879c834619c7bb9298d5694@canb.auug.org.au>
+In-Reply-To: <20120321124007.e879c834619c7bb9298d5694@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 6:49 AM, Matt <jackdachef@gmail.com> wrote:
-[......]
+On 03/20/2012 08:40 PM, Stephen Rothwell wrote:
+> Hi Sage,
 >
-> Hi Lin Ming,
+> After merging the ceph tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 >
-> thanks for CCing on the updated patch
+> drivers/block/rbd.c: In function 'rbd_add':
+> drivers/block/rbd.c:2384:2: error: 'struct rbd_image_header' has no member named 'snap_rwsem'
 >
-> I just finished testing it with 3.3-rc7 and it works as advertised
+> Caused by commit dd2a081fb58f ("rbd: move snap_rwsem to the device,
+> rename to header_rwsem") interacting with commit 0e805a1d8577 ("rbd:
+> initialize snap_rwsem in rbd_add()") from Linus' tree.
+>
+> I used the ceph tree from next-20120320 for today.
 
-Hi Jeff,
+I'll take a look at this tomorrow.  I'm sorry my earlier
+suggestion didn't address this.
 
-Any comment?
-Could you apply this patch for 3.4-rc?
-
-Thanks,
-Lin Ming
-
->
->
-> Kind Regards
->
-> Matt
+					-Alex
