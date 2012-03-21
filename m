@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759894Ab2CUSUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:20:18 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:33684 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753440Ab2CUSUP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:20:15 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 81.ujcsVM1k8tLd9IJTlChHyd_7zF.zwXZR015h8PrXPTKl
- 6BVpiIPnFRyyx7E2vcMZ2ySJj1ezMMSJKMxq8Ik5_BPNfeBI9RdHUhnyizli
- l.cxSPdyIjwkAElfgwBanFxrZ2NVQC0EUuP7XME60Kz6LI.564q98Y6y5Dhg
- qpjU.JVQ9PqYyIuYBTmQs.SzFc16wJ99.35BZa.pKHqFsrjFzC7hSLenQb8a
- Mk_if5mWQZiHmjprO6mrtFmKSnzAyYw.CgAP_pl4Jk4tlx1Y5r3pNN.y9x5l
- ZJNBd4OnmnwW1FHOlHsJG08T0o.KRTUZZ0gTSajE7M1IJP8cJsGcDWjGv_Xu
- crzBQ5S3NQ3DtZk3SjRerMkg6heIJ1igmMZkj8Cqu44v74g9Qp8sIcDtNePw
- e
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 21 Mar 2012 13:20:11 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: Patch workqueue: create new slab cache instead of hacking
-In-Reply-To: <1332353119.9433.2.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.00.1203211319100.25567@router.home>
-References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com> <20120320154619.GA5684@google.com> <4F6944D9.5090002@cn.fujitsu.com> <CAOS58YPydFUap4HjuRATxza6VZgyrXmQHVxR83G7GRJL50ZTRQ@mail.gmail.com>
- <alpine.DEB.2.00.1203210910450.20482@router.home> <1332341381.7893.17.camel@edumazet-glaptop> <alpine.DEB.2.00.1203210959500.21932@router.home> <1332345859.5330.8.camel@edumazet-glaptop> <alpine.DEB.2.00.1203211253520.21932@router.home>
- <1332353119.9433.2.camel@edumazet-glaptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759922Ab2CUS1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:27:52 -0400
+Received: from mout0.freenet.de ([195.4.92.90]:51578 "EHLO mout0.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754588Ab2CUS1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 14:27:51 -0400
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+X-Newsgroups: linux.kernel
+Subject: Re: hibernate random memory corruption, workaround i915.modeset=0
+Date: Wed, 21 Mar 2012 19:15:48 +0100
+Organization: privat
+Message-ID: <4F6A1AD4.2030302@01019freenet.de>
+References: <iz8bE-3ij-7@gated-at.bofh.it> <iGMdX-6N4-9@gated-at.bofh.it> <iGOz9-2vm-19@gated-at.bofh.it> <iHvuq-7MF-25@gated-at.bofh.it>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+In-Reply-To: <iHvuq-7MF-25@gated-at.bofh.it>
+To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012, Eric Dumazet wrote:
+Hi Stanislaw!
 
-> On Wed, 2012-03-21 at 12:54 -0500, Christoph Lameter wrote:
-> > On Wed, 21 Mar 2012, Eric Dumazet wrote:
-> >
-> > > On Wed, 2012-03-21 at 10:03 -0500, Christoph Lameter wrote:
-> > > > On Wed, 21 Mar 2012, Eric Dumazet wrote:
-> > > >
-> > > > > Creating a dedicated cache for few objects ? Thats a lot of overhead, at
-> > > > > least for SLAB (no merges of caches)
-> > > >
-> > > > Its some overhead for SLAB (a lot is what? If you tune down the per cpu
-> > > > caches it should be a couple of pages) but its none for SLUB.
-> > >
-> > > SLAB overhead per cache is O(CPUS * nr_node_ids)  (unless alien caches
-> > > are disabled)
-> >
-> > nr_node_ids==2 in the standard case these days. Alien caches are minimal.
->
->
-> Thats not true. Some machines use lots of nodes (fake nodes) for various
-> reasons.
+Stanislaw Gruszka schrieb:
+> On Mon, Mar 19, 2012 at 10:21:28AM -0700, Keith Packard wrote:
+>> <#part sign=pgpmime>
+>> On Mon, 19 Mar 2012 15:53:54 +0100, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+>>
+>>> Keith, is there a chance that this bug can be fixed by i915 team?
+>>
+>> Yes, I'm working on figuring out how to actually reproduce this and then
+>> work on a few work-arounds.
+> 
+> This must be hardware dependent then, yesterday and today I tried to
+> reproduce on Lenovo T60 with:
+> 
+> 00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller [8086:27a2] (rev 03)
+> 
+> and there is no sign of corruption, I double checked if slab poisoning
+> is enabled.
+> 
+>>> If not, can we disable hibernate on i915 with modeset=1 and add
+>>> module option, which enable it for those who want to risk?
+>>
+>> I'd love to know if disabling modeset on just the booting kernel helps;
+>> leaving the resuming kernel with modeset=1. I haven't been able to
+>> reproduce this locally yet to test this theory though.
+> 
+> On Lenovo T500 with:
+> 
+> 00:02.1 Display controller [0380]: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller [8086:2a43] (rev 07)
+> 
+> that is the case. Script attached on previous email trigger corruption
+> with modeset=1 (on various older and newer kernels) in less then 20
+> iterations. There is no corruption after 100 iterations if
+> i915.modeset=0 parameter is used. Some users on RH bugzilla confirmed
+> that workaround as well.
+> 
+> If you want list of more i915 adapters where the problem happens, I can
+> check in our bugzilla and provide it.
 
-Which is not a typical use case.
+It happens too with a MSI CR620 notebook (Intel Core I5 M460):
 
-> And they cant disable alien caches for performance reasons.
-
-Ok then lets genericize the slub merge in some form so that it works for
-all slab allocators.
+00:02.0 VGA compatible controller: Intel Corporation Core Processor
+Integrated Graphics Controller (rev 02) (prog-if 00 [VGA controller])
 
 
+I can confirm that modeset=0 during resume doesn't activate the error.
+But this is nothing new as I already wrote here[1], that the error
+doesn't come up as long as kms is disabled.
+
+
+Regards,
+Andreas
+
+[1] http://article.gmane.org/gmane.linux.kernel/1266499
