@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965161Ab2CUG4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:56:51 -0400
+	id S965196Ab2CUG5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:57:25 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39114 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965127Ab2CUG4t (ORCPT
+	with ESMTP id S1030431Ab2CUG5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:56:49 -0400
-Subject: [PATCH 08/16] mm/unicore32: use vm_flags_t for vma flags
+	Wed, 21 Mar 2012 02:57:18 -0400
+Subject: [PATCH 15/16] mm: cast vm_flags_t to u64 before printing
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 10:56:46 +0400
-Message-ID: <20120321065645.13852.83925.stgit@zurg>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Wed, 21 Mar 2012 10:57:14 +0400
+Message-ID: <20120321065714.13852.12470.stgit@zurg>
 In-Reply-To: <20120321065140.13852.52315.stgit@zurg>
 References: <20120321065140.13852.52315.stgit@zurg>
 User-Agent: StGit/0.15
@@ -24,46 +23,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same magic like in arm: assembler code wants to test VM_EXEC,
-but for big-endian we should get upper word for this.
+Let's always print vm_flags_t as u64, thus now we can freely change
+vm_flags_t's size depending on target achitecture or config options.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/unicore32/kernel/asm-offsets.c |    6 +++++-
- arch/unicore32/mm/fault.c           |    2 +-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ arch/sh/mm/tlbflush_64.c                         |    2 +-
+ drivers/infiniband/hw/ipath/ipath_file_ops.c     |    6 ++++--
+ drivers/infiniband/hw/qib/qib_file_ops.c         |    6 ++++--
+ drivers/staging/android/binder.c                 |   15 ++++++++------
+ drivers/staging/tidspbridge/core/tiomap3430.c    |   13 ++++++------
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |    4 ++--
+ fs/binfmt_elf_fdpic.c                            |   24 ++++++++++++++--------
+ mm/memory.c                                      |    5 +++--
+ 8 files changed, 45 insertions(+), 30 deletions(-)
 
-diff --git a/arch/unicore32/kernel/asm-offsets.c b/arch/unicore32/kernel/asm-offsets.c
-index ffcbe75..e3199b5 100644
---- a/arch/unicore32/kernel/asm-offsets.c
-+++ b/arch/unicore32/kernel/asm-offsets.c
-@@ -87,9 +87,13 @@ int main(void)
- 	DEFINE(S_FRAME_SIZE,	sizeof(struct pt_regs));
- 	BLANK();
- 	DEFINE(VMA_VM_MM,	offsetof(struct vm_area_struct, vm_mm));
-+#if defined(CONFIG_CPU_BIG_ENDIAN) && (NR_VMA_FLAGS > 32)
-+	DEFINE(VMA_VM_FLAGS,	offsetof(struct vm_area_struct, vm_flags) + 4);
-+#else
- 	DEFINE(VMA_VM_FLAGS,	offsetof(struct vm_area_struct, vm_flags));
-+#endif
- 	BLANK();
--	DEFINE(VM_EXEC,		VM_EXEC);
-+	DEFINE(VM_EXEC,		(__force unsigned int)VM_EXEC);
- 	BLANK();
- 	DEFINE(PAGE_SZ,		PAGE_SIZE);
- 	BLANK();
-diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
-index 283aa4b..9137996 100644
---- a/arch/unicore32/mm/fault.c
-+++ b/arch/unicore32/mm/fault.c
-@@ -158,7 +158,7 @@ void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
-  */
- static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
- {
--	unsigned int mask = VM_READ | VM_WRITE | VM_EXEC;
-+	vm_flags_t mask = VM_READ | VM_WRITE | VM_EXEC;
+diff --git a/arch/sh/mm/tlbflush_64.c b/arch/sh/mm/tlbflush_64.c
+index e3430e0..b798e7f 100644
+--- a/arch/sh/mm/tlbflush_64.c
++++ b/arch/sh/mm/tlbflush_64.c
+@@ -48,7 +48,7 @@ static inline void print_vma(struct vm_area_struct *vma)
+ 	printk("vma end   0x%08lx\n", vma->vm_end);
  
- 	if (!(fsr ^ 0x12))	/* write? */
- 		mask = VM_WRITE;
+ 	print_prots(vma->vm_page_prot);
+-	printk("vm_flags 0x%08lx\n", vma->vm_flags);
++	printk("vm_flags 0x%08llx\n", (__force u64)vma->vm_flags);
+ }
+ 
+ static inline void print_task(struct task_struct *tsk)
+diff --git a/drivers/infiniband/hw/ipath/ipath_file_ops.c b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+index 736d9ed..b3dfa21 100644
+--- a/drivers/infiniband/hw/ipath/ipath_file_ops.c
++++ b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+@@ -1115,7 +1115,8 @@ static int mmap_rcvegrbufs(struct vm_area_struct *vma,
+ 
+ 	if (vma->vm_flags & VM_WRITE) {
+ 		dev_info(&dd->pcidev->dev, "Can't map eager buffers as "
+-			 "writable (flags=%lx)\n", vma->vm_flags);
++			 "writable (flags=%llx)\n",
++			 (__force u64)vma->vm_flags);
+ 		ret = -EPERM;
+ 		goto bail;
+ 	}
+@@ -1204,7 +1205,8 @@ static int mmap_kvaddr(struct vm_area_struct *vma, u64 pgaddr,
+                 if (vma->vm_flags & VM_WRITE) {
+                         dev_info(&dd->pcidev->dev,
+                                  "Can't map eager buffers as "
+-                                 "writable (flags=%lx)\n", vma->vm_flags);
++				 "writable (flags=%llx)\n",
++				 (__force u64)vma->vm_flags);
+                         ret = -EPERM;
+                         goto bail;
+                 }
+diff --git a/drivers/infiniband/hw/qib/qib_file_ops.c b/drivers/infiniband/hw/qib/qib_file_ops.c
+index a740324..0fe928d 100644
+--- a/drivers/infiniband/hw/qib/qib_file_ops.c
++++ b/drivers/infiniband/hw/qib/qib_file_ops.c
+@@ -857,7 +857,8 @@ static int mmap_rcvegrbufs(struct vm_area_struct *vma,
+ 
+ 	if (vma->vm_flags & VM_WRITE) {
+ 		qib_devinfo(dd->pcidev, "Can't map eager buffers as "
+-			 "writable (flags=%lx)\n", vma->vm_flags);
++			 "writable (flags=%llx)\n",
++			 (__force u64)vma->vm_flags);
+ 		ret = -EPERM;
+ 		goto bail;
+ 	}
+@@ -946,7 +947,8 @@ static int mmap_kvaddr(struct vm_area_struct *vma, u64 pgaddr,
+ 		if (vma->vm_flags & VM_WRITE) {
+ 			qib_devinfo(dd->pcidev,
+ 				 "Can't map eager buffers as "
+-				 "writable (flags=%lx)\n", vma->vm_flags);
++				 "writable (flags=%llx)\n",
++				 (__force u64)vma->vm_flags);
+ 			ret = -EPERM;
+ 			goto bail;
+ 		}
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index c283212..b0d03e0 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2761,9 +2761,10 @@ static void binder_vma_open(struct vm_area_struct *vma)
+ {
+ 	struct binder_proc *proc = vma->vm_private_data;
+ 	binder_debug(BINDER_DEBUG_OPEN_CLOSE,
+-		     "binder: %d open vm area %lx-%lx (%ld K) vma %lx pagep %lx\n",
++		     "binder: %d open vm area %lx-%lx (%ld K) vma %llx pagep %lx\n",
+ 		     proc->pid, vma->vm_start, vma->vm_end,
+-		     (vma->vm_end - vma->vm_start) / SZ_1K, vma->vm_flags,
++		     (vma->vm_end - vma->vm_start) / SZ_1K,
++		     (__force u64)vma->vm_flags,
+ 		     (unsigned long)pgprot_val(vma->vm_page_prot));
+ }
+ 
+@@ -2771,9 +2772,10 @@ static void binder_vma_close(struct vm_area_struct *vma)
+ {
+ 	struct binder_proc *proc = vma->vm_private_data;
+ 	binder_debug(BINDER_DEBUG_OPEN_CLOSE,
+-		     "binder: %d close vm area %lx-%lx (%ld K) vma %lx pagep %lx\n",
++		     "binder: %d close vm area %lx-%lx (%ld K) vma %llx pagep %lx\n",
+ 		     proc->pid, vma->vm_start, vma->vm_end,
+-		     (vma->vm_end - vma->vm_start) / SZ_1K, vma->vm_flags,
++		     (vma->vm_end - vma->vm_start) / SZ_1K,
++		     (__force u64)vma->vm_flags,
+ 		     (unsigned long)pgprot_val(vma->vm_page_prot));
+ 	proc->vma = NULL;
+ 	proc->vma_vm_mm = NULL;
+@@ -2797,9 +2799,10 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ 		vma->vm_end = vma->vm_start + SZ_4M;
+ 
+ 	binder_debug(BINDER_DEBUG_OPEN_CLOSE,
+-		     "binder_mmap: %d %lx-%lx (%ld K) vma %lx pagep %lx\n",
++		     "binder_mmap: %d %lx-%lx (%ld K) vma %llx pagep %lx\n",
+ 		     proc->pid, vma->vm_start, vma->vm_end,
+-		     (vma->vm_end - vma->vm_start) / SZ_1K, vma->vm_flags,
++		     (vma->vm_end - vma->vm_start) / SZ_1K,
++		     (__force u64)vma->vm_flags,
+ 		     (unsigned long)pgprot_val(vma->vm_page_prot));
+ 
+ 	if (vma->vm_flags & FORBIDDEN_MMAP_FLAGS) {
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 7862513..328a9ab 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -1216,9 +1216,9 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 	if (vma)
+ 		dev_dbg(bridge,
+ 			"VMAfor UserBuf: ul_mpu_addr=%x, ul_num_bytes=%x, "
+-			"vm_start=%lx, vm_end=%lx, vm_flags=%lx\n", ul_mpu_addr,
++			"vm_start=%lx, vm_end=%lx, vm_flags=%llx\n", ul_mpu_addr,
+ 			ul_num_bytes, vma->vm_start, vma->vm_end,
+-			vma->vm_flags);
++			(__force u64)vma->vm_flags);
+ 
+ 	/*
+ 	 * It is observed that under some circumstances, the user buffer is
+@@ -1230,9 +1230,9 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 		vma = find_vma(mm, vma->vm_end + 1);
+ 		dev_dbg(bridge,
+ 			"VMA for UserBuf ul_mpu_addr=%x ul_num_bytes=%x, "
+-			"vm_start=%lx, vm_end=%lx, vm_flags=%lx\n", ul_mpu_addr,
++			"vm_start=%lx, vm_end=%lx, vm_flags=%llx\n", ul_mpu_addr,
+ 			ul_num_bytes, vma->vm_start, vma->vm_end,
+-			vma->vm_flags);
++			(__force u64)vma->vm_flags);
+ 	}
+ 	if (!vma) {
+ 		pr_err("%s: Failed to get VMA region for 0x%x (%d)\n",
+@@ -1302,11 +1302,12 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 			} else {
+ 				pr_err("DSPBRIDGE: get_user_pages FAILED,"
+ 				       "MPU addr = 0x%x,"
+-				       "vma->vm_flags = 0x%lx,"
++				       "vma->vm_flags = 0x%llx,"
+ 				       "get_user_pages Err"
+ 				       "Value = %d, Buffer"
+ 				       "size=0x%x\n", ul_mpu_addr,
+-				       vma->vm_flags, pg_num, ul_num_bytes);
++				       (__force u64)vma->vm_flags,
++				       pg_num, ul_num_bytes);
+ 				status = -EPERM;
+ 				break;
+ 			}
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index 3cac014..f7ea4af 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -265,9 +265,9 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 
+ 	dev_dbg(bridge, "%s: vm filp %p start %lx end %lx page_prot %ulx "
+-		"flags %lx\n", __func__, filp,
++		"flags %llx\n", __func__, filp,
+ 		vma->vm_start, vma->vm_end, vma->vm_page_prot,
+-		vma->vm_flags);
++		(__force u64)vma->vm_flags);
+ 
+ 	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+ 				 vma->vm_end - vma->vm_start,
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index c64bf5e..49a85b7 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -1215,7 +1215,8 @@ static int maydump(struct vm_area_struct *vma, unsigned long mm_flags)
+ 
+ 	/* Do not dump I/O mapped devices or special mappings */
+ 	if (vma->vm_flags & (VM_IO | VM_RESERVED)) {
+-		kdcore("%08lx: %08lx: no (IO)", vma->vm_start, vma->vm_flags);
++		kdcore("%08lx: %08llx: no (IO)", vma->vm_start,
++		       (__force u64)vma->vm_flags);
+ 		return 0;
+ 	}
+ 
+@@ -1223,7 +1224,8 @@ static int maydump(struct vm_area_struct *vma, unsigned long mm_flags)
+ 	 * them either. "dump_write()" can't handle it anyway.
+ 	 */
+ 	if (!(vma->vm_flags & VM_READ)) {
+-		kdcore("%08lx: %08lx: no (!read)", vma->vm_start, vma->vm_flags);
++		kdcore("%08lx: %08llx: no (!read)", vma->vm_start,
++		       (__force u64)vma->vm_flags);
+ 		return 0;
+ 	}
+ 
+@@ -1231,14 +1233,16 @@ static int maydump(struct vm_area_struct *vma, unsigned long mm_flags)
+ 	if (vma->vm_flags & VM_SHARED) {
+ 		if (vma->vm_file->f_path.dentry->d_inode->i_nlink == 0) {
+ 			dump_ok = test_bit(MMF_DUMP_ANON_SHARED, &mm_flags);
+-			kdcore("%08lx: %08lx: %s (share)", vma->vm_start,
+-			       vma->vm_flags, dump_ok ? "yes" : "no");
++			kdcore("%08lx: %08llx: %s (share)", vma->vm_start,
++			       (__force u64)vma->vm_flags,
++			       dump_ok ? "yes" : "no");
+ 			return dump_ok;
+ 		}
+ 
+ 		dump_ok = test_bit(MMF_DUMP_MAPPED_SHARED, &mm_flags);
+-		kdcore("%08lx: %08lx: %s (share)", vma->vm_start,
+-		       vma->vm_flags, dump_ok ? "yes" : "no");
++		kdcore("%08lx: %08llx: %s (share)", vma->vm_start,
++		       (__force u64)vma->vm_flags,
++		       dump_ok ? "yes" : "no");
+ 		return dump_ok;
+ 	}
+ 
+@@ -1246,14 +1250,16 @@ static int maydump(struct vm_area_struct *vma, unsigned long mm_flags)
+ 	/* By default, if it hasn't been written to, don't write it out */
+ 	if (!vma->anon_vma) {
+ 		dump_ok = test_bit(MMF_DUMP_MAPPED_PRIVATE, &mm_flags);
+-		kdcore("%08lx: %08lx: %s (!anon)", vma->vm_start,
+-		       vma->vm_flags, dump_ok ? "yes" : "no");
++		kdcore("%08lx: %08llx: %s (!anon)", vma->vm_start,
++		       (__force u64)vma->vm_flags,
++		       dump_ok ? "yes" : "no");
+ 		return dump_ok;
+ 	}
+ #endif
+ 
+ 	dump_ok = test_bit(MMF_DUMP_ANON_PRIVATE, &mm_flags);
+-	kdcore("%08lx: %08lx: %s", vma->vm_start, vma->vm_flags,
++	kdcore("%08lx: %08llx: %s", vma->vm_start,
++	       (__force u64)vma->vm_flags,
+ 	       dump_ok ? "yes" : "no");
+ 	return dump_ok;
+ }
+diff --git a/mm/memory.c b/mm/memory.c
+index b1c7c98..ee85fc4 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -705,8 +705,9 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
+ 	if (page)
+ 		dump_page(page);
+ 	printk(KERN_ALERT
+-		"addr:%p vm_flags:%08lx anon_vma:%p mapping:%p index:%lx\n",
+-		(void *)addr, vma->vm_flags, vma->anon_vma, mapping, index);
++		"addr:%p vm_flags:%08llx anon_vma:%p mapping:%p index:%lx\n",
++		(void *)addr, (__force u64)vma->vm_flags,
++		vma->anon_vma, mapping, index);
+ 	/*
+ 	 * Choose text because data symbols depend on CONFIG_KALLSYMS_ALL=y
+ 	 */
 
