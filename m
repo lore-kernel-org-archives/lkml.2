@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030488Ab2CUN6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:58:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34760 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030277Ab2CUN6u (ORCPT
+	id S1030613Ab2CUN65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:58:57 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:40941 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030405Ab2CUN6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:58:50 -0400
+	Wed, 21 Mar 2012 09:58:53 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,94 +24,16 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
 Subject: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
-Date: Wed, 21 Mar 2012 14:58:05 +0100
-Message-Id: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+Date: Wed, 21 Mar 2012 14:58:06 +0100
+Message-Id: <1332338318-5958-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-A summary of what this is about can be found here:
-  https://lkml.org/lkml/2011/8/15/245
-
-There are still a lot of things to handle. Especially about
-what is done by scheduler_tick() but we also need to:
-
-- completely handle cputime accounting (need to find every "reader"
-of cputime and flush cputimes for all of them).
--handle  perf
-- handle irqtime finegrained accounting
-- handle ilb load balancing
-- etc...
-
-Nonetheless this is time to post a new iteration of the patchset
-because the design has changed a bit, some bugs have been fixed,
-more simplification, more unification with dynticks-idle code,
-namespace fixes, various improvements here and there...
-
-The git branch can be fetched from:
-
-git://github.com/fweisbec/linux-dynticks.git
-	nohz/cpuset-v2
-
-Changelog since v1:
-
-- Rebase against 3.3-rc7 + tip:timers/core branch targeted
-for 3.4-rc1
-
-- Refine some changelogs
-
-- Adapt against latest rcu changes: introduce new APIs
-  rcu_user_enter(), rcu_user_exit(), rcu_user_enter_irq()
-  and rcu_user_exit_irq()
-
-- Handle RCU idle mode with do_notify_resume() path
-
-- Fix deadlock after double rq lock on schedule:
-  schedule() -> rq_lock -> next is idle task ->
-  tick_nohz_restart_sched_tick() -> wake up softirq ->
-  rq lock
-
-- Fix lockup while issuing flush times IPI on exit path:
-
-  CPU 0	     	   	   	 CPU 1
-
-  read_lock(tasklist_lock)
-				write_lock_irq(tasklist_lock)
-				smp_call_function(CPU 1)
-				* deadlock *
-
-- Many namespace renames (cpuset_* to tick_nohz_*) and code migration
-from sched.c to tick-sched.c
-
-- Seperate code that determine if we can stop the idle tick and don't
-use it for adaptive tickless mode.
-
-- Fix adaptive tickless mode set on idle incidentally. TIF_NOHZ was
-then missing on the following task that ran tickless, issuing some
-illegal uses of RCU
-
-- Restart the tick anytime more than one task is on the runqueue. We were previously
-only covering wake ups, now we also handle migration and any other source of task enqueuing
-
-- Handle use of RCU in schedule() when called right before resuming userspace
-(new schedule_user() API)
-
-- Take the decision to stop the tick from irq exit instead of the middle of the timer
-interrupt. This gives more opportunity to stop it and is one step more to unify idle
-and adaptive tickless.
-
-- Unify tickless idle and tickless user/system CPU time accounting infrastructures.
-
-- If the tick is stopped adaptively and we are going to schedule the idle
-task, don't restart the tick.
-
-- Remove task_nohz_mode per cpu var and use ts->tick_stopped instead. This
-leads to more unification between idle tickless and adaptive tickless.
-
-
+*** BLURB HERE ***
 
 Frederic Weisbecker (32):
   nohz: Separate idle sleeping time accounting from nohz logic
