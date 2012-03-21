@@ -1,189 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab2CUCXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 22:23:15 -0400
-Received: from tundra.namei.org ([65.99.196.166]:54235 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756572Ab2CUCXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 22:23:10 -0400
-Date: Wed, 21 Mar 2012 13:23:05 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] Security subsystem updates for 3.4
-Message-ID: <alpine.LRH.2.02.1203211312440.3364@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1759633Ab2CUCYD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 22:24:03 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:35985 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759240Ab2CUCYB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Mar 2012 22:24:01 -0400
+Date: Tue, 20 Mar 2012 22:23:53 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Amit Kucheria <amit.kucheria@linaro.org>
+cc: Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Robert Lee <rob.lee@linaro.org>, len.brown@intel.com,
+        Andrew Morton <akpm@linux-foundation.org>, rjw@sisk.pl,
+        robherring2@gmail.com, Baohua.Song@csr.com, nicolas.ferre@atmel.com,
+        linux@maxim.org.za, kgene.kim@samsung.com, amit.kachhap@linaro.org,
+        magnus.damm@gmail.com, nsekhar@ti.com, daniel.lezcano@linaro.org,
+        mturquette@linaro.org, vincent.guittot@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
+        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
+        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
+In-Reply-To: <CAP245DXwhCMOJaspW8SY7jtqsA3d5SK4Ctr+JvS+cw4yHfL-mw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1203202146131.24151@xanadu.home>
+References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org> <201203202158.08042.arnd.bergmann@linaro.org> <873992zy5u.fsf@ti.com> <CAP245DXwhCMOJaspW8SY7jtqsA3d5SK4Ctr+JvS+cw4yHfL-mw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1729038486-1332296636=:24151"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main addition here is the new Yama security module from Kees Cook, 
-which was discussed at the Linux Security Summit last year.  Its purpose 
-is to collect miscellaneous DAC security enhancements in one place.  This 
-also marks a departure in policy for LSM modules, which were previously 
-limited to being standalone access control systems.  Chromium OS is using 
-Yama, and I believe there are plans for Ubuntu, at least.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-This patchset also includes maintenance updates for AppArmor, TOMOYO and 
-others.
+--8323328-1729038486-1332296636=:24151
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Please pull.
+On Wed, 21 Mar 2012, Amit Kucheria wrote:
 
---- 
+> On Wed, Mar 21, 2012 at 12:48 AM, Kevin Hilman <khilman@ti.com> wrote:
+> > Maybe it's time that drivers/cpuidle gets a maintainer.  With lots of
+> > discussions of scheduler changes that affect load estimation, I suspect
+> > we're all going to have a bit of CPUidle work to do in the
+> > not-so-distant future.
+> >
+> 
+> I don't mean to be piling on to Len here, but Daniel Lezcano too has a
+> bunch of clean ups that didn't get any maintainer review for over two
+> months. He has now refreshed them for 3.3 and is getting ready to send
+> them out again. We (Linaro) expect to be spending a lot of time on
+> cpuidle in the future and would be glad to help review, test and
+> collect patches into a tree for Linus/Andrew to pull while we wait for
+> Len to respond or another maintainer to emerge.
 
-The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
-  Linus Torvalds (1):
-        Linux 3.3
+As I advised recently, it is usually a good idea for the person/group 
+who is working the most on a subsystem to simply take the lead and 
+become the new maintainer.  Waiting for another maintainer to emerge 
+could be compared to cowardice.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
-
-Al Viro (2):
-      mm: collapse security_vm_enough_memory() variants into a single function
-      security: trim security.h
-
-Dan Carpenter (1):
-      KEYS: testing wrong bit for KEY_FLAG_REVOKED
-
-David Howells (1):
-      KEYS: Allow special keyrings to be cleared
-
-Dmitry Kasatkin (2):
-      ima: policy for RAMFS
-      digsig: changed type of the timestamp
-
-Eric Paris (1):
-      IMA: fix audit res field to indicate 1 for success and 0 for failure
-
-Fabio Estevam (1):
-      ima: fix Kconfig dependencies
-
-James Morris (4):
-      Merge branch 'linus-master'; commit 'v3.3-rc3' into next
-      Merge branch 'next-queue' into next
-      Merge branch 'for-security' of git://git.kernel.org/.../jj/linux-apparmor into next
-      Merge branch 'for-security' of git://git.kernel.org/.../jj/linux-apparmor into next
-
-Jan Engelhardt (1):
-      AppArmor: add const qualifiers to string arrays
-
-John Johansen (13):
-      AppArmor: Add mising end of structure test to caps unpacking
-      AppArmor: Fix dropping of allowed operations that are force audited
-      AppArmor: Fix underflow in xindex calculation
-      AppArmor: fix mapping of META_READ to audit and quiet flags
-      AppArmor: Fix the error case for chroot relative path name lookup
-      AppArmor: Fix error returned when a path lookup is disconnected
-      AppArmor: Fix oops in policy unpack auditing
-      AppArmor: Add const qualifiers to generated string tables
-      AppArmor: Retrieve the dentry_path for error reporting when path lookup fails
-      AppArmor: Minor cleanup of d_namespace_path to consolidate error handling
-      AppArmor: Update dfa matching routines.
-      AppArmor: Move path failure information into aa_get_name and rename
-      AppArmor: Add ability to load extended policy
-
-Kees Cook (7):
-      security: create task_free security callback
-      security: Yama LSM
-      Yama: add PR_SET_PTRACER_ANY
-      AppArmor: refactor securityfs to use structures
-      AppArmor: add initial "features" directory to securityfs
-      AppArmor: add "file" details to securityfs
-      AppArmor: export known rlimit names/value mappings in securityfs
-
-Randy Dunlap (1):
-      security: fix ima kconfig warning
-
-Stefan Berger (2):
-      tpm_tis: Only probe iTPMs
-      tpm_tis: Clean up after module_param cleanup
-
-Tetsuo Handa (4):
-      TOMOYO: Fix mount flags checking order.
-      TOMOYO: Return appropriate value to poll().
-      TOMOYO: Return error if fails to delete a domain
-      AppArmor: Fix location of const qualifier on generated string tables
-
-Tim Gardner (1):
-      TPM: Zero buffer whole after copying to userspace
-
- Documentation/networking/dns_resolver.txt |    4 +
- Documentation/security/00-INDEX           |    2 +
- Documentation/security/Yama.txt           |   65 ++++++
- Documentation/security/keys.txt           |    4 +
- drivers/char/tpm/Kconfig                  |    1 -
- drivers/char/tpm/tpm.c                    |    3 +-
- drivers/char/tpm/tpm.h                    |    2 +
- drivers/char/tpm/tpm_tis.c                |   17 +-
- drivers/net/macvtap.c                     |    1 +
- drivers/target/iscsi/iscsi_target.c       |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    1 +
- fs/cifs/cifsacl.c                         |    1 +
- fs/nfs/client.c                           |    1 +
- fs/nfs/idmap.c                            |    1 +
- fs/proc/proc_sysctl.c                     |    2 +
- fs/quota/dquot.c                          |    1 +
- fs/super.c                                |    1 +
- include/linux/digsig.h                    |    4 +-
- include/linux/key.h                       |    1 +
- include/linux/prctl.h                     |    7 +
- include/linux/security.h                  |   80 ++++----
- include/net/sock.h                        |    2 +
- ipc/msgutil.c                             |    2 +
- kernel/cred.c                             |    1 +
- kernel/exit.c                             |    1 +
- kernel/fork.c                             |    3 +-
- kernel/sched/core.c                       |    1 +
- kernel/sysctl.c                           |    1 +
- mm/mmap.c                                 |   17 ++-
- mm/mprotect.c                             |    2 +-
- mm/mremap.c                               |    2 +-
- mm/shmem.c                                |    4 +-
- mm/swapfile.c                             |    4 +-
- net/dns_resolver/dns_key.c                |    1 +
- security/Kconfig                          |    6 +
- security/Makefile                         |    2 +
- security/apparmor/Makefile                |   27 ++-
- security/apparmor/apparmorfs.c            |  195 ++++++++++++++----
- security/apparmor/audit.c                 |    7 +-
- security/apparmor/domain.c                |    5 +-
- security/apparmor/file.c                  |   21 +--
- security/apparmor/include/apparmor.h      |   15 ++-
- security/apparmor/include/apparmorfs.h    |   44 ++++
- security/apparmor/include/audit.h         |    9 +-
- security/apparmor/include/file.h          |    2 +-
- security/apparmor/include/match.h         |    3 +
- security/apparmor/include/path.h          |    3 +-
- security/apparmor/include/policy.h        |   15 ++-
- security/apparmor/include/resource.h      |    4 +
- security/apparmor/match.c                 |   80 +++++++-
- security/apparmor/path.c                  |   56 +++--
- security/apparmor/policy.c                |    3 +-
- security/apparmor/policy_unpack.c         |   31 +++-
- security/apparmor/resource.c              |    5 +
- security/capability.c                     |    5 +
- security/commoncap.c                      |    1 +
- security/integrity/ima/Kconfig            |    4 +-
- security/integrity/ima/ima_audit.c        |    2 +-
- security/integrity/ima/ima_policy.c       |    3 +-
- security/keys/keyctl.c                    |   15 ++-
- security/keys/process_keys.c              |    3 +-
- security/security.c                       |   21 +--
- security/selinux/hooks.c                  |    2 +
- security/smack/smack_lsm.c                |    3 +
- security/tomoyo/audit.c                   |    4 +-
- security/tomoyo/common.c                  |   63 ++----
- security/tomoyo/common.h                  |    6 +-
- security/tomoyo/mount.c                   |   38 ++--
- security/tomoyo/securityfs_if.c           |    5 +-
- security/yama/Kconfig                     |   13 ++
- security/yama/Makefile                    |    3 +
- security/yama/yama_lsm.c                  |  323 +++++++++++++++++++++++++++++
- 72 files changed, 1036 insertions(+), 252 deletions(-)
- create mode 100644 Documentation/security/Yama.txt
- create mode 100644 security/yama/Kconfig
- create mode 100644 security/yama/Makefile
- create mode 100644 security/yama/yama_lsm.c
+Nicolas
+--8323328-1729038486-1332296636=:24151--
