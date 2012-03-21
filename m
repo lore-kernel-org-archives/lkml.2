@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965040Ab2CUJwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:52:46 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:48934 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757981Ab2CUJwK (ORCPT
+	id S1758095Ab2CUJxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:53:00 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:40021 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757951Ab2CUJwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:52:10 -0400
+	Wed, 21 Mar 2012 05:52:09 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 09/11] net/ariadne: Improve debug prints
-Date: Wed, 21 Mar 2012 10:51:53 +0100
-Message-Id: <1332323515-7314-9-git-send-email-geert@linux-m68k.org>
+        Michael Schmitz <schmitzmic@googlemail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 10/11] scsi/atari: Revive "atascsi=" setup option
+Date: Wed, 21 Mar 2012 10:51:54 +0100
+Message-Id: <1332323515-7314-10-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1332323515-7314-1-git-send-email-geert@linux-m68k.org>
 References: <1332323515-7314-1-git-send-email-geert@linux-m68k.org>
@@ -21,45 +23,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove casts and use proper printf()-style format specifiers instead.
+It was documented in Documentation/m68k/kernel-options.txt and
+Documentation/scsi/scsi-parameters.txt, but the implementation was
+missing.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
+Cc: Michael Schmitz <schmitzmic@googlemail.com>
+Cc: James E.J. Bottomley <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
 ---
- drivers/net/ethernet/amd/ariadne.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/atari_scsi.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/amd/ariadne.c b/drivers/net/ethernet/amd/ariadne.c
-index eb18e1f..2e7a1c5 100644
---- a/drivers/net/ethernet/amd/ariadne.c
-+++ b/drivers/net/ethernet/amd/ariadne.c
-@@ -213,10 +213,10 @@ static int ariadne_rx(struct net_device *dev)
- 						(const void *)priv->rx_buff[entry],
- 						pkt_len);
- 			skb->protocol = eth_type_trans(skb, dev);
--			netdev_dbg(dev, "RX pkt type 0x%04x from %pM to %pM data 0x%08x len %d\n",
-+			netdev_dbg(dev, "RX pkt type 0x%04x from %pM to %pM data %p len %u\n",
- 				   ((u_short *)skb->data)[6],
- 				   skb->data + 6, skb->data,
--				   (int)skb->data, (int)skb->len);
-+				   skb->data, skb->len);
+diff --git a/drivers/scsi/atari_scsi.c b/drivers/scsi/atari_scsi.c
+index 04a154f..3102ce5 100644
+--- a/drivers/scsi/atari_scsi.c
++++ b/drivers/scsi/atari_scsi.c
+@@ -734,17 +734,21 @@ int atari_scsi_release(struct Scsi_Host *sh)
+ 	return 1;
+ }
  
- 			netif_rx(skb);
- 			dev->stats.rx_packets++;
-@@ -566,10 +566,10 @@ static netdev_tx_t ariadne_start_xmit(struct sk_buff *skb,
+-void __init atari_scsi_setup(char *str, int *ints)
++#ifndef MODULE
++static int __init atari_scsi_setup(char *str)
+ {
+ 	/* Format of atascsi parameter is:
+ 	 *   atascsi=<can_queue>,<cmd_per_lun>,<sg_tablesize>,<hostid>,<use_tags>
+ 	 * Defaults depend on TT or Falcon, hostid determined at run time.
+ 	 * Negative values mean don't change.
+ 	 */
++	int ints[6];
++
++	get_options(str, ARRAY_SIZE(ints), ints);
  
- 	/* Fill in a Tx ring entry */
+ 	if (ints[0] < 1) {
+ 		printk("atari_scsi_setup: no arguments!\n");
+-		return;
++		return 0;
+ 	}
  
--	netdev_dbg(dev, "TX pkt type 0x%04x from %pM to %pM data 0x%08x len %d\n",
-+	netdev_dbg(dev, "TX pkt type 0x%04x from %pM to %pM data %p len %u\n",
- 		   ((u_short *)skb->data)[6],
- 		   skb->data + 6, skb->data,
--		   (int)skb->data, (int)skb->len);
-+		   skb->data, skb->len);
+ 	if (ints[0] >= 1) {
+@@ -777,8 +781,13 @@ void __init atari_scsi_setup(char *str, int *ints)
+ 			setup_use_tagged_queuing = !!ints[5];
+ 	}
+ #endif
++
++	return 1;
+ }
  
- 	local_irq_save(flags);
- 
++__setup("atascsi=", atari_scsi_setup);
++#endif /* !MODULE */
++
+ int atari_scsi_bus_reset(Scsi_Cmnd *cmd)
+ {
+ 	int rv;
 -- 
 1.7.0.4
 
