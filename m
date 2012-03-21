@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab2CUWU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:20:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65325 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760267Ab2CUWSF (ORCPT
+	id S1760209Ab2CUWSC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:18:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42808 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760082Ab2CUWR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:18:05 -0400
+	Wed, 21 Mar 2012 18:17:57 -0400
 From: Tejun Heo <tj@kernel.org>
 To: glommer@parallels.com, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Tejun Heo <tj@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 07/12] memcg: always create memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-Date: Wed, 21 Mar 2012 15:17:40 -0700
-Message-Id: <1332368265-21586-8-git-send-email-tj@kernel.org>
+        ctalbott@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 03/12] cgroup: implement cgroup_add_cftypes() and friends
+Date: Wed, 21 Mar 2012 15:17:36 -0700
+Message-Id: <1332368265-21586-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
 References: <1332368265-21586-1-git-send-email-tj@kernel.org>
@@ -23,192 +22,313 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of conditioning creation of memsw files on do_swap_account,
-always create the files if compiled-in and fail read/write attempts
-with -EOPNOTSUPP if !do_swap_account.
+Currently, cgroup directories are populated by subsys->populate()
+callback explicitly creating files on each cgroup creation.  This
+level of flexibility isn't needed or desirable.  It provides largely
+unused flexibility which call for abuses while severely limiting what
+the core layer can do through the lack of structure and conventions.
 
-This is suggested by KAMEZAWA to simplify memcg file creation so that
-it can use cgroup->subsys_cftypes.
+Per each cgroup file type, the only distinction that cgroup users is
+making is whether a cgroup is root or not, which can easily be
+expressed with flags.
+
+This patch introduces cgroup_add_cftypes().  These deal with cftypes
+instead of individual files - controllers indicate that certain types
+of files exist for certain subsystem.  Newly added CFTYPE_*_ON_ROOT
+flags indicate whether a cftype should be excluded or created only on
+the root cgroup.
+
+cgroup_add_cftypes() can be called any time whether the target
+subsystem is currently attached or not.  cgroup core will create files
+on the existing cgroups as necessary.
+
+Also, cgroup_subsys->base_cftypes is added to ease registration of the
+base files for the subsystem.  If non-NULL on subsys init, the cftypes
+pointed to by ->base_cftypes are automatically registered on subsys
+init / load.
+
+Further patches will convert the existing users and remove the file
+based interface.  Note that this interface allows dynamic addition of
+files to an active controller.  This will be used for sub-controller
+modularity and unified hierarchy in the longer term.
+
+This patch implements the new mechanism but doesn't apply it to any
+user.
+
+v2: replaced DECLARE_CGROUP_CFTYPES[_COND]() with
+    cgroup_subsys->base_cftypes, which works better for cgroup_subsys
+    which is loaded as module.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   65 ++++++++++++++++++++++++++----------------------------
- 1 files changed, 31 insertions(+), 34 deletions(-)
+ include/linux/cgroup.h |   33 +++++++++++-
+ kernel/cgroup.c        |  132 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 162 insertions(+), 3 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ae2f0a8..1e2a9d1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3818,14 +3818,21 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
- 	return val << PAGE_SHIFT;
- }
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 908f26f..ff5b764 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -192,6 +192,7 @@ struct cgroup {
+ 	struct list_head css_sets;
  
--static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
-+static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
-+			       struct file *file, char __user *buf,
-+			       size_t nbytes, loff_t *ppos)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-+	char str[64];
- 	u64 val;
--	int type, name;
-+	int type, name, len;
+ 	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
++	struct list_head cft_q_node;	/* used during cftype add/rm */
  
- 	type = MEMFILE_TYPE(cft->private);
- 	name = MEMFILE_ATTR(cft->private);
-+
-+	if (!do_swap_account && type == _MEMSWAP)
-+		return -EOPNOTSUPP;
-+
- 	switch (type) {
- 	case _MEM:
- 		if (name == RES_USAGE)
-@@ -3843,7 +3850,9 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
- 		BUG();
- 		break;
- 	}
--	return val;
-+
-+	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
-+	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
- }
- /*
-  * The user of this function is...
-@@ -3859,6 +3868,10 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 	/*
+ 	 * Linked list running through all cgroups that can
+@@ -277,11 +278,17 @@ struct cgroup_map_cb {
+  *	- the 'cftype' of the file is file->f_dentry->d_fsdata
+  */
  
- 	type = MEMFILE_TYPE(cft->private);
- 	name = MEMFILE_ATTR(cft->private);
+-#define MAX_CFTYPE_NAME 64
++/* cftype->flags */
++#define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
++#define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create onp root cg */
 +
-+	if (!do_swap_account && type == _MEMSWAP)
-+		return -EOPNOTSUPP;
++#define MAX_CFTYPE_NAME		64
 +
- 	switch (name) {
- 	case RES_LIMIT:
- 		if (mem_cgroup_is_root(memcg)) { /* Can't set limit on root */
-@@ -3925,12 +3938,15 @@ out:
+ struct cftype {
+ 	/*
+ 	 * By convention, the name should begin with the name of the
+-	 * subsystem, followed by a period
++	 * subsystem, followed by a period.  Zero length string indicates
++	 * end of cftype array.
+ 	 */
+ 	char name[MAX_CFTYPE_NAME];
+ 	int private;
+@@ -297,6 +304,9 @@ struct cftype {
+ 	 */
+ 	size_t max_write_len;
  
- static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
- {
--	struct mem_cgroup *memcg;
-+	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 	int type, name;
++	/* CFTYPE_* flags */
++	unsigned int flags;
++
+ 	int (*open)(struct inode *inode, struct file *file);
+ 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct file *file,
+@@ -375,6 +385,16 @@ struct cftype {
+ 			struct eventfd_ctx *eventfd);
+ };
  
--	memcg = mem_cgroup_from_cont(cont);
- 	type = MEMFILE_TYPE(event);
- 	name = MEMFILE_ATTR(event);
-+
-+	if (!do_swap_account && type == _MEMSWAP)
-+		return -EOPNOTSUPP;
-+
- 	switch (name) {
- 	case RES_MAX_USAGE:
- 		if (type == _MEM)
-@@ -4599,7 +4615,7 @@ static struct cftype mem_cgroup_files[] = {
- 	{
- 		.name = "usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 		.register_event = mem_cgroup_usage_register_event,
- 		.unregister_event = mem_cgroup_usage_unregister_event,
- 	},
-@@ -4607,25 +4623,25 @@ static struct cftype mem_cgroup_files[] = {
- 		.name = "max_usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_MAX_USAGE),
- 		.trigger = mem_cgroup_reset,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
- 	{
- 		.name = "limit_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_LIMIT),
- 		.write_string = mem_cgroup_write,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
- 	{
- 		.name = "soft_limit_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_SOFT_LIMIT),
- 		.write_string = mem_cgroup_write,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
- 	{
- 		.name = "failcnt",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
- 		.trigger = mem_cgroup_reset,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
- 	{
- 		.name = "stat",
-@@ -4665,14 +4681,11 @@ static struct cftype mem_cgroup_files[] = {
- 		.mode = S_IRUGO,
- 	},
- #endif
--};
--
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
--static struct cftype memsw_cgroup_files[] = {
- 	{
- 		.name = "memsw.usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_USAGE),
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 		.register_event = mem_cgroup_usage_register_event,
- 		.unregister_event = mem_cgroup_usage_unregister_event,
- 	},
-@@ -4680,35 +4693,22 @@ static struct cftype memsw_cgroup_files[] = {
- 		.name = "memsw.max_usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_MAX_USAGE),
- 		.trigger = mem_cgroup_reset,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
- 	{
- 		.name = "memsw.limit_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_LIMIT),
- 		.write_string = mem_cgroup_write,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
- 	{
- 		.name = "memsw.failcnt",
- 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_FAILCNT),
- 		.trigger = mem_cgroup_reset,
--		.read_u64 = mem_cgroup_read,
-+		.read = mem_cgroup_read,
- 	},
--};
--
--static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
--{
--	if (!do_swap_account)
--		return 0;
--	return cgroup_add_files(cont, ss, memsw_cgroup_files,
--				ARRAY_SIZE(memsw_cgroup_files));
--};
--#else
--static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
--{
--	return 0;
--}
- #endif
++/*
++ * cftype_sets describe cftypes belonging to a subsystem and are chained at
++ * cgroup_subsys->cftsets.  Each cftset points to an array of cftypes
++ * terminated by zero length name.
++ */
++struct cftype_set {
++	struct list_head		node;	/* chained at subsys->cftsets */
++	const struct cftype		*cfts;
 +};
++
+ struct cgroup_scanner {
+ 	struct cgroup *cg;
+ 	int (*test_task)(struct task_struct *p, struct cgroup_scanner *scan);
+@@ -400,6 +420,8 @@ int cgroup_add_files(struct cgroup *cgrp,
+ 			const struct cftype cft[],
+ 			int count);
  
- static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- {
-@@ -4969,9 +4969,6 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
- 				ARRAY_SIZE(mem_cgroup_files));
++int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
++
+ int cgroup_is_removed(const struct cgroup *cgrp);
  
- 	if (!ret)
--		ret = register_memsw_files(cont, ss);
+ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen);
+@@ -502,6 +524,13 @@ struct cgroup_subsys {
+ 	struct idr idr;
+ 	rwlock_t id_lock;
+ 
++	/* list of cftype_sets */
++	struct list_head cftsets;
++
++	/* base cftypes, automatically [de]registered with subsys itself */
++	struct cftype *base_cftypes;
++	struct cftype_set base_cftset;
++
+ 	/* should be defined only by modular subsystems */
+ 	struct module *module;
+ };
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index fceee52..fe7a5c2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2627,8 +2627,14 @@ int cgroup_add_file(struct cgroup *cgrp,
+ 	struct dentry *dentry;
+ 	int error;
+ 	umode_t mode;
 -
--	if (!ret)
- 		ret = register_kmem_files(cont, ss);
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
++
++	/* does @cft->flags tell us to skip creation on @cgrp? */
++	if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
++		return 0;
++	if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
++		return 0;
++
+ 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
+ 		strcpy(name, subsys->name);
+ 		strcat(name, ".");
+@@ -2664,6 +2670,95 @@ int cgroup_add_files(struct cgroup *cgrp,
+ }
+ EXPORT_SYMBOL_GPL(cgroup_add_files);
  
- 	return ret;
++static DEFINE_MUTEX(cgroup_cft_mutex);
++
++static void cgroup_cfts_prepare(void)
++	__acquires(&cgroup_cft_mutex) __acquires(&cgroup_mutex)
++{
++	/*
++	 * Thanks to the entanglement with vfs inode locking, we can't walk
++	 * the existing cgroups under cgroup_mutex and create files.
++	 * Instead, we increment reference on all cgroups and build list of
++	 * them using @cgrp->cft_q_node.  Grab cgroup_cft_mutex to ensure
++	 * exclusive access to the field.
++	 */
++	mutex_lock(&cgroup_cft_mutex);
++	mutex_lock(&cgroup_mutex);
++}
++
++static void cgroup_cfts_commit(struct cgroup_subsys *ss,
++			       const struct cftype *cfts)
++	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
++{
++	LIST_HEAD(pending);
++	struct cgroup *cgrp, *n;
++	int count = 0;
++
++	while (cfts[count].name[0] != '\0')
++		count++;
++
++	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
++	if (cfts && ss->root != &rootnode) {
++		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
++			dget(cgrp->dentry);
++			list_add_tail(&cgrp->cft_q_node, &pending);
++		}
++	}
++
++	mutex_unlock(&cgroup_mutex);
++
++	/*
++	 * All new cgroups will see @cfts update on @ss->cftsets.  Add/rm
++	 * files for all cgroups which were created before.
++	 */
++	list_for_each_entry_safe(cgrp, n, &pending, cft_q_node) {
++		struct inode *inode = cgrp->dentry->d_inode;
++
++		mutex_lock(&inode->i_mutex);
++		mutex_lock(&cgroup_mutex);
++		if (!cgroup_is_removed(cgrp))
++			cgroup_add_files(cgrp, ss, cfts, count);
++		mutex_unlock(&cgroup_mutex);
++		mutex_unlock(&inode->i_mutex);
++
++		list_del_init(&cgrp->cft_q_node);
++		dput(cgrp->dentry);
++	}
++
++	mutex_unlock(&cgroup_cft_mutex);
++}
++
++/**
++ * cgroup_add_cftypes - add an array of cftypes to a subsystem
++ * @ss: target cgroup subsystem
++ * @cfts: zero-length name terminated array of cftypes
++ *
++ * Register @cfts to @ss.  Files described by @cfts are created for all
++ * existing cgroups to which @ss is attached and all future cgroups will
++ * have them too.  This function can be called anytime whether @ss is
++ * attached or not.
++ *
++ * Returns 0 on successful registration, -errno on failure.  Note that this
++ * function currently returns 0 as long as @cfts registration is successful
++ * even if some file creation attempts on existing cgroups fail.
++ */
++int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
++{
++	struct cftype_set *set;
++
++	set = kzalloc(sizeof(*set), GFP_KERNEL);
++	if (!set)
++		return -ENOMEM;
++
++	cgroup_cfts_prepare();
++	set->cfts = cfts;
++	list_add_tail(&set->node, &ss->cftsets);
++	cgroup_cfts_commit(ss, cfts);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
++
+ /**
+  * cgroup_task_count - count the number of tasks in a cgroup.
+  * @cgrp: the cgroup in question
+@@ -3664,10 +3759,25 @@ static int cgroup_populate_dir(struct cgroup *cgrp)
+ 			return err;
+ 	}
+ 
++	/* process cftsets of each subsystem */
+ 	for_each_subsys(cgrp->root, ss) {
++		struct cftype_set *set;
++
+ 		if (ss->populate && (err = ss->populate(ss, cgrp)) < 0)
+ 			return err;
++
++		list_for_each_entry(set, &ss->cftsets, node) {
++			const struct cftype *cft;
++
++			for (cft = set->cfts; cft->name[0] != '\0'; cft++) {
++				err = cgroup_add_file(cgrp, ss, cft);
++				if (err)
++					pr_warning("cgroup_populate_dir: failed to create %s, err=%d\n",
++						   cft->name, err);
++			}
++		}
+ 	}
++
+ 	/* This cgroup is ready now */
+ 	for_each_subsys(cgrp->root, ss) {
+ 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+@@ -4038,12 +4148,29 @@ again:
+ 	return 0;
+ }
+ 
++static void __init_or_module cgroup_init_cftsets(struct cgroup_subsys *ss)
++{
++	INIT_LIST_HEAD(&ss->cftsets);
++
++	/*
++	 * base_cftset is embedded in subsys itself, no need to worry about
++	 * deregistration.
++	 */
++	if (ss->base_cftypes) {
++		ss->base_cftset.cfts = ss->base_cftypes;
++		list_add_tail(&ss->base_cftset.node, &ss->cftsets);
++	}
++}
++
+ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ {
+ 	struct cgroup_subsys_state *css;
+ 
+ 	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
+ 
++	/* init base cftset */
++	cgroup_init_cftsets(ss);
++
+ 	/* Create the top cgroup state for this subsystem */
+ 	list_add(&ss->sibling, &rootnode.subsys_list);
+ 	ss->root = &rootnode;
+@@ -4113,6 +4240,9 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 		return 0;
+ 	}
+ 
++	/* init base cftset */
++	cgroup_init_cftsets(ss);
++
+ 	/*
+ 	 * need to register a subsys id before anything else - for example,
+ 	 * init_cgroup_css needs it.
 -- 
 1.7.7.3
 
