@@ -1,53 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab2CUQSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:18:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39287 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759404Ab2CUQST (ORCPT
+	id S1759566Ab2CUQVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:21:09 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41039 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759357Ab2CUQVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:18:19 -0400
-Message-ID: <4F69FF48.3010200@acm.org>
-Date: Wed, 21 Mar 2012 11:18:16 -0500
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Wed, 21 Mar 2012 12:21:06 -0400
+Message-ID: <4F69FFEF.4030007@xenotime.net>
+Date: Wed, 21 Mar 2012 09:21:03 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com> <4F6854F4.3060703@cn.fujitsu.com> <20120320154517.GG27928@redhat.com> <4F692723.8050904@cn.fujitsu.com> <20120321091127.GO22368@redhat.com>
-In-Reply-To: <20120321091127.GO22368@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+CC: tiwai@suse.de, kay.sievers@vrfy.org, mchehab@infradead.org, perex@perex.cz,
+        hjlipp@web.de, davem@davemloft.net, w.sang@pengutronix.de,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHES v2 2/2] Remove references to /etc/modprobe.conf
+References: <s5hwr6ksfm7.wl%tiwai@suse.de> <1331964860-25608-1-git-send-email-lucas.demarchi@profusion.mobi> <CAMOw1v6oVQ2BM8JC4GxB3zm49Sn9AsDEtYZ7RVKF16e=PWLewQ@mail.gmail.com>
+In-Reply-To: <CAMOw1v6oVQ2BM8JC4GxB3zm49Sn9AsDEtYZ7RVKF16e=PWLewQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/20/2012 10:45 AM, Lucas De Marchi wrote:
 
-> Look at drivers/char/ipmi/ipmi_msghandler.c. It has code to send panic
-> event over IMPI. The code is pretty complex. Of course if we a going to
-> implement something more complex than simple hypercall for panic
-> notification we better do something more interesting with it than just
-> saying "panic happened", like sending stack traces on all cpus for
-> instance.
+> On Sat, Mar 17, 2012 at 3:14 AM, Lucas De Marchi
+> <lucas.demarchi@profusion.mobi> wrote:
+>> Usage of /etc/modprobe.conf file was deprecated by module-init-tools and
+>> is no longer parsed by new kmod tool. References to this file are
+>> replaced in Documentation, comments and Kconfig according to the
+>> context.
+>>
+>> There are also some references to the old /etc/modules.conf from 2.4
+>> kernels that are being removed.
+>>
+>> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+>> ---
+>>  Documentation/aoe/aoe.txt                       |    2 +-
+>>  Documentation/aoe/autoload.sh                   |    4 +--
+>>  Documentation/blockdev/floppy.txt               |    2 +-
+>>  Documentation/fb/intel810.txt                   |    2 +-
+>>  Documentation/fb/intelfb.txt                    |    2 +-
+>>  Documentation/i2c/busses/scx200_acb             |    2 +-
+>>  Documentation/ide/ide.txt                       |    2 +-
+>>  Documentation/isdn/README.gigaset               |   16 ++++-----
+>>  Documentation/laptops/sonypi.txt                |    2 +-
+>>  Documentation/mono.txt                          |    8 ++---
+>>  Documentation/networking/baycom.txt             |    2 +-
+>>  Documentation/networking/bonding.txt            |   43 ++++++++++-------------
+>>  Documentation/networking/dl2k.txt               |   11 +++---
+>>  Documentation/networking/e100.txt               |    6 ++--
+>>  Documentation/networking/ipv6.txt               |    6 ++--
+>>  Documentation/networking/ixgb.txt               |    6 ++--
+>>  Documentation/networking/ltpc.txt               |    2 +-
+>>  Documentation/networking/vortex.txt             |    6 ++--
+>>  Documentation/parport.txt                       |   13 ++++---
+>>  Documentation/s390/3270.txt                     |   21 ++++++-----
+>>  Documentation/scsi/aic79xx.txt                  |    2 +-
+>>  Documentation/scsi/aic7xxx.txt                  |    2 +-
+>>  Documentation/scsi/osst.txt                     |    2 +-
+>>  Documentation/serial/computone.txt              |    8 ++---
+>>  Documentation/serial/rocket.txt                 |    2 +-
+>>  Documentation/serial/stallion.txt               |    4 +--
+>>  Documentation/sound/alsa/ALSA-Configuration.txt |   10 +++---
+>>  Documentation/sound/alsa/Audiophile-Usb.txt     |    4 +--
+>>  Documentation/sound/alsa/MIXART.txt             |    6 ++--
+>>  Documentation/sound/alsa/OSS-Emulation.txt      |    2 +-
+>>  Documentation/sound/oss/AudioExcelDSP16         |    6 ++--
+>>  Documentation/sound/oss/CMI8330                 |    5 ++-
+>>  Documentation/sound/oss/Introduction            |   10 +++---
+>>  Documentation/sound/oss/Opti                    |    8 ++---
+>>  Documentation/sound/oss/PAS16                   |    4 +--
+>>  Documentation/sound/oss/README.modules          |    8 ++---
+>>  Documentation/usb/power-management.txt          |    3 +-
+>>  Documentation/video4linux/CQcam.txt             |   14 ++------
+>>  Documentation/video4linux/Zoran                 |    2 +-
+>>  Documentation/video4linux/bttv/Modules.conf     |    2 +-
+>>  Documentation/video4linux/meye.txt              |    2 +-
+>>  drivers/net/wan/Kconfig                         |    4 +--
+>>  drivers/scsi/aic7xxx/aic79xx_osm.c              |    8 ++---
+>>  drivers/scsi/aic7xxx/aic7xxx_osm.c              |    8 ++---
+>>  drivers/staging/asus_oled/README                |    2 +-
+>>  drivers/tty/isicom.c                            |    2 +-
+>>  drivers/usb/serial/ftdi_sio.c                   |    3 +-
+>>  drivers/usb/storage/Kconfig                     |    2 +-
+>>  sound/core/seq/seq_dummy.c                      |    2 +-
+>>  sound/drivers/Kconfig                           |    3 +-
+>>  50 files changed, 138 insertions(+), 160 deletions(-)
+> 
+> I'm not sure who would take this patch. Changes are mostly in Documentation.
+> 
+> Randy, could you take this? Or do you want this patch to be split and
+> go through each subsystem maintainer?
+> 
+> Takahashi, any objections on the new version?
+> 
+> 
+> Lucas De Marchi
 
-I doubt that's the best example, unfortunately.  The IPMI event log has 
-limited space and it has to be send a little piece at a time since each 
-log entry is 14 bytes.  It just prints the panic string, nothing else.  
-Not that it isn't useful, it has saved my butt before.
 
-You have lots of interesting options with paravirtualization.  You 
-could, for instance, create a console driver that delivered all console 
-output efficiently through a hypercall.  That would be really easy.  Or, 
-as you mention, a custom way to deliver panic information.  Collecting 
-information like stack traces would be harder to accomplish, as I don't 
-think there is currently a way to get it except by sending it to printk.
+Yes, I'll apply it.  Thanks.
 
--corey
+
+-- 
+~Randy
