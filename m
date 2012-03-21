@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030876Ab2CUN7I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:59:08 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34760 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030533Ab2CUN6z (ORCPT
+	id S1030940Ab2CUN7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:59:22 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:48256 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030533Ab2CUN7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:58:55 -0400
+	Wed, 21 Mar 2012 09:59:16 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 01/32] nohz: Separate idle sleeping time accounting from nohz logic
-Date: Wed, 21 Mar 2012 14:58:07 +0100
-Message-Id: <1332338318-5958-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 07/32] cpuset: Set up interface for nohz flag
+Date: Wed, 21 Mar 2012 14:58:13 +0100
+Message-Id: <1332338318-5958-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,10 +33,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we plan to be able to stop the tick outside the idle task, we
-need to prepare for separating nohz logic from idle. As a start,
-this pulls the idle sleeping time accounting out of the tick
-stop/restart API to the callers on idle entry/exit.
+Prepare the interface to implement the nohz cpuset flag.
+This flag, once set, will tell the system to try to
+shutdown the periodic timer tick when possible.
+
+We use here a per cpu refcounter. As long as a CPU
+is contained into at least one cpuset that has the
+nohz flag set, it is part of the set of CPUs that
+run into adaptive nohz mode.
+
+[ include build fix from Zen Lin ]
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -57,146 +63,191 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- kernel/time/tick-sched.c |   78 +++++++++++++++++++++++++--------------------
- 1 files changed, 43 insertions(+), 35 deletions(-)
+ arch/Kconfig           |    3 ++
+ include/linux/cpuset.h |   25 +++++++++++++++++++++++
+ init/Kconfig           |    8 +++++++
+ kernel/cpuset.c        |   52 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 88 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3526038..a1ca479 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -271,10 +271,10 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- }
- EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 4f55c73..a0710f6 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -177,6 +177,9 @@ config HAVE_ARCH_JUMP_LABEL
+ 	bool
  
--static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
-+static void tick_nohz_stop_sched_tick(struct tick_sched *ts, ktime_t now)
- {
- 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
--	ktime_t last_update, expires, now;
-+	ktime_t last_update, expires;
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 	u64 time_delta;
- 	int cpu;
-@@ -282,8 +282,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
- 	cpu = smp_processor_id();
- 	ts = &per_cpu(tick_cpu_sched, cpu);
- 
--	now = tick_nohz_start_idle(cpu, ts);
--
- 	/*
- 	 * If this cpu is offline and it is the one which updates
- 	 * jiffies, then give up the assignment and let it be taken by
-@@ -444,6 +442,14 @@ out:
- 	ts->sleep_length = ktime_sub(dev->next_event, now);
- }
- 
-+static void __tick_nohz_idle_enter(struct tick_sched *ts)
-+{
-+	ktime_t now;
+ config HAVE_ARCH_MUTEX_CPU_RELAX
++       bool
 +
-+	now = tick_nohz_start_idle(smp_processor_id(), ts);
-+	tick_nohz_stop_sched_tick(ts, now);
++config HAVE_CPUSETS_NO_HZ
+ 	bool
+ 
+ config HAVE_RCU_TABLE_FREE
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index e9eaec5..5510708 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -244,4 +244,29 @@ static inline void put_mems_allowed(void)
+ 
+ #endif /* !CONFIG_CPUSETS */
+ 
++#ifdef CONFIG_CPUSETS_NO_HZ
++
++DECLARE_PER_CPU(int, cpu_adaptive_nohz_ref);
++
++static inline bool cpuset_cpu_adaptive_nohz(int cpu)
++{
++	if (per_cpu(cpu_adaptive_nohz_ref, cpu) > 0)
++		return true;
++
++	return false;
 +}
 +
- /**
-  * tick_nohz_idle_enter - stop the idle tick from the idle task
-  *
-@@ -479,7 +485,7 @@ void tick_nohz_idle_enter(void)
- 	 * update of the idle time accounting in tick_nohz_start_idle().
- 	 */
- 	ts->inidle = 1;
--	tick_nohz_stop_sched_tick(ts);
-+	__tick_nohz_idle_enter(ts);
++static inline bool cpuset_adaptive_nohz(void)
++{
++	if (__get_cpu_var(cpu_adaptive_nohz_ref) > 0)
++		return true;
++
++	return false;
++}
++#else
++static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
++static inline bool cpuset_adaptive_nohz(void) { return false; }
++
++#endif /* CONFIG_CPUSETS_NO_HZ */
++
+ #endif /* _LINUX_CPUSET_H */
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..43f7687 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -638,6 +638,14 @@ config PROC_PID_CPUSET
+ 	depends on CPUSETS
+ 	default y
  
- 	local_irq_enable();
++config CPUSETS_NO_HZ
++       bool "Tickless cpusets"
++       depends on CPUSETS && HAVE_CPUSETS_NO_HZ
++       help
++         This options let you apply a nohz property to a cpuset such
++	 that the periodic timer tick tries to be avoided when possible on
++	 the concerned CPUs.
++
+ config CGROUP_CPUACCT
+ 	bool "Simple CPU accounting cgroup subsystem"
+ 	help
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index a09ac2b..5a28cf8 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -145,6 +145,7 @@ typedef enum {
+ 	CS_SCHED_LOAD_BALANCE,
+ 	CS_SPREAD_PAGE,
+ 	CS_SPREAD_SLAB,
++	CS_ADAPTIVE_NOHZ,
+ } cpuset_flagbits_t;
+ 
+ /* convenient tests for these bits */
+@@ -183,6 +184,11 @@ static inline int is_spread_slab(const struct cpuset *cs)
+ 	return test_bit(CS_SPREAD_SLAB, &cs->flags);
  }
-@@ -499,7 +505,7 @@ void tick_nohz_irq_exit(void)
- 	if (!ts->inidle)
- 		return;
  
--	tick_nohz_stop_sched_tick(ts);
-+	__tick_nohz_idle_enter(ts);
++static inline int is_adaptive_nohz(const struct cpuset *cs)
++{
++	return test_bit(CS_ADAPTIVE_NOHZ, &cs->flags);
++}
++
+ static struct cpuset top_cpuset = {
+ 	.flags = ((1 << CS_CPU_EXCLUSIVE) | (1 << CS_MEM_EXCLUSIVE)),
+ };
+@@ -1211,6 +1217,31 @@ static void cpuset_change_flag(struct task_struct *tsk,
+ 	cpuset_update_task_spread_flag(cgroup_cs(scan->cg), tsk);
  }
  
- /**
-@@ -540,39 +546,11 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
++#ifdef CONFIG_CPUSETS_NO_HZ
++
++DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
++
++static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
++{
++	int cpu;
++	int val;
++
++	if (is_adaptive_nohz(old_cs) == is_adaptive_nohz(cs))
++		return;
++
++	for_each_cpu(cpu, cs->cpus_allowed) {
++		if (is_adaptive_nohz(cs))
++			per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
++		else
++			per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
++	}
++}
++#else
++static inline void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
++{
++}
++#endif
++
+ /*
+  * update_tasks_flags - update the spread flags of tasks in the cpuset.
+  * @cs: the cpuset in which each task's spread flags needs to be changed
+@@ -1276,6 +1307,8 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
+ 	spread_flag_changed = ((is_spread_slab(cs) != is_spread_slab(trialcs))
+ 			|| (is_spread_page(cs) != is_spread_page(trialcs)));
+ 
++	update_nohz_cpus(cs, trialcs);
++
+ 	mutex_lock(&callback_mutex);
+ 	cs->flags = trialcs->flags;
+ 	mutex_unlock(&callback_mutex);
+@@ -1488,6 +1521,7 @@ typedef enum {
+ 	FILE_MEMORY_PRESSURE,
+ 	FILE_SPREAD_PAGE,
+ 	FILE_SPREAD_SLAB,
++	FILE_ADAPTIVE_NOHZ,
+ } cpuset_filetype_t;
+ 
+ static int cpuset_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
+@@ -1527,6 +1561,11 @@ static int cpuset_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
+ 	case FILE_SPREAD_SLAB:
+ 		retval = update_flag(CS_SPREAD_SLAB, cs, val);
+ 		break;
++#ifdef CONFIG_CPUSETS_NO_HZ
++	case FILE_ADAPTIVE_NOHZ:
++		retval = update_flag(CS_ADAPTIVE_NOHZ, cs, val);
++		break;
++#endif
+ 	default:
+ 		retval = -EINVAL;
+ 		break;
+@@ -1686,6 +1725,10 @@ static u64 cpuset_read_u64(struct cgroup *cont, struct cftype *cft)
+ 		return is_spread_page(cs);
+ 	case FILE_SPREAD_SLAB:
+ 		return is_spread_slab(cs);
++#ifdef CONFIG_CPUSETS_NO_HZ
++	case FILE_ADAPTIVE_NOHZ:
++		return is_adaptive_nohz(cs);
++#endif
+ 	default:
+ 		BUG();
  	}
- }
+@@ -1794,6 +1837,15 @@ static struct cftype files[] = {
+ 		.write_u64 = cpuset_write_u64,
+ 		.private = FILE_SPREAD_SLAB,
+ 	},
++
++#ifdef CONFIG_CPUSETS_NO_HZ
++	{
++		.name = "adaptive_nohz",
++		.read_u64 = cpuset_read_u64,
++		.write_u64 = cpuset_write_u64,
++		.private = FILE_ADAPTIVE_NOHZ,
++	},
++#endif
+ };
  
--/**
-- * tick_nohz_idle_exit - restart the idle tick from the idle task
-- *
-- * Restart the idle tick when the CPU is woken up from idle
-- * This also exit the RCU extended quiescent state. The CPU
-- * can use RCU again after this function is called.
-- */
--void tick_nohz_idle_exit(void)
-+static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
- {
--	int cpu = smp_processor_id();
--	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
- 	unsigned long ticks;
- #endif
--	ktime_t now;
--
--	local_irq_disable();
--
--	WARN_ON_ONCE(!ts->inidle);
--
--	ts->inidle = 0;
--
--	if (ts->idle_active || ts->tick_stopped)
--		now = ktime_get();
--
--	if (ts->idle_active)
--		tick_nohz_stop_idle(cpu, now);
--
--	if (!ts->tick_stopped) {
--		local_irq_enable();
--		return;
--	}
--
- 	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
- 	tick_do_update_jiffies64(now);
-@@ -599,6 +577,36 @@ void tick_nohz_idle_exit(void)
- 	ts->idle_exittime = now;
- 
- 	tick_nohz_restart(ts, now);
-+}
-+
-+/**
-+ * tick_nohz_idle_exit - restart the idle tick from the idle task
-+ *
-+ * Restart the idle tick when the CPU is woken up from idle
-+ * This also exit the RCU extended quiescent state. The CPU
-+ * can use RCU again after this function is called.
-+ */
-+void tick_nohz_idle_exit(void)
-+
-+{
-+	int cpu = smp_processor_id();
-+	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-+	ktime_t now;
-+
-+	local_irq_disable();
-+
-+	WARN_ON_ONCE(!ts->inidle);
-+
-+	ts->inidle = 0;
-+
-+	if (ts->idle_active || ts->tick_stopped)
-+		now = ktime_get();
-+
-+	if (ts->idle_active)
-+		tick_nohz_stop_idle(cpu, now);
-+
-+	if (ts->tick_stopped)
-+		tick_nohz_restart_sched_tick(ts, now);
- 
- 	local_irq_enable();
- }
+ static struct cftype cft_memory_pressure_enabled = {
 -- 
 1.7.5.4
 
