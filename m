@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760410Ab2CUVTr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:19:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35643 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759125Ab2CUVSw (ORCPT
+	id S1760439Ab2CUVUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:20:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63855 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759045Ab2CUVSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:52 -0400
-Message-Id: <20120321211533.367387452@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:18:49 -0400
+Message-Id: <20120321211533.279865634@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:15:39 -0700
+Date: Wed, 21 Mar 2012 14:15:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "RongQing.Li" <roy.qing.li@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Simon Kirby <sim@netnation.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 7/9] ipv6: Dont dev_hold(dev) in ip6_mc_find_dev_rcu.
+Subject: [ 6/9] tcp: fix syncookie regression
 In-Reply-To: <20120321211539.GA28899@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: RongQing.Li <roy.qing.li@gmail.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit c577923756b7fe9071f28a76b66b83b306d1d001 ]
+[ Upstream commit dfd25ffffc132c00070eed64200e8950da5d7e9d ]
 
-ip6_mc_find_dev_rcu() is called with rcu_read_lock(), so don't
-need to dev_hold().
-With dev_hold(), not corresponding dev_put(), will lead to leak.
+commit ea4fc0d619 (ipv4: Don't use rt->rt_{src,dst} in ip_queue_xmit())
+added a serious regression on synflood handling.
 
-[ bug introduced in 96b52e61be1 (ipv6: mcast: RCU conversions) ]
+Simon Kirby discovered a successful connection was delayed by 20 seconds
+before being responsive.
 
-Signed-off-by: RongQing.Li <roy.qing.li@gmail.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+In my tests, I discovered that xmit frames were lost, and needed ~4
+retransmits and a socket dst rebuild before being really sent.
+
+In case of syncookie initiated connection, we use a different path to
+initialize the socket dst, and inet->cork.fl.u.ip4 is left cleared.
+
+As ip_queue_xmit() now depends on inet flow being setup, fix this by
+copying the temp flowi4 we use in cookie_v4_check().
+
+Reported-by: Simon Kirby <sim@netnation.com>
+Bisected-by: Simon Kirby <sim@netnation.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/mcast.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/ipv4/syncookies.c |   30 ++++++++++++++++--------------
+ net/ipv4/tcp_ipv4.c   |   10 +++++++---
+ 2 files changed, 23 insertions(+), 17 deletions(-)
 
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -257,7 +257,6 @@ static struct inet6_dev *ip6_mc_find_dev
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -278,6 +278,7 @@ struct sock *cookie_v4_check(struct sock
+ 	struct rtable *rt;
+ 	__u8 rcv_wscale;
+ 	bool ecn_ok = false;
++	struct flowi4 fl4;
  
- 		if (rt) {
- 			dev = rt->rt6i_dev;
--			dev_hold(dev);
- 			dst_release(&rt->dst);
- 		}
- 	} else
+ 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
+ 		goto out;
+@@ -346,20 +347,16 @@ struct sock *cookie_v4_check(struct sock
+ 	 * hasn't changed since we received the original syn, but I see
+ 	 * no easy way to do this.
+ 	 */
+-	{
+-		struct flowi4 fl4;
+-
+-		flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+-				   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+-				   inet_sk_flowi_flags(sk),
+-				   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+-				   ireq->loc_addr, th->source, th->dest);
+-		security_req_classify_flow(req, flowi4_to_flowi(&fl4));
+-		rt = ip_route_output_key(sock_net(sk), &fl4);
+-		if (IS_ERR(rt)) {
+-			reqsk_free(req);
+-			goto out;
+-		}
++	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
++			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
++			   inet_sk_flowi_flags(sk),
++			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
++			   ireq->loc_addr, th->source, th->dest);
++	security_req_classify_flow(req, flowi4_to_flowi(&fl4));
++	rt = ip_route_output_key(sock_net(sk), &fl4);
++	if (IS_ERR(rt)) {
++		reqsk_free(req);
++		goto out;
+ 	}
+ 
+ 	/* Try to redo what tcp_v4_send_synack did. */
+@@ -373,5 +370,10 @@ struct sock *cookie_v4_check(struct sock
+ 	ireq->rcv_wscale  = rcv_wscale;
+ 
+ 	ret = get_cookie_sock(sk, skb, req, &rt->dst);
++	/* ip_queue_xmit() depends on our flow being setup
++	 * Normal sockets get it right from inet_csk_route_child_sock()
++	 */
++	if (ret)
++		inet_sk(ret)->cork.fl.u.ip4 = fl4;
+ out:	return ret;
+ }
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1465,9 +1465,13 @@ struct sock *tcp_v4_syn_recv_sock(struct
+ 		inet_csk(newsk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+ 	newinet->inet_id = newtp->write_seq ^ jiffies;
+ 
+-	if (!dst && (dst = inet_csk_route_child_sock(sk, newsk, req)) == NULL)
+-		goto put_and_exit;
+-
++	if (!dst) {
++		dst = inet_csk_route_child_sock(sk, newsk, req);
++		if (!dst)
++			goto put_and_exit;
++	} else {
++		/* syncookie case : see end of cookie_v4_check() */
++	}
+ 	sk_setup_caps(newsk, dst);
+ 
+ 	tcp_mtup_init(newsk);
 
 
