@@ -1,206 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031070Ab2CUOGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:06:44 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:55041 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030880Ab2CUOG2 (ORCPT
+	id S1030884Ab2CUOHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:07:06 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48218 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030744Ab2CUN7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:06:28 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] usb gadget: fix a section mismatch when compiling g_ffs with CONFIG_USB_FUNCTIONFS_ETH
-Date: Wed, 21 Mar 2012 15:06:17 +0100
-Message-Id: <1332338777-27297-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.2.5
-To: linux-usb@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
-References: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
+	Wed, 21 Mar 2012 09:59:04 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Subject: [PATCH 03/32] nohz: Rename ts->idle_tick to ts->last_tick
+Date: Wed, 21 Mar 2012 14:58:09 +0100
+Message-Id: <1332338318-5958-5-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- commit 28824b18ac4705e876a282a15ea0de8fc957551f:
- |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
- |Date:   Wed May 5 12:53:13 2010 +0200
- |
- |    USB: gadget: __init and __exit tags removed
- |
- |    __init, __initdata and __exit tags have have been removed from
- |    various files to make it possible for gadgets that do not use
- |    the __init/__exit tags to use those.
- obviously missed (at least) this case leading to a section mismatch in
- g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
+Now that idle and nohz logic are going to be split, ts->idle_tick becomes
+a misnomer when it takes a field name to save the last tick before
+switching to nohz mode, because now we want to be able to switch to nohz mode
+further the idle context.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Call it last_tick instead. This changes a bit the timer list
+stat export so we need to increase its version.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Zen Lin <zen@openhuawei.org>
 ---
- drivers/usb/gadget/f_subset.c |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ include/linux/tick.h     |    8 ++++----
+ kernel/time/tick-sched.c |    4 ++--
+ kernel/time/timer_list.c |    4 ++--
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
-index c154064..21ab474 100644
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -74,7 +74,7 @@ static inline struct f_gether *func_to_geth(struct usb_function *f)
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index ab8be90..f37fceb 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -31,10 +31,10 @@ enum tick_nohz_mode {
+  * struct tick_sched - sched tick emulation and no idle tick control/stats
+  * @sched_timer:	hrtimer to schedule the periodic tick in high
+  *			resolution mode
+- * @idle_tick:		Store the last idle tick expiry time when the tick
+- *			timer is modified for idle sleeps. This is necessary
++ * @last_tick:		Store the last tick expiry time when the tick
++ *			timer is modified for nohz sleeps. This is necessary
+  *			to resume the tick timer operation in the timeline
+- *			when the CPU returns from idle
++ *			when the CPU returns from nohz sleep.
+  * @tick_stopped:	Indicator that the idle tick has been stopped
+  * @idle_jiffies:	jiffies at the entry to idle for idle time accounting
+  * @idle_calls:		Total number of idle calls
+@@ -51,7 +51,7 @@ struct tick_sched {
+ 	struct hrtimer			sched_timer;
+ 	unsigned long			check_clocks;
+ 	enum tick_nohz_mode		nohz_mode;
+-	ktime_t				idle_tick;
++	ktime_t				last_tick;
+ 	int				inidle;
+ 	int				tick_stopped;
+ 	unsigned long			idle_jiffies;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9373f61..fc9f687 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -400,7 +400,7 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts, ktime_t now)
+ 		if (!ts->tick_stopped) {
+ 			select_nohz_load_balancer(1);
  
- /* interface descriptor: */
+-			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
++			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 		}
  
--static struct usb_interface_descriptor subset_data_intf __initdata = {
-+static struct usb_interface_descriptor subset_data_intf = {
- 	.bLength =		sizeof subset_data_intf,
- 	.bDescriptorType =	USB_DT_INTERFACE,
- 
-@@ -87,7 +87,7 @@ static struct usb_interface_descriptor subset_data_intf __initdata = {
- 	/* .iInterface = DYNAMIC */
- };
- 
--static struct usb_cdc_header_desc mdlm_header_desc __initdata = {
-+static struct usb_cdc_header_desc mdlm_header_desc = {
- 	.bLength =		sizeof mdlm_header_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
-@@ -95,7 +95,7 @@ static struct usb_cdc_header_desc mdlm_header_desc __initdata = {
- 	.bcdCDC =		cpu_to_le16(0x0110),
- };
- 
--static struct usb_cdc_mdlm_desc mdlm_desc __initdata = {
-+static struct usb_cdc_mdlm_desc mdlm_desc = {
- 	.bLength =		sizeof mdlm_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_MDLM_TYPE,
-@@ -111,7 +111,7 @@ static struct usb_cdc_mdlm_desc mdlm_desc __initdata = {
-  * can't really use its struct.  All we do here is say that we're using
-  * the submode of "SAFE" which directly matches the CDC Subset.
-  */
--static u8 mdlm_detail_desc[] __initdata = {
-+static u8 mdlm_detail_desc[] = {
- 	6,
- 	USB_DT_CS_INTERFACE,
- 	USB_CDC_MDLM_DETAIL_TYPE,
-@@ -121,7 +121,7 @@ static u8 mdlm_detail_desc[] __initdata = {
- 	0,	/* network data capabilities ("raw" encapsulation) */
- };
- 
--static struct usb_cdc_ether_desc ether_desc __initdata = {
-+static struct usb_cdc_ether_desc ether_desc = {
- 	.bLength =		sizeof ether_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_ETHERNET_TYPE,
-@@ -136,7 +136,7 @@ static struct usb_cdc_ether_desc ether_desc __initdata = {
- 
- /* full speed support: */
- 
--static struct usb_endpoint_descriptor fs_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor fs_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -144,7 +144,7 @@ static struct usb_endpoint_descriptor fs_subset_in_desc __initdata = {
- 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
- };
- 
--static struct usb_endpoint_descriptor fs_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor fs_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -152,7 +152,7 @@ static struct usb_endpoint_descriptor fs_subset_out_desc __initdata = {
- 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
- };
- 
--static struct usb_descriptor_header *fs_eth_function[] __initdata = {
-+static struct usb_descriptor_header *fs_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -165,7 +165,7 @@ static struct usb_descriptor_header *fs_eth_function[] __initdata = {
- 
- /* high speed support: */
- 
--static struct usb_endpoint_descriptor hs_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor hs_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -173,7 +173,7 @@ static struct usb_endpoint_descriptor hs_subset_in_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(512),
- };
- 
--static struct usb_endpoint_descriptor hs_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor hs_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -181,7 +181,7 @@ static struct usb_endpoint_descriptor hs_subset_out_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(512),
- };
- 
--static struct usb_descriptor_header *hs_eth_function[] __initdata = {
-+static struct usb_descriptor_header *hs_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -194,7 +194,7 @@ static struct usb_descriptor_header *hs_eth_function[] __initdata = {
- 
- /* super speed support: */
- 
--static struct usb_endpoint_descriptor ss_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor ss_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -202,7 +202,7 @@ static struct usb_endpoint_descriptor ss_subset_in_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(1024),
- };
- 
--static struct usb_endpoint_descriptor ss_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor ss_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -210,7 +210,7 @@ static struct usb_endpoint_descriptor ss_subset_out_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(1024),
- };
- 
--static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc __initdata = {
-+static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc = {
- 	.bLength =		sizeof ss_subset_bulk_comp_desc,
- 	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
- 
-@@ -219,7 +219,7 @@ static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc __initdata = {
- 	/* .bmAttributes =	0, */
- };
- 
--static struct usb_descriptor_header *ss_eth_function[] __initdata = {
-+static struct usb_descriptor_header *ss_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -290,7 +290,7 @@ static void geth_disable(struct usb_function *f)
- 
- /* serial function driver setup/binding */
- 
--static int __init
-+static int
- geth_bind(struct usb_configuration *c, struct usb_function *f)
+@@ -526,7 +526,7 @@ ktime_t tick_nohz_get_sleep_length(void)
+ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
  {
- 	struct usb_composite_dev *cdev = c->cdev;
-@@ -404,7 +404,7 @@ geth_unbind(struct usb_configuration *c, struct usb_function *f)
-  * Caller must have called @gether_setup().  Caller is also responsible
-  * for calling @gether_cleanup() before module unload.
-  */
--int __init geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
-+int geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
- {
- 	struct f_gether	*geth;
- 	int		status;
+ 	hrtimer_cancel(&ts->sched_timer);
+-	hrtimer_set_expires(&ts->sched_timer, ts->idle_tick);
++	hrtimer_set_expires(&ts->sched_timer, ts->last_tick);
+ 
+ 	while (1) {
+ 		/* Forward the time to expire in the future */
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index 3258455..af5a7e9 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -167,7 +167,7 @@ static void print_cpu(struct seq_file *m, int cpu, u64 now)
+ 	{
+ 		struct tick_sched *ts = tick_get_tick_sched(cpu);
+ 		P(nohz_mode);
+-		P_ns(idle_tick);
++		P_ns(last_tick);
+ 		P(tick_stopped);
+ 		P(idle_jiffies);
+ 		P(idle_calls);
+@@ -259,7 +259,7 @@ static int timer_list_show(struct seq_file *m, void *v)
+ 	u64 now = ktime_to_ns(ktime_get());
+ 	int cpu;
+ 
+-	SEQ_printf(m, "Timer List Version: v0.6\n");
++	SEQ_printf(m, "Timer List Version: v0.7\n");
+ 	SEQ_printf(m, "HRTIMER_MAX_CLOCK_BASES: %d\n", HRTIMER_MAX_CLOCK_BASES);
+ 	SEQ_printf(m, "now at %Ld nsecs\n", (unsigned long long)now);
+ 
 -- 
-1.7.2.5
+1.7.5.4
 
