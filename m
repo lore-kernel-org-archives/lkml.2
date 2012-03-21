@@ -1,89 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab2CUFjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:39:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43818 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754699Ab2CUFjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:39:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="123253187"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] max17042_battery: Clean up interrupt handling
-Date: Wed, 21 Mar 2012 03:03:16 +0530
-Message-Id: <1332279196-17991-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756020Ab2CUFqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:46:05 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:33480 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754786Ab2CUFqC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 01:46:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F693DD8.7070305@codeaurora.org>
+References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+ <1332214706-675-1-git-send-email-skannan@codeaurora.org> <20120320071957.GH3852@pengutronix.de>
+ <348585ed29fb3ff171267c03658e6c0d.squirrel@www.codeaurora.org>
+ <CAJOA=zO=wp9oyuBZONk2oCRYdWU1c4qanKJik-8-sFg51p27MQ@mail.gmail.com> <4F693DD8.7070305@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 20 Mar 2012 22:45:36 -0700
+Message-ID: <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] clk: Fix error handling in fixed clock hardware type
+ register fn
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Max17042 driver has dummy hardIRQ function which
-does nothing but waking the threaded handler.
+On Tue, Mar 20, 2012 at 7:32 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 03/20/2012 05:13 PM, Turquette, Mike wrote:
+>>
+>> On Tue, Mar 20, 2012 at 12:46 AM, Saravana Kannan
+>> <skannan@codeaurora.org>  wrote:
+>>>
+>>> On Tue, March 20, 2012 12:19 am, Sascha Hauer wrote:
+>>>>
+>>>> On Mon, Mar 19, 2012 at 08:38:25PM -0700, Saravana Kannan wrote:
+>>>>>
+>>>>> If memory allocation for the parents array or the parent string fails,
+>>>>> then
+>>>>> fail the registration immediately instead of calling clk_register and
+>>>>> hoping it fails there.
+>>>>>
+>>>>> Return -ENOMEM on failure.
+>>>>>
+>>>>> Signed-off-by: Saravana Kannan<skannan@codeaurora.org>
+>>>>> Cc: Mike Turquette<mturquette@linaro.org>
+>>>>> Cc: Andrew Lunn<andrew@lunn.ch>
+>>>>> Cc: Rob Herring<rob.herring@calxeda.com>
+>>>>> Cc: Russell King<linux@arm.linux.org.uk>
+>>>>> Cc: Jeremy Kerr<jeremy.kerr@canonical.com>
+>>>>> Cc: Thomas Gleixner<tglx@linutronix.de>
+>>>>> Cc: Arnd Bergman<arnd.bergmann@linaro.org>
+>>>>> Cc: Paul Walmsley<paul@pwsan.com>
+>>>>> Cc: Shawn Guo<shawn.guo@freescale.com>
+>>>>> Cc: Sascha Hauer<s.hauer@pengutronix.de>
+>>>>> Cc: Jamie Iles<jamie@jamieiles.com>
+>>>>> Cc: Richard Zhao<richard.zhao@linaro.org>
+>>>>> Cc: Saravana Kannan<skannan@codeaurora.org>
+>>>>> Cc: Magnus Damm<magnus.damm@gmail.com>
+>>>>> Cc: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>>>>> Cc: Linus Walleij<linus.walleij@stericsson.com>
+>>>>> Cc: Stephen Boyd<sboyd@codeaurora.org>
+>>>>> Cc: Amit Kucheria<amit.kucheria@linaro.org>
+>>>>> Cc: Deepak Saxena<dsaxena@linaro.org>
+>>>>> Cc: Grant Likely<grant.likely@secretlab.ca>
+>>>>> ---
+>>>>> There are still some memory free issues when clk_register() fails, but
+>>>>> I
+>>>>> will
+>>>>> fix it when I fixed the other register() fns to return ENOMEM of alloc
+>>>>> failure instead of a NULL.
+>>>>>
+>>>>>  drivers/clk/clk-fixed-rate.c |   10 +++++++---
+>>>>>  1 files changed, 7 insertions(+), 3 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/clk/clk-fixed-rate.c
+>>>>> b/drivers/clk/clk-fixed-rate.c
+>>>>> index 90c79fb..6423ae9 100644
+>>>>> --- a/drivers/clk/clk-fixed-rate.c
+>>>>> +++ b/drivers/clk/clk-fixed-rate.c
+>>>>> @@ -61,22 +61,26 @@ struct clk *clk_register_fixed_rate(struct device
+>>>>> *dev, const char *name,
+>>>>>              parent_names = kmalloc(sizeof(char *), GFP_KERNEL);
+>>>>>
+>>>>>              if (! parent_names)
+>>>>> -                    goto out;
+>>>>> +                    goto fail_ptr;
+>>>>>
+>>>>>              len = sizeof(char) * strlen(parent_name);
+>>>>>
+>>>>>              parent_names[0] = kmalloc(len, GFP_KERNEL);
+>>>>>
+>>>>>              if (!parent_names[0])
+>>>>> -                    goto out;
+>>>>> +                    goto fail_str;
+>>>>>
+>>>>>              strncpy(parent_names[0], parent_name, len);
+>>>>>      }
+>>>>
+>>>>
+>>>> It's easier to add a char *parent to struct clk_fixed and pass it to
+>>>> clk_register with&fixed->parent. This saves you a kmalloc call and
+>>>>
+>>>> makes the error path simpler. It's the same way already done in the
+>>>> divider.
+>>
+>>
+>> I thought I had done this for v7... hmm looks like one got left out.
+>> I'll line up a patch to get it in sync with the others as part of my
+>> fixes.
+>>
+>>> I thought about that since I saw the same was done for gated and divider
+>>> (I think). Here is my guess at Mike's reasoning for this:
+>>>
+>>> Gated and divider clocks have to have a parent. There's nothing to gate
+>>> otherwise. But fixed rate clocks might not have a parent. It could be
+>>> XO's
+>>> or PLLs running off of always on XOs not controlled by the SoC. So, it's
+>>> arguable to not have a parent. I don't have a strong opinion on this --
+>>> since Mike took the time to write it, it left it to his subjective
+>>> preference.
+>>
+>>
+>> I appreciate the thoughtfulness.  Re-using the same type of mechanism
+>> as the divider and gate clocks will still allow the fixed-rate clock
+>> to be parentless, and it makes for cleaner code, one less allocation
+>> and lines up with how the other single-parent basic clocks are done,
+>> so I'll take that method in instead of your patch.
+>
+>
+> No problem, go for it.
+>
+>
+>>
+>>> I sent this patch first since it was around the place I was cleaning up.
+>>> I
+>>> didn't want to actually just shuffle around a bug. As I mentioned, this
+>>> patch still leaves a bug open -- what if clk_register() fails. I plan to
+>>> fix that once my two patches are picked up (hopefully).
+>>
+>>
+>> Do you still find it useful to return -ENOMEM from the registration
+>> function instead of a NULL clock?  I'm always worried that people
+>> don't check for error codes on pointers in their platform code and
+>> only check for NULL...
+>
+>
+> The last discussion I remember, NULL was considered a valid clock. So, I
+> think on error, we shouldn't ever return NULL when the return type is struct
+> clk *.
 
-This patch removes the hardIRQ function and also
-modifies the interrupt type to falling edge. While
-we are there, change the macros to comply with the
-Data sheet.
+IIRC, that discussion was with respect to the .parent member of struct
+clk.  It was decided that having .parent = NULL does not imply that a
+clock is a root clock, but instead we rely on the CLK_IS_ROOT flag.  I
+can't think of any other instance where a NULL clk when returned from
+a registration function would be useful.
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- drivers/power/max17042_battery.c |   18 +++++++-----------
- 1 files changed, 7 insertions(+), 11 deletions(-)
+Regards,
+Mike
 
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index e36763a..abf3400 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -47,8 +47,8 @@
- 
- /* Interrupt mask bits */
- #define CONFIG_ALRT_BIT_ENBL	(1 << 2)
--#define STATUS_INTR_SOC_BIT	(1 << 14)
--#define STATUS_INTR_LOW_SOC_BIT	(1 << 10)
-+#define STATUS_INTR_SOCMIN_BIT	(1 << 10)
-+#define STATUS_INTR_SOCMAX_BIT	(1 << 14)
- 
- #define VFSOC0_LOCK		0x0000
- #define VFSOC0_UNLOCK		0x0080
-@@ -572,19 +572,14 @@ static void max17042_set_soc_threshold(struct max17042_chip *chip, u16 off)
- 	max17042_write_reg(chip->client, MAX17042_SALRT_Th, soc_tr);
- }
- 
--static irqreturn_t max17042_intr_handler(int id, void *dev)
--{
--	return IRQ_WAKE_THREAD;
--}
--
- static irqreturn_t max17042_thread_handler(int id, void *dev)
- {
- 	struct max17042_chip *chip = dev;
- 	u16 val;
- 
- 	val = max17042_read_reg(chip->client, MAX17042_STATUS);
--	if ((val & STATUS_INTR_SOC_BIT) ||
--		(val & STATUS_INTR_LOW_SOC_BIT)) {
-+	if ((val & STATUS_INTR_SOCMIN_BIT) ||
-+		(val & STATUS_INTR_SOCMAX_BIT)) {
- 		dev_info(&chip->client->dev, "SOC threshold INTR\n");
- 		max17042_set_soc_threshold(chip, 1);
- 	}
-@@ -692,9 +687,10 @@ static int __devinit max17042_probe(struct i2c_client *client,
- 	}
- 
- 	if (client->irq) {
--		ret = request_threaded_irq(client->irq, max17042_intr_handler,
-+		ret = request_threaded_irq(client->irq, NULL,
- 						max17042_thread_handler,
--						0, chip->battery.name, chip);
-+						IRQF_TRIGGER_FALLING,
-+						chip->battery.name, chip);
- 		if (!ret) {
- 			reg =  max17042_read_reg(client, MAX17042_CONFIG);
- 			reg |= CONFIG_ALRT_BIT_ENBL;
--- 
-1.7.0.4
-
+> Thanks,
+> Saravana
