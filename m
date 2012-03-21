@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab2CUL3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 07:29:34 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:38149 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2CUL3c (ORCPT
+	id S1753005Ab2CULcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 07:32:01 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33694 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab2CULcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 07:29:32 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Date: Wed, 21 Mar 2012 15:51:28 +0530
-Message-Id: <20120321102128.473.3039.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V6 4/11]  xen: defer spinlock setup until boot CPU setup
-x-cbid: 12032110-3864-0000-0000-000001F3D8A6
+	Wed, 21 Mar 2012 07:32:00 -0400
+Date: Wed, 21 Mar 2012 12:31:55 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Bernhard Walle <bernhard@bwalle.de>,
+        Bernhard Walle <walle@corscience.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
+Message-ID: <20120321113155.GS3852@pengutronix.de>
+References: <1332262083-9375-1-git-send-email-walle@corscience.de>
+ <201203210839.06258.arnd@arndb.de>
+ <20120321084856.GA17472@avionic-0098.mockup.avionic-design.de>
+ <201203211003.28019.arnd@arndb.de>
+ <20120321102847.GA13630@avionic-0098.mockup.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120321102847.GA13630@avionic-0098.mockup.avionic-design.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:30:10 up 129 days, 19:17, 69 users,  load average: 0.26, 2.19,
+ 1.53
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Wed, Mar 21, 2012 at 11:28:47AM +0100, Thierry Reding wrote:
+> * Arnd Bergmann wrote:
+> > On Wednesday 21 March 2012, Thierry Reding wrote:
+> > > I don't have a public tree anywhere. Does anyone have a recommendation where
+> > > I could set one up? github or gitorious are the first to come to my mind.
+> > 
+> > They both work fine and are easy to set up, at least as a temporary location.
+> 
+> Okay, I'll check both and will also investigate whether one can be setup on
+> our domain.
+> 
+> > If you want to have something more official in the long run, you could
+> > either set up your own git server on your employer's domain or if that
+> > is impractical, get an account on kernel.org or linaro.org. Both of those
+> > try to limit the amount of accounts they hand out to external people, but
+> > since you are going to be a subsystem maintainer, I don't see it as a
+> > problem.
+> 
+> Maybe Sascha should have a say in this (adding to Cc). He wrote the original
+> code and got the ball rolling, so I don't want to jump the queue. If he's
+> okay with it, though, I'd be happy to take over.
 
-There's no need to do it at very early init, and doing it there
-makes it impossible to use the jump_label machinery.
+I'm okay with this. I only wanted to write code for pwm, not maintain it ;)
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- arch/x86/xen/smp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 501d4e0..e85d3ee 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -201,6 +201,7 @@ static void __init xen_smp_prepare_boot_cpu(void)
- 
- 	xen_filter_cpu_maps();
- 	xen_setup_vcpu_info_placement();
-+	xen_init_spinlocks();
- }
- 
- static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
-@@ -530,7 +531,6 @@ void __init xen_smp_init(void)
- {
- 	smp_ops = xen_smp_ops;
- 	xen_fill_possible_map();
--	xen_init_spinlocks();
- }
- 
- static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
+Sascha
 
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
