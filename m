@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab2CUFqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:46:49 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49061 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756123Ab2CUFqa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:46:30 -0400
+	id S964772Ab2CUFwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:52:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56153 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756179Ab2CUFwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 01:52:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJOA=zOZ=XNwhEwUSD34AERi+f8fnMqG9EmS5hxCx+2u8qnkgw@mail.gmail.com>
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
-	<1331878280-2758-3-git-send-email-mturquette@linaro.org>
-	<20120320140220.GE32469@S2101-09.ap.freescale.net>
-	<CAJOA=zOZ=XNwhEwUSD34AERi+f8fnMqG9EmS5hxCx+2u8qnkgw@mail.gmail.com>
-Date: Wed, 21 Mar 2012 13:46:28 +0800
-Message-ID: <CAAQ0ZWRyowjHvR0_T-cA8UmbMNpo6yd6OLJ_HPh4foVULF0Tyg@mail.gmail.com>
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linaro-dev@lists.linaro.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
+Date: Wed, 21 Mar 2012 11:22:05 +0530
+Message-ID: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
+Subject: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
+From: Rajesh Bhagat <rajesh.lnx@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 March 2012 07:46, Turquette, Mike <mturquette@ti.com> wrote:
-...
-> As mentioned above, you'll still need to check for CLK_SET_RATE_PARENT
-> in your .round_rate implementation with __clk_get_flags(hw->clk).
->
-For my particular case, the clk is PLL with fixed rate clk
-(oscillator) as parent.  It's known that flag CLK_SET_RATE_PARENT will
-never be set for this type of clks.
+>From 60ec8a88ba671fa0b424f7b4467dba3ea8a2a2c8 Mon Sep 17 00:00:00 2001
+From: Rajesh Bhagat <rajesh.lnx@gmail.com>
+Date: Tue, 20 Mar 2012 10:35:59 +0530
+Subject: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
 
-> Did you want to send a formal patch or just have me absorb this into
-> the fixes I'm brewing already?  I've already fixed the potential null
-> ptr dereferences in clk_calc_new_rates, but that's no big deal.
->
-The code was attached for better discussion, and I would leave the
-formal patch to you.
+This patch resets the trace_array using tracing_reset_online_cpus, if same
+tracer is set again instead of just returning from funtion tracing_set_tracer.
 
-Regards,
-Shawn
+problem description
+-------------------
+once function tracer is set, set_ftrace_filter not working.
+/debug/tracing # echo function > current_tracer
+/debug/tracing # echo schedule > set_ftrace_filter
+/debug/tracing # echo function > current_tracer
+/debug/tracing #  cat trace
+# tracer: function
+#
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+          <idle>-0     [000]    21.997778: irq_enter <-handle_IRQ
+          <idle>-0     [000]    21.997785: idle_cpu <-irq_enter
+          <idle>-0     [000]    21.997794: local_bh_disable <-irq_enter
+          <idle>-0     [000]    21.997800: tick_check_idle <-irq_enter
+          <idle>-0     [000]    21.997807:
+tick_check_oneshot_broadcast <-tick_check_idle
+          <idle>-0     [000]    21.997814: _local_bh_enable <-irq_enter
+
+After applying this patch, only filtered functions are traced.
+
+Signed-off-by: Rajesh Bhagat <rajesh.lnx@gmail.com>
+---
+ kernel/trace/trace.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a3f1bc5..f4fb190 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3058,8 +3058,10 @@ static int tracing_set_tracer(const char *buf)
+        ret = -EINVAL;
+        goto out;
+    }
+-   if (t == current_trace)
++   if (t == current_trace) {
++       tracing_reset_online_cpus(tr);
+        goto out;
++   }
+
+    trace_branch_disable();
+    if (current_trace && current_trace->reset)
+-- 
+1.7.6
