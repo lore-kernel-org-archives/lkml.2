@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab2CUT4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 15:56:53 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:39209 "EHLO
-	na3sys009amx257.postini.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757372Ab2CUT4w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 15:56:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120321090730.GR15988@n2100.arm.linux.org.uk>
-References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
- <1332214706-675-1-git-send-email-skannan@codeaurora.org> <20120320071957.GH3852@pengutronix.de>
- <348585ed29fb3ff171267c03658e6c0d.squirrel@www.codeaurora.org>
- <CAJOA=zO=wp9oyuBZONk2oCRYdWU1c4qanKJik-8-sFg51p27MQ@mail.gmail.com>
- <4F693DD8.7070305@codeaurora.org> <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
- <20120321090730.GR15988@n2100.arm.linux.org.uk>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Wed, 21 Mar 2012 12:56:21 -0700
-Message-ID: <CAJOA=zMEkPOkSgM2kDrRWaXbyeXKA81Uq3Wv3KrbMbQOVv9CNA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: Fix error handling in fixed clock hardware type
- register fn
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
+	id S932096Ab2CUT5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 15:57:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56043 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757024Ab2CUT47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 15:56:59 -0400
+Date: Wed, 21 Mar 2012 19:56:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
         linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, patches@linaro.org,
         Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>,
         Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 1/3] Documentation: common clk API
+Message-ID: <20120321195656.GN3226@opensource.wolfsonmicro.com>
+References: <4F6A2042.9030302@codeaurora.org>
+ <20120321190741.GL3226@opensource.wolfsonmicro.com>
+ <20120321193304.GO9859@atomide.com>
+ <4F6A2EF5.3010008@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Rzq/nSLlHy1djmXS"
+Content-Disposition: inline
+In-Reply-To: <4F6A2EF5.3010008@codeaurora.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 2:07 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Mar 20, 2012 at 10:45:36PM -0700, Turquette, Mike wrote:
->> IIRC, that discussion was with respect to the .parent member of struct
->> clk.  It was decided that having .parent = NULL does not imply that a
->> clock is a root clock, but instead we rely on the CLK_IS_ROOT flag.  I
->> can't think of any other instance where a NULL clk when returned from
->> a registration function would be useful.
->
-> No.  What I've been saying is that in _drivers_ which use clk_get(),
-> the error range is defined by IS_ERR(clk).  Every other value of
-> clk must be assumed by the driver to be valid, no ifs or buts.
 
-Drivers certainly might make calls to clk_register_foo, despite it
-being outside of the traditional clock api.  For the sake of
-consistency I'll convert the clk_register_foo functions to return
-error codes.
+--Rzq/nSLlHy1djmXS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
-Mike
+On Wed, Mar 21, 2012 at 12:41:41PM -0700, Saravana Kannan wrote:
+> On 03/21/2012 12:33 PM, Tony Lindgren wrote:
+> >* Mark Brown<broonie@opensource.wolfsonmicro.com>  [120321 12:11]:
+
+> >>These aren't new APIs, the clock API has been around since forever.
+
+> I disagree. When I say clock API, I mean the actual functions and
+> their semantics. Not the existence of a header file.
+
+> The meaning of clk_enable/disable has been changed and they won't
+> work without calling clk_prepare/unprepare. So, these are definitely
+> new APIs. If it weren't new APIs, then none of the general drivers
+> would need to change.
+
+clk_prepare() and clk_unprepare() are already there for any clk.h user
+and are stubbed in no matter what, they're really not a meaningful
+barrier here.
+
+--Rzq/nSLlHy1djmXS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPajJsAAoJEBus8iNuMP3deHAP/1y36//PZAWnihTtgIjiK9EJ
+T1YxJlZ2R/RAOmVzhbaDJZdPdt781dOFwo1WwgIrc9W4vdvM86sSrtuZrRpVbMfg
+qlBDI8oMP7EfRr1bC/n1ncXKXoz4v0uf42tTobdIkuFauPxt99GZetCKGxGKGl0h
+GsoZO0HTKXYeb9XG6HDmmi0aS5f7NAszDM/t/f4voKS2ctgDO8s1WaUa+dUTiMq3
+0BHUI2dOTBYRHoFS1MKjGs/8RU4xqPA1DXx0M4tK8shqu4cfA6pozUBk2qd6LGM7
+ut1xoi1DgOamSNicG7CDuLOUzmH0d7bkl8xSOTZCj9C2NsT8AGOuOKHIEDxV/vxG
+djcMFzazO5SZYFO9dMbUE9ZBE21pB2WzYWr38cHZFO12gaxnJ0JSF57yXtuTOpyF
+x4L1TvatWiZqEVDQaFkuofC5cu+zeM4nZjmVjAbFPK0+GAgWBAnSQXOc60rXpauo
+p2tT3ULAXS+nZrxcyMEkkgxTMeDwFROdQ8ZH7R7PiSGl2zN48v3yYn/BKDaYta3f
+/6RthPG25j+iTBg+BRY8tXXJSFZ0QAkbhlbf3M3JGUZhRbsPhVDwm6kdZ6dW4pnj
+CDXWciBfrPXc6uchOKB8K49qnpO+2oI8p8iJuzAMo6x+/UvWLfA9Az/lO9sg6ATd
+Zw9kVSRc4wwq0mGWy4zx
+=nqVW
+-----END PGP SIGNATURE-----
+
+--Rzq/nSLlHy1djmXS--
