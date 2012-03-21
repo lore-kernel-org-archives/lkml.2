@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759951Ab2CUSgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:36:08 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:46518 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759725Ab2CUSgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:36:07 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.4-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20120321183613.2C93F426DA7@whiskey.americas.sgi.com>
-Date: Wed, 21 Mar 2012 13:36:13 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1759970Ab2CUSgZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:36:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:34377 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752125Ab2CUSgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 14:36:24 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/jLY1VtMDjrS/yfQRhJbPEHZk+0JE1La4Efe5UWb
+	R2T7epTk7j152Q
+Message-ID: <4F6A1F87.6010806@gmx.de>
+Date: Wed, 21 Mar 2012 18:35:51 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+MIME-Version: 1.0
+To: Wang YanQing <Udknight@gmail.com>, spock@gentoo.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video:uvesafb: notice user when we failed to save hardware
+ state
+References: <20120302014531.GA3597@udknight>
+In-Reply-To: <20120302014531.GA3597@udknight>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 03/02/2012 01:45 AM, Wang YanQing wrote:
+> 
+> uvesafb_open may failed to save hardware state when kmalloc failed
+> in uvesafb_vbe_state_save, we should check this and notice user.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
 
-   Please pull from git://oss.sgi.com/xfs/xfs for-linus
+Applied.
 
-   Bugfixes and cleanups.
 
 Thanks,
-	Ben
 
-The following changes since commit 31f6765266417c0d99f0e922fe82848a7c9c2ae9:
+Florian Tobias Schandinat
 
-  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2012-03-21 10:37:25 -0700)
+> ---
+>  drivers/video/uvesafb.c |   14 +++++++++++---
+>  1 file changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+> index e7f69ef..9db3de3 100644
+> --- a/drivers/video/uvesafb.c
+> +++ b/drivers/video/uvesafb.c
+> @@ -362,7 +362,7 @@ static u8 *uvesafb_vbe_state_save(struct uvesafb_par *par)
+>  
+>  	state = kmalloc(par->vbe_state_size, GFP_KERNEL);
+>  	if (!state)
+> -		return NULL;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	task = uvesafb_prep();
+>  	if (!task) {
+> @@ -1172,9 +1172,17 @@ static int uvesafb_open(struct fb_info *info, int user)
+>  {
+>  	struct uvesafb_par *par = info->par;
+>  	int cnt = atomic_read(&par->ref_count);
+> +	u8 *buf = NULL;
+>  
+> -	if (!cnt && par->vbe_state_size)
+> -		par->vbe_state_orig = uvesafb_vbe_state_save(par);
+> +	if (!cnt && par->vbe_state_size) {
+> +		buf =  uvesafb_vbe_state_save(par);
+> +		if (IS_ERR(buf)) {
+> +			printk(KERN_WARNING "uvesafb: save hardware state"
+> +				"failed, error code is %ld!\n", PTR_ERR(buf));
+> +		} else {
+> +			par->vbe_state_orig = buf;
+> +		}
+> +	}
+>  
+>  	atomic_inc(&par->ref_count);
+>  	return 0;
 
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Amit Sahrawat (1):
-      xfs: kill the unused XFS_BB_FSB_OFFSET macro
-
-Chandra Seetharaman (4):
-      Define a new function xfs_this_quota_on()
-      Define a new function xfs_inode_dquot()
-      Change xfs_sb_from_disk() interface to take a mount pointer
-      Define new macro XFS_ALL_QUOTA_ACTIVE and simply some usage
-
-Christoph Hellwig (1):
-      xfs: use a normal shrinker for the dquot freelist
-
-Jesper Juhl (1):
-      XFS: xfs_trans_add_item() - don't assign in ASSERT() when compare is intended
-
-Mitsuo Hayasaka (3):
-      xfs: show uuid when mount fails due to duplicate uuid
-      xfs: change available ranges of softlimit and hardlimit in quota check
-      xfs: make inode quota check more general
-
- fs/xfs/kmem.h            |    6 -
- fs/xfs/xfs_dquot.c       |  164 ++++++++------------------
- fs/xfs/xfs_dquot.h       |   30 ++++-
- fs/xfs/xfs_log_recover.c |    8 +-
- fs/xfs/xfs_mount.c       |    8 +-
- fs/xfs/xfs_mount.h       |    2 +-
- fs/xfs/xfs_qm.c          |  293 ++++++++++++++++++----------------------------
- fs/xfs/xfs_qm.h          |   14 ---
- fs/xfs/xfs_qm_stats.c    |    4 +-
- fs/xfs/xfs_qm_syscalls.c |    4 +-
- fs/xfs/xfs_quota.h       |    2 +
- fs/xfs/xfs_sb.h          |    1 -
- fs/xfs/xfs_super.c       |    7 +-
- fs/xfs/xfs_trace.h       |    5 +-
- fs/xfs/xfs_trans.c       |    4 +-
- fs/xfs/xfs_trans_dquot.c |   10 +-
- 16 files changed, 216 insertions(+), 346 deletions(-)
