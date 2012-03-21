@@ -1,36 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab2CUJMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:12:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46379 "EHLO
+	id S964903Ab2CUJPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:15:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46476 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2CUJMR convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754947Ab2CUJPf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:12:17 -0400
-Message-ID: <1332321124.18960.471.camel@twins>
-Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Wed, 21 Mar 2012 10:12:04 +0100
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A05B485@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
-	 <1331718197.18960.106.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-	 <1331808391.18960.160.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
-	 <1331891364.18960.221.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
-	 <1332151397.18960.252.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com>
-	 <1332245842.18960.413.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05B485@SHSMSX101.ccr.corp.intel.com>
+	Wed, 21 Mar 2012 05:15:35 -0400
+Message-ID: <1332321311.18960.474.camel@twins>
+Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 21 Mar 2012 10:15:11 +0100
+In-Reply-To: <20120320204625.GA17142@gmail.com>
+References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
+	 <1332267341-26338-4-git-send-email-jolsa@redhat.com>
+	 <1332269081.18960.444.camel@twins> <20120320204625.GA17142@gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -39,12 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 05:59 +0000, Liu, Chuansheng wrote:
-> Could you consider the advice that setting the active just after set
-> online?
+On Tue, 2012-03-20 at 21:46 +0100, Ingo Molnar wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > Now the disadvantage is that {} needs quotes on bash, [...]
+> 
+> Not on my version of Bash:
+> 
+>  earth5:~> perf stat {}
+>  {}: No such file or directory
+>  Terminated
+>  earth5:~> perf stat true {}
+> 
+>   Performance counter stats for 'true {}':
+> 
+> it's passed in literally, AFAICS.
 
-Not until I understand why the current stuff explodes, also see
-fd8a7de17 setting active after online can re-introduce that problem.
+# echo {}
+{}
+# echo {en,dis}able
+enable disable
 
-Which ever way I need to clean up some archs since there's all kind of
-broken in there.
+
+It somehow special cases {}, which is horrible.
