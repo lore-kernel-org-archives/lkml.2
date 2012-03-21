@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421Ab2CUVUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:20:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45365 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757757Ab2CUVSu (ORCPT
+	id S1760290Ab2CUVUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:20:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63855 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab2CUVSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:50 -0400
-Date: Wed, 21 Mar 2012 21:18:35 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, Joe Perches <joe@perches.com>,
-        greg@kroah.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [take 3] pohmelfs: call for inclusion
-Message-ID: <20120321211835.GQ6589@ZenIV.linux.org.uk>
-References: <20120316121829.GA12685@ioremap.net>
- <1331904553.5406.34.camel@joe2Laptop>
- <20120316134314.GA19342@ioremap.net>
- <1331907127.5406.48.camel@joe2Laptop>
- <20120321202702.GA16713@ioremap.net>
- <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Mar 2012 17:18:42 -0400
+Message-Id: <20120321211533.096465896@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Wed, 21 Mar 2012 14:15:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Ahern <dsahern@gmail.com>,
+        Eric B Munson <emunson@mgebm.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 4/9] perf tools: Incorrect use of snprintf results in SEGV
+In-Reply-To: <20120321211539.GA28899@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 02:02:43PM -0700, Linus Torvalds wrote:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> I can't really say that I tend to care deeply about the innards of
-> some unusual filesystem that hopefully cannot possibly impact anything
-> else. So as long as you keep people like Al happy (or at least not
-> overly unhappy), I'm unlikely to worry too much.
+------------------
 
-As far as I can see, it's still suffering the same problems it used to;
-in particular, the games it plays with d_path() are completely bogus.
-Take a look at this:
+From: Anton Blanchard <anton@samba.org>
 
-static int pohmelfs_construct_path_string(struct pohmelfs_inode *pi, void *data
- int len)
-{
-	struct path path;
-	struct dentry *d;
-	char *ptr;
-	int err = 0, strlen, reduce = 0;
+commit b832796caa1fda8516464a003c8c7cc547bc20c2 upstream.
 
-	d = d_find_alias(&pi->vfs_inode);
-	if (!d) {
-		err = -ENOENT;
-		goto err_out_exit;
-	}
+I have a workload where perf top scribbles over the stack and we SEGV.
+What makes it interesting is that an snprintf is causing this.
 
-	spin_lock(&current->fs->lock);
-	path.mnt = mntget(current->fs->root.mnt);
-	spin_unlock(&current->fs->lock);
+The workload is a c++ gem that has method names over 3000 characters
+long, but snprintf is designed to avoid overrunning buffers. So what
+went wrong?
 
-	path.dentry = d;
+The problem is we assume snprintf returns the number of characters
+written:
 
-	if (!IS_ROOT(d) && d_unhashed(d))
-		reduce = 1;
+    ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
+...
+    ret += repsep_snprintf(bf + ret, size - ret, "%s", self->ms.sym->name);
 
-	ptr = d_path(&path, data, len);
-	if (IS_ERR(ptr)) {
-		err = PTR_ERR(ptr);
-		goto err_out_put;
-	}
+Unfortunately this is not how snprintf works. snprintf returns the
+number of characters that would have been written if there was enough
+space. In the above case, if the first snprintf returns a value larger
+than size, we pass a negative size into the second snprintf and happily
+scribble over the stack. If you have 3000 character c++ methods thats a
+lot of stack to trample.
 
-	if (reduce && len >= UNHASHED_OBSCURE_STRING_SIZE) {
-		char *end = data + len - UNHASHED_OBSCURE_STRING_SIZE;
-		*end = '\0';
-	}
+This patch fixes repsep_snprintf by clamping the value at size - 1 which
+is the maximum snprintf can write before adding the NULL terminator.
 
-	strlen = len - (ptr - (char *)data);
-	memmove(data, ptr, strlen);
-	ptr = data;
+I get the sinking feeling that there are a lot of other uses of snprintf
+that have this same bug, we should audit them all.
 
-	err = strlen - 1; /* no including 0-byte */
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Eric B Munson <emunson@mgebm.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Link: http://lkml.kernel.org/r/20120307114249.44275ca3@kryten
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-	pr_debug("%s: dname: '%s', len: %u, maxlen: %u, name: '%s', strlen: %d.\n",
-		__func__, d->d_name.name, d->d_name.len, len, ptr, strlen);
+---
+ tools/perf/util/sort.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-err_out_put:
-	dput(d);
-	mntput(path.mnt);
-err_out_exit:
-	return err;
-}
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -33,6 +33,9 @@ static int repsep_snprintf(char *bf, siz
+ 		}
+ 	}
+ 	va_end(ap);
++
++	if (n >= (int)size)
++		return size - 1;
+ 	return n;
+ }
+ 
 
-For Nth time: what happens to poor sod that happens to be chrooted
-into that animal?  We get pathname relative to process' root or to fs
-root, whichever's closer.  And no, it's used not just for debugging 
-printks...
 
-I think I've asked that question at least 3 times.  Never got anything
-resembling an answer...  Is that misspelled dentry_path()?  Or is something
-subtle going on and we really want different strings generated for
-chrooted processes here?
