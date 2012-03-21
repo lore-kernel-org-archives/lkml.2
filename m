@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab2CUF0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:26:34 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:3324 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754012Ab2CUF0b (ORCPT
+	id S1755183Ab2CUF1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:27:35 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5574 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057Ab2CUF1e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:26:31 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 21 Mar 2012 13:37:39 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sjg@chromium.org" <sjg@chromium.org>,
+	Wed, 21 Mar 2012 01:27:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 20 Mar 2012 22:27:22 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Igor Grinberg <grinberg@compulab.co.il>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 2/6] dt: pinctrl: Document device tree binding
-Message-ID: <20120321053738.GD3191@shlinux2.ap.freescale.net>
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
- <1332265479-1260-2-git-send-email-swarren@wwwdotorg.org>
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Date: Wed, 21 Mar 2012 10:57:18 +0530
+Subject: RE: [PATCH] mfd: Fix compilation error in TPS65910.h
+Thread-Topic: [PATCH] mfd: Fix compilation error in TPS65910.h
+Thread-Index: Ac0GhyMZIKmtk70TSw+8XxBrEM08kwAnBbzg
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD3127DD4@BGMAIL02.nvidia.com>
+References: <1331882917-27960-1-git-send-email-vbyravarasu@nvidia.com>
+ <20120316200154.GU20524@sortiz-mobl>
+ <D958900912E20642BCBC71664EFECE3E6DD3127A5D@BGMAIL02.nvidia.com>
+ <4F6860AF.5060404@compulab.co.il>
+In-Reply-To: <4F6860AF.5060404@compulab.co.il>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
+Content-Language: en-US
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1332265479-1260-2-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 01:44:35AM +0800, Stephen Warren wrote:
-> The core pin controller bindings define:
-> * The fact that pin controllers expose pin configurations as nodes in
->   device tree.
-> * That the bindings for those pin configuration nodes is defined by the
->   individual pin controller drivers.
-> * A standardized set of properties for client devices to define numbered
->   or named pin configuration states, each referring to some number of the
->   afore-mentioned pin configuration nodes.
-> * That the bindings for the client devices determines the set of numbered
->   or named states that must exist.
+Yes Igor, this change should get into stable as well.
+
+> -----Original Message-----
+> From: Igor Grinberg [mailto:grinberg@compulab.co.il]
+> Sent: Tuesday, March 20, 2012 4:19 PM
+> To: Venu Byravarasu
+> Cc: Samuel Ortiz; linux-kernel@vger.kernel.org; jedu@slimlogic.co.uk;
+> lrg@slimlogic.co.uk; broonie@opensource.wolfsonmicro.com;
+> gg@slimlogic.co.uk
+> Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
 > 
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> v2: Fix a couple of grammar-os per Randy Dunlap. Add example of a client
-> device that references no pin configuration nodes per Dong Aisheng.
-> ---
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-
-Regards
-Dong Aisheng
-
+> On 03/19/12 10:43, Venu Byravarasu wrote:
+> > Thanks Mark and Samuel.
+> >
+> >> -----Original Message-----
+> >> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+> >> Sent: Saturday, March 17, 2012 1:32 AM
+> >> To: Venu Byravarasu
+> >> Cc: linux-kernel@vger.kernel.org; jedu@slimlogic.co.uk; lrg@slimlogic.co.uk;
+> >> broonie@opensource.wolfsonmicro.com; gg@slimlogic.co.uk
+> >> Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
+> >>
+> >> Hi Venu,
+> >>
+> >> On Fri, Mar 16, 2012 at 12:58:37PM +0530, Venu Byravarasu wrote:
+> >>> From: Venu Byravarasu <vbyravarasu@nvidia.com>
+> >>>
+> >>> Fix compilation error due to including TPS65910.h
+> >> Probably too late for 3.3, but I applied this patch anyway.
+> 
+> Venu,
+> Should this go also to stable?
+> 
+> If it should then, Samuel, can you please add Cc: stable@vger.kernel.org?
+> 
+> 
+> --
+> Regards,
+> Igor.
