@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab2CUMPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 08:15:20 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63673 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502Ab2CUMPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 08:15:17 -0400
-Date: Wed, 21 Mar 2012 13:15:10 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
-Message-ID: <20120321121510.GA4386@gmail.com>
-References: <1332267341-26338-1-git-send-email-jolsa@redhat.com>
- <1332267341-26338-4-git-send-email-jolsa@redhat.com>
- <1332269081.18960.444.camel@twins>
- <20120320204625.GA17142@gmail.com>
- <1332321311.18960.474.camel@twins>
- <20120321095211.GA11122@gmail.com>
- <1332330852.18960.482.camel@twins>
+	id S1756254Ab2CUMSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 08:18:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab2CUMSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 08:18:06 -0400
+Date: Wed, 21 Mar 2012 13:17:03 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Dan Smith <danms@us.ibm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] AutoNUMA alpha6
+Message-ID: <20120321121703.GW24602@redhat.com>
+References: <20120316144028.036474157@chello.nl>
+ <20120316182511.GJ24602@redhat.com>
+ <87k42edenh.fsf@danplanet.com>
+ <20120321075349.GB24997@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332330852.18960.482.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120321075349.GB24997@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 21, 2012 at 08:53:49AM +0100, Ingo Molnar wrote:
+> My impression is that while threading is on the rise due to its 
+> ease of use, many threaded HPC workloads still fall into the 
+> second category.
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+This is why after Peter's initial complains that a threaded
+application had to be handled perfectly by AutoNUMA even if it had
+more threads than CPU in a node, I had to take a break, and rewrite
+part of AutoNUMA to handle this scenario automatically, by introducing
+the numa hinting page faults. Before Peter complains I only had the
+pagetable scanner. So I appreciate his criticism for having convinced
+me that AutoNUMA had to have this working immediately.
 
-> On Wed, 2012-03-21 at 10:52 +0100, Ingo Molnar wrote:
-> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > # echo {}
-> > > {}
-> > > # echo {en,dis}able
-> > > enable disable
-> > > 
-> > > 
-> > > It somehow special cases {}, which is horrible.
-> > 
-> > Oh, indeed: brace expansion and sequence expressions both use 
-> > curly braces:
-> > 
-> >  $ echo foo-{a,b,c}-bar
-> >  foo-a-bar foo-b-bar foo-c-bar
-> > 
-> >  $ echo {1..10}
-> >  1 2 3 4 5 6 7 8 9 10
-> > 
-> > Too bad, it would be rather intuitive. All the brace characters 
-> > are taken by Bash.
-> > 
-> > Maybe something like:
-> > 
-> >  $ echo /minor-faults,major-faults/
-> >  /minor-faults,major-faults/
-> > 
-> > although it looks a bit weird.
-> > 
-> > So ... how about using another grouping operator, such as '+'?
-> > 
-> > Something like:
-> > 
-> >  -e minor-faults+major-faults
-> > 
-> > While when comma separated they are not grouped, or so.
-> 
-> I would much prefer a syntax that's more natural but requires 
-> quoting than one that's quirky and tailor made to avoid 
-> whatever current bash does. For one, there's other shells out 
-> there that might have different quoting needs and bash is of 
-> course free to extend its syntax.
+Perhaps somebody remembers what I told at KVMForum on stage about
+this, back then I was planning to automatically handle only processes
+that fit in a node. So the talk with Peter has been fundamental to add
+one more gear to the design or I wouldn't be able to compete with his
+syscalls.
 
-Well, they are unlikely to extend to '+', it would break a 
-boatload of scripts I suspect.
+> In fact they are often explicitly *turned* into the second 
+> category at the application level by duplicating shared global 
+> data explicitly and turning it into per thread local data.
 
-So the question would be, is a+b+c as event grouping a natural 
-syntax? If not then lets use a quoted one that is.
+per-thread local data is the best case of AutoNUMA. AutoNUMA already
+detects and reacts to false sharing putting all false-sharing threads
+in the same node statistically over time. It also cancels pending
+migration pages queued, and requires two more consecutive hits from
+threads in the same node before re-allowing migration. There's quite a
+bit of work I did to make false sharing handled properly. But the
+absolute best case is per-thread local storage (both numa01
+-DTHREAD_ALLOC and numa02, numa02 spans over the whole system with the
+same process, numa01 has two processes, where each fit in a node, with
+local thread storage).
 
-Thanks,
+> And to default-enable any of this on stock kernels we'd need to 
+> even more testing and widespread, feel-good speedups in almost 
+> every key Linux workload... I don't see that happening though, 
+> so the best we can get are probably some easy and flexible knobs 
+> for HPC.
 
-	Ingo
+This is a very good point. We can merge AutoNUMA in a disabled way. It
+won't ever do anything unless explicitly enabled, and even more
+important if you disable it (echo 0 >enabled) it will deactivate
+completely and everything will settle down like if has never run, it
+will leave zero signs in the VM and scheduler.
+
+There are three gears, if the pagetable scanner never runs (first
+gear), all other gears never activates and it is a complete bypass (noop).
+
+There are environments like virt that are quite memory static and
+predictable, so if demonstrated it would work for them, it would be
+real easy for virt admin to echo 1 >/sys/kernel/mm/autonuma/enabled .
