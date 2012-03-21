@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2CUW61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:58:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab2CUW6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:58:24 -0400
-Date: Wed, 21 Mar 2012 23:58:13 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v4 2/3] thp: add HPAGE_PMD_* definitions for
- !CONFIG_TRANSPARENT_HUGEPAGE
-Message-ID: <20120321225813.GM24602@redhat.com>
-References: <1331591456-20769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1331591456-20769-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <CAP=VYLoGSckJH+2GytZN0V0P3Uuv-PiVneKbFsVb5kQa3kcTCQ@mail.gmail.com>
- <20120321154721.3b8884bd.akpm@linux-foundation.org>
+	id S1757170Ab2CUXAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 19:00:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43760 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab2CUXAL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 19:00:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321154721.3b8884bd.akpm@linux-foundation.org>
+In-Reply-To: <20120321220652.GJ8451@sgi.com>
+References: <20120321183613.2C93F426DA7@whiskey.americas.sgi.com>
+ <CA+55aFyz5UWiJeeMbwZUZEscisZY5Jb0nADpJP6jWKwf3Uai1A@mail.gmail.com> <20120321220652.GJ8451@sgi.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 21 Mar 2012 15:59:49 -0700
+X-Google-Sender-Auth: tJ1qI95FcLgb-BIrVxQi7kXz1fU
+Message-ID: <CA+55aFzzoLDs0MSo7zoNEDL7gzMmqR+Vr1WYh337xeSVyDhJ0w@mail.gmail.com>
+Subject: Re: [GIT PULL] XFS update for 3.4-rc1
+To: Ben Myers <bpm@sgi.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Mar 21, 2012 at 3:06 PM, Ben Myers <bpm@sgi.com> wrote:
+>
+> xfs/master contains scalability improvements for dquots, log grant code
+> cleanups, plus bugfixes and cleanups large and small.
 
-On Wed, Mar 21, 2012 at 03:47:21PM -0700, Andrew Morton wrote:
-> On Wed, 21 Mar 2012 18:07:41 -0400
-> Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> 
-> > On Mon, Mar 12, 2012 at 6:30 PM, Naoya Horiguchi
-> > <n-horiguchi@ah.jp.nec.com> wrote:
-> > > These macros will be used in later patch, where all usage are expected
-> > > to be optimized away without #ifdef CONFIG_TRANSPARENT_HUGEPAGE.
-> > > But to detect unexpected usages, we convert existing BUG() to BUILD_BUG().
-> > 
-> > Just a heads up that this showed up in linux-next today as the
-> > cause of a new build failure for an ARM board:
-> > 
-> > http://kisskb.ellerman.id.au/kisskb/buildresult/5930053/
-> 
-> The internet started working again.
-> 
-> mm/pgtable-generic.c: In function 'pmdp_clear_flush_young':
-> mm/pgtable-generic.c:76: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
-> 
-> I guess we shouldn't be evaluating HPAGE_PMD_MASK at all if
-> !CONFIG_TRANSPARENT_HUGEPAGE, so...
+Shortlog and diffstat?
 
-Yes. Either that or define __HAVE_ARCH_PMDP_CLEAR_YOUNG_FLUSH without
-actually implementing the function to flush it away of the .text (is
-it perhaps flushed away at vmlinux link time?). That
-function never could be called by ARM. The BUG() is actually correct
-even in the original position, just now it triggers at build time
-because it doesn't know it can't be called.
+> Unfortunately the stuff in:  git://oss.sgi.com/xfs/xfs master
+>
+> Conflicts with the stuff in:  git://oss.sgi.com/xfs/xfs for-linus
 
-> 
-> --- a/mm/pgtable-generic.c~thp-add-hpage_pmd_-definitions-for-config_transparent_hugepage-fix
-> +++ a/mm/pgtable-generic.c
-> @@ -70,10 +70,11 @@ int pmdp_clear_flush_young(struct vm_are
->  			   unsigned long address, pmd_t *pmdp)
->  {
->  	int young;
-> -#ifndef CONFIG_TRANSPARENT_HUGEPAGE
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
-> +#else
->  	BUG();
->  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
-> -	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
->  	young = pmdp_test_and_clear_young(vma, address, pmdp);
->  	if (young)
->  		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-> _
-> 
+There's still nothng in 'for-linus'.
+
+> I've resolved the conflict here:  git://oss.sgi.com/xfs/xfs for-linus-merged
+
+I actually prefer to merge things myself to see what is up, especially
+since everybody else writes horrible merge messages (but also because
+I simply want to know what the conflicts are). I appreciate more
+complex pull requests that *also* have a "pre-merged" branch just in
+case (I tend to use that for verification if there was anything even
+remotely questionable going on), but I really do not generally want
+pre-merging.
+
+I'm used to resolving conflicts. I'm so used to it, in fact, that
+there have been cases where I did it right despite not really knowing
+the code and the maintainer did it wrong, just because I know what to
+look for.
+
+> I would like to figure out how to
+> 1) send important bugfixes upstream after rc1, and
+> 2) not hold up development commits to xfs/master, while
+> 3) avoiding conflicts like this.
+
+Avoiding conflicts isn't that important. Getting too many of them
+implies that there is something odd going on. But a few conflicts due
+to upstream bugfixes are basically "normal". Judging by the merge I
+see, there wasn't anything complicated going on.
+
+                           Linus
