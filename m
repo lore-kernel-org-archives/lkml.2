@@ -1,179 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab2CUFqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:46:05 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:33480 "EHLO
-	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754786Ab2CUFqC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:46:02 -0400
+	id S1756276Ab2CUFqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:46:49 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49061 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756123Ab2CUFqa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 01:46:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F693DD8.7070305@codeaurora.org>
-References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
- <1332214706-675-1-git-send-email-skannan@codeaurora.org> <20120320071957.GH3852@pengutronix.de>
- <348585ed29fb3ff171267c03658e6c0d.squirrel@www.codeaurora.org>
- <CAJOA=zO=wp9oyuBZONk2oCRYdWU1c4qanKJik-8-sFg51p27MQ@mail.gmail.com> <4F693DD8.7070305@codeaurora.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 20 Mar 2012 22:45:36 -0700
-Message-ID: <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: Fix error handling in fixed clock hardware type
- register fn
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
+In-Reply-To: <CAJOA=zOZ=XNwhEwUSD34AERi+f8fnMqG9EmS5hxCx+2u8qnkgw@mail.gmail.com>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
+	<1331878280-2758-3-git-send-email-mturquette@linaro.org>
+	<20120320140220.GE32469@S2101-09.ap.freescale.net>
+	<CAJOA=zOZ=XNwhEwUSD34AERi+f8fnMqG9EmS5hxCx+2u8qnkgw@mail.gmail.com>
+Date: Wed, 21 Mar 2012 13:46:28 +0800
+Message-ID: <CAAQ0ZWRyowjHvR0_T-cA8UmbMNpo6yd6OLJ_HPh4foVULF0Tyg@mail.gmail.com>
+Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
+From: Shawn Guo <shawn.guo@linaro.org>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
         Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
+        Saravana Kannan <skannan@codeaurora.org>, linaro-dev@lists.linaro.org,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 7:32 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> On 03/20/2012 05:13 PM, Turquette, Mike wrote:
->>
->> On Tue, Mar 20, 2012 at 12:46 AM, Saravana Kannan
->> <skannan@codeaurora.org>  wrote:
->>>
->>> On Tue, March 20, 2012 12:19 am, Sascha Hauer wrote:
->>>>
->>>> On Mon, Mar 19, 2012 at 08:38:25PM -0700, Saravana Kannan wrote:
->>>>>
->>>>> If memory allocation for the parents array or the parent string fails,
->>>>> then
->>>>> fail the registration immediately instead of calling clk_register and
->>>>> hoping it fails there.
->>>>>
->>>>> Return -ENOMEM on failure.
->>>>>
->>>>> Signed-off-by: Saravana Kannan<skannan@codeaurora.org>
->>>>> Cc: Mike Turquette<mturquette@linaro.org>
->>>>> Cc: Andrew Lunn<andrew@lunn.ch>
->>>>> Cc: Rob Herring<rob.herring@calxeda.com>
->>>>> Cc: Russell King<linux@arm.linux.org.uk>
->>>>> Cc: Jeremy Kerr<jeremy.kerr@canonical.com>
->>>>> Cc: Thomas Gleixner<tglx@linutronix.de>
->>>>> Cc: Arnd Bergman<arnd.bergmann@linaro.org>
->>>>> Cc: Paul Walmsley<paul@pwsan.com>
->>>>> Cc: Shawn Guo<shawn.guo@freescale.com>
->>>>> Cc: Sascha Hauer<s.hauer@pengutronix.de>
->>>>> Cc: Jamie Iles<jamie@jamieiles.com>
->>>>> Cc: Richard Zhao<richard.zhao@linaro.org>
->>>>> Cc: Saravana Kannan<skannan@codeaurora.org>
->>>>> Cc: Magnus Damm<magnus.damm@gmail.com>
->>>>> Cc: Mark Brown<broonie@opensource.wolfsonmicro.com>
->>>>> Cc: Linus Walleij<linus.walleij@stericsson.com>
->>>>> Cc: Stephen Boyd<sboyd@codeaurora.org>
->>>>> Cc: Amit Kucheria<amit.kucheria@linaro.org>
->>>>> Cc: Deepak Saxena<dsaxena@linaro.org>
->>>>> Cc: Grant Likely<grant.likely@secretlab.ca>
->>>>> ---
->>>>> There are still some memory free issues when clk_register() fails, but
->>>>> I
->>>>> will
->>>>> fix it when I fixed the other register() fns to return ENOMEM of alloc
->>>>> failure instead of a NULL.
->>>>>
->>>>>  drivers/clk/clk-fixed-rate.c |   10 +++++++---
->>>>>  1 files changed, 7 insertions(+), 3 deletions(-)
->>>>>
->>>>> diff --git a/drivers/clk/clk-fixed-rate.c
->>>>> b/drivers/clk/clk-fixed-rate.c
->>>>> index 90c79fb..6423ae9 100644
->>>>> --- a/drivers/clk/clk-fixed-rate.c
->>>>> +++ b/drivers/clk/clk-fixed-rate.c
->>>>> @@ -61,22 +61,26 @@ struct clk *clk_register_fixed_rate(struct device
->>>>> *dev, const char *name,
->>>>>              parent_names = kmalloc(sizeof(char *), GFP_KERNEL);
->>>>>
->>>>>              if (! parent_names)
->>>>> -                    goto out;
->>>>> +                    goto fail_ptr;
->>>>>
->>>>>              len = sizeof(char) * strlen(parent_name);
->>>>>
->>>>>              parent_names[0] = kmalloc(len, GFP_KERNEL);
->>>>>
->>>>>              if (!parent_names[0])
->>>>> -                    goto out;
->>>>> +                    goto fail_str;
->>>>>
->>>>>              strncpy(parent_names[0], parent_name, len);
->>>>>      }
->>>>
->>>>
->>>> It's easier to add a char *parent to struct clk_fixed and pass it to
->>>> clk_register with&fixed->parent. This saves you a kmalloc call and
->>>>
->>>> makes the error path simpler. It's the same way already done in the
->>>> divider.
->>
->>
->> I thought I had done this for v7... hmm looks like one got left out.
->> I'll line up a patch to get it in sync with the others as part of my
->> fixes.
->>
->>> I thought about that since I saw the same was done for gated and divider
->>> (I think). Here is my guess at Mike's reasoning for this:
->>>
->>> Gated and divider clocks have to have a parent. There's nothing to gate
->>> otherwise. But fixed rate clocks might not have a parent. It could be
->>> XO's
->>> or PLLs running off of always on XOs not controlled by the SoC. So, it's
->>> arguable to not have a parent. I don't have a strong opinion on this --
->>> since Mike took the time to write it, it left it to his subjective
->>> preference.
->>
->>
->> I appreciate the thoughtfulness.  Re-using the same type of mechanism
->> as the divider and gate clocks will still allow the fixed-rate clock
->> to be parentless, and it makes for cleaner code, one less allocation
->> and lines up with how the other single-parent basic clocks are done,
->> so I'll take that method in instead of your patch.
+On 21 March 2012 07:46, Turquette, Mike <mturquette@ti.com> wrote:
+...
+> As mentioned above, you'll still need to check for CLK_SET_RATE_PARENT
+> in your .round_rate implementation with __clk_get_flags(hw->clk).
 >
->
-> No problem, go for it.
->
->
->>
->>> I sent this patch first since it was around the place I was cleaning up.
->>> I
->>> didn't want to actually just shuffle around a bug. As I mentioned, this
->>> patch still leaves a bug open -- what if clk_register() fails. I plan to
->>> fix that once my two patches are picked up (hopefully).
->>
->>
->> Do you still find it useful to return -ENOMEM from the registration
->> function instead of a NULL clock?  I'm always worried that people
->> don't check for error codes on pointers in their platform code and
->> only check for NULL...
->
->
-> The last discussion I remember, NULL was considered a valid clock. So, I
-> think on error, we shouldn't ever return NULL when the return type is struct
-> clk *.
+For my particular case, the clk is PLL with fixed rate clk
+(oscillator) as parent.  It's known that flag CLK_SET_RATE_PARENT will
+never be set for this type of clks.
 
-IIRC, that discussion was with respect to the .parent member of struct
-clk.  It was decided that having .parent = NULL does not imply that a
-clock is a root clock, but instead we rely on the CLK_IS_ROOT flag.  I
-can't think of any other instance where a NULL clk when returned from
-a registration function would be useful.
+> Did you want to send a formal patch or just have me absorb this into
+> the fixes I'm brewing already?  I've already fixed the potential null
+> ptr dereferences in clk_calc_new_rates, but that's no big deal.
+>
+The code was attached for better discussion, and I would leave the
+formal patch to you.
 
 Regards,
-Mike
-
-> Thanks,
-> Saravana
+Shawn
