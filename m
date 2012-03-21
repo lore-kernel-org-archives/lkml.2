@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab2CUSSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:18:18 -0400
-Received: from david.siemens.de ([192.35.17.14]:20824 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759882Ab2CUSSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:18:14 -0400
-Message-ID: <4F6A1B4D.2060908@siemens.com>
-Date: Wed, 21 Mar 2012 19:17:49 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1759894Ab2CUSUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:20:18 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:33684 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753440Ab2CUSUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 14:20:15 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 81.ujcsVM1k8tLd9IJTlChHyd_7zF.zwXZR015h8PrXPTKl
+ 6BVpiIPnFRyyx7E2vcMZ2ySJj1ezMMSJKMxq8Ik5_BPNfeBI9RdHUhnyizli
+ l.cxSPdyIjwkAElfgwBanFxrZ2NVQC0EUuP7XME60Kz6LI.564q98Y6y5Dhg
+ qpjU.JVQ9PqYyIuYBTmQs.SzFc16wJ99.35BZa.pKHqFsrjFzC7hSLenQb8a
+ Mk_if5mWQZiHmjprO6mrtFmKSnzAyYw.CgAP_pl4Jk4tlx1Y5r3pNN.y9x5l
+ ZJNBd4OnmnwW1FHOlHsJG08T0o.KRTUZZ0gTSajE7M1IJP8cJsGcDWjGv_Xu
+ crzBQ5S3NQ3DtZk3SjRerMkg6heIJ1igmMZkj8Cqu44v74g9Qp8sIcDtNePw
+ e
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 21 Mar 2012 13:20:11 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Patch workqueue: create new slab cache instead of hacking
+In-Reply-To: <1332353119.9433.2.camel@edumazet-glaptop>
+Message-ID: <alpine.DEB.2.00.1203211319100.25567@router.home>
+References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com> <20120320154619.GA5684@google.com> <4F6944D9.5090002@cn.fujitsu.com> <CAOS58YPydFUap4HjuRATxza6VZgyrXmQHVxR83G7GRJL50ZTRQ@mail.gmail.com>
+ <alpine.DEB.2.00.1203210910450.20482@router.home> <1332341381.7893.17.camel@edumazet-glaptop> <alpine.DEB.2.00.1203210959500.21932@router.home> <1332345859.5330.8.camel@edumazet-glaptop> <alpine.DEB.2.00.1203211253520.21932@router.home>
+ <1332353119.9433.2.camel@edumazet-glaptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>,
-        "minyard@acm.org" <minyard@acm.org>,
-        Corey Minyard <tcminyard@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com> <4F6854F4.3060703@cn.fujitsu.com> <20120320154517.GG27928@redhat.com> <4F692723.8050904@cn.fujitsu.com> <20120321091127.GO22368@redhat.com> <4F69FF48.3010200@acm.org> <4F6A00EC.3060706@redhat.com> <20120321170413.GD3101@redhat.com> <4F6A1109.8060209@redhat.com>
-In-Reply-To: <4F6A1109.8060209@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-21 18:34, Avi Kivity wrote:
-> On 03/21/2012 07:04 PM, Daniel P. Berrange wrote:
->>>
->>> In fact the feature can be implemented 100% host side by searching for a
->>> panic string signature in the console logs.
->>
->> You can even go one better and search for the panic string in the
->> guest memory directly, which is what virt-dmesg does :-)
->>
->>   http://people.redhat.com/~rjones/virt-dmesg/
->>
-> 
-> -ETOOHACKY
-> 
-> Any guest change will break this, no?
+On Wed, 21 Mar 2012, Eric Dumazet wrote:
 
-/me has a simple python script (a few ten lines) to do this during
-runtime (kgdb, qemu gdbstub) or post-portem (gdb -c vmcore). Ideally,
-that will once come with the Linux sources where it can be kept in sync
-with the kernel data structures.
+> On Wed, 2012-03-21 at 12:54 -0500, Christoph Lameter wrote:
+> > On Wed, 21 Mar 2012, Eric Dumazet wrote:
+> >
+> > > On Wed, 2012-03-21 at 10:03 -0500, Christoph Lameter wrote:
+> > > > On Wed, 21 Mar 2012, Eric Dumazet wrote:
+> > > >
+> > > > > Creating a dedicated cache for few objects ? Thats a lot of overhead, at
+> > > > > least for SLAB (no merges of caches)
+> > > >
+> > > > Its some overhead for SLAB (a lot is what? If you tune down the per cpu
+> > > > caches it should be a couple of pages) but its none for SLUB.
+> > >
+> > > SLAB overhead per cache is O(CPUS * nr_node_ids)  (unless alien caches
+> > > are disabled)
+> >
+> > nr_node_ids==2 in the standard case these days. Alien caches are minimal.
+>
+>
+> Thats not true. Some machines use lots of nodes (fake nodes) for various
+> reasons.
 
-Jan
+Which is not a typical use case.
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+> And they cant disable alien caches for performance reasons.
+
+Ok then lets genericize the slub merge in some form so that it works for
+all slab allocators.
+
+
