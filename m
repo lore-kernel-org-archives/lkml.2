@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab2CUS6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:58:33 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46900 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755065Ab2CUS62 (ORCPT
+	id S1756533Ab2CUS6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:58:48 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39615 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065Ab2CUS6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:58:28 -0400
+	Wed, 21 Mar 2012 14:58:43 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, linux-kernel@vger.kernel.org,
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
         Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v3 03/12] ima: free securityfs violations file
-Date: Wed, 21 Mar 2012 14:54:08 -0400
-Message-Id: <1332356057-3356-4-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v3 08/12] ima: add inode_post_setattr call
+Date: Wed, 21 Mar 2012 14:54:13 -0400
+Message-Id: <1332356057-3356-9-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032118-6148-0000-0000-000004700D9D
+x-cbid: 12032118-7408-0000-0000-0000039EA31C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Changing an inode's metadata may result in our not needing to appraise
+the file.  In such cases, we must remove 'security.ima'.
 
-On ima_fs_init() error, free securityfs violations file.
+Changelog v1:
+- use ima_inode_post_setattr() stub function, if IMA_APPRAISE not configured
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 ---
- security/integrity/ima/ima_fs.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/attr.c           |    2 ++
+ include/linux/ima.h |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index e1aa2b4..3fccc06 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -367,6 +367,7 @@ int __init ima_fs_init(void)
+diff --git a/fs/attr.c b/fs/attr.c
+index d9bd7fc..f496bac 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -14,6 +14,7 @@
+ #include <linux/fcntl.h>
+ #include <linux/security.h>
+ #include <linux/evm.h>
++#include <linux/ima.h>
  
+ /**
+  * inode_change_ok - check if attribute changes to an inode are allowed
+@@ -245,6 +246,7 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
+ 
+ 	if (!error) {
+ 		fsnotify_change(dentry, ia_valid);
++		ima_inode_post_setattr(dentry);
+ 		evm_inode_post_setattr(dentry, ia_valid);
+ 	}
+ 
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 6ac8e50..e2bfbb1 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -39,5 +39,15 @@ static inline int ima_file_mmap(struct file *file, unsigned long prot)
+ {
  	return 0;
- out:
-+	securityfs_remove(violations);
- 	securityfs_remove(runtime_measurements_count);
- 	securityfs_remove(ascii_runtime_measurements);
- 	securityfs_remove(binary_runtime_measurements);
+ }
++
+ #endif /* CONFIG_IMA_H */
++
++#ifdef CONFIG_IMA_APPRAISE
++extern void ima_inode_post_setattr(struct dentry *dentry);
++#else
++static inline void ima_inode_post_setattr(struct dentry *dentry)
++{
++	return;
++}
++#endif /* CONFIG_IMA_APPRAISE_H */
+ #endif /* _LINUX_IMA_H */
 -- 
 1.7.6.5
 
