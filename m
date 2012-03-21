@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2CUVQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:16:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47498 "EHLO
+	id S1759435Ab2CUVQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:16:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61339 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757709Ab2CUVQh (ORCPT
+	with ESMTP id S1758334Ab2CUVQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:16:37 -0400
-Message-Id: <20120321211448.506218083@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:16:44 -0400
+Message-Id: <20120321211448.777109178@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:14:51 -0700
+Date: Wed, 21 Mar 2012 14:14:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
-        David Howells <dhowells@redhat.com>
-Subject: [ 3/8] afs: Remote abort can cause BUG in rxrpc code
+        alan@lxorguk.ukuu.org.uk, "RongQing.Li" <roy.qing.li@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 6/8] ipv6: Dont dev_hold(dev) in ip6_mc_find_dev_rcu.
 In-Reply-To: <20120321211522.GA28233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,66 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
 
-commit c0173863528a8c9212c53e080d63a1aaae5ef4f4 upstream.
+From: RongQing.Li <roy.qing.li@gmail.com>
 
-When writing files to afs I sometimes hit a BUG:
+[ Upstream commit c577923756b7fe9071f28a76b66b83b306d1d001 ]
 
-kernel BUG at fs/afs/rxrpc.c:179!
+ip6_mc_find_dev_rcu() is called with rcu_read_lock(), so don't
+need to dev_hold().
+With dev_hold(), not corresponding dev_put(), will lead to leak.
 
-With a backtrace of:
+[ bug introduced in 96b52e61be1 (ipv6: mcast: RCU conversions) ]
 
-	afs_free_call
-	afs_make_call
-	afs_fs_store_data
-	afs_vnode_store_data
-	afs_write_back_from_locked_page
-	afs_writepages_region
-	afs_writepages
-
-The cause is:
-
-	ASSERT(skb_queue_empty(&call->rx_queue));
-
-Looking at a tcpdump of the session the abort happens because we
-are exceeding our disk quota:
-
-	rx abort fs reply store-data error diskquota exceeded (32)
-
-So the abort error is valid. We hit the BUG because we haven't
-freed all the resources for the call.
-
-By freeing any skbs in call->rx_queue before calling afs_free_call
-we avoid hitting leaking memory and avoid hitting the BUG.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: RongQing.Li <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/afs/rxrpc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv6/mcast.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/afs/rxrpc.c
-+++ b/fs/afs/rxrpc.c
-@@ -314,6 +314,7 @@ int afs_make_call(struct in_addr *addr,
- 	struct msghdr msg;
- 	struct kvec iov[1];
- 	int ret;
-+	struct sk_buff *skb;
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -257,7 +257,6 @@ static struct inet6_dev *ip6_mc_find_dev
  
- 	_enter("%x,{%d},", addr->s_addr, ntohs(call->port));
- 
-@@ -380,6 +381,8 @@ int afs_make_call(struct in_addr *addr,
- 
- error_do_abort:
- 	rxrpc_kernel_abort_call(rxcall, RX_USER_ABORT);
-+	while ((skb = skb_dequeue(&call->rx_queue)))
-+		afs_free_skb(skb);
- 	rxrpc_kernel_end_call(rxcall);
- 	call->rxcall = NULL;
- error_kill_call:
+ 		if (rt) {
+ 			dev = rt->rt6i_dev;
+-			dev_hold(dev);
+ 			dst_release(&rt->dst);
+ 		}
+ 	} else
 
 
