@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030648Ab2CUG6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 02:58:18 -0400
+	id S1030692Ab2CUG6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 02:58:46 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39114 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965024Ab2CUG5O (ORCPT
+	with ESMTP id S1030257Ab2CUG5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 02:57:14 -0400
-Subject: [PATCH 14/16] mm/score: use vm_flags_t for vma flags
+	Wed, 21 Mar 2012 02:57:10 -0400
+Subject: [PATCH 13/16] mm/parisc: use vm_flags_t for vma flags
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Lennox Wu <lennox.wu@gmail.com>, Chen Liqin <liqin.chen@sunplusct.com>
-Date: Wed, 21 Mar 2012 10:57:10 +0400
-Message-ID: <20120321065710.13852.36939.stgit@zurg>
+Cc: linux-mm@kvack.org, Helge Deller <deller@gmx.de>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Date: Wed, 21 Mar 2012 10:57:06 +0400
+Message-ID: <20120321065706.13852.68934.stgit@zurg>
 In-Reply-To: <20120321065140.13852.52315.stgit@zurg>
 References: <20120321065140.13852.52315.stgit@zurg>
 User-Agent: StGit/0.15
@@ -25,41 +26,33 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org
 ---
- arch/score/mm/cache.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/parisc/mm/fault.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/score/mm/cache.c b/arch/score/mm/cache.c
-index b25e957..2288ffc 100644
---- a/arch/score/mm/cache.c
-+++ b/arch/score/mm/cache.c
-@@ -79,7 +79,7 @@ void __update_cache(struct vm_area_struct *vma, unsigned long address,
+diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
+index 18162ce..0d3680a 100644
+--- a/arch/parisc/mm/fault.c
++++ b/arch/parisc/mm/fault.c
+@@ -49,7 +49,7 @@ DEFINE_PER_CPU(struct exception_data, exception_data);
+  *   VM_WRITE if write operation
+  *   VM_EXEC  if execute operation
+  */
+-static unsigned long
++static vm_flags_t
+ parisc_acctyp(unsigned long code, unsigned int inst)
  {
- 	struct page *page;
- 	unsigned long pfn, addr;
--	int exec = (vma->vm_flags & VM_EXEC);
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
+ 	if (code == 6 || code == 16)
+@@ -173,7 +173,7 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
+ 	struct vm_area_struct *vma, *prev_vma;
+ 	struct task_struct *tsk = current;
+ 	struct mm_struct *mm = tsk->mm;
+-	unsigned long acc_type;
++	vm_flags_t acc_type;
+ 	int fault;
  
- 	pfn = pte_pfn(pte);
- 	if (unlikely(!pfn_valid(pfn)))
-@@ -172,7 +172,7 @@ void flush_cache_range(struct vm_area_struct *vma,
- 		unsigned long start, unsigned long end)
- {
- 	struct mm_struct *mm = vma->vm_mm;
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
- 	pgd_t *pgdp;
- 	pud_t *pudp;
- 	pmd_t *pmdp;
-@@ -210,7 +210,7 @@ void flush_cache_range(struct vm_area_struct *vma,
- void flush_cache_page(struct vm_area_struct *vma,
- 		unsigned long addr, unsigned long pfn)
- {
--	int exec = vma->vm_flags & VM_EXEC;
-+	int exec = (vma->vm_flags & VM_EXEC) != VM_NONE;
- 	unsigned long kaddr = 0xa0000000 | (pfn << PAGE_SHIFT);
- 
- 	flush_dcache_range(kaddr, kaddr + PAGE_SIZE);
+ 	if (in_atomic() || !mm)
 
