@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930Ab2CUOjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:39:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30509 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757738Ab2CUOjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 10:39:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="123414860"
-Message-ID: <1332340949.14983.9.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: phram: fix section mismatch for phram_setup
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Ryosuke Saito <raitosyo@gmail.com>
-Cc: h-fache@ti.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 16:42:29 +0200
-In-Reply-To: <1332323267.14283.13.camel@HDL00099>
-References: <1332323267.14283.13.camel@HDL00099>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-lwullPuVdty3QrSXSfIw"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1758429Ab2CUOoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:44:08 -0400
+Received: from 42.7.be.static.xlhost.com ([209.190.7.66]:39893 "EHLO
+	NS1.HOSTTHAISEOVDO.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750937Ab2CUOoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 10:44:05 -0400
+Date: Wed, 21 Mar 2012 10:43:55 -0400
+To: linux-kernel@vger.kernel.org
+From: Mr Frank Taylor <franktaylor@anzbanklondon.com>
+Reply-To: franktaylor444@gmail.com
+Subject: Zelo zelo nujno prosim !!!
+Message-ID: <11d30814a4e3a45794655e0f751088fc@1094thanart.co.cc>
+X-Priority: 3
+X-Mailer: PHPMailer (phpmailer.sourceforge.net) [version ]
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - NS1.HOSTTHAISEOVDO.COM
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [774 772] / [47 12]
+X-AntiAbuse: Sender Address Domain - NS1.HOSTTHAISEOVDO.COM
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Od: Mr.Frank Taylor. 
+Tel: +44 704 574 7992. 
 
---=-lwullPuVdty3QrSXSfIw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-03-21 at 18:47 +0900, Ryosuke Saito wrote:
-> phram_setup() is only called from init_phram() which is in .init.text,
-> so it must be in the same section to avoid a section mismatch warning.
->=20
-> Signed-off-by: Ryosuke Saito <raitosyo@gmail.com>
+Sprejmi moje iskreno opravi&#269;ilo, &#269;e moj mail ne ustreza vašim personalethics. 
 
-Pushed to l2-mtd.git, thanks!
+Bom se predstavim kot Mr.Frank Taylor, jaz sem državljan Deviški otoki 
+Britanski režiser prebivajo v London.A pri vodenju ra&#269;unov 
+oddelku, spremljanje finan&#269;no mrežo tukaj v Združenem kraljestvu. 
 
---=20
-Best Regards,
-Artem Bityutskiy
+To je podrobnost o tem, kaj ho&#269;em, da mi pomagajo pri doing.One naših ra&#269;unov 
+ z gospodarstva, bilance funtov 20,500,000.00 (dvajset milijonov petsto tiso&#269; funtov) 
+je v mirujo&#269;em stanju in ni deloval v zadnjih dvanajstih (12) let. 
 
---=-lwullPuVdty3QrSXSfIw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Iz mojih raziskav in potrditev, lastnik thisaccount, 
+Tujec z imenom Ost Bob) je umrl 31. januarja 2000. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+glej to: http://aviation.crosswindlanding.com/accidents/alaska_261.htm 
 
-iQIcBAABAgAGBQJPaejVAAoJECmIfjd9wqK0NaIP/3fthKv8KXnBdFSqtLfeKUky
-bFfQ2g85ON1rbubHTiR0t1GDGaOn280Ny1+/siSiolGJrI76bMcsXetk3GbEeUy+
-AecODRH2qOTBa6kDuTDLtlGCCz2zsCULqocMQtG7wh7JgmxZdZwFupNJnVjADqP+
-CXK/c34Vx7KE1b86xJKS4gZ7rlD1U8rWi1FCPTLrM5Jrg0s9qg7GtTVCrv4vx/2U
-g0tzssJ5vK06OXmeLBleKM3rhrEAy+EvE5qymEFruedx6jfY2/MXtqqDQ+dIrFi5
-xFLr4guQtw4czICuzKaiS1sdo1WkypQC6FzDtfYVFcTslF93RqQ9JXaNMlOlUBM/
-YGKDTiTji2r5FgRBoCqhWq6ihoU9wPlixj6UCW6d9KEDHejSyP4U90SUEJg97SiZ
-iJsQlOrZRzK+Ocd++zNGPIhL9fKZsMXMx944eeZh6EaLD29Y3YZbohw4Pz1JjfhM
-CfqjC3g/ehKEPxZNAFUaDj3/ND5UWyyXFzgGBfqjCFrdfVaA2f88+uelgr1MDyAO
-oM1wFP2o1c14QLe7cweGVoqSHV3wu1CaqXhNf5x29F2QkrU9qdKmyt3CkkZGBQTi
-G4mFSk9R8jD9KTCJiOfMfcrjKSsW0CF67wX2OWdQn7r2tUdo9YiSCFaC/J2jXp6c
-jBT0NmOnOICyWSa66+b3
-=C3IH
------END PGP SIGNATURE-----
+In od takrat se nih&#269;e ni naredil ni&#269;esar v zvezi z zahtevo po tem 
+denar, ker je nima družinskih &#269;lanov, ki se zavedajo obstoja 
+ne upošteva niti sredstev. 
 
---=-lwullPuVdty3QrSXSfIw--
+Sem iskati vaše privoljenje, da vam predstavi kot ožjih sorodnikov / bo upravi&#269;enec do 
+umrlega, tako da se izkupi&#269;ek od tega ra&#269;una vrednotijo &#8203;&#8203;na 20,5 milijonov funtov funtov 
+lahko pla&#269;a (prenos) na vaš ra&#269;un v vaši državi. 
 
+
+To bo izpla&#269;ana ali delijo v teh odstotkih, 60% za mene in 40% za vas. 
+vse potrebne pravne dokumente, ki se lahko uporabljajo za nazaj do tega zahtevka smo kar bo zagotovljeno. 
+
+Prosim, da mi naslednje, kot smo 7 dni te&#269;i, da through.This je zelo zelo NUJNO prosim. 
+  
+1. Ime in priimek. 
+2. Vaš Direct Mobile številka. 
+3. Vaš kontaktni naslov. 
+4. Vaš Age. 
+5. Vaš poklic. 
+  
+S spoštovanjem, 
+Mr.Frank Taylor 
+Tel: +44 704 574 7992. 
+
+
+
+............................................................................................................................................................
+
+From: Mr.Frank Taylor.
+Tel: +44 704 574 7992.
+
+
+Accept my sincere apologies if my mail does not meet your personalethics.
+
+I will introduce myself as Mr.Frank Taylor, I am a citizen Virgin Islands 
+A British residing in London.A director in the accounts management
+section, monitoring financial network here in the United Kingdom.
+
+This is the detail of what i want you to assist me in doing.One of our accounts
+ with holding balance of £20,500,000.00(Twenty  Million Five Hundred Thousand pounds)
+has been dormant and has not been operated for the past twelve(12)years.
+
+>From my investigations and confirmations,the owner of thisaccount,
+a foreigner by name (Ost Bob)died On January 31 2000.
+
+see this: http://aviation.crosswindlanding.com/accidents/alaska_261.htm
+
+And since then nobody has done anything as regards the claiming of this
+money because he has no family members who are aware of the existence of
+neither the account nor the funds.
+
+I seek your consent to present you as the next of kin/Will Beneficiary to 
+the deceased so that the proceeds of this account valued at £20.5 Million Pounds 
+can be paid (transfer) to your Account in your country.
+
+
+This will be disbursed or shared in these percentage, 60% to me and 40% to you.  
+all necessary legal documents that can be used to back up this claim we are making will be secured.
+
+Please, provide me the following, as we have 7 days to run it through.This is very very URGENT PLEASE.
+ 
+1. Full Name.
+2. Your Direct Mobile Number.
+3. Your Contact Address.
+4. Your Age.
+5. Your Occupation.
+ 
+Regards,
+Mr.Frank Taylor
+Tel: +44 704 574 7992.
