@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2CUIjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 04:39:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54870 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab2CUIje convert rfc822-to-8bit (ORCPT
+	id S1755990Ab2CUItG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 04:49:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49250 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab2CUItC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 04:39:34 -0400
+	Wed, 21 Mar 2012 04:49:02 -0400
+Date: Wed, 21 Mar 2012 09:48:56 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bernhard Walle <bernhard@bwalle.de>, Bernhard Walle <walle@corscience.de>,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: Add TWL4030 PWM driver
+Message-ID: <20120321084856.GA17472@avionic-0098.mockup.avionic-design.de>
+References: <1332262083-9375-1-git-send-email-walle@corscience.de>
+ <201203202202.12060.arnd@arndb.de>
+ <4F697201.1090206@bwalle.de>
+ <201203210839.06258.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
-References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
-	<af9b876508ebc83431312aef67b3ae920780bd5c.1319025009.git.dmitry.kasatkin@intel.com>
-	<alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
-Date: Wed, 21 Mar 2012 09:39:32 +0100
-X-Google-Sender-Auth: 7XCdQDm8BejkSdl4FVM9Grv0QPo
-Message-ID: <CAMuHMdWLixmQ-iSiShRjFHgxPp9MZxUQDA=oYasdZd3WwmqGYg@mail.gmail.com>
-Subject: Re: [PATCH v2.2 2/7] crypto: GnuPG based MPI lib - header files (part 2)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        zohar@linux.vnet.ibm.com, dhowells@redhat.com,
-        herbert@gondor.hengli.com.au,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
+Content-Disposition: inline
+In-Reply-To: <201203210839.06258.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:O/m8mVbw43paPx6H2BHDAj3o9Jr5coU++u8MOvkTBIs
+ b9WCz3lTgpj1hm/dgMaDHlEW1kUiyqD8i3gi6kbG857xOB/h4g
+ 9yem3M40nkGQTDF6o5hcQ6FOj0oDaK2+LOVg0LGCBJmBCzJ+Uk
+ Ngs+ZPFsA5b/zc+IAu1QkHvXYoQNbQ6GUexYG5YieypqGaGj/A
+ qlLng7cZXgB7oidaPZhPZynbpvdKq187CpBs2jjwaFxhfmb33L
+ RsAWL8n25KuI5C1dj/0AUhuUjz0TdKGDWYwmZNvVEi62irpS9/
+ lVtLfbytq443v8MoRtN5P4Lda9/CVBQ60yM5tyxUKB0KOsADo8
+ R0KXMx+vEJbvOBrCa+W7cBTgQkxSV+3kX4HyXsZku7RJavS7sX
+ BgEcTiEvP9nUQh7fh5+Y9J4BJaiQXOPLNo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
 
-On Sun, Mar 11, 2012 at 10:55, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Wed, 19 Oct 2011, Dmitry Kasatkin wrote:
->> Adds the multi-precision-integer maths library which was originally taken
->> from GnuPG and ported to the kernel by (among others) David Howells.
->> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
->> The difference is that checkpatch reported errors and warnings have been fixed.
->>
->> This library is used to implemenet RSA digital signature verification
->> used in IMA/EVM integrity protection subsystem.
->
->> --- /dev/null
->> +++ b/lib/mpi/longlong.h
->
->> +     /* If udiv_qrnnd was not defined for this processor, use __udiv_qrnnd_c.  */
->> +#if !defined(udiv_qrnnd)
->> +#define UDIV_NEEDS_NORMALIZATION 1
->> +#define udiv_qrnnd __udiv_qrnnd_c
->> +#endif
->> +
->> +#undef count_leading_zeros
->
-> Why is this #undef here? It's not present in mpi/longlong.h from Ubuntu's
-> gnupg-1.4.10, and causing ...
->
->> +#if !defined(count_leading_zeros)
->> +     extern
->> +#ifdef __STDC__
->> +                     const
->> +#endif
->> +                     unsigned char __clz_tab[];
->> +#define count_leading_zeros(count, x) \
->> +do { \
->> +     UWtype __xr = (x); \
->> +     UWtype __a; \
->> +     \
->> +     if (W_TYPE_SIZE <= 32) { \
->> +             __a = __xr < ((UWtype) 1 << 2*__BITS4) \
->> +             ? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
->> +             : (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
->> +     } \
->> +     else { \
->> +             for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
->> +                     if (((__xr >> __a) & 0xff) != 0) \
->> +                             break; \
->> +     } \
->> +     \
->> +     (count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
->> +} while (0)
->> +     /* This version gives a well-defined value for zero. */
->> +#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
->
-> lib/mpi/longlong.h:1483:1: warning: "COUNT_LEADING_ZEROS_0" redefined
-> lib/mpi/longlong.h:610:1: warning: this is the location of the previous definition
->
-> on m68k/allmodconfig.
->
-> I'm also wondering why this warning is not seen on other arches, e.g. PPC
-> #defines COUNT_LEADING_ZEROS_0 to 32, just like m68k.
->
->> +#endif
->
-> I suppose the plan is to clean up this header file, as lots of its
-> functionality is already present in the kernel sources in some other way
-> (e.g. arch/m68k/lib/muldi3.c)?
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Gr{oetje,eeting}s,
+* Arnd Bergmann wrote:
+> On Wednesday 21 March 2012, Bernhard Walle wrote:
+> > Am 20.03.12 23:02, schrieb Arnd Bergmann:
+> > > On Tuesday 20 March 2012, Bernhard Walle wrote:
+> > >>
+> > >> This PWM driver uses the PWM of the TWL4030. The driver for the TWL6=
+030
+> > >> PWM has been used as mode, but the PWM registers are different.
+> > >>
+> > >> The driver can be used and has been tested in conjunction with
+> > >> pwm-backlight to control a backlight LED of a LCD touch screen.
+> > >>
+> > >> Signed-off-by: Bernhard Walle <walle@corscience.de>
+> > >=20
+> > > Since it's too late for v3.4 now and we will get a new pwm
+> > > subsystem in v3.5, I suggest you change the driver to work
+> > > register with that subsystem instead of just using the old
+> > > header file. Note that drivers/mfd is not really the right
+> > > place anyway, because this is not a multifunction driver but
+> > > just one device driver that happens to be a slave of an mfd.
+> >=20
+> > Does that new subsystem already exist in some tree?
+> =20
+> Thierry Reding has been busily posting patches, so he probably has
+> one that you can use, but I couldn't find it now.
 
-                        Geert
+I don't have a public tree anywhere. Does anyone have a recommendation where
+I could set one up? github or gitorious are the first to come to my mind.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thierry
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk9plfgACgkQZ+BJyKLjJp+oVwCgpj2ZSzvNTRmhsVW+1cmO07ek
+4oEAoIPHh/23A5nbbK95PetCskZVUSN+
+=gJls
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
