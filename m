@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760277Ab2CUVSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:18:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35643 "EHLO
+	id S1760381Ab2CUVTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:19:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41497 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760241Ab2CUVSq (ORCPT
+	with ESMTP id S1760285Ab2CUVS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:46 -0400
-Message-Id: <20120321211533.187688008@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:18:58 -0400
+Message-Id: <20120321211533.557011479@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:15:37 -0700
+Date: Wed, 21 Mar 2012 14:15:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
-        Eric B Munson <emunson@mgebm.net>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 5/9] perf tools: Use scnprintf where applicable
+        alan@lxorguk.ukuu.org.uk,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Adam Conrad <adconrad@ubuntu.com>
+Subject: [ 9/9] powerpc/pmac: Fix SMP kernels on pre-core99 UP machines
 In-Reply-To: <20120321211539.GA28899@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,267 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit e7f01d1e3d8d501deb8abeaa269d5d48a703b8b0 upstream.
+commit 78c5c68a4cf4329d17abfa469345ddf323d4fd62 upstream.
 
-Several places were expecting that the value returned was the number of
-characters printed, not what would be printed if there was space.
+The code for "powersurge" SMP would kick in and cause a crash
+at boot due to the lack of a NULL test.
 
-Fix it by using the scnprintf and vscnprintf variants we inherited from
-the kernel sources.
-
-Some corner cases where the number of printed characters were not
-accounted were fixed too.
-
-Reported-by: Anton Blanchard <anton@samba.org>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-kwxo2eh29cxmd8ilixi2005x@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Reported-by: Adam Conrad <adconrad@ubuntu.com>
+Tested-by: Adam Conrad <adconrad@ubuntu.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/arch/powerpc/util/header.c |    2 +-
- tools/perf/arch/x86/util/header.c     |    2 +-
- tools/perf/util/color.c               |    9 +++++----
- tools/perf/util/header.c              |    4 ++--
- tools/perf/util/hist.c                |   30 +++++++++++++++---------------
- tools/perf/util/strbuf.c              |    7 ++++---
- tools/perf/util/ui/browsers/hists.c   |   12 ++++++------
- tools/perf/util/ui/helpline.c         |    2 +-
- 8 files changed, 35 insertions(+), 33 deletions(-)
+ arch/powerpc/platforms/powermac/smp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/tools/perf/arch/powerpc/util/header.c
-+++ b/tools/perf/arch/powerpc/util/header.c
-@@ -25,7 +25,7 @@ get_cpuid(char *buffer, size_t sz)
+--- a/arch/powerpc/platforms/powermac/smp.c
++++ b/arch/powerpc/platforms/powermac/smp.c
+@@ -414,7 +414,7 @@ static struct irqaction psurge_irqaction
  
- 	pvr = mfspr(SPRN_PVR);
- 
--	nb = snprintf(buffer, sz, "%lu,%lu$", PVR_VER(pvr), PVR_REV(pvr));
-+	nb = scnprintf(buffer, sz, "%lu,%lu$", PVR_VER(pvr), PVR_REV(pvr));
- 
- 	/* look for end marker to ensure the entire data fit */
- 	if (strchr(buffer, '$')) {
---- a/tools/perf/arch/x86/util/header.c
-+++ b/tools/perf/arch/x86/util/header.c
-@@ -48,7 +48,7 @@ get_cpuid(char *buffer, size_t sz)
- 		if (family >= 0x6)
- 			model += ((a >> 16) & 0xf) << 4;
- 	}
--	nb = snprintf(buffer, sz, "%s,%u,%u,%u$", vendor, family, model, step);
-+	nb = scnprintf(buffer, sz, "%s,%u,%u,%u$", vendor, family, model, step);
- 
- 	/* look for end marker to ensure the entire data fit */
- 	if (strchr(buffer, '$')) {
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -1,3 +1,4 @@
-+#include <linux/kernel.h>
- #include "cache.h"
- #include "color.h"
- 
-@@ -182,12 +183,12 @@ static int __color_vsnprintf(char *bf, s
- 	}
- 
- 	if (perf_use_color_default && *color)
--		r += snprintf(bf, size, "%s", color);
--	r += vsnprintf(bf + r, size - r, fmt, args);
-+		r += scnprintf(bf, size, "%s", color);
-+	r += vscnprintf(bf + r, size - r, fmt, args);
- 	if (perf_use_color_default && *color)
--		r += snprintf(bf + r, size - r, "%s", PERF_COLOR_RESET);
-+		r += scnprintf(bf + r, size - r, "%s", PERF_COLOR_RESET);
- 	if (trail)
--		r += snprintf(bf + r, size - r, "%s", trail);
-+		r += scnprintf(bf + r, size - r, "%s", trail);
- 	return r;
- }
- 
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1227,7 +1227,7 @@ int build_id_cache__add_s(const char *sb
- 	if (realname == NULL || filename == NULL || linkname == NULL)
- 		goto out_free;
- 
--	len = snprintf(filename, size, "%s%s%s",
-+	len = scnprintf(filename, size, "%s%s%s",
- 		       debugdir, is_kallsyms ? "/" : "", realname);
- 	if (mkdir_p(filename, 0755))
- 		goto out_free;
-@@ -1242,7 +1242,7 @@ int build_id_cache__add_s(const char *sb
- 			goto out_free;
- 	}
- 
--	len = snprintf(linkname, size, "%s/.build-id/%.2s",
-+	len = scnprintf(linkname, size, "%s/.build-id/%.2s",
- 		       debugdir, sbuild_id);
- 
- 	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -767,7 +767,7 @@ static int hist_entry__pcnt_snprintf(str
- 						     sep ? "%.2f" : "   %6.2f%%",
- 						     (period * 100.0) / total);
- 		else
--			ret = snprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
-+			ret = scnprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
- 				       (period * 100.0) / total);
- 		if (symbol_conf.show_cpu_utilization) {
- 			ret += percent_color_snprintf(s + ret, size - ret,
-@@ -790,20 +790,20 @@ static int hist_entry__pcnt_snprintf(str
- 			}
- 		}
- 	} else
--		ret = snprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
-+		ret = scnprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
- 
- 	if (symbol_conf.show_nr_samples) {
- 		if (sep)
--			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
-+			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
- 		else
--			ret += snprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
-+			ret += scnprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
- 	}
- 
- 	if (symbol_conf.show_total_period) {
- 		if (sep)
--			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
-+			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
- 		else
--			ret += snprintf(s + ret, size - ret, " %12" PRIu64, period);
-+			ret += scnprintf(s + ret, size - ret, " %12" PRIu64, period);
- 	}
- 
- 	if (pair_hists) {
-@@ -818,25 +818,25 @@ static int hist_entry__pcnt_snprintf(str
- 		diff = new_percent - old_percent;
- 
- 		if (fabs(diff) >= 0.01)
--			snprintf(bf, sizeof(bf), "%+4.2F%%", diff);
-+			ret += scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
- 		else
--			snprintf(bf, sizeof(bf), " ");
-+			ret += scnprintf(bf, sizeof(bf), " ");
- 
- 		if (sep)
--			ret += snprintf(s + ret, size - ret, "%c%s", *sep, bf);
-+			ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
- 		else
--			ret += snprintf(s + ret, size - ret, "%11.11s", bf);
-+			ret += scnprintf(s + ret, size - ret, "%11.11s", bf);
- 
- 		if (show_displacement) {
- 			if (displacement)
--				snprintf(bf, sizeof(bf), "%+4ld", displacement);
-+				ret += scnprintf(bf, sizeof(bf), "%+4ld", displacement);
- 			else
--				snprintf(bf, sizeof(bf), " ");
-+				ret += scnprintf(bf, sizeof(bf), " ");
- 
- 			if (sep)
--				ret += snprintf(s + ret, size - ret, "%c%s", *sep, bf);
-+				ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
- 			else
--				ret += snprintf(s + ret, size - ret, "%6.6s", bf);
-+				ret += scnprintf(s + ret, size - ret, "%6.6s", bf);
- 		}
- 	}
- 
-@@ -854,7 +854,7 @@ int hist_entry__snprintf(struct hist_ent
- 		if (se->elide)
- 			continue;
- 
--		ret += snprintf(s + ret, size - ret, "%s", sep ?: "  ");
-+		ret += scnprintf(s + ret, size - ret, "%s", sep ?: "  ");
- 		ret += se->se_snprintf(he, s + ret, size - ret,
- 				       hists__col_len(hists, se->se_width_idx));
- 	}
---- a/tools/perf/util/strbuf.c
-+++ b/tools/perf/util/strbuf.c
-@@ -1,4 +1,5 @@
- #include "cache.h"
-+#include <linux/kernel.h>
- 
- int prefixcmp(const char *str, const char *prefix)
+ static void __init smp_psurge_setup_cpu(int cpu_nr)
  {
-@@ -89,14 +90,14 @@ void strbuf_addf(struct strbuf *sb, cons
- 	if (!strbuf_avail(sb))
- 		strbuf_grow(sb, 64);
- 	va_start(ap, fmt);
--	len = vsnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
-+	len = vscnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
- 	va_end(ap);
- 	if (len < 0)
--		die("your vsnprintf is broken");
-+		die("your vscnprintf is broken");
- 	if (len > strbuf_avail(sb)) {
- 		strbuf_grow(sb, len);
- 		va_start(ap, fmt);
--		len = vsnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
-+		len = vscnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
- 		va_end(ap);
- 		if (len > strbuf_avail(sb)) {
- 			die("this should not happen, your snprintf is broken");
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -839,15 +839,15 @@ static int hists__browser_title(struct h
- 	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
+-	if (cpu_nr != 0)
++	if (cpu_nr != 0 || !psurge_start)
+ 		return;
  
- 	nr_events = convert_unit(nr_events, &unit);
--	printed = snprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
-+	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
- 
- 	if (thread)
--		printed += snprintf(bf + printed, size - printed,
-+		printed += scnprintf(bf + printed, size - printed,
- 				    ", Thread: %s(%d)",
- 				    (thread->comm_set ? thread->comm : ""),
- 				    thread->pid);
- 	if (dso)
--		printed += snprintf(bf + printed, size - printed,
-+		printed += scnprintf(bf + printed, size - printed,
- 				    ", DSO: %s", dso->short_name);
- 	return printed;
- }
-@@ -1097,7 +1097,7 @@ static void perf_evsel_menu__write(struc
- 						       HE_COLORSET_NORMAL);
- 
- 	nr_events = convert_unit(nr_events, &unit);
--	printed = snprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
-+	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
- 			   unit, unit == ' ' ? "" : " ", ev_name);
- 	slsmg_printf("%s", bf);
- 
-@@ -1107,8 +1107,8 @@ static void perf_evsel_menu__write(struc
- 		if (!current_entry)
- 			ui_browser__set_color(browser, HE_COLORSET_TOP);
- 		nr_events = convert_unit(nr_events, &unit);
--		snprintf(bf, sizeof(bf), ": %ld%c%schunks LOST!", nr_events,
--			 unit, unit == ' ' ? "" : " ");
-+		printed += scnprintf(bf, sizeof(bf), ": %ld%c%schunks LOST!",
-+				     nr_events, unit, unit == ' ' ? "" : " ");
- 		warn = bf;
- 	}
- 
---- a/tools/perf/util/ui/helpline.c
-+++ b/tools/perf/util/ui/helpline.c
-@@ -65,7 +65,7 @@ int ui_helpline__show_help(const char *f
- 	static int backlog;
- 
- 	pthread_mutex_lock(&ui__lock);
--	ret = vsnprintf(ui_helpline__last_msg + backlog,
-+	ret = vscnprintf(ui_helpline__last_msg + backlog,
- 			sizeof(ui_helpline__last_msg) - backlog, format, ap);
- 	backlog += ret;
- 
+ 	/* reset the entry point so if we get another intr we won't
 
 
