@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab2CUQiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 12:38:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49327 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758100Ab2CUQiO (ORCPT
+	id S1754642Ab2CUQpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:45:47 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36675 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab2CUQpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 12:38:14 -0400
-Date: Wed, 21 Mar 2012 16:38:12 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Add support for spi regmap
-Message-ID: <20120321163811.GH3226@opensource.wolfsonmicro.com>
-References: <1332345170.21744.10.camel@matrix>
- <20120321155635.GE3226@opensource.wolfsonmicro.com>
- <1332348080.21744.26.camel@matrix>
+	Wed, 21 Mar 2012 12:45:46 -0400
+Date: Wed, 21 Mar 2012 12:41:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: jwboyer@redhat.com, mingo@elte.hu, hpa@zytor.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] xen/x86: Implement x86_apic_ops
+Message-ID: <20120321164124.GB16441@phenom.dumpdata.com>
+References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
+ <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
+ <1332288764-10351-4-git-send-email-konrad.wilk@oracle.com>
+ <1332293497.16101.90.camel@sbsiddha-desk.sc.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pfTAc8Cvt8L6I27a"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332348080.21744.26.camel@matrix>
-X-Cookie: Tomorrow, you can be anywhere.
+In-Reply-To: <1332293497.16101.90.camel@sbsiddha-desk.sc.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090208.4F6A05B4.0012,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 20, 2012 at 06:31:37PM -0700, Suresh Siddha wrote:
+> On Tue, 2012-03-20 at 20:12 -0400, Konrad Rzeszutek Wilk wrote:
+> > Or rather just implement one different function as opposed
+> > to the native one : the read function.
+> > 
+> > We synthesize the values.
+> > 
+> > Suggested-by:  Suresh Siddha <suresh.b.siddha@intel.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/xen/Makefile    |    2 +-
+> >  arch/x86/xen/apic.c      |   17 +++++++++++++++++
+> >  arch/x86/xen/enlighten.c |    2 ++
+> >  arch/x86/xen/xen-ops.h   |    4 ++++
+> >  4 files changed, 24 insertions(+), 1 deletions(-)
+> >  create mode 100644 arch/x86/xen/apic.c
+> > 
+> > diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+> > index add2c2d..96ab2c0 100644
+> > --- a/arch/x86/xen/Makefile
+> > +++ b/arch/x86/xen/Makefile
+> > @@ -20,5 +20,5 @@ obj-$(CONFIG_EVENT_TRACING) += trace.o
+> >  obj-$(CONFIG_SMP)		+= smp.o
+> >  obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+> >  obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
+> > -obj-$(CONFIG_XEN_DOM0)		+= vga.o
+> > +obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
+> >  obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
+> > diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
+> > new file mode 100644
+> > index 0000000..c53b3ef
+> > --- /dev/null
+> > +++ b/arch/x86/xen/apic.c
+> > @@ -0,0 +1,17 @@
+> > +#include <linux/init.h>
+> > +#include <asm/x86_init.h>
+> > +
+> > +unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
+> > +{
+> > +	if (reg == 0x1)
+> > +		return 0x00170020;
+> > +	else if (reg == 0x0)
+> > +		return 0x00000000;
+> 
+> For IO-APIC ID register (0), you can probably use the argument 'apic' to
+> set the ID bits in the returned register.
 
---pfTAc8Cvt8L6I27a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ok, that would be just
+return 0x0000000 | apic
 
-On Wed, Mar 21, 2012 at 10:11:20PM +0530, Ashish Chavan wrote:
-> On Wed, 2012-03-21 at 15:56 +0000, Mark Brown wrote:
+right? Since the last 8 bits are the apic value?
+> 
+> > +
+> > +	return 0xfd;
+> 
+> 0xff might be better.
 
-> This is writing to page register. SPI register space is divided in to
-> two pages. Registers from 0x01 to 0x80 fall in to first page. If we want
-> to write to any register above 0x80, first we need to set page register
-> with PAGE1. May be I should put comments to make it obvious.
-
-You also need to make sure that the register cache doesn't get confused.
-
-> > >  	/* unlock */
-> > >  	regmap_write(da7210->regmap, DA7210_A_HID_UNLOCK,	0x8B);
-> > > @@ -1035,6 +1056,10 @@ static int da7210_probe(struct snd_soc_codec *codec)
-> > >  	regmap_write(da7210->regmap, DA7210_A_HID_UNLOCK,	0x00);
-> > >  	regmap_write(da7210->regmap, DA7210_A_TEST_UNLOCK,	0x00);
-
-> > I also note that you've not yet updated this to use a regmap patch as
-> > was previously requested.
-
-> Actually I don't have enough details about the problem that you
-> mentioned with this. I am waiting for inputs from some body else. Can
-
-...and didn't bother asking any questions so it's unlikely anyone will
-say anything...
-
-> you please elaborate the problem if you have details? so that I can
-> correct it.
-
-What is unclear in the previous feedback?  You should be converting this
-to use a regmap patch...
-
---pfTAc8Cvt8L6I27a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPagL+AAoJEBus8iNuMP3d+3kQAJwsFnlgLpxxM91gMA0WCTbN
-iKL1QqapB5KdDLEHv/3JGkdMsZ+h0nWVBxe1o61JKiLmiFRI9Zur1zFj7IdnTo/O
-bbIkHDlo/2GjhCdsaLHxkWoMhxJxicaE+k/txuNwXjHv+oSPjg4sBNNc9x+lm0aV
-ycv3qZfCNK/2HQ4FfjX+nSPW/rMcICxehhHFSGmFu12g+Q/wTI/T1hzFjJvWowmH
-RtdSv0kYwoJOCdPD97rbgYcYEVrymlPl5srK8JuQ+f4OHwHuqj1FxHSxV4sgJyJp
-MgrW8jMHCRwwA2JACg3xh/EieNFVLlQ+4j97B8/wsertwg2YD4ZRGgmbO+5gDEhS
-ZqwVdpTLE5SURtyrm6wI1k5Jwa3IkAf/g1oQ6BULzUQtsGLsa+xH1ChyIKnCKw5G
-8mGJxkW9DEMSs1pXkOxlo2KHYjzMJLe7EYj9wepSjbTCHzFnxMg+NNZ4e3Pnuzv9
-IjKLmwEPYvht/8OSiLZyicZ/4x2WJAvs9JtGxHvjKlwvcUm9mzGsbp6ea9r4PY0S
-d03Z/t/ocyo724hwHP1dxOm8ZDe5Y+Gy6dnp4GeDsKmRPJtkxVdo9/n/qdEaQ9qM
-S8wRmWgpe+4lPjGa87rPD42qFsK/DYLVS25ukQzJ7ik2Y8wLZKuQWGBWw6TQ8ZLp
-3v1Wq1Ls47vZVoPqsoUM
-=bCAI
------END PGP SIGNATURE-----
-
---pfTAc8Cvt8L6I27a--
+<nods> Done!
