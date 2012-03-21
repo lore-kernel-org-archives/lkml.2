@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031107Ab2CUOAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:00:05 -0400
+	id S1031100Ab2CUOAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:00:16 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:61813 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031037Ab2CUN74 (ORCPT
+	with ESMTP id S1031101Ab2CUOAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:59:56 -0400
+	Wed, 21 Mar 2012 10:00:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 20/32] nohz/cpuset: New API to flush cputimes on nohz cpusets
-Date: Wed, 21 Mar 2012 14:58:26 +0100
-Message-Id: <1332338318-5958-22-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 23/32] nohz/cpuset: Flush cputimes for getrusage() and times() syscalls
+Date: Wed, 21 Mar 2012 14:58:29 +0100
+Message-Id: <1332338318-5958-25-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,10 +33,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a new API that sends an IPI to every CPUs included
-in nohz cpusets in order to flush their cputimes. It's going
-to be useful for those that want to see accurate cputimes
-on a nohz cpuset.
+Both syscalls need to iterate through the thread group to get
+the cputimes. As some threads of the group may be running on
+nohz cpuset, we need to flush the cputimes there.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -57,166 +56,40 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- include/linux/cpuset.h   |    2 ++
- include/linux/tick.h     |    1 +
- kernel/cpuset.c          |   34 +++++++++++++++++++++++++++++++++-
- kernel/time/tick-sched.c |   21 ++++++++++++++++-----
- 4 files changed, 52 insertions(+), 6 deletions(-)
+ kernel/sys.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index 89ef5f3..ccbc2fd 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -265,9 +265,11 @@ static inline bool cpuset_adaptive_nohz(void)
- }
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 4070153..5b3e880 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -45,6 +45,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/kprobes.h>
+ #include <linux/user_namespace.h>
++#include <linux/cpuset.h>
  
- extern void cpuset_exit_nohz_interrupt(void *unused);
-+extern void cpuset_nohz_flush_cputimes(void);
- #else
- static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
- static inline bool cpuset_adaptive_nohz(void) { return false; }
-+static inline void cpuset_nohz_flush_cputimes(void) { }
- 
- #endif /* CONFIG_CPUSETS_NO_HZ */
- 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 598b492..3c31d6e 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -161,6 +161,7 @@ extern void tick_nohz_check_adaptive(void);
- extern void tick_nohz_pre_schedule(void);
- extern void tick_nohz_post_schedule(void);
- extern bool tick_nohz_account_tick(void);
-+extern void tick_nohz_flush_current_times(bool restart_tick);
- #else /* !CPUSETS_NO_HZ */
- static inline void tick_nohz_enter_kernel(void) { }
- static inline void tick_nohz_exit_kernel(void) { }
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 00864a0..aa8304d 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -59,6 +59,7 @@
- #include <linux/mutex.h>
- #include <linux/workqueue.h>
- #include <linux/cgroup.h>
-+#include <linux/tick.h>
- 
- /*
-  * Workqueue for cpuset related tasks.
-@@ -1221,6 +1222,23 @@ static void cpuset_change_flag(struct task_struct *tsk,
- 
- DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
- 
-+static cpumask_t nohz_cpuset_mask;
-+
-+static void flush_cputime_interrupt(void *unused)
-+{
-+	tick_nohz_flush_current_times(false);
-+}
-+
-+void cpuset_nohz_flush_cputimes(void)
-+{
-+	preempt_disable();
-+	smp_call_function_many(&nohz_cpuset_mask, flush_cputime_interrupt,
-+			       NULL, true);
-+	preempt_enable();
-+	/* Make the utime/stime updates visible */
-+	smp_mb();
-+}
-+
- static void cpu_exit_nohz(int cpu)
+ #include <linux/kmsg_dump.h>
+ /* Move somewhere else to avoid recompiling? */
+@@ -950,6 +951,8 @@ void do_sys_times(struct tms *tms)
  {
- 	preempt_disable();
-@@ -1245,7 +1263,15 @@ static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
+ 	cputime_t tgutime, tgstime, cutime, cstime;
  
- 		val = per_cpu(cpu_adaptive_nohz_ref, cpu);
- 
--		if (!val) {
-+		if (val == 1) {
-+			cpumask_set_cpu(cpu, &nohz_cpuset_mask);
-+			/*
-+			 * The mask update needs to be visible right away
-+			 * so that this CPU is part of the cputime IPI
-+			 * update right now.
-+			 */
-+			 smp_mb();
-+		} else if (!val) {
- 			/*
- 			 * The update to cpu_adaptive_nohz_ref must be
- 			 * visible right away. So that once we restart the tick
-@@ -1256,6 +1282,12 @@ static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
- 			 */
- 			smp_mb();
- 			cpu_exit_nohz(cpu);
-+			/*
-+			 * Now that the tick has been restarted and cputimes
-+			 * flushed, we don't need anymore to be part of the
-+			 * cputime flush IPI.
-+			 */
-+			cpumask_clear_cpu(cpu, &nohz_cpuset_mask);
- 		}
- 	}
- }
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index ff78126..6706a7d 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -703,7 +703,6 @@ static void tick_nohz_account_ticks(struct tick_sched *ts)
- 			WARN_ON_ONCE(1);
- 		}
- 	}
--	ts->saved_jiffies_whence = JIFFIES_SAVED_NONE;
- }
- 
- /**
-@@ -737,6 +736,7 @@ void tick_nohz_idle_exit(void)
- 		__tick_nohz_restart_sched_tick(ts, now);
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
- 		tick_nohz_account_ticks(ts);
-+		ts->saved_jiffies_whence = JIFFIES_SAVED_NONE;
- #endif
- 	}
- 
-@@ -981,9 +981,7 @@ static void tick_do_timer_check_handler(int cpu)
- 
- static void tick_nohz_restart_adaptive(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
--
--	tick_nohz_account_ticks(ts);
-+	tick_nohz_flush_current_times(true);
- 	tick_nohz_restart_sched_tick();
- 	clear_thread_flag(TIF_NOHZ);
- }
-@@ -1021,7 +1019,7 @@ void tick_nohz_pre_schedule(void)
- 	 * on the prev task.
- 	 */
- 	if (ts->tick_stopped) {
--		tick_nohz_account_ticks(ts);
-+		tick_nohz_flush_current_times(true);
- 		clear_thread_flag(TIF_NOHZ);
- 	}
- }
-@@ -1038,6 +1036,19 @@ void tick_nohz_post_schedule(void)
- 	if (ts->tick_stopped)
- 		tick_nohz_restart_sched_tick();
- }
++	cpuset_nohz_flush_cputimes();
 +
-+void tick_nohz_flush_current_times(bool restart_tick)
-+{
-+	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+
-+	if (ts->tick_stopped) {
-+		tick_nohz_account_ticks(ts);
-+		if (restart_tick)
-+			ts->saved_jiffies_whence = JIFFIES_SAVED_NONE;
-+		else
-+			ts->saved_jiffies = jiffies;
-+	}
-+}
- #else
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	thread_group_times(current, &tgutime, &tgstime);
+ 	cutime = current->signal->cutime;
+@@ -1614,6 +1617,9 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+ 		goto out;
+ 	}
  
- static void tick_do_timer_check_handler(int cpu)
++	/* For thread_group_times */
++	cpuset_nohz_flush_cputimes();
++
+ 	if (!lock_task_sighand(p, &flags))
+ 		return;
+ 
 -- 
 1.7.5.4
 
