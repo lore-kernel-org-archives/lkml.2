@@ -1,118 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab2CUP53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 11:57:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58684 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679Ab2CUP5Y (ORCPT
+	id S1757675Ab2CUQCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 12:02:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3463 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757076Ab2CUQCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 11:57:24 -0400
-Message-ID: <4F69FA5A.9020504@wwwdotorg.org>
-Date: Wed, 21 Mar 2012 09:57:14 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sjg@chromium.org" <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 5/6] dt: Document Tegra20/30 pinctrl binding
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org> <1332265479-1260-5-git-send-email-swarren@wwwdotorg.org> <20120321091919.GA18592@shlinux2.ap.freescale.net>
-In-Reply-To: <20120321091919.GA18592@shlinux2.ap.freescale.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 12:02:46 -0400
+X-Authority-Analysis: v=2.0 cv=UcbTuduN c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=vSR_77ExQU4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=DGVdJMzkP5qVwfwKpk0A:9 a=MTocQoJVF8CqSSsctTsA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=VpyCUuCw5JZxbyK2:21 a=EyBBiWVHZ693A4KO:21 a=-myBjJ4njXlruc6DL10A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120321160244.450154952@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Wed, 21 Mar 2012 12:01:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 5/5] ktest: Allow a test to override REBOOT_ON_SUCCESS
+References: <20120321160125.496052559@goodmis.org>
+Content-Disposition: inline; filename=0005-ktest-Allow-a-test-to-override-REBOOT_ON_SUCCESS.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2012 03:19 AM, Dong Aisheng wrote:
-> On Wed, Mar 21, 2012 at 01:44:38AM +0800, Stephen Warren wrote:
->> Define a new binding for the Tegra pin controller, which is capable of
->> defining all aspects of desired pin multiplexing and pin configuration.
->> This is all based on the new common pinctrl bindings.
->>
->> Add Tegra30 binding based on Tegra20 binding.
->>
->> Add some basic stuff that was missing before:
->> * How many and what reg property entries must be provided.
->> * An example.
->>
->> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
->> ---
-> ........
->> +Example board file extract:
->> +
->> +	pinctrl@70000000 {
->> +		sdio4_default {
->> +			atb {
->> +				nvidia,pins = "atb", "gma", "gme";
->> +				nvidia,function = "sdio4";
->> +				nvidia,pull = <0>;
->> +				nvidia,tristate = <0>;
->> +			};
->> +		};
->> +	};
->> +
->> +	sdhci@c8000600 {
->> +		pinctrl-names = "default";
->> +		pinctrl-0 = <&sdio4_default>;
->
-> A typo error? sdio4_default is not a phandle.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yes.
+From: Steven Rostedt <srostedt@redhat.com>
 
->> +Example board file extract:
->> +
->> +	pinctrl@70000000 {
->> +		sdmmc4_default: pinmux {
->> +			sdmmc4_clk_pcc4 {
->> +				nvidia,pins =	"sdmmc4_clk_pcc4",
->> +						"sdmmc4_rst_n_pcc3";
->> +				nvidia,function = "sdmmc4";
->> +				nvidia,pull = <0>;
->> +				nvidia,tristate = <0>;
->> +			};
->> +			sdmmc4_dat0_paa0 {
->> +				nvidia,pins =	"sdmmc4_dat0_paa0",
->> +						"sdmmc4_dat1_paa1",
->> +						"sdmmc4_dat2_paa2",
->> +						"sdmmc4_dat3_paa3",
->> +						"sdmmc4_dat4_paa4",
->> +						"sdmmc4_dat5_paa5",
->> +						"sdmmc4_dat6_paa6",
->> +						"sdmmc4_dat7_paa7";
->> +				nvidia,function = "sdmmc4";
->> +				nvidia,pull = <2>;
->> +				nvidia,tristate = <0>;
->
-> It seems it does not support per pin config for tegra30 and we have to
-> separate them in different nodes with same group config value, right?
+The option REBOOT_ON_SUCCESS is global, and will have the machine reboot
+the the box if all tests are successful. But a test may not want the
+machine to reboot, and perhaps have the kernel it loaded be used to
+install the next kernel. Or the last test may set up a kernel that the
+user may want to look at. In this case, the user could have the global
+option REBOOT_ON_SUCCESS be true, but if a test is defined to run at the
+end, that test can override the global option and keep the kernel it
+installed for the user to log in with.
 
-Sorry, I don't understand the question.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/ktest/ktest.pl |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-On Tegra30, pin mux selection and some pin configuration parameters are
-per-pin. Other pin configuration parameters are per-group. The pinctrl
-driver defines groups for:
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index e7fed79..c858152 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -87,6 +87,7 @@ my $reboot_on_error;
+ my $switch_to_good;
+ my $switch_to_test;
+ my $poweroff_on_error;
++my $reboot_on_success;
+ my $die_on_failure;
+ my $powercycle_after_reboot;
+ my $poweroff_after_halt;
+@@ -213,6 +214,7 @@ my %option_map =3D (
+     "SWITCH_TO_GOOD"		=3D> \$switch_to_good,
+     "SWITCH_TO_TEST"		=3D> \$switch_to_test,
+     "POWEROFF_ON_ERROR"		=3D> \$poweroff_on_error,
++    "REBOOT_ON_SUCCESS"		=3D> \$reboot_on_success,
+     "DIE_ON_FAILURE"		=3D> \$die_on_failure,
+     "POWER_OFF"			=3D> \$power_off,
+     "POWERCYCLE_AFTER_REBOOT"	=3D> \$powercycle_after_reboot,
+@@ -3552,8 +3554,10 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+ 	    die "failed to checkout $checkout";
+     }
+=20
+-    $no_reboot =3D 0;
+-
++    # A test may opt to not reboot the box
++    if ($reboot_on_success) {
++	$no_reboot =3D 0;
++    }
+=20
+     if ($test_type eq "bisect") {
+ 	bisect $i;
+@@ -3598,8 +3602,12 @@ if ($opt{"POWEROFF_ON_SUCCESS"}) {
+     halt;
+ } elsif ($opt{"REBOOT_ON_SUCCESS"} && !do_not_reboot) {
+     reboot_to_good;
++} elsif (defined($switch_to_good)) {
++    # still need to get to the good kernel
++    run_command $switch_to_good;
+ }
+=20
++
+ doprint "\n    $successes of $opt{NUM_TESTS} tests were successful\n\n";
+=20
+ exit 0;
+--=20
+1.7.8.3
 
-* Each pin (for per-pin properties)
-* Each group that has non-per-pin configuration parameters.
 
-You can use either/both sets of groups in the .dts file (i.e. in the
-nvidia,pins property).
 
-You'd never end up with a single node that mixes the "per-pin" group
-names and "non-per-pin" group names, simply because there are no
-properties that can be applied to groups of both types in hardware.
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPafukAAoJEIy3vGnGbaoAKPgQAOK7dApLsyqobmwjLvjjNRXQ
+i9GzClXf/vRiTaJHuKI8N+x77oeL9P0TweIKjN6+hhfc7rHK21rJTGcxjgjTd41E
+XBWx0CzA6bwz3ToiU6hF/nV6NBYPXrN79E8PKwAkGUWOxnihNWqMO76H6ZrMZb1p
+lz+B36fVfzYpgKncgvUzCpVwdoTYY7ruqvK8PIeOTwevgtA0XBAbB0+eE1HB4pbO
+o62yyMt3k0iXcvS7S/F3wrnPJtJzbs35Jhe+FLNGP6U4QMdI5WFaooi1UfPIaQo9
+06gtsoEg4yXgYVY3lNXBquPsCvp7DrB4PUiRwDQ2Hwpq0wLRoCvWj6bLZn3+Udfi
+I8ZSQkKzqmekSEMs1RyMw7TMBRKxT2zb+LfB1frogYGDl9M3kyQ0AguN1nqBjtKI
+4+gs1gT/oxo7/0tHD7Y6VL98cXodKwzWW0XSqKGv34INPRcZXvmuwLdbh59F/q4m
+JAHHMH8vz99FDqo+7k4lDMIlcixQHBT/B+FUc6s2gzWSH5Fmul+9Skn6WAXqfAa8
+9DzJGbkrf4YF0Eev56beZ818vpgP/4ryLy10SulV0KrjnDii6rkaJ6rwRuFN3x97
+FQ5SafsV47R6AiXIv4jBjoPkSXSR1KLnlbsdTx8N40Neata5oJsCjkdtCV/kzBN1
+bS9GNQ3wzIHxOUDqVW0l
+=pvz4
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
