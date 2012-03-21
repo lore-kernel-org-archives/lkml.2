@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759045Ab2CUVV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:21:59 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:51064 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755387Ab2CUVV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:21:58 -0400
-Date: Wed, 21 Mar 2012 17:21:52 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Risanecek <risanecek@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ext2 large block size support - the shocking truth...
-Message-ID: <20120321212152.GA32041@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Risanecek <risanecek@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <CAE7SGk7rJXwjs4pD01e_ZgkoH4UNLAh8JLfX1_gv=q7RXtY5Gw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE7SGk7rJXwjs4pD01e_ZgkoH4UNLAh8JLfX1_gv=q7RXtY5Gw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1759034Ab2CUV2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:28:30 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:56197 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878Ab2CUV21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 17:28:27 -0400
+Message-ID: <1332365297.3858.5.camel@key-ThinkPad-W510>
+Subject: [PATCH 00/17] Platform Facilities Option and crypto accelerator
+ driver
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
+Date: Wed, 21 Mar 2012 16:28:17 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032121-2398-0000-0000-00000538A8E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 09:38:33PM +0100, Risanecek wrote:
-> 
-> EXT2-fs (sdd2): error: bad blocksize 32768
-> 
-> Seems many DVRs use that kind of "enhanced ext2"...
+This patch series adds support for a new device type, the Platform
+Facilities Option (PFO).  PFO resources are a set of accelerators that
+share some system resources managed by the VIO bus.  This patchset
+includes the basic support for the devices in the VIO bus code along
+with drivers for the random number generator and the cryptographic
+accelerators.
 
-It's not an enhanced ext2 as much as it is enhancements primarily in
-the mm layer to allow file systems to use a "larger page" which is
-larger than the native page size of the CPU's MMU.  This is the first
-that I've heard of a DVR, or any product in general, actually trying
-to use Christoph Lameter's patches in a shipping Linux system.
+Please cc me on replies.
 
-If you just need to read and write files from this file system from a
-userspace CLI shell utility, you could just use the programs from the
-e2tools package; they should work just fine.  It works much like the
-mtools package do to be able to copy, rename, list directories, of an
-MSDOS file system, but for ext2/3/4 file systems.
+Thanks,
+Kent
 
-Alternatively, you could try to forward port Christoph's patches to a
-modern kernel, or commission someone to port it to a modern for you...
+Kent Yoder (12):
+  powerpc: crypto: AES-CBC mode routines for nx encryption
+  powerpc: crypto: AES-CCM mode routines for nx encryption
+  powerpc: crypto: AES-CTR mode routines for nx encryption
+  powerpc: crypto: AES-ECB mode routines for nx encryption
+  powerpc: crypto: AES-GCM mode routines for nx encryption
+  powerpc: crypto: AES-XCBC mode routines for nx encryption
+  powerpc: crypto: SHA256 hash routines for nx encryption
+  powerpc: crypto: SHA512 hash routines for nx encryption
+  powerpc: crypto: nx driver code supporting nx encryption
+  powerpc: crypto: sysfs routines and docs for the nx device driver
+  powerpc: crypto: Build files for the nx device driver
+  powerpc: crypto: enable the PFO-based encryption device
 
-Hope this helps,
+Michael Neuling (1):
+  hwrng: pseries - PFO-based hwrng driver
 
-						- Ted
+Robert Jennings (4):
+  powerpc: Add new hvcall constants to support PFO
+  powerpc: Add pseries update notifier for OFDT prop changes
+  powerpc: Add PFO support to the VIO bus
+  pseries: Enabled the PFO-based RNG accelerator
+
+ Documentation/powerpc/pfo-nx-crypto.txt     |   52 ++
+ arch/powerpc/Makefile                       |    1 +
+ arch/powerpc/crypto/nx/Makefile             |   11 +
+ arch/powerpc/crypto/nx/nx-aes-cbc.c         |  135 +++++
+ arch/powerpc/crypto/nx/nx-aes-ccm.c         |  466 ++++++++++++++++++
+ arch/powerpc/crypto/nx/nx-aes-ctr.c         |  175 +++++++
+ arch/powerpc/crypto/nx/nx-aes-ecb.c         |  133 +++++
+ arch/powerpc/crypto/nx/nx-aes-gcm.c         |  352 +++++++++++++
+ arch/powerpc/crypto/nx/nx-aes-xcbc.c        |  230 +++++++++
+ arch/powerpc/crypto/nx/nx-sha256.c          |  240 +++++++++
+ arch/powerpc/crypto/nx/nx-sha512.c          |  259 ++++++++++
+ arch/powerpc/crypto/nx/nx.c                 |  710 +++++++++++++++++++++++++++
+ arch/powerpc/crypto/nx/nx.h                 |  190 +++++++
+ arch/powerpc/crypto/nx/nx_csbcpb.h          |  246 +++++++++
+ arch/powerpc/crypto/nx/nx_sysfs.c           |  194 ++++++++
+ arch/powerpc/include/asm/hvcall.h           |   25 +-
+ arch/powerpc/include/asm/pSeries_reconfig.h |   12 +
+ arch/powerpc/include/asm/vio.h              |   46 ++
+ arch/powerpc/kernel/prom_init.c             |   19 +-
+ arch/powerpc/kernel/vio.c                   |  274 +++++++++--
+ arch/powerpc/platforms/pseries/reconfig.c   |    7 +
+ drivers/char/hw_random/Kconfig              |   13 +
+ drivers/char/hw_random/Makefile             |    1 +
+ drivers/char/hw_random/pseries-rng.c        |   99 ++++
+ drivers/crypto/Kconfig                      |   18 +
+ 25 files changed, 3865 insertions(+), 43 deletions(-)
+ create mode 100644 Documentation/powerpc/pfo-nx-crypto.txt
+ create mode 100644 arch/powerpc/crypto/nx/Makefile
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-cbc.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-ccm.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-ctr.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-ecb.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-gcm.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-aes-xcbc.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-sha256.c
+ create mode 100644 arch/powerpc/crypto/nx/nx-sha512.c
+ create mode 100644 arch/powerpc/crypto/nx/nx.c
+ create mode 100644 arch/powerpc/crypto/nx/nx.h
+ create mode 100644 arch/powerpc/crypto/nx/nx_csbcpb.h
+ create mode 100644 arch/powerpc/crypto/nx/nx_sysfs.c
+ create mode 100644 drivers/char/hw_random/pseries-rng.c
+
+
