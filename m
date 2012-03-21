@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760177Ab2CUUNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 16:13:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25994 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758439Ab2CUUNL (ORCPT
+	id S1760172Ab2CUUUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 16:20:07 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64044 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757577Ab2CUUUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 16:13:11 -0400
-X-Authority-Analysis: v=2.0 cv=UcbTuduN c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=vTxDKTmahrcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=WUI-r05spyQwVWTg6V8A:9 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120321201310.393214145@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Wed, 21 Mar 2012 16:12:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 2/2] Linux 3.0.25-rt44-rc1
-References: <20120321201227.979421546@goodmis.org>
-Content-Disposition: inline; filename=0002-Linux-3.0.25-rt44-rc1.patch
+	Wed, 21 Mar 2012 16:20:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALyraeOX0nA6kVh+jtm1C8LnbE8mDvL+jcKcbXxYNkdXfm1REw@mail.gmail.com>
+References: <CALyraeOX0nA6kVh+jtm1C8LnbE8mDvL+jcKcbXxYNkdXfm1REw@mail.gmail.com>
+Date: Wed, 21 Mar 2012 16:20:04 -0400
+Message-ID: <CALyraeMTMpqzKGOUbursVi4-JCSOuaQW5DGQYjFsH6a-VKHR=w@mail.gmail.com>
+Subject: Re: xtables question
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        linux-netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Sending the e-mail again
 
----
- localversion-rt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, Mar 20, 2012 at 6:34 PM, Sri Ram Vemulpali
+<sri.ram.gmu06@gmail.com> wrote:
+> Hi guys,
+>
+> I am trying to implement the rules in kernel using xtables. I have
+> very basic knowledge of xtables framework. Is there any resource where
+> there is coherent explanation of subject. The problem is there is no
+> proper explanation of each and every field of structures used in
+> xtables. I know the netfilter basic framework. If anyone can point me
+> to clean explanation and also how to send rules from user space to
+> kernel. Do not ask me to search the google, I learned the basic
+> framework from wikipedia references.
+>
+> Hope someone can provide resource.
+>
+> Thanks in advance.
+>
+> --
+> Regards,
+> Sri.
 
-diff --git a/localversion-rt b/localversion-rt
-index 41f7b99..b085f9e 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt43
-+-rt44-rc1
+
+
 -- 
-1.7.8.3
-
-
+Regards,
+Sri.
