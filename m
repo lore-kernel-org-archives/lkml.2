@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab2CUCIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 22:08:09 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56465 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2CUCIG convert rfc822-to-8bit (ORCPT
+	id S1758690Ab2CUCMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 22:12:41 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:61685 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2CUCMk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 22:08:06 -0400
+	Tue, 20 Mar 2012 22:12:40 -0400
+Date: Wed, 21 Mar 2012 10:12:29 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Michael J. Wang" <mjwang@broadcom.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Message-ID: <20120321021229.GB19766@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+ <20120321014050.GA19766@zhy>
+ <2EF88150C0EF2C43A218742ED384C1BC0FC84327@IRVEXCHMB08.corp.ad.broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <CANejiEVWbP53QVKZQBS2xKtaqdX6jdW_mjZxJ9q5=cxKNk6_dg@mail.gmail.com>
-References: <20120316073213.656519005@fusionio.com>
-	<alpine.LRH.2.02.1203181824590.24824@diagnostix.dwd.de>
-	<CANejiEWeaF44Rbgt5jhf_bnafF4yoTTZAYsqoD2+greJ07c-_A@mail.gmail.com>
-	<alpine.LRH.2.02.1203200839120.29880@diagnostix.dwd.de>
-	<CANejiEVWbP53QVKZQBS2xKtaqdX6jdW_mjZxJ9q5=cxKNk6_dg@mail.gmail.com>
-Date: Wed, 21 Mar 2012 10:08:05 +0800
-X-Google-Sender-Auth: Z8jjc40zsAg38Oq3yQzwuGA6jjg
-Message-ID: <CANejiEUDmDzGirBZRwKh5MTHvXX308JTHmmH_U0JfnPJkpvHJQ@mail.gmail.com>
-Subject: Re: [patch v2 0/6] Add TRIM support for raid linear/0/1/10
-From: Shaohua Li <shli@kernel.org>
-To: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>, neilb@suse.de,
-        axboe@kernel.dk, vgoyal@redhat.com, martin.petersen@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <2EF88150C0EF2C43A218742ED384C1BC0FC84327@IRVEXCHMB08.corp.ad.broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/20 Shaohua Li <shli@kernel.org>:
-> 2012/3/20 Holger Kiehl <Holger.Kiehl@dwd.de>:
->> Hello,
->>
->>
->> On Tue, 20 Mar 2012, Shaohua Li wrote:
->>
->>> 2012/3/20 Holger Kiehl <Holger.Kiehl@dwd.de>:
->>>>
->>>> Hello,
->>>>
->>>>
->>>> On Fri, 16 Mar 2012, Shaohua Li wrote:
->>>>
->>>>> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM
->>>>> support
->>>>> for
->>>>> raid 4/5/6 later. The implementation is pretty straightforward and
->>>>> self-explained.
->>>>>
->>>>> v1->v2:
->>>>> 1. fixed a checking issue
->>>>> 2. dropped discard request plug and replace it with no discard merege,
->>>>> because
->>>>> current SCSI layer can't handle discard request merge.
->>>>>
->>>> Have tested TRIM patches on three different systems with the following
->>>> hardware/ setup:
->>>>
->>>>   1) root mounted on a raid1 over two SAS SSD's (200GB) and /home
->>>> partition
->>>>      on a raid0 over a fusionio ioDrive Duo. Is very new and seen very
->>>>      little usage.
->>>>
->>>>   2) root and /home mounted on a raid0 over two Intel X25 Postville
->>>>      (160GB) connected to a Intel P55 Express chipset. Has seen very
->>>>      heavy usage for approx. 2 years.
->>>>
->>>>   3) root and /home mounted on a raid0 over three OCZ-VERTEX2 (120GB)
->>>>      connected via ICH7 south bridge. Has seen mild usage for approx.
->>>>      1.5 years.
->>>>
->>>> Made the following observations when running my own benchmark which
->>>> copies around a lot of small files and deletes them. The benchmark on
->>>> all systems was always run only on the /home partition ie. on a raid0.
->>>>
->>>> For system 1) there is hardly any measurable differnce whether discard
->>>> is enabled or not (~29000 files per second).
->>>>
->>>> On system 2) the performance drops from 6500->3700 files per second,
->>>> but under normal usage one does not notice any difference.
->>>
->>> do you have the blktrace data when the benchmark is running, especially
->>> when doing file deletion. I'd like to check the latency of discard in this
->>> case.
->>>
->> It is uploaded on ftp://ftp.dwd.de/pub/afd/test/trim
-> Thanks, I'll check it.
-Thanks for the testing. The trace data is very helpful. In the intel
-SSD, trace data
-shows a discard request uses about 1 ~ 3 ms. The filesystem suffers from
-fragmentation too, so lots of small discard requests. When ext4 starts doing
-discard, it usually uses more than 1 minutes. That's too bad.
-If just looking one disk's trace data, there are some extra latencies between
-two discard requests. The combined trace data of two disks show the latency
-comes from waiting for another disk, so nothing abnormal. I thought we could
-do an optimization for this case in the future.
-So in summary, discard from the SSDs is slow. When your filesystem is
-fragmented, the performance will be terrible.
+On Wed, Mar 21, 2012 at 01:56:47AM +0000, Michael J. Wang wrote:
+> Ah, I see.  Forgot about the length of my comment line.
+> 
+> Should I reformat my patch and send it again?
+
+It'll be better, and I think Peter/Ingo will happy with it.
 
 Thanks,
-Shaohua
+Yong
+
+> 
+> Thanks,
+> Michael
+> 
+> 
+> -----Original Message-----
+> From: Yong Zhang [mailto:yong.zhang0@gmail.com] 
+> Sent: Tuesday, March 20, 2012 6:41 PM
+> To: Michael J. Wang
+> Cc: mingo@elte.hu; peterz@infradead.org; linux-kernel@vger.kernel.org; rostedt@goodmis.org
+> Subject: Re: [PATCH 1/1] scheduler: minor improvement to pick_next_highest_task_rt in linux-3.3
+> 
+> On Mon, Mar 19, 2012 at 10:26:19PM +0000, Michael J. Wang wrote:
+> > From: Michael J Wang <mjwang@broadcom.com>
+> > 
+> > Avoid extra work by continuing on to the next rt_rq if the highest prio task in current rt_rq is the same priority as our candidate task.
+> > 
+> > Signed-off-by: Michael J Wang <mjwang@broadcom.com>
+> > 
+> > ---
+> > 
+> > More detailed explanation:  if next is not NULL, then we have found a candidate task, and its priority is next->prio.  Now we are looking for an even higher priority task in the other rt_rq's.  idx is the highest priority in the current candidate rt_rq.  In the current 3.3 code, if idx is equal to next->prio, we would start scanning the tasks in that rt_rq and replace the current candidate task with a task from that rt_rq.  But the new task would only have a priority that is equal to our previous candidate task, so we have not advanced our goal of finding a higher prio task.  So we should avoid the extra work by continuing on to the next rt_rq if idx is equal to next->prio.
+> > 
+> 
+> You should limit characters of each line to 80 if possible.
+> 
+> And before sending you patch, linux-source/scripts/checkpatch.pl maybe
+> give you some clues whether there is some warning/error. If there are,
+> fix them.
+> 
+> Only for what your patch wants to show:
+> Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+> 
+> Thanks,
+> Yong
+> 
+> > --- linux-3.3/kernel/sched/rt.c.orig	2012-03-18 16:15:34.000000000 -0700
+> > +++ linux-3.3/kernel/sched/rt.c	2012-03-19 14:52:54.585391702 -0700
+> > @@ -1403,7 +1403,7 @@ static struct task_struct *pick_next_hig
+> >  next_idx:
+> >  		if (idx >= MAX_RT_PRIO)
+> >  			continue;
+> > -		if (next && next->prio < idx)
+> > +		if (next && next->prio <= idx)
+> >  			continue;
+> >  		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+> >  			struct task_struct *p;
+> > 
+> > 
+> > 
+> > 
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Only stand for myself
+> 
+> Nï¿½ï¿½ï¿½ï¿½ï¿½rï¿½ï¿½yï¿½ï¿½ï¿½bï¿½Xï¿½ï¿½Ç§vï¿½^ï¿½)Þº{.nï¿½+ï¿½ï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½ï¿½zXï¿½ï¿½ï¿½ï¿½Ü¨}ï¿½ï¿½ï¿½Æ zï¿½&j:+vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½zZ+ï¿½ï¿½+zfï¿½ï¿½ï¿½hï¿½ï¿½ï¿½~ï¿½ï¿½ï¿½ï¿½iï¿½ï¿½ï¿½zï¿½ï¿½wï¿½ï¿½ï¿½?ï¿½ï¿½ï¿½ï¿½&ï¿½)ß¢fï¿½ï¿½^jÇ«yï¿½mï¿½ï¿½@Aï¿½aï¿½ï¿½ï¿½0ï¿½ï¿½hï¿½ï¿½i
+
+-- 
+Only stand for myself
