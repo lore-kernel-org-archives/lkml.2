@@ -1,132 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760439Ab2CUVUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:20:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63855 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759045Ab2CUVSt (ORCPT
+	id S1760421Ab2CUVUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:20:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45365 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757757Ab2CUVSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:18:49 -0400
-Message-Id: <20120321211533.279865634@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:15:38 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Simon Kirby <sim@netnation.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 6/9] tcp: fix syncookie regression
-In-Reply-To: <20120321211539.GA28899@kroah.com>
+	Wed, 21 Mar 2012 17:18:50 -0400
+Date: Wed, 21 Mar 2012 21:18:35 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, Joe Perches <joe@perches.com>,
+        greg@kroah.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [take 3] pohmelfs: call for inclusion
+Message-ID: <20120321211835.GQ6589@ZenIV.linux.org.uk>
+References: <20120316121829.GA12685@ioremap.net>
+ <1331904553.5406.34.camel@joe2Laptop>
+ <20120316134314.GA19342@ioremap.net>
+ <1331907127.5406.48.camel@joe2Laptop>
+ <20120321202702.GA16713@ioremap.net>
+ <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Mar 21, 2012 at 02:02:43PM -0700, Linus Torvalds wrote:
 
-------------------
+> I can't really say that I tend to care deeply about the innards of
+> some unusual filesystem that hopefully cannot possibly impact anything
+> else. So as long as you keep people like Al happy (or at least not
+> overly unhappy), I'm unlikely to worry too much.
 
+As far as I can see, it's still suffering the same problems it used to;
+in particular, the games it plays with d_path() are completely bogus.
+Take a look at this:
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+static int pohmelfs_construct_path_string(struct pohmelfs_inode *pi, void *data
+ int len)
+{
+	struct path path;
+	struct dentry *d;
+	char *ptr;
+	int err = 0, strlen, reduce = 0;
 
-[ Upstream commit dfd25ffffc132c00070eed64200e8950da5d7e9d ]
+	d = d_find_alias(&pi->vfs_inode);
+	if (!d) {
+		err = -ENOENT;
+		goto err_out_exit;
+	}
 
-commit ea4fc0d619 (ipv4: Don't use rt->rt_{src,dst} in ip_queue_xmit())
-added a serious regression on synflood handling.
+	spin_lock(&current->fs->lock);
+	path.mnt = mntget(current->fs->root.mnt);
+	spin_unlock(&current->fs->lock);
 
-Simon Kirby discovered a successful connection was delayed by 20 seconds
-before being responsive.
+	path.dentry = d;
 
-In my tests, I discovered that xmit frames were lost, and needed ~4
-retransmits and a socket dst rebuild before being really sent.
+	if (!IS_ROOT(d) && d_unhashed(d))
+		reduce = 1;
 
-In case of syncookie initiated connection, we use a different path to
-initialize the socket dst, and inet->cork.fl.u.ip4 is left cleared.
+	ptr = d_path(&path, data, len);
+	if (IS_ERR(ptr)) {
+		err = PTR_ERR(ptr);
+		goto err_out_put;
+	}
 
-As ip_queue_xmit() now depends on inet flow being setup, fix this by
-copying the temp flowi4 we use in cookie_v4_check().
+	if (reduce && len >= UNHASHED_OBSCURE_STRING_SIZE) {
+		char *end = data + len - UNHASHED_OBSCURE_STRING_SIZE;
+		*end = '\0';
+	}
 
-Reported-by: Simon Kirby <sim@netnation.com>
-Bisected-by: Simon Kirby <sim@netnation.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/syncookies.c |   30 ++++++++++++++++--------------
- net/ipv4/tcp_ipv4.c   |   10 +++++++---
- 2 files changed, 23 insertions(+), 17 deletions(-)
+	strlen = len - (ptr - (char *)data);
+	memmove(data, ptr, strlen);
+	ptr = data;
 
---- a/net/ipv4/syncookies.c
-+++ b/net/ipv4/syncookies.c
-@@ -278,6 +278,7 @@ struct sock *cookie_v4_check(struct sock
- 	struct rtable *rt;
- 	__u8 rcv_wscale;
- 	bool ecn_ok = false;
-+	struct flowi4 fl4;
- 
- 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
- 		goto out;
-@@ -346,20 +347,16 @@ struct sock *cookie_v4_check(struct sock
- 	 * hasn't changed since we received the original syn, but I see
- 	 * no easy way to do this.
- 	 */
--	{
--		struct flowi4 fl4;
--
--		flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
--				   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
--				   inet_sk_flowi_flags(sk),
--				   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
--				   ireq->loc_addr, th->source, th->dest);
--		security_req_classify_flow(req, flowi4_to_flowi(&fl4));
--		rt = ip_route_output_key(sock_net(sk), &fl4);
--		if (IS_ERR(rt)) {
--			reqsk_free(req);
--			goto out;
--		}
-+	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
-+			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
-+			   inet_sk_flowi_flags(sk),
-+			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
-+			   ireq->loc_addr, th->source, th->dest);
-+	security_req_classify_flow(req, flowi4_to_flowi(&fl4));
-+	rt = ip_route_output_key(sock_net(sk), &fl4);
-+	if (IS_ERR(rt)) {
-+		reqsk_free(req);
-+		goto out;
- 	}
- 
- 	/* Try to redo what tcp_v4_send_synack did. */
-@@ -373,5 +370,10 @@ struct sock *cookie_v4_check(struct sock
- 	ireq->rcv_wscale  = rcv_wscale;
- 
- 	ret = get_cookie_sock(sk, skb, req, &rt->dst);
-+	/* ip_queue_xmit() depends on our flow being setup
-+	 * Normal sockets get it right from inet_csk_route_child_sock()
-+	 */
-+	if (ret)
-+		inet_sk(ret)->cork.fl.u.ip4 = fl4;
- out:	return ret;
- }
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1465,9 +1465,13 @@ struct sock *tcp_v4_syn_recv_sock(struct
- 		inet_csk(newsk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
- 	newinet->inet_id = newtp->write_seq ^ jiffies;
- 
--	if (!dst && (dst = inet_csk_route_child_sock(sk, newsk, req)) == NULL)
--		goto put_and_exit;
--
-+	if (!dst) {
-+		dst = inet_csk_route_child_sock(sk, newsk, req);
-+		if (!dst)
-+			goto put_and_exit;
-+	} else {
-+		/* syncookie case : see end of cookie_v4_check() */
-+	}
- 	sk_setup_caps(newsk, dst);
- 
- 	tcp_mtup_init(newsk);
+	err = strlen - 1; /* no including 0-byte */
 
+	pr_debug("%s: dname: '%s', len: %u, maxlen: %u, name: '%s', strlen: %d.\n",
+		__func__, d->d_name.name, d->d_name.len, len, ptr, strlen);
 
+err_out_put:
+	dput(d);
+	mntput(path.mnt);
+err_out_exit:
+	return err;
+}
+
+For Nth time: what happens to poor sod that happens to be chrooted
+into that animal?  We get pathname relative to process' root or to fs
+root, whichever's closer.  And no, it's used not just for debugging 
+printks...
+
+I think I've asked that question at least 3 times.  Never got anything
+resembling an answer...  Is that misspelled dentry_path()?  Or is something
+subtle going on and we really want different strings generated for
+chrooted processes here?
