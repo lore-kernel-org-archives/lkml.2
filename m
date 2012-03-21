@@ -1,127 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab2CUJdz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:33:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58394 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab2CUJdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:33:53 -0400
-X-IronPort-AV: E=Sophos;i="4.73,623,1325433600"; 
-   d="scan'208";a="4588596"
-Message-ID: <4F69A0F5.7050504@cn.fujitsu.com>
-Date: Wed, 21 Mar 2012 17:35:49 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1757364Ab2CUJkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:40:20 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:64014 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab2CUJkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 05:40:17 -0400
+Date: Wed, 21 Mar 2012 11:37:25 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-ID: <201203210137.q2L1bPMB005418@goober.corp.nai.org>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>, <uclinux-dev@uclinux.org>,
+        <geert@linux-m68k.org>
+Subject: [git pull] m68knommu arch updates for 3.4
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com> <4F6854F4.3060703@cn.fujitsu.com> <20120320154517.GG27928@redhat.com> <4F692723.8050904@cn.fujitsu.com> <20120321091127.GO22368@redhat.com>
-In-Reply-To: <20120321091127.GO22368@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-21 17:31:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-21 17:31:42,
-	Serialize complete at 2012-03-21 17:31:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/21/2012 05:11 PM, Gleb Natapov Wrote:
-> On Wed, Mar 21, 2012 at 08:56:03AM +0800, Wen Congyang wrote:
->> At 03/20/2012 11:45 PM, Gleb Natapov Wrote:
->>> On Tue, Mar 20, 2012 at 05:59:16PM +0800, Wen Congyang wrote:
->>>> At 03/19/2012 03:33 PM, Wen Congyang Wrote:
->>>>> At 03/08/2012 03:57 PM, Wen Congyang Wrote:
->>>>>> We can know the guest is paniced when the guest runs on xen.
->>>>>> But we do not have such feature on kvm.
->>>>>>
->>>>>> Another purpose of this feature is: management app(for example:
->>>>>> libvirt) can do auto dump when the guest is crashed. If management
->>>>>> app does not do auto dump, the guest's user can do dump by hand if
->>>>>> he sees the guest is paniced.
->>>>>>
->>>>>> I touch the hypervisor instead of using virtio-serial, because
->>>>>> 1. it is simple
->>>>>> 2. the virtio-serial is an optional device, and the guest may
->>>>>>    not have such device.
->>>>>>
->>>>>> Changes from v2 to v3:
->>>>>> 1. correct spelling
->>>>>>
->>>>>> Changes from v1 to v2:
->>>>>> 1. split up host and guest-side changes
->>>>>> 2. introduce new request flag to avoid changing return values.
->>>>>> --
->>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>>>
->>>>>
->>>>>
->>>>> Hi all:
->>>>>
->>>>> we neet this feature, but we don't decide how to implement it.
->>>>> We have two solution:
->>>>> 1. use vmcall
->>>>> 2. use virtio-serial.
->>>>>
->>>>> I will not change this patch set before we decide how to do it.
->>>>> Can we make a decision recent days?
->>>>
->>>> Anybody can decide which solution to use?
->>>>
->>> To make an informed decision we need to have at least raw idea how
->>> virtio-serial variant will look.
->>
->> Hmm, I think we can do this:
->> 1. reset the virtio-serial device or reset the port we use to notice
->>    the host that guest is panicked.
->> 2. write some specific messages to the port
->>
->> So the port should have fixed name. If this port is opened by the userspace
->> before the guest is paniced, I am not sure whether we can use it(because a
->> port only can be opened once at the same time).
-> Yes, IMO we should dedicate one virtio-serial port for panic
-> notifications. Just like we dedicate one for a console.
-> 
->> We cannot call any function in the module, so we may need to write a simple
->> driver for virtio-serial(like diskdump's disk driver).
->>
-> netconsole uses standard NIC drivers in polling mode to send OOPSes
-> over the network and it mostly works. So I think using virtio-serial
-> driver is not out of question, but with IRQ disabled of course.
 
-The code for netconsole is in which file?
-Another question: we cannot call the function in the module directly in the
-kernel.
+Hi Linus,
 
-> 
->> I donot know how to implement it now. But I guess that it may be complicated.
->>
-> Look at drivers/char/ipmi/ipmi_msghandler.c. It has code to send panic
-> event over IMPI. The code is pretty complex. Of course if we a going to
-> implement something more complex than simple hypercall for panic
-> notification we better do something more interesting with it than just
-> saying "panic happened", like sending stack traces on all cpus for
-> instance.
+Can you please pull the m68knommu git tree, for-next branch:
 
-If we implement it by virtio-serial, I agree with passing more useful message
-to host.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
 
-Thanks
-Wen Congyang
+Includes a cleanup of the non-MMU linker script (it now almost exclusively
+uses the well defined linker script support macros and definitions).
+Some more merging of MMU and non-MMU common files (specifically the arch
+process.c, ptrace and time.c). And a big cleanup of the massively duplicated
+ColdFire device definition code. Overall we remove about 2000 lines of code,
+and end up with a single set of platform device definitions for the serial
+ports, ethernet ports and QSPI ports common in most ColdFire SoCs.
 
-> 
-> --
-> 			Gleb.
-> 
+I expect you will get a merge conflict on arch/m68k/kernel/process.c,
+in cpu_idle(). It should be relatively strait forward to fixup.
 
+Regards
+Greg
+
+
+
+The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
+  Linus Torvalds (1):
+        Linux 3.3-rc6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+Greg Ungerer (57):
+      m68knommu: hard set the ColdFire MBAR register on startup
+      m68knommu: clean up linker script
+      m68knommu: remove reduntant definitions of _ramvec
+      m68knommu: make persistent clock code consistent with m68k
+      m68knommu: modify timer init code to make it consistent with m68k code
+      m68knommu: remove unused CONFIG_GENERIC_CMOS_UPDATE option
+      m68k: merge mmu and non-mmu versions of time.c
+      m68k: remove dead timer code
+      m68k: merge the mmu and non-mmu versions of ptrace.c
+      m68k: make support for FPU hardware configurable
+      m68k: merge the MMU and non-MMU versions of process.c
+      m68knommu: make 5206 UART platform addressing consistent
+      m68knommu: make 520x UART platform addressing consistent
+      m68knommu: make 523x UART platform addressing consistent
+      m68knommu: make 5249 UART platform addressing consistent
+      m68knommu: make 5272 UART platform addressing consistent
+      m68knommu: make 527x UART platform addressing consistent
+      m68knommu: make 5307 UART platform addressing consistent
+      m68knommu: make 528x UART platform addressing consistent
+      m68knommu: make 532x UART platform addressing consistent
+      m68knommu: make 5407 UART platform addressing consistent
+      m68knommu: make 54xx UART platform addressing consistent
+      m68knommu: simplify the 5206 UART setup code
+      m68knommu: simplify the 520x UART setup code
+      m68knommu: simplify the 5249 UART setup code
+      m68knommu: simplify the 5272 UART setup code
+      m68knommu: simplify the 527x UART setup code
+      m68knommu: simplify the 528x UART setup code
+      m68knommu: simplify the 5307 UART setup code
+      m68knommu: simplify the 532x UART setup code
+      m68knommu: simplify the 5407 UART setup code
+      m68knommu: simplify the 54xx UART setup code
+      m68knommu: merge common ColdFire UART platform setup code
+      m68knommu: merge common ColdFire UART IRQ setup
+      m68knommu: make 520x FEC platform addressing consistent
+      m68knommu: make 523x FEC platform addressing consistent
+      m68knommu: make 5272 FEC platform addressing consistent
+      m68knommu: make 527x FEC platform addressing consistent
+      m68knommu: make 528x FEC platform addressing consistent
+      m68knommu: make 532x FEC platform addressing consistent
+      m68knommu: merge common ColdFire FEC platform setup code
+      m68knommu: make 520x QSPI platform addressing consistent
+      m68knommu: make 523x QSPI platform addressing consistent
+      m68knommu: make 5249 QSPI platform addressing consistent
+      m68knommu: make 527x QSPI platform addressing consistent
+      m68knommu: make 528x QSPI platform addressing consistent
+      m68knommu: make 532x QSPI platform addressing consistent
+      m68knommu: merge common ColdFire QSPI platform setup code
+      m68knommu: clean up init code in ColdFire 523x startup
+      m68knommu: clean up init code in ColdFire 528x startup
+      m68knommu: clean up init code in ColdFire 532x startup
+      m68knommu: move old ColdFire timers init from CPU init to timers code
+      m68knommu: factor some common ColdFire cpu reset code
+      m68knommu: make 523x CPU reset register addressing consistent
+      m68knommu: make 527x CPU reset register addressing consistent
+      m68knommu: make 528x CPU reset register addressing consistent
+      m68knommu: factor more common ColdFire cpu reset code
+
+ arch/m68k/Kconfig                      |    7 +-
+ arch/m68k/include/asm/m5206sim.h       |   10 +-
+ arch/m68k/include/asm/m520xsim.h       |   33 +++-
+ arch/m68k/include/asm/m523xsim.h       |   42 +++-
+ arch/m68k/include/asm/m5249sim.h       |   18 ++-
+ arch/m68k/include/asm/m5272sim.h       |   17 +-
+ arch/m68k/include/asm/m527xsim.h       |   53 ++++-
+ arch/m68k/include/asm/m528xsim.h       |   40 +++-
+ arch/m68k/include/asm/m5307sim.h       |   10 +-
+ arch/m68k/include/asm/m532xsim.h       |   35 +++-
+ arch/m68k/include/asm/m5407sim.h       |    6 +-
+ arch/m68k/include/asm/m54xxsim.h       |   16 +-
+ arch/m68k/include/asm/machdep.h        |    5 +-
+ arch/m68k/include/asm/mcfqspi.h        |   11 -
+ arch/m68k/include/asm/mcfuart.h        |    5 +-
+ arch/m68k/kernel/process.c             |  379 +++++++++++++++++++++++++++++-
+ arch/m68k/kernel/process_mm.c          |  369 -----------------------------
+ arch/m68k/kernel/process_no.c          |  406 --------------------------------
+ arch/m68k/kernel/ptrace.c              |  306 ++++++++++++++++++++++++-
+ arch/m68k/kernel/ptrace_mm.c           |  295 -----------------------
+ arch/m68k/kernel/ptrace_no.c           |  255 --------------------
+ arch/m68k/kernel/setup_no.c            |    3 +
+ arch/m68k/kernel/time.c                |  116 +++++++++-
+ arch/m68k/kernel/time_mm.c             |  114 ---------
+ arch/m68k/kernel/time_no.c             |   90 -------
+ arch/m68k/kernel/vmlinux-nommu.lds     |  200 ++++------------
+ arch/m68k/platform/5206/config.c       |   91 +-------
+ arch/m68k/platform/520x/config.c       |  256 ++-------------------
+ arch/m68k/platform/523x/config.c       |  235 +------------------
+ arch/m68k/platform/5249/config.c       |  244 +------------------
+ arch/m68k/platform/5272/config.c       |   84 +------
+ arch/m68k/platform/527x/config.c       |  296 +-----------------------
+ arch/m68k/platform/528x/config.c       |  230 +-----------------
+ arch/m68k/platform/5307/config.c       |   91 +-------
+ arch/m68k/platform/532x/config.c       |  221 +----------------
+ arch/m68k/platform/5407/config.c       |   91 +-------
+ arch/m68k/platform/54xx/config.c       |   77 +------
+ arch/m68k/platform/68328/config.c      |    5 +-
+ arch/m68k/platform/68328/ints.c        |    2 -
+ arch/m68k/platform/68328/timers.c      |   18 +-
+ arch/m68k/platform/68360/config.c      |    8 +-
+ arch/m68k/platform/68360/ints.c        |    2 -
+ arch/m68k/platform/68EZ328/config.c    |    5 +-
+ arch/m68k/platform/68VZ328/config.c    |    5 +-
+ arch/m68k/platform/coldfire/Makefile   |   22 +-
+ arch/m68k/platform/coldfire/device.c   |  318 +++++++++++++++++++++++++
+ arch/m68k/platform/coldfire/head.S     |    4 +
+ arch/m68k/platform/coldfire/pit.c      |    2 +-
+ arch/m68k/platform/coldfire/reset.c    |   50 ++++
+ arch/m68k/platform/coldfire/sltimers.c |    7 +-
+ arch/m68k/platform/coldfire/timers.c   |   27 ++-
+ arch/m68k/platform/coldfire/vectors.c  |    2 -
+ 52 files changed, 1593 insertions(+), 3641 deletions(-)
+ delete mode 100644 arch/m68k/kernel/process_mm.c
+ delete mode 100644 arch/m68k/kernel/process_no.c
+ delete mode 100644 arch/m68k/kernel/ptrace_mm.c
+ delete mode 100644 arch/m68k/kernel/ptrace_no.c
+ delete mode 100644 arch/m68k/kernel/time_mm.c
+ delete mode 100644 arch/m68k/kernel/time_no.c
+ create mode 100644 arch/m68k/platform/coldfire/device.c
+ create mode 100644 arch/m68k/platform/coldfire/reset.c
