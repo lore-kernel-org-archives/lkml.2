@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab2CUF1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 01:27:35 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5574 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab2CUF1e convert rfc822-to-8bit (ORCPT
+	id S932078Ab2CUFce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 01:32:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33659 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355Ab2CUFcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 01:27:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 20 Mar 2012 22:27:22 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Igor Grinberg <grinberg@compulab.co.il>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Date: Wed, 21 Mar 2012 10:57:18 +0530
-Subject: RE: [PATCH] mfd: Fix compilation error in TPS65910.h
-Thread-Topic: [PATCH] mfd: Fix compilation error in TPS65910.h
-Thread-Index: Ac0GhyMZIKmtk70TSw+8XxBrEM08kwAnBbzg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD3127DD4@BGMAIL02.nvidia.com>
-References: <1331882917-27960-1-git-send-email-vbyravarasu@nvidia.com>
- <20120316200154.GU20524@sortiz-mobl>
- <D958900912E20642BCBC71664EFECE3E6DD3127A5D@BGMAIL02.nvidia.com>
- <4F6860AF.5060404@compulab.co.il>
-In-Reply-To: <4F6860AF.5060404@compulab.co.il>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Mar 2012 01:32:33 -0400
+Date: Wed, 21 Mar 2012 16:31:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Robert Richter <robert.richter@amd.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lin Ming <ming.m.lin@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: linux-next: manual merge of the oprofile tree with the tip tree
+Message-Id: <20120321163151.83cad17d5524424938f7576c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Mar_2012_16_31_51_+1100_m+REZc=KQ6MDBYux"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes Igor, this change should get into stable as well.
+--Signature=_Wed__21_Mar_2012_16_31_51_+1100_m+REZc=KQ6MDBYux
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Igor Grinberg [mailto:grinberg@compulab.co.il]
-> Sent: Tuesday, March 20, 2012 4:19 PM
-> To: Venu Byravarasu
-> Cc: Samuel Ortiz; linux-kernel@vger.kernel.org; jedu@slimlogic.co.uk;
-> lrg@slimlogic.co.uk; broonie@opensource.wolfsonmicro.com;
-> gg@slimlogic.co.uk
-> Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
-> 
-> On 03/19/12 10:43, Venu Byravarasu wrote:
-> > Thanks Mark and Samuel.
-> >
-> >> -----Original Message-----
-> >> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
-> >> Sent: Saturday, March 17, 2012 1:32 AM
-> >> To: Venu Byravarasu
-> >> Cc: linux-kernel@vger.kernel.org; jedu@slimlogic.co.uk; lrg@slimlogic.co.uk;
-> >> broonie@opensource.wolfsonmicro.com; gg@slimlogic.co.uk
-> >> Subject: Re: [PATCH] mfd: Fix compilation error in TPS65910.h
-> >>
-> >> Hi Venu,
-> >>
-> >> On Fri, Mar 16, 2012 at 12:58:37PM +0530, Venu Byravarasu wrote:
-> >>> From: Venu Byravarasu <vbyravarasu@nvidia.com>
-> >>>
-> >>> Fix compilation error due to including TPS65910.h
-> >> Probably too late for 3.3, but I applied this patch anyway.
-> 
-> Venu,
-> Should this go also to stable?
-> 
-> If it should then, Samuel, can you please add Cc: stable@vger.kernel.org?
-> 
-> 
-> --
-> Regards,
-> Igor.
+Hi Robert,
+
+Today's linux-next merge of the oprofile tree got a conflict in
+tools/perf/util/parse-events.c between commit 89812fc81f8d ("perf tools:
+Add parser generator for events parsing") from the tip tree and commit
+1e48600d2388 ("perf tool: Parse general/raw events from sysfs") from the
+oprofile tree.
+
+I have no idea how to fix this up, so I effectively dropped this patch
+from the oprofile tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__21_Mar_2012_16_31_51_+1100_m+REZc=KQ6MDBYux
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPaWfHAAoJEECxmPOUX5FE9uIP/0nFM4HQFgm/Y01A+YXRUDGQ
++mBvWUXAXF52Oru+ao2kLX8DROTLhrS0WkcyXA21eag+Ez1drghZ7c+juyRuqtCR
+CCq0fLWeNDKDOOqc7SkCuq+ThWoL89RpwBu8ZrcNJD0itLFn6Wi27DBwaaFh99dY
+D3pxWIIBPlpiAVJP6RJIRp2GxGB1Nw0Pp2GbHm5+0a9GB9yl9S/qNaJA75lDqwYE
+OJ8K8x5LE0zE15ljylLwj8A+x550yoaVnLRCN+C9vJHazLoLfx0CiseksaPBQYwB
+a0GOwAUJBGhNwXMSUo1MhxnuUh647uKjLcAfIy5Vn05VQzegQPIqe5A9J3ZRIgAh
+VCAGHQ0aehwPDSsbRgyKSHyB/alORSe9hbiOjAZZxJJ671GcP8dWhOYzYjMU4XeF
+CV7W4H0DrdonnHgmtoazDbF5+KfxpKXeu6S316Puk3oOMr3qw++onMfp1XmQp3vk
+VTt3Z6YHpX9Yxz+HSVWNgTpJZ4JK0wJWo1FuaOGJUB0LSDoPmiUUppZOv1v7iPUX
+WKuwnXkysQlfMw8O9evpIPWrI6yJkvrXj029kIpIG7CU1Eb1zM6jH5HDLS2erEX9
+2t1e/EF6f1axBNtCJwxqq+ncMPMpKcaDAWCQoLmK1eJDD85m1n7092boKN64viWy
+8joJmZB9VmE4U4zubjhT
+=xNex
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Mar_2012_16_31_51_+1100_m+REZc=KQ6MDBYux--
