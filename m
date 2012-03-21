@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab2CURvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 13:51:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab2CURvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 13:51:48 -0400
-Date: Wed, 21 Mar 2012 13:51:45 -0400
-From: David Teigland <teigland@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] dlm updates for 3.4
-Message-ID: <20120321175145.GC32165@redhat.com>
+	id S1753937Ab2CURyn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 13:54:43 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:47020 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752152Ab2CURym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 13:54:42 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Svt6LZsVM1ltBQdKE9Ma6E_vYj0MfmGL7pmHL_KfN792QKX
+ u4mQZaA784WCRodKr1LKM.DwMDb.BUEAZEh4dT.zD45sfe_ONyJCOSQL5hIH
+ .cuA0z44N9NHhlp.4fV.AfetGbF8aFZpm4nmyzOy5cbn4ODe9tOH7HvyGzZR
+ iJXcW89P5osb0OWBmTXFkcphrU5rzZdSYGf2xLHp6R0qhwGfxiqWQY6MFiO.
+ _p_t4qXDnbgiux548uLx406eI6HUEaC7YuyANzkAJu4kAkvanB3VJdo7NP5B
+ 829Sm9sUDN2TsPKdiSeIw7vHcIerVU.IdYvrhZdr550yQV9lbFSKI.GSJ8wk
+ OHh8BNYdAym2sSzaz7r.Av6zSsfLs3raRZGcvQCaFQ9SNQJ.SAVlFtSlTZsV
+ rmcaa2HX7cd73SEKjpHfk8y0rRghoG5iRfoKm
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 21 Mar 2012 12:54:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Patch workqueue: create new slab cache instead of hacking
+In-Reply-To: <1332345859.5330.8.camel@edumazet-glaptop>
+Message-ID: <alpine.DEB.2.00.1203211253520.21932@router.home>
+References: <1332238884-6237-1-git-send-email-laijs@cn.fujitsu.com> <1332238884-6237-7-git-send-email-laijs@cn.fujitsu.com> <20120320154619.GA5684@google.com> <4F6944D9.5090002@cn.fujitsu.com> <CAOS58YPydFUap4HjuRATxza6VZgyrXmQHVxR83G7GRJL50ZTRQ@mail.gmail.com>
+ <alpine.DEB.2.00.1203210910450.20482@router.home> <1332341381.7893.17.camel@edumazet-glaptop> <alpine.DEB.2.00.1203210959500.21932@router.home> <1332345859.5330.8.camel@edumazet-glaptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 21 Mar 2012, Eric Dumazet wrote:
 
-Please pull dlm updates from tag:
+> On Wed, 2012-03-21 at 10:03 -0500, Christoph Lameter wrote:
+> > On Wed, 21 Mar 2012, Eric Dumazet wrote:
+> >
+> > > Creating a dedicated cache for few objects ? Thats a lot of overhead, at
+> > > least for SLAB (no merges of caches)
+> >
+> > Its some overhead for SLAB (a lot is what? If you tune down the per cpu
+> > caches it should be a couple of pages) but its none for SLUB.
+>
+> SLAB overhead per cache is O(CPUS * nr_node_ids)  (unless alien caches
+> are disabled)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm.git dlm-3.4
+nr_node_ids==2 in the standard case these days. Alien caches are minimal.
 
-This set includes one trivial fix, and one simple recovery
-speed up.  Directory recovery can use the standard hash table
-to find resources rather than always searching the linear
-recovery list.
+> For few in flight objects, its just better to use standard kmalloc-xxxx
+> caches.
 
-Thanks,
-Dave
-
-David Teigland (2):
-      dlm: fix slow rsb search in dir recovery
-      dlm: last element of dlm_local_addr[] never used
-
- fs/dlm/dir.c      |   17 +++++++++++++++++
- fs/dlm/lock.c     |    8 ++++----
- fs/dlm/lock.h     |    3 +++
- fs/dlm/lowcomms.c |    2 +-
- 4 files changed, 25 insertions(+), 5 deletions(-)
+Its easier to use a custom slab cache. Avoids hackery like we have in
+workqueue.c
 
