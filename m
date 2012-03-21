@@ -1,61 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964916Ab2CUNI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 09:08:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53715 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964786Ab2CUNI0 convert rfc822-to-8bit (ORCPT
+	id S964854Ab2CUNLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 09:11:25 -0400
+Received: from 42.7.be.static.xlhost.com ([209.190.7.66]:57444 "EHLO
+	NS1.HOSTTHAISEOVDO.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753565Ab2CUNLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:08:26 -0400
-Subject: [PATCH] do not export kernel's NULL #define to userspace
-From: Lubos Lunak <l.lunak@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 14:08:24 +0100
+	Wed, 21 Mar 2012 09:11:24 -0400
+Date: Wed, 21 Mar 2012 09:11:18 -0400
+To: linux-kernel@vger.kernel.org
+From: Mr Frank Taylor <franktaylor@anzbanklondon.com>
+Reply-To: franktaylor444@gmail.com
+Subject: Zelo zelo nujno prosim !!!
+Message-ID: <b9ab08d22251ad1acbd43704a8e29705@1094thanart.co.cc>
+X-Priority: 3
+X-Mailer: PHPMailer (phpmailer.sourceforge.net) [version ]
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201203211408.25040.l.lunak@suse.cz>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - NS1.HOSTTHAISEOVDO.COM
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [774 772] / [47 12]
+X-AntiAbuse: Sender Address Domain - NS1.HOSTTHAISEOVDO.COM
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GCC's NULL is actually __null, which allows detecting some questionable
-NULL usage and warn about it. Moreover each platform/compiler should have
-its own stddef.h anyway (which is different from linux/stddef.h).
-So there's no good reason to leak kernel's NULL to userspace and
-override what the compiler provides.
+Od: Mr.Frank Taylor. 
+Tel: +44 704 574 7992. 
 
-Signed-off-by: Lubo≈° Lu≈à√°k <l.lunak@suse.cz>
----
- include/linux/stddef.h |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/stddef.h b/include/linux/stddef.h
-index 6a40c76..1747b67 100644
---- a/include/linux/stddef.h
-+++ b/include/linux/stddef.h
-@@ -3,14 +3,10 @@
+Sprejmi moje iskreno opravi&#269;ilo, &#269;e moj mail ne ustreza vaöim personalethics. 
+
+Bom se predstavim kot Mr.Frank Taylor, jaz sem drûavljan Deviöki otoki 
+Britanski reûiser prebivajo v London.A pri vodenju ra&#269;unov 
+oddelku, spremljanje finan&#269;no mreûo tukaj v Zdruûenem kraljestvu. 
+
+To je podrobnost o tem, kaj ho&#269;em, da mi pomagajo pri doing.One naöih ra&#269;unov 
+ z gospodarstva, bilance funtov 20,500,000.00 (dvajset milijonov petsto tiso&#269; funtov) 
+je v mirujo&#269;em stanju in ni deloval v zadnjih dvanajstih (12) let. 
+
+Iz mojih raziskav in potrditev, lastnik thisaccount, 
+Tujec z imenom Ost Bob) je umrl 31. januarja 2000. 
+
+glej to: http://aviation.crosswindlanding.com/accidents/alaska_261.htm 
+
+In od takrat se nih&#269;e ni naredil ni&#269;esar v zvezi z zahtevo po tem 
+denar, ker je nima druûinskih &#269;lanov, ki se zavedajo obstoja 
+ne upoöteva niti sredstev. 
+
+Sem iskati vaöe privoljenje, da vam predstavi kot oûjih sorodnikov / bo upravi&#269;enec do 
+umrlega, tako da se izkupi&#269;ek od tega ra&#269;una vrednotijo &#8203;&#8203;na 20,5 milijonov funtov funtov 
+lahko pla&#269;a (prenos) na vaö ra&#269;un v vaöi drûavi. 
+
+
+To bo izpla&#269;ana ali delijo v teh odstotkih, 60% za mene in 40% za vas. 
+vse potrebne pravne dokumente, ki se lahko uporabljajo za nazaj do tega zahtevka smo kar bo zagotovljeno. 
+
+Prosim, da mi naslednje, kot smo 7 dni te&#269;i, da through.This je zelo zelo NUJNO prosim. 
+  
+1. Ime in priimek. 
+2. Vaö Direct Mobile ötevilka. 
+3. Vaö kontaktni naslov. 
+4. Vaö Age. 
+5. Vaö poklic. 
+  
+S spoötovanjem, 
+Mr.Frank Taylor 
+Tel: +44 704 574 7992. 
+
+
+
+............................................................................................................................................................
+
+From: Mr.Frank Taylor.
+Tel: +44 704 574 7992.
+
+
+Accept my sincere apologies if my mail does not meet your personalethics.
+
+I will introduce myself as Mr.Frank Taylor, I am a citizen Virgin Islands 
+A British residing in London.A director in the accounts management
+section, monitoring financial network here in the United Kingdom.
+
+This is the detail of what i want you to assist me in doing.One of our accounts
+ with holding balance of £20,500,000.00(Twenty  Million Five Hundred Thousand pounds)
+has been dormant and has not been operated for the past twelve(12)years.
+
+>From my investigations and confirmations,the owner of thisaccount,
+a foreigner by name (Ost Bob)died On January 31 2000.
+
+see this: http://aviation.crosswindlanding.com/accidents/alaska_261.htm
+
+And since then nobody has done anything as regards the claiming of this
+money because he has no family members who are aware of the existence of
+neither the account nor the funds.
+
+I seek your consent to present you as the next of kin/Will Beneficiary to 
+the deceased so that the proceeds of this account valued at £20.5 Million Pounds 
+can be paid (transfer) to your Account in your country.
+
+
+This will be disbursed or shared in these percentage, 60% to me and 40% to you.  
+all necessary legal documents that can be used to back up this claim we are making will be secured.
+
+Please, provide me the following, as we have 7 days to run it through.This is very very URGENT PLEASE.
  
- #include <linux/compiler.h>
+1. Full Name.
+2. Your Direct Mobile Number.
+3. Your Contact Address.
+4. Your Age.
+5. Your Occupation.
  
-+#ifdef __KERNEL__
-+
- #undef NULL
--#if defined(__cplusplus)
--#define NULL 0
--#else
- #define NULL ((void *)0)
--#endif
--
--#ifdef __KERNEL__
- 
- enum {
- 	false	= 0,
--- 
-1.7.3.4
--- 
- Lubos Lunak
- l.lunak@suse.cz
+Regards,
+Mr.Frank Taylor
+Tel: +44 704 574 7992.
