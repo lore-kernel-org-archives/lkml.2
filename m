@@ -1,92 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030265Ab2CUARS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 20:17:18 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49700 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab2CUARN (ORCPT
+	id S932410Ab2CUARs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 20:17:48 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23118 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758290Ab2CUARL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 20:17:13 -0400
+	Tue, 20 Mar 2012 20:17:11 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: suresh.b.siddha@intel.com, jwboyer@redhat.com, mingo@elte.hu,
         hpa@zytor.com, yinghai@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.2.1 Unable to reset IRR messages on boot
-Date: Tue, 20 Mar 2012 20:12:41 -0400
-Message-Id: <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] x86/apic_ops: Replace apic_ops with x86_apic_ops.
+Date: Tue, 20 Mar 2012 20:12:43 -0400
+Message-Id: <1332288764-10351-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
 References: <1332273919.16101.74.camel@sbsiddha-desk.sc.intel.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4F691DFF.0019,ss=1,re=0.000,fgs=0
+ <1332288764-10351-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090209.4F691DFF.0023,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 01:05:19PM -0700, Suresh Siddha wrote:
-> On Tue, 2012-03-20 at 14:58 -0400, Konrad Rzeszutek Wilk wrote:
-> > Then this fixes the issue - thought if there are more checks in the future
-> > it will have to be redone..:
-> > 
-> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> > index 988828b..b8e2794 100644
-> > --- a/arch/x86/xen/mmu.c
-> > +++ b/arch/x86/xen/mmu.c
-> > @@ -1859,6 +1859,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
-> >  #endif	/* CONFIG_X86_64 */
-> >  
-> >  static unsigned char dummy_mapping[PAGE_SIZE] __page_aligned_bss;
-> > +static unsigned char fake_ioapic_mapping[PAGE_SIZE] __page_aligned_bss;
-> >  
-> >  static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
-> >  {
-> > @@ -1899,7 +1900,7 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
-> >  		 * We just don't map the IO APIC - all access is via
-> >  		 * hypercalls.  Keep the address in the pte for reference.
-> >  		 */
-> > -		pte = pfn_pte(PFN_DOWN(__pa(dummy_mapping)), PAGE_KERNEL);
-> > +		pte = pfn_pte(PFN_DOWN(__pa(fake_ioapic_mapping)), PAGE_KERNEL);
-> >  		break;
-> >  #endif
-> >  
-> > @@ -2064,6 +2065,7 @@ void __init xen_init_mmu_ops(void)
-> >  	pv_mmu_ops = xen_mmu_ops;
-> >  
-> >  	memset(dummy_mapping, 0xff, PAGE_SIZE);
-> > +	memset(fake_ioapic_mapping, 0xfd, PAGE_SIZE);
-> 
-> heh ;)
-> 
-> I was referring to setting up something little more valid. Like
-> IO_APIC_reg_01 showing value of 0x00170020 etc. As the gsi computation
-> actually refers to the number of redirection table entries supported by
-> the IO-APIC.
-> 
-> Also does the dom0 see all the GSI's/io-apic's that the host sees or is
-> it going to be just one io-apic? I was just wondering if the reg 01 need
-> to be same as what the host sees?
+. which makes the code fit within the rest of the x86_ops functions.
 
-I was talking with Suresh on IRC and I realized that some of these patches
-that did this were posted some time ago, so I dusted them off and redid them
-just a tiny bit.
-
-Ingo, please take a look - and if you are OK with them please put in them
-the v3.4 queue - if you are not comfortable, then the above patch will have to
-suffice as a work-around for the regression.
-
- arch/x86/include/asm/io_apic.h  |   31 +++++++++++++++++++++++++++++--
- arch/x86/include/asm/x86_init.h |    8 ++++++++
- arch/x86/kernel/apic/io_apic.c  |   10 ++++++----
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/io_apic.h  |   40 +++++++++++++++++++++--------
+ arch/x86/include/asm/x86_init.h |    8 ++++++
+ arch/x86/kernel/apic/io_apic.c  |   54 ++++----------------------------------
  arch/x86/kernel/setup.c         |    2 +-
- arch/x86/kernel/x86_init.c      |    8 ++++++++
- arch/x86/xen/Makefile           |    2 +-
- arch/x86/xen/apic.c             |   17 +++++++++++++++++
- arch/x86/xen/enlighten.c        |    2 ++
- arch/x86/xen/xen-ops.h          |    4 ++++
- 9 files changed, 76 insertions(+), 8 deletions(-)
-Jeremy Fitzhardinge (1):
-      x86: add io_apic_ops to allow interception
+ arch/x86/kernel/x86_init.c      |    8 ++++++
+ 5 files changed, 52 insertions(+), 60 deletions(-)
 
-Konrad Rzeszutek Wilk (2):
-      x86/apic_ops: Replace apic_ops with x86_apic_ops.
-      xen/x86: Implement x86_apic_ops
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 190d8c2..bb876ce 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -5,6 +5,7 @@
+ #include <asm/mpspec.h>
+ #include <asm/apicdef.h>
+ #include <asm/irq_vectors.h>
++#include <asm/x86_init.h>
+ 
+ /*
+  * Intel IO-APIC support for SMP and UP systems.
+@@ -21,15 +22,6 @@
+ #define IO_APIC_REDIR_LEVEL_TRIGGER	(1 << 15)
+ #define IO_APIC_REDIR_MASKED		(1 << 16)
+ 
+-struct io_apic_ops {
+-	void (*init)(void);
+-	unsigned int (*read)(unsigned int apic, unsigned int reg);
+-	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
+-	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
+-};
+-
+-void __init set_io_apic_ops(const struct io_apic_ops *);
+-
+ /*
+  * The structure of the IO-APIC:
+  */
+@@ -156,7 +148,6 @@ struct io_apic_irq_attr;
+ extern int io_apic_set_pci_routing(struct device *dev, int irq,
+ 		 struct io_apic_irq_attr *irq_attr);
+ void setup_IO_APIC_irq_extra(u32 gsi);
+-extern void ioapic_and_gsi_init(void);
+ extern void ioapic_insert_resources(void);
+ 
+ int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
+@@ -185,12 +176,35 @@ extern void mp_save_irq(struct mpc_intsrc *m);
+ 
+ extern void disable_ioapic_support(void);
+ 
++
++void __init native_ioapic_init_mappings(void);
++unsigned int native_ioapic_read(unsigned int apic, unsigned int reg);
++void native_ioapic_write(unsigned int apic, unsigned int reg,
++			 unsigned int val);
++void native_ioapic_modify(unsigned int apic, unsigned int reg,
++			  unsigned int val);
++
++static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
++{
++	return x86_apic.read(apic, reg);
++}
++
++static inline void io_apic_write(unsigned int apic, unsigned int reg,
++				 unsigned int value)
++{
++	x86_apic.write(apic, reg, value);
++}
++
++static inline void io_apic_modify(unsigned int apic, unsigned int reg,
++				  unsigned int value)
++{
++	x86_apic.modify(apic, reg, value);
++}
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+ #define setup_ioapic_ids_from_mpc x86_init_noop
+ static const int timer_through_8259 = 0;
+-static inline void ioapic_and_gsi_init(void) { }
+ static inline void ioapic_insert_resources(void) { }
+ #define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+@@ -212,6 +226,10 @@ static inline int restore_ioapic_entries(void)
+ 
+ static inline void mp_save_irq(struct mpc_intsrc *m) { };
+ static inline void disable_ioapic_support(void) { }
++#define native_ioapic_init_mappings NULL
++#define native_ioapic_read NULL
++#define native_ioapic_write NULL
++#define native_ioapic_modify NULL
+ #endif
+ 
+ #endif /* _ASM_X86_IO_APIC_H */
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 517d476..0fdf65b 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -182,10 +182,18 @@ struct x86_msi_ops {
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
+ };
+ 
++struct x86_apic_ops {
++	void (*init)(void);
++	unsigned int (*read)(unsigned int apic, unsigned int reg);
++	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
++	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
++};
++
+ extern struct x86_init_ops x86_init;
+ extern struct x86_cpuinit_ops x86_cpuinit;
+ extern struct x86_platform_ops x86_platform;
+ extern struct x86_msi_ops x86_msi;
++extern struct x86_apic_ops x86_apic;
+ 
+ extern void x86_init_noop(void);
+ extern void x86_init_uint_noop(unsigned int unused);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index bf120234..9a15d4b 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -67,25 +67,6 @@
+ #define for_each_irq_pin(entry, head) \
+ 	for (entry = head; entry; entry = entry->next)
+ 
+-static void __init __ioapic_init_mappings(void);
+-static unsigned int __io_apic_read(unsigned int apic, unsigned int reg);
+-static void __io_apic_write(unsigned int apic, unsigned int reg,
+-			    unsigned int val);
+-static void __io_apic_modify(unsigned int apic, unsigned int reg,
+-			     unsigned int val);
+-
+-static struct io_apic_ops io_apic_ops = {
+-	.init = __ioapic_init_mappings,
+-	.read = __io_apic_read,
+-	.write = __io_apic_write,
+-	.modify = __io_apic_modify,
+-};
+-
+-void __init set_io_apic_ops(const struct io_apic_ops *ops)
+-{
+-	io_apic_ops = *ops;
+-}
+-
+ /*
+  *      Is the SiS APIC rmw bug present ?
+  *      -1 = don't know, 0 = no, 1 = yes
+@@ -313,24 +294,6 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+ 	irq_free_desc(at);
+ }
+ 
+-static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
+-{
+-	return io_apic_ops.read(apic, reg);
+-}
+-
+-static inline void io_apic_write(unsigned int apic, unsigned int reg,
+-				 unsigned int value)
+-{
+-	io_apic_ops.write(apic, reg, value);
+-}
+-
+-static inline void io_apic_modify(unsigned int apic, unsigned int reg,
+-				  unsigned int value)
+-{
+-	io_apic_ops.modify(apic, reg, value);
+-}
+-
+-
+ struct io_apic {
+ 	unsigned int index;
+ 	unsigned int unused[3];
+@@ -351,15 +314,15 @@ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
+ 	writel(vector, &io_apic->eoi);
+ }
+ 
+-static unsigned int __io_apic_read(unsigned int apic, unsigned int reg)
++unsigned int native_ioapic_read(unsigned int apic, unsigned int reg)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(reg, &io_apic->index);
+ 	return readl(&io_apic->data);
+ }
+ 
+-static void __io_apic_write(unsigned int apic, unsigned int reg,
+-			    unsigned int value)
++void native_ioapic_write(unsigned int apic, unsigned int reg,
++			 unsigned int value)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(reg, &io_apic->index);
+@@ -372,8 +335,8 @@ static void __io_apic_write(unsigned int apic, unsigned int reg,
+  *
+  * Older SiS APIC requires we rewrite the index register
+  */
+-static void __io_apic_modify(unsigned int apic, unsigned int reg,
+-			     unsigned int value)
++void native_ioapic_modify(unsigned int apic, unsigned int reg,
++			  unsigned int value)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 
+@@ -3910,12 +3873,7 @@ static struct resource * __init ioapic_setup_resources(int nr_ioapics)
+ 	return res;
+ }
+ 
+-void __init ioapic_and_gsi_init(void)
+-{
+-	io_apic_ops.init();
+-}
+-
+-static void __init __ioapic_init_mappings(void)
++void __init native_ioapic_init_mappings(void)
+ {
+ 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
+ 	struct resource *ioapic_res;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d7d5099..87a0fcd 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1016,7 +1016,7 @@ void __init setup_arch(char **cmdline_p)
+ 	init_cpu_to_node();
+ 
+ 	init_apic_mappings();
+-	ioapic_and_gsi_init();
++	x86_apic.init();
+ 
+ 	kvm_guest_init();
+ 
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 947a06c..c5d0697 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -18,6 +18,7 @@
+ #include <asm/e820.h>
+ #include <asm/time.h>
+ #include <asm/irq.h>
++#include <asm/io_apic.h>
+ #include <asm/pat.h>
+ #include <asm/tsc.h>
+ #include <asm/iommu.h>
+@@ -117,3 +118,10 @@ struct x86_msi_ops x86_msi = {
+ 	.teardown_msi_irqs = default_teardown_msi_irqs,
+ 	.restore_msi_irqs = default_restore_msi_irqs,
+ };
++
++struct x86_apic_ops x86_apic = {
++	.init = native_ioapic_init_mappings,
++	.read = native_ioapic_read,
++	.write = native_ioapic_write,
++	.modify = native_ioapic_modify,
++};
+-- 
+1.7.7.5
 
