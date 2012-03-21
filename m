@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab2CUAjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Mar 2012 20:39:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54850 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066Ab2CUAjF (ORCPT
+	id S1758267Ab2CUAnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Mar 2012 20:43:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40027 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab2CUAnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Mar 2012 20:39:05 -0400
-Date: Wed, 21 Mar 2012 11:38:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Ungerer <gerg@snapgear.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the tip tree with the m68knommu
- tree
-Message-Id: <20120321113852.93618d6fa5977e9a71caa298@canb.auug.org.au>
-In-Reply-To: <20120302134903.7992cf17cb0c50b9a2b3842c@canb.auug.org.au>
-References: <20120302134903.7992cf17cb0c50b9a2b3842c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Mar_2012_11_38_52_+1100_Ybw/a6oOP4kupOgk"
+	Tue, 20 Mar 2012 20:43:53 -0400
+Date: Wed, 21 Mar 2012 09:43:44 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: use global_dirty_limit in throttle_vm_writeout()
+Message-ID: <20120321004344.GC14584@barrios>
+References: <20120302061451.GA6468@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302061451.GA6468@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Mar_2012_11_38_52_+1100_Ybw/a6oOP4kupOgk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Wu,
 
-Hi Greg, Geert,
+Sorry for late response.
+I have a question.
 
-On Fri, 2 Mar 2012 13:49:03 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> Today's linux-next merge of the tip tree got conflicts in
-> arch/m68k/kernel/process_no.c and arch/m68k/kernel/process_mm.c between
-> commit 8d8b74c955fd ("m68k: merge the MMU and non-MMU versions of
-> process.c") from the m68knommu tree and commit bd2f55361f18 ("sched/rt:
-> Use schedule_preempt_disabled()") from the tip tree.
+On Fri, Mar 02, 2012 at 02:14:51PM +0800, Fengguang Wu wrote:
+> When starting a memory hog task, a desktop box w/o swap is found to go
+> unresponsive for a long time. It's solely caused by lots of congestion
+> waits in throttle_vm_writeout():
+> 
+>  gnome-system-mo-4201 553.073384: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
+>  gnome-system-mo-4201 553.073386: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
+>            gtali-4237 553.080377: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
+>            gtali-4237 553.080378: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
+>             Xorg-3483 553.103375: congestion_wait: throttle_vm_writeout+0x70/0x7f shrink_mem_cgroup_zone+0x48f/0x4a1
+>             Xorg-3483 553.103377: writeback_congestion_wait: usec_timeout=100000 usec_delayed=100000
+> 
+> The root cause is, the dirty threshold is knocked down a lot by the
+> memory hog task. Fixed by using global_dirty_limit which decreases
 
-That tip tree commit is now in Linus' tree, so I am now applying the
-patch below after merging the m68knommu tree.
+AFAIUC, memory hog task, you mean it consumes lots of anon pages, not file-backed pages.
+So global_dirty_limits would get small available_memory by global_reclaimable_pages
+so that it ends up dirty threshold is knocked down.
 
-> The former merged these two files into a single process.c, so I removed
-> them.  I then applied the following merge fix patch.
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 2 Mar 2012 13:43:03 +1100
-> Subject: [PATCH] sched/rt: Use schedule_preempt_disabled() in m68k
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Could you confirm my understanding?
+
+Thanks.
+
+> gradually on such events and can guarantee we stay above (the also
+> decreasing) nr_dirty in the progress of following down to the new
+> dirty threshold.
+> 
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 > ---
->  arch/m68k/kernel/process.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
->=20
-> diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
-> index f053e24..c54ef927 100644
-> --- a/arch/m68k/kernel/process.c
-> +++ b/arch/m68k/kernel/process.c
-> @@ -78,9 +78,7 @@ void cpu_idle(void)
->  	while (1) {
->  		while (!need_resched())
->  			idle();
-> -		preempt_enable_no_resched();
-> -		schedule();
-> -		preempt_disable();
-> +		schedule_preempt_disabled();
->  	}
->  }
-> =20
-> --=20
-> 1.7.9.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__21_Mar_2012_11_38_52_+1100_Ybw/a6oOP4kupOgk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPaSMcAAoJEECxmPOUX5FEn/EQAKZLebHgOFAUxQniXOTcWy9U
-74YkVtWAPXKq0IMLVJr0CJNPaLv5yS6a/8cm2pZq8Duxh3BDqzyC/UyYUR7YhT3z
-GIQ/tR4QtiqDyUsHrWFLBLKDH/maWRWmeICMt/FYBStBn0OgpjRDMwsscadkSirh
-PSJ69LfZM+Zv1N7aBGG1BsW4UUQ1r9ilyOBwRXTt/J+wKvacLwUGe/dwKbxcl0LS
-TBgx5U/CPb6bUH4JDGGRB/ecrbKBOAkRaoooAYTozqSccvGHf9v0fTZYKOr92FMh
-A53Imkpo/fQ/U/2A99d040WulGfn3TRmsnCe+GvlBkK2+2PLN/QLxGD2TlpEpPcG
-EqwvjJGpcT4YOTXd/K52kf1qmKbwnROXTQCJiDpMa8yJJNIdGv6KxeD06cfXtnyX
-ej3NOQ26naKOSF6+/PuCey61DcupV05cW69fqK6Y8DEcCdP9B6g9XkrVq+VLroZc
-+86qCOpYzG/u0Rzr3Gr7tpCMgdLoBK1wSU3IrA4/GkdFBdII1vNp7eigNM9xnLnq
-kFAEAjZB3KfObfnc9XtSDwANpdkJ0oSf9iPFLmkBKXlLuA8PvNXB8OJnAT1QOvvr
-5XzHUASImPczau6jIybUotMWqPtAiSYvuQBjt2ZEKkJq5+8TriDms5JRYNgfkPHy
-kNdKPOx6Ck3WqZciKhCT
-=Cb9/
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Mar_2012_11_38_52_+1100_Ybw/a6oOP4kupOgk--
+>  mm/page-writeback.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux.orig/mm/page-writeback.c	2012-03-02 14:05:01.633763187 +0800
+> +++ linux/mm/page-writeback.c	2012-03-02 14:11:52.929772962 +0800
+> @@ -1472,6 +1472,7 @@ void throttle_vm_writeout(gfp_t gfp_mask
+>  
+>          for ( ; ; ) {
+>  		global_dirty_limits(&background_thresh, &dirty_thresh);
+> +		dirty_thresh = hard_dirty_limit(dirty_thresh);
+>  
+>                  /*
+>                   * Boost the allowable dirty threshold a bit for page
