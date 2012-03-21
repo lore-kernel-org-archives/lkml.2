@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759922Ab2CUS1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 14:27:52 -0400
-Received: from mout0.freenet.de ([195.4.92.90]:51578 "EHLO mout0.freenet.de"
+	id S1759926Ab2CUSd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 14:33:59 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1615 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab2CUS1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 14:27:51 -0400
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-X-Newsgroups: linux.kernel
-Subject: Re: hibernate random memory corruption, workaround i915.modeset=0
-Date: Wed, 21 Mar 2012 19:15:48 +0100
-Organization: privat
-Message-ID: <4F6A1AD4.2030302@01019freenet.de>
-References: <iz8bE-3ij-7@gated-at.bofh.it> <iGMdX-6N4-9@gated-at.bofh.it> <iGOz9-2vm-19@gated-at.bofh.it> <iHvuq-7MF-25@gated-at.bofh.it>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
-In-Reply-To: <iHvuq-7MF-25@gated-at.bofh.it>
-To: linux-kernel@vger.kernel.org
+	id S1752125Ab2CUSd5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 14:33:57 -0400
+X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
+From: "Michael J. Wang" <mjwang@broadcom.com>
+To: "Peter Zijlstra" <peterz@infradead.org>
+cc: "Yong Zhang" <yong.zhang0@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Michael J. Wang" <mjwang@broadcom.com>
+Subject: RE: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Thread-Topic: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Thread-Index: Ac0GHwijHkYM9zt3RLiiFsMKptWd3QBH0jYAAA4wyTD//5dRgIAAF8jwgABcB4D//9gBMA==
+Date: Wed, 21 Mar 2012 18:33:45 +0000
+Message-ID: <2EF88150C0EF2C43A218742ED384C1BC0FC85433@IRVEXCHMB08.corp.ad.broadcom.com>
+References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+ <20120321014050.GA19766@zhy>
+ <2EF88150C0EF2C43A218742ED384C1BC0FC84327@IRVEXCHMB08.corp.ad.broadcom.com>
+ <20120321021229.GB19766@zhy>
+ <2EF88150C0EF2C43A218742ED384C1BC0FC8438B@IRVEXCHMB08.corp.ad.broadcom.com>
+ <1332320819.18960.468.camel@twins>
+In-Reply-To: <1332320819.18960.468.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.161.125]
+MIME-Version: 1.0
+X-WSS-ID: 6374FEB23E07508610-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislaw!
-
-Stanislaw Gruszka schrieb:
-> On Mon, Mar 19, 2012 at 10:21:28AM -0700, Keith Packard wrote:
->> <#part sign=pgpmime>
->> On Mon, 19 Mar 2012 15:53:54 +0100, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
->>
->>> Keith, is there a chance that this bug can be fixed by i915 team?
->>
->> Yes, I'm working on figuring out how to actually reproduce this and then
->> work on a few work-arounds.
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Wednesday, March 21, 2012 2:07 AM
+> To: Michael J. Wang
+> Cc: Yong Zhang; mingo@elte.hu; linux-kernel@vger.kernel.org;
+> rostedt@goodmis.org
+> Subject: RE: [PATCH 1/1] scheduler: minor improvement to
+> pick_next_highest_task_rt in linux-3.3
 > 
-> This must be hardware dependent then, yesterday and today I tried to
-> reproduce on Lenovo T60 with:
+> On Wed, 2012-03-21 at 07:49 +0000, Michael J. Wang wrote:
+> > > > Should I reformat my patch and send it again?
+> > >
+> > > It'll be better, and I think Peter/Ingo will happy with it.
+> > >
+> >
+> > OK.  I will resend now.  Thanks for all your help!
 > 
-> 00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller [8086:27a2] (rev 03)
+> The resend didn't include the more details thing, so I fudged it by
+> hand. The queued thing now looks like this:
 > 
-> and there is no sign of corruption, I double checked if slab poisoning
-> is enabled.
+
+OK.  Thanks.  I was afraid the details were too verbose when the fix
+was obvious to the experts.  Anyways, I now know the format you
+are expecting, so I will do better next time.
+
+Michael
+
+> ---
+> Subject: sched, rt: Minor improvement to pick_next_highest_task_rt
+> From: Michael J Wang <mjwang@broadcom.com>
+> Date: Mon, 19 Mar 2012 22:26:19 +0000
 > 
->>> If not, can we disable hibernate on i915 with modeset=1 and add
->>> module option, which enable it for those who want to risk?
->>
->> I'd love to know if disabling modeset on just the booting kernel helps;
->> leaving the resuming kernel with modeset=1. I haven't been able to
->> reproduce this locally yet to test this theory though.
+> Avoid extra work by continuing on to the next rt_rq if the highest
+> prio task in current rt_rq is the same priority as our candidate
+> task.
 > 
-> On Lenovo T500 with:
+> More detailed explanation:  if next is not NULL, then we have found a
+> candidate task, and its priority is next->prio.  Now we are looking
+> for an even higher priority task in the other rt_rq's.  idx is the
+> highest priority in the current candidate rt_rq.  In the current 3.3
+> code, if idx is equal to next->prio, we would start scanning the tasks
+> in that rt_rq and replace the current candidate task with a task from
+> that rt_rq.  But the new task would only have a priority that is equal
+> to our previous candidate task, so we have not advanced our goal of
+> finding a higher prio task.  So we should avoid the extra work by
+> continuing on to the next rt_rq if idx is equal to next->prio.
 > 
-> 00:02.1 Display controller [0380]: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller [8086:2a43] (rev 07)
+> Signed-off-by: Michael J Wang <mjwang@broadcom.com>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link:
+> http://lkml.kernel.org/r/2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEX
+> CHMB08.corp.ad.broadcom.com
+> ---
+>  kernel/sched/rt.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> that is the case. Script attached on previous email trigger corruption
-> with modeset=1 (on various older and newer kernels) in less then 20
-> iterations. There is no corruption after 100 iterations if
-> i915.modeset=0 parameter is used. Some users on RH bugzilla confirmed
-> that workaround as well.
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1428,7 +1428,7 @@ static struct task_struct *pick_next_hig
+>  next_idx:
+>  		if (idx >= MAX_RT_PRIO)
+>  			continue;
+> -		if (next && next->prio < idx)
+> +		if (next && next->prio <= idx)
+>  			continue;
+>  		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+>  			struct task_struct *p;
 > 
-> If you want list of more i915 adapters where the problem happens, I can
-> check in our bugzilla and provide it.
-
-It happens too with a MSI CR620 notebook (Intel Core I5 M460):
-
-00:02.0 VGA compatible controller: Intel Corporation Core Processor
-Integrated Graphics Controller (rev 02) (prog-if 00 [VGA controller])
 
 
-I can confirm that modeset=0 during resume doesn't activate the error.
-But this is nothing new as I already wrote here[1], that the error
-doesn't come up as long as kms is disabled.
-
-
-Regards,
-Andreas
-
-[1] http://article.gmane.org/gmane.linux.kernel/1266499
