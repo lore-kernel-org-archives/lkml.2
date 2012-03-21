@@ -1,43 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965227Ab2CUKJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 06:09:47 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54895 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965181Ab2CUKJp (ORCPT
+	id S1030733Ab2CUKLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 06:11:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50038 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965188Ab2CUKLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 06:09:45 -0400
-Message-ID: <1332324581.2909.38.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] st: fix race in st_scsi_execute_end
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Petr Uzel <petr.uzel@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Willem Riede <osst@riede.org>, jack@suse.cz,
-        linux-scsi@vger.kernel.org, juergen.gross@ts.fujitsu.com
-Date: Wed, 21 Mar 2012 10:09:41 +0000
-In-Reply-To: <20111021113108.GA26181@foxbat.suse.cz>
-References: <20111021113108.GA26181@foxbat.suse.cz>
+	Wed, 21 Mar 2012 06:11:36 -0400
+Message-ID: <1332324687.12310.2.camel@phoenix>
+Subject: [PATCH] backlight: Use id->driver_data to differentiate lp855x chips
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Purdie <rpurdie@rpsys.net>, "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 21 Mar 2012 18:11:27 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-21 at 13:31 +0200, Petr Uzel wrote:
-> The call to complete() in st_scsi_execute_end() wakes up sleeping thread
-> in write_behind_check(), which frees the st_request, thus invalidating
-> the pointer to the associated bio structure, which is then passed to the
-> blk_rq_unmap_user(). Fix by storing pointer to bio structure into
-> temporary local variable.
-> 
-> This bug is present since at least linux-2.6.32.
+Current code has corresponding driver_data settings for different chip types.
+Use the driver_data to differentiate lp855x chips.
 
-This patch isn't applyable.  That's because gpg has mangled it.  You
-either need to turn it off or do detached signatures.
+Also make lp855x_is_valid_rom_area() return bool instead of int.
 
-Thanks,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/lp855x_bl.c |   28 +++++++++++++++++-----------
+ 1 files changed, 17 insertions(+), 11 deletions(-)
 
-James
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index ce0c53a..c2c420e 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -25,7 +25,8 @@
+ #define MAX_BRIGHTNESS		255
+ 
+ struct lp855x {
+-	const char *chipid;
++	const char *chipname;
++	enum lp855x_chip_id chip_id;
+ 	struct i2c_client *client;
+ 	struct backlight_device *bl;
+ 	struct device *dev;
+@@ -61,23 +62,27 @@ static int lp855x_write_byte(struct lp855x *lp, u8 reg, u8 data)
+ 	return ret;
+ }
+ 
+-static int lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
++static bool lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
+ {
+-	const char *id = lp->chipid;
+ 	u8 start, end;
+ 
+-	if (strstr(id, "lp8550") || strstr(id, "lp8551")
+-	    || strstr(id, "lp8552") || strstr(id, "lp8553")) {
++	switch (lp->chip_id) {
++	case LP8550:
++	case LP8551:
++	case LP8552:
++	case LP8553:
+ 		start = EEPROM_START;
+ 		end = EEPROM_END;
+-	} else if (strstr(id, "lp8556")) {
++		break;
++	case LP8556:
+ 		start = EPROM_START;
+ 		end = EPROM_END;
+-	} else {
+-		return 0;
++		break;
++	default:
++		return false;
+ 	}
+ 
+-	return (addr >= start && addr <= end) ? 1 : 0;
++	return (addr >= start && addr <= end) ? true : false;
+ }
+ 
+ static int lp855x_init_registers(struct lp855x *lp)
+@@ -199,7 +204,7 @@ static ssize_t lp855x_get_chip_id(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+ 	struct lp855x *lp = dev_get_drvdata(dev);
+-	return scnprintf(buf, BUF_SIZE, "%s\n", lp->chipid);
++	return scnprintf(buf, BUF_SIZE, "%s\n", lp->chipname);
+ }
+ 
+ static ssize_t lp855x_get_bl_ctl_mode(struct device *dev,
+@@ -253,7 +258,8 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 	lp->client = cl;
+ 	lp->dev = &cl->dev;
+ 	lp->pdata = pdata;
+-	lp->chipid = id->name;
++	lp->chipname = id->name;
++	lp->chip_id = id->driver_data;
+ 	i2c_set_clientdata(cl, lp);
+ 
+ 	mutex_init(&lp->xfer_lock);
+-- 
+1.7.5.4
+
 
 
