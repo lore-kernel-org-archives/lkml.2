@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760241Ab2CUVua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:50:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50903 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758221Ab2CUVu2 (ORCPT
+	id S1760442Ab2CUVyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:54:39 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37179 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab2CUVyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:50:28 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org,
-        x86@kernel.org
-Subject: [PATCH] x86: Fix typo in syscall table
-Date: Wed, 21 Mar 2012 22:50:08 +0100
-Message-Id: <1332366608-2695-2-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.9.4
-X-Provags-ID: V02:K0:HT6i2A7wsaej4Jle/SSwpZFHx8Rl723fFw/k6H0EH1W
- oTTonjiMnZ54OSC79sJc58r+xWfiP1NTd8/sUFHY7mWiRdOQvu
- xPhJVcfZU4cSMeL5bnWFbdm9z0R57KTFrWfyV76RNMrAY4UX0d
- LUMSGjGWk+CTmfuO0DG729VvAjg0i2Kxqm4z7sPZ+3KHmcO0hs
- 0nw7H71LRnGG2YLX0t5p+8FMlppeypO3dUQnsVfdXfbCltxYRL
- fTnHsPknw1WuE/WE3qmFO9CbvXnSpXCCgVfzl/a42KV7C7jGV+
- SJbv0y9Eme/tnsZ/LH4BR7JkdQuHG8Cx+fSJDd1ZtIHksONgYK
- 5xb/9IbMaB0geLVNy7P6lze7PhorUby2BoQUzLnRMtZzbI53+v
- dyGWuTETb3OXNvhI3gz1Dcf9Ky/AeWwUrMZay/pNFNLXumvhGO
- AsFZv
+	Wed, 21 Mar 2012 17:54:38 -0400
+Date: Wed, 21 Mar 2012 21:54:32 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [take 3] pohmelfs: call for inclusion
+Message-ID: <20120321215432.GR6589@ZenIV.linux.org.uk>
+References: <20120316121829.GA12685@ioremap.net>
+ <1331904553.5406.34.camel@joe2Laptop>
+ <20120316134314.GA19342@ioremap.net>
+ <1331907127.5406.48.camel@joe2Laptop>
+ <20120321202702.GA16713@ioremap.net>
+ <CA+55aFwm+wfMDFwpcngKwrQEeh53JpsDXr9CPU6Xf0mfGvJHKg@mail.gmail.com>
+ <20120321211835.GQ6589@ZenIV.linux.org.uk>
+ <20120321213704.GB16713@ioremap.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120321213704.GB16713@ioremap.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Syscall 282 was mistakenly named mq_getsetaddr instead of mq_getsetattr.
-When building uClibc against the Linux kernel this would result in a
-shared library that doesn't provide the mq_getattr() and mq_setattr()
-functions.
+On Thu, Mar 22, 2012 at 01:37:04AM +0400, Evgeniy Polyakov wrote:
+> On Wed, Mar 21, 2012 at 09:18:35PM +0000, Al Viro (viro@ZenIV.linux.org.uk) wrote:
+> > I think I've asked that question at least 3 times.  Never got anything
+> > resembling an answer...  Is that misspelled dentry_path()?  Or is something
+> > subtle going on and we really want different strings generated for
+> > chrooted processes here?
+> 
+> This is a special case which does bad things intentionally.
+> http-compatibility was added in _this_ POHMELFS on demand from people
+> who do want to access files by handle created from whole path. Not name
+> or inode number, but whole path, since that's only what is available in
+> http (or more generally via rest api)
+> 
+> It is limited, wrong and error-prone. It does not even support rename
+> and hardlinks. But that's what people want.
+> When I bind-remount part of the tree, things 'dissapear' from the tree.
+> Yes, this is really an uglymoron, but it was created for _some_ limited
+> case which rougly work in sandboxed environment only.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: stable@vger.kernel.org
-Cc: x86@kernel.org
----
- arch/x86/syscalls/syscall_32.tbl |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index dfa4993..7a35a6e 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -288,7 +288,7 @@
- 279	i386	mq_timedsend		sys_mq_timedsend		compat_sys_mq_timedsend
- 280	i386	mq_timedreceive		sys_mq_timedreceive		compat_sys_mq_timedreceive
- 281	i386	mq_notify		sys_mq_notify			compat_sys_mq_notify
--282	i386	mq_getsetaddr		sys_mq_getsetattr		compat_sys_mq_getsetattr
-+282	i386	mq_getsetattr		sys_mq_getsetattr		compat_sys_mq_getsetattr
- 283	i386	kexec_load		sys_kexec_load			compat_sys_kexec_load
- 284	i386	waitid			sys_waitid			compat_sys_waitid
- # 285 sys_setaltroot
--- 
-1.7.9.4
-
+IDGI.  Again, you are getting different strings for different processes,
+so that one inside a chroot generates shorter pathnames.  I'm not asking
+about races with rename() et.al. - it's obviously racy, but that's a
+separate problem.  Details, please - as far as I can tell, that code
+looks like a reimplementation of dentry_path() in a curiously broken
+way; what demands that particular breakage?  Again, the question of
+pathname stability, uniqueness, etc. is a separate story; why this specific
+weirdness?  Note that you are passing a to d_path() a vfsmount/dentry
+pair that violates all kinds of assertions - dentry->d_sb != mnt->mnt_sb
+more often than not, to start with.
