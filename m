@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab2CUEpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 00:45:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63073 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2CUEpK convert rfc822-to-8bit (ORCPT
+	id S1753977Ab2CUEsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 00:48:24 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:33053
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752889Ab2CUEsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 00:45:10 -0400
+	Wed, 21 Mar 2012 00:48:20 -0400
+X-SpamScore: -6
+X-BigFish: VPS-6(zcb8kz1432N98dKzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M17XCC-01-5FE-02
+X-M-MSG: 
+Date: Wed, 21 Mar 2012 12:48:06 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 5/8] libata-acpi: add ata port runtime D3Cold
+ support
+Message-ID: <20120321044806.GA6910@localhost.amd.com>
+References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
+ <1330592577-16546-6-git-send-email-ming.m.lin@intel.com>
+ <20120319033616.GA32695@localhost.amd.com>
+ <1332134820.17875.17.camel@minggr>
+ <20120319063544.GA2707@localhost.amd.com>
+ <1332140620.17875.35.camel@minggr>
 MIME-Version: 1.0
-In-Reply-To: <87wr6evmnn.fsf@ti.com>
-References: <1332274969-15782-1-git-send-email-rob.lee@linaro.org>
-	<87wr6evmnn.fsf@ti.com>
-Date: Tue, 20 Mar 2012 23:45:04 -0500
-Message-ID: <CAMXH7KGs7TsgvVbaher2oMW=s=Y+5TMnQcffDG8kcdAfn7z8zg@mail.gmail.com>
-Subject: Re: [PATCH v8 0/8] Consolidate cpuidle functionality
-From: Rob Lee <rob.lee@linaro.org>
-To: Kevin Hilman <khilman@ti.com>
-Cc: len.brown@intel.com, akpm@linux-foundation.org, rjw@sisk.pl,
-        robherring2@gmail.com, Baohua.Song@csr.com, amit.kucheria@linaro.org,
-        nicolas.ferre@atmel.com, linux@maxim.org.za, kgene.kim@samsung.com,
-        amit.kachhap@linaro.org, magnus.damm@gmail.com, nsekhar@ti.com,
-        daniel.lezcano@linaro.org, mturquette@linaro.org,
-        vincent.guittot@linaro.org, arnd.bergmann@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
-        nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
-        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
-        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
-        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1332140620.17875.35.camel@minggr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 21 Mar 2012 04:48:06.0977 (UTC) FILETIME=[CEDEDB10:01CD071D]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 7:10 PM, Kevin Hilman <khilman@ti.com> wrote:
-> Hi Rob,
->
-> Robert Lee <rob.lee@linaro.org> writes:
->
->> This patch series moves various functionality duplicated in platform
->> cpuidle drivers to the core cpuidle driver. Also, the platform irq
->> disabling was removed as it appears that all calls into
->> cpuidle_call_idle will have already called local_irq_disable().
->>
->> These changes have been pulled into linux-next.
->>
->> Len, Andrew, can a request be made for Linus to pull these changes?
->>
->> Acked-by: Jean Pihet<j-pihet@ti.com>  (v6)
->> Tested-by: Jean Pihet<j-pihet@ti.com>  (v6, omap3)
->> Tested-by: Amit Daniel<amit.kachhap@linaro.org>  (v6, Exynos4)
->> Tested-by: Robert Lee<rob.lee@linaro.org>  (imx51, imx6q)
->
-> Note that there's a space missing between the name and email in these
-> tags (and for Deepthi's below also.)  That seems to exist in all the
-> patches.
->
+On Mon, Mar 19, 2012 at 03:03:40PM +0800, Lin Ming wrote:
+> > 
+> > Sorry I didn't make it clear.
+> > The problem here is, we are going to set the device power state to D3
+> > cold, and current OSPM has no support for it.
+> > 
+> > Another patch of yours solved this problem by defining:
+> > 1 Device supports D3 cold if it has _PR3;
+> > 2 For a device to be put to D3 cold, power off all the power resources
+> > referenced in its _PR3.
+> > 
+> > Since this can't work for AMD's platform(there is no _PR3 for the sata
+> > acpi device), I would like to change this a little bit:
+> > 1 Device supports D3 cold if it has _PR3 or _PS3;
+> 
+> _PS3 may only mean D3Hot support for other device.
+> 
+> You mentioned that AMD platform defined a special device, named ODDZ.
+> 
+> How about device supports D3 cold if
+> 
+> _PR3 or (is ODDZ and ODDZ._PS3)?
 
-Thanks.  This is now fixed in my pull tree.
+Sounds good, I'll do this, thanks.
 
->> Reviewed-by: Kevin Hilman <khilman@ti.com>
->
-> For my Reviewed-by, it only applies to the core code and the OMAP
-> changes.  I haven't reviewed the other platform-specific drivers.  I
-> believe the same applies to Jean Pihet who works with me on OMAP.
->
->> Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> Reviewed-by: Deepthi Dharwar<deepthi@linux.vnet.ibm.com> (core cpuidle only)
->
-> Looks like you never heard from anyone actively working on at91,
-> shmobile, kirwood or davinci.
->
-> I'm not sure we should merge those platform-specific changes without an
-> ack from those platform maintainers.
->
-> For 3.4, maybe we should just merge the core code and the platforms that
-> have been reviewed/ack'd, and for 3.5, spent some time nagging the other
-> platform maintainers to review and test.
->
-> Kevin
->
+> 
+> > 2 For a device to be put to D3 cold, execute _PS3 first if available and
+> > then deal with _PR3 as above.
+> 
+> __acpi_bus_set_power(...) has done this.
+> 
+
+Actually not, current implementation of __acpi_bus_set_power will call
+_PS4 ;-)
+I'll need to think of a way to handle the D3 cold case.
+
+-Aaron
+
+
