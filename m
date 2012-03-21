@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab2CUJIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 05:08:10 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:50124
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753270Ab2CUJIH (ORCPT
+	id S1756937Ab2CUJIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 05:08:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36721 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769Ab2CUJIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 05:08:07 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 21 Mar 2012 17:19:20 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sjg@chromium.org" <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 5/6] dt: Document Tegra20/30 pinctrl binding
-Message-ID: <20120321091919.GA18592@shlinux2.ap.freescale.net>
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
- <1332265479-1260-5-git-send-email-swarren@wwwdotorg.org>
+	Wed, 21 Mar 2012 05:08:37 -0400
+Date: Wed, 21 Mar 2012 09:07:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH 1/2] clk: Fix error handling in fixed clock hardware
+	type register fn
+Message-ID: <20120321090730.GR15988@n2100.arm.linux.org.uk>
+References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com> <1332214706-675-1-git-send-email-skannan@codeaurora.org> <20120320071957.GH3852@pengutronix.de> <348585ed29fb3ff171267c03658e6c0d.squirrel@www.codeaurora.org> <CAJOA=zO=wp9oyuBZONk2oCRYdWU1c4qanKJik-8-sFg51p27MQ@mail.gmail.com> <4F693DD8.7070305@codeaurora.org> <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332265479-1260-5-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAJOA=zNteC+24oWpqkQJRnL8oqAJe2NcsjHNLbJb1MGN--VEsw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 01:44:38AM +0800, Stephen Warren wrote:
-> Define a new binding for the Tegra pin controller, which is capable of
-> defining all aspects of desired pin multiplexing and pin configuration.
-> This is all based on the new common pinctrl bindings.
-> 
-> Add Tegra30 binding based on Tegra20 binding.
-> 
-> Add some basic stuff that was missing before:
-> * How many and what reg property entries must be provided.
-> * An example.
-> 
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
-........
-> +Example board file extract:
-> +
-> +	pinctrl@70000000 {
-> +		sdio4_default {
-> +			atb {
-> +				nvidia,pins = "atb", "gma", "gme";
-> +				nvidia,function = "sdio4";
-> +				nvidia,pull = <0>;
-> +				nvidia,tristate = <0>;
-> +			};
-> +		};
-> +	};
-> +
-> +	sdhci@c8000600 {
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&sdio4_default>;
-A typo error? sdio4_default is not a phandle.
+On Tue, Mar 20, 2012 at 10:45:36PM -0700, Turquette, Mike wrote:
+> IIRC, that discussion was with respect to the .parent member of struct
+> clk.  It was decided that having .parent = NULL does not imply that a
+> clock is a root clock, but instead we rely on the CLK_IS_ROOT flag.  I
+> can't think of any other instance where a NULL clk when returned from
+> a registration function would be useful.
 
-> +Example board file extract:
-> +
-> +	pinctrl@70000000 {
-> +		sdmmc4_default: pinmux {
-> +			sdmmc4_clk_pcc4 {
-> +				nvidia,pins =	"sdmmc4_clk_pcc4",
-> +						"sdmmc4_rst_n_pcc3";
-> +				nvidia,function = "sdmmc4";
-> +				nvidia,pull = <0>;
-> +				nvidia,tristate = <0>;
-> +			};
-> +			sdmmc4_dat0_paa0 {
-> +				nvidia,pins =	"sdmmc4_dat0_paa0",
-> +						"sdmmc4_dat1_paa1",
-> +						"sdmmc4_dat2_paa2",
-> +						"sdmmc4_dat3_paa3",
-> +						"sdmmc4_dat4_paa4",
-> +						"sdmmc4_dat5_paa5",
-> +						"sdmmc4_dat6_paa6",
-> +						"sdmmc4_dat7_paa7";
-> +				nvidia,function = "sdmmc4";
-> +				nvidia,pull = <2>;
-> +				nvidia,tristate = <0>;
-It seems it does not support per pin config for tegra30 and we have to
-separate them in different nodes with same group config value, right?
+No.  What I've been saying is that in _drivers_ which use clk_get(),
+the error range is defined by IS_ERR(clk).  Every other value of
+clk must be assumed by the driver to be valid, no ifs or buts.
 
-Regards
-Dong Aisheng
+What the clk API assumes about struct clk is its own business.  If it
+wishes to interpret the NULL clk in a specific way, that's its business
+to do so.  But it's still not the drivers business to then go and
+interpret NULL as being any different from any other valid clock.
 
+This is part of the clk API contract, which is as I said in the first
+paragraph, and I keep on saying.  I'm not sure what's so difficult
+about this.
