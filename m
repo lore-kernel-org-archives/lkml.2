@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031114Ab2CUOEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 10:04:55 -0400
+	id S1031011Ab2CUOFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 10:05:24 -0400
 Received: from mail-wi0-f170.google.com ([209.85.212.170]:48256 "EHLO
 	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030972Ab2CUN7d (ORCPT
+	with ESMTP id S1030943Ab2CUN7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 09:59:33 -0400
+	Wed, 21 Mar 2012 09:59:30 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: [PATCH 12/32] nohz/cpuset: Wake up adaptive nohz CPU when a timer gets enqueued
-Date: Wed, 21 Mar 2012 14:58:18 +0100
-Message-Id: <1332338318-5958-14-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs it
+Date: Wed, 21 Mar 2012 14:58:17 +0100
+Message-Id: <1332338318-5958-13-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
 References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
@@ -33,10 +33,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wake up a CPU when a timer list timer is enqueued there and
-the CPU is in adaptive nohz mode. Sending an IPI to it makes
-it reconsidering the next timer to program on top of recent
-updates.
+If RCU is waiting for the current CPU to complete a grace
+period, don't turn off the tick. Unlike dynctik-idle, we
+are not necessarily going to enter into rcu extended quiescent
+state, so we may need to keep the tick to note current CPU's
+quiescent states.
+
+[added build fix from Zen Lin]
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -57,82 +60,97 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Zen Lin <zen@openhuawei.org>
 ---
- include/linux/sched.h |    4 ++--
- kernel/sched/core.c   |   24 +++++++++++++++++++++++-
- kernel/timer.c        |    2 +-
- 3 files changed, 26 insertions(+), 4 deletions(-)
+ include/linux/rcupdate.h |    1 +
+ kernel/rcutree.c         |    3 +--
+ kernel/time/tick-sched.c |   22 ++++++++++++++++++----
+ 3 files changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index dd5df2a..2cf5d9b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1992,9 +1992,9 @@ static inline void idle_task_exit(void) {}
- #endif
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 81c04f4..e06639e 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -184,6 +184,7 @@ static inline int rcu_preempt_depth(void)
+ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
+ extern void rcu_check_callbacks(int cpu, int user);
++extern int rcu_pending(int cpu);
+ struct notifier_block;
+ extern void rcu_idle_enter(void);
+ extern void rcu_idle_exit(void);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 6c4a672..e141c7e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -212,7 +212,6 @@ int rcu_cpu_stall_suppress __read_mostly;
+ module_param(rcu_cpu_stall_suppress, int, 0644);
  
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
--extern void wake_up_idle_cpu(int cpu);
-+extern void wake_up_nohz_cpu(int cpu);
- #else
--static inline void wake_up_idle_cpu(int cpu) { }
-+static inline void wake_up_nohz_cpu(int cpu) { }
- #endif
+ static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
+-static int rcu_pending(int cpu);
  
- extern unsigned int sysctl_sched_latency;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4f80a81..ba9e4d4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -576,7 +576,7 @@ unlock:
-  * account when the CPU goes back to idle and evaluates the timer
-  * wheel for the next timer event.
+ /*
+  * Return the number of RCU-sched batches processed thus far for debug & stats.
+@@ -1915,7 +1914,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+  * by the current CPU, returning 1 if so.  This function is part of the
+  * RCU implementation; it is -not- an exported member of the RCU API.
   */
--void wake_up_idle_cpu(int cpu)
-+static void wake_up_idle_cpu(int cpu)
+-static int rcu_pending(int cpu)
++int rcu_pending(int cpu)
  {
- 	struct rq *rq = cpu_rq(cpu);
- 
-@@ -606,6 +606,28 @@ void wake_up_idle_cpu(int cpu)
- 		smp_send_reschedule(cpu);
+ 	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
+ 	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 43fa7ac..4f99766 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -506,9 +506,21 @@ void tick_nohz_idle_enter(void)
+ 	local_irq_enable();
  }
  
-+static bool wake_up_cpuset_nohz_cpu(int cpu)
-+{
 +#ifdef CONFIG_CPUSETS_NO_HZ
-+	/*
-+	 * FIXME: We need to ensure that updates
-+	 * on cpu_adaptive_nohz_ref are visible right
-+	 * away.
-+	 */
-+	if (cpuset_cpu_adaptive_nohz(cpu)) {
-+		smp_cpuset_update_nohz(cpu);
-+		return true;
-+	}
-+#endif
-+	return false;
-+}
-+
-+void wake_up_nohz_cpu(int cpu)
++static bool can_stop_adaptive_tick(void)
 +{
-+	if (!wake_up_cpuset_nohz_cpu(cpu))
-+		wake_up_idle_cpu(cpu);
++	if (!sched_can_stop_tick())
++		return false;
++
++	/* Is there a grace period to complete ? */
++	if (rcu_pending(smp_processor_id()))
++		return false;
++
++	return true;
 +}
 +
- static inline bool got_nohz_idle_kick(void)
+ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
  {
+-#ifdef CONFIG_CPUSETS_NO_HZ
  	int cpu = smp_processor_id();
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a297ffc..c203297 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -926,7 +926,7 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	 * makes sure that a CPU on the way to idle can not evaluate
- 	 * the timer wheel.
- 	 */
--	wake_up_idle_cpu(cpu);
-+	wake_up_nohz_cpu(cpu);
- 	spin_unlock_irqrestore(&base->lock, flags);
+ 
+ 	if (!cpuset_adaptive_nohz() || is_idle_task(current))
+@@ -517,12 +529,14 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
+ 	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
+ 		return;
+ 
+-	if (!sched_can_stop_tick())
++	if (!can_stop_adaptive_tick())
+ 		return;
+ 
+ 	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
+-#endif
  }
- EXPORT_SYMBOL_GPL(add_timer_on);
++#else
++static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts) { }
++#endif
+ 
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -852,7 +866,7 @@ void tick_nohz_check_adaptive(void)
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+ 
+ 	if (ts->tick_stopped && !is_idle_task(current)) {
+-		if (!sched_can_stop_tick())
++		if (!can_stop_adaptive_tick())
+ 			tick_nohz_restart_sched_tick();
+ 	}
+ }
 -- 
 1.7.5.4
 
