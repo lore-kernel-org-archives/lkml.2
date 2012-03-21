@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758382Ab2CUX3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 19:29:06 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39935 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757929Ab2CUX3E (ORCPT
+	id S1754326Ab2CUXgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 19:36:07 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59560 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab2CUXgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 19:29:04 -0400
-Date: Thu, 22 Mar 2012 00:29:45 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Rebecca Schultz Zavin <rebecca@android.com>
-Cc: Rob Clark <rob.clark@linaro.org>, linaro-mm-sig@lists.linaro.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [Linaro-mm-sig] [PATCH] [RFC] dma-buf: mmap support
-Message-ID: <20120321232945.GC20712@phenom.ffwll.local>
-Mail-Followup-To: Rebecca Schultz Zavin <rebecca@android.com>,
-	Rob Clark <rob.clark@linaro.org>, linaro-mm-sig@lists.linaro.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	linux-media@vger.kernel.org
-References: <1332276785-1440-1-git-send-email-daniel.vetter@ffwll.ch>
- <CAF6AEGsBZ5BBBBGKZ5VSJOr70=9Qpp1pq+2m4d_vgsveW+3Atw@mail.gmail.com>
- <CALJcvx5+g2+tZPp-2PJg04AOzYuv0eZyih542M+ghjQLFeBmFg@mail.gmail.com>
- <20120321222528.GA20712@phenom.ffwll.local>
- <CALJcvx422uZ4Wb346=bvDvp1iLGOdSwJ6qKc5nLwRO4NQbQK1Q@mail.gmail.com>
+	Wed, 21 Mar 2012 19:36:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALJcvx422uZ4Wb346=bvDvp1iLGOdSwJ6qKc5nLwRO4NQbQK1Q@mail.gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <201203211716.45418.thomas@fjellstrom.ca>
+References: <201203211716.45418.thomas@fjellstrom.ca>
+Date: Wed, 21 Mar 2012 16:36:02 -0700
+Message-ID: <CAHtARFGL0ibTZ=ADOL+x4akVvF-d1LjWoqW-WAv8_AeX+O3RdA@mail.gmail.com>
+Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
+From: adam radford <aradford@gmail.com>
+To: thomas@fjellstrom.ca
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 03:44:38PM -0700, Rebecca Schultz Zavin wrote:
-> Couldn't this just as easily be handled by not having those mappings
-> be mapped cached or write combine to userspace?  They'd be coherent,
-> just slow.  I'm not sure we can actually say that all these cpu access
-> are necessary slow path operations anyway.  On android we do sometimes
-> decide to software render things to eliminate the overhead of
-> maintaining a hardware context for context switching the gpu.   If you
-> want cached or writecombine mappings you'd have to manage them
-> explicitly.  If you can't manage them explicitly you have to settle
-> for slow.  That seems reasonable to me.
+On Wed, Mar 21, 2012 at 4:16 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
+> I recently got an IBM M1015 (MegaRaid 9240-8i) card, and after getting a new
+> motherboard, the system now boots, but the megaraid_sas driver seems to be
+> getting stuck when trying to initialize the card.
+>
+> Looking through the source, it seems to be stuck in the megasas_adp_reset_gen2
+> function, in the while loop at the end. Now, according to the code it can't
+> actually get stuck there permanently, but it does take quite a while for the
+> loop to finish, and the udev timeout messages to stop.
+>
+> I've looked around quite a bit, but haven't found any solutions thus far. If
+> anyone could point me in the right direction I'd appreciate it.
 
-Well the usual approach is writecombine, which doesn't need any explicit
-cache management. 
+If you are getting controller resets during driver load, you must not
+be getting interrupts or firmware is not responding to the inquiry
+roll-call.  Make sure you have the latest firmware.
 
-> As far as I can tell with explicit operations I have to invalidate
-> before touching from mmap and clean after.  With these implicit ones,
-> I stil have to invalidate and clean, but now I also have to remap them
-> before and after.  I don't know what the performance hit of this
-> remapping step is, but I'd like to if you have any insight.
+The code at the end of megasas_adp_reset_gen2() just looks for
+DIAG_RESET_ADAPTER flag to clear on the host diag register when
+issuing a controller reset... that should happen almost immediately
+unless there is a hardware or firmware issue.
 
-We have a few inefficiencies in the drm/i915 fault path which makes it
-slow, but generally pagefault performance should be rather quick (at least
-quicker than flushing the actual data). At least if your fault handler is
-somewhat clever and prefaults a few more pages in both x and y direction.
+Are you sure your 'new' motherboard is actually good ?
 
-But if that's too slow, I'm open to extending dma-buf later on to support
-more explicit cache management for userspace mmaps (like I've explained
-below in my previous mail). I just think we should have real benchmark
-results (and hence some real users of dma-buf) before we add this
-complexity. Atm I have no idea whether it's worth it. After all, as soon
-as we expect a lot of rendering/processing, some special dsp/gpu/whatever
-is likely to take over.
+Can you move your megaraid 9240-8i into a 'known working' system and re-test ?
 
-> > Imo the best way to enable cached mappings is to later on extend dma-buf
-> > (as soon as we have some actual exporters/importers in the mainline
-> > kernel) with an optional cached_mmap interface which requires explict
-> > prepare_mmap_access/finish_mmap_acces calls. Then if both exporter and
-> > importer support this, it could get used - otherwise the dma-buf layer
-> > could transparently fall back to coherent mappings.
-
-Yours, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+-Adam
