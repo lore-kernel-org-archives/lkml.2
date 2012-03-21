@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758951Ab2CUVQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 17:16:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61339 "EHLO
+	id S1758655Ab2CUVSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 17:18:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47498 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757623Ab2CUVQe (ORCPT
+	with ESMTP id S1758092Ab2CUVQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 17:16:34 -0400
-Message-Id: <20120321211448.316064855@linuxfoundation.org>
+	Wed, 21 Mar 2012 17:16:40 -0400
+Message-Id: <20120321211448.676904040@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 21 Mar 2012 14:14:49 -0700
+Date: Wed, 21 Mar 2012 14:14:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Slicky Devil <slicky.dvl@gmail.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [ 1/8] nilfs2: fix NULL pointer dereference in nilfs_load_super_block()
+        alan@lxorguk.ukuu.org.uk, Simon Kirby <sim@netnation.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 5/8] tcp: fix syncookie regression
 In-Reply-To: <20120321211522.GA28233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +26,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit d7178c79d9b7c5518f9943188091a75fc6ce0675 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-According to the report from Slicky Devil, nilfs caused kernel oops at
-nilfs_load_super_block function during mount after he shrank the
-partition without resizing the filesystem:
+[ Upstream commit dfd25ffffc132c00070eed64200e8950da5d7e9d ]
 
- BUG: unable to handle kernel NULL pointer dereference at 00000048
- IP: [<d0d7a08e>] nilfs_load_super_block+0x17e/0x280 [nilfs2]
- *pde = 00000000
- Oops: 0000 [#1] PREEMPT SMP
- ...
- Call Trace:
-  [<d0d7a87b>] init_nilfs+0x4b/0x2e0 [nilfs2]
-  [<d0d6f707>] nilfs_mount+0x447/0x5b0 [nilfs2]
-  [<c0226636>] mount_fs+0x36/0x180
-  [<c023d961>] vfs_kern_mount+0x51/0xa0
-  [<c023ddae>] do_kern_mount+0x3e/0xe0
-  [<c023f189>] do_mount+0x169/0x700
-  [<c023fa9b>] sys_mount+0x6b/0xa0
-  [<c04abd1f>] sysenter_do_call+0x12/0x28
- Code: 53 18 8b 43 20 89 4b 18 8b 4b 24 89 53 1c 89 43 24 89 4b 20 8b 43
- 20 c7 43 2c 00 00 00 00 23 75 e8 8b 50 68 89 53 28 8b 54 b3 20 <8b> 72
- 48 8b 7a 4c 8b 55 08 89 b3 84 00 00 00 89 bb 88 00 00 00
- EIP: [<d0d7a08e>] nilfs_load_super_block+0x17e/0x280 [nilfs2] SS:ESP 0068:ca9bbdcc
- CR2: 0000000000000048
+commit ea4fc0d619 (ipv4: Don't use rt->rt_{src,dst} in ip_queue_xmit())
+added a serious regression on synflood handling.
 
-This turned out due to a defect in an error path which runs if the
-calculated location of the secondary super block was invalid.
+Simon Kirby discovered a successful connection was delayed by 20 seconds
+before being responsive.
 
-This patch fixes it and eliminates the reported oops.
+In my tests, I discovered that xmit frames were lost, and needed ~4
+retransmits and a socket dst rebuild before being really sent.
 
-Reported-by: Slicky Devil <slicky.dvl@gmail.com>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Slicky Devil <slicky.dvl@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In case of syncookie initiated connection, we use a different path to
+initialize the socket dst, and inet->cork.fl.u.ip4 is left cleared.
+
+As ip_queue_xmit() now depends on inet flow being setup, fix this by
+copying the temp flowi4 we use in cookie_v4_check().
+
+Reported-by: Simon Kirby <sim@netnation.com>
+Bisected-by: Simon Kirby <sim@netnation.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nilfs2/the_nilfs.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/syncookies.c |   30 ++++++++++++++++--------------
+ net/ipv4/tcp_ipv4.c   |   10 +++++++---
+ 2 files changed, 23 insertions(+), 17 deletions(-)
 
---- a/fs/nilfs2/the_nilfs.c
-+++ b/fs/nilfs2/the_nilfs.c
-@@ -515,6 +515,7 @@ static int nilfs_load_super_block(struct
- 		brelse(sbh[1]);
- 		sbh[1] = NULL;
- 		sbp[1] = NULL;
-+		valid[1] = 0;
- 		swp = 0;
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -277,6 +277,7 @@ struct sock *cookie_v4_check(struct sock
+ 	struct rtable *rt;
+ 	__u8 rcv_wscale;
+ 	bool ecn_ok = false;
++	struct flowi4 fl4;
+ 
+ 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
+ 		goto out;
+@@ -344,20 +345,16 @@ struct sock *cookie_v4_check(struct sock
+ 	 * hasn't changed since we received the original syn, but I see
+ 	 * no easy way to do this.
+ 	 */
+-	{
+-		struct flowi4 fl4;
+-
+-		flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+-				   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+-				   inet_sk_flowi_flags(sk),
+-				   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+-				   ireq->loc_addr, th->source, th->dest);
+-		security_req_classify_flow(req, flowi4_to_flowi(&fl4));
+-		rt = ip_route_output_key(sock_net(sk), &fl4);
+-		if (IS_ERR(rt)) {
+-			reqsk_free(req);
+-			goto out;
+-		}
++	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
++			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
++			   inet_sk_flowi_flags(sk),
++			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
++			   ireq->loc_addr, th->source, th->dest);
++	security_req_classify_flow(req, flowi4_to_flowi(&fl4));
++	rt = ip_route_output_key(sock_net(sk), &fl4);
++	if (IS_ERR(rt)) {
++		reqsk_free(req);
++		goto out;
  	}
- 	if (!valid[swp]) {
+ 
+ 	/* Try to redo what tcp_v4_send_synack did. */
+@@ -371,5 +368,10 @@ struct sock *cookie_v4_check(struct sock
+ 	ireq->rcv_wscale  = rcv_wscale;
+ 
+ 	ret = get_cookie_sock(sk, skb, req, &rt->dst);
++	/* ip_queue_xmit() depends on our flow being setup
++	 * Normal sockets get it right from inet_csk_route_child_sock()
++	 */
++	if (ret)
++		inet_sk(ret)->cork.fl.u.ip4 = fl4;
+ out:	return ret;
+ }
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1454,9 +1454,13 @@ struct sock *tcp_v4_syn_recv_sock(struct
+ 		inet_csk(newsk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+ 	newinet->inet_id = newtp->write_seq ^ jiffies;
+ 
+-	if (!dst && (dst = inet_csk_route_child_sock(sk, newsk, req)) == NULL)
+-		goto put_and_exit;
+-
++	if (!dst) {
++		dst = inet_csk_route_child_sock(sk, newsk, req);
++		if (!dst)
++			goto put_and_exit;
++	} else {
++		/* syncookie case : see end of cookie_v4_check() */
++	}
+ 	sk_setup_caps(newsk, dst);
+ 
+ 	tcp_mtup_init(newsk);
 
 
