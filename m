@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab2CUWSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 18:18:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42808 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760240Ab2CUWSD (ORCPT
+	id S965146Ab2CUWS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 18:18:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65325 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964926Ab2CUWSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 18:18:03 -0400
+	Wed, 21 Mar 2012 18:18:13 -0400
 From: Tejun Heo <tj@kernel.org>
 To: glommer@parallels.com, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Tejun Heo <tj@kernel.org>,
-        Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 06/12] cgroup: convert all non-memcg controllers to the new cftype interface
-Date: Wed, 21 Mar 2012 15:17:39 -0700
-Message-Id: <1332368265-21586-7-git-send-email-tj@kernel.org>
+        ctalbott@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 11/12] cgroup: introduce struct cfent
+Date: Wed, 21 Mar 2012 15:17:44 -0700
+Message-Id: <1332368265-21586-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
 References: <1332368265-21586-1-git-send-email-tj@kernel.org>
@@ -26,317 +22,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert debug, freezer, cpuset, cpu_cgroup, cpuacct, net_prio, blkio,
-net_cls and device controllers to use the new cftype based interface.
-Termination entry is added to cftype arrays and populate callbacks are
-replaced with cgroup_subsys->base_cftypes initializations.
+This patch adds cfent (cgroup file entry) which is the association
+between a cgroup and a file.  This is in-cgroup representation of
+files under a cgroup directory.  This simplifies walking walking
+cgroup files and thus cgroup_clear_directory(), which is now
+implemented in two parts - cgroup_rm_file() and a loop around it.
 
-This is functionally identical transformation.  There shouldn't be any
-visible behavior change.
+cgroup_rm_file() will be used to implement cftype removal and cfent is
+scheduled to serve cgroup specific per-file data (e.g. for sysfs-like
+"sever" semantics).
 
-memcg is rather special and will be converted separately.
+v2: - cfe was freed from cgroup_rm_file() which led to use-after-free
+      if the file had openers at the time of removal.  Moved to
+      cgroup_diput().
+
+    - cgroup_clear_directory() triggered WARN_ON_ONCE() if d_subdirs
+      wasn't empty after removing all files.  This triggered
+      spuriously if some files were open during directory clearing.
+      Removed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Glauber Costa <glommer@parallels.com>
 ---
- block/blk-cgroup.c        |    9 ++-------
- kernel/cgroup.c           |   10 +++-------
- kernel/cgroup_freezer.c   |   11 +++--------
- kernel/cpuset.c           |   31 ++++++++++---------------------
- kernel/sched/core.c       |   16 ++++------------
- net/core/netprio_cgroup.c |    8 ++------
- net/sched/cls_cgroup.c    |    8 ++------
- security/device_cgroup.c  |   10 ++--------
- 8 files changed, 28 insertions(+), 75 deletions(-)
+ include/linux/cgroup.h |    1 +
+ kernel/cgroup.c        |  111 ++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 76 insertions(+), 36 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index c0cbe8b..a13e189 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -1515,14 +1515,9 @@ struct cftype blkio_files[] = {
- 		.read_map = blkiocg_file_read_map,
- 	},
- #endif
-+	{ }	/* terminate */
- };
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 45869d7..bfe5470 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -175,6 +175,7 @@ struct cgroup {
+ 	 */
+ 	struct list_head sibling;	/* my parent's children */
+ 	struct list_head children;	/* my children */
++	struct list_head files;		/* my files */
  
--static int blkiocg_populate(struct cgroup_subsys *subsys, struct cgroup *cgroup)
--{
--	return cgroup_add_files(cgroup, subsys, blkio_files,
--				ARRAY_SIZE(blkio_files));
--}
--
- static void blkiocg_destroy(struct cgroup *cgroup)
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
-@@ -1642,11 +1637,11 @@ struct cgroup_subsys blkio_subsys = {
- 	.can_attach = blkiocg_can_attach,
- 	.attach = blkiocg_attach,
- 	.destroy = blkiocg_destroy,
--	.populate = blkiocg_populate,
- #ifdef CONFIG_BLK_CGROUP
- 	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
- 	.subsys_id = blkio_subsys_id,
- #endif
-+	.base_cftypes = blkio_files,
- 	.use_id = 1,
- 	.module = THIS_MODULE,
- };
+ 	struct cgroup *parent;		/* my parent */
+ 	struct dentry __rcu *dentry;	/* cgroup fs entry, RCU protected */
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 45657d1..d6fe34a 100644
+index d64f16d..67daea9 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -5354,19 +5354,15 @@ static struct cftype debug_files[] =  {
- 		.name = "releasable",
- 		.read_u64 = releasable_read,
- 	},
--};
- 
--static int debug_populate(struct cgroup_subsys *ss, struct cgroup *cont)
--{
--	return cgroup_add_files(cont, ss, debug_files,
--				ARRAY_SIZE(debug_files));
--}
-+	{ }	/* terminate */
-+};
- 
- struct cgroup_subsys debug_subsys = {
- 	.name = "debug",
- 	.create = debug_create,
- 	.destroy = debug_destroy,
--	.populate = debug_populate,
- 	.subsys_id = debug_subsys_id,
-+	.base_cftypes = debug_files,
- };
- #endif /* CONFIG_CGROUP_DEBUG */
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index f86e939..3649fc6 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -358,24 +358,19 @@ static int freezer_write(struct cgroup *cgroup,
- static struct cftype files[] = {
- 	{
- 		.name = "state",
-+		.flags = CFTYPE_NOT_ON_ROOT,
- 		.read_seq_string = freezer_read,
- 		.write_string = freezer_write,
- 	},
-+	{ }	/* terminate */
- };
- 
--static int freezer_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
--{
--	if (!cgroup->parent)
--		return 0;
--	return cgroup_add_files(cgroup, ss, files, ARRAY_SIZE(files));
--}
--
- struct cgroup_subsys freezer_subsys = {
- 	.name		= "freezer",
- 	.create		= freezer_create,
- 	.destroy	= freezer_destroy,
--	.populate	= freezer_populate,
- 	.subsys_id	= freezer_subsys_id,
- 	.can_attach	= freezer_can_attach,
- 	.fork		= freezer_fork,
-+	.base_cftypes	= files,
- };
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 5d57583..81cf9b7 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1792,28 +1792,17 @@ static struct cftype files[] = {
- 		.write_u64 = cpuset_write_u64,
- 		.private = FILE_SPREAD_SLAB,
- 	},
--};
--
--static struct cftype cft_memory_pressure_enabled = {
--	.name = "memory_pressure_enabled",
--	.read_u64 = cpuset_read_u64,
--	.write_u64 = cpuset_write_u64,
--	.private = FILE_MEMORY_PRESSURE_ENABLED,
--};
- 
--static int cpuset_populate(struct cgroup_subsys *ss, struct cgroup *cont)
--{
--	int err;
-+	{
-+		.name = "memory_pressure_enabled",
-+		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_MEMORY_PRESSURE_ENABLED,
-+	},
- 
--	err = cgroup_add_files(cont, ss, files, ARRAY_SIZE(files));
--	if (err)
--		return err;
--	/* memory_pressure_enabled is in root cpuset only */
--	if (!cont->parent)
--		err = cgroup_add_file(cont, ss,
--				      &cft_memory_pressure_enabled);
--	return err;
--}
-+	{ }	/* terminate */
-+};
+@@ -148,6 +148,15 @@ struct cgroupfs_root {
+ static struct cgroupfs_root rootnode;
  
  /*
-  * post_clone() is called during cgroup_create() when the
-@@ -1914,9 +1903,9 @@ struct cgroup_subsys cpuset_subsys = {
- 	.destroy = cpuset_destroy,
- 	.can_attach = cpuset_can_attach,
- 	.attach = cpuset_attach,
--	.populate = cpuset_populate,
- 	.post_clone = cpuset_post_clone,
- 	.subsys_id = cpuset_subsys_id,
-+	.base_cftypes = files,
- 	.early_init = 1,
- };
++ * cgroupfs file entry, pointed to from leaf dentry->d_fsdata.
++ */
++struct cfent {
++	struct list_head		node;
++	struct dentry			*dentry;
++	struct cftype			*type;
++};
++
++/*
+  * CSS ID -- ID per subsys's Cgroup Subsys State(CSS). used only when
+  * cgroup_subsys->use_id != 0.
+  */
+@@ -287,11 +296,16 @@ static inline struct cgroup *__d_cgrp(struct dentry *dentry)
+ 	return dentry->d_fsdata;
+ }
  
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ff12f72..90815b5 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7902,13 +7902,9 @@ static struct cftype cpu_files[] = {
- 		.write_u64 = cpu_rt_period_write_uint,
- 	},
- #endif
-+	{ }	/* terminate */
- };
+-static inline struct cftype *__d_cft(struct dentry *dentry)
++static inline struct cfent *__d_cfe(struct dentry *dentry)
+ {
+ 	return dentry->d_fsdata;
+ }
  
--static int cpu_cgroup_populate(struct cgroup_subsys *ss, struct cgroup *cont)
++static inline struct cftype *__d_cft(struct dentry *dentry)
++{
++	return __d_cfe(dentry)->type;
++}
++
+ /* the list of cgroups eligible for automatic release. Protected by
+  * release_list_lock */
+ static LIST_HEAD(release_list);
+@@ -877,6 +891,12 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 		BUG_ON(!list_empty(&cgrp->pidlists));
+ 
+ 		kfree_rcu(cgrp, rcu_head);
++	} else {
++		struct cfent *cfe = __d_cfe(dentry);
++
++		WARN_ONCE(!list_empty(&cfe->node),
++			  "cfe still linked for %s\n", cfe->type->name);
++		kfree(cfe);
+ 	}
+ 	iput(inode);
+ }
+@@ -895,34 +915,36 @@ static void remove_dir(struct dentry *d)
+ 	dput(parent);
+ }
+ 
+-static void cgroup_clear_directory(struct dentry *dentry)
 -{
--	return cgroup_add_files(cont, ss, cpu_files, ARRAY_SIZE(cpu_files));
--}
+-	struct list_head *node;
 -
- struct cgroup_subsys cpu_cgroup_subsys = {
- 	.name		= "cpu",
- 	.create		= cpu_cgroup_create,
-@@ -7916,8 +7912,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- 	.can_attach	= cpu_cgroup_can_attach,
- 	.attach		= cpu_cgroup_attach,
- 	.exit		= cpu_cgroup_exit,
--	.populate	= cpu_cgroup_populate,
- 	.subsys_id	= cpu_cgroup_subsys_id,
-+	.base_cftypes	= cpu_files,
- 	.early_init	= 1,
- };
- 
-@@ -8102,13 +8098,9 @@ static struct cftype files[] = {
- 		.name = "stat",
- 		.read_map = cpuacct_stats_show,
- 	},
-+	{ }	/* terminate */
- };
- 
--static int cpuacct_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
--{
--	return cgroup_add_files(cgrp, ss, files, ARRAY_SIZE(files));
--}
+-	BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
+-	spin_lock(&dentry->d_lock);
+-	node = dentry->d_subdirs.next;
+-	while (node != &dentry->d_subdirs) {
+-		struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
 -
+-		spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
+-		list_del_init(node);
+-		if (d->d_inode) {
+-			/* This should never be called on a cgroup
+-			 * directory with child cgroups */
+-			BUG_ON(d->d_inode->i_mode & S_IFDIR);
+-			dget_dlock(d);
+-			spin_unlock(&d->d_lock);
+-			spin_unlock(&dentry->d_lock);
+-			d_delete(d);
+-			simple_unlink(dentry->d_inode, d);
+-			dput(d);
+-			spin_lock(&dentry->d_lock);
+-		} else
+-			spin_unlock(&d->d_lock);
+-		node = dentry->d_subdirs.next;
++static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
++{
++	struct cfent *cfe;
++
++	lockdep_assert_held(&cgrp->dentry->d_inode->i_mutex);
++	lockdep_assert_held(&cgroup_mutex);
++
++	list_for_each_entry(cfe, &cgrp->files, node) {
++		struct dentry *d = cfe->dentry;
++
++		if (cft && cfe->type != cft)
++			continue;
++
++		dget(d);
++		d_delete(d);
++		simple_unlink(d->d_inode, d);
++		list_del_init(&cfe->node);
++		dput(d);
++
++		return 0;
+ 	}
+-	spin_unlock(&dentry->d_lock);
++	return -ENOENT;
++}
++
++static void cgroup_clear_directory(struct dentry *dir)
++{
++	struct cgroup *cgrp = __d_cgrp(dir);
++
++	while (!list_empty(&cgrp->files))
++		cgroup_rm_file(cgrp, NULL);
+ }
+ 
  /*
-  * charge this task's execution time to its accounting group.
-  *
-@@ -8140,7 +8132,7 @@ struct cgroup_subsys cpuacct_subsys = {
- 	.name = "cpuacct",
- 	.create = cpuacct_create,
- 	.destroy = cpuacct_destroy,
--	.populate = cpuacct_populate,
- 	.subsys_id = cpuacct_subsys_id,
-+	.base_cftypes = files,
- };
- #endif	/* CONFIG_CGROUP_CPUACCT */
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index c802613..aa1d391 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -241,21 +241,17 @@ static struct cftype ss_files[] = {
- 		.read_map = read_priomap,
- 		.write_string = write_priomap,
- 	},
-+	{ }	/* terminate */
- };
+@@ -1352,6 +1374,7 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ {
+ 	INIT_LIST_HEAD(&cgrp->sibling);
+ 	INIT_LIST_HEAD(&cgrp->children);
++	INIT_LIST_HEAD(&cgrp->files);
+ 	INIT_LIST_HEAD(&cgrp->css_sets);
+ 	INIT_LIST_HEAD(&cgrp->release_list);
+ 	INIT_LIST_HEAD(&cgrp->pidlists);
+@@ -2623,7 +2646,9 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+ 			   const struct cftype *cft)
+ {
+ 	struct dentry *dir = cgrp->dentry;
++	struct cgroup *parent = __d_cgrp(dir);
+ 	struct dentry *dentry;
++	struct cfent *cfe;
+ 	int error;
+ 	umode_t mode;
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+@@ -2639,17 +2664,31 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+ 		strcat(name, ".");
+ 	}
+ 	strcat(name, cft->name);
++
+ 	BUG_ON(!mutex_is_locked(&dir->d_inode->i_mutex));
++
++	cfe = kzalloc(sizeof(*cfe), GFP_KERNEL);
++	if (!cfe)
++		return -ENOMEM;
++
+ 	dentry = lookup_one_len(name, dir, strlen(name));
+-	if (!IS_ERR(dentry)) {
+-		mode = cgroup_file_mode(cft);
+-		error = cgroup_create_file(dentry, mode | S_IFREG,
+-						cgrp->root->sb);
+-		if (!error)
+-			dentry->d_fsdata = (void *)cft;
+-		dput(dentry);
+-	} else
++	if (IS_ERR(dentry)) {
+ 		error = PTR_ERR(dentry);
++		goto out;
++	}
++
++	mode = cgroup_file_mode(cft);
++	error = cgroup_create_file(dentry, mode | S_IFREG, cgrp->root->sb);
++	if (!error) {
++		cfe->type = (void *)cft;
++		cfe->dentry = dentry;
++		dentry->d_fsdata = cfe;
++		list_add_tail(&cfe->node, &parent->files);
++		cfe = NULL;
++	}
++	dput(dentry);
++out:
++	kfree(cfe);
+ 	return error;
+ }
  
--static int cgrp_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
--{
--	return cgroup_add_files(cgrp, ss, ss_files, ARRAY_SIZE(ss_files));
--}
--
- struct cgroup_subsys net_prio_subsys = {
- 	.name		= "net_prio",
- 	.create		= cgrp_create,
- 	.destroy	= cgrp_destroy,
--	.populate	= cgrp_populate,
- #ifdef CONFIG_NETPRIO_CGROUP
- 	.subsys_id	= net_prio_subsys_id,
- #endif
-+	.base_cftypes	= ss_files,
- 	.module		= THIS_MODULE
- };
- 
-diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
-index 024df8a..7743ea8 100644
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -70,21 +70,17 @@ static struct cftype ss_files[] = {
- 		.read_u64 = read_classid,
- 		.write_u64 = write_classid,
- 	},
-+	{ }	/* terminate */
- };
- 
--static int cgrp_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
--{
--	return cgroup_add_files(cgrp, ss, ss_files, ARRAY_SIZE(ss_files));
--}
--
- struct cgroup_subsys net_cls_subsys = {
- 	.name		= "net_cls",
- 	.create		= cgrp_create,
- 	.destroy	= cgrp_destroy,
--	.populate	= cgrp_populate,
- #ifdef CONFIG_NET_CLS_CGROUP
- 	.subsys_id	= net_cls_subsys_id,
- #endif
-+	.base_cftypes	= ss_files,
- 	.module		= THIS_MODULE,
- };
- 
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index c43a332..442204c 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -447,22 +447,16 @@ static struct cftype dev_cgroup_files[] = {
- 		.read_seq_string = devcgroup_seq_read,
- 		.private = DEVCG_LIST,
- 	},
-+	{ }	/* terminate */
- };
- 
--static int devcgroup_populate(struct cgroup_subsys *ss,
--				struct cgroup *cgroup)
--{
--	return cgroup_add_files(cgroup, ss, dev_cgroup_files,
--					ARRAY_SIZE(dev_cgroup_files));
--}
--
- struct cgroup_subsys devices_subsys = {
- 	.name = "devices",
- 	.can_attach = devcgroup_can_attach,
- 	.create = devcgroup_create,
- 	.destroy = devcgroup_destroy,
--	.populate = devcgroup_populate,
- 	.subsys_id = devices_subsys_id,
-+	.base_cftypes = dev_cgroup_files,
- };
- 
- int __devcgroup_inode_permission(struct inode *inode, int mask)
 -- 
 1.7.7.3
 
