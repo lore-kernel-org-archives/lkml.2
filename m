@@ -1,77 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2CUIDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 04:03:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38972 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2CUIDT (ORCPT
+	id S1753037Ab2CUIRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 04:17:10 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39908 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2CUIRG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 04:03:19 -0400
-Date: Wed, 21 Mar 2012 01:03:13 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Donggeun Kim <dg77.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: build failure after merge of the final tree (mfd and
- input trees related)
-Message-ID: <20120321080313.GA12410@core.coreip.homeip.net>
-References: <20120321182930.6f75199b7406044669891a14@canb.auug.org.au>
+	Wed, 21 Mar 2012 04:17:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321182930.6f75199b7406044669891a14@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
+References: <5535e246-b7c0-4f69-a27b-1abbadd42db0@zmail14.collab.prod.int.phx2.redhat.com>
+	<65a23329-d843-4859-8b7b-430f12882492@zmail14.collab.prod.int.phx2.redhat.com>
+	<CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
+Date: Wed, 21 Mar 2012 16:17:03 +0800
+Message-ID: <CABqxG0eF2=PJPMLGm3uzr-D-BSEneB0tnOAzg0zEmMBszs0i1A@mail.gmail.com>
+Subject: Re: crash dump memory reservation regression
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: CAI Qian <caiqian@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Tue, Mar 13, 2012 at 1:31 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sun, Mar 11, 2012 at 8:00 PM, CAI Qian <caiqian@redhat.com> wrote:
+>> commit 3661ca66a42e306aaf53246fb75aec1ea01be0f0
+>> x86, memblock: Fix crashkernel allocation
+>>
+>> introduced a regression that crashkernel=512M
+>> according to bisecting will fail like this,
+>>
+>> crashkernel reservation failed - No suitable area found.
+>> The full dmesg can be found here.
+>>
+>> http://people.redhat.com/qcai/dmesg.bad
+>
+> The reason is: we put pagetable for [0,2g) just blow 512M.
+>
+> Later we have other patches that will put pagetable for [0,2g) just
+> below 2g. even at that time we only can access 512M, because we use
+> early_ioremap to access page table.
+>
+> But that good_end part get reverted in following because it cause s4
+> resume fail.
+>
+> So there will be pagetable around just below 512M again. So you have
+> no chance to get 512M below 768M.
+>
+> Solution will be:
+> 1.  remove the good_end setting for 64 bit again. and root cause S4 resume.
 
-On Wed, Mar 21, 2012 at 06:29:30PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> In file included from drivers/leds/leds-max8997.c:18:0:
-> include/linux/mfd/max8997.h:205:6: error: nested redefinition of 'enum max8997_haptic_motor_type'
-> include/linux/mfd/max8997.h:205:6: error: redeclaration of 'enum max8997_haptic_motor_type'
-> include/linux/mfd/max8997.h:134:6: note: originally defined here
-> include/linux/mfd/max8997.h:206:2: error: redeclaration of enumerator 'MAX8997_HAPTIC_ERM'
-> include/linux/mfd/max8997.h:135:2: note: previous definition of 'MAX8997_HAPTIC_ERM' was here
-> include/linux/mfd/max8997.h:207:2: error: redeclaration of enumerator 'MAX8997_HAPTIC_LRA'
-> include/linux/mfd/max8997.h:136:2: note: previous definition of 'MAX8997_HAPTIC_LRA' was here
-> include/linux/mfd/max8997.h:210:6: error: nested redefinition of 'enum max8997_haptic_pulse_mode'
-> include/linux/mfd/max8997.h:210:6: error: redeclaration of 'enum max8997_haptic_pulse_mode'
-> include/linux/mfd/max8997.h:139:6: note: originally defined here
-> include/linux/mfd/max8997.h:211:2: error: redeclaration of enumerator 'MAX8997_EXTERNAL_MODE'
-> include/linux/mfd/max8997.h:140:2: note: previous definition of 'MAX8997_EXTERNAL_MODE' was here
-> include/linux/mfd/max8997.h:212:2: error: redeclaration of enumerator 'MAX8997_INTERNAL_MODE'
-> include/linux/mfd/max8997.h:141:2: note: previous definition of 'MAX8997_INTERNAL_MODE' was here
-> include/linux/mfd/max8997.h:215:6: error: nested redefinition of 'enum max8997_haptic_pwm_divisor'
-> include/linux/mfd/max8997.h:215:6: error: redeclaration of 'enum max8997_haptic_pwm_divisor'
-> include/linux/mfd/max8997.h:144:6: note: originally defined here
-> include/linux/mfd/max8997.h:216:2: error: redeclaration of enumerator 'MAX8997_PWM_DIVISOR_32'
-> include/linux/mfd/max8997.h:145:2: note: previous definition of 'MAX8997_PWM_DIVISOR_32' was here
-> include/linux/mfd/max8997.h:217:2: error: redeclaration of enumerator 'MAX8997_PWM_DIVISOR_64'
-> include/linux/mfd/max8997.h:146:2: note: previous definition of 'MAX8997_PWM_DIVISOR_64' was here
-> include/linux/mfd/max8997.h:218:2: error: redeclaration of enumerator 'MAX8997_PWM_DIVISOR_128'
-> include/linux/mfd/max8997.h:147:2: note: previous definition of 'MAX8997_PWM_DIVISOR_128' was here
-> include/linux/mfd/max8997.h:219:2: error: redeclaration of enumerator 'MAX8997_PWM_DIVISOR_256'
-> include/linux/mfd/max8997.h:148:2: note: previous definition of 'MAX8997_PWM_DIVISOR_256' was here
-> include/linux/mfd/max8997.h:241:8: error: redefinition of 'struct max8997_haptic_platform_data'
-> include/linux/mfd/max8997.h:170:8: note: originally defined here
-> 
-> Caused by a bad merge of commits 104594b01ce7 ("Input: add driver support
-> for MAX8997-haptic") from the input tree and 02b09703e7a4 ("mfd: Add
-> platform data for MAX8997 haptic driver") from the mfd tree.
+Takashi, could you check if latest kernel without the good_end patch
+below works for you?
 
-Sorry about this. I thought Samuel was going to revert the platform data
-from his tree as he OKed applying the combined patch...
+> 2.  get page low?
+> 3.  fix kdump, and make kdump could take two ranges, one is small
+> segment below 512M, other part could be more than 4G.
+>
+> Thanks
+>
+> Yinghai
+>
+>
+> commit 8548c84da2f47e71bbbe300f55edb768492575f7
+> Author: Takashi Iwai <tiwai@suse.de>
+> Date:   Sun Oct 23 23:19:12 2011 +0200
+>
+>    x86: Fix S4 regression
+>
+>    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
+>    regression since 2.6.39, namely the machine reboots occasionally at S4
+>    resume.  It doesn't happen always, overall rate is about 1/20.  But,
+>    like other bugs, once when this happens, it continues to happen.
+>
+>    This patch fixes the problem by essentially reverting the memory
+>    assignment in the older way.
+>
+>    Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>    Cc: <stable@kernel.org>
+>    Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>    Cc: Yinghai Lu <yinghai.lu@oracle.com>
+>    [ We'll hopefully find the real fix, but that's too late for 3.1 now ]
+>    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 3032644..87488b9 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -63,9 +63,8 @@ static void __init find_early_table_space(unsigned
+> long end, int use_pse,
+>  #ifdef CONFIG_X86_32
+>        /* for fixmap */
+>        tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+> -
+> -       good_end = max_pfn_mapped << PAGE_SHIFT;
+>  #endif
+> +       good_end = max_pfn_mapped << PAGE_SHIFT;
+>
+>        base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+>        if (base == MEMBLOCK_ERROR)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks.
+
 
 -- 
-Dmitry
+Regards
+Dave
