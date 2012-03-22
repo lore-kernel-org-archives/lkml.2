@@ -1,78 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab2CVThJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:37:09 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:53199 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2CVThG (ORCPT
+	id S1759398Ab2CVTim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:38:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55161 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753162Ab2CVTik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:37:06 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
-To: lwoodman@redhat.com
-Cc: Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
-Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if task is already on a correct node
-In-Reply-To: Your message of "Thu, 22 Mar 2012 15:07:00 -0400."
-             <4F6B7854.1040203@redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home>
-            <4F6B7854.1040203@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1332445016_39840P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 22 Mar 2012 15:36:56 -0400
-Message-ID: <40300.1332445016@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4F6B7F59.012F,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 22 Mar 2012 15:38:40 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3.4] mfd: wm831x: Fix register range passing for recent ARM updates
+Date: Thu, 22 Mar 2012 19:38:37 +0000
+Message-Id: <1332445117-25947-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1332445016_39840P
-Content-Type: text/plain; charset=us-ascii
+The removal of mach/io.h from most ARM platforms also set the range of
+valid IO ports to be empty for most platforms when previously any 32
+bit integer had been valid. This makes it impossible to add IO resources
+as the added range is smaller than that of the root resource for IO ports.
 
-On Thu, 22 Mar 2012 15:07:00 -0400, Larry Woodman said:
+Since we're not really using IO memory at all fix this by defining our
+own root resource outside the normal tree and make that the parent of
+all IO resources. This also ensures we won't conflict with read IO ports
+if we ever run on a platform which happens to use them.
 
-> So to be clear on this, in that case the intention would be move 3 to 4,
-> 4 to 5 and 5 to 6
-> to keep the node ordering the same?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-Would it make more sense to do 5->6, 4->5, 3->4?  If we move stuff
-from 3 to 4 before clearing the old 4 stuff out, it might get crowded?
-
-
---==_Exmh_1332445016_39840P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT2t/VwdmEQWDXROgAQIkgg//WSjenDA84KouiK00Bf7PdzfwvRLox3kL
-3IN/CMMaPLbOIjjO1Uy8NpCJAgNRTrR40mpzAY3zLs3y7Ir6bYb9W2UtG72Xu/Io
-XdsTkXQQ4BQvBsOe21YSqKVORtziXLw9LhlDpfJRPog+ocDjIrlK5twCG4VpSisf
-Vl1RwbEkRMFlEJSHCbzwbzlaMNgG9CAdBxD+hnFsAgTgk+bXW37zEhw+v07tWtVU
-Foy1Cpa/QhHyxuuQ9MvMALu8jO8g4fzhUB10JRbLUa7e3AKZ9G/Sp0pBGIDpgMkd
-40HNg0Xf3Yv0PBRBtAjQSojiu+iFwohsA3ian1aPHZVR7Zp8pFi3RC1QVZcpI+lq
-3WAi5zvM9oeVnKxUTy1ya1w9cG8vf8XFgI1WOomtVfDIc0Ndd6yCvWU7DfLknkTb
-pDN1DdH0MtGZtym64C4DbRdp4Vy9cjcYOD9OcFN1+ZGx/pD3ggzUw9bPZcH5/AFh
-Hqlhrr+7bf+fTsdoIqspVXhs+NlrRQegQTyJjivOitTKcehrG6WcQYta8q51uLF7
-Jl6ms8dlPJWrLiXZSCSdfEMxf0AQj/yoyzSB7rtixPQyOPLrKGs6nkZhpjmjdO/D
-v3edqqnCHcoVyEtJS83UN3A6qU5a0qg5pM3npB2gHjP4uQp6HChWBIz+rMV/gCy0
-lDzYDAe23OE=
-=xLes
------END PGP SIGNATURE-----
-
---==_Exmh_1332445016_39840P--
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 838056c..476e4d3 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -614,8 +614,15 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
+ }
+ EXPORT_SYMBOL_GPL(wm831x_set_bits);
+ 
++static struct resource wm831x_io_parent = {
++	.start = 0,
++	.end   = 0xffffffff,
++	.flags = IORESOURCE_IO,
++};
++
+ static struct resource wm831x_dcdc1_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC1_CONTROL_1,
+ 		.end   = WM831X_DC1_DVS_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -637,6 +644,7 @@ static struct resource wm831x_dcdc1_resources[] = {
+ 
+ static struct resource wm831x_dcdc2_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC2_CONTROL_1,
+ 		.end   = WM831X_DC2_DVS_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -657,6 +665,7 @@ static struct resource wm831x_dcdc2_resources[] = {
+ 
+ static struct resource wm831x_dcdc3_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC3_CONTROL_1,
+ 		.end   = WM831X_DC3_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -671,6 +680,7 @@ static struct resource wm831x_dcdc3_resources[] = {
+ 
+ static struct resource wm831x_dcdc4_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC4_CONTROL,
+ 		.end   = WM831X_DC4_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -685,6 +695,7 @@ static struct resource wm831x_dcdc4_resources[] = {
+ 
+ static struct resource wm8320_dcdc4_buck_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC4_CONTROL,
+ 		.end   = WM832X_DC4_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -707,6 +718,7 @@ static struct resource wm831x_gpio_resources[] = {
+ 
+ static struct resource wm831x_isink1_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_CURRENT_SINK_1,
+ 		.end   = WM831X_CURRENT_SINK_1,
+ 		.flags = IORESOURCE_IO,
+@@ -720,6 +732,7 @@ static struct resource wm831x_isink1_resources[] = {
+ 
+ static struct resource wm831x_isink2_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_CURRENT_SINK_2,
+ 		.end   = WM831X_CURRENT_SINK_2,
+ 		.flags = IORESOURCE_IO,
+@@ -733,6 +746,7 @@ static struct resource wm831x_isink2_resources[] = {
+ 
+ static struct resource wm831x_ldo1_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO1_CONTROL,
+ 		.end   = WM831X_LDO1_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -747,6 +761,7 @@ static struct resource wm831x_ldo1_resources[] = {
+ 
+ static struct resource wm831x_ldo2_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO2_CONTROL,
+ 		.end   = WM831X_LDO2_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -761,6 +776,7 @@ static struct resource wm831x_ldo2_resources[] = {
+ 
+ static struct resource wm831x_ldo3_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO3_CONTROL,
+ 		.end   = WM831X_LDO3_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -775,6 +791,7 @@ static struct resource wm831x_ldo3_resources[] = {
+ 
+ static struct resource wm831x_ldo4_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO4_CONTROL,
+ 		.end   = WM831X_LDO4_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -789,6 +806,7 @@ static struct resource wm831x_ldo4_resources[] = {
+ 
+ static struct resource wm831x_ldo5_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO5_CONTROL,
+ 		.end   = WM831X_LDO5_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -803,6 +821,7 @@ static struct resource wm831x_ldo5_resources[] = {
+ 
+ static struct resource wm831x_ldo6_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO6_CONTROL,
+ 		.end   = WM831X_LDO6_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -817,6 +836,7 @@ static struct resource wm831x_ldo6_resources[] = {
+ 
+ static struct resource wm831x_ldo7_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO7_CONTROL,
+ 		.end   = WM831X_LDO7_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -831,6 +851,7 @@ static struct resource wm831x_ldo7_resources[] = {
+ 
+ static struct resource wm831x_ldo8_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO8_CONTROL,
+ 		.end   = WM831X_LDO8_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -845,6 +866,7 @@ static struct resource wm831x_ldo8_resources[] = {
+ 
+ static struct resource wm831x_ldo9_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO9_CONTROL,
+ 		.end   = WM831X_LDO9_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -859,6 +881,7 @@ static struct resource wm831x_ldo9_resources[] = {
+ 
+ static struct resource wm831x_ldo10_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO10_CONTROL,
+ 		.end   = WM831X_LDO10_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -873,6 +896,7 @@ static struct resource wm831x_ldo10_resources[] = {
+ 
+ static struct resource wm831x_ldo11_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO11_ON_CONTROL,
+ 		.end   = WM831X_LDO11_SLEEP_CONTROL,
+ 		.flags = IORESOURCE_IO,
+@@ -974,6 +998,7 @@ static struct resource wm831x_rtc_resources[] = {
+ 
+ static struct resource wm831x_status1_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_STATUS_LED_1,
+ 		.end   = WM831X_STATUS_LED_1,
+ 		.flags = IORESOURCE_IO,
+@@ -982,6 +1007,7 @@ static struct resource wm831x_status1_resources[] = {
+ 
+ static struct resource wm831x_status2_resources[] = {
+ 	{
++		.parent = &wm831x_io_parent,
+ 		.start = WM831X_STATUS_LED_2,
+ 		.end   = WM831X_STATUS_LED_2,
+ 		.flags = IORESOURCE_IO,
+-- 
+1.7.9.1
 
