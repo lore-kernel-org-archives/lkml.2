@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031065Ab2CVV22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:28:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58114 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965151Ab2CVV2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:28:22 -0400
-Date: Thu, 22 Mar 2012 21:28:11 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-Message-ID: <20120322212810.GE6589@ZenIV.linux.org.uk>
-References: <20120321065140.13852.52315.stgit@zurg>
- <20120321100602.GA5522@barrios>
- <4F69D496.2040509@openvz.org>
- <20120322142647.42395398.akpm@linux-foundation.org>
+	id S1031127Ab2CVV3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:29:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:60272 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031055Ab2CVV3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 17:29:21 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH] virtio-spec: clarify ro/rw bits and updating rule of virtio-net status field
+In-Reply-To: <20120321063746.GA6773@redhat.com>
+References: <20120320062020.12815.61342.stgit@jason-ThinkPad-T400> <87ty1jpm6p.fsf@rustcorp.com.au> <20120320224805.GA4997@redhat.com> <87ty1ializ.fsf@rustcorp.com.au> <20120321063746.GA6773@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 22 Mar 2012 15:00:22 +1030
+Message-ID: <87aa399s0x.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322142647.42395398.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 02:26:47PM -0700, Andrew Morton wrote:
-> It would be nice to find some way of triggering compiler warnings or
-> sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
-> thoughts on this?
-> 
-> (Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
-> describe it)
+On Wed, 21 Mar 2012 08:37:46 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> Ah. Right, we need to trap for host to clear the bit.
+> OK, so let's make the bit RO, and add
+> VIRTIO_NET_CTRL_ANNOUNCED to acknowledge that we've
+> seen VIRTIO_NET_S_ANNOUNCE using the control VQ?
 
-Use __bitwise for that - check how gfp_t is handled.
+Thanks, that's nice.  Guest should send arp packets first, then send
+VIRTIO_NET_CTRL_ANNOUNCED, and ignore the bit being set in the meantime.
+
+Thanks,
+Rusty.
+-- 
+  How could I marry someone with more hair than me?  http://baldalex.org
