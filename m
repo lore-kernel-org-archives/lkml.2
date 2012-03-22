@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab2CVOuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 10:50:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab2CVOud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 10:50:33 -0400
-Date: Thu, 22 Mar 2012 15:42:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout()
-	API
-Message-ID: <20120322144246.GA13873@redhat.com>
-References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com> <4F6A92FC.6060702@panasas.com> <20120322142758.GA12370@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322142758.GA12370@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755590Ab2CVOxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 10:53:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58785 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753210Ab2CVOxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 10:53:15 -0400
+Message-ID: <1332427989.2946.20.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 0/4] arch/CPU hotplug: Add missing CPU Hotplug bits to
+ fix nasty issues
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, rkuo@codeaurora.org,
+        tglx@linutronix.de, linas@codeaurora.org, mingo@elte.hu,
+        dhowells@redhat.com, yasutake.koichi@jp.panasonic.com,
+        akpm@linux-foundation.org, benh@kernel.crashing.org,
+        jesper.nilsson@axis.com, cmetcalf@tilera.com, linux@arm.linux.org.uk,
+        jejb@parisc-linux.org, deller@gmx.de, vapier@gentoo.org,
+        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org
+Date: Thu, 22 Mar 2012 14:53:09 +0000
+In-Reply-To: <1332418412.2487.13.camel@twins>
+References: <20120322112735.17063.21791.stgit@srivatsabhat.in.ibm.com>
+	 <1332418412.2487.13.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW,
+On Thu, 2012-03-22 at 13:13 +0100, Peter Zijlstra wrote:
+> On Thu, 2012-03-22 at 16:58 +0530, Srivatsa S. Bhat wrote:
+> > Commit 5fbd036b552f633abb394a319f7c62a5c86a9cd7 (sched: Cleanup cpu_active
+> > madness) introduced some changes that made the scheduler rely on the
+> > CPU_STARTING notifier. And hence those architectures which forgot to
+> > send out the CPU_STARTING notification will almost surely get into trouble.
+> > (Xen is one example[1]). 
+> 
+> The requirement is that CPU_STARTING is ran before set_cpu_online() or
+> the open-coded equivalent -- eg. blackfin gets this wrong.
+> 
+> However, it is also required that all this happens while local IRQs are
+> still disabled, since the moment we enable IRQs interrupts can happen
+> and interrupts can cause wakeups, and wakeups need to have this state
+> set up -- blackfin, cris, m32r, mips, sh, sparc64, sparc32, um?, x86 get
+> this wrong.
+> 
+> Furthermore, all archs that use CONFIG_USE_GENERIC_SMP_HELPERS should
+> hold ipi_call_lock() over setting the cpu online -- alpha, arm, m32r,
+> mips, sh, sparc32 seem wrong.
 
-On 03/22, Oleg Nesterov wrote:
->
-> In any case. I do not know why do we need timeout, but this is
-> orthogonal to KILLABLE. Please redo your patches on top of -mm
-> tree? Please note that in this case the change becomes trivial.
+So for parisc, anywhere in smp_callin() should be fine.  Our last act on
+CPU bringup before going into cpu_idle() is to enable interrupts.
 
-I have found 1-3 on marc.info, they look fine.
+> Furthermore, I was pondering the scenario where a 3rd cpu IPIs the newly
+> booting cpu, I suspect we need a smp_wmb() after setting cpu_active and
+> a rmb in select_fallback_rq() before reading active.
+> 
+> All in all its a complete friggin trainwreck.
 
-But 2/4 is not exactly correct, it forgets to do argv_free() if
-call_usermodehelper_fns() returns -ENOMEM. And I guess you forgot
-to remove the unused "struct subprocess_info *info".
+I haven't yet actually tried git head on parisc (and I won't be able to
+until I actually get my machines back [currently being shipped across
+the atlantic]) but if there's a problem it will show up quickly:  parisc
+actually uses cpu hotplug to boot its secondary cpus.
 
-Oleg.
+James
+
 
