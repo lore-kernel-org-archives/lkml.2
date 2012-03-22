@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab2CVWTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 18:19:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53041 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab2CVWTM (ORCPT
+	id S1030256Ab2CVWUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 18:20:34 -0400
+Received: from out06.mta.xmission.com ([166.70.13.236]:38871 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751849Ab2CVWUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 18:19:12 -0400
-Date: Fri, 23 Mar 2012 09:19:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Mar 22
-Message-Id: <20120323091900.d3c007d76b49d4053457906e@canb.auug.org.au>
-In-Reply-To: <4F6B88D2.5060500@redhat.com>
-References: <20120322170829.38a649b3f84d225d94808648@canb.auug.org.au>
-	<4F6B88D2.5060500@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__23_Mar_2012_09_19_00_+1100_7LKQh7kJ8dr.s6FV"
+	Thu, 22 Mar 2012 18:20:33 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <20120313005855.GA24639@redhat.com>
+	<CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
+	<20120318192755.GB6589@ZenIV.linux.org.uk>
+Date: Thu, 22 Mar 2012 15:24:04 -0700
+In-Reply-To: <20120318192755.GB6589@ZenIV.linux.org.uk> (Al Viro's message of
+	"Sun, 18 Mar 2012 19:27:55 +0000")
+Message-ID: <m1sjh0z33v.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX188Fzv5VqWNE8os02I/VFFzqLbby6gVUGE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2833]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: **
+Subject: Re: [3.3-rc7] sys_poll use after free (hibernate)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Mar_2012_09_19_00_+1100_7LKQh7kJ8dr.s6FV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-Hi Mauro,
-
-On Thu, 22 Mar 2012 17:17:22 -0300 Mauro Carvalho Chehab <mchehab@redhat.co=
-m> wrote:
+> On Sun, Mar 18, 2012 at 12:02:04PM -0700, Linus Torvalds wrote:
+>> and that load is from
+>> 
+>>     poll_wait(filp, &table->poll->wait, wait);
+>> 
+>> where the testing of %rsi and %rcx are the "if (p && wait_address)"
+>> check in poll_wait(), and %rsi is "table->poll" if I read it all
+>> correctly.
+>> 
+>> And the 6b6b6b6b6b6b6b6b pattern is obviously POISON_FREE, so
+>> apparently 'table' has already been freed.
+>> 
+>> I suspect the whole sysctl 'poll' code is seriously broken, since it
+>> seems to depend on those ctl_table pointers being stable over the
+>> whole open/close sequence, but if somebody unregisters the sysctl,
+>> it's all gone. The ctl_table doesn't have any refcounting etc, and I
+>> suspect that your hibernate sequence ends up unregistering some sysctl
+>> (perhaps as part of a module unload?)
 >
-> Em 22-03-2012 03:08, Stephen Rothwell escreveu:
-> > Merging edac/linux_next (4d096ca MAINTAINERS: add an entry for Edac San=
-dy Bridge driver)
->=20
-> Not sure what's happening, but I've updated my EDAC tree a few days ago,
-> and I've added more stuff yesterday, but you're still pointing to an
-> old changeset.
->=20
-> Could you please check if it is pointing to the right tree/branch? It sho=
-uld be:
->=20
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git lin=
-ux-next
+> Ewww...  The way it was supposed to work (prio to ->poll() madness) was
+> that actual IO gets wrapped into grab_header()/sysctl_head_finish()
+> pair.  proc_sys_poll() doesn't do it, so yes, that post-mortem is
+> very likely to be correct.
 
-Well, I am still using the infradead.org repo.  I will start using the
-above today. (and it looks like the branch is actually linux_next)
+> Looking at that sucker a bit more: what the hell is proc_sys_setattr()
+> doing with vmtruncate(), of all things???  Unless something has changed
+> very much and very badly, it does *not* use page cache at all...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+sysctl continues not to use the page cache.  The vmtruncate was a generic
+vfs level push down that has not been removed as unnecessary in
+proc_sysctl.c yet.
 
---Signature=_Fri__23_Mar_2012_09_19_00_+1100_7LKQh7kJ8dr.s6FV
-Content-Type: application/pgp-signature
+The question of how to cleanly implement suppoort for byte level
+read/writes of sysctl entries remains an open problem.  But even that
+looks like a job for seq_file or cousin of seq_file rather than the page
+cache.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> Incidentally, I wonder if we want the whole thing in fs/proc; the argument
+> against splitoff to a separate fs used to be "that would break userland
+> setups - can't ask people to update /etc/fstab or init scripts to mount
+> that thing on /proc/sys".  Fair enough, but... what's to stop us from slapping
+> ->d_automount() on /proc/sys like that:
+> 	struct vfsmount *mnt = vfs_kern_mount(&sysctlfs_type, 0, "sysctl", 0);
+> 	if (!IS_ERR(mnt))
+> 		mntget(mnt);
+> 	return mnt;
+> and we are all set.  IOW, now that ->d_automount() stuff is there, we can
+> do that easily without any userland breakage.  Comments?
 
-iQIcBAEBCAAGBQJPa6VUAAoJEECxmPOUX5FEiUIQAIFnxw7zKRPqX/QeIF3nDFgo
-kFWuESWOWK7ITptjFyyX6Q81NQZ2OszXuAxwVOlVJSILMeZZcHz1QZ+rCZSawr33
-O5hzQQkLo4pVuPXoynUwkHpDdsMwL1gVoSYU/bmKSMa3XOgcqN4cv4wYKWVvCrpr
-vMm00SIQOWOnwS1ONapGKFglvYTB7ssGUuh5MWBtf1yE2+k+p8YEYBjvS8btDBke
-dBxYF3yHJxueuv5RASaY0CHfC98xZ7+PCrNpuN6iP+14dtQdMVFW4ewnlkdjBHvv
-MQNN8DSeMD8J2Q4iMR3cypJyGgQqpWoeXP5rNz0hom/gxXgyi2FH23muhr0RYZwB
-a7DE1xb7OKHqtz1/MU86yj34ET5ZhaJYLb6K5zAt8OH4zo0mmx7LUAX0YhoUzf3k
-Cl6tk6a/iDXiyqEhoLeMPseIdo30Grqr2HmE+fzOPyo9sDJgpYvgTRq0xy8lG09/
-19gN00RSpVahOIRia+PIGJqBdou0l4UYx1HRgVlFTqxTY9f44VXyUoyTCpRtZKvS
-C0tfbwDJF9F0+JHxFr2kEoba0o4jHxZ0fAZCXVm4clGZYdlCfCTuWkh/oJ4TJtEO
-I74vVbX0CLjRWNhbTrfGpq1JueAE/J5RTagz6XYRPZTsILcT9NC8MUUkhgM/9t6r
-BqcbmZfOMTq8beoHkomJ
-=Wkv7
------END PGP SIGNATURE-----
+Is that something we could do with /proc/<pid>/net as well?
 
---Signature=_Fri__23_Mar_2012_09_19_00_+1100_7LKQh7kJ8dr.s6FV--
+I am looking at what it will take to move /proc/sys into /proc/<pid>/sys
+so that we can remove the namespace inspired dcache weirdness.  With my
+recent cleanups that should be a pretty simple change.
+
+I remember attempting that once before for /proc/<pid>/net and the
+review got stalled in getting the expiry logic right.
+
+Eric
