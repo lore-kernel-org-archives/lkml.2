@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab2CVJLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:11:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49830 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab2CVJLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:11:49 -0400
-Date: Thu, 22 Mar 2012 10:11:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: memcg-devel updated for v3.3
-Message-ID: <20120322091147.GB18665@tiehlicka.suse.cz>
-References: <20120321094545.GA10450@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321094545.GA10450@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756726Ab2CVJOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:14:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62957 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2CVJOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:14:31 -0400
+Message-ID: <1332407659.3870.1.camel@phoenix>
+Subject: [PATCH] mfd: Remove unused mutex from struct tps65090
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Thu, 22 Mar 2012 17:14:19 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-03-12 10:45:45, Michal Hocko wrote:
-[...]
-> Hugh Dickins (15):
->       memcg-clear-pc-mem_cgorup-if-necessary-fix-2
->       memcg-clear-pc-mem_cgorup-if-necessary fix 3
->       memcg: fix page migration to reset_owner
->       memcg: replace MEM_CONT by MEM_RES_CTLR
->       memcg: replace mem and mem_cont stragglers
->       memcg: lru_size instead of MEM_CGROUP_ZSTAT
->       memcg: enum lru_list lru
->       memcg: remove redundant returns
->       idr: make idr_get_next() good for rcu_read_lock()
->       cgroup: revert ss_id_lock to spinlock
->       memcg: let css_get_next() rely upon rcu_read_lock()
->       memcg: remove PCG_CACHE page_cgroup flag fix
->       memcg: remove PCG_CACHE page_cgroup flag fix2
->       memcg: remove PCG_FILE_MAPPED fix cosmetic fix
->       memcg: fix GPF when cgroup removal races with last exit
+The mutex lock is not used after converting to use regmap, remove it.
 
-I have just noticed I forgot about one fix.
-Hugh Dickins (1):
-      memcg: fix deadlock by avoiding stat lock when anon
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/tps65090.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-pushed and sorry
-
+diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+index a66d4df..9a84bda 100644
+--- a/drivers/mfd/tps65090.c
++++ b/drivers/mfd/tps65090.c
+@@ -79,7 +79,6 @@ static struct mfd_cell tps65090s[] = {
+ };
+ 
+ struct tps65090 {
+-	struct mutex		lock;
+ 	struct device		*dev;
+ 	struct i2c_client	*client;
+ 	struct regmap		*rmap;
+@@ -283,8 +282,6 @@ static int __devinit tps65090_i2c_probe(struct i2c_client *client,
+ 	tps65090->dev = &client->dev;
+ 	i2c_set_clientdata(client, tps65090);
+ 
+-	mutex_init(&tps65090->lock);
+-
+ 	if (client->irq) {
+ 		ret = tps65090_irq_init(tps65090, client->irq, pdata->irq_base);
+ 		if (ret) {
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.5.4
+
+
+
