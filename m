@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab2CVOWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 10:22:19 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:34412 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab2CVOWR (ORCPT
+	id S965062Ab2CVOWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 10:22:34 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39443 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab2CVOWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 10:22:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174778052"
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tsoni@codeaurora.org, Ravi Kumar V <kumarrav@codeaurora.org>
-Subject: [PATCH v5 0/2] Add Qualcomm MSM ADM DMAEngine driver
-Date: Thu, 22 Mar 2012 19:52:02 +0530
-Message-Id: <1332426122-25174-1-git-send-email-kumarrav@codeaurora.org>
-X-Mailer: git-send-email 1.7.8
+	Thu, 22 Mar 2012 10:22:20 -0400
+Date: Thu, 22 Mar 2012 14:22:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Matt Helsley <matt.helsley@gmail.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v3 10/12] ima: defer calling __fput()
+Message-ID: <20120322142212.GV6589@ZenIV.linux.org.uk>
+References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following are the changes we have done from the previous
-v1 posted here: https://lkml.org/lkml/2011/12/22/148
+On Wed, Mar 21, 2012 at 02:54:15PM -0400, Mimi Zohar wrote:
+> If a file is closed before it is munmapped, __fput() is called with
+> the mmap_sem taken.  With IMA-appraisal enabled, this results in an
+> mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count
+> to defer __fput() being called until after the mmap_sem is released.
 
-As our ADM Scatter-gather hardware needs
--32-bit command configuration parameter
- apart from
--32-bit source address
--32-bit destination address
--16-bit length
+NAK.  It's far too heavy-weight for what's a very common path.  Worse,
+it causes different locking conditions on IMA and non-IMA kernels and makes
+bugs harder to spot.  Rejected with extreme prejudice; please, fix your
+locking instead.
 
-So,we have added new parameter in struct scatterlist to support xfer descriptor
-specific private data, and for supporting ADM Box mode DMA we added new
-API and data structure.
+BTW, you've missed several other places in mm/* doing fput(), so it wouldn't
+be enough to paper over your problem anyway.
 
-Changes done from v2:
-
-As per our previous discussion you had suggested us to follow the below patch
-https://lkml.org/lkml/2012/1/26/405
-Please check the below link of our discussion
-https://lkml.org/lkml/2012/1/30/48
-
-So we have added the new context parameter in device_prep_dma_sg and
-device_prep_interleave_dma API's to support for passing client channel specific
-private data associated with every transfer descriptor.
-
-We are using
-Interleaved API for BOX type transfer.
-SG API for SG type transfer.
-
-Changes done from v3:
-
-Implemented the wrappers as suggested by Russell King in following patch
-https://lkml.org/lkml/2012/2/3/269
-Fixed the dmaengine & client drivers to follow above changes
-
-Changes done from v4:
-
-Changed return value of prep_dma_sg & prep_interleaved_dma to NULL
-when some thing fails inside the API
- 
-Ravi Kumar V (2):
-  dmaengine: Add context parameter to prep_dma_sg and
-    prep_interleaved_dma
-  DMAEngine: Add DMAEngine driver based on old MSM ADM DMA APIs
-
- arch/arm/mach-msm/include/mach/dma.h    |   35 ++
- drivers/dma/Kconfig                     |   12 +
- drivers/dma/Makefile                    |    1 +
- drivers/dma/fsldma.c                    |    2 +-
- drivers/dma/msm_adm_dma.c               |  728 +++++++++++++++++++++++++++++++
- drivers/dma/sirf-dma.c                  |    2 +-
- drivers/dma/ste_dma40.c                 |    2 +-
- drivers/misc/carma/carma-fpga-program.c |    2 +-
- drivers/misc/carma/carma-fpga.c         |    7 +-
- include/linux/dmaengine.h               |   22 +-
- 10 files changed, 803 insertions(+), 10 deletions(-)
- create mode 100644 drivers/dma/msm_adm_dma.c
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Final fput() *can* happen under mmap_sem.  Period.
