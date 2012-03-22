@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031105Ab2CVV3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:29:24 -0400
-Received: from ozlabs.org ([203.10.76.45]:51520 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031011Ab2CVV3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:29:21 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-In-Reply-To: <1332320519.18960.466.camel@twins>
-References: <4F674649.2000300@linux.vnet.ibm.com> <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins> <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 22 Mar 2012 14:55:04 +1030
-Message-ID: <87d3859s9r.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1031144Ab2CVV3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:29:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60887 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031055Ab2CVV3n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 17:29:43 -0400
+Date: Thu, 22 Mar 2012 14:29:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH] memcg: change behavior of moving charges at task move
+Message-Id: <20120322142941.01e601c0.akpm@linux-foundation.org>
+In-Reply-To: <4F69A4C4.4080602@jp.fujitsu.com>
+References: <4F69A4C4.4080602@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 10:01:59 +0100, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2012-03-21 at 09:30 +1030, Rusty Russell wrote:
-> > > > (2) Do something more efficient with userspace threads than migrating
-> > > >     them one at a time.
-> > > 
-> > > Sadly that can't really be done. We need to pick up every task
-> > > (userspace, but also running kernel threads) and update their state.
-> > 
-> > What if we had an "orphan" runqueue which everyone pulled from?  Then we
-> > could grab the lock, move them all to the fake rq, then let stuff happen
-> > normally.
+On Wed, 21 Mar 2012 18:52:04 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> As discussed before, I post this to fix the spec and implementation of task moving.
+> Then, do you think what target kernel version should be ? 3.4/3.5 ?
+> but yes, it may be late for 3.4....
+
+Well, the key information here is "what effect does the bug have upon
+users".
+
+> In documentation, it's said that 'shared anon are not moved'.
+> But in implementation, the check was wrong.
 > 
-> Well, we could simply let them sit where they are and fudge load-balance
-> to consider it a source but not a destination until its empty, but it
-> might be somewhat tricky to make it fast enough to not introduce
-> noticable latencies. Also, you really don't want everyone to pull,
-> that's a serialization/scalability problem.
+>   if (!move_anon() || page_mapcount(page) > 2)
 > 
-> Also, since we really only move the currently runnable tasks it
-> shouldn't be too many in the first place. Is it really that expensive?
-
-Good question, requires measurement to answer.
-
-> > Maybe that's crap, but at least we could move the migration out of the
-> > hotplug callback somehow. 
+> Ah, memcg has been moving shared anon pages for a long time.
 > 
-> Thing is, if its really too much for some people, they can orchestrate
-> it such that its not. Just move everybody in a cpuset, clear the to be
-> offlined cpu from the cpuset's mask -- this will migrate everybody away.
-> Then hotplug will find an empty runqueue and its fast, no?
+> Then, here is a discussion about handling of shared anon pages.
+> 
+>  - It's complex
+>  - Now, shared file caches are moved in force.
+>  - It adds unclear check as page_mapcount(). To do correct check,
+>    we should check swap users, etc.
+>  - No one notice this implementation behavior. So, no one get benefit
+>    from the design.
+>  - In general, once task is moved to a cgroup for running, it will not
+>    be moved....
+>  - Finally, we have control knob as memory.move_charge_at_immigrate.
+> 
+> Here is a patch to allow moving shared pages, completely. This makes
+> memcg simpler and fix current broken code.
+> 
+> Note:
+>  IIUC, libcgroup's cgroup daemon moves tasks after exec().
+>  So, it's not affected.
+>  libcgroup's command "cgexec" does move itsef to a memcg and call exec()
+>  without fork(). it's not affected.
+> 
+> Changelog:
+>  - fixed PageAnon() check.
+>  - remove call of lookup_swap_cache()
+>  - fixed Documentation.
 
-I like this solution better.
+But you forgot to tell us :(
 
-Thanks,
-Rusty.
--- 
-  How could I marry someone with more hair than me?  http://baldalex.org
