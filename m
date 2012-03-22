@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030484Ab2CVTUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:20:43 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:47780 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030364Ab2CVTUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:20:42 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+kuQIdUqKkjbSoqEV4EQUpX5cYpHmB+3M1bOZdLa
-	OasjVOL41vkDzj
-Message-ID: <1332444030.24328.66.camel@marge.simpson.net>
-Subject: Re: [PATCH 07/32] cpuset: Set up interface for nohz flag
-From: Mike Galbraith <efault@gmx.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Date: Thu, 22 Mar 2012 20:20:30 +0100
-In-Reply-To: <alpine.DEB.2.00.1203221118550.25011@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	 <1332338318-5958-9-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1203210949440.20482@router.home>
-	 <1332389033.5759.52.camel@marge.simpson.net>
-	 <alpine.DEB.2.00.1203221118550.25011@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	id S1030531Ab2CVTV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:21:57 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49519 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab2CVTV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 15:21:56 -0400
+Message-ID: <4F6B7BAB.5050902@linaro.org>
+Date: Thu, 22 Mar 2012 12:21:15 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Dave Jones <davej@redhat.com>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: WARNING: Adjusting tsc more then 11%
+References: <20120305154411.GA29668@redhat.com> <1330972323.2191.74.camel@work-vm> <20120305192338.GA30491@redhat.com> <1330977010.2191.84.camel@work-vm> <20120305195758.GA25498@redhat.com> <CA+1xoqfYbC30dFDOtfAVcr5w0WYAS1ruKFS-rcRAEv2ZqaGW6w@mail.gmail.com> <1330979254.2191.98.camel@work-vm> <CA+1xoqeKMVzSEMef+Yg6yBSyObN4pWA9cVf7t72SBJ0W==MNqQ@mail.gmail.com> <1331082811.2191.167.camel@work-vm> <CA+1xoqe+KfsJK0eV9r8tVW=uTdsh_U=so2A0sE_jFkUNRH2+Ow@mail.gmail.com>
+In-Reply-To: <CA+1xoqe+KfsJK0eV9r8tVW=uTdsh_U=so2A0sE_jFkUNRH2+Ow@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032219-7182-0000-0000-00000119DE7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 11:26 -0500, Christoph Lameter wrote: 
-> On Thu, 22 Mar 2012, Mike Galbraith wrote:
-> 
-> > > > We use here a per cpu refcounter. As long as a CPU
-> > > > is contained into at least one cpuset that has the
-> > > > nohz flag set, it is part of the set of CPUs that
-> > > > run into adaptive nohz mode.
-> > >
-> > > What are the drawbacks for nohz?
-> >
-> > For nohz in general, latency.  To make it at all usable for rt loads, I
-> 
-> Well nohz while a process is running on a dedicated cpu means the cpu is
-> running full power and no disruptions occur. This is a tremendous benefit.
+On 03/22/2012 12:11 PM, Sasha Levin wrote:
+> On Wed, Mar 7, 2012 at 3:13 AM, John Stultz<john.stultz@linaro.org>  wrote:
+>> On Mon, 2012-03-05 at 22:36 +0200, Sasha Levin wrote:
+>>> On Mon, Mar 5, 2012 at 10:27 PM, John Stultz<john.stultz@linaro.org>  wrote:
+>>>> On Mon, 2012-03-05 at 22:16 +0200, Sasha Levin wrote:
+>>>>> On Mon, Mar 5, 2012 at 9:57 PM, Dave Jones<davej@redhat.com>  wrote:
+>>>>>> On Mon, Mar 05, 2012 at 11:50:10AM -0800, John Stultz wrote:
+>>>>>>
+>>>>>>   >  So it would be great to get further feedback from folks who are seeing
+>>>>>>   >  this warning, so we can really hammer this out, but I don't want the
+>>>>>>   >  warning spooking anyone into thinking things are terribly broken.
+>>>>>>
+>>>>>> One of the reports was from someone using vbox. I'm now wondering if
+>>>>>> the other users are using some other flavour of virt. I'll ask.
+>>>>> I've reported this issue with regards to KVM before
+>>>>> (http://permalink.gmane.org/gmane.comp.emulators.kvm.devel/85632) but
+>>>>> according to this thread it's not really KVM specific.
+>>>>>
+>>>>> It's easily reproducible using Dave's trinity running inside a KVM guest.
+>>>> Great! Do you have a link to trinity? (Google just gives me a video of
+>>>> its use and links to various churches)
+>>> Sure, the git tree is here: codemonkey.org.uk/projects/trinity/trinity.git
+>>>
+>>> Basically just start 2*vcpu instances of trinity inside the guest and
+>>> wait a bit.
+>> So I left trinity running in a 2vcpu kvm guest for ~5 hours and haven't
+>> seen anything yet. Could you send me a .config for the guest kernel and
+>> maybe your kvm command line?
+>>
+>> Also, it shouldn't really matter, but are the guests 32bit or 64bit?
+>>
+>> thanks
+>> -john
+>>
+>>
+> Sorry, I missed this mail.
+>
+> You should start several trinity instances, probably 4-5 on a 2vcpu guest.
+>
+Ah. Sorry I misread the 2*vcpu as  "on a 2 vcpu instance".   Thanks for 
+the clarification. Re-running tests now.
 
-In the context of single task burning in userspace, you bet.
-
-> Less than 10us jitter can alrady be accomplished by building a kernel with
-> certain options off (like for example preemption...) and ensuring that
-> stuff stays off certain processors. Lets not confuse realtime with low
-> latency. Real time in the sense of deterministic execution is bad for
-> latency because overhead is added to ensure the determinism which
-> increases latency.
-
-Yeah, I know RT pays heavily for determinism.  It loses on best case.
-
-> > of the current box, triple digit for simple synchronized frame timers +
-> > compute worker-bees load on 64 cores.  Patch 4 probably helps that, but
-> > don't _think_ it'll fix it.  If you (currently) ever become balancer,
-> > you're latency target is smoking wreckage.
-> 
-> Yes so we need something to tell the system which cpu is the sacrificial
-> lamb that will not run low latency applications.
-
-Definitely a lamb is required.
-
-(This set is targeted at HPC, so I'll shut up now.. but RT is HPC too)
-
--Mike
+thanks
+-john
 
