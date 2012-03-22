@@ -1,97 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030775Ab2CVDEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 23:04:22 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:17272 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758841Ab2CVDES (ORCPT
+	id S1030866Ab2CVDEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 23:04:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40171 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758913Ab2CVDET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 23:04:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian.Campbell@citrix.com, JBeulich@novell.com, linux-kernel@vger.kernel.org,
-        stefano.stabellini@eu.citrix.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/xenbus: Add quirk to deal with misconfigured backends.
-Date: Wed, 21 Mar 2012 22:59:49 -0400
-Message-Id: <1332385189-29029-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F6A96A9.001F,ss=1,re=0.000,fgs=0
+	Wed, 21 Mar 2012 23:04:19 -0400
+Date: Thu, 22 Mar 2012 14:04:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Vinod Koul <vinod.koul@intel.com>, Huang Shijie <b32955@freescale.com>
+Subject: linux-next: manual merge of the l2-mtd tree with the slave-dma tree
+Message-Id: <20120322140410.2f9af2f25906a3cdc9497d72@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__22_Mar_2012_14_04_10_+1100_8uGYuAeZUMil2qHI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A rather annoying and common case is when booting a PVonHVM guest
-and exposing the PV KBD and PV VFB - as both of those do not
-make any sense. The HVM guest is using the VGA driver and the emulated
-keyboard for this. So we provide a very basic quirk framework
-(can be expanded in the future) to not wait for 6 minutes for those devices
-to initialize - they never wont.
+--Signature=_Thu__22_Mar_2012_14_04_10_+1100_8uGYuAeZUMil2qHI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To trigger this, put this in your guest config:
+Hi Artem,
 
-vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+Today's linux-next merge of the l2-mtd tree got a conflict in
+drivers/mtd/nand/gpmi-nand/gpmi-lib.c between commit 16052827d98f
+("dmaengine/dma_slave: introduce inline wrappers") from the slave-dma
+tree and commit c790d78c631f ("mxs-dma : rewrite the last parameter of
+mxs_dma_prep_slave_sg()") from the l2-mtd tree.
 
-instead of this:
-vnc=1
-vnclisten="0.0.0.0"
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/xenbus/xenbus_probe_frontend.c |   30 ++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+diff --cc drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+index 590dd5c,c34dab1..0000000
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+@@@ -848,7 -848,10 +848,9 @@@ int gpmi_send_command(struct gpmi_nand_
+ =20
+  	sg_init_one(sgl, this->cmd_buffer, this->command_length);
+  	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
+- 	desc =3D dmaengine_prep_slave_sg(channel, sgl, 1, DMA_MEM_TO_DEV, 1);
+ -	desc =3D channel->device->device_prep_slave_sg(channel,
+ -				sgl, 1, DMA_MEM_TO_DEV,
+++	desc =3D dmaengine_prep_slave_sg(channel, sgl, 1, DMA_MEM_TO_DEV,
++ 				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++=20
+  	if (!desc) {
+  		pr_err("step 2 error\n");
+  		return -1;
+@@@ -888,8 -892,9 +890,9 @@@ int gpmi_send_data(struct gpmi_nand_dat
+ =20
+  	/* [2] send DMA request */
+  	prepare_data_dma(this, DMA_TO_DEVICE);
+ -	desc =3D channel->device->device_prep_slave_sg(channel, &this->data_sgl,
+ +	desc =3D dmaengine_prep_slave_sg(channel, &this->data_sgl,
+- 						1, DMA_MEM_TO_DEV, 1);
++ 					1, DMA_MEM_TO_DEV,
++ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+  	if (!desc) {
+  		pr_err("step 2 error\n");
+  		return -1;
+@@@ -924,8 -929,9 +927,9 @@@ int gpmi_read_data(struct gpmi_nand_dat
+ =20
+  	/* [2] : send DMA request */
+  	prepare_data_dma(this, DMA_FROM_DEVICE);
+ -	desc =3D channel->device->device_prep_slave_sg(channel, &this->data_sgl,
+ +	desc =3D dmaengine_prep_slave_sg(channel, &this->data_sgl,
+- 					1, DMA_DEV_TO_MEM, 1);
++ 					1, DMA_DEV_TO_MEM,
++ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+  	if (!desc) {
+  		pr_err("step 2 error\n");
+  		return -1;
+@@@ -970,8 -976,10 +974,9 @@@ int gpmi_send_page(struct gpmi_nand_dat
+  	pio[4] =3D payload;
+  	pio[5] =3D auxiliary;
+ =20
+ -	desc =3D channel->device->device_prep_slave_sg(channel,
+ -					(struct scatterlist *)pio,
+ +	desc =3D dmaengine_prep_slave_sg(channel, (struct scatterlist *)pio,
+- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
++ 					ARRAY_SIZE(pio), DMA_TRANS_NONE,
++ 					DMA_CTRL_ACK);
+  	if (!desc) {
+  		pr_err("step 2 error\n");
+  		return -1;
+@@@ -1033,9 -1041,10 +1038,10 @@@ int gpmi_read_page(struct gpmi_nand_dat
+  	pio[3] =3D geo->page_size;
+  	pio[4] =3D payload;
+  	pio[5] =3D auxiliary;
+ -	desc =3D channel->device->device_prep_slave_sg(channel,
+ +	desc =3D dmaengine_prep_slave_sg(channel,
+  					(struct scatterlist *)pio,
+- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
++ 					ARRAY_SIZE(pio), DMA_TRANS_NONE,
++ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+  	if (!desc) {
+  		pr_err("step 2 error\n");
+  		return -1;
+@@@ -1052,9 -1061,11 +1058,11 @@@
+  		| BF_GPMI_CTRL0_ADDRESS(address)
+  		| BF_GPMI_CTRL0_XFER_COUNT(geo->page_size);
+  	pio[1] =3D 0;
++ 	pio[2] =3D 0; /* clear GPMI_HW_GPMI_ECCCTRL, disable the BCH. */
+ -	desc =3D channel->device->device_prep_slave_sg(channel,
+ +	desc =3D dmaengine_prep_slave_sg(channel,
+- 				(struct scatterlist *)pio, 2,
+- 				DMA_TRANS_NONE, 1);
++ 				(struct scatterlist *)pio, 3,
++ 				DMA_TRANS_NONE,
++ 				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+  	if (!desc) {
+  		pr_err("step 3 error\n");
+  		return -1;
 
-diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
-index f20c5f1..80325cf 100644
---- a/drivers/xen/xenbus/xenbus_probe_frontend.c
-+++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
-@@ -134,7 +134,31 @@ static int read_backend_details(struct xenbus_device *xendev)
- {
- 	return xenbus_read_otherend_details(xendev, "backend-id", "backend");
- }
-+static bool skip_if_quirk(struct device *dev, void *data)
-+{
-+	struct xenbus_device *xendev = to_xenbus_device(dev);
-+	struct device_driver *drv = data;
-+
-+	/* Is this operation limited to a particular driver? */
-+	if (drv && (dev->driver != drv))
-+		return false;
-+
-+	if (xen_pv_domain())
-+		return false;
-+
-+	/* With older QEMU, for PVonHVM guests the guest config files could
-+	 * contain: vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
-+	 * which is nonsensical as there is no PV FB (or PV KBD) when
-+	 * running as HVM guest. */
- 
-+	if ((strncmp(xendev->nodename, "device/vkbd", 11) == 0))
-+		return true;
-+
-+	if ((strncmp(xendev->nodename, "device/vfb", 10) == 0))
-+		return true;
-+
-+	return false;
-+}
- static int is_device_connecting(struct device *dev, void *data)
- {
- 	struct xenbus_device *xendev = to_xenbus_device(dev);
-@@ -153,6 +177,12 @@ static int is_device_connecting(struct device *dev, void *data)
- 		return 0;
- 
- 	xendrv = to_xenbus_driver(dev->driver);
-+
-+	if (skip_if_quirk(dev, data)) {
-+		printk(KERN_INFO "XENBUS: (quirk) Skipping : %s\n",
-+		       xendev->nodename);
-+		return 0;
-+	}
- 	return (xendev->state < XenbusStateConnected ||
- 		(xendev->state == XenbusStateConnected &&
- 		 xendrv->is_ready && !xendrv->is_ready(xendev)));
--- 
-1.7.7.5
+--Signature=_Thu__22_Mar_2012_14_04_10_+1100_8uGYuAeZUMil2qHI
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPapaqAAoJEECxmPOUX5FEUbIP/1ZpRfu4Q4qVZwvb8MG4zgpH
+CmBvokAJkzbemQI7NcXQ3dfgsXNWDet+8q8sgXn+aK2CYkFOc8+m8q09bNClOkD7
+aD6/7tDh2YirZ6eGselZMFf9DV8oHg4CuytnBIqmlNZpAg6pynzJupZUgg8SCbQm
+RvmbpdAHET2HKdLRaAHxgavOjCRLyTZbQRm6OxEUWwT5nUKgbvv329Os5pX8eNAd
+ZWUKIkWc0KlMLaOXmx47EZES0ItW/gaCtNEAnMrDiASLEOeNoBxw0EbJ4+o8t4uE
+wCq0qNFTT0eU8Mv5K9jJVySfW63qzzJHKQZ4oKRgj3x6xyB6qVrNKjlJrbcnSRJr
+zW/3O6n0TYDIQEV4iLB1uERLJheDZXdVPnwfM0/SWrFKtpUt2TRZGujzefYMnMOh
+sDElXds8+gmPn84OEX+OH2vlSinjzDMKO2M6wHIl92hHajmuWtmy4Uo7WLCHrh+s
+ROopCtDU/1oEphrDYIQpOZowD7RvbJPso+66umbJA3kwBVjrY41bgFarel+Co8Kn
+XJcWN/G0hcSYABpvIuCkzHYaA06oThwmokxZEeMccMsDDE7m158y5NpmfQ86OA6W
+aaNEip/rwaVjPQuoz52UbrzaBaollklDLDaysnzAmFWAhHtV9Dbnfb2wsR1IOEXQ
+d3Y/mK4oQw8+wNqfcoMo
+=pUpG
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__22_Mar_2012_14_04_10_+1100_8uGYuAeZUMil2qHI--
