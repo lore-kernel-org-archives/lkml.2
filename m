@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab2CVLkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:40:55 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:47149 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab2CVLky (ORCPT
+	id S1756137Ab2CVLrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:47:32 -0400
+Received: from smtp-out-022.synserver.de ([212.40.185.22]:1047 "EHLO
+	smtp-out-015.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752720Ab2CVLrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:40:54 -0400
-Date: Thu, 22 Mar 2012 12:40:51 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86, mce: Add persistent MCE event
-Message-ID: <20120322114051.GB30026@aftab>
-References: <1332340496-21658-1-git-send-email-bp@amd64.org>
- <1332340496-21658-3-git-send-email-bp@amd64.org>
- <4F6AE48D.4070508@linux.vnet.ibm.com>
+	Thu, 22 Mar 2012 07:47:31 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9453
+Message-ID: <4F6B11DC.9090401@metafoo.de>
+Date: Thu, 22 Mar 2012 12:49:48 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6AE48D.4070508@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ravi Kumar V <kumarrav@codeaurora.org>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tsoni@codeaurora.org
+Subject: Re: [PATCH v4 2/2] DMAEngine: Add DMAEngine driver based on old MSM
+ ADM DMA APIs
+References: <1332413882-8456-1-git-send-email-kumarrav@codeaurora.org>
+In-Reply-To: <1332413882-8456-1-git-send-email-kumarrav@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 02:06:29PM +0530, Srivatsa S. Bhat wrote:
-> > +err_unwind:
-> > +	err = -EINVAL;
-> > +	for (--cpu; cpu >= 0; cpu--)
-> > +		perf_rm_persistent_on_cpu(cpu, &per_cpu(mce_ev, cpu));
-> > +
-> 
-> 
-> *Totally* theoretical question: How do you know that the cpu_online_mask isn't
-> sparse? In other words, what if some CPUs weren't booted? Then this for-loop
-> wouldn't be very good..
-> 
-> Oh, now I see that perf_rm_persistent_on_cpu() probably handles that case well..
-> So no issues I guess.. ?
+On 03/22/2012 11:58 AM, Ravi Kumar V wrote:
+> [...]
+> +static struct dma_async_tx_descriptor *msm_dma_prep_sg(
+> +		struct dma_chan *dchan,
+> +		struct scatterlist *dst_sg, unsigned int dst_nents,
+> +		struct scatterlist *src_sg, unsigned int src_nents,
+> +		unsigned long flags, void *context)
+> +{
+> [...]
+> +
+> +	if (!dchan)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	if (dst_nents == 0 || src_nents == 0)
+> +		return ERR_PTR(-EINVAL);
+> +	if (!dst_sg || !src_sg)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	if ((dst_nents != src_nents) || (cmd_config->num_cmd != src_nents))
+> +		return ERR_PTR(-EINVAL);
+> +
+> + [...]
+> +
+> +	if (!new) {
+> +		dev_err(chan->dev,
+> +			"No free memory for link descriptor\n");
+> +		return ERR_PTR(-ENOMEM);
+> +	}
+> +
+> [...]
+> +	return &new->async_tx;
+> +}
 
-Right, this could theoretically come around to bite us in some obscure
-cases, so we probably fix it from the get-go.
+Same comment as before. This is supposed to return either a valid descriptor
+or NULL, but not an ERR_PTR.
 
-> (Moreover, we will probably have bigger issues at hand if some CPU didn't
-> boot..)
-> 
-> (The code looked funny, so I thought of pointing it out, whether or not it
-> actually is worrisome. Sorry for the noise, if any).
-
-Right, no, thanks for pointing it out.
-
-I'll probably do something like the following:
-
-	for (--cpu; cpu >= 0; cpu--)
-		if (cpu_online(cpu))
-			perf_rm_persistent_on_cpu(cpu, &per_cpu(mce_ev, cpu));
-
-to be on the safe side from that perspective.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
