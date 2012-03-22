@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab2CVKZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:25:49 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60732 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab2CVKZr convert rfc822-to-8bit (ORCPT
+	id S1755142Ab2CVKcd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:32:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40270 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab2CVKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:25:47 -0400
+	Thu, 22 Mar 2012 06:32:29 -0400
+Date: Thu, 22 Mar 2012 11:32:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexander Gordeev <agordeev@redhat.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] genirq: Get rid of unneeded force parameter in
+ irq_finalize_oneshot()
+In-Reply-To: <20120319145848.GG2147@dhcp-26-207.brq.redhat.com>
+Message-ID: <alpine.LFD.2.02.1203221128260.2542@ionos>
+References: <20120319145848.GG2147@dhcp-26-207.brq.redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120322100236.GS15988@n2100.arm.linux.org.uk>
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
-	<20120319130445.GN15988@n2100.arm.linux.org.uk>
-	<CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
-	<20120319132623.GO15988@n2100.arm.linux.org.uk>
-	<4F696011.7080409@linaro.org>
-	<CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
-	<CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
-	<20120322100236.GS15988@n2100.arm.linux.org.uk>
-Date: Thu, 22 Mar 2012 15:55:46 +0530
-Message-ID: <CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I understand your point,
-Our target (2.6) always had ARCH_USES_GETTIMEOFFSET=y , but still we
-were able to use the TRACER in past until the patch "kill
-GENERIC_TIMER" published, anyone will ask me remove this patch and use
-TRACER, becaue it was working before. :)
+On Mon, 19 Mar 2012, Alexander Gordeev wrote:
 
-If I set  ARCH_USES_GETTIMEOFFSET=n to use this feature, my target
-fail to boot. (reason I well understand from our past discussions)
+> The only place irq_finalize_oneshot() is called with force parameter set
+> is the threaded handler error exit path. But IRQTF_RUNTHREAD is dropped
+> at this point and irq_wake_thread() is not going to reset it again,
+> since PF_EXITING is set for this thread already. So we will drop the
+> thread's bit in threads_oneshot anyway and the force parameter is
+> superfluous.
 
-but if do below, everything work find target as well as tracer.
+Wrong.
 
---- linux-3.0.20/kernel/time/Kconfig    2012-02-06 23:01:45.000000000 +0530
-+++ linux-3.0.20-dirty/kernel/time/Kconfig      2012-03-19
-18:22:32.000000000 +0530
-@@ -6,7 +6,7 @@ config TICK_ONESHOT
+CPU 0				CPU 1
 
- config NO_HZ
-       bool "Tickless System (Dynamic Ticks)"
--       depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
-+       depends on GENERIC_CLOCKEVENTS
-       select TICK_ONESHOT
-       help
-         This option enables a tickless system: timer interrupts will
-@@ -15,7 +15,7 @@ config NO_HZ
+    do_exit()
+				check(PF_EXITING)
+				set_bit(IRQTF_RUNTHREAD)
+				...
+    set(PF_EXITING)
+    exit_irq_thread()
 
- config HIGH_RES_TIMERS
-       bool "High Resolution Timer Support"
--       depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
-+       depends on GENERIC_CLOCKEVENTS
-       select TICK_ONESHOT
-       help
-         This option enables high resolution timer support. If your
+    if (test_bit(IRQTF_RUNTHREAD))
+	goto out;
 
-On Thu, Mar 22, 2012 at 3:32 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Mar 22, 2012 at 02:46:31PM +0530, Ajeet Yadav wrote:
->> Hi John,
->> On our target  ARCH_USES_GETTIMEOFFSET=y, can you please help me how
->> can I useIRQSOFF_TRACER, PREEMPT_TRACER ?
->
-> If you have ARCH_USES_GETTIMEOFFSET=y, the simple answer is: you can't.
->
-> Your solution is to update your platform to use clock sources and clock
-> events and disable the obsolete ARCH_USES_GETTIMEOFFSET option.
+	-> FAIL
+
+Thanks,
+
+	tglx
