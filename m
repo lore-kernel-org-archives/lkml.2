@@ -1,49 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab2CVG26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 02:28:58 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41882
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750913Ab2CVG25 (ORCPT
+	id S1753281Ab2CVGlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 02:41:04 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48100 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab2CVGlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 02:28:57 -0400
-Date: Thu, 22 Mar 2012 02:28:51 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Shaohua Li <shli@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        neilb@suse.de, axboe@kernel.dk
-Subject: Re: [patch v2 2/6] blk: dont allow discard request merge temporarily
-Message-ID: <20120322062850.GA25288@infradead.org>
-References: <20120316073213.656519005@fusionio.com>
- <20120316073512.485027511@fusionio.com>
- <20120320162157.GE17071@redhat.com>
- <CANejiEWecb58G--=mwez+A4Ra6nJ0qOHGMcJA-nOGH=jmGA3qQ@mail.gmail.com>
- <yq1d385wf75.fsf@sermon.lab.mkp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1d385wf75.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 22 Mar 2012 02:41:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174674164"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: tsoni@codeaurora.org
+Cc: Ravi Kumar V <kumarrav@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/2] dmaengine: Add context parameter to prep_dma_sg and prep_interleaved_dma
+Date: Thu, 22 Mar 2012 12:10:36 +0530
+Message-Id: <1332398437-13306-2-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1332398437-13306-1-git-send-email-kumarrav@codeaurora.org>
+References: <1332398437-13306-1-git-send-email-kumarrav@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 10:18:54PM -0400, Martin K. Petersen wrote:
-> >>>>> "Shaohua" == Shaohua Li <shli@kernel.org> writes:
-> 
-> Shaohua> Enabling discard merge is required for device with slow discard
-> Shaohua> (and very helpful for raid),
-> 
-> Before RAID support there really wasn't much point. That's one of the
-> reasons the current discard merge code has survived despite being
-> completely broken.
+Add new context parameter to DMA SG and Interleaveid mode for passing
+per transfer specific private data, using this it enables the
+dma devices which needs to pass the parameters which changes per
+each transfer
 
-I've actually send repeated bug reports about it beeing broken when
-I enabled async discard in XFS which led to merges, and debugged it down
-to beeing a problem with merges.  But Jens didn't like my patch to mark
-them nomerged, so we still couldn't commit the async discard support for
-XFS which would have helped quite a bit with discard performance.
+Change-Id: Ia9ee19f2c253e68b8e5ff254a57478dcc51014ca
+Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+---
+ drivers/dma/fsldma.c                    |    2 +-
+ drivers/dma/sirf-dma.c                  |    2 +-
+ drivers/dma/ste_dma40.c                 |    2 +-
+ drivers/misc/carma/carma-fpga-program.c |    2 +-
+ drivers/misc/carma/carma-fpga.c         |    7 ++---
+ include/linux/dmaengine.h               |   45 +++++++++++++++++++++++++++++-
+ 6 files changed, 50 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index b98070c..f9f77db 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -645,7 +645,7 @@ fail:
+ static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
+ 	struct scatterlist *dst_sg, unsigned int dst_nents,
+ 	struct scatterlist *src_sg, unsigned int src_nents,
+-	unsigned long flags)
++	unsigned long flags, void *context)
+ {
+ 	struct fsl_desc_sw *first = NULL, *prev = NULL, *new = NULL;
+ 	struct fsldma_chan *chan = to_fsl_chan(dchan);
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 2333810..ff4d344 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -428,7 +428,7 @@ sirfsoc_dma_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+ 
+ static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
+ 	struct dma_chan *chan, struct dma_interleaved_template *xt,
+-	unsigned long flags)
++	unsigned long flags, void *context)
+ {
+ 	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+ 	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index cc5ecbc..2f58ba9 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2287,7 +2287,7 @@ static struct dma_async_tx_descriptor *
+ d40_prep_memcpy_sg(struct dma_chan *chan,
+ 		   struct scatterlist *dst_sg, unsigned int dst_nents,
+ 		   struct scatterlist *src_sg, unsigned int src_nents,
+-		   unsigned long dma_flags)
++		   unsigned long dma_flags, void *context)
+ {
+ 	if (dst_nents != src_nents)
+ 		return NULL;
+diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
+index a2d25e4..3739a12 100644
+--- a/drivers/misc/carma/carma-fpga-program.c
++++ b/drivers/misc/carma/carma-fpga-program.c
+@@ -530,7 +530,7 @@ static noinline int fpga_program_dma(struct fpga_dev *priv)
+ 	}
+ 
+ 	/* setup and submit the DMA transaction */
+-	tx = chan->device->device_prep_dma_sg(chan,
++	tx = chan->device->dmaengine_prep_dma_sg(chan,
+ 					      table.sgl, num_pages,
+ 					      vb->sglist, vb->sglen, 0);
+ 	if (!tx) {
+diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+index 14e974b2..be0baf6 100644
+--- a/drivers/misc/carma/carma-fpga.c
++++ b/drivers/misc/carma/carma-fpga.c
+@@ -638,10 +638,9 @@ static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
+ 	 */
+ 
+ 	/* setup the scatterlist to scatterlist transfer */
+-	tx = chan->device->device_prep_dma_sg(chan,
+-					      dst_sg, dst_nents,
+-					      src_sg, src_nents,
+-					      0);
++	tx = dmaengine_prep_dma_sg(chan, dst_sg, dst_nents,
++					 src_sg, src_nents,
++					 0);
+ 	if (!tx) {
+ 		dev_err(priv->dev, "unable to prep scatterlist DMA\n");
+ 		return -ENOMEM;
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 679b349..61afc79 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -570,7 +570,7 @@ struct dma_device {
+ 		struct dma_chan *chan,
+ 		struct scatterlist *dst_sg, unsigned int dst_nents,
+ 		struct scatterlist *src_sg, unsigned int src_nents,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 
+ 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+ 		struct dma_chan *chan, struct scatterlist *sgl,
+@@ -581,7 +581,7 @@ struct dma_device {
+ 		size_t period_len, enum dma_transfer_direction direction);
+ 	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+ 		struct dma_chan *chan, struct dma_interleaved_template *xt,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		unsigned long arg);
+ 
+@@ -615,6 +615,47 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
+ 	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
+ }
+ 
++static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_sg(
++			struct dma_chan *chan, struct scatterlist *dst_sg,
++			unsigned int dst_nents,	struct scatterlist *src_sg,
++			unsigned int src_nents,	unsigned long flags)
++{
++	return chan->device->device_prep_dma_sg(chan, dst_sg, dst_nents,
++					src_sg, src_nents, flags, NULL);
++}
++
++
++static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_sg_ext(
++			struct dma_chan *chan, struct scatterlist *dst_sg,
++			unsigned int dst_nents,	struct scatterlist *src_sg,
++			unsigned int src_nents,	unsigned long flags,
++					void *context)
++{
++	return chan->device->device_prep_dma_sg(chan, dst_sg, dst_nents,
++					src_sg, src_nents, flags, context);
++}
++
++static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
++			struct dma_chan *chan,
++			struct dma_interleaved_template *xt,
++			unsigned long flags)
++{
++	return chan->device->device_prep_interleaved_dma(chan, xt,
++							flags, NULL);
++}
++
++
++static inline struct dma_async_tx_descriptor
++			*dmaengine_prep_interleaved_dma_ext(
++			struct dma_chan *chan,
++			struct dma_interleaved_template *xt,
++			unsigned long flags,
++			void *context)
++{
++	return chan->device->device_prep_interleaved_dma(chan, xt,
++							flags, context);
++}
++
+ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ {
+ 	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
