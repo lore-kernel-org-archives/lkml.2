@@ -1,200 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030840Ab2CVP4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 11:56:01 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:37981 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965045Ab2CVP4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 11:56:00 -0400
-Date: Thu, 22 Mar 2012 10:56:07 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [GIT PULL] XFS update for 3.4-rc1
-Message-ID: <20120322155607.GK8451@sgi.com>
-References: <20120321183613.2C93F426DA7@whiskey.americas.sgi.com> <CA+55aFyz5UWiJeeMbwZUZEscisZY5Jb0nADpJP6jWKwf3Uai1A@mail.gmail.com> <20120321220652.GJ8451@sgi.com> <CA+55aFzzoLDs0MSo7zoNEDL7gzMmqR+Vr1WYh337xeSVyDhJ0w@mail.gmail.com>
+	id S1030881Ab2CVQC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 12:02:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38293 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752741Ab2CVQC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 12:02:58 -0400
+Date: Thu, 22 Mar 2012 16:02:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] regulator: Add TPS65090 regulator driver
+Message-ID: <20120322160256.GK3091@opensource.wolfsonmicro.com>
+References: <1332421449-15656-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRokNccIwvMzawGl"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzzoLDs0MSo7zoNEDL7gzMmqR+Vr1WYh337xeSVyDhJ0w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1332421449-15656-1-git-send-email-vbyravarasu@nvidia.com>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus, 
 
-On Wed, Mar 21, 2012 at 03:59:49PM -0700, Linus Torvalds wrote:
-> On Wed, Mar 21, 2012 at 3:06 PM, Ben Myers <bpm@sgi.com> wrote:
-> > Unfortunately the stuff in:  git://oss.sgi.com/xfs/xfs master
-> >
-> > Conflicts with the stuff in:  git://oss.sgi.com/xfs/xfs for-linus
-> 
-> There's still nothng in 'for-linus'.
+--wRokNccIwvMzawGl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-D'oh.  I'll give it another whirl...
+On Thu, Mar 22, 2012 at 06:34:09PM +0530, Venu Byravarasu wrote:
+> Add TPS65090 regulator driver
+>=20
+> TPS65090 PMIC from TI consists of 3 step down converters,
+> 2 always on LDOs and 7 current limited load switches. The
+> output voltages are ON/OFF controllable and are meant to
+> supply power to the components on target board.
 
-Please pull from git://oss.sgi.com/xfs/xfs for-linus  
+Applied, but...
 
-I've updated it with changes for 3.4.  We have scalability improvements
-for quotas, log grant code cleanups, bugfixes and other cleanups large
-and small.
+> +	rdev =3D regulator_register(&ri->desc, &pdev->dev,
+> +				&tps_pdata->regulator, ri, NULL);
+> +	if (IS_ERR_OR_NULL(rdev)) {
 
-> > I've resolved the conflict here:  git://oss.sgi.com/xfs/xfs for-linus-merged
-> 
-> I actually prefer to merge things myself to see what is up, especially
-> since everybody else writes horrible merge messages (but also because
-> I simply want to know what the conflicts are). I appreciate more
-> complex pull requests that *also* have a "pre-merged" branch just in
-> case (I tend to use that for verification if there was anything even
-> remotely questionable going on), but I really do not generally want
-> pre-merging.
+=2E..please submit an incremental patch changing this to plain IS_ERR(),
+regulator_register() only returns error pointers.  Note that no other
+regulator drivers do this check.
 
-I understand.  Here's a pre-merged branch (just in case):
+--wRokNccIwvMzawGl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-git://oss.sgi.com/xfs/xfs for-linus-merged
- 
-> I'm used to resolving conflicts. I'm so used to it, in fact, that
-> there have been cases where I did it right despite not really knowing
-> the code and the maintainer did it wrong, just because I know what to
-> look for.
-> 
-> > I would like to figure out how to
-> > 1) send important bugfixes upstream after rc1, and
-> > 2) not hold up development commits to xfs/master, while
-> > 3) avoiding conflicts like this.
-> 
-> Avoiding conflicts isn't that important. Getting too many of them
-> implies that there is something odd going on. But a few conflicts due
-> to upstream bugfixes are basically "normal". Judging by the merge I
-> see, there wasn't anything complicated going on.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Ok, I won't worry too much about avoiding conflict anymore.  Summary and
-diffstat below.
+iQIcBAEBAgAGBQJPa00nAAoJEBus8iNuMP3dQsIP/Ati7M+C9h8Ru35P5hjQxTC2
+MjKoZNTukrhbsEAwBd8re0DBbu0uS2gpHd0i+sZp2bAVXGUTbtH24NWsM2ppK+9A
+hW5GH4uvJ17IZbLKtZFOTtCxzuBuhLq1/jHpHf68THnYH8KZmKsc38tSfspnhXMs
+alARQ5m+9lTHPLUokaWGckFJQD8A2HpBhfgDE/uXPF9jQ/bZk4DyiRTn3T7gxsdH
+QFIN6xD9g0qgnaJVQvUHOtoyOBicy8OFKAuaZfbplLJ4r9zLbNBxwaORZDseK6Ya
+tOuxFCYrKv+5lJ3uymqmmRlKuUGMX28SndEycFG+3buTzibcBmtnZMxtMkshSdpO
+ymU1U+WegWDOv8MPvCqlefh/ZiNpWk+VsYyYxpXWOCrV+OFGhQ55mkKsi9nCQT63
+PRlD19q7nRergr4CuFp4CTW+/JvJd4uVIkWmEvWcceTzMthn0de0qJGCwvYsv+ed
+FdpOEx3AaC8KDPNzN602EAIIpuqBL4YgXeKHB8etEPL8JZK574ZwYNnjD/in+kIS
+VQ3FUtxuMb7FUq6sR4jJXWkIf9gcMZOZsDcSAVlys11tUtuGnW1+qgb8hoBbLtyA
+6CflhBINxQ17GfvfqCr3l6qTZVlvdcJvaCljZtIgbiafefFNXRHk5s2RZXYRoUkC
+jRwkMAn4oed5UNTk7Xpf
+=XsjO
+-----END PGP SIGNATURE-----
 
-Thanks,
-	Ben
-
-The following changes since commit 30d73f375238441d6dc31de0d90bc39f5bb0bfe5:
-
-  Merge tag 'dlm-3.4' of git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm (2012-03-21 13:54:22 -0700)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Alex Elder (1):
-      xfs: only take the ILOCK in xfs_reclaim_inode()
-
-Amit Sahrawat (1):
-      xfs: kill the unused XFS_BB_FSB_OFFSET macro
-
-Chandra Seetharaman (4):
-      Define a new function xfs_this_quota_on()
-      Define a new function xfs_inode_dquot()
-      Change xfs_sb_from_disk() interface to take a mount pointer
-      Define new macro XFS_ALL_QUOTA_ACTIVE and simply some usage
-
-Christoph Hellwig (29):
-      xfs: use a normal shrinker for the dquot freelist
-      xfs: split tail_lsn assignments from log space wakeups
-      xfs: do exact log space wakeups in xlog_ungrant_log_space
-      xfs: remove xfs_trans_unlocked_item
-      xfs: cleanup xfs_log_space_wake
-      xfs: remove log space waitqueues
-      xfs: add the xlog_grant_head structure
-      xfs: add xlog_grant_head_init
-      xfs: add xlog_grant_head_wake_all
-      xfs: share code for grant head waiting
-      xfs: share code for grant head wakeups
-      xfs: share code for grant head availability checks
-      xfs: split and cleanup xfs_log_reserve
-      xfs: merge xfs_qm_export_dquot into xfs_qm_scall_getquota
-      xfs: include reservations in quota reporting
-      quota: make Q_XQUOTASYNC a noop
-      xfs: use per-filesystem I/O completion workqueues
-      xfs: do not require an ioend for new EOF calculation
-      xfs: log file size updates as part of unwritten extent conversion
-      xfs: log file size updates at I/O completion time
-      xfs: log timestamp updates
-      xfs: make xfs_inode_item_size idempotent
-      xfs: split in-core and on-disk inode log item fields
-      xfs: reimplement fdatasync support
-      xfs: use common code for quota statistics
-      xfs: per-filesystem dquot LRU lists
-      xfs: use per-filesystem radix trees for dquot lookup
-      xfs: remove the per-filesystem list of dquots
-      xfs: remove the global xfs_Gqm structure
-
-Dave Chinner (5):
-      xfs: clean up minor sparse warnings
-      xfs: fix inode lookup race
-      xfs: remove remaining scraps of struct xfs_iomap
-      xfs: fallback to vmalloc for large buffers in xfs_attrmulti_attr_get
-      xfs: fallback to vmalloc for large buffers in xfs_getbmap
-
-Jesper Juhl (1):
-      XFS: xfs_trans_add_item() - don't assign in ASSERT() when compare is intended
-
-Mitsuo Hayasaka (4):
-      xfs: show uuid when mount fails due to duplicate uuid
-      xfs: change available ranges of softlimit and hardlimit in quota check
-      xfs: make inode quota check more general
-      xfs: cleanup quota check on disk blocks and inodes reservations
-
- fs/quota/quota.c         |    3 +-
- fs/xfs/Makefile          |    3 -
- fs/xfs/kmem.h            |    6 -
- fs/xfs/xfs_aops.c        |  183 +++++++----
- fs/xfs/xfs_aops.h        |    4 +-
- fs/xfs/xfs_bmap.c        |   13 +-
- fs/xfs/xfs_buf.c         |   17 -
- fs/xfs/xfs_dfrag.c       |   24 +-
- fs/xfs/xfs_dir2_block.c  |    1 +
- fs/xfs/xfs_dquot.c       |  539 +++++++++--------------------
- fs/xfs/xfs_dquot.h       |   49 ++--
- fs/xfs/xfs_file.c        |   84 +----
- fs/xfs/xfs_iget.c        |   41 ++-
- fs/xfs/xfs_inode.c       |   94 ++----
- fs/xfs/xfs_inode.h       |   23 +-
- fs/xfs/xfs_inode_item.c  |  297 ++++++----------
- fs/xfs/xfs_inode_item.h  |   16 +-
- fs/xfs/xfs_ioctl.c       |   14 +-
- fs/xfs/xfs_ioctl32.c     |    2 +-
- fs/xfs/xfs_iomap.c       |   19 +-
- fs/xfs/xfs_iops.c        |   71 +----
- fs/xfs/xfs_itable.c      |   21 +-
- fs/xfs/xfs_log.c         |  612 ++++++++++++++-------------------
- fs/xfs/xfs_log.h         |   16 +-
- fs/xfs/xfs_log_priv.h    |   28 +-
- fs/xfs/xfs_log_recover.c |   12 +-
- fs/xfs/xfs_mount.c       |    8 +-
- fs/xfs/xfs_mount.h       |    5 +-
- fs/xfs/xfs_qm.c          |  863 ++++++++++++++++------------------------------
- fs/xfs/xfs_qm.h          |   63 +---
- fs/xfs/xfs_qm_bhv.c      |   42 +--
- fs/xfs/xfs_qm_stats.c    |  105 ------
- fs/xfs/xfs_qm_stats.h    |   53 ---
- fs/xfs/xfs_qm_syscalls.c |  134 +++-----
- fs/xfs/xfs_quota.h       |    2 +
- fs/xfs/xfs_quota_priv.h  |   11 -
- fs/xfs/xfs_sb.h          |    1 -
- fs/xfs/xfs_stats.c       |   99 +++++-
- fs/xfs/xfs_stats.h       |   10 +
- fs/xfs/xfs_super.c       |  164 +++++-----
- fs/xfs/xfs_super.h       |    8 +-
- fs/xfs/xfs_sync.c        |   46 +---
- fs/xfs/xfs_sync.h        |    2 -
- fs/xfs/xfs_trace.h       |   33 +-
- fs/xfs/xfs_trans.c       |   35 ++-
- fs/xfs/xfs_trans_ail.c   |   83 +----
- fs/xfs/xfs_trans_buf.c   |   25 +--
- fs/xfs/xfs_trans_dquot.c |   19 +-
- fs/xfs/xfs_trans_inode.c |    8 +-
- fs/xfs/xfs_trans_priv.h  |    3 -
- fs/xfs/xfs_vnode.h       |    1 -
- fs/xfs/xfs_vnodeops.h    |    3 -
- 52 files changed, 1502 insertions(+), 2516 deletions(-)
- delete mode 100644 fs/xfs/xfs_qm_stats.c
- delete mode 100644 fs/xfs/xfs_qm_stats.h
+--wRokNccIwvMzawGl--
