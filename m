@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab2CVGtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 02:49:43 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50635 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab2CVGtl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 02:49:41 -0400
-Message-ID: <4F6ACB80.10809@linaro.org>
-Date: Thu, 22 Mar 2012 14:49:36 +0800
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1753084Ab2CVG6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 02:58:25 -0400
+Received: from mail4.ccl.ru ([195.222.140.73]:59949 "EHLO mail4.ccl.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab2CVG6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 02:58:23 -0400
+Message-ID: <4F6ACD82.2030505@permonline.ru>
+Date: Thu, 22 Mar 2012 12:58:10 +0600
+From: Mike Sinkovsky <msink@permonline.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Nancy Chen <Nancy.Chen@freescale.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v13] Regulator: Add Anatop regulator driver
-References: <1331692152-9256-1-git-send-email-paul.liu@linaro.org> <20120322052449.GB2213@S2101-09.ap.freescale.net>
-In-Reply-To: <20120322052449.GB2213@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Florian Fainelli <florian@openwrt.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, msink@permonline.ru
+Subject: Re: [PATCH v2] ethernet driver for the WIZnet W5300 chip
+References: <1332149037-12025-1-git-send-email-msink@permonline.ru> <4F69EA7E.4030606@openwrt.org>
+In-Reply-To: <4F69EA7E.4030606@openwrt.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012年03月22日 13:24), Shawn Guo wrote:
-> On Wed, Mar 14, 2012 at 10:29:12AM +0800, Ying-Chun Liu (PaulLiu) wrote:
->> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
->>
->> Anatop is an integrated regulator inside i.MX6 SoC.
->> There are 3 digital regulators which controls PU, CORE (ARM), and SOC.
->> And 3 analog regulators which controls 1P1, 2P5, 3P0 (USB).
->> This patch adds the Anatop regulator driver.
->>
->> Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
->> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
->> Acked-by: Shawn Guo <shawn.guo@linaro.org>
->> Reviewed-by: Axel Lin <axel.lin@gmail.com>
->> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> Cc: Liam Girdwood <lrg@ti.com>
->> Cc: Samuel Ortiz <sameo@linux.intel.com>
->> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->> ---
->>  drivers/regulator/Kconfig            |    8 +
->>  drivers/regulator/Makefile           |    1 +
->>  drivers/regulator/anatop-regulator.c |  241 ++++++++++++++++++++++++++++++++++
->>  3 files changed, 250 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/regulator/anatop-regulator.c
->>
-> I just noticed that the binding document below got lost since v11 of
-> the series.
-> 
->   Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-> 
-> It got lost by mistaken or you dropped it for some reason?
-> 
+21.03.2012 20:49, Florian Fainelli wrote:
+>> +#if defined(CONFIG_WIZNET_BUS_DIRECT)
+>> +#define detect_bus_mode(priv, mem_size) do {} while(0)
+>> +#define read_reg_u16    read_u16_direct
+>> +#define write_reg_u16    write_u16_direct
+>> +
+>> +#elif defined(CONFIG_WIZNET_BUS_INDIRECT)
+>> +#define detect_bus_mode(priv, mem_size) do {} while(0)
+>> +#define read_reg_u16    read_u16_indirect
+>> +#define write_reg_u16    write_u16_indirect
+> Looks like you don't have to make such decisions at compile-time. 
+> Since it is a platform driver, better supply this through 
+> platform_data instead.
+Interface bus mode can be selected in .config (make menuconfig etc.)
+If don't selected explicitly in .config, platform_device.resource[] is 
+used in runtime to setup callbacks.
+This hack was done for performance reasons, but may be not necessary, 
+I'm not sure.
 
-Ouch. I'll prepare a separate patch to add back the documentation.
 
-Sorry,
+> Please implement phylib to properly report the link state to the 
+> networking stack and ethtool.
+This chip don't allow any access to phy interface, it completely hidden 
+for host processor.
+The only way I found - to wire pin LINK from W5300 to some GPIO, then 
+ise RIGING/FALLING interrupt for tthat GPIO:
+> +static irqreturn_t w5300_detect_link(int irq, void *ndev_instance)
+> +{
+> +        struct net_device *ndev = ndev_instance;
+> +        struct w5300_private *priv = netdev_priv(ndev);
+> +
+> +        if (netif_running(ndev)) {
+> +                if (gpio_get_value(priv->link) == 0)
+> +                        netif_carrier_off(ndev);
+> +                else
+> +                        netif_carrier_on(ndev);
+> +        }
+> +
+> +        return IRQ_HANDLED;
+> +}
+Isn't it enough for networking stack?
 
-Paul
+
+> Allow platform_data to pass a valid MAC address to this driver instead 
+> of defaulting to random unconditionnaly.
+>
+Do you mean - create .h file in /include/linux/platform_data/ ?
+Ok, will do in next version.
+
+Thanks.
+
+---
+Mike
+
 
