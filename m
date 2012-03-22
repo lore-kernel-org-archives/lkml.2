@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760014Ab2CVV0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:26:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34234 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758358Ab2CVV0q (ORCPT
+	id S1031048Ab2CVV0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:26:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60747 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758358Ab2CVV0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:26:46 -0400
-X-Sasl-enc: 0QH4HtmN9huK943xbQHChCoKlZ5tFZshqQOYu1/EE8Ga 1332451605
-Date: Thu, 22 Mar 2012 14:26:44 -0700
-From: Greg KH <greg@kroah.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Regression introduced in v3.2.12 stable
-Message-ID: <20120322212644.GA30888@kroah.com>
-References: <4F6B7A37.3020300@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6B7A37.3020300@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Mar 2012 17:26:49 -0400
+Date: Thu, 22 Mar 2012 14:26:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+Message-Id: <20120322142647.42395398.akpm@linux-foundation.org>
+In-Reply-To: <4F69D496.2040509@openvz.org>
+References: <20120321065140.13852.52315.stgit@zurg>
+	<20120321100602.GA5522@barrios>
+	<4F69D496.2040509@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 03:15:03PM -0400, Joseph Salisbury wrote:
-> I figured I'd send a heads up regarding a possible regression in v3.2.12
-> stable.  The issue prevents systems from booting.
+On Wed, 21 Mar 2012 17:16:06 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+
+> Minchan Kim wrote:
+> > Hi Konstantin,
+> >
+> > It seems to be nice clean up to me and you are a volunteer we have been wanted
+> > for a long time. Thanks!
+> > I am one of people who really want to expand vm_flags to 64 bit but when KOSAKI
+> > tried it, Linus said his concerning, I guess you already saw that.
+> >
+> > He want to tidy vm_flags's usage up rather than expanding it.
+> > Without the discussion about that, just expanding vm_flags would make us use
+> > it up easily so that we might need more space.
 > 
-> There have been a few bugs[0] reported against the Ubuntu kernel, which
-> was recently rebased to 3.2.12.  We're in the process of bisecting now
-> and will post an update..
+> Strictly speaking, my pachset does not expands vm_flags, it just prepares to this.
+> Anyway vm_flags_t looks better than hard-coded "unsigned long" and messy type-casts around it.
 
-What specifically happens here when the system does not boot?  Any error
-message?  Are you sure this isn't the known pci express issue showing up
-here?
+It would be nice to find some way of triggering compiler warnings or
+sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
+thoughts on this?
 
-Can you run 'git bisect' to trace it down to a specific patch please?
-
-thanks,
-
-greg k-h
+(Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
+describe it)
