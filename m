@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030573Ab2CVJxe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:53:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37695 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757287Ab2CVJxc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:53:32 -0400
-Message-ID: <1332409996.18960.511.camel@twins>
-Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ari Savolainen <ari.m.savolainen@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 Mar 2012 10:53:16 +0100
-In-Reply-To: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
-References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932361Ab2CVJxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:53:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52252 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965038Ab2CVJxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:53:44 -0400
+Date: Thu, 22 Mar 2012 10:53:42 +0100
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+Message-ID: <20120322095342.GC14485@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
-> The warning below is printed when executing a command like
-> sudo perf record su - user -c "echo hello"
+On Tue 20-03-12 16:41:20, Artem Bityutskiy wrote:
+> This patch-set makes ext4 independent of the VFS superblock management
+> services. Namely, ext4 does not require to register the 'write_super()' VFS
+> call-back.
 > 
-> It's fixed by moving the call of perf_event_comm to be protected
-> by the task lock.
+> The reason of this exercises is to get rid of the 'sync_supers()' kernel thread
+> which wakes up every 5 seconds (by default) even if all superblocks are clean.
+> This is wasteful from power management POW (unnecessary wake-ups).
+> 
+> Note, I tried to optimize 'sync_supers()' instead in 2010, but Al wanted me
+> to get rid of it instead. See https://lkml.org/lkml/2010/6/6/87
+> And I think this is right because many file-systems do not need this, for
+> example btrfs does not use VFS superblock management services at all, so on a
+> btrfs-based system we currently end-up useless periodic wake-ups source.
+> 
+> Changes for other file-systems are coming later.
+> 
+> The patch-set structure.
+> 1. patches 1,2,3 are independent ext4 cleanups and I ask Ted to merge them as
+>    soon/long as they are OK. I sent them also independently in order to get
+>    early comments, but did not get so far, so re-sending.
+> 2. patch 4 exports 'dirty_writeback_interval' and it would be very useful to
+>    have it merged ASAP to simplify further work
+> 3. patch 5 is also and independent VFS clean-up
+> 4. patches 6-9 actually make ext4 independent on the 'sync_supers()' thread.
+  Artem, if you look at places where ext4 sets s_dirt you will notice they
+are rather rare events and all of them actually take care of writing
+superblock themselves (at least if my memory serves well). So ext4
+shouldn't need sync_supers() at all...
 
-That seems like a rather poor solution since it increases the lock hold
-time for no explained reason.
-
-> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
-
->  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
->  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
-
-So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
-so I presume its before that.
+								Honza
