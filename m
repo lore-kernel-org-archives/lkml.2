@@ -1,186 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab2CVHMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 03:12:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53805 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab2CVHMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 03:12:09 -0400
-Date: Thu, 22 Mar 2012 15:11:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Nancy Chen <Nancy.Chen@freescale.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v13] Regulator: Add Anatop regulator driver
-Message-ID: <20120322071152.GC2213@S2101-09.ap.freescale.net>
-References: <1331692152-9256-1-git-send-email-paul.liu@linaro.org>
- <20120322052449.GB2213@S2101-09.ap.freescale.net>
- <4F6ACB80.10809@linaro.org>
+	id S1754218Ab2CVH3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 03:29:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab2CVH3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 03:29:07 -0400
+Date: Thu, 22 Mar 2012 09:28:55 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Avi Kivity <avi@redhat.com>, minyard@acm.org,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Corey Minyard <tcminyard@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH 0/2 v3] kvm: notify host when guest panicked
+Message-ID: <20120322072855.GX22368@redhat.com>
+References: <4F58664D.1070800@cn.fujitsu.com>
+ <4F66E14F.3040809@cn.fujitsu.com>
+ <4F6854F4.3060703@cn.fujitsu.com>
+ <20120320154517.GG27928@redhat.com>
+ <4F692723.8050904@cn.fujitsu.com>
+ <20120321091127.GO22368@redhat.com>
+ <4F69FF48.3010200@acm.org>
+ <4F6A00EC.3060706@redhat.com>
+ <4F6A29C6.2070708@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4F6ACB80.10809@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4F6A29C6.2070708@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 02:49:36PM +0800, Ying-Chun Liu (PaulLiu) wrote:
-...
-> Ouch. I'll prepare a separate patch to add back the documentation.
+On Wed, Mar 21, 2012 at 02:19:34PM -0500, Anthony Liguori wrote:
+> On 03/21/2012 11:25 AM, Avi Kivity wrote:
+> >On 03/21/2012 06:18 PM, Corey Minyard wrote:
+> >>
+> >>>Look at drivers/char/ipmi/ipmi_msghandler.c. It has code to send panic
+> >>>event over IMPI. The code is pretty complex. Of course if we a going to
+> >>>implement something more complex than simple hypercall for panic
+> >>>notification we better do something more interesting with it than just
+> >>>saying "panic happened", like sending stack traces on all cpus for
+> >>>instance.
+> >>
+> >>I doubt that's the best example, unfortunately.  The IPMI event log
+> >>has limited space and it has to be send a little piece at a time since
+> >>each log entry is 14 bytes.  It just prints the panic string, nothing
+> >>else.  Not that it isn't useful, it has saved my butt before.
+> >>
+> >>You have lots of interesting options with paravirtualization.  You
+> >>could, for instance, create a console driver that delivered all
+> >>console output efficiently through a hypercall.  That would be really
+> >>easy.  Or, as you mention, a custom way to deliver panic information.
+> >>Collecting information like stack traces would be harder to
+> >>accomplish, as I don't think there is currently a way to get it except
+> >>by sending it to printk.
+> >
+> >That already exists; virtio-console (or serial console emulation) can do
+> >the job.
 > 
-I just gave a quick testing on the driver with the dts change you
-posted on imx6.  There is some little problem we may need to address.
+> I think the use case here is pretty straight forward: if the guest
+> finds itself in bad place, it wants to indicate that to the host.
+> 
+> We shouldn't rely on any device drivers or complex code.  It should
+> be as close to a single instruction as possible that can run even if
+> interrupts are disabled.
+> 
+> An out instruction fits this very well.  I think a simple protocol like:
+> 
+> inl PORT -> returns a magic number indicating the presence of qemucalls
+> inl PORT+1 -> returns a bitmap of supported features
+> 
+Sigh, one more PV isa device.
 
-prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-vddpu@140
-vddpu: 725 <--> 1300 mV at 1100 mV
-prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-vddcore@140
-cpu: 725 <--> 1300 mV at 1100 mV
-prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-vddsoc@140
-vddsoc: 725 <--> 1300 mV at 1100 mV
-prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-2p5@130
-vdd2p5: 2000 <--> 2775 mV at 2400 mV
-prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-1p1@110
-vdd1p1: 800 <--> 1400 mV at 1100 mV
-prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-3p0@120
-vdd3p0: 2800 <--> 3150 mV at 3000 mV
+> outl PORT+1 -> data reg1
+> outl PORT+2 -> data reg2
+> outl PORT+N -> data regN
+> 
+> outl PORT -> qemucall of index value with arguments 1..N
+And you think you can trust panicked SMP guest to not call this on
+multiple cpus simultaneously?
 
-The DT core function __of_translate_address will give some annoying
-error messages.  We call of_platform_populate from anatop mfd driver
-to populate regulator device, and during the call, DT core tries to
-translate "reg" property to address resource, and will complain if
-!(#size-cells > 0). 
+> 
+> Regards,
+> 
+> Anthony Liguori
+> 
+> >
+> >In fact the feature can be implemented 100% host side by searching for a
+> >panic string signature in the console logs.
+> >
 
-To fix that, we may want to rename "reg" property to something else,
-e.g. "anatop-reg-offset".  I tested the following changes removed the
-error messages above.
-
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index 56d3c16..65bad45 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -346,16 +346,14 @@
-                                compatible = "fsl,imx6q-anatop";
-                                reg = <0x020c8000 0x1000>;
-                                interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
--                               #address-cells = <1>;
--                               #size-cells = <0>;
-
--                               regulator-vddpu@140 {
-+                               regulator-vddpu {
-                                        compatible = "fsl,anatop-regulator";
-                                        regulator-name = "vddpu";
-                                        regulator-min-microvolt = <725000>;
-                                        regulator-max-microvolt = <1300000>;
-                                        regulator-always-on;
--                                       reg = <0x140>;
-+                                       anatop-reg-offset = <0x140>;
-                                        anatop-vol-bit-shift = <9>;
-                                        anatop-vol-bit-width = <5>;
-                                        anatop-min-bit-val = <1>;
-@@ -363,13 +361,13 @@
-                                        anatop-max-voltage = <1300000>;
-                                };
-
--                               regulator-vddcore@140 {
-+                               regulator-vddcore {
-                                        compatible = "fsl,anatop-regulator";
-                                        regulator-name = "cpu";
-                                        regulator-min-microvolt = <725000>;
-                                        regulator-max-microvolt = <1300000>;
-                                        regulator-always-on;
--                                       reg = <0x140>;
-+                                       anatop-reg-offset = <0x140>;
-                                        anatop-vol-bit-shift = <0>;
-                                        anatop-vol-bit-width = <5>;
-                                        anatop-min-bit-val = <1>;
-@@ -377,13 +375,13 @@
-                                        anatop-max-voltage = <1300000>;
-                                };
-
--                               regulator-vddsoc@140 {
-+                               regulator-vddsoc {
-                                        compatible = "fsl,anatop-regulator";
-                                        regulator-name = "vddsoc";
-                                        regulator-min-microvolt = <725000>;
-                                        regulator-max-microvolt = <1300000>;
-                                        regulator-always-on;
--                                       reg = <0x140>;
-+                                       anatop-reg-offset = <0x140>;
-                                        anatop-vol-bit-shift = <18>;
-                                        anatop-vol-bit-width = <5>;
-                                        anatop-min-bit-val = <1>;
-@@ -391,13 +389,13 @@
-                                        anatop-max-voltage = <1300000>;
-                                };
-
--                               regulator-2p5@130 {
-+                               regulator-2p5 {
-                                        compatible = "fsl,anatop-regulator";
-                                        regulator-name = "vdd2p5";
-                                        regulator-min-microvolt = <2000000>;
-                                        regulator-max-microvolt = <2775000>;
-                                        regulator-always-on;
--                                       reg = <0x130>;
-+                                       anatop-reg-offset = <0x130>;
-                                        anatop-vol-bit-shift = <8>;
-                                        anatop-vol-bit-width = <5>;
-                                        anatop-min-bit-val = <0>;
-@@ -405,13 +403,13 @@
-                                        anatop-max-voltage = <2775000>;
-                                };
-
--                               regulator-1p1@110 {
-+                               regulator-1p1 {
-                                        compatible = "fsl,anatop-regulator";
-                                        regulator-name = "vdd1p1";
-                                        regulator-min-microvolt = <800000>;
-                                        regulator-max-microvolt = <1400000>;
-                                        regulator-always-on;
--                                       reg = <0x110>;
-+                                       anatop-reg-offset = <0x110>;
-                                        anatop-vol-bit-shift = <8>;
-                                        anatop-vol-bit-width = <5>;
-                                        anatop-min-bit-val = <4>;
-@@ -419,13 +417,13 @@
-                                        anatop-max-voltage = <1400000>;
-                                };
-
--                               regulator-3p0@120 {
-+                               regulator-3p0 {
-                                        compatible = "fsl,anatop-regulator";
-                                        regulator-name = "vdd3p0";
-                                        regulator-min-microvolt = <2800000>;
-                                        regulator-max-microvolt = <3150000>;
-                                        regulator-always-on;
--                                       reg = <0x120>;
-+                                       anatop-reg-offset = <0x120>;
-                                        anatop-vol-bit-shift = <8>;
-                                        anatop-vol-bit-width = <5>;
-                                        anatop-min-bit-val = <7>;
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-index 17499a5..632c087 100644
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -138,9 +138,9 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
-        rdesc->type = REGULATOR_VOLTAGE;
-        rdesc->owner = THIS_MODULE;
-        sreg->mfd = anatopmfd;
--       ret = of_property_read_u32(np, "reg", &sreg->control_reg);
-+       ret = of_property_read_u32(np, "anatop-reg-offset", &sreg->control_reg);
-        if (ret) {
--               dev_err(dev, "no reg property set\n");
-+               dev_err(dev, "no anatop-reg-offset property set\n");
-                goto anatop_probe_end;
-        }
-        ret = of_property_read_u32(np, "anatop-vol-bit-width",
-
-
--- 
-Regards,
-Shawn
+--
+			Gleb.
