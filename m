@@ -1,46 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab2CVGX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 02:23:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38096 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231Ab2CVGXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 02:23:54 -0400
-Message-ID: <1332397358.2982.82.camel@pasglop>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Date: Thu, 22 Mar 2012 17:22:38 +1100
-In-Reply-To: <20120322053958.GA5278@barrios>
-References: <20120321065140.13852.52315.stgit@zurg>
-	 <20120321100602.GA5522@barrios> <4F69D496.2040509@openvz.org>
-	 <20120322053958.GA5278@barrios>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755021Ab2CVGZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 02:25:11 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:54888 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2CVGZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 02:25:04 -0400
+Message-ID: <4F6AC5BD.6040309@kernel.org>
+Date: Thu, 22 Mar 2012 02:25:01 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mjg@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 5/5] Disable MCP limit exceeded messages from Intel IPS
+ driver
+References: <1328545032-21373-1-git-send-email-andi@firstfloor.org>	<1328545032-21373-6-git-send-email-andi@firstfloor.org> <20120207114547.2a32fbfb@jbarnes-desktop>
+In-Reply-To: <20120207114547.2a32fbfb@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 14:39 +0900, Minchan Kim wrote:
-> I think we can also unify VM_MAPPED_COPY(nommu) and VM_SAO(powerpc)
-> with one VM_ARCH_1
-> Okay. After this series is merged, let's try to remove flags we can
-> do. Then, other guys
-> might suggest another ideas.
+Applied.
 
-Agreed. I would like more VM_ARCH while at it :-)
-
-Cheers,
-Ben.
-
-
+thanks,
+Len Brown, Intel Open Source Technology Center
