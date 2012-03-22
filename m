@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab2CVKdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:33:50 -0400
-Received: from gecko.sbs.de ([194.138.37.40]:20097 "EHLO gecko.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab2CVKdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:33:49 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 06:33:49 EDT
-From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Fix ftrace stack trace entries
-Date: Thu, 22 Mar 2012 11:18:20 +0100
-Message-Id: <1332411501-8059-2-git-send-email-wolfgang.mauerer@siemens.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1332411501-8059-1-git-send-email-wolfgang.mauerer@siemens.com>
-References: <1332411501-8059-1-git-send-email-wolfgang.mauerer@siemens.com>
+	id S1756774Ab2CVKeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:34:25 -0400
+Received: from mail-pb0-f66.google.com ([209.85.160.66]:59438 "EHLO
+	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab2CVKeX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 06:34:23 -0400
+Message-ID: <4F6B002A.7000600@gmail.com>
+Date: Thu, 22 Mar 2012 18:34:18 +0800
+From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, "Ren, Yongjie" <yongjie.ren@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        Casey DeLorme <cdelorme@gmail.com>,
+        David TECHER <davidtecher@yahoo.fr>,
+        "Teo En Ming (Zhang Enming)" <singapore.mr.teo.en.ming@gmail.com>
+Subject: [MUST WATCH YOUTUBE VIDEO] [SUCCESS REPORT] Xen VGA Passthrough to
+ Windows 8 Consumer Preview HVM Virtual Machine with Xen 4.2-unstable Changeset
+ 25070 and Linux Kernel 3.3.0 in Ubuntu 11.10 amd64 dom0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-8 hex characters tell only half the tale for 64 bit CPUs,
-so use the appropriate length.
+Dear Xen Users and David Techer,
 
-Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
----
- kernel/trace/trace_entries.h |   16 ++++++++++++----
- kernel/trace/trace_export.c  |    2 +-
- 2 files changed, 13 insertions(+), 5 deletions(-)
+It is only in the last few days that I have had great success with Xen 
+VGA Passthrough to Windows 8 Consumer Preview HVM Virtual Machine with 
+Xen 4.2-unstable Changeset 25070 and Linux Kernel 3.3.0 in Ubuntu 11.10 
+amd64 dom0.
 
-diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
-index d91eb05..4108e12 100644
---- a/kernel/trace/trace_entries.h
-+++ b/kernel/trace/trace_entries.h
-@@ -166,6 +166,12 @@ FTRACE_ENTRY_DUP(wakeup, ctx_switch_entry,
- 
- #define FTRACE_STACK_ENTRIES	8
- 
-+#ifndef CONFIG_64BIT
-+# define IP_FMT "%08lx"
-+#else
-+# define IP_FMT "%016lx"
-+#endif
-+
- FTRACE_ENTRY(kernel_stack, stack_entry,
- 
- 	TRACE_STACK,
-@@ -175,8 +181,9 @@ FTRACE_ENTRY(kernel_stack, stack_entry,
- 		__dynamic_array(unsigned long,	caller	)
- 	),
- 
--	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
--		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
-+	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
- 		 __entry->caller[6], __entry->caller[7]),
-@@ -193,8 +200,9 @@ FTRACE_ENTRY(user_stack, userstack_entry,
- 		__array(	unsigned long,	caller, FTRACE_STACK_ENTRIES	)
- 	),
- 
--	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
--		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
-+	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
- 		 __entry->caller[6], __entry->caller[7]),
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 7b46c9b..3dd15e8 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -162,7 +162,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
- #define __dynamic_array(type, item)
- 
- #undef F_printk
--#define F_printk(fmt, args...) #fmt ", "  __stringify(args)
-+#define F_printk(fmt, args...) __stringify(fmt) ", "  __stringify(args)
- 
- #undef FTRACE_ENTRY_REG
- #define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, filter,\
--- 
-1.7.6.4
+Please do watch my Youtube video on successful Xen VGA Passthrough to 
+Windows 8 Consumer Preview HVM domU.
+
+Youtube video link: http://www.youtube.com/watch?v=kGH05ZoMk6o
+
+The duration of my home made video is only 26 minutes. My Youtube video 
+demonstrates Xen VGA Passthrough of my Palit NVIDIA Geforce 8400 GS PCI 
+Express x16 to Windows 8 Consumer Preview HVM.
+
+Also read the documentation I have written for Xen, Linux Kernel and Xen 
+VGA Passthrough.
+
+Article 1: Building and Installing Xen 4.x and Linux Kernel 3.x on 
+Ubuntu and Debian Linux
+Version: 1.3
+Filename of attachment: Building and Installing Xen 4.x and Linux Kernel 
+3.x on Ubuntu and Debian Linux - Version 1.3.pdf
+
+Article 2: Xen VGA Passthrough to Windows 8 Consumer Preview 64-bit 
+English HVM domU and Windows XP Home Edition SP3 HVM domU with Xen 
+4.2-unstable Changeset 25070 and Linux Kernel 3.3.0 in Ubuntu 11.10 
+oneiric ocelot amd64 Final Release Dom0
+Version: 1.3
+Filename of attachment: Xen VGA Passthrough - Version 1.3.pdf
+
+Please read the following xen-user and xen-devel mailing list threads:
+
+(1) http://lists.xen.org/archives/html/xen-devel/2012-03/msg01863.html
+(2)
+
+Thank you very much for your kind attention.
+
+Yours sincerely,
+
+Teo En Ming (Zhang Enming)
+Singapore
+
+
+
 
