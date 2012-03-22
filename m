@@ -1,111 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030876Ab2CVDCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 23:02:43 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24263 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030774Ab2CVDCk (ORCPT
+	id S1030924Ab2CVDDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 23:03:05 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:16808 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030850Ab2CVDCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 23:02:40 -0400
+	Wed, 21 Mar 2012 23:02:43 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: mingo@elte.hu, suresh.b.siddha@intel.com, jwboyer@redhat.com,
         linux-kernel@vger.kernel.org, hpa@zytor.com, yinghai@kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/3] xen/x86: Implement x86_apic_ops
-Date: Wed, 21 Mar 2012 22:58:10 -0400
-Message-Id: <1332385090-18056-4-git-send-email-konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/3] x86: add io_apic_ops to allow interception
+Date: Wed, 21 Mar 2012 22:58:08 -0400
+Message-Id: <1332385090-18056-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
 References: <1332294154.16101.97.camel@sbsiddha-desk.sc.intel.com>
  <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090205.4F6A9648.000B,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4F6A9647.001E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Or rather just implement one different function as opposed
-to the native one : the read function.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-We synthesize the values.
+Xen dom0 needs to paravirtualize IO operations to the IO APIC, so add
+a io_apic_ops for it to intercept.  Do this as ops structure because
+there's at least some chance that another paravirtualized environment
+may want to intercept these.
 
-Acked-by:  Suresh Siddha <suresh.b.siddha@intel.com>
+[ Impact: indirect IO APIC access via io_apic_ops ]
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/xen/Makefile    |    2 +-
- arch/x86/xen/apic.c      |   17 +++++++++++++++++
- arch/x86/xen/enlighten.c |    2 ++
- arch/x86/xen/xen-ops.h   |    4 ++++
- 4 files changed, 24 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/xen/apic.c
+ arch/x86/include/asm/io_apic.h |    9 +++++++
+ arch/x86/kernel/apic/io_apic.c |   50 +++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 56 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-index add2c2d..96ab2c0 100644
---- a/arch/x86/xen/Makefile
-+++ b/arch/x86/xen/Makefile
-@@ -20,5 +20,5 @@ obj-$(CONFIG_EVENT_TRACING) += trace.o
- obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
- obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
--obj-$(CONFIG_XEN_DOM0)		+= vga.o
-+obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
- obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
-diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
-new file mode 100644
-index 0000000..71ed91c
---- /dev/null
-+++ b/arch/x86/xen/apic.c
-@@ -0,0 +1,17 @@
-+#include <linux/init.h>
-+#include <asm/x86_init.h>
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 690d1cc..190d8c2 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -21,6 +21,15 @@
+ #define IO_APIC_REDIR_LEVEL_TRIGGER	(1 << 15)
+ #define IO_APIC_REDIR_MASKED		(1 << 16)
+ 
++struct io_apic_ops {
++	void (*init)(void);
++	unsigned int (*read)(unsigned int apic, unsigned int reg);
++	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
++	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
++};
 +
-+unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
++void __init set_io_apic_ops(const struct io_apic_ops *);
++
+ /*
+  * The structure of the IO-APIC:
+  */
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..bf120234 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -67,6 +67,25 @@
+ #define for_each_irq_pin(entry, head) \
+ 	for (entry = head; entry; entry = entry->next)
+ 
++static void __init __ioapic_init_mappings(void);
++static unsigned int __io_apic_read(unsigned int apic, unsigned int reg);
++static void __io_apic_write(unsigned int apic, unsigned int reg,
++			    unsigned int val);
++static void __io_apic_modify(unsigned int apic, unsigned int reg,
++			     unsigned int val);
++
++static struct io_apic_ops io_apic_ops = {
++	.init = __ioapic_init_mappings,
++	.read = __io_apic_read,
++	.write = __io_apic_write,
++	.modify = __io_apic_modify,
++};
++
++void __init set_io_apic_ops(const struct io_apic_ops *ops)
 +{
-+	if (reg == 0x1)
-+		return 0x00170020;
-+	else if (reg == 0x0)
-+		return apic << 24;
-+
-+	return 0xff;
++	io_apic_ops = *ops;
 +}
 +
-+void __init xen_init_apic(void)
-+{
-+	x86_ioapic.read = xen_io_apic_read;
-+}
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 0732326..93a03195 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1377,6 +1377,8 @@ asmlinkage void __init xen_start_kernel(void)
- 		xen_start_info->console.domU.mfn = 0;
- 		xen_start_info->console.domU.evtchn = 0;
- 
-+		xen_init_apic();
-+
- 		/* Make sure ACS will be enabled */
- 		pci_request_acs();
- 
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index b095739..45c0c06 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -92,11 +92,15 @@ struct dom0_vga_console_info;
- 
- #ifdef CONFIG_XEN_DOM0
- void __init xen_init_vga(const struct dom0_vga_console_info *, size_t size);
-+void __init xen_init_apic(void);
- #else
- static inline void __init xen_init_vga(const struct dom0_vga_console_info *info,
- 				       size_t size)
- {
+ /*
+  *      Is the SiS APIC rmw bug present ?
+  *      -1 = don't know, 0 = no, 1 = yes
+@@ -294,6 +313,24 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+ 	irq_free_desc(at);
  }
-+static inline void __init xen_init_apic(void)
-+{
-+}
- #endif
  
- /* Declare an asm function, along with symbols needed to make it
++static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
++{
++	return io_apic_ops.read(apic, reg);
++}
++
++static inline void io_apic_write(unsigned int apic, unsigned int reg,
++				 unsigned int value)
++{
++	io_apic_ops.write(apic, reg, value);
++}
++
++static inline void io_apic_modify(unsigned int apic, unsigned int reg,
++				  unsigned int value)
++{
++	io_apic_ops.modify(apic, reg, value);
++}
++
++
+ struct io_apic {
+ 	unsigned int index;
+ 	unsigned int unused[3];
+@@ -314,14 +351,15 @@ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
+ 	writel(vector, &io_apic->eoi);
+ }
+ 
+-static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
++static unsigned int __io_apic_read(unsigned int apic, unsigned int reg)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(reg, &io_apic->index);
+ 	return readl(&io_apic->data);
+ }
+ 
+-static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
++static void __io_apic_write(unsigned int apic, unsigned int reg,
++			    unsigned int value)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(reg, &io_apic->index);
+@@ -334,7 +372,8 @@ static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned i
+  *
+  * Older SiS APIC requires we rewrite the index register
+  */
+-static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
++static void __io_apic_modify(unsigned int apic, unsigned int reg,
++			     unsigned int value)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 
+@@ -3873,6 +3912,11 @@ static struct resource * __init ioapic_setup_resources(int nr_ioapics)
+ 
+ void __init ioapic_and_gsi_init(void)
+ {
++	io_apic_ops.init();
++}
++
++static void __init __ioapic_init_mappings(void)
++{
+ 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
+ 	struct resource *ioapic_res;
+ 	int i;
 -- 
 1.7.7.5
 
