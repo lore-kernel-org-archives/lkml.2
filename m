@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab2CVKLj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:11:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53210 "EHLO mx2.suse.de"
+	id S1752997Ab2CVKRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:17:15 -0400
+Received: from metasoft.pl ([195.149.224.191]:33394 "EHLO smtp.metasoft.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932145Ab2CVKLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:11:36 -0400
-Date: Thu, 22 Mar 2012 11:11:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 8/9] ext4: small cleanup in ext4_commit_super
-Message-ID: <20120322101133.GG14485@quack.suse.cz>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
- <1332254489-2300-9-git-send-email-dedekind1@gmail.com>
+	id S1750920Ab2CVKRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 06:17:12 -0400
+X-clamdmail: clamdmail 0.18a
+Message-ID: <4F6AFC19.9040003@metasoft.pl>
+Date: Thu, 22 Mar 2012 11:16:57 +0100
+From: Rafal Prylowski <prylowski@metasoft.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332254489-2300-9-git-send-email-dedekind1@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+References: <4F683B36.8090101@metasoft.pl> <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-03-12 16:41:28, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On 2012-03-21 18:12, H Hartley Sweeten wrote:
+> Hmm... This isn't working on my ep9307 board...
 > 
-> We have many 'EXT4_SB(sb)' references in 'ext4_commit_super()' and I am going
-> to add another one, so I think the function will be a bit tidier if I introduce
-> a separate 'sbi' pointer for the ext4 superblock.
+> When the system boots I get stormed with messages:
 > 
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-  Good cleanup.
-Reviewed-by: Jan Kara <jack@suse.cz>
+> dma dma1chan0: unknown interrupt!
+> dma dma1chan0: unknown interrupt!
+> dma dma1chan0: unknown interrupt!
+> dma dma1chan1: unknown interrupt!
+> dma dma1chan1: unknown interrupt!
+> dma dma1chan1: unknown interrupt!
+> dma dma1chan0: unknown interrupt!
+> dma dma1chan0: unknown interrupt!
+> dma dma1chan1: unknown interrupt!
+> 
+> Note, I have use_dma set for the ep93xx_spi driver and am using mmc_spi.
 
-								Honza
-> ---
->  fs/ext4/super.c |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 7d453f7..64f3a6a 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -4132,8 +4132,9 @@ static int ext4_load_journal(struct super_block *sb,
->  
->  static int ext4_commit_super(struct super_block *sb, int sync)
->  {
-> -	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
-> -	struct buffer_head *sbh = EXT4_SB(sb)->s_sbh;
-> +	struct ext4_sb_info *sbi = EXT4_SB(sb);
-> +	struct ext4_super_block *es = sbi->s_es;
-> +	struct buffer_head *sbh = sbi->s_sbh;
->  	int error = 0;
->  
->  	if (!sbh || block_device_ejected(sb))
-> @@ -4174,18 +4175,17 @@ static int ext4_commit_super(struct super_block *sb, int sync)
->  		es->s_wtime = cpu_to_le32(get_seconds());
->  	if (sb->s_bdev->bd_part)
->  		es->s_kbytes_written =
-> -			cpu_to_le64(EXT4_SB(sb)->s_kbytes_written +
-> +			cpu_to_le64(sbi->s_kbytes_written +
->  			    ((part_stat_read(sb->s_bdev->bd_part, sectors[1]) -
-> -			      EXT4_SB(sb)->s_sectors_written_start) >> 1));
-> +			      sbi->s_sectors_written_start) >> 1));
->  	else
-> -		es->s_kbytes_written =
-> -			cpu_to_le64(EXT4_SB(sb)->s_kbytes_written);
-> +		es->s_kbytes_written = cpu_to_le64(sbi->s_kbytes_written);
->  	ext4_free_blocks_count_set(es,
-> -			EXT4_C2B(EXT4_SB(sb), percpu_counter_sum_positive(
-> -				&EXT4_SB(sb)->s_freeclusters_counter)));
-> +			EXT4_C2B(sbi, percpu_counter_sum_positive(
-> +				&sbi->s_freeclusters_counter)));
->  	es->s_free_inodes_count =
->  		cpu_to_le32(percpu_counter_sum_positive(
-> -				&EXT4_SB(sb)->s_freeinodes_counter));
-> +				&sbi->s_freeinodes_counter));
->  	BUFFER_TRACE(sbh, "marking dirty");
->  	mark_buffer_dirty(sbh);
->  	if (sync) {
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks for testing. Unfortunately, I'm unable to test this patch with SPI,
+because my hardware uses it only for very simple communication (one byte
+commands, I noticed that DMA is not used in this case, even if enabled).
+
+In current mainline I also get these messages:
+
+dma dma1chan0: unknown interrupt!
+dma dma1chan1: got interrupt while active list is empty
+
+With my patch applied they happen more often (maybe because NFB interrupt
+is enabled), but the system is usable. Changing kernel to 3.2.x or using
+hack proposed by Mika makes the problem is gone.
+
