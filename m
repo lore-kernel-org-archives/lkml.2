@@ -1,218 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab2CVIUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 04:20:37 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:64829 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755732Ab2CVIUb (ORCPT
+	id S1756428Ab2CVIVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 04:21:52 -0400
+Received: from mga07.intel.com ([143.182.124.22]:30782 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755398Ab2CVIVp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 04:20:31 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: mxs: enforce semantics of clk_prepare()/clk_unprepare() and clk_enable()/clk_disable()
-Date: Thu, 22 Mar 2012 09:18:17 +0100
-Message-Id: <1332404298-18891-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.2.5
-To: Shawn Guo <shawn.guo@linaro.org>
+	Thu, 22 Mar 2012 04:21:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAMuHMdWLixmQ-iSiShRjFHgxPp9MZxUQDA=oYasdZd3WwmqGYg@mail.gmail.com>
+References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
+	<af9b876508ebc83431312aef67b3ae920780bd5c.1319025009.git.dmitry.kasatkin@intel.com>
+	<alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
+	<CAMuHMdWLixmQ-iSiShRjFHgxPp9MZxUQDA=oYasdZd3WwmqGYg@mail.gmail.com>
+Date: Thu, 22 Mar 2012 10:21:44 +0200
+Message-ID: <CALLzPKYazTXLq3XSALUJgtaRdkYFg-_ZbLT8cx7LPeN-Eg_ZHQ@mail.gmail.com>
+Subject: Re: [PATCH v2.2 2/7] crypto: GnuPG based MPI lib - header files (part 2)
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        zohar@linux.vnet.ibm.com, dhowells@redhat.com,
+        herbert@gondor.hengli.com.au,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After introducing clk_prepare()/clk_unprepare() there may still be
-drivers out there that don't use the new functions.
-This patch warns about drivers calling clk_enable() without a
-preceding clk_prepare() and various other invalid sequences of calls
-to clk_enable()/clk_disable() and clk_prepare()/clk_unprepare().
+On Wed, Mar 21, 2012 at 10:39 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Ping?
+>
+> On Sun, Mar 11, 2012 at 10:55, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Wed, 19 Oct 2011, Dmitry Kasatkin wrote:
+>>> Adds the multi-precision-integer maths library which was originally taken
+>>> from GnuPG and ported to the kernel by (among others) David Howells.
+>>> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
+>>> The difference is that checkpatch reported errors and warnings have been fixed.
+>>>
+>>> This library is used to implemenet RSA digital signature verification
+>>> used in IMA/EVM integrity protection subsystem.
+>>
+>>> --- /dev/null
+>>> +++ b/lib/mpi/longlong.h
+>>
+>>> +     /* If udiv_qrnnd was not defined for this processor, use __udiv_qrnnd_c.  */
+>>> +#if !defined(udiv_qrnnd)
+>>> +#define UDIV_NEEDS_NORMALIZATION 1
+>>> +#define udiv_qrnnd __udiv_qrnnd_c
+>>> +#endif
+>>> +
+>>> +#undef count_leading_zeros
+>>
+>> Why is this #undef here? It's not present in mpi/longlong.h from Ubuntu's
+>> gnupg-1.4.10, and causing ...
+>>
+>>> +#if !defined(count_leading_zeros)
+>>> +     extern
+>>> +#ifdef __STDC__
+>>> +                     const
+>>> +#endif
+>>> +                     unsigned char __clz_tab[];
+>>> +#define count_leading_zeros(count, x) \
+>>> +do { \
+>>> +     UWtype __xr = (x); \
+>>> +     UWtype __a; \
+>>> +     \
+>>> +     if (W_TYPE_SIZE <= 32) { \
+>>> +             __a = __xr < ((UWtype) 1 << 2*__BITS4) \
+>>> +             ? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
+>>> +             : (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
+>>> +     } \
+>>> +     else { \
+>>> +             for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
+>>> +                     if (((__xr >> __a) & 0xff) != 0) \
+>>> +                             break; \
+>>> +     } \
+>>> +     \
+>>> +     (count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
+>>> +} while (0)
+>>> +     /* This version gives a well-defined value for zero. */
+>>> +#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
+>>
+>> lib/mpi/longlong.h:1483:1: warning: "COUNT_LEADING_ZEROS_0" redefined
+>> lib/mpi/longlong.h:610:1: warning: this is the location of the previous definition
+>>
+>> on m68k/allmodconfig.
+>>
+>> I'm also wondering why this warning is not seen on other arches, e.g. PPC
+>> #defines COUNT_LEADING_ZEROS_0 to 32, just like m68k.
+>>
+>>> +#endif
+>>
+>> I suppose the plan is to clean up this header file, as lots of its
+>> functionality is already present in the kernel sources in some other way
+>> (e.g. arch/m68k/lib/muldi3.c)?
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-To not make a system unusable due to excessive warning messages the
-warnings are limited to 1 per clk by a flag in the 'flags' member of
-struct clk.
+Hello,
 
+There are things to cleanup...
+It takes a bit of time.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- arch/arm/mach-mxs/clock.c              |   98 ++++++++++++++++++++++++++++----
- arch/arm/mach-mxs/include/mach/clock.h |    6 ++
- 2 files changed, 93 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/mach-mxs/clock.c b/arch/arm/mach-mxs/clock.c
-index 97a6f4a..4c23351 100644
---- a/arch/arm/mach-mxs/clock.c
-+++ b/arch/arm/mach-mxs/clock.c
-@@ -56,24 +56,61 @@ static void __clk_disable(struct clk *clk)
- 	if (!(--clk->usecount)) {
- 		if (clk->disable)
- 			clk->disable(clk);
--		__clk_disable(clk->parent);
- 	}
- }
- 
- static int __clk_enable(struct clk *clk)
- {
--	if (clk == NULL || IS_ERR(clk))
--		return -EINVAL;
-+	if (clk == NULL)
-+		return 0;
- 
--	if (clk->usecount++ == 0) {
--		__clk_enable(clk->parent);
-+	if (IS_ERR(clk))
-+		return -EINVAL;
- 
--		if (clk->enable)
--			clk->enable(clk);
-+	if (clk->usecount == 0) {
-+		if (clk->enable) {
-+			int ret = clk->enable(clk);
-+			if (ret)
-+				return ret;
-+		}
- 	}
-+	clk->usecount++;
-+
- 	return 0;
- }
- 
-+static void __clk_unprepare(struct clk *clk)
-+{
-+	if (clk == NULL || IS_ERR(clk))
-+		return;
-+
-+	if (clk->parent)
-+		__clk_unprepare(clk->parent);
-+
-+	__clk_disable(clk);
-+}
-+
-+static int __clk_prepare(struct clk *clk)
-+{
-+	int ret;
-+
-+	if (clk == NULL)
-+		return 0;
-+
-+	if (IS_ERR(clk))
-+		return -EINVAL;
-+
-+	ret = __clk_prepare(clk->parent);
-+	if (ret)
-+		return ret;
-+
-+	ret = __clk_enable(clk);
-+	if (ret)
-+		__clk_unprepare(clk->parent);
-+
-+	return ret;
-+}
-+
- /*
-  * The clk_enable/clk_disable could be called by drivers in atomic context,
-  * so they should not really hold mutex.  Instead, clk_prepare/clk_unprepare
-@@ -86,11 +123,18 @@ int clk_prepare(struct clk *clk)
- {
- 	int ret = 0;
- 
--	if (clk == NULL || IS_ERR(clk))
-+	if (clk == NULL)
-+		return 0;
-+
-+	if (IS_ERR(clk))
- 		return -EINVAL;
- 
- 	mutex_lock(&clocks_mutex);
--	ret = __clk_enable(clk);
-+	if (clk->prepared++ == 0) {
-+		ret = __clk_prepare(clk);
-+		if (ret)
-+			clk->prepared--;
-+	}
- 	mutex_unlock(&clocks_mutex);
- 
- 	return ret;
-@@ -103,20 +147,52 @@ void clk_unprepare(struct clk *clk)
- 		return;
- 
- 	mutex_lock(&clocks_mutex);
--	__clk_disable(clk);
-+	if (WARN_ON(!clk->prepared && !(clk->flags & CLK_WARNED))) {
-+		pr_err("clk_unprepare() called without clk_prepare()\n");
-+		clk->flags |= CLK_WARNED;
-+	}
-+	if (WARN_ON(clk->prepared == 1 && clk->usecount > 1)) {
-+		pr_err("unbalanced calls (%d) to clk_enable()/clk_disable() before clk_unprepare()\n",
-+			clk->usecount);
-+		clk->flags |= CLK_WARNED;
-+	}
-+	if (!(--clk->prepared))
-+		__clk_unprepare(clk);
- 	mutex_unlock(&clocks_mutex);
- }
- EXPORT_SYMBOL(clk_unprepare);
- 
- int clk_enable(struct clk *clk)
- {
-+	if (clk == NULL)
-+		return 0;
-+
-+	if (IS_ERR(clk))
-+		return -EINVAL;
-+
-+	if (WARN_ON(!clk->prepared && !(clk->flags & CLK_WARNED))) {
-+		pr_err("clk_enable() called without clk_prepare()\n");
-+		clk->flags |= CLK_WARNED;
-+	}
-+	clk->usecount++;
- 	return 0;
- }
- EXPORT_SYMBOL(clk_enable);
- 
- void clk_disable(struct clk *clk)
- {
--	/* nothing to do */
-+	if (clk == NULL || IS_ERR(clk))
-+		return;
-+
-+	if (WARN_ON(!clk->prepared && !(clk->flags & CLK_WARNED))) {
-+		pr_err("clk_disable() called without clk_prepare()\n");
-+		clk->flags |= CLK_WARNED;
-+	}
-+	if (WARN_ON(clk->usecount <= 1 && !(clk->flags & CLK_WARNED))) {
-+		pr_err("unbalanced clk_disable()\n");
-+		clk->flags |= CLK_WARNED;
-+	}
-+	clk->usecount--;
- }
- EXPORT_SYMBOL(clk_disable);
- 
-diff --git a/arch/arm/mach-mxs/include/mach/clock.h b/arch/arm/mach-mxs/include/mach/clock.h
-index 592c9ab..285ca6b 100644
---- a/arch/arm/mach-mxs/include/mach/clock.h
-+++ b/arch/arm/mach-mxs/include/mach/clock.h
-@@ -25,12 +25,18 @@
- 
- struct module;
- 
-+enum clk_flags {
-+	CLK_WARNED = 0x01,
-+};
-+
- struct clk {
- 	int id;
- 	/* Source clock this clk depends on */
- 	struct clk *parent;
- 	/* Reference count of clock enable/disable */
- 	__s8 usecount;
-+	/* Reference count of clock prepare/unprepare */
-+	__s8 prepared;
- 	/* Register bit position for clock's enable/disable control. */
- 	u8 enable_shift;
- 	/* Register address for clock's enable/disable control. */
--- 
-1.7.2.5
-
+- Dmitry
