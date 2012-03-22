@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964872Ab2CVLXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:23:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33815 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab2CVLXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:23:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="120415668"
-Message-ID: <1332415537.18717.21.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Mar 2012 13:25:37 +0200
-In-Reply-To: <20120322103309.GA14484@quack.suse.cz>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
-	 <20120322095342.GC14485@quack.suse.cz>
-	 <1332410747.18717.12.camel@sauron.fi.intel.com>
-	 <20120322103309.GA14484@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-m7BzqZp205qfFoP0txw4"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1755287Ab2CVL0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:26:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41525 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667Ab2CVL0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 07:26:16 -0400
+Date: Thu, 22 Mar 2012 12:26:13 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] clk: wm831x: Add initial WM831x clock driver
+Message-ID: <20120322112613.GA3852@pengutronix.de>
+References: <1332360082-25092-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1332360082-25092-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20120321222622.GG29317@pengutronix.de>
+ <20120322111531.GA3091@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322111531.GA3091@opensource.wolfsonmicro.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:24:15 up 130 days, 19:11, 68 users,  load average: 0.02, 0.04,
+ 0.13
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 22, 2012 at 11:15:31AM +0000, Mark Brown wrote:
+> On Wed, Mar 21, 2012 at 11:26:22PM +0100, Sascha Hauer wrote:
+> > On Wed, Mar 21, 2012 at 08:01:22PM +0000, Mark Brown wrote:
+> 
+> > > +	if (!clk_register(&pdev->dev, "xtal", &wm831x_xtal_ops,
+> > > +			  &clkdata->xtal_hw, NULL, 0, CLK_IS_ROOT))
+> > > +		return -EINVAL;
+> 
+> > The clock names are unique identifiers for the clock, so clocks in
+> > drivers should probably have dev_name encoded into them.
+> 
+> No, that's not sensible.  We shouldn't be open coding this into each
+> individual driver that provides clocks, and we shouldn't have clock
+> users having to guess at what scheme the driver author used to dedupe
+> the clocks.  As a driver author you would assume that the reason we're
+> providing the struct device to the registration function in the first
+> place is so that the core has the information it needs to do that.
+> 
+> I did provide patches to do what you suggest in the core for one of the
+> earlier versions of the API, I have to say I didn't check to see if they
+> got dropped during the general lulls.
 
---=-m7BzqZp205qfFoP0txw4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+It seems they got dropped. Currently the clock framework does nothing
+with the device argument. But right, it could use this argument to
+generate a suitable name.
 
-On Thu, 2012-03-22 at 11:33 +0100, Jan Kara wrote:
-> > However, if there is _no_ journal, the 'write_super' is initialized, an=
-d
-> > in many places the 's_dirt' flag is set, and thus VFS services seem to
-> > be actively used.
->   Which many places are you speaking about? Grep shows 4 places with
-> sb->s_dirt =3D 1;
+Sascha
 
-Well, with 'ext4_mark_super_dirty()' there are still 6 or something
-places.
-
->   You remove two of those in your cleanups so only
-> __ext4_handle_dirty_super() remains. That is called from 3 (4 after your
-> cleanups) places and they happen so rarely (during filesystem resize or
-> when we start using some feature on the filesystem) that if you use
-> sync_buffer() from all of them, it should be fine.
-
-But AFAIKC, the whole '__ext4_handle_dirty_super()' also falls-back to
-marking the superblock as dirty if the file-system has no journal for
-some reasons, right?. But I do not really understand what
-'ext4_handle_valid()' does. If I grep for 'ext4_handle_dirty_super()' -
-there are many places places where it is used, and a few are obviously
-for the superblocks.
-
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-m7BzqZp205qfFoP0txw4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPawwxAAoJECmIfjd9wqK0LJEP/1KCA9fBdQvnZuoRMKsCCEom
-rFsuWStPynTbB95PruUj3C7tJs4H3NrqPIZTfZ9p5F2mULSd+VVhHaAEJz/xOEy4
-4MLboIgRkJTtO73LbXW9x2UngP1yKohti3R9wYbHvMnwJFCgDA+HY54JHURd+6mG
-eJ2cWphuyZy6rTJbBkruXhvhb0qS/Iqmdp9aj2/tvf+23WSU9j41qejrqH7ZVxpg
-NiAtP4ErdzEfi9OBEEYHJkMvyuXZtBfeZatqKGGVnR0eA9WjGLWArAFCxXiZ7UXV
-EqYLKZjSIhA9m2RUWfM6IX9/ZEKyct3klXQPEvKwpDGJ1mZh23AQDWOEZC0b/HYo
-JH1r8GnZ2VXP7cgGh1xmjt78aH0nLGHaHrXZOA9eED+F22zB89EgbdLv0Kr3P0Tr
-Pye59QjhKH4n6ntJPlJWjLQx1XMSRnN7sToBxMu31HXH8ua8wc6pbTEOv6bRUSh8
-Yd8nyystKXV6+JQkcbz836sNQSKG1moljCGfOCO3u6WqaktkkpjMSUy5BEaTVNFM
-fm0GMmMTgTvtYM+NDehtFpMAH6WMASTRZQR8SwU/qwF91kyvRsOjIowUzZblsF5j
-SOBRDo8/C8Y2YtJ27dKWQpjJ/cv35se438fMeuoYJ78s9/a+S0qVFIyVDg5RrzsO
-ujYHLJhzm3PBqifaGRN0
-=FB1n
------END PGP SIGNATURE-----
-
---=-m7BzqZp205qfFoP0txw4--
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
