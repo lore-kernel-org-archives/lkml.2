@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab2CVCyE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 22:54:04 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:40157 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab2CVCyA (ORCPT
+	id S1758213Ab2CVCyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 22:54:19 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:60520 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757276Ab2CVCyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 22:54:00 -0400
-X-AuditID: b753bd60-9a1a8ba000002f45-d3-4f6a94459125
-X-AuditID: b753bd60-9a1a8ba000002f45-d3-4f6a94459125
-Message-ID: <4F6A9444.4050603@hitachi.com>
-Date: Thu, 22 Mar 2012 11:53:56 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 21 Mar 2012 22:54:03 -0400
+Message-ID: <4F6A93F5.1070202@panasas.com>
+Date: Wed, 21 Mar 2012 19:52:37 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH 2/2] kgdb,debug_core,kgdbts: End DEBUG_RODATA limitation
- using kprobe breakpoints
-References: <1332352536-29186-1-git-send-email-jason.wessel@windriver.com> <1332352536-29186-3-git-send-email-jason.wessel@windriver.com>
-In-Reply-To: <1332352536-29186-3-git-send-email-jason.wessel@windriver.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, <keyrings@linux-nfs.org>,
+        <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout()
+ API
+References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com> <4F6A92FC.6060702@panasas.com>
+In-Reply-To: <4F6A92FC.6060702@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/22 2:55), Jason Wessel wrote:
-> There has long been a limitation using software breakpoints with a
-> kernel compiled with CONFIG_DEBUG_RODATA.  The kprobe breakpoint code
-> has its own text_poke() function which accommodates writing a
-> breakpoint into a read-only page.  The debug_core can make use of the
-> text_poke() capabilities by using the kprobes API, specifically
-> arch_arm_kprobe() and arch_disarm_kprobe().  For now it is safe to use
-> a single statically allocated kprobe structure to call the kprobes API
-> because the debug_core breakpoint API is only used when the kernel is
-> in the debug state.
-
-You might misunderstand it. arch_*_kprobe() are not open APIs.
-Those are kprobes internal APIs (which means that those functions
-should be used only by kprobes).
-
-
-> The debug_core will first attempt to use the traditional
-> probe_kernel_write(), and next try using a kprobe breakpoint.  The
-> kgdb test suite was updated to run all the software breakpoint tests
-> when using a kernel with built with CONFIG_DEBUG_RODATA.
+On 03/21/2012 07:48 PM, Boaz Harrosh wrote:
+> On 03/20/2012 04:32 PM, Boaz Harrosh wrote:
+>>
+<snip>
 > 
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+> Please review my patchset above, and comment. If you guys want I can combine
+> the two sets into one patchset ASAP. (Will try to finish an RFC tomorrow)
+> Since we are inventing the same mechanisms for slightly different needs.
+> But basically we both need support for the waiter to be returning before
+> the child has completed.
+> 
 
-Nak.
+I forgot to ask, what is the official git tree for these patches?
 
-[...]
-> @@ -165,17 +173,48 @@ int __weak kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
->  {
->  	int err;
->  
-> +	bpt->type = BP_BREAKPOINT;
->  	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
->  				BREAK_INSTR_SIZE);
->  	if (err)
->  		return err;
->  	err = probe_kernel_write((char *)bpt->bpt_addr,
->  				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
-> +#if defined(CONFIG_KPROBES) && defined(CONFIG_DEBUG_RODATA)
-> +	if (!err)
-> +		return err;
-> +	probe_write_tmp.addr = (kprobe_opcode_t *)bpt->bpt_addr;
-> +	arch_arm_kprobe(&probe_write_tmp);
+Currently I picked them up from the linux-next/master tree.
+Is there a more stable source for these? (Though I can just carry them
+as a patchset, I'll need to rebase them anyway)
 
-No, please don't use kprobes internal function this way, because
-you can't ensure that the arch_arm_kprobe() has no side-effect.
+> Thanks
+> Boaz
 
-Why don't you use text_poke()? I see that the text_poke()
-is only for x86, but you already have arch/x86/kernel/kgdb.c for
-making your own wrapper function.
-
-> +	err = probe_kernel_read(&probe_write_tmp.opcode, (char *)bpt->bpt_addr,
-> +				BREAK_INSTR_SIZE);
-> +	if (err)
-> +		return err;
-> +	if (memcmp(&probe_write_tmp.opcode, arch_kgdb_ops.gdb_bpt_instr,
-> +		   BREAK_INSTR_SIZE))
-> +		return -EINVAL;
-> +	bpt->type = BP_KPROBE_BREAKPOINT;
-> +#endif /* CONFIG_KPROBES && CONFIG_DEBUG_RODATA */
->  	return err;
->  }
->  
->  int __weak kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
->  {
-> +#if defined(CONFIG_KPROBES) && defined(CONFIG_DEBUG_RODATA)
-> +	int err;
-> +
-> +	if (bpt->type != BP_KPROBE_BREAKPOINT)
-> +		goto knl_write;
-> +	probe_write_tmp.addr = (kprobe_opcode_t *)bpt->bpt_addr;
-> +	memcpy(&probe_write_tmp.opcode, bpt->saved_instr, BREAK_INSTR_SIZE);
-> +	arch_disarm_kprobe(&probe_write_tmp);
-
-Ditto.
-
-> +	err = probe_kernel_read(&probe_write_tmp.opcode, (char *)bpt->bpt_addr,
-> +				BREAK_INSTR_SIZE);
-> +	if (err ||
-> +	    memcmp(&probe_write_tmp.opcode, bpt->saved_instr, BREAK_INSTR_SIZE))
-> +		goto knl_write;
-> +	return err;
-> +knl_write:
-> +#endif /* CONFIG_KPROBES && CONFIG_DEBUG_RODATA */
->  	return probe_kernel_write((char *)bpt->bpt_addr,
->  				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
->  }
-> @@ -294,7 +333,6 @@ int dbg_set_sw_break(unsigned long addr)
->  		return -E2BIG;
->  
->  	kgdb_break[breakno].state = BP_SET;
-> -	kgdb_break[breakno].type = BP_BREAKPOINT;
->  	kgdb_break[breakno].bpt_addr = addr;
->  
->  	return 0;
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
