@@ -1,66 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030937Ab2CVJa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:30:59 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:39410 "EHLO violet"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756598Ab2CVJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:30:55 -0400
-Date: Thu, 22 Mar 2012 10:27:27 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Cc: David Miller <davem@davemloft.net>, xiong@qca.qualcomm.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com,
-        kgiori@qca.qualcomm.com, chris.snook@gmail.com,
-        mathieu@qca.qualcomm.com, bryanh@quicinc.com,
-        Jesper Andersen <jespera@diku.dk>, Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH] net: add QCA alx Ethernet driver
-Message-ID: <20120322092727.GA21284@electric-eye.fr.zoreil.com>
-References: <157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com> <20120228.212857.797446903975232476.davem@davemloft.net> <157393863283F442885425D2C454285619415561@nasanexd02a.na.qualcomm.com> <20120228.223258.2261979237568571219.davem@davemloft.net> <CAB=NE6W-CYjEhbfYOv7XqXFGvdhZxRECqfAmgouaa5_j45gnOQ@mail.gmail.com>
+	id S1030964Ab2CVJgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:36:42 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:28402 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756566Ab2CVJgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:36:37 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: joeyli <jlee@suse.com>
+To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CABNxG=D-JJgD72Wv3hpui0CiprW25MvBzCKcNt-+twAD72+Eyg@mail.gmail.com>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+	 <1332122514.10557.270.camel@linux-s257.site>
+	 <1332241764.10557.329.camel@linux-s257.site>
+	 <1332269710.3921.31.camel@debian.Gayathri>
+	 <1332298845.10557.343.camel@linux-s257.site>
+	 <1332356993.3103.23.camel@debian.Gayathri>
+	 <1332380037.10557.398.camel@linux-s257.site>
+	 <1332383623.2622.6.camel@debian.Gayathri>
+	 <1332386725.10557.402.camel@linux-s257.site>
+	 <1332387122.2622.9.camel@debian.Gayathri>
+	 <1332388489.10557.406.camel@linux-s257.site>
+	 <CABNxG=D-JJgD72Wv3hpui0CiprW25MvBzCKcNt-+twAD72+Eyg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Mar 2012 17:34:41 +0800
+Message-ID: <1332408881.10557.416.camel@linux-s257.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6W-CYjEhbfYOv7XqXFGvdhZxRECqfAmgouaa5_j45gnOQ@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez <rodrigue@qca.qualcomm.com> :
-> On Tue, Feb 28, 2012 at 7:32 PM, David Miller <davem@davemloft.net> wrote:
-[...]
-> > To be honest tg3, as one example, supports quite a large array of
-> > different pieces of hardware that use the same logical core.
+於 四，2012-03-22 於 11:26 +0530，Pradeep Subrahmanion 提到：
+> >From acer acpi ,I came to know that the 4730 series uses new wmi interface .
 > 
-> At certain point it becomes a pain in the ass to support older
-> chipsets, and simply easier to leave the older driver to rot.
+> http://code.google.com/p/aceracpi/wiki/SupportedHardware
+> 
 
-I would avoid saying such things while trying to sell a plan for a bright
-future of drivers maintained and supported by $BIGCORP. :o)
+I am not sure what is the WMIDv2, but it's not the current WMI v2 in
+acer-wmi driver.
 
-[...]
-> Would it be worthwhile to consider alx upstream only for the newer
-> chipsets (regardless of the litmus test, which I do agree with on
-> technical grounds) in consideration for helping pave the way on
-> killing proprietary drivers?
+> Thanks ,
+> 
+> Pradeep Subrahmanion
+> 
+> On Thu, Mar 22, 2012 at 9:24 AM, joeyli <jlee@suse.com> wrote:
+> > 於 四，2012-03-22 於 09:02 +0530，Pradeep Subrahmanion 提到：
+> >> On Thu, 2012-03-22 at 11:25 +0800, joeyli wrote:
+> >> > 於 四，2012-03-22 於 08:03 +0530，Pradeep Subrahmanion 提到：
+> >> > > On Thu, 2012-03-22 at 09:33 +0800, joeyli wrote:
+> >> > > > 於 四，2012-03-22 於 00:39 +0530，Pradeep Subrahmanion 提到：
+> >> > > > > > This new patch should remove acpi_video0 interface on your machine.
+> >> > > > > > Please kindly provide your dmidecode:
+> >> > > > > >  dmidecode > dmidecode.log
+> >> > > > > >
+> >> > > > > > And,
+> >> > > > > > please make should the patch really applied, you can do a bit change on
+> >> > > > > > pr_info message by yourself.
+> >> > > > >
+> >> > > > >    Sorry . I think there was some mistake . I tried the patch again. Now
+> >> > > > > I see only intel_backlight inside /sys/class/backlight. There is no
+> >> > > > > acer-wmi interface . Is this the expected behavior ? . Or am I missing
+> >> > > > > anything ?
+> >> > > > >
+> >> > > >
+> >> > > > Yes, this is the expected behavior! But, now I doubt your issue was
+> >> > > > workaround by acpi_osi=Linux but not intel_backlight.
+> >> > > >
+> >> > >
+> >> > > > >
+> >> > > > >
+> >> > > > > >
+> >> > > > > > > echo 5 > /sys/class/backlight/acpi_video0/brightness
+> >> > > > > > > echo 5 > /sys/class/backlight/intel_backlight/brightness
+> >> > > > > > >
+> >> > > > > > > But it doesn't make any change .
+> >> > > > > > >
+> >> > > > > > > In my case  , 'acpi_backlight = vendor' does not make any difference since the hot key control
+> >> > > > > > >
+> >> > > > > > > already starts working with 'acpi_osi=Linux' option.
+> >> > > > > > >
+> >> > > > > > > cat /proc/cmdline gives ,
+> >> > > > > > >
+> >> > > > > > > BOOT_IMAGE=/boot/vmlinuz-3.3.0+
+> >> > > > > > > root=UUID=f0197a59-c067-4fd8-ad90-c4d721816077 ro acpi_osi=Linux
+> >> > > > > > >
+> >> > > > > > >
+> >> > > > > > > Thanks ,
+> >> > > > > > >
+> >> > > > > > > Pradeep Subrahmanion
+> >> > > > > > >
+> >> > > > > >
+> >> > > > > > OK, that's more clearly, please remove acpi_osi=Linux then re-test, I
+> >> > > > > > think the hotkey of backlight control only works with acpi_osi=Linux ?
+> >> > > > > >
+> >> > > >
+> >> > > > Does your backlight control still work if you remove acpi_osi=Linux ?
+> >> > >
+> >> > >    If I remove acpi_osi=Linux , the hot key control stops working .
+> >> > >
+> >> >
+> >> > What is the preload OS in your machine when you bought it? Windows XP,
+> >> > Vista or Windows 7?
+> >>
+> >>    It was Windows XP.
+> >>
+> >
+> > The WDDM driver didn't support by Windows XP, the brightness control on
+> > XP should works with _BCM or OpRegion.
+> >
+> > Wonder how does brightness control work on XP with your machine.
+> >
+> > I will dig more in your dsdt...
+> >
+> >
 
-What is the situation regarding the availability for public use of
-programming manuals and errata on older chipsets ?
+Please kindly try acpi_osi="!Windows 2006", I think it also works to
+you.
 
-I am fine with Qualcomm being completely uninterested in maintaining
-code for old chipsets and dedicating manpower or $$$ on it, be it now,
-tomorrow or after a new arrival of management execs. However it sends
-a bad message if code for new chipsets comes in while users have to
-maintain their pile of poo in the dark.
 
-The hardware stays for years. It's one of the engineering problems of
-the day. Killing proprietary drivers is an interesting goal but it is
-far, far away.
+Thanks
+Joey Lee
 
-Qualcomm should imvho meet davem's remarks with more short termed
-deliverables.
-
--- 
-Ueimor
