@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab2CVCjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 22:39:21 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61160 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2CVCjU convert rfc822-to-8bit (ORCPT
+	id S1030245Ab2CVCjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 22:39:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60069 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab2CVCjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 22:39:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <yq18vitwejt.fsf@sermon.lab.mkp.net>
-References: <20120316073213.656519005@fusionio.com>
-	<20120316073512.485027511@fusionio.com>
-	<20120320162157.GE17071@redhat.com>
-	<CANejiEWecb58G--=mwez+A4Ra6nJ0qOHGMcJA-nOGH=jmGA3qQ@mail.gmail.com>
-	<4F69C62C.7020604@kernel.org>
-	<yq18vitwejt.fsf@sermon.lab.mkp.net>
-Date: Thu, 22 Mar 2012 10:39:19 +0800
-X-Google-Sender-Auth: wsOik5mo4O4U9noSqrsFcqQz5Us
-Message-ID: <CANejiEX26=jqijgTwb0iLMw7WC7byF1o+whwp3K5CcY5_a8o8w@mail.gmail.com>
-Subject: Re: [patch 1/2]block: handle merged discard request
-From: Shaohua Li <shli@kernel.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, neilb@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Mar 2012 22:39:43 -0400
+Date: Thu, 22 Mar 2012 13:39:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: linux-next: manual merge of the slave-dma tree with the sound tree
+Message-Id: <20120322133930.b75bb87714ef197d22d56cf3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__22_Mar_2012_13_39_30_+1100_eON2aC3a77O5uydn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/22 Martin K. Petersen <martin.petersen@oracle.com>:
->>>>>> "Shaohua" == Shaohua Li <shli@kernel.org> writes:
->
-> Shaohua> The SCSI discard implementation hacks the first bio of request
-> Shaohua> to add payload, which makes blk_update_request() can't
-> Shaohua> correctly mark bios finish.  The patch solves it. We set
-> Shaohua> discard bio size to 0 and finish it after the hacked payload
-> Shaohua> finishes.
->
-> Ick!
->
-> Also, you can't muck with bi_size because if we get an I/O error and
-> have to reissue the command we no longer know how much to write.
-> I have had to deal with the same issue for WRITE SAME. And the only sane
-> approach is to distinguish between the DMA transfer size and the blocks
-> "affected" by the command. That's what I'm working on right now for copy
-> offload...
-Yes, this is a problem. But note we already have this problem with
-discard request for a long time. The payload has just (sector, length).
-And looks the request finish returns the transfered data of the
-payload instead of the discarded data. Am I missing anything?
+--Signature=_Thu__22_Mar_2012_13_39_30_+1100_eON2aC3a77O5uydn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> If this is something you want in 3.4 I guess we could temporarily add a
-> separate length field to struct request. If you can wait I suggest we
-> talk at LSF.
-This blocked my raid discard patches, but I can wait. Sure we can have
-a talk at LSF.
+Hi Vinod,
 
-Thanks,
-Shaohua
+Today's linux-next merge of the slave-dma tree got a conflict in
+sound/soc/imx/imx-pcm-dma-mx2.c between commit c307e8e32e11 ("ASoC:
+imx-pcm-dma: Use dmaengine PCM helper functions") from the sound tree and
+commit 16052827d98f ("dmaengine/dma_slave: introduce inline wrappers")
+from the slave-dma tree.
+
+I just use dthe version from the sound tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__22_Mar_2012_13_39_30_+1100_eON2aC3a77O5uydn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPapDiAAoJEECxmPOUX5FEi3kP/AslmOWsp6fqmEw46kyoZEqY
+NFum5A9eGySfwCd1vrKjkIZOuWJFtc4UigS2WMIaHQM7NDk4fNDZlLshJHJ2h2sf
+60tT6Y3TAdDGmGIPYLwswrUlVp/wATZTq/jv4GJOxh3ezcm5TMCyQoT/PVe2a4Ei
+V+KvAkWxeKZnjxsXcVbbCfWazQiOx/Bpd/AwtPOrPlS93qF2ZoN1wN8XwOqP1J6u
+KdvEOffnVfxPH55hDz+l0O/VC6FO/eHHdIl1GF1J1XJtLURpBEKFJYVsJhSxIIfe
+C97Vkr0Sofpaqf2GBsbaJ04/XPnrI6jBG2X/61hNjQqlyFqL+3G9RWMSg4SpmW01
+UyeY4AEW2sfu9G5Gt+k2ID6EPUn7zC+Zo7W+HOcWp/CEL2ezYOJiiO+m56M+7x2k
+Ow1LQlw1PLEwi8c83Y7xbEGH/wFCxEZdP8GDhpAaa+kC20hQqKnpKbdtXZv24crI
+u1q6azC0K19gUElU42fRcFDC3N9EOwc/xfAAltLy3++SNgA7S96jlo6cC3BmtSIy
+DhYIaYd8ZVaiFSdAtlgDr3LIOevc66v/dIGWYfnim+2CF7DHZubLbadF6SrSu2EN
+go7OWEIs/FmBiQGgDCf95PLhL/m0ecdAMQypqx9YfgQbpa0vd2VdGNoYVBnEpZk6
+FsDGkOIh0oqSzLSE5QaB
+=c6PH
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__22_Mar_2012_13_39_30_+1100_eON2aC3a77O5uydn--
