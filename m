@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab2CVNVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 09:21:40 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37353 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964924Ab2CVNVX convert rfc822-to-8bit (ORCPT
+	id S1756738Ab2CVNZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 09:25:32 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40654 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab2CVNZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 09:21:23 -0400
+	Thu, 22 Mar 2012 09:25:29 -0400
+Date: Thu, 22 Mar 2012 09:21:02 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xenbus: Add quirk to deal with
+ misconfigured backends.
+Message-ID: <20120322132102.GA22545@phenom.dumpdata.com>
+References: <1332385189-29029-1-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1203221040030.15151@kaball-desktop>
+ <1332413546.8817.64.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <20120321140019.9ca39a31.akpm@linux-foundation.org>
-References: <CAJd=RBALNtedfq+PLPnGKd4i4D0mLiVPdW_7pWWopnSZNC_vqA@mail.gmail.com>
-	<20120222130659.d75b6f69.akpm@linux-foundation.org>
-	<CAJd=RBA53nS70Q7GEeskKFas-hfg4GKmUf=Zut5anSN0P+d1KA@mail.gmail.com>
-	<20120223121238.b597e7e4.akpm@linux-foundation.org>
-	<20120321140019.9ca39a31.akpm@linux-foundation.org>
-Date: Thu, 22 Mar 2012 21:21:22 +0800
-Message-ID: <CAJd=RBC9wN_M6T=vxmw+HxwxJF8Me1pq+UwZGEGoxto+HmG-3Q@mail.gmail.com>
-Subject: Re: [PATCH] mm: hugetlb: bail out unmapping after serving reference page
-From: Hillf Danton <dhillf@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332413546.8817.64.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090208.4F6B2841.00E1,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 5:00 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 23 Feb 2012 12:12:38 -0800
-> Andrew Morton <akpm@linux-foundation.org> wrote:
->
->> On Thu, 23 Feb 2012 21:05:41 +0800
->> Hillf Danton <dhillf@gmail.com> wrote:
->>
->> > and a follow-up cleanup also attached.
->>
->> Please, never put more than one patches in an email - it is rather a
->> pain to manually unpick everything.
->>
->> > When unmapping given VM range, a couple of code duplicate, such as pte_page()
->> > and huge_pte_none(), so a cleanup needed to compact them together.
->> >
->> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> > ---
->> >
->> > --- a/mm/hugetlb.c  Thu Feb 23 20:13:06 2012
->> > +++ b/mm/hugetlb.c  Thu Feb 23 20:30:16 2012
->> > @@ -2245,16 +2245,23 @@ void __unmap_hugepage_range(struct vm_ar
->> >             if (huge_pmd_unshare(mm, &address, ptep))
->> >                     continue;
->> >
->> > +           pte = huge_ptep_get(ptep);
->> > +           if (huge_pte_none(pte))
->> > +                   continue;
->> > +
->> > +           /*
->> > +            * HWPoisoned hugepage is already unmapped and dropped reference
->> > +            */
->> > +           if (unlikely(is_hugetlb_entry_hwpoisoned(pte)))
->> > +                   continue;
->> > +
->> > +           page = pte_page(pte);
->> >             /*
->> >              * If a reference page is supplied, it is because a specific
->> >              * page is being unmapped, not a range. Ensure the page we
->> >              * are about to unmap is the actual page of interest.
->> >              */
->> >             if (ref_page) {
->> > -                   pte = huge_ptep_get(ptep);
->> > -                   if (huge_pte_none(pte))
->> > -                           continue;
->> > -                   page = pte_page(pte);
->> >                     if (page != ref_page)
->> >                             continue;
->> >
->> > @@ -2267,16 +2274,6 @@ void __unmap_hugepage_range(struct vm_ar
->> >             }
->> >
->> >             pte = huge_ptep_get_and_clear(mm, address, ptep);
->> > -           if (huge_pte_none(pte))
->> > -                   continue;
->> > -
->> > -           /*
->> > -            * HWPoisoned hugepage is already unmapped and dropped reference
->> > -            */
->> > -           if (unlikely(is_hugetlb_entry_hwpoisoned(pte)))
->> > -                   continue;
->> > -
->> > -           page = pte_page(pte);
->> >             if (pte_dirty(pte))
->> >                     set_page_dirty(page);
->> >             list_add(&page->lru, &page_list);
->>
->> This changes behaviour when ref_page refers to a hwpoisoned page.
->
-> Respond, please?
+On Thu, Mar 22, 2012 at 10:52:26AM +0000, Ian Campbell wrote:
+> On Thu, 2012-03-22 at 10:44 +0000, Stefano Stabellini wrote:
+> > On Thu, 22 Mar 2012, Konrad Rzeszutek Wilk wrote:
+> > > A rather annoying and common case is when booting a PVonHVM guest
+> > > and exposing the PV KBD and PV VFB - as both of those do not
+> > > make any sense. The HVM guest is using the VGA driver and the emulated
+> > > keyboard for this. So we provide a very basic quirk framework
+> > > (can be expanded in the future) to not wait for 6 minutes for those devices
+> > > to initialize - they never wont.
+> > > 
+> > > To trigger this, put this in your guest config:
+> > > 
+> > > vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+> > > 
+> > > instead of this:
+> > > vnc=1
+> > > vnclisten="0.0.0.0"
+> > 
+> > While I do understand the issue you are trying to solve, it actually
+> > makes sense to have PV KBD (and PV VFB maybe in the future) in a PVonHVM
+> > guest. In particular PV KVB is already enabled in upstream QEMU for
+> > PVonHVM guests because it allows users to have a keyboard and mouse
 
-First say sorry to you, Andrew.
+How about looking for a particular Xen version? The patch
+could check for anything less than 4.2 (does 4.2 use that version of
+QEMU that has this implemented?). I can't find any way to get the QEMU
+version from within the guest - DMI reports:
 
-The comment says, HWPoisoned hugepage is already unmapped;
-and even if ref_page == HWPoisoned page, it is not added onto
-page_list and no page_remove_rmap() is issued for it, so we end
-up with no behavior change.
+DMI: Xen HVM domU, BIOS 4.1-120322 03/22/2012
 
-Thanks
--hd
+> > without USB emulation, that requires lots of wakes up in QEMU.
+> > 
+> > Maybe we could just reduce the timeout in general for all the PV
+> > devices? After all, why are we waiting 6 minutes? I could understand 6
+> > seconds, but 6 minutes seem really too much.
+> 
+> This was increased based on empirical evidence, way back (circa
+> 150:09c88868e344 in linux-2.6.18-xen.hg)
+> 
+> It really can happen when starting lots of guests on a heavily loaded
+> dom0 that you timeout when connecting devices, at which point the guest
+> fails to boot if it happened to contain the root filesystem.
+> 
+> Maybe a halfway house would be to wait a the longer time for more
+> critical devices (like disks and nics)?
+> 
+> Ian.
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
