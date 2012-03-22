@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab2CVKcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:32:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40270 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab2CVKc3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:32:29 -0400
-Date: Thu, 22 Mar 2012 11:32:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Gordeev <agordeev@redhat.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] genirq: Get rid of unneeded force parameter in
- irq_finalize_oneshot()
-In-Reply-To: <20120319145848.GG2147@dhcp-26-207.brq.redhat.com>
-Message-ID: <alpine.LFD.2.02.1203221128260.2542@ionos>
-References: <20120319145848.GG2147@dhcp-26-207.brq.redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756106Ab2CVKdO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:33:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54303 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab2CVKdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 06:33:11 -0400
+Date: Thu, 22 Mar 2012 11:33:09 +0100
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Ted Tso <tytso@mit.edu>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+Message-ID: <20120322103309.GA14484@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+ <20120322095342.GC14485@quack.suse.cz>
+ <1332410747.18717.12.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332410747.18717.12.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Mar 2012, Alexander Gordeev wrote:
+On Thu 22-03-12 12:05:47, Artem Bityutskiy wrote:
+> On Thu, 2012-03-22 at 10:53 +0100, Jan Kara wrote:
+> > On Tue 20-03-12 16:41:20, Artem Bityutskiy wrote:
+> > > This patch-set makes ext4 independent of the VFS superblock management
+> > > services. Namely, ext4 does not require to register the 'write_super()' VFS
+> > > call-back.
+> > > 
+> > > The reason of this exercises is to get rid of the 'sync_supers()' kernel thread
+> > > which wakes up every 5 seconds (by default) even if all superblocks are clean.
+> > > This is wasteful from power management POW (unnecessary wake-ups).
+> > > 
+> > > Note, I tried to optimize 'sync_supers()' instead in 2010, but Al wanted me
+> > > to get rid of it instead. See https://lkml.org/lkml/2010/6/6/87
+> > > And I think this is right because many file-systems do not need this, for
+> > > example btrfs does not use VFS superblock management services at all, so on a
+> > > btrfs-based system we currently end-up useless periodic wake-ups source.
+> > > 
+> > > Changes for other file-systems are coming later.
+> > > 
+> > > The patch-set structure.
+> > > 1. patches 1,2,3 are independent ext4 cleanups and I ask Ted to merge them as
+> > >    soon/long as they are OK. I sent them also independently in order to get
+> > >    early comments, but did not get so far, so re-sending.
+> > > 2. patch 4 exports 'dirty_writeback_interval' and it would be very useful to
+> > >    have it merged ASAP to simplify further work
+> > > 3. patch 5 is also and independent VFS clean-up
+> > > 4. patches 6-9 actually make ext4 independent on the 'sync_supers()' thread.
+> >   Artem, if you look at places where ext4 sets s_dirt you will notice they
+> > are rather rare events and all of them actually take care of writing
+> > superblock themselves (at least if my memory serves well). So ext4
+> > shouldn't need sync_supers() at all...
+> 
+> Hmm, if there is journal, then ext4 does not initialize the
+> '->write_super()' VFS call-back and indeed takes care of the SB itself.
+> Indeed. So 'sync_supers()' wakes up every 5 seconds for nothing.
+  Yes.
 
-> The only place irq_finalize_oneshot() is called with force parameter set
-> is the threaded handler error exit path. But IRQTF_RUNTHREAD is dropped
-> at this point and irq_wake_thread() is not going to reset it again,
-> since PF_EXITING is set for this thread already. So we will drop the
-> thread's bit in threads_oneshot anyway and the force parameter is
-> superfluous.
+> However, if there is _no_ journal, the 'write_super' is initialized, and
+> in many places the 's_dirt' flag is set, and thus VFS services seem to
+> be actively used.
+  Which many places are you speaking about? Grep shows 4 places with
+sb->s_dirt = 1;
+  You remove two of those in your cleanups so only
+__ext4_handle_dirty_super() remains. That is called from 3 (4 after your
+cleanups) places and they happen so rarely (during filesystem resize or
+when we start using some feature on the filesystem) that if you use
+sync_buffer() from all of them, it should be fine.
 
-Wrong.
+  Then we have ext4_mark_super_dirty() call from 4 places - I forgot about
+these originally... I kind of miss their purpose. Originally they were used
+so that we write total number of free blocks and inodes in the superblock
+but when we do not maintain them in the journal mode I don't see a reason
+to periodically sync them in no-journal mode. Ted, what is the purpose of
+these calls?
 
-CPU 0				CPU 1
-
-    do_exit()
-				check(PF_EXITING)
-				set_bit(IRQTF_RUNTHREAD)
-				...
-    set(PF_EXITING)
-    exit_irq_thread()
-
-    if (test_bit(IRQTF_RUNTHREAD))
-	goto out;
-
-	-> FAIL
-
-Thanks,
-
-	tglx
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
