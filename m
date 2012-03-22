@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab2CVKRP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:17:15 -0400
-Received: from metasoft.pl ([195.149.224.191]:33394 "EHLO smtp.metasoft.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab2CVKRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:17:12 -0400
-X-clamdmail: clamdmail 0.18a
-Message-ID: <4F6AFC19.9040003@metasoft.pl>
-Date: Thu, 22 Mar 2012 11:16:57 +0100
-From: Rafal Prylowski <prylowski@metasoft.pl>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1753704Ab2CVKRs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:17:48 -0400
+Received: from hulk.biessmann.org ([62.75.166.25]:38134 "EHLO
+	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab2CVKRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 06:17:46 -0400
+Date: Thu, 22 Mar 2012 11:17:19 +0100
+From: Andreas =?iso-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Michal Marek <mmarek@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] x86, build: remove unused include
+Message-ID: <20120322101719.GC1406@localhost>
+References: <1329324589-26907-1-git-send-email-andreas@biessmann.de>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-References: <4F683B36.8090101@metasoft.pl> <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1329324589-26907-1-git-send-email-andreas@biessmann.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SPAM_bar: --
+X-SPAM_score: -28
+X-ChkData-Signature: 3bad601bfe40790bdc6d658c545eeec0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-21 18:12, H Hartley Sweeten wrote:
-> Hmm... This isn't working on my ep9307 board...
+On Wed, Feb 15, 2012 at 05:49:49PM +0100, Andreas Bieﬂmann wrote:
+> Commit 079f85e624189292d1c818b47764916bf8cf84a8 removed necessity for
+> sys/sysmacros.h include but missed to remove the include.
 > 
-> When the system boots I get stormed with messages:
+> Still requiring sys/sysmacros.h for build tool breaks cross compiling x86 kernel
+> on non linux style systems which may not offer sys/sysmacros.h.
 > 
-> dma dma1chan0: unknown interrupt!
-> dma dma1chan0: unknown interrupt!
-> dma dma1chan0: unknown interrupt!
-> dma dma1chan1: unknown interrupt!
-> dma dma1chan1: unknown interrupt!
-> dma dma1chan1: unknown interrupt!
-> dma dma1chan0: unknown interrupt!
-> dma dma1chan0: unknown interrupt!
-> dma dma1chan1: unknown interrupt!
+> Signed-off-by: Andreas Bieﬂmann <andreas@biessmann.de>
+> ---
+>  arch/x86/boot/tools/build.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> Note, I have use_dma set for the ep93xx_spi driver and am using mmc_spi.
+> diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+> index 4e9bd6b..52628cd 100644
+> --- a/arch/x86/boot/tools/build.c
+> +++ b/arch/x86/boot/tools/build.c
+> @@ -29,7 +29,6 @@
+>  #include <stdarg.h>
+>  #include <sys/types.h>
+>  #include <sys/stat.h>
+> -#include <sys/sysmacros.h>
+>  #include <unistd.h>
+>  #include <fcntl.h>
+>  #include <sys/mman.h>
+> -- 
 
-Thanks for testing. Unfortunately, I'm unable to test this patch with SPI,
-because my hardware uses it only for very simple communication (one byte
-commands, I noticed that DMA is not used in this case, even if enabled).
-
-In current mainline I also get these messages:
-
-dma dma1chan0: unknown interrupt!
-dma dma1chan1: got interrupt while active list is empty
-
-With my patch applied they happen more often (maybe because NFB interrupt
-is enabled), but the system is usable. Changing kernel to 3.2.x or using
-hack proposed by Mika makes the problem is gone.
-
+are there any objections against that patch? could anyone take it if not?
