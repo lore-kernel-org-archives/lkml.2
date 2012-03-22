@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab2CVKzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:55:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1885 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2CVKzu (ORCPT
+	id S1754240Ab2CVK6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:58:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57633 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab2CVK6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:55:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="172436969"
+	Thu, 22 Mar 2012 06:58:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174718248"
 From: Ravi Kumar V <kumarrav@codeaurora.org>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <dan.j.williams@intel.com>,
@@ -17,9 +17,9 @@ Cc: Dan Williams <dan.j.williams@intel.com>,
         Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         tsoni@codeaurora.org, Ravi Kumar V <kumarrav@codeaurora.org>
-Subject: [PATCH 2/2] DMAEngine: Add DMAEngine driver based on old MSM ADM DMA APIs
-Date: Thu, 22 Mar 2012 16:25:36 +0530
-Message-Id: <1332413736-8379-1-git-send-email-kumarrav@codeaurora.org>
+Subject: [PATCH v4 2/2] DMAEngine: Add DMAEngine driver based on old MSM ADM DMA APIs
+Date: Thu, 22 Mar 2012 16:28:02 +0530
+Message-Id: <1332413882-8456-1-git-send-email-kumarrav@codeaurora.org>
 X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
