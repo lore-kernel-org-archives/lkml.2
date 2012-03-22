@@ -1,122 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab2CVIVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 04:21:52 -0400
-Received: from mga07.intel.com ([143.182.124.22]:30782 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755398Ab2CVIVp convert rfc822-to-8bit (ORCPT
+	id S1030260Ab2CVIYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 04:24:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33685 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab2CVIYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 04:21:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWLixmQ-iSiShRjFHgxPp9MZxUQDA=oYasdZd3WwmqGYg@mail.gmail.com>
-References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
-	<af9b876508ebc83431312aef67b3ae920780bd5c.1319025009.git.dmitry.kasatkin@intel.com>
-	<alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
-	<CAMuHMdWLixmQ-iSiShRjFHgxPp9MZxUQDA=oYasdZd3WwmqGYg@mail.gmail.com>
-Date: Thu, 22 Mar 2012 10:21:44 +0200
-Message-ID: <CALLzPKYazTXLq3XSALUJgtaRdkYFg-_ZbLT8cx7LPeN-Eg_ZHQ@mail.gmail.com>
-Subject: Re: [PATCH v2.2 2/7] crypto: GnuPG based MPI lib - header files (part 2)
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        zohar@linux.vnet.ibm.com, dhowells@redhat.com,
-        herbert@gondor.hengli.com.au,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Mar 2012 04:24:17 -0400
+From: Weiping Pan <panweiping3@gmail.com>
+Cc: Weiping Pan <panweiping3@gmail.com>,
+        Jay Vosburgh <fubar@us.ibm.com> (supporter:BONDING DRIVER),
+        Andy Gospodarek <andy@greyhouse.net> (supporter:BONDING DRIVER),
+        netdev@vger.kernel.org (open list:BONDING DRIVER),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH net 1/2] bonding:delete rlb entry if bond's ip is deleted
+Date: Thu, 22 Mar 2012 16:18:31 +0800
+Message-Id: <a63c50701cc26f4cba7867513adfe6803092b038.1332386801.git.panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <cover.1332386801.git.panweiping3@gmail.com>
+References: <cover.1332386801.git.panweiping3@gmail.com>
+In-Reply-To: <cover.1332386801.git.panweiping3@gmail.com>
+References: <cover.1332386801.git.panweiping3@gmail.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 10:39 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Ping?
->
-> On Sun, Mar 11, 2012 at 10:55, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> On Wed, 19 Oct 2011, Dmitry Kasatkin wrote:
->>> Adds the multi-precision-integer maths library which was originally taken
->>> from GnuPG and ported to the kernel by (among others) David Howells.
->>> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
->>> The difference is that checkpatch reported errors and warnings have been fixed.
->>>
->>> This library is used to implemenet RSA digital signature verification
->>> used in IMA/EVM integrity protection subsystem.
->>
->>> --- /dev/null
->>> +++ b/lib/mpi/longlong.h
->>
->>> +     /* If udiv_qrnnd was not defined for this processor, use __udiv_qrnnd_c.  */
->>> +#if !defined(udiv_qrnnd)
->>> +#define UDIV_NEEDS_NORMALIZATION 1
->>> +#define udiv_qrnnd __udiv_qrnnd_c
->>> +#endif
->>> +
->>> +#undef count_leading_zeros
->>
->> Why is this #undef here? It's not present in mpi/longlong.h from Ubuntu's
->> gnupg-1.4.10, and causing ...
->>
->>> +#if !defined(count_leading_zeros)
->>> +     extern
->>> +#ifdef __STDC__
->>> +                     const
->>> +#endif
->>> +                     unsigned char __clz_tab[];
->>> +#define count_leading_zeros(count, x) \
->>> +do { \
->>> +     UWtype __xr = (x); \
->>> +     UWtype __a; \
->>> +     \
->>> +     if (W_TYPE_SIZE <= 32) { \
->>> +             __a = __xr < ((UWtype) 1 << 2*__BITS4) \
->>> +             ? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
->>> +             : (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
->>> +     } \
->>> +     else { \
->>> +             for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
->>> +                     if (((__xr >> __a) & 0xff) != 0) \
->>> +                             break; \
->>> +     } \
->>> +     \
->>> +     (count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
->>> +} while (0)
->>> +     /* This version gives a well-defined value for zero. */
->>> +#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
->>
->> lib/mpi/longlong.h:1483:1: warning: "COUNT_LEADING_ZEROS_0" redefined
->> lib/mpi/longlong.h:610:1: warning: this is the location of the previous definition
->>
->> on m68k/allmodconfig.
->>
->> I'm also wondering why this warning is not seen on other arches, e.g. PPC
->> #defines COUNT_LEADING_ZEROS_0 to 32, just like m68k.
->>
->>> +#endif
->>
->> I suppose the plan is to clean up this header file, as lots of its
->> functionality is already present in the kernel sources in some other way
->> (e.g. arch/m68k/lib/muldi3.c)?
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+When the ip of bonding is deleted, its rlb table still contains old invalid
+mappings, just delete them to avoid poisoning other clients arp cache.
 
-Hello,
+Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+---
+ drivers/net/bonding/bond_alb.c  |   35 +++++++++++++++++++++++++++++++++++
+ drivers/net/bonding/bond_alb.h  |    2 ++
+ drivers/net/bonding/bond_main.c |    1 +
+ 3 files changed, 38 insertions(+), 0 deletions(-)
 
-There are things to cleanup...
-It takes a bit of time.
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index f820b26..bca1039 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -853,6 +853,41 @@ static void rlb_clear_vlan(struct bonding *bond, unsigned short vlan_id)
+ 	_unlock_rx_hashtbl_bh(bond);
+ }
+ 
++/* delete all rlb entries whose ip_src equals ip */
++void bond_alb_delete_entry(struct bonding *bond, __be32 ip)
++{
++	struct alb_bond_info *bond_info = &(BOND_ALB_INFO(bond));
++	u32 curr_index;
++
++	_lock_rx_hashtbl_bh(bond);
++
++	curr_index = bond_info->rx_hashtbl_head;
++	while (curr_index != RLB_NULL_INDEX) {
++		struct rlb_client_info *curr = &(bond_info->rx_hashtbl[curr_index]);
++		u32 next_index = bond_info->rx_hashtbl[curr_index].next;
++		u32 prev_index = bond_info->rx_hashtbl[curr_index].prev;
++		if (curr->assigned && (curr->ip_src == ip)) {
++			if (curr_index == bond_info->rx_hashtbl_head) {
++				bond_info->rx_hashtbl_head = next_index;
++			}
++
++			if (prev_index != RLB_NULL_INDEX) {
++				bond_info->rx_hashtbl[prev_index].next = next_index;
++			}
++
++			if (next_index != RLB_NULL_INDEX) {
++				bond_info->rx_hashtbl[next_index].prev = prev_index;
++			}
++
++			rlb_init_table_entry(curr);
++		}
++
++		curr_index = next_index;
++	}
++
++	_unlock_rx_hashtbl_bh(bond);
++}
++
+ /*********************** tlb/rlb shared functions *********************/
+ 
+ static void alb_send_learning_packets(struct slave *slave, u8 mac_addr[])
+diff --git a/drivers/net/bonding/bond_alb.h b/drivers/net/bonding/bond_alb.h
+index 90f140a..38863fc 100644
+--- a/drivers/net/bonding/bond_alb.h
++++ b/drivers/net/bonding/bond_alb.h
+@@ -163,5 +163,7 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev);
+ void bond_alb_monitor(struct work_struct *);
+ int bond_alb_set_mac_address(struct net_device *bond_dev, void *addr);
+ void bond_alb_clear_vlan(struct bonding *bond, unsigned short vlan_id);
++
++void bond_alb_delete_entry(struct bonding *bond, __be32 ip);
+ #endif /* __BOND_ALB_H__ */
+ 
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 435984a..ec071b9 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3315,6 +3315,7 @@ static int bond_inetaddr_event(struct notifier_block *this, unsigned long event,
+ 				return NOTIFY_OK;
+ 			case NETDEV_DOWN:
+ 				bond->master_ip = 0;
++				bond_alb_delete_entry(bond, ifa->ifa_local);
+ 				return NOTIFY_OK;
+ 			default:
+ 				return NOTIFY_DONE;
+-- 
+1.7.4
 
-- Dmitry
