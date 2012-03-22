@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab2CVKAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:00:52 -0400
-Received: from metasoft.pl ([195.149.224.191]:58407 "EHLO smtp.metasoft.pl"
+	id S1757527Ab2CVKCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:02:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52663 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755598Ab2CVKAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:00:50 -0400
-X-clamdmail: clamdmail 0.18a
-Message-ID: <4F6AF845.9070209@metasoft.pl>
-Date: Thu, 22 Mar 2012 11:00:37 +0100
-From: Rafal Prylowski <prylowski@metasoft.pl>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1754628Ab2CVKCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 06:02:08 -0400
+Date: Thu, 22 Mar 2012 11:02:06 +0100
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 3/9] ext4: remove useless s_dirt assignment
+Message-ID: <20120322100206.GF14485@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+ <1332254489-2300-4-git-send-email-dedekind1@gmail.com>
 MIME-Version: 1.0
-To: Ryan Mallon <rmallon@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-References: <4F683B36.8090101@metasoft.pl> <4F6A78ED.3050403@gmail.com>
-In-Reply-To: <4F6A78ED.3050403@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332254489-2300-4-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-22 01:57, Ryan Mallon wrote:
-> I haven't looked through the patch yet, since I'm waiting on more
-> information from Mika and Hartley's testing.
+On Tue 20-03-12 16:41:23, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 > 
-> However, the commit log doesn't tell me why we want this change. Is it a
-> performance improvement? If so, do you have some numbers that we can
-> paste into the commit log?
+> Clean-up ext4 a tiny bit by removing useless s_dirt assignment in
+> 'ext4_fill_super()' because a bit later we anyway call 'ext4_setup_super()'
+> which writes the superblock to the media unconditionally.
+> 
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+  Looks good.
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-In principle, using double buffering should be faster than using only
-one buffer and disabling/enabling channel each time. But my measurements
-doesn't show any significant change.
-
-The real reason for this change is that current code is not 100% reliable
-in IDE-DMA (I'm planning to submit ep93xx ide driver to linux-ide soon).
-Although using only one buffer and DONE interrupt is simple, surprisingly
-we can get interrupt when M2M DMA is in DMA_BUF_ON and DMA_STALL state.
-If we disable the channel at this moment, we end with ata timeout.
+								Honza
+> ---
+>  fs/ext4/super.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index c1f5111..d280bb6 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -3415,7 +3415,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>  #else
+>  		es->s_flags |= cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
+>  #endif
+> -		sb->s_dirt = 1;
+>  	}
+>  
+>  	/* Handle clustersize */
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
