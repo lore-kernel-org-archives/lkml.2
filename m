@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab2CVFde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 01:33:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40027 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab2CVFdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 01:33:31 -0400
-Message-ID: <1332394386.2982.75.camel@pasglop>
-Subject: Re: [git pull] Please pull powerpc.git next branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Mar 2012 16:33:06 +1100
-In-Reply-To: <CA+55aFz-pyBHa73zkbkub4czwnU+k4_qKzBEaAGvi66MBBUTpQ@mail.gmail.com>
-References: <1332377206.2982.60.camel@pasglop>
-	 <CA+55aFz-pyBHa73zkbkub4czwnU+k4_qKzBEaAGvi66MBBUTpQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754799Ab2CVFeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 01:34:24 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:57951 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751362Ab2CVFeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 01:34:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMbhsRQiuyhSFd9khE6h5qNFeQ0ax587aoALGCdRCGp-9-ktRQ@mail.gmail.com>
+References: <alpine.LFD.2.02.1203211604050.24151@xanadu.home> <CAMbhsRQiuyhSFd9khE6h5qNFeQ0ax587aoALGCdRCGp-9-ktRQ@mail.gmail.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 22 Mar 2012 11:04:01 +0530
+Message-ID: <CAMQu2gwKrVxue0xpFRpFXOFvSWpA3LiXZd+6pucynueRi89RTA@mail.gmail.com>
+Subject: Re: [PATCH] cpu_pm.c: fix various typos
+To: Colin Cross <ccross@android.com>, Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 19:02 -0700, Linus Torvalds wrote:
-> On Wed, Mar 21, 2012 at 5:46 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> >
-> > Here's the powerpc batch for this merge window. It is going to be a bit
-> > more nasty than usual as in touching things outside of arch/powerpc
-> > mostly due to the big iSeriesectomy :-) We finally got rid of the bugger
-> > (legacy iSeries support) which was a PITA to maintain and that nobody
-> > really used anymore.
-> >
-> > Here are some of the highlights:
-> 
-> Ok, so this conflicted a bit with the generalized irq-domain stuff
-> from Grant Likely, and while I tried to fix it up I can't even
-> compile-test the end result, so you really need to verify my merge and
-> perhaps send me fixups. Ok?
-> 
-> Especially the sysdev/mpic.c resolution needs somebody who knows the
-> code to verify. Added Grant and Kyle explicitly to the cc..
+On Thu, Mar 22, 2012 at 1:42 AM, Colin Cross <ccross@android.com> wrote:
+> On Wed, Mar 21, 2012 at 1:09 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>>
+>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+>>
+Thanks Nicolas.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>	
 
-I tested a few machines (ppc32 dual G4, a G5, some P6 and P7 machines)
-and it seems to be all good. Thanks !
+[..]
 
-Cheers,
-Ben.
- 
+> Not sure whose tree this would go in through.
+Last time, I pushed these patches through Russell's tree.
 
+Regards
+Santosh
