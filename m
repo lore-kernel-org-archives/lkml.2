@@ -1,67 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031109Ab2CVRCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 13:02:33 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42620 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031000Ab2CVRC1 (ORCPT
+	id S1031096Ab2CVRCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 13:02:30 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48412 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031041Ab2CVRB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 13:02:27 -0400
-Message-ID: <4F6B5B1E.9090402@suse.cz>
-Date: Thu, 22 Mar 2012 18:02:22 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120320 Thunderbird/13.0a2
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-References: <cover.1331856299.git.joe@perches.com>  <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>  <20120319040950.GG31682@thunk.org> <1332131137.23125.44.camel@joe2Laptop>  <4F6762F1.7050902@gmail.com> <1332176943.1983.28.camel@joe2Laptop>  <4F684673.1050309@suse.cz> <1332235315.7847.63.camel@joe2Laptop>  <4F684D00.4040102@suse.cz> <1332236803.7847.85.camel@joe2Laptop>
-In-Reply-To: <1332236803.7847.85.camel@joe2Laptop>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Mar 2012 13:01:58 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 1/2] tools: Add Makefile.lib
+Date: Thu, 22 Mar 2012 18:01:52 +0100
+Message-Id: <1332435713-32143-2-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
+In-Reply-To: <1332435713-32143-1-git-send-email-bp@amd64.org>
+References: <1332435713-32143-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 10:46 AM, Joe Perches wrote:
-> On Tue, 2012-03-20 at 10:25 +0100, Jiri Slaby wrote:
->> On 03/20/2012 10:21 AM, Joe Perches wrote:
->>> the ath5k pr_ conversion patches are to
->>> standardize prefixes and to reduce code size by
->>> centralizing tests.
->>
->> What is the "standard" prefix?
-> 
-> KBUILD_MODNAME
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Instead, we should switch as many printks to dev_* and similar as
-possible, right? They are standard and provide a good interface for
-extensions: one has a device to work with. This is something what pr_*
-does not offer. For that reason it's not worth it.
+Put generic enough build settings which could be reused by other tools
+into a common Makefile.lib file.
 
->>> https://lkml.org/lkml/2012/3/18/121
->>> https://lkml.org/lkml/2012/3/18/123
->>> https://lkml.org/lkml/2012/3/18/124
->>> I happen to like 30K/10+% code size reductions.
->> Obvious question: what speed reduction does this bring?
-> 
-> Anyone looking for speed impacts in logging
-> messages is looking in the wrong place.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ tools/perf/Makefile        |   45 +-----------------------------------
+ tools/scripts/Makefile.lib |   55 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 44 deletions(-)
+ create mode 100644 tools/scripts/Makefile.lib
 
-Ok, I finally found some time to look into the changes properly. I was
-confused by Adrian's note that you moved a debug check to an external
-function. But that is not true.
-
-> btw: it's effectively 0.
-
-Frankly, moving the debug code to a separate function should make the
-code rather faster. By moving the unlikely code out of the instruction
-cache.
-
-thanks,
--- js suse labs
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 8a4b9bccf8b2..3c0bfa39eb8b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -1,18 +1,10 @@
+-ifeq ("$(origin O)", "command line")
+-	OUTPUT := $(O)/
+-endif
++include ../scripts/Makefile.lib
+ 
+ # The default target of this Makefile is...
+ all:
+ 
+ include config/utilities.mak
+ 
+-ifneq ($(OUTPUT),)
+-# check that the output directory actually exists
+-OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
+-$(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
+-endif
+-
+ # Define V to have a more verbose compile.
+ #
+ # Define PYTHON to point to the python binary if the default
+@@ -70,31 +62,6 @@ ifneq ($(WERROR),0)
+ 	CFLAGS_WERROR := -Werror
+ endif
+ 
+-#
+-# Include saner warnings here, which can catch bugs:
+-#
+-
+-EXTRA_WARNINGS := -Wformat
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-y2k
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-prototypes
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wnested-externs
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
+-
+ ifeq ("$(origin DEBUG)", "command line")
+   PERF_DEBUG = $(DEBUG)
+ endif
+@@ -619,16 +586,6 @@ else
+ 	endif
+ endif
+ 
+-ifneq ($(findstring $(MAKEFLAGS),s),s)
+-ifndef V
+-	QUIET_CC       = @echo '   ' CC $@;
+-	QUIET_AR       = @echo '   ' AR $@;
+-	QUIET_LINK     = @echo '   ' LINK $@;
+-	QUIET_MKDIR    = @echo '   ' MKDIR $@;
+-	QUIET_GEN      = @echo '   ' GEN $@;
+-endif
+-endif
+-
+ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
+diff --git a/tools/scripts/Makefile.lib b/tools/scripts/Makefile.lib
+new file mode 100644
+index 000000000000..a2586d13bcf8
+--- /dev/null
++++ b/tools/scripts/Makefile.lib
+@@ -0,0 +1,55 @@
++ifeq ("$(origin O)", "command line")
++	OUTPUT := $(O)/
++endif
++
++ifneq ($(OUTPUT),)
++# check that the output directory actually exists
++OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
++$(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
++endif
++
++#
++# Include saner warnings here, which can catch bugs:
++#
++EXTRA_WARNINGS := -Wformat
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-y2k
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-prototypes
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wnested-externs
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
++
++ifneq ($(findstring $(MAKEFLAGS), w),w)
++PRINT_DIR = --no-print-directory
++else
++NO_SUBDIR = :
++endif
++
++QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
++QUIET_SUBDIR1  =
++
++ifneq ($(findstring $(MAKEFLAGS),s),s)
++ifndef V
++	QUIET_CC       = @echo '   ' CC $@;
++	QUIET_AR       = @echo '   ' AR $@;
++	QUIET_LINK     = @echo '   ' LINK $@;
++	QUIET_MKDIR    = @echo '   ' MKDIR $@;
++	QUIET_GEN      = @echo '   ' GEN $@;
++	QUIET_SUBDIR0  = +@subdir=
++	QUIET_SUBDIR1  = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
++			 $(MAKE) $(PRINT_DIR) -C $$subdir
++endif
++endif
+-- 
+1.7.9.3.362.g71319
 
