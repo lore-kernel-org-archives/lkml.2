@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab2CVVCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:02:25 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:50847 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab2CVVCY (ORCPT
+	id S1757432Ab2CVVEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:04:38 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49419 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065Ab2CVVEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:02:24 -0400
-X-Greylist: delayed 1413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 17:02:23 EDT
+	Thu, 22 Mar 2012 17:04:35 -0400
+Date: Thu, 22 Mar 2012 22:04:31 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 2/2] tools: Add a toplevel Makefile
+Message-ID: <20120322210431.GA1462@aftab>
+References: <1332435713-32143-1-git-send-email-bp@amd64.org>
+ <1332435713-32143-3-git-send-email-bp@amd64.org>
+ <alpine.DEB.2.00.1203221332390.25011@router.home>
 MIME-Version: 1.0
-Date: Thu, 22 Mar 2012 16:38:46 -0400
-Message-ID: <CAEwYmTJzzUi1qfRHYfZg77g1K7myNsAh2oDiY7hWxzRO5hQGHA@mail.gmail.com>
-Subject: sysfs binary attribute API flux
-From: Jonathan McCune <jonmccune@cmu.edu>
-To: linux-kernel@vger.kernel.org
-Cc: "Jonathan M. McCune" <jonmccune@cmu.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
-X-SMTP-Spam-Clean: 8% (
- BODY_ENDS_IN_URL_NOT_WWW 0, BODY_SIZE_1000_1099 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_EDU_TLD 0, TO_NO_NAME 0, WEBMAIL_SOURCE 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HELO_GMAIL 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __RDNS_GMAIL 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_WWW 0)
-X-SMTP-Spam-Score: 8%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1203221332390.25011@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On Thu, Mar 22, 2012 at 01:33:18PM -0500, Christoph Lameter wrote:
+> On Thu, 22 Mar 2012, Borislav Petkov wrote:
+> 
+> > index 000000000000..97631367e0db
+> > --- /dev/null
+> > +++ b/tools/Makefile
+> > @@ -0,0 +1,24 @@
+> > +include scripts/Makefile.lib
+> > +
+> > +perf firewire lguest slub usb virtio: FORCE
+> > +	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
+> > +
+> > +cpupower: FORCE
+> > +	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
+> > +
+> > +turbostat x86_energy_perf_policy: FORCE
+> > +	$(QUIET_SUBDIR0)power/x86/$@/ $(QUIET_SUBDIR1)
+> > +
+> > +firewire_clean lguest_clean perf_clean slub_clean usb_clean virtio_clean:
 
-I maintain a Linux kernel module for a research project*, where it is
-necessary to move some binary data from userspace into the kernel. I
-have been using sysfs's 'struct bin_attribute'.  Unfortunately, every
-few kernel versions, my code breaks because of a change in the
-definition of some elements in this struct.  For example, kernel
-versions 2.6.20, 2.6.32, and 2.6.38 each define the 'read' and 'write'
-function pointers differently. I will spare the inline diff, but they
-can each be seen here:
+						^^^----------------------------------------------
+											    	|
+> > +	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean				    	|
+> >												|
+> > +												|
+> > +cp_clean:											|
+> > +	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean					|
+> > +												|
+> > +turbostat_clean x86_energy_perf_policy_clean:						|
+> > +	$(QUIET_SUBDIR0)power/x86/$(@:_clean=)/ $(QUIET_SUBDIR1) clean				|
+> > +												|
+> > +clean: cp_clean firewire_clean lguest_clean perf_clean slub_clean turbostat_clean \	|
+> 												|
+> slub_clean? Where is that target defined?							|
+												|
+Here---------------------------------------------------------------------------------------------
 
-http://lxr.linux.no/linux+v2.6.32.59/include/linux/sysfs.h#L65
-http://lxr.linux.no/linux+v2.6.38.8/include/linux/sysfs.h#L88
-http://lxr.linux.no/linux+v2.6.20.21/include/linux/sysfs.h#L54
+:-).
 
-My question: is there some other interface that I should be using?  Am
-I using sysfs incorrectly?  All of the documentation I've been able to
-find seems to strongly encourage the use of sysfs.
+It basically does:
 
-http://kernel.org/doc/Documentation/filesystems/sysfs.txt
+$ make -C slub/ clean
 
-cc appreciated in reply.
+which runs the target of the same name in the Makefile in slub/.
 
-Many thanks,
--Jon
+Thanks.
 
-* http://flickertcb.sourceforge.net/
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
