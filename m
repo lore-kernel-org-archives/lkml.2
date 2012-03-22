@@ -1,106 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab2CVD1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 23:27:21 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:43752 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab2CVD1T (ORCPT
+	id S1755624Ab2CVD2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 23:28:25 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:30104 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753067Ab2CVD2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 23:27:19 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: joeyli <jlee@suse.com>
-To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1332383623.2622.6.camel@debian.Gayathri>
-References: <1331608337.2267.67.camel@debian.Gayathri>
-	 <20120312175130.GA18002@srcf.ucam.org>
-	 <1331640592.3485.50.camel@debian.Gayathri>
-	 <20120313124738.GB10822@srcf.ucam.org>
-	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
-	 <20120313133458.GA11574@srcf.ucam.org>
-	 <1331688294.2577.19.camel@debian.Gayathri>
-	 <1331680373.10557.169.camel@linux-s257.site>
-	 <1331692996.3052.8.camel@debian.Gayathri>
-	 <1331704278.10557.190.camel@linux-s257.site>
-	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
-	 <1331798740.10557.245.camel@linux-s257.site>
-	 <1332047432.6304.13.camel@debian.Gayathri>
-	 <1332122514.10557.270.camel@linux-s257.site>
-	 <1332241764.10557.329.camel@linux-s257.site>
-	 <1332269710.3921.31.camel@debian.Gayathri>
-	 <1332298845.10557.343.camel@linux-s257.site>
-	 <1332356993.3103.23.camel@debian.Gayathri>
-	 <1332380037.10557.398.camel@linux-s257.site>
-	 <1332383623.2622.6.camel@debian.Gayathri>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Mar 2012 11:25:25 +0800
-Message-ID: <1332386725.10557.402.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 21 Mar 2012 23:28:20 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zzbb2dI9371I146fK1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 22 Mar 2012 11:39:36 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "sjg@chromium.org" <sjg@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2 3/6] pinctrl: core device tree mapping table parsing
+ support
+Message-ID: <20120322033935.GA840@shlinux2.ap.freescale.net>
+References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
+ <1332265479-1260-3-git-send-email-swarren@wwwdotorg.org>
+ <20120321073116.GE3191@shlinux2.ap.freescale.net>
+ <4F69F844.3060102@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F69F844.3060102@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2012-03-22 於 08:03 +0530，Pradeep Subrahmanion 提到：
-> On Thu, 2012-03-22 at 09:33 +0800, joeyli wrote:
-> > 於 四，2012-03-22 於 00:39 +0530，Pradeep Subrahmanion 提到：
-> > > > This new patch should remove acpi_video0 interface on your machine.
-> > > > Please kindly provide your dmidecode:
-> > > >  dmidecode > dmidecode.log
-> > > >
-> > > > And, 
-> > > > please make should the patch really applied, you can do a bit change on
-> > > > pr_info message by yourself.
-> > > 
-> > >    Sorry . I think there was some mistake . I tried the patch again. Now
-> > > I see only intel_backlight inside /sys/class/backlight. There is no
-> > > acer-wmi interface . Is this the expected behavior ? . Or am I missing
-> > > anything ?
-> > > 
-> > 
-> > Yes, this is the expected behavior! But, now I doubt your issue was
-> > workaround by acpi_osi=Linux but not intel_backlight.
+On Wed, Mar 21, 2012 at 11:48:20PM +0800, Stephen Warren wrote:
+> On 03/21/2012 01:31 AM, Dong Aisheng wrote:
+> > On Wed, Mar 21, 2012 at 01:44:36AM +0800, Stephen Warren wrote:
+> >> During pinctrl_get(), if the client device has a device tree node, look
+> >> for the common pinctrl properties there. If found, parse the referenced
+> >> device tree nodes, with the help of the pinctrl drivers, and generate
+> >> mapping table entries from them.
+> >>
+> >> During pinctrl_put(), free any results of device tree parsing.
+> 
+> >> +static void dt_free_map(struct pinctrl_dev *pctldev,
+> >> +		     struct pinctrl_map *map, unsigned num_maps)
+> >> +{
+> >> +	if (pctldev) {
+> >> +		struct pinctrl_ops *ops = pctldev->desc->pctlops;
+> >> +		ops->dt_free_map(pctldev, map, num_maps);
+> >> +	} else {
 > >
+> > I remember for hog on functions the pctldev becomes pinctrl devices itself,
+> > so in which case pctldev can be NULL?
 > 
-> > > 
-> > > 
-> > > > 
-> > > > > echo 5 > /sys/class/backlight/acpi_video0/brightness 
-> > > > > echo 5 > /sys/class/backlight/intel_backlight/brightness
-> > > > > 
-> > > > > But it doesn't make any change . 
-> > > > > 
-> > > > > In my case  , 'acpi_backlight = vendor' does not make any difference since the hot key control 
-> > > > > 
-> > > > > already starts working with 'acpi_osi=Linux' option.
-> > > > > 
-> > > > > cat /proc/cmdline gives , 
-> > > > > 
-> > > > > BOOT_IMAGE=/boot/vmlinuz-3.3.0+
-> > > > > root=UUID=f0197a59-c067-4fd8-ad90-c4d721816077 ro acpi_osi=Linux 
-> > > > > 
-> > > > > 
-> > > > > Thanks , 
-> > > > > 
-> > > > > Pradeep Subrahmanion
-> > > > > 
-> > > > 
-> > > > OK, that's more clearly, please remove acpi_osi=Linux then re-test, I
-> > > > think the hotkey of backlight control only works with acpi_osi=Linux ?
-> > > > 
-> > 
-> > Does your backlight control still work if you remove acpi_osi=Linux ?
+> PIN_MAP_TYPE_DUMMY_STATE has no pctldev.
 > 
->    If I remove acpi_osi=Linux , the hot key control stops working .
+Oh, get it now.
+Maybe we could a line of comment in the generating dummy state code telling about
+this.
+
+> >> +static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
+> >> +				struct device_node *np_config)
+> >> +{
+> >> +	struct device_node *np_pctldev;
+> >> +	struct pinctrl_dev *pctldev;
+> >> +	struct pinctrl_ops *ops;
+> >> +	int ret;
+> >> +	struct pinctrl_map *map;
+> >> +	unsigned num_maps;
+> >> +
+> >> +	/* Find the pin controller containing np_config */
+> >> +	np_pctldev = of_node_get(np_config);
+> >
+> > It seems the np_config node is already got when call of_find_node_by_phandle.
+> > So do we still need this line?
 > 
+> Right below that code, we traverse up the tree using
+> of_get_next_parent(). Internally, this calls of_node_put() on the node
+> pointer that's passed in. Hence, we need an extra get() to match this.
+> 
+Yes, it's true.
+So it's reasonable here.
 
-What is the preload OS in your machine when you bought it? Windows XP,
-Vista or Windows 7?
+> >> +int pinctrl_dt_to_map(struct pinctrl *p)
+> >> +{
+> >> +	struct device_node *np = p->dev->of_node;
+> >> +	int state, ret;
+> >> +	char *propname;
+> >> +	struct property *prop;
+> >> +	const char *statename;
+> >> +	const __be32 *list;
+> >> +	int size, config;
+> >> +	phandle phandle;
+> >> +	struct device_node *np_config;
+> >> +	struct pinctrl_dt_map *dt_map;
+> >
+> > Add NULL np checking?
+> 
+> Oops yes. I though I had that somewhere, but evidently not...
+> 
+> >> +	/* We may store pointers to property names within the node */
+> >> +	of_node_get(np);
+> >> +
+> >> +	/* For each defined state ID */
+> >> +	for (state = 0; ; state++) {
+> >> +		/* Retrieve the pinctrl-* property */
+> >> +		propname = kasprintf(GFP_KERNEL, "pinctrl-%d", state);
+> >> +		prop = of_find_property(np, propname, &size);
+> ...
+> >> +			/* strlen("pinctrl-") == 8 */
+> >> +			if (strlen(prop->name) < 8) {
+> >
+> > Do we really need this extra checking?
+> > It seems the prop->name is the "pinctrl-%d" you searched above, so the
+> > strlen(prop->name) must not < 8, right?
+> 
+> Assuming of_find_property works correctly, I guess that's true. We can
+> remove that if check.
+> 
+> >> +				dev_err(p->dev, "prop %s inconsistent length\n",
+> >> +					prop->name);
+> >> +				ret = -EINVAL;
+> >> +				goto err;
+> >> +			}
+> >> +			statename = prop->name + 8;
+> >
+> > From this code, it seems actually we provide user the option by chance to define
+> > state as pinctrl-syspend which is out of our binding doc.
+> 
+> The user can place a property with name "pinctrl-suspend" into the DT.
+> However, since we only look for properties named pinctrl-%d, then the
+> code will never read/use it, just like any other unexpected property.
+> 
+Yes, you're correct.
+I misunderstood that.
 
+> >> +		}
+> >> +
+> >> +		/* For every referenced pin configuration node in it */
+> >> +		for (config = 0; config < size; config++) {
+> >> +			phandle = be32_to_cpup(list++);
+> >> +
+> >> +			/* Look up the pin configuration node */
+> >> +			np_config = of_find_node_by_phandle(phandle);
+> >
+> > One option is using of_parse_phandle, then we do not need calculate
+> > the phandle offset by ourselves.
+> > Like:
+> > np_config = of_parse_phandle(propname , config);
+> 
+> Yes, that's a good idea. I'll try that.
+> 
+> >> +			if (!np_config) {
+> >> +				dev_err(p->dev,
+> >> +					"prop %s index %i invalid phandle\n",
+> >> +					prop->name, config);
+> >> +				ret = -EINVAL;
+> >> +				goto err;
+> >> +			}
+> >> +
+> >> +			/* Parse the node */
+> >> +			ret = dt_to_map_one_config(p, statename, np_config);
+> >> +			of_node_put(np_config);
+> >> +			if (ret < 0)
+> >> +				goto err;
+> >> +		}
+> >> +
+> >> +		/* No entries in DT? Generate a dummy state table entry */
+> >> +		if (!size) {
+> >> +			ret = dt_remember_dummy_state(p, statename);
+> >> +			if (ret < 0)
+> >> +				goto err;
+> >> +		}
+> >> +	}
+> >> +
+> >> +	list_for_each_entry(dt_map, &p->dt_maps, node) {
+> >> +		ret = pinctrl_register_map(dt_map->map, dt_map->num_maps,
+> >> +					   false, true);
+> >> +		if (ret < 0)
+> >> +			goto err;
+> >> +	}
+> >
+> > What's main purpose of differing the map registration and introduce a
+> > intermediate pinctrl_dt_map(dt_remember_or_free_map)?
+> > What about directly register maps once it's parsed?
+> 
+> s/differing/deferring/ I assume.
+> 
+> IIRC, this was mainly to simplify error handling; by deferring it, you
+> don't have to unregister everything when undoing a failed parse.
+> However, I guess that pinctrl_dt_free_maps() already cleans up
+> everything anyway, so we couuld just register everything as soon as its
+> parsed. I'll think a little more about this and switch to doing that if
+> will work.
+> 
+Yes, since it introduces extra complexities which i'm not sure is worth
+enough, we can double check it.
 
-thanks
-Joey Lee
+Regards
+Dong Aisheng
 
