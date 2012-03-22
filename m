@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab2CVS1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 14:27:39 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52514 "EHLO
+	id S964840Ab2CVS1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 14:27:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37318 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005Ab2CVS1g (ORCPT
+	with ESMTP id S1758399Ab2CVS1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 14:27:36 -0400
+	Thu, 22 Mar 2012 14:27:44 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: linus.walleij@linaro.org
 Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
@@ -15,9 +15,9 @@ Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
         thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH V3 3/6] pinctrl: core device tree mapping table parsing support
-Date: Thu, 22 Mar 2012 12:27:19 -0600
-Message-Id: <1332440842-1098-3-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V3 6/6] pinctrl: tegra: Add complete device tree support
+Date: Thu, 22 Mar 2012 12:27:22 -0600
+Message-Id: <1332440842-1098-6-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1332440842-1098-1-git-send-email-swarren@wwwdotorg.org>
 References: <1332440842-1098-1-git-send-email-swarren@wwwdotorg.org>
@@ -26,561 +26,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During pinctrl_get(), if the client device has a device tree node, look
-for the common pinctrl properties there. If found, parse the referenced
-device tree nodes, with the help of the pinctrl drivers, and generate
-mapping table entries from them.
-
-During pinctrl_put(), free any results of device tree parsing.
+Implement pinctrl_ops dt_node_to_map() and dt_free_map(). These allow
+complete specification of the desired pinmux configuration using device
+tree.
 
 Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 ---
-v3: Add explit check for devies without dev->of_node. Add comments re:
-    lack of pctldev for PIN_MAP_TYPE_DUMMY_STATE.
-v2: Place most code into new file devicetree.c
-
-pinctrl core dt fixup
+v3: Rebase on of_property_for_each_string() API changes.
+    Improve DT parsing so it only calls krealloc() on the top-level map
+    table once per subnode, rather than once per subnode/pin combination.
+v2: Rebase on of_property_for_each_string() API changes.
 ---
- drivers/pinctrl/Makefile        |    1 +
- drivers/pinctrl/core.c          |   72 ++++++++---
- drivers/pinctrl/core.h          |   11 ++-
- drivers/pinctrl/devicetree.c    |  271 +++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/devicetree.h    |   35 +++++
- include/linux/pinctrl/pinctrl.h |    7 +
- 6 files changed, 379 insertions(+), 18 deletions(-)
- create mode 100644 drivers/pinctrl/devicetree.c
- create mode 100644 drivers/pinctrl/devicetree.h
+ drivers/pinctrl/pinctrl-tegra.c |  205 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 205 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 6d4150b..049c9fb 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -5,6 +5,7 @@ ccflags-$(CONFIG_DEBUG_PINCTRL)	+= -DDEBUG
- obj-$(CONFIG_PINCTRL)		+= core.o
- obj-$(CONFIG_PINMUX)		+= pinmux.o
- obj-$(CONFIG_PINCONF)		+= pinconf.o
-+obj-$(CONFIG_OF)		+= devicetree.o
- obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
- obj-$(CONFIG_PINCTRL_PXA3xx)	+= pinctrl-pxa3xx.o
- obj-$(CONFIG_PINCTRL_MMP2)	+= pinctrl-mmp2.o
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index df6296c..832f71d 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -26,6 +26,7 @@
+diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+index 9b32968..80e97c9 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -23,9 +23,11 @@
+ #include <linux/io.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
++#include <linux/pinctrl/machine.h>
  #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/machine.h>
- #include "core.h"
-+#include "devicetree.h"
- #include "pinmux.h"
- #include "pinconf.h"
- 
-@@ -45,7 +46,7 @@ struct pinctrl_maps {
- DEFINE_MUTEX(pinctrl_mutex);
- 
- /* Global list of pin control devices (struct pinctrl_dev) */
--static LIST_HEAD(pinctrldev_list);
-+LIST_HEAD(pinctrldev_list);
- 
- /* List of pin controller handles (struct pinctrl) */
- static LIST_HEAD(pinctrl_list);
-@@ -579,6 +580,13 @@ static struct pinctrl *create_pinctrl(struct device *dev)
- 	}
- 	p->dev = dev;
- 	INIT_LIST_HEAD(&p->states);
-+	INIT_LIST_HEAD(&p->dt_maps);
-+
-+	ret = pinctrl_dt_to_map(p);
-+	if (ret < 0) {
-+		kfree(p);
-+		return ERR_PTR(ret);
-+	}
- 
- 	devname = dev_name(dev);
- 
-@@ -662,6 +670,8 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
- 		kfree(state);
- 	}
- 
-+	pinctrl_dt_free_maps(p);
-+
- 	if (inlist)
- 		list_del(&p->node);
- 	kfree(p);
-@@ -787,15 +797,8 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
- }
- EXPORT_SYMBOL_GPL(pinctrl_select_state);
- 
--/**
-- * pinctrl_register_mappings() - register a set of pin controller mappings
-- * @maps: the pincontrol mappings table to register. This should probably be
-- *	marked with __initdata so it can be discarded after boot. This
-- *	function will perform a shallow copy for the mapping entries.
-- * @num_maps: the number of maps in the mapping table
-- */
--int pinctrl_register_mappings(struct pinctrl_map const *maps,
--			      unsigned num_maps)
-+int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
-+			 bool dup, bool locked)
- {
- 	int i, ret;
- 	struct pinctrl_maps *maps_node;
-@@ -851,20 +854,52 @@ int pinctrl_register_mappings(struct pinctrl_map const *maps,
- 	}
- 
- 	maps_node->num_maps = num_maps;
--	maps_node->maps = kmemdup(maps, sizeof(*maps) * num_maps, GFP_KERNEL);
--	if (!maps_node->maps) {
--		pr_err("failed to duplicate mapping table\n");
--		kfree(maps_node);
--		return -ENOMEM;
-+	if (dup) {
-+		maps_node->maps = kmemdup(maps, sizeof(*maps) * num_maps,
-+					  GFP_KERNEL);
-+		if (!maps_node->maps) {
-+			pr_err("failed to duplicate mapping table\n");
-+			kfree(maps_node);
-+			return -ENOMEM;
-+		}
-+	} else {
-+		maps_node->maps = maps;
- 	}
- 
--	mutex_lock(&pinctrl_mutex);
-+	if (!locked)
-+		mutex_lock(&pinctrl_mutex);
- 	list_add_tail(&maps_node->node, &pinctrl_maps);
--	mutex_unlock(&pinctrl_mutex);
-+	if (!locked)
-+		mutex_unlock(&pinctrl_mutex);
- 
- 	return 0;
- }
- 
-+/**
-+ * pinctrl_register_mappings() - register a set of pin controller mappings
-+ * @maps: the pincontrol mappings table to register. This should probably be
-+ *	marked with __initdata so it can be discarded after boot. This
-+ *	function will perform a shallow copy for the mapping entries.
-+ * @num_maps: the number of maps in the mapping table
-+ */
-+int pinctrl_register_mappings(struct pinctrl_map const *maps,
-+			      unsigned num_maps)
-+{
-+	return pinctrl_register_map(maps, num_maps, true, false);
-+}
-+
-+void pinctrl_unregister_map(struct pinctrl_map const *map)
-+{
-+	struct pinctrl_maps *maps_node;
-+
-+	list_for_each_entry(maps_node, &pinctrl_maps, node) {
-+		if (maps_node->maps == map) {
-+			list_del(&maps_node->node);
-+			return;
-+		}
-+	}
-+}
-+
- #ifdef CONFIG_DEBUG_FS
- 
- static int pinctrl_pins_show(struct seq_file *s, void *what)
-@@ -1231,6 +1266,9 @@ static int pinctrl_check_ops(struct pinctrl_dev *pctldev)
- 	    !ops->get_group_pins)
- 		return -EINVAL;
- 
-+	if (ops->dt_node_to_map && !ops->dt_free_map)
-+		return -EINVAL;
-+
- 	return 0;
- }
- 
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 17ecf65..98ae808 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -52,12 +52,15 @@ struct pinctrl_dev {
-  * @dev: the device using this pin control handle
-  * @states: a list of states for this device
-  * @state: the current state
-+ * @dt_maps: the mapping table chunks dynamically parsed from device tree for
-+ *	this device, if any
-  */
- struct pinctrl {
- 	struct list_head node;
- 	struct device *dev;
- 	struct list_head states;
- 	struct pinctrl_state *state;
-+	struct list_head dt_maps;
- };
- 
- /**
-@@ -100,7 +103,8 @@ struct pinctrl_setting_configs {
-  * struct pinctrl_setting - an individual mux or config setting
-  * @node: list node for struct pinctrl_settings's @settings field
-  * @type: the type of setting
-- * @pctldev: pin control device handling to be programmed
-+ * @pctldev: pin control device handling to be programmed. Not used for
-+ *   PIN_MAP_TYPE_DUMMY_STATE.
-  * @data: Data specific to the setting type
-  */
- struct pinctrl_setting {
-@@ -153,4 +157,9 @@ static inline struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev,
- 	return radix_tree_lookup(&pctldev->pin_desc_tree, pin);
- }
- 
-+int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
-+			 bool dup, bool locked);
-+void pinctrl_unregister_map(struct pinctrl_map const *map);
-+
- extern struct mutex pinctrl_mutex;
-+extern struct list_head pinctrldev_list;
-diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
-new file mode 100644
-index 0000000..a7b4d61
---- /dev/null
-+++ b/drivers/pinctrl/devicetree.c
-@@ -0,0 +1,271 @@
-+/*
-+ * Device tree integration for the pin control subsystem
-+ *
-+ * Copyright (C) 2012 NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/of.h>
-+#include <linux/pinctrl/pinctrl.h>
+ #include <linux/pinctrl/pinmux.h>
+ #include <linux/pinctrl/pinconf.h>
 +#include <linux/slab.h>
-+
-+#include "core.h"
-+#include "devicetree.h"
-+
-+/**
-+ * struct pinctrl_dt_map - mapping table chunk parsed from device tree
-+ * @node: list node for struct pinctrl's @dt_maps field
-+ * @pctldev: the pin controller that allocated this struct, and will free it
-+ * @maps: the mapping table entries
-+ */
-+struct pinctrl_dt_map {
-+	struct list_head node;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_map *map;
-+	unsigned num_maps;
-+};
-+
-+static void dt_free_map(struct pinctrl_dev *pctldev,
-+		     struct pinctrl_map *map, unsigned num_maps)
+ 
+ #include <mach/pinconf-tegra.h>
+ 
+@@ -98,11 +100,214 @@ static void tegra_pinctrl_pin_dbg_show(struct pinctrl_dev *pctldev,
+ 	seq_printf(s, " " DRIVER_NAME);
+ }
+ 
++static int reserve_map(struct pinctrl_map **map, unsigned *reserved_maps,
++		       unsigned *num_maps, unsigned reserve)
 +{
-+	if (pctldev) {
-+		struct pinctrl_ops *ops = pctldev->desc->pctlops;
-+		ops->dt_free_map(pctldev, map, num_maps);
-+	} else {
-+		/* There is no pctldev for PIN_MAP_TYPE_DUMMY_STATE */
-+		kfree(map);
-+	}
-+}
++	unsigned old_num = *reserved_maps;
++	unsigned new_num = *num_maps + reserve;
++	struct pinctrl_map *new_map;
 +
-+void pinctrl_dt_free_maps(struct pinctrl *p)
-+{
-+	struct pinctrl_dt_map *dt_map, *n1;
-+
-+	list_for_each_entry_safe(dt_map, n1, &p->dt_maps, node) {
-+		pinctrl_unregister_map(dt_map->map);
-+		list_del(&dt_map->node);
-+		dt_free_map(dt_map->pctldev, dt_map->map,
-+			    dt_map->num_maps);
-+		kfree(dt_map);
-+	}
-+
-+	of_node_put(p->dev->of_node);
-+}
-+
-+static int dt_remember_or_free_map(struct pinctrl *p, const char *statename,
-+				   struct pinctrl_dev *pctldev,
-+				   struct pinctrl_map *map, unsigned num_maps)
-+{
-+	int i;
-+	struct pinctrl_dt_map *dt_map;
-+
-+	/* Initialize common mapping table entry fields */
-+	for (i = 0; i < num_maps; i++) {
-+		map[i].dev_name = dev_name(p->dev);
-+		map[i].name = statename;
-+		if (pctldev)
-+			map[i].ctrl_dev_name = dev_name(pctldev->dev);
-+	}
-+
-+	/* Remember the converted mapping table entries */
-+	dt_map = kzalloc(sizeof(*dt_map), GFP_KERNEL);
-+	if (!dt_map) {
-+		dev_err(p->dev, "failed to alloc struct pinctrl_dt_map\n");
-+		dt_free_map(pctldev, map, num_maps);
-+		return -ENOMEM;
-+	}
-+
-+	dt_map->pctldev = pctldev;
-+	dt_map->map = map;
-+	dt_map->num_maps = num_maps;
-+	list_add_tail(&dt_map->node, &p->dt_maps);
-+
-+	return 0;
-+}
-+
-+static struct pinctrl_dev *find_pinctrl_by_of_node(struct device_node *np)
-+{
-+	struct pinctrl_dev *pctldev;
-+
-+	list_for_each_entry(pctldev, &pinctrldev_list, node)
-+		if (pctldev->dev->of_node == np)
-+			return pctldev;
-+
-+	return NULL;
-+}
-+
-+static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
-+				struct device_node *np_config)
-+{
-+	struct device_node *np_pctldev;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_ops *ops;
-+	int ret;
-+	struct pinctrl_map *map;
-+	unsigned num_maps;
-+
-+	/* Find the pin controller containing np_config */
-+	np_pctldev = of_node_get(np_config);
-+	for (;;) {
-+		np_pctldev = of_get_next_parent(np_pctldev);
-+		if (!np_pctldev || of_node_is_root(np_pctldev)) {
-+			dev_err(p->dev, "could not find pctldev for node %s\n",
-+				np_config->full_name);
-+			of_node_put(np_pctldev);
-+			/* FIXME: This should trigger deferrered probe */
-+			return -ENODEV;
-+		}
-+		pctldev = find_pinctrl_by_of_node(np_pctldev);
-+		if (pctldev)
-+			break;
-+	}
-+	of_node_put(np_pctldev);
-+
-+	/*
-+	 * Call pinctrl driver to parse device tree node, and
-+	 * generate mapping table entries
-+	 */
-+	ops = pctldev->desc->pctlops;
-+	if (!ops->dt_node_to_map) {
-+		dev_err(p->dev, "pctldev %s doesn't support DT\n",
-+			dev_name(pctldev->dev));
-+		return -ENODEV;
-+	}
-+	ret = ops->dt_node_to_map(pctldev, np_config, &map, &num_maps);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Stash the mapping table chunk away for later use */
-+	ret = dt_remember_or_free_map(p, statename, pctldev,
-+					map, num_maps);
-+	if (ret < 0)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int dt_remember_dummy_state(struct pinctrl *p, const char *statename)
-+{
-+	struct pinctrl_map *map;
-+	int ret;
-+
-+	map = kzalloc(sizeof(*map), GFP_KERNEL);
-+	if (!map) {
-+		dev_err(p->dev, "failed to alloc struct pinctrl_map\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* There is no pctldev for PIN_MAP_TYPE_DUMMY_STATE */
-+	map->type = PIN_MAP_TYPE_DUMMY_STATE;
-+
-+	ret = dt_remember_or_free_map(p, statename, NULL, map, 1);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+int pinctrl_dt_to_map(struct pinctrl *p)
-+{
-+	struct device_node *np = p->dev->of_node;
-+	int state, ret;
-+	char *propname;
-+	struct property *prop;
-+	const char *statename;
-+	const __be32 *list;
-+	int size, config;
-+	phandle phandle;
-+	struct device_node *np_config;
-+	struct pinctrl_dt_map *dt_map;
-+
-+	/* CONFIG_OF enabled, p->dev not instantiated from DT */
-+	if (!np)
++	if (old_num >= new_num)
 +		return 0;
 +
-+	/* We may store pointers to property names within the node */
-+	of_node_get(np);
++	new_map = krealloc(*map, sizeof(*new_map) * new_num, GFP_KERNEL);
++	if (!new_map)
++		return -ENOMEM;
 +
-+	/* For each defined state ID */
-+	for (state = 0; ; state++) {
-+		/* Retrieve the pinctrl-* property */
-+		propname = kasprintf(GFP_KERNEL, "pinctrl-%d", state);
-+		prop = of_find_property(np, propname, &size);
-+		kfree(propname);
-+		if (!prop)
-+			break;
-+		list = prop->value;
-+		size /= sizeof(*list);
++	memset(new_map + old_num, 0, (new_num - old_num) * sizeof(*new_map));
 +
-+		/* Determine whether pinctrl-names property names the state */
-+		ret = of_property_read_string_index(np, "pinctrl-names",
-+						    state, &statename);
-+		/*
-+		 * If not, statename is just the integer state ID. But rather
-+		 * than dynamically allocate it and have to free it later,
-+		 * just point part way into the property name for the string.
-+		 */
-+		if (ret < 0) {
-+			/* strlen("pinctrl-") == 8 */
-+			if (strlen(prop->name) < 8) {
-+				dev_err(p->dev, "prop %s inconsistent length\n",
-+					prop->name);
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+			statename = prop->name + 8;
-+		}
-+
-+		/* For every referenced pin configuration node in it */
-+		for (config = 0; config < size; config++) {
-+			phandle = be32_to_cpup(list++);
-+
-+			/* Look up the pin configuration node */
-+			np_config = of_find_node_by_phandle(phandle);
-+			if (!np_config) {
-+				dev_err(p->dev,
-+					"prop %s index %i invalid phandle\n",
-+					prop->name, config);
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+
-+			/* Parse the node */
-+			ret = dt_to_map_one_config(p, statename, np_config);
-+			of_node_put(np_config);
-+			if (ret < 0)
-+				goto err;
-+		}
-+
-+		/* No entries in DT? Generate a dummy state table entry */
-+		if (!size) {
-+			ret = dt_remember_dummy_state(p, statename);
-+			if (ret < 0)
-+				goto err;
-+		}
-+	}
-+
-+	list_for_each_entry(dt_map, &p->dt_maps, node) {
-+		ret = pinctrl_register_map(dt_map->map, dt_map->num_maps,
-+					   false, true);
-+		if (ret < 0)
-+			goto err;
-+	}
++	*map = new_map;
++	*reserved_maps = new_num;
 +
 +	return 0;
++}
 +
-+err:
-+	pinctrl_dt_free_maps(p);
++static int add_map_mux(struct pinctrl_map **map, unsigned *reserved_maps,
++		       unsigned *num_maps, const char *group,
++		       const char *function)
++{
++	if (*num_maps == *reserved_maps)
++		return -ENOSPC;
++
++	(*map)[*num_maps].type = PIN_MAP_TYPE_MUX_GROUP;
++	(*map)[*num_maps].data.mux.group = group;
++	(*map)[*num_maps].data.mux.function = function;
++	(*num_maps)++;
++
++	return 0;
++}
++
++static int add_map_configs(struct pinctrl_map **map, unsigned *reserved_maps,
++			   unsigned *num_maps, const char *group,
++			   unsigned long *configs, unsigned num_configs)
++{
++	unsigned long *dup_configs;
++
++	if (*num_maps == *reserved_maps)
++		return -ENOSPC;
++
++	dup_configs = kmemdup(configs, num_configs * sizeof(*dup_configs),
++			      GFP_KERNEL);
++	if (!dup_configs)
++		return -ENOMEM;
++
++	(*map)[*num_maps].type = PIN_MAP_TYPE_CONFIGS_GROUP;
++	(*map)[*num_maps].data.configs.group_or_pin = group;
++	(*map)[*num_maps].data.configs.configs = dup_configs;
++	(*map)[*num_maps].data.configs.num_configs = num_configs;
++	(*num_maps)++;
++
++	return 0;
++}
++
++static int add_config(unsigned long **configs, unsigned *num_configs,
++		      unsigned long config)
++{
++	unsigned old_num = *num_configs;
++	unsigned new_num = old_num + 1;
++	unsigned long *new_configs;
++
++	new_configs = krealloc(*configs, sizeof(*new_configs) * new_num,
++			       GFP_KERNEL);
++	if (!new_configs)
++		return -ENOMEM;
++
++	new_configs[old_num] = config;
++
++	*configs = new_configs;
++	*num_configs = new_num;
++
++	return 0;
++}
++
++void tegra_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
++			       struct pinctrl_map *map, unsigned num_maps)
++{
++	int i;
++
++	for (i = 0; i < num_maps; i++)
++		if (map[i].type == PIN_MAP_TYPE_CONFIGS_GROUP)
++			kfree(map[i].data.configs.configs);
++
++	kfree(map);
++}
++
++static const struct cfg_param {
++	const char *property;
++	enum tegra_pinconf_param param;
++} cfg_params[] = {
++	{"nvidia,pull",			TEGRA_PINCONF_PARAM_PULL},
++	{"nvidia,tristate",		TEGRA_PINCONF_PARAM_TRISTATE},
++	{"nvidia,enable-input",		TEGRA_PINCONF_PARAM_ENABLE_INPUT},
++	{"nvidia,open-drain",		TEGRA_PINCONF_PARAM_OPEN_DRAIN},
++	{"nvidia,lock",			TEGRA_PINCONF_PARAM_LOCK},
++	{"nvidia,io-reset",		TEGRA_PINCONF_PARAM_IORESET},
++	{"nvidia,high-speed-mode",	TEGRA_PINCONF_PARAM_HIGH_SPEED_MODE},
++	{"nvidia,schmitt",		TEGRA_PINCONF_PARAM_SCHMITT},
++	{"nvidia,low-power-mode",	TEGRA_PINCONF_PARAM_LOW_POWER_MODE},
++	{"nvidia,pull-down-strength",	TEGRA_PINCONF_PARAM_DRIVE_DOWN_STRENGTH},
++	{"nvidia,pull-up-strength",	TEGRA_PINCONF_PARAM_DRIVE_UP_STRENGTH},
++	{"nvidia,slew-rate-falling",	TEGRA_PINCONF_PARAM_SLEW_RATE_FALLING},
++	{"nvidia,slew-rate-rising",	TEGRA_PINCONF_PARAM_SLEW_RATE_RISING},
++};
++
++int tegra_pinctrl_dt_subnode_to_map(struct device_node *np,
++				    struct pinctrl_map **map,
++				    unsigned *reserved_maps,
++				    unsigned *num_maps)
++{
++	int ret, i;
++	const char *function;
++	u32 val;
++	unsigned long config;
++	unsigned long *configs = NULL;
++	unsigned num_configs = 0;
++	unsigned reserve;
++	struct property *prop;
++	const char *group;
++
++	ret = of_property_read_string(np, "nvidia,function", &function);
++	if (ret < 0)
++		function = NULL;
++
++	for (i = 0; i < ARRAY_SIZE(cfg_params); i++) {
++		ret = of_property_read_u32(np, cfg_params[i].property, &val);
++		if (!ret) {
++			config = TEGRA_PINCONF_PACK(cfg_params[i].param, val);
++			ret = add_config(&configs, &num_configs, config);
++			if (ret < 0)
++				goto exit;
++		}
++	}
++
++	reserve = 0;
++	if (function != NULL)
++		reserve++;
++	if (num_configs)
++		reserve++;
++	ret = of_property_count_strings(np, "nvidia,pins");
++	if (ret < 0)
++		goto exit;
++	reserve *= ret;
++
++	ret = reserve_map(map, reserved_maps, num_maps, reserve);
++	if (ret < 0)
++		goto exit;
++
++	of_property_for_each_string(np, "nvidia,pins", prop, group) {
++		if (function) {
++			ret = add_map_mux(map, reserved_maps, num_maps,
++					  group, function);
++			if (ret < 0)
++				goto exit;
++		}
++
++		if (num_configs) {
++			ret = add_map_configs(map, reserved_maps, num_maps,
++					      group, configs, num_configs);
++			if (ret < 0)
++				goto exit;
++		}
++	}
++
++	ret = 0;
++
++exit:
++	kfree(configs);
 +	return ret;
 +}
-diff --git a/drivers/pinctrl/devicetree.h b/drivers/pinctrl/devicetree.h
-new file mode 100644
-index 0000000..760bc49
---- /dev/null
-+++ b/drivers/pinctrl/devicetree.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Internal interface to pinctrl device tree integration
-+ *
-+ * Copyright (C) 2012 NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
 +
-+#ifdef CONFIG_OF
-+
-+void pinctrl_dt_free_maps(struct pinctrl *p);
-+int pinctrl_dt_to_map(struct pinctrl *p);
-+
-+#else
-+
-+static inline int pinctrl_dt_to_map(struct pinctrl *p)
++int tegra_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
++				 struct device_node *np_config,
++				 struct pinctrl_map **map, unsigned *num_maps)
 +{
++	unsigned reserved_maps;
++	struct device_node *np;
++	int ret;
++
++	reserved_maps = 0;
++	*map = NULL;
++	*num_maps = 0;
++
++	for_each_child_of_node(np_config, np) {
++		ret = tegra_pinctrl_dt_subnode_to_map(np, map, &reserved_maps,
++						      num_maps);
++		if (ret < 0) {
++			tegra_pinctrl_dt_free_map(pctldev, *map, *num_maps);
++			return ret;
++		}
++	}
++
 +	return 0;
 +}
 +
-+static inline void pinctrl_dt_free_maps(struct pinctrl *p)
-+{
-+}
-+
-+#endif
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 4e9f078..aa92cde 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -21,9 +21,11 @@
- 
- struct device;
- struct pinctrl_dev;
-+struct pinctrl_map;
- struct pinmux_ops;
- struct pinconf_ops;
- struct gpio_chip;
-+struct device_node;
- 
- /**
-  * struct pinctrl_pin_desc - boards/machines provide information on their
-@@ -83,6 +85,11 @@ struct pinctrl_ops {
- 			       unsigned *num_pins);
- 	void (*pin_dbg_show) (struct pinctrl_dev *pctldev, struct seq_file *s,
- 			  unsigned offset);
-+	int (*dt_node_to_map) (struct pinctrl_dev *pctldev,
-+			       struct device_node *np_config,
-+			       struct pinctrl_map **map, unsigned *num_maps);
-+	void (*dt_free_map) (struct pinctrl_dev *pctldev,
-+			     struct pinctrl_map *map, unsigned num_maps);
+ static struct pinctrl_ops tegra_pinctrl_ops = {
+ 	.list_groups = tegra_pinctrl_list_groups,
+ 	.get_group_name = tegra_pinctrl_get_group_name,
+ 	.get_group_pins = tegra_pinctrl_get_group_pins,
+ 	.pin_dbg_show = tegra_pinctrl_pin_dbg_show,
++	.dt_node_to_map = tegra_pinctrl_dt_node_to_map,
++	.dt_free_map = tegra_pinctrl_dt_free_map,
  };
  
- /**
+ static int tegra_pinctrl_list_funcs(struct pinctrl_dev *pctldev,
 -- 
 1.7.0.4
 
