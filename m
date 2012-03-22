@@ -1,32 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab2CVJGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:06:03 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50350 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756535Ab2CVJF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:05:58 -0400
-Message-ID: <4F6AEB0E.7070606@parallels.com>
-Date: Thu, 22 Mar 2012 13:04:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1030716Ab2CVJJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:09:15 -0400
+Received: from s15407518.onlinehome-server.info ([82.165.136.167]:42031 "EHLO
+	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964968Ab2CVJJL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:09:11 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH] regulator: gpio-regulator: Set the smallest voltage/current in the specified range
+Date: Thu, 22 Mar 2012 10:08:58 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1332396484.3842.2.camel@phoenix>
+In-Reply-To: <1332396484.3842.2.camel@phoenix>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
-Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
-References: <1332368265-21586-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201203221009.05902.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2012 02:17 AM, Tejun Heo wrote:
-> Can you please send a patch to move init to
-> ->create()?
+Am Donnerstag, 22. März 2012, 07:08:04 schrieb Axel Lin:
+> Do not assume the gpio regulator states map is sorted in any order.
+> This patch ensures we always set the smallest voltage/current that falls
+> within the specified range.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Yes.
+nice addition, thanks
+
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+
+> ---
+>  drivers/regulator/gpio-regulator.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/regulator/gpio-regulator.c
+> b/drivers/regulator/gpio-regulator.c index 42e1cb1..b728b36 100644
+> --- a/drivers/regulator/gpio-regulator.c
+> +++ b/drivers/regulator/gpio-regulator.c
+> @@ -105,15 +105,15 @@ static int gpio_regulator_set_value(struct
+> regulator_dev *dev, int min, int max)
+>  {
+>  	struct gpio_regulator_data *data = rdev_get_drvdata(dev);
+> -	int ptr, target, state;
+> +	int ptr, target, state, best_val = INT_MAX;
+> 
+> -	target = -1;
+>  	for (ptr = 0; ptr < data->nr_states; ptr++)
+> -		if (data->states[ptr].value >= min &&
+> +		if (data->states[ptr].value < best_val &&
+> +		    data->states[ptr].value >= min &&
+>  		    data->states[ptr].value <= max)
+>  			target = data->states[ptr].gpios;
+> 
+> -	if (target < 0)
+> +	if (best_val == INT_MAX)
+>  		return -EINVAL;
+> 
+>  	for (ptr = 0; ptr < data->nr_gpios; ptr++) {
 
