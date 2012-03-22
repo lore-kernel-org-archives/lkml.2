@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab2CVW5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 18:57:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55217 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab2CVW5H (ORCPT
+	id S1757963Ab2CVW7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 18:59:18 -0400
+Received: from out06.mta.xmission.com ([166.70.13.236]:43284 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753159Ab2CVW7Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 18:57:07 -0400
-Message-ID: <4F6BAE34.7010805@wwwdotorg.org>
-Date: Thu, 22 Mar 2012 16:56:52 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Thu, 22 Mar 2012 18:59:16 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <20120313005855.GA24639@redhat.com>
+	<CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
+	<20120318192755.GB6589@ZenIV.linux.org.uk>
+	<CAMOw1v4qa_AxJgc+qAsY6M=K--2JDvO-+CNj8OwKuE7piRViGw@mail.gmail.com>
+	<m1vclw1fx8.fsf@fess.ebiederm.org>
+	<CAMOw1v4gszzV7F3z1m+RWEe9UDgR2Jrp9wX_w9z_1UkXT=FL5Q@mail.gmail.com>
+Date: Thu, 22 Mar 2012 16:02:46 -0700
+In-Reply-To: <CAMOw1v4gszzV7F3z1m+RWEe9UDgR2Jrp9wX_w9z_1UkXT=FL5Q@mail.gmail.com>
+	(Lucas De Marchi's message of "Thu, 22 Mar 2012 19:12:26 -0300")
+Message-ID: <m1ehskxmqx.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Oliver Neukum <oliver@neukum.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <willy@meta-x.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Regression due to: net/usbnet: avoid recursive locking in usbnet_stop()
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/yoKnQxCYorSKhGSoO2cdUw19bltDNRKE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4901]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Lucas De Marchi <lucas.demarchi@profusion.mobi>
+X-Spam-Relay-Country: **
+Subject: Re: [3.3-rc7] sys_poll use after free (hibernate)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d
-"net/usbnet: avoid recursive locking in usbnet_stop()" causes a problem
-for me.
+Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
 
-When I reboot or shutdown, I see the error spew below at least 50% of
-the time. Reverting the above patch fixes this, at least for 10 reboot
-attempts.
+> On Thu, Mar 22, 2012 at 6:31 PM, Eric W. Biederman
 
-Other notes:
-* I'm running on an NVIDIA Tegra ARM device, with smsc95xx USB ethernet.
-* This first happens in next-20120309, not in next-20120308.
-* The problematic commit appears to have been queued for backport to
-various stable branches:-(
+>> It looks like it was a combination of the fuzzer doing silly things
+>> and a removed ctl_table entry being poisoned and having .poll set
+>> to 6b6b6b6b6b6b6b6b so the guard against calling poll when it is
+>> nonsense did not trigger.  So your patch should be sufficient
+>> for now.
+>
+> What I understood afterwards was:
+>
+> 1. fuzzer calling poll() on files that did support poll
+> 2. modules that created that sysctl entries were removed
+> 3. 'table' was entirely removed (not ->poll).
 
-> Will now restart.
-> [ 85.622493] Unable to handle kernel paging request at virtual address 6b6b6bfb
-> [ 85.629748] pgd = eea68000
-> [ 85.632477] [6b6b6bfb] *pgd=00000000
-> [ 85.636096] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-> [ 85.641426] Modules linked in:
-> [ 85.644527] CPU: 0 Not tainted (3.3.0-rc7-next-20120319-00027-gee679a3 #30)
-> [ 85.651879] PC is at kobject_put+0xc/0x74
-> [ 85.655936] LR is at usb_hcd_unlink_urb+0x68/0xc4
-> [ 85.660675] pc : [<c019fb14>] lr : [<c0228db4>] psr: 20000013
-> [ 85.660695] sp : ee8c7e08 ip : ffffac43 fp : 00000000
-> [ 85.672198] r10: c057e190 r9 : ee87e0c0 r8 : ee83ac00
-> [ 85.677448] r7 : a0000013 r6 : ffffff98 r5 : ee87e0c0 r4 : 6b6b6bdb
-> [ 85.684000] r3 : ee82c800 r2 : ef1b6800 r1 : a0000013 r0 : 6b6b6bdb
-> [ 85.690554] Flags: nzCv IRQs on FIQs on Mode SVC_32 ISA ARM Segment user
-> [ 85.697716] Control: 10c5387d Table: 2ea6804a DAC: 00000015
-> [ 85.703485] Process reboot (pid: 1528, stack limit = 0xee8c62f0)
-> [ 85.709516] Stack: (0xee8c7e08 to 0xee8c8000)
-> [ 85.713908] 7e00: 6b6b6bdb a0000013 00000000 c0228db4 ee87e0c0 ffffff98
-> [ 85.722132] 7e20: ee82c800 ee83acd4 00000000 ee926bb8 ee83acc8 c02180f8 ee83ac00 ee83acc8
-> [ 85.730353] 7e40: ee83acdc ee8c6000 00000000 ee83ba00 c057e190 c02181fc 00000000 00000000
-> [ 85.738575] 7e60: eea53a40 c004a820 ee8c7e78 ee8c7e78 00000000 00000000 ee8c7e68 ee8c7e68
-> [ 85.746796] 7e80: 00000000 ee83a800 ee83ac00 c03bb8f8 00000001 00000000 ee83ba0c c02191c8
-> [ 85.755017] 7ea0: ee83a800 00000200 ee8c7ed0 ee83a800 00001003 00000001 00000000 c02ba42c
-> [ 85.763239] 7ec0: ee83a858 ee83a800 00001042 c02ba480 ee83a858 ee83a858 c02bd224 c02bd4c4
-> [ 85.771459] 7ee0: 00000000 ee83a800 00001003 ee83a800 beca7468 c02bd5b4 ee917840 00000000
-> [ 85.779679] 7f00: ee83a800 c0302dfc ee83a828 beca7468 30687465 00000000 00000000 00000000
-> [ 85.787899] 7f20: 00001042 71cc140a 00000000 00000000 30687465 00008914 beca7468 00008914
-> [ 85.796120] 7f40: 00000003 c000e264 ee8c6000 00000000 beca7470 c02a974c ee9a0080 beca7468
-> [ 85.804342] 7f60: 00008914 c00be058 ee9a0080 00000003 00008914 ee9a0080 beca7468 00008914
-> [ 85.812562] 7f80: 00000003 c00be0c4 00000003 00000000 beca7468 00000000 beca746a beca7468
-> [ 85.820782] 7fa0: 00000036 c000e0e0 00000000 beca746a 00000003 00008914 beca7468 00001042
-> [ 85.829003] 7fc0: 00000000 beca746a beca7468 00000036 beca7468 00000001 beca7468 beca7470
-> [ 85.837224] 7fe0: 00000000 beca7460 000095bc b6f1bcec 20000010 00000003 e0836006 e2044fff
-> [ 85.845470] [<c019fb14>] (kobject_put+0xc/0x74) from [<c0228db4>] (usb_hcd_unlink_urb+0x68/0xc4)
-> [ 85.854336] [<c0228db4>] (usb_hcd_unlink_urb+0x68/0xc4) from [<c02180f8>] (unlink_urbs+0x44/0xa8)
-> [ 85.863270] [<c02180f8>] (unlink_urbs+0x44/0xa8) from [<c02181fc>] (usbnet_terminate_urbs+0xa0/0x15c)
-> [ 85.872547] [<c02181fc>] (usbnet_terminate_urbs+0xa0/0x15c) from [<c02191c8>] (usbnet_stop+0xe0/0x13c)
-> [ 85.881935] [<c02191c8>] (usbnet_stop+0xe0/0x13c) from [<c02ba42c>] (__dev_close_many+0x88/0xb8)
-> [ 85.890782] [<c02ba42c>] (__dev_close_many+0x88/0xb8) from [<c02ba480>] (__dev_close+0x24/0x34)
-> [ 85.899541] [<c02ba480>] (__dev_close+0x24/0x34) from [<c02bd4c4>] (__dev_change_flags+0x8c/0x110)
-> [ 85.908548] [<c02bd4c4>] (__dev_change_flags+0x8c/0x110) from [<c02bd5b4>] (dev_change_flags+0x10/0x44)
-> [ 85.918010] [<c02bd5b4>] (dev_change_flags+0x10/0x44) from [<c0302dfc>] (devinet_ioctl+0x2b0/0x598)
-> [ 85.927125] [<c0302dfc>] (devinet_ioctl+0x2b0/0x598) from [<c02a974c>] (sock_ioctl+0x1dc/0x230)
-> [ 85.935883] [<c02a974c>] (sock_ioctl+0x1dc/0x230) from [<c00be058>] (do_vfs_ioctl+0x294/0x2cc)
-> [ 85.944544] [<c00be058>] (do_vfs_ioctl+0x294/0x2cc) from [<c00be0c4>] (sys_ioctl+0x34/0x54)
-> [ 85.952957] [<c00be0c4>] (sys_ioctl+0x34/0x54) from [<c000e0e0>] (ret_fast_syscall+0x0/0x30)
-> [ 85.961436] Code: c045ccd1 e92d4013 e2504000 0a000015 (e5d43020)
-> [ 85.971554] ---[ end trace 2a43ec4ab88bc4a2 ]---
-> Segmentation fault 
+I just grepped the kernel for ctl_table_poll and DEFINE_CTL_TABLE_POLL.
+There are only the two original users of hostname and domainname.
+
+The problem very much had to be that ctl_table was freed and poisoned
+but we still pointed to it, and we were not using the grab_header idiom
+to ensure we did not use an expired ctl_table entry.
+
+Which means that it was any ctl_table being add/removed.  Probably in
+this case the per cpu scheduler sysctl table entries that get
+added/removed whenever we logically add/remove a cpu.
+
+I expect what happened is that the fuzzer opened the sysctl file some
+time before it was removed and then sometime after the entry was removed
+(but before the memory was reused) called select/poll on that file
+descriptor.  Since the ctl_table was poisoned ->poll was
+6b6b6b6b6b6b6b6b and so we passed the checks for a non NULL ->poll and
+we proceed to do nonsense things that caused the kernel oops in
+proc_sys_poll.
+
+>> Long term we still need a version of poll that is safe to use
+>> with modules.
+>
+> I think the way it's now (with my patch taken by Andrew) is safe for
+> having poll() with modules.
+
+No it is not.
+
+The problem is that proc_sys_poll is non-blocking.  It is called
+primarily to place the system on a wait queue.  But notice that
+if you place the caller on a wait_queue in proc_sys_poll and return
+then we may call unregister_sysctl_table while and remove the sysctl
+while someone still is on the wait queue.  Sleeping on a wait_queue
+that has been freed is so bizarre I don't want to think about the
+failure modes.
+
+sysfs solves this problem by tracking openers and has it's wait_queue in
+the per opener structure.  That same logic needs to be mirrored in
+sysctl for poll to be safe on any sysctl table entry that can be
+removed.
+
+I believe a correct fix would remove the .poll field in struct ctl_table,
+remove struct ctl_table_poll entirely and modify the signature of
+proc_sys_poll_notify to be:
+void proc_sys_poll_notify(struct ctl_table_header *head, struct ctl_table *table);
+
+Eric
