@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab2CVRSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 13:18:18 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41670 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2CVRSO (ORCPT
+	id S1754626Ab2CVRT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 13:19:57 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:31267 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752535Ab2CVRT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 13:18:14 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
+	Thu, 22 Mar 2012 13:19:56 -0400
+Date: Thu, 22 Mar 2012 13:19:52 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>, apw@canonical.com,
         hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] checkpatch.pl: thou shalt not use () or (...) in function declarations
-In-Reply-To: Your message of "Thu, 22 Mar 2012 17:55:38 +0100."
-             <4F6B598A.7090909@suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <1332430038-21057-1-git-send-email-ext-phil.2.carmody@nokia.com> <4F6B51C9.6010904@suse.cz> <4517.1332434943@turing-police.cc.vt.edu>
-            <4F6B598A.7090909@suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1332436627_1970P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 22 Mar 2012 13:17:07 -0400
-Message-ID: <6258.1332436627@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4F6B5E94.0106,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+Subject: Re: [PATCH 1/1] checkpatch.pl: thou shalt not use () or (...) in
+ function declarations
+Message-ID: <20120322171952.GB27776@elliptictech.com>
+References: <1332430038-21057-1-git-send-email-ext-phil.2.carmody@nokia.com>
+ <4F6B51C9.6010904@suse.cz>
+ <20120322171702.GA27776@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322171702.GA27776@elliptictech.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1332436627_1970P
-Content-Type: text/plain; charset=us-ascii
+On 2012-03-22 13:17 -0400, Nick Bowler wrote:
+> On 2012-03-22 17:22 +0100, Jiri Slaby wrote:
+> > On 03/22/2012 04:27 PM, Phil Carmody wrote:
+> [...]
+> > > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> > > index a3b9782..3993011 100755
+> > > --- a/scripts/checkpatch.pl
+> > > +++ b/scripts/checkpatch.pl
+> > > @@ -1881,6 +1881,10 @@ sub process {
+> > >  				substr($ctx, 0, $name_len + 1, '');
+> > >  				$ctx =~ s/\)[^\)]*$//;
+> > >  
+> > > +				if ($ctx =~ /^\s*(?:\.\.\.)?\s*$/) {
+> > > +					# HPA explains why: http://lwn.net/Articles/487493/
+> > > +					ERROR("(...) and () are not sufficiently informative function declarations\n$hereline");
+> > > +				}
+> > 
+> > That explanation is not fully correct. C99 explicitly says (6.7.5.3.14):
+> > An identifier list declares only the identifiers of the parameters of
+> > the function. An empty list in a function declarator that is part of a
+> > definition of that function specifies that the function has no
+> > parameters.
+> 
+> Nevertheless, an empty identifier list in a declaration is still not the
+                                              ^^^^^^^^^^^
+That should obviously have said "definition".  Sigh.
 
-On Thu, 22 Mar 2012 17:55:38 +0100, Jiri Slaby said:
-> On 03/22/2012 05:49 PM, Valdis.Kletnieks@vt.edu wrote:
-> > Is there any *legitimate* use of an empty parameter list in the
-> > kernel tree?
->
-> Yeah, a ton of them. There are many drivers which work with a global
-> singleton. So they need no argument.
-
-Those can be 'int foo(void)' can't they?  The other historical usage is for
-'int foo()' to denote an old K&R-style varargs list, which is like disco - a
-bad idea from long agon that's never coming back. ;)
-
-Of course, if we add this to checkpatch, we'll have a flood of fixup patches.
-Maybe we just need to say "3.5 will be the int foo() housecleaning release" and
-be done with it?
-
-
---==_Exmh_1332436627_1970P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT2tekwdmEQWDXROgAQIA3Q//aUefdMLNGCkOn2xN/zlh8fu21yNH1YT9
-+GmW2KKsKBsjJ+5n1Q/ho5/GX+Qyo1yd6uU/XLybYf7dT6VYNKrxtSmgZa9WOKv0
-0Lwunt360gVXq97MhxPNREANyl9nv9O/UM4v/m51sZnF+4i+GhB3q4aAKwUcaW18
-N574wHutn7K/hRhc9WIvTbePON0mXCbTV2aAwHTMI/+kDOF99gePar7HrP/kx2IQ
-TA1MJOlY1DFJGRpYhTIfhHvcN6bhn0MOt+/xEcRyKcZ2LtQFGCIVHmlJnjmzlMs0
-0FDFjUMhYeYIajcUGZuEFbRCCGuNWNPJ9n4+B40MODy0g/F+kjF7Kg5waDeI00zv
-GjZn0EKGfRNWaGC6OqRfwbp/apbotNvqXzI8rlXq/BNZiXbRRDo6OO1sXqbQgbNM
-nTzID6Fea2QtXqQNbgnD3+H/V8tnp6B/8Eqo+tGS0d0WwmeDUPwJN+u3qjSik+/g
-JXwk5GtkMP3RC8YLhatEOEYlchQlgvGpYDOWBXovehtru1o5zxD+yeGT9iVlV8q2
-ympJSOWT6srK9pi241hY2aYuMJKR8w5ey4szUynLGKrSKfSNvzOmb5uxkk6JeMhf
-CoC6tMEtqKgK9LvQ5csZ7VqB1aJMugvU/NUB941YiM8obwdZuuFOP57GONeuJqGg
-3nkOYHRlMb0=
-=hrex
------END PGP SIGNATURE-----
-
---==_Exmh_1332436627_1970P--
+> same as a parameter type list with (void).  In particular, the empty
+> identifier list *is not a prototype declaration for the function*.  That
+> means that arguments passed to the function are not subject to the usual
+> checks/conversions implied by a prototype.
+> 
+> Consider:
+> 
+>   int foo()
+>   {
+>      return 0;
+>   }
+> 
+>   int main(void)
+>   {
+>     return foo(1, 2, 3, 4, 5); /* this is syntactically OK; undefined
+>                                   behaviour at runtime. */
+>   }
+> 
+> GCC will not normally warn about the above (unless you pass
+> -Wold-style-definition) which warns for all function definitions that
+> lack a prototype.  On the other hand, changing it to int foo(void)
+> provides the required prototype for the arguments to be checked, and the
+> above becomes a proper error.
+> 
+> > So what you are trying to force here holds only for (forward)
+> > declarations. Not for functions with definitions (bodies). Is
+> > checkpatch capable to differ between those?
+> 
+> For the above reasons, non-prototype declarations of any sort should be
+> avoided.  No need for checkpatch to distinguish between whether or not
+> there's a function body.
+> 
+> Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
