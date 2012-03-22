@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030273Ab2CVTPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:15:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55977 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757542Ab2CVTPG (ORCPT
+	id S1030484Ab2CVTUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:20:43 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:47780 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1030364Ab2CVTUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:15:06 -0400
-Message-ID: <4F6B7A37.3020300@canonical.com>
-Date: Thu, 22 Mar 2012 15:15:03 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120313 Thunderbird/11.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Regression introduced in v3.2.12 stable
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Mar 2012 15:20:42 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+kuQIdUqKkjbSoqEV4EQUpX5cYpHmB+3M1bOZdLa
+	OasjVOL41vkDzj
+Message-ID: <1332444030.24328.66.camel@marge.simpson.net>
+Subject: Re: [PATCH 07/32] cpuset: Set up interface for nohz flag
+From: Mike Galbraith <efault@gmx.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Date: Thu, 22 Mar 2012 20:20:30 +0100
+In-Reply-To: <alpine.DEB.2.00.1203221118550.25011@router.home>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+	 <1332338318-5958-9-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1203210949440.20482@router.home>
+	 <1332389033.5759.52.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1203221118550.25011@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Thu, 2012-03-22 at 11:26 -0500, Christoph Lameter wrote: 
+> On Thu, 22 Mar 2012, Mike Galbraith wrote:
+> 
+> > > > We use here a per cpu refcounter. As long as a CPU
+> > > > is contained into at least one cpuset that has the
+> > > > nohz flag set, it is part of the set of CPUs that
+> > > > run into adaptive nohz mode.
+> > >
+> > > What are the drawbacks for nohz?
+> >
+> > For nohz in general, latency.  To make it at all usable for rt loads, I
+> 
+> Well nohz while a process is running on a dedicated cpu means the cpu is
+> running full power and no disruptions occur. This is a tremendous benefit.
 
-Hello,
+In the context of single task burning in userspace, you bet.
 
-I figured I'd send a heads up regarding a possible regression in v3.2.12
-stable.  The issue prevents systems from booting.
+> Less than 10us jitter can alrady be accomplished by building a kernel with
+> certain options off (like for example preemption...) and ensuring that
+> stuff stays off certain processors. Lets not confuse realtime with low
+> latency. Real time in the sense of deterministic execution is bad for
+> latency because overhead is added to ensure the determinism which
+> increases latency.
 
-There have been a few bugs[0] reported against the Ubuntu kernel, which
-was recently rebased to 3.2.12.  We're in the process of bisecting now
-and will post an update..
+Yeah, I know RT pays heavily for determinism.  It loses on best case.
 
-Thanks,
+> > of the current box, triple digit for simple synchronized frame timers +
+> > compute worker-bees load on 64 cores.  Patch 4 probably helps that, but
+> > don't _think_ it'll fix it.  If you (currently) ever become balancer,
+> > you're latency target is smoking wreckage.
+> 
+> Yes so we need something to tell the system which cpu is the sacrificial
+> lamb that will not run low latency applications.
 
-Joe
+Definitely a lamb is required.
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/961482
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+(This set is targeted at HPC, so I'll shut up now.. but RT is HPC too)
 
-iQIcBAEBAgAGBQJPa3o3AAoJEGzvPSfKWxQeiXEQAMFKzJj+urC+JyVXfTOOjV/z
-iv7/nMAHFPvKgNpDFpk+SM3pFDgZJ/7JZn5Bjl6nidycJy79uCoYxBehBycohtkn
-De3Qvefq4lUvIdVpxbM1GhjxRphru8tnGmUOsC1a9S30aYPhRKcHSIGpZZyaSE7k
-XmdbI3XEtu1pNiML4Q7lJku5VbOrAt4mm0vBoNpczdTikaAsuLsNnLPju94el3iR
-z0Ra7U5buxM06d4T81xoOqVRmcVU8kVsC9Rebp7W2Cfo8VBkkzdlyRsmCCVFL7j/
-3Hi5Ir0DCSY7nvPgnlcmOPvF9J4TwgCDkpAheNFkQQph3jc9q7XrlsG3310LeAW7
-7w4dtTt+m7FmkmveRmvkC54av2YdqgabcJDMDPlXQ6GC6tdYU7H3dvvKJsz1NbT0
-H5JlURCE0zmnMEUnErVLhMCrNm3AFdQQGpJkut3roapSxJfARatowu5Vu+eFzmhV
-DCwZpRUKjdvCd88dn+blSBRTb2BLDGYTSP5/Lp2gehdeStrLs3QVJDq8VDGHQUq5
-b5zAM1BAmgtT8eCyJHLGVrjO7dmuMRVBqitn4IGbcAeUbd9bSNxuZ4fnkjrVlW4f
-Qy1xzws5qGqSYQt39tIG0uvSYar2U4UBUmJERr1FBAEb5FvnGnA5enB75RFWqwR1
-q8dxiWcHxI9jG4/wVFq7
-=3Uid
------END PGP SIGNATURE-----
+-Mike
+
