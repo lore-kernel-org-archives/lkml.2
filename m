@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab2CVCfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 22:35:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18090 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab2CVCe5 (ORCPT
+	id S1757899Ab2CVCfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 22:35:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48884 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab2CVCfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 22:34:57 -0400
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=2lctLRda9xcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=D6_8q99FMep-hr_qlsUA:9 a=DA6IXVnOCVby-kSkeoMA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120322023454.688981968@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Wed, 21 Mar 2012 22:33:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 1/3] Revert "kprobes: adjust "fix a memory leak in function
- pre_handler_kretprobe()""
-References: <20120322023309.083011587@goodmis.org>
-Content-Disposition: inline; filename=0001-Revert-kprobes-adjust-fix-a-memory-leak-in-function-.patch
+	Wed, 21 Mar 2012 22:35:09 -0400
+Date: Wed, 21 Mar 2012 22:34:57 -0400 (EDT)
+Message-Id: <20120321.223457.641438956547942596.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sandeep.kumar@freescale.com
+Subject: Re: [PATCH] gianfar: Fix possible overrun and simplify interrupt
+ name field creation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <17d93e9eb16cbad75b20cdbcaf38f268260d6fd5.1332010469.git.joe@perches.com>
+References: <17d93e9eb16cbad75b20cdbcaf38f268260d6fd5.1332010469.git.joe@perches.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Mar 2012 19:34:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Joe Perches <joe@perches.com>
+Date: Sat, 17 Mar 2012 12:05:38 -0700
 
-This reverts commit b8a0040ef7112439ad2efac6f1a79aa842b5924f.
+> Space allocated for int_name_<foo> is unsufficient for
+> maximal device name, expand it.
+> 
+> Code to create int_name_<foo> is obscure, simplify it
+> by using sprintf.
+> 
+> Found by looking for unnecessary \ line continuations.
+> Uncompiled, untested.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-As pointed out by John Kacur, the patch breaks 3.0-rt.
+Can a gianfar expert please review and test this patch?
 
-Because rt pulls in 7b8d0e5, the above fix which comes from v3.0.24
-should not be applied. kretprobe is a raw_spinlock_t for real-time.
-
-Before the revert we get the following compile errors
-
-kernel/kprobes.c:1664: warning: passing argument 1 of 'rt_spin_lock' from incompatible pointer type
-kernel/kprobes.c:1666: warning: passing argument 1 of 'rt_spin_unlock' from incompatible pointer type
-
-Signed-off-by: John Kacur <jkacur@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/kprobes.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index a7dcf06..9cdbf26 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1661,9 +1661,9 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 		ri->task = current;
- 
- 		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
--			spin_lock_irqsave(&rp->lock, flags);
-+			raw_spin_lock_irqsave(&rp->lock, flags);
- 			hlist_add_head(&ri->hlist, &rp->free_instances);
--			spin_unlock_irqrestore(&rp->lock, flags);
-+			raw_spin_unlock_irqrestore(&rp->lock, flags);
- 			return 0;
- 		}
- 
--- 
-1.7.8.3
-
-
+Thanks.
