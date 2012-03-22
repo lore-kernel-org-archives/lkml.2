@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2CWFZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 01:25:06 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53921 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab2CWFY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 01:24:59 -0400
-X-Nat-Received: from [202.181.97.72]:62815 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1332480224.19902
-Message-Id: <201203230523.q2N5Nhn4068469@www262.sakura.ne.jp>
-Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout()API
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: bharrosh@panasas.com
-Cc: oleg@redhat.com, akpm@linux-foundation.org, rjw@sisk.pl,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        sbhamare@panasas.com, dhowells@redhat.com, eparis@redhat.com,
-        srivatsa.bhat@linux.vnet.ibm.com, kay.sievers@vrfy.org,
-        jmorris@namei.org, ebiederm@xmission.com, gregkh@linuxfoundation.org,
-        rusty@rustcorp.com.au, tj@kernel.org, rientjes@google.com
+	id S1753716Ab2CWFl6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 01:41:58 -0400
+Received: from fw2.prolan.hu ([193.68.50.107]:41731 "EHLO fw2.prolan.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab2CWFl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 01:41:56 -0400
+Message-ID: <4F6B4C11.4000608@prolan.hu>
+Date: Thu, 22 Mar 2012 16:58:09 +0100
+From: Peter Rusko <rusko.peter@prolan.hu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Fri, 23 Mar 2012 14:23:43 +0900
-References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com> <4F6A92FC.6060702@panasas.com> <20120322142758.GA12370@redhat.com> <4F6B789C.8020201@panasas.com> <201203230716.GFE32712.StOJOVFHMQOFFL@I-love.SAKURA.ne.jp> <4F6C0092.1010901@panasas.com>
-In-Reply-To: <4F6C0092.1010901@panasas.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 23032012 #7386445, status: clean
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <linux-kernel@vger.kernel.org>
+Subject: PCA GPIO interrupt triggers
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [193.91.83.115]
+X-EsetResult: clean, is OK
+X-EsetId: 525F3323825E3531001F6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh wrote:
-> That's fine. I will fail totally gracefully, and nothing will happen. I like this
-> example if the system is under heavy load and there is no memory and the
-> iscsi auto-login takes more then 15 second (Settable by module param) then I'd
-> rather fail the login and revert to plain NFS-MDS IO, instead of the direct osd-target
-> IO. Believe me.
+Hi,
 
-So, race with timeout causes no inconsistency to the kernel.
-Then, it will be no problem to have timeout-able version.
+I'm using a GPIO chip (PCA9554) for a matrix-keypad. The keypad driver 
+itself needs interrupts for both rising and falling edges. The PCA 
+driver (gpio-pca953x.c) doesn't support it, but I don't understand why.
 
-> >> I don't want any chance of D stating IO operations.
-> >> (My code is in the IO path, either fsync or write-back. There is not
-> >>  always a killable target)
-> > 
-> > Then, isn't UMH_NO_WAIT better than UMH_WAIT_PROC?
-> > 
-> No I need to wait for the application to finish the iscsi login before
-> I can continue IO to the target. Otherwise what's the point.
+I think, this patch should work:
 
-Your code which launches usermodehelper is in the I/O path, isn't it?
-Then, don't you need to use GFP_NOFS rather than GFP_KERNEL?
-http://lists.infradead.org/pipermail/linux-mtd-cvs/2007-October/005937.html
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index 147df8a..be9aff4 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -356,12 +356,6 @@ static int pca953x_irq_set_type(struct irq_data *d, 
+unsigned int type)
+         uint16_t level = d->irq - chip->irq_base;
+         uint16_t mask = 1 << level;
 
-I'm not familiar with GFP_* flags usage. Can somebody clarify when we need to
-use GFP_NOFS rather than GFP_KERNEL by enumerating the name of function (e.g.
-xxxfs_writepage()) and/or the name of locks (e.g. xxx_mutex)? I've asked this
-in the past http://www.spinics.net/lists/linux-fsdevel/msg30248.html but
-explanation with actual function/variable names is easier to understand.
+-       if (!(type & IRQ_TYPE_EDGE_BOTH)) {
+-               dev_err(&chip->client->dev, "irq %d: unsupported type %d\n",
+-                       d->irq, type);
+-               return -EINVAL;
+-       }
+-
+         if (type & IRQ_TYPE_EDGE_FALLING)
+                 chip->irq_trig_fall |= mask;
+         else
+
+I think that the other parts of the code checks for rising and falling 
+edges correctly. Am I missing something?
+
+-- 
+Ruskó Péter
+Fejlesztőmérnök
+
+Prolan Zrt. / Prolan Co.
+Hungary 2011 Budakalász, Szentendrei út 1-3.
+Tel./Phone: +36 20 954 3118
+Fax: +36 26 540 420
+E-mail: rusko.peter@prolan.hu
+Web: www.prolan.hu
+Timezone:CET
