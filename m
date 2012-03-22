@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab2CVV5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:57:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57572 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031171Ab2CVV4o (ORCPT
+	id S1031260Ab2CVV5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:57:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32785 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030938Ab2CVV5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:56:44 -0400
-Subject: [PATCH v6 6/7] mm/memcg: kill mem_cgroup_lru_del()
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 23 Mar 2012 01:56:39 +0400
-Message-ID: <20120322215639.27814.4996.stgit@zurg>
-In-Reply-To: <20120322214944.27814.42039.stgit@zurg>
-References: <20120322214944.27814.42039.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 22 Mar 2012 17:57:14 -0400
+Date: Thu, 22 Mar 2012 14:57:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: gorcunov@openvz.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: use more apprioriate types when dumping
+ /proc/N/stat
+Message-Id: <20120322145712.d9efbc34.akpm@linux-foundation.org>
+In-Reply-To: <1332339136-26022-1-git-send-email-jengelh@medozas.de>
+References: <1332339136-26022-1-git-send-email-jengelh@medozas.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch kills mem_cgroup_lru_del(), we can use mem_cgroup_lru_del_list()
-instead. On 0-order isolation we already have right lru list id.
+On Wed, 21 Mar 2012 15:12:16 +0100
+Jan Engelhardt <jengelh@medozas.de> wrote:
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>
----
- include/linux/memcontrol.h |    5 -----
- mm/memcontrol.c            |    5 -----
- mm/vmscan.c                |    7 +++++--
- 3 files changed, 5 insertions(+), 12 deletions(-)
+> * field 14, 15: clock_t is a long
+> * field 18, 19: task_nice/task_prio return int
+> * field 24: get_mm_rss returns unsigned long
+> * field 36, 37: always 0
+> 
+> ...
+>
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -361,7 +361,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+>  			struct pid *pid, struct task_struct *task, int whole)
+>  {
+>  	unsigned long vsize, eip, esp, wchan = ~0UL;
+> -	long priority, nice;
+> +	int priority, nice;
+>  	int tty_pgrp = -1, tty_nr = 0;
+>  	sigset_t sigign, sigcatch;
+>  	char state;
+> @@ -463,8 +463,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+>  	start_time = nsec_to_clock_t(start_time);
+>  
+>  	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
+> -%lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
+> -%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+> +%lu %lu %lu %ld %ld %ld %ld %d %d %d 0 %llu %lu %lu %lu %lu %lu %lu %lu \
+> +%lu %lu %lu %lu %lu %lu 0 0 %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+>  		pid_nr_ns(pid, ns),
+>  		tcomm,
+>  		state,
+> @@ -503,8 +503,6 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+>  		sigign      .sig[0] & 0x7fffffffUL,
+>  		sigcatch    .sig[0] & 0x7fffffffUL,
+>  		wchan,
+> -		0UL,
+> -		0UL,
+>  		task->exit_signal,
+>  		task_cpu(task),
+>  		task->rt_priority,
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 95dc32c..58d820c 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -66,7 +66,6 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
- struct lruvec *mem_cgroup_lru_add_list(struct zone *, struct page *,
- 				       enum lru_list);
- void mem_cgroup_lru_del_list(struct page *, enum lru_list);
--void mem_cgroup_lru_del(struct page *);
- struct lruvec *mem_cgroup_lru_move_lists(struct zone *, struct page *,
- 					 enum lru_list, enum lru_list);
- 
-@@ -260,10 +259,6 @@ static inline void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
- {
- }
- 
--static inline void mem_cgroup_lru_del(struct page *page)
--{
--}
--
- static inline struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
- 						       struct page *page,
- 						       enum lru_list from,
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 59697fb..16db6c1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1115,11 +1115,6 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
- 	mz->lru_size[lru] -= 1 << compound_order(page);
- }
- 
--void mem_cgroup_lru_del(struct page *page)
--{
--	mem_cgroup_lru_del_list(page, page_lru(page));
--}
--
- /**
-  * mem_cgroup_lru_move_lists - account for moving a page between lrus
-  * @zone: zone of the page
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5f6ed98..9de66be 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1147,7 +1147,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 
- 		switch (__isolate_lru_page(page, mode)) {
- 		case 0:
--			mem_cgroup_lru_del(page);
-+			mem_cgroup_lru_del_list(page, lru);
- 			list_move(&page->lru, dst);
- 			nr_taken += hpage_nr_pages(page);
- 			break;
-@@ -1205,8 +1205,11 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 
- 			if (__isolate_lru_page(cursor_page, mode) == 0) {
- 				unsigned int isolated_pages;
-+				enum lru_list cursor_lru;
- 
--				mem_cgroup_lru_del(cursor_page);
-+				cursor_lru = page_lru(cursor_page);
-+				mem_cgroup_lru_del_list(cursor_page,
-+							cursor_lru);
- 				list_move(&cursor_page->lru, dst);
- 				isolated_pages = hpage_nr_pages(cursor_page);
- 				nr_taken += isolated_pages;
+When trying to review this I went completely crosseyed then fell on
+the floor.  Which is why this code got ripped out and redone in
+linux-next, against which I'll ask you to redo the patch, please.
+
 
