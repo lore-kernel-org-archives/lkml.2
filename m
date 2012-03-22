@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab2CVKvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:51:53 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56824 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab2CVKvv (ORCPT
+	id S1754708Ab2CVKwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:52:30 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:58290 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab2CVKw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:51:51 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174717508"
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tsoni@codeaurora.org, Ravi Kumar V <kumarrav@codeaurora.org>
-Subject: [PATCH v4 0/2] Add Qualcomm MSM ADM DMAEngine driver 
-Date: Thu, 22 Mar 2012 16:21:36 +0530
-Message-Id: <1332413496-8246-1-git-send-email-kumarrav@codeaurora.org>
-X-Mailer: git-send-email 1.7.8
+	Thu, 22 Mar 2012 06:52:28 -0400
+X-IronPort-AV: E=Sophos;i="4.73,629,1325462400"; 
+   d="scan'208";a="11470099"
+Message-ID: <1332413546.8817.64.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] xen/xenbus: Add quirk to deal with misconfigured
+ backends.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Thu, 22 Mar 2012 10:52:26 +0000
+In-Reply-To: <alpine.DEB.2.00.1203221040030.15151@kaball-desktop>
+References: <1332385189-29029-1-git-send-email-konrad.wilk@oracle.com>
+	 <alpine.DEB.2.00.1203221040030.15151@kaball-desktop>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following are the changes we have done from the previous
-v1 posted here: https://lkml.org/lkml/2011/12/22/148
+On Thu, 2012-03-22 at 10:44 +0000, Stefano Stabellini wrote:
+> On Thu, 22 Mar 2012, Konrad Rzeszutek Wilk wrote:
+> > A rather annoying and common case is when booting a PVonHVM guest
+> > and exposing the PV KBD and PV VFB - as both of those do not
+> > make any sense. The HVM guest is using the VGA driver and the emulated
+> > keyboard for this. So we provide a very basic quirk framework
+> > (can be expanded in the future) to not wait for 6 minutes for those devices
+> > to initialize - they never wont.
+> > 
+> > To trigger this, put this in your guest config:
+> > 
+> > vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+> > 
+> > instead of this:
+> > vnc=1
+> > vnclisten="0.0.0.0"
+> 
+> While I do understand the issue you are trying to solve, it actually
+> makes sense to have PV KBD (and PV VFB maybe in the future) in a PVonHVM
+> guest. In particular PV KVB is already enabled in upstream QEMU for
+> PVonHVM guests because it allows users to have a keyboard and mouse
+> without USB emulation, that requires lots of wakes up in QEMU.
+> 
+> Maybe we could just reduce the timeout in general for all the PV
+> devices? After all, why are we waiting 6 minutes? I could understand 6
+> seconds, but 6 minutes seem really too much.
 
-As our ADM Scatter-gather hardware needs
--32-bit command configuration parameter
- apart from
--32-bit source address
--32-bit destination address
--16-bit length
+This was increased based on empirical evidence, way back (circa
+150:09c88868e344 in linux-2.6.18-xen.hg)
 
-So,we have added new parameter in struct scatterlist to support xfer descriptor
-specific private data, and for supporting ADM Box mode DMA we added new
-API and data structure.
+It really can happen when starting lots of guests on a heavily loaded
+dom0 that you timeout when connecting devices, at which point the guest
+fails to boot if it happened to contain the root filesystem.
 
-Changes done from v2:
+Maybe a halfway house would be to wait a the longer time for more
+critical devices (like disks and nics)?
 
-As per our previous discussion you had suggested us to follow the below patch
-https://lkml.org/lkml/2012/1/26/405
-Please check the below link of our discussion
-https://lkml.org/lkml/2012/1/30/48
-
-So we have added the new context parameter in device_prep_dma_sg and
-device_prep_interleave_dma API's to support for passing client channel specific
-private data associated with every transfer descriptor.
-
-We are using
-Interleaved API for BOX type transfer.
-SG API for SG type transfer.
-
-Changes done from v3:
-
-Implemented the wrappers as suggested by Russell King in following patch
-https://lkml.org/lkml/2012/2/3/269
-Fixed the dmaengine & client drivers to follow above changes
-
-Ravi Kumar V (2):
-  dmaengine: Add context parameter to prep_dma_sg and
-    prep_interleaved_dma
-  DMAEngine: Add DMAEngine driver based on old MSM ADM DMA APIs
-
- arch/arm/mach-msm/include/mach/dma.h    |   35 ++
- drivers/dma/Kconfig                     |   12 +
- drivers/dma/Makefile                    |    1 +
- drivers/dma/fsldma.c                    |    2 +-
- drivers/dma/msm_adm_dma.c               |  728 +++++++++++++++++++++++++++++++
- drivers/dma/sirf-dma.c                  |    2 +-
- drivers/dma/ste_dma40.c                 |    2 +-
- drivers/misc/carma/carma-fpga-program.c |    2 +-
- drivers/misc/carma/carma-fpga.c         |    7 +-
- include/linux/dmaengine.h               |   22 +-
- 10 files changed, 803 insertions(+), 10 deletions(-)
- create mode 100644 drivers/dma/msm_adm_dma.c
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ian.
 
