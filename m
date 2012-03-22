@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031351Ab2CVWwO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 18:52:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45123 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031315Ab2CVWwL (ORCPT
+	id S1757943Ab2CVW5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 18:57:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55217 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab2CVW5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 18:52:11 -0400
-Message-ID: <4F6BAD15.90802@openvz.org>
-Date: Fri, 23 Mar 2012 02:52:05 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Thu, 22 Mar 2012 18:57:07 -0400
+Message-ID: <4F6BAE34.7010805@wwwdotorg.org>
+Date: Thu, 22 Mar 2012 16:56:52 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Oliver Neukum <oliver@neukum.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-References: <20120321065140.13852.52315.stgit@zurg> <20120321100602.GA5522@barrios> <4F69D496.2040509@openvz.org> <20120322142647.42395398.akpm@linux-foundation.org> <20120322212810.GE6589@ZenIV.linux.org.uk> <20120322144122.59d12051.akpm@linux-foundation.org> <4F6BA221.8020602@openvz.org> <4F6BA69F.1040707@openvz.org> <CA+55aFz4hWfT5c93rUWvN4OsYHjOSAjmNtoT7Rkjz7kYsaC7xg@mail.gmail.com>
-In-Reply-To: <CA+55aFz4hWfT5c93rUWvN4OsYHjOSAjmNtoT7Rkjz7kYsaC7xg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <willy@meta-x.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Regression due to: net/usbnet: avoid recursive locking in usbnet_stop()
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote:
-> On Thu, Mar 22, 2012 at 3:24 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org>  wrote:
->>
->> # define __nocast       __attribute__((nocast))
->>
->> typedef long __nocast long_t;
->
-> So the intention is that this really creates a *new* type.
->
-> So "long_t" really is a different type from "long", but because
-> __nocast is so weak, it happily casts to another integer type of the
-> same size.
->
-> But a pointer to it is different, the same way "int *" is different
-> from "long *" even if "int" and "long" happen to have the same size.
-> So I do think that the warning you quote is correct and expected:
->
->> 1.c:13:12: warning: incorrect type in argument 1 (different modifiers)
->> 1.c:13:12:    expected int [nocast] [usertype] *x
->> 1.c:13:12:    got int *<noident>
->> 1.c:13:12: warning: implicit cast to nocast type
->>
->> Is this ok?
->
-> Yes.
->
-> The thing about __nocast is that it's so *very* very easy to lose it.
-> For example, do this:
->
->    typedef long __nocast long_t;
->
->    int main(long_t a)
->    {
->          return a;
->    }
->
-> and you get the (expected) warning.
->
-> HOWEVER. Now do "return a+1" instead, and the warning goes away. Why?
-> Because the expression ends up having just the type "long", because
-> the "a" mixed happily with the "1" (that was cast from 'int' to 'long'
-> by the normal C type rules).
->
-> That is arguably a bug, but this kind of thing really wasn't what
-> __nocast was designed for. The __nocast design ended up being too
-> weak, though, and we hardly use it in the kernel.
->
+It looks like commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d
+"net/usbnet: avoid recursive locking in usbnet_stop()" causes a problem
+for me.
 
-Thanks. Looks like "__nocast" totally undocumented.
-It would be nice to add something about this into Documentation/sparse.txt
+When I reboot or shutdown, I see the error spew below at least 50% of
+the time. Reverting the above patch fixes this, at least for 10 reboot
+attempts.
+
+Other notes:
+* I'm running on an NVIDIA Tegra ARM device, with smsc95xx USB ethernet.
+* This first happens in next-20120309, not in next-20120308.
+* The problematic commit appears to have been queued for backport to
+various stable branches:-(
+
+> Will now restart.
+> [ 85.622493] Unable to handle kernel paging request at virtual address 6b6b6bfb
+> [ 85.629748] pgd = eea68000
+> [ 85.632477] [6b6b6bfb] *pgd=00000000
+> [ 85.636096] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+> [ 85.641426] Modules linked in:
+> [ 85.644527] CPU: 0 Not tainted (3.3.0-rc7-next-20120319-00027-gee679a3 #30)
+> [ 85.651879] PC is at kobject_put+0xc/0x74
+> [ 85.655936] LR is at usb_hcd_unlink_urb+0x68/0xc4
+> [ 85.660675] pc : [<c019fb14>] lr : [<c0228db4>] psr: 20000013
+> [ 85.660695] sp : ee8c7e08 ip : ffffac43 fp : 00000000
+> [ 85.672198] r10: c057e190 r9 : ee87e0c0 r8 : ee83ac00
+> [ 85.677448] r7 : a0000013 r6 : ffffff98 r5 : ee87e0c0 r4 : 6b6b6bdb
+> [ 85.684000] r3 : ee82c800 r2 : ef1b6800 r1 : a0000013 r0 : 6b6b6bdb
+> [ 85.690554] Flags: nzCv IRQs on FIQs on Mode SVC_32 ISA ARM Segment user
+> [ 85.697716] Control: 10c5387d Table: 2ea6804a DAC: 00000015
+> [ 85.703485] Process reboot (pid: 1528, stack limit = 0xee8c62f0)
+> [ 85.709516] Stack: (0xee8c7e08 to 0xee8c8000)
+> [ 85.713908] 7e00: 6b6b6bdb a0000013 00000000 c0228db4 ee87e0c0 ffffff98
+> [ 85.722132] 7e20: ee82c800 ee83acd4 00000000 ee926bb8 ee83acc8 c02180f8 ee83ac00 ee83acc8
+> [ 85.730353] 7e40: ee83acdc ee8c6000 00000000 ee83ba00 c057e190 c02181fc 00000000 00000000
+> [ 85.738575] 7e60: eea53a40 c004a820 ee8c7e78 ee8c7e78 00000000 00000000 ee8c7e68 ee8c7e68
+> [ 85.746796] 7e80: 00000000 ee83a800 ee83ac00 c03bb8f8 00000001 00000000 ee83ba0c c02191c8
+> [ 85.755017] 7ea0: ee83a800 00000200 ee8c7ed0 ee83a800 00001003 00000001 00000000 c02ba42c
+> [ 85.763239] 7ec0: ee83a858 ee83a800 00001042 c02ba480 ee83a858 ee83a858 c02bd224 c02bd4c4
+> [ 85.771459] 7ee0: 00000000 ee83a800 00001003 ee83a800 beca7468 c02bd5b4 ee917840 00000000
+> [ 85.779679] 7f00: ee83a800 c0302dfc ee83a828 beca7468 30687465 00000000 00000000 00000000
+> [ 85.787899] 7f20: 00001042 71cc140a 00000000 00000000 30687465 00008914 beca7468 00008914
+> [ 85.796120] 7f40: 00000003 c000e264 ee8c6000 00000000 beca7470 c02a974c ee9a0080 beca7468
+> [ 85.804342] 7f60: 00008914 c00be058 ee9a0080 00000003 00008914 ee9a0080 beca7468 00008914
+> [ 85.812562] 7f80: 00000003 c00be0c4 00000003 00000000 beca7468 00000000 beca746a beca7468
+> [ 85.820782] 7fa0: 00000036 c000e0e0 00000000 beca746a 00000003 00008914 beca7468 00001042
+> [ 85.829003] 7fc0: 00000000 beca746a beca7468 00000036 beca7468 00000001 beca7468 beca7470
+> [ 85.837224] 7fe0: 00000000 beca7460 000095bc b6f1bcec 20000010 00000003 e0836006 e2044fff
+> [ 85.845470] [<c019fb14>] (kobject_put+0xc/0x74) from [<c0228db4>] (usb_hcd_unlink_urb+0x68/0xc4)
+> [ 85.854336] [<c0228db4>] (usb_hcd_unlink_urb+0x68/0xc4) from [<c02180f8>] (unlink_urbs+0x44/0xa8)
+> [ 85.863270] [<c02180f8>] (unlink_urbs+0x44/0xa8) from [<c02181fc>] (usbnet_terminate_urbs+0xa0/0x15c)
+> [ 85.872547] [<c02181fc>] (usbnet_terminate_urbs+0xa0/0x15c) from [<c02191c8>] (usbnet_stop+0xe0/0x13c)
+> [ 85.881935] [<c02191c8>] (usbnet_stop+0xe0/0x13c) from [<c02ba42c>] (__dev_close_many+0x88/0xb8)
+> [ 85.890782] [<c02ba42c>] (__dev_close_many+0x88/0xb8) from [<c02ba480>] (__dev_close+0x24/0x34)
+> [ 85.899541] [<c02ba480>] (__dev_close+0x24/0x34) from [<c02bd4c4>] (__dev_change_flags+0x8c/0x110)
+> [ 85.908548] [<c02bd4c4>] (__dev_change_flags+0x8c/0x110) from [<c02bd5b4>] (dev_change_flags+0x10/0x44)
+> [ 85.918010] [<c02bd5b4>] (dev_change_flags+0x10/0x44) from [<c0302dfc>] (devinet_ioctl+0x2b0/0x598)
+> [ 85.927125] [<c0302dfc>] (devinet_ioctl+0x2b0/0x598) from [<c02a974c>] (sock_ioctl+0x1dc/0x230)
+> [ 85.935883] [<c02a974c>] (sock_ioctl+0x1dc/0x230) from [<c00be058>] (do_vfs_ioctl+0x294/0x2cc)
+> [ 85.944544] [<c00be058>] (do_vfs_ioctl+0x294/0x2cc) from [<c00be0c4>] (sys_ioctl+0x34/0x54)
+> [ 85.952957] [<c00be0c4>] (sys_ioctl+0x34/0x54) from [<c000e0e0>] (ret_fast_syscall+0x0/0x30)
+> [ 85.961436] Code: c045ccd1 e92d4013 e2504000 0a000015 (e5d43020)
+> [ 85.971554] ---[ end trace 2a43ec4ab88bc4a2 ]---
+> Segmentation fault 
