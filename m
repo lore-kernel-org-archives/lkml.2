@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab2CVLgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:36:12 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61290 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755030Ab2CVLgI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:36:08 -0400
+	id S1756746Ab2CVLjV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:39:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53669 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2CVLjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 07:39:20 -0400
+Message-ID: <4F6B0F66.40505@canonical.com>
+Date: Thu, 22 Mar 2012 11:39:18 +0000
+From: James Hunt <james.hunt@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120313 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <1332409996.18960.511.camel@twins>
-References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
-	<1332409996.18960.511.camel@twins>
-Date: Thu, 22 Mar 2012 13:36:06 +0200
-Message-ID: <CAEbykaUbkgCEcufTx4ZBSdqwrifVbV384Ru4xTyF7BXYtJ85Zg@mail.gmail.com>
-Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
-From: Ari Savolainen <ari.m.savolainen@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+To: "upstart-devel >> Upstart Devel List" 
+	<upstart-devel@lists.ubuntu.com>,
         linux-kernel@vger.kernel.org
+Subject: Upstart 1.5 released
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-22. maaliskuuta 2012 11.53 Peter Zijlstra <a.p.zijlstra@chello.nl> kirjoitti:
-> On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
->> The warning below is printed when executing a command like
->> sudo perf record su - user -c "echo hello"
->>
->> It's fixed by moving the call of perf_event_comm to be protected
->> by the task lock.
->
-> That seems like a rather poor solution since it increases the lock hold
-> time for no explained reason.
->
->> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
->
->>  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
->>  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
->
-> So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
-> so I presume its before that.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I think the warning comes from this source-level call path:
+Summary of changes:
 
-perf_event_comm ->
-  perf_event_enable_on_exec ->
-    perf_cgroup_sched_out ->
-      perf_cgroup_from_task ->
-        task_subsys_state ->
-          task_subsys_state_check
+* Lots of "console log" improvements (and new tests).
 
-It seems there that path does not take rcu_read_lock(). Where should
-rcu_read_lock/unlock be added? In perf_group_sched_out around the
-calls of perf_cgroup_from_task? Like this:
+* New 'early logging' facility which allows jobs that end before the
+  log disk is writeable to have their output peristed to disk when the disk
+  later becomes writeable.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1b5c081..bbb4abc 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -409,6 +409,8 @@ static inline void perf_cgroup_sched_out(struct
-task_struct *task,
-        struct perf_cgroup *cgrp1;
-        struct perf_cgroup *cgrp2 = NULL;
+* Upstart is now able to detect jobs which leak file
+  descriptors: a message is generated when run with debug enabled
+  ('--debug' / "initctl log-priority debug").
 
-+       rcu_read_lock();
-+
-        /*
-         * we come here when we know perf_cgroup_events > 0
-         */
-@@ -421,6 +423,8 @@ static inline void perf_cgroup_sched_out(struct
-task_struct *task,
-        if (next)
-                cgrp2 = perf_cgroup_from_task(next);
+* New "usage" stanza which allows instance jobs to display a usage
+  message explaining how job should be started. The usage is displayed
+  when the user has not specified the correct variables to allow the job
+  to be started, or when the user queries the usage using
+  "initctl usage <job>".
 
-+       rcu_read_unlock();
-+
-        /*
-         * only schedule out current cgroup events if we know
-         * that we are switching to a different cgroup. Otherwise,
---
+Download it from launchpad: https://launchpad.net/upstart
 
+Kind regards,
 
-Ari
+James
+- --
+James Hunt
+____________________________________
+http://upstart.ubuntu.com/cookbook
+http://upstart.ubuntu.com/cookbook/upstart_cookbook.pdf
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPaw9lAAoJEJ1Q4UTmNXMn/y4QAJUkxQ88FlN4Hsu3zKOhSJWs
+0VXeSLRlmNhWNdK52A1iZO/BshjaEGrpWICTjNmlY7OWJvey2JxNgF24O9kAqAIK
+jxXsn1H3QWAceot8t0KxHEeFqToGeJaPzAh+SXMnlHItp0S8PAAsE2zmrlw06buI
+yBvDOk5BG4SGeBj4o2fiDC1zGd3d8XWH3cJhi7vpqUniiXAYJFw5HGLUJYCxFmff
+L2VFiAX0gn0KNAFVrbQDpYBRq4ZegUc4H0FQUjWNpOWU6v4jZ0rZmWD/7ETmgpkk
+fDRpq65La8HrP+LlY4VM74POkOk18QQJGiM1jpXWv0fq6z5tRUGMjnpfUigOuGiw
+7Ws749NpKApjiUh2azON89tS0Vb3IQdW0zGdjsL9FOQ+B6u03PbmSwMa/JkMSYh0
++OkOhK17Lx/6ooHnW6Sr83Q/5WhEMsBacLOSi0nCJJlrJLS9K/vINDCR6iQqsl1B
+ixe6FsdCxdQSE7aCt2euIi5AKTWOoMzEi8gu6me0mF7XTT7ezpxbcc6n7vAE2X7C
+iOluM13DgeZH9Zmf9/q8v39HQ9vi5FT+DC0hmM/UQQB/XNfiLJtpLzysOZV0sfq/
+6jN1B/UdgAjHbzwmkeUY/jWGwDvamEGDw38xb/As+g7gt+TxuICOfqBfOE142t19
+MDDAq/1NcMWYzJSwbE27
+=6nMB
+-----END PGP SIGNATURE-----
