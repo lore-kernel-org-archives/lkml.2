@@ -1,37 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760211Ab2CVXeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 19:34:24 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58689 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab2CVXeW (ORCPT
+	id S1031519Ab2CVXfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 19:35:05 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48045 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1031478Ab2CVXe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 19:34:22 -0400
-Date: Thu, 22 Mar 2012 19:34:06 -0400 (EDT)
-Message-Id: <20120322.193406.703367892281370263.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, nyh@il.ibm.com,
-        nyh@math.technion.ac.il
-Subject: Re: [PULL] vhost-net/virtio: fixes for 3.4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120322221227.GA17849@redhat.com>
-References: <20120322082718.GA11258@redhat.com>
-	<20120322.165649.32205268396882350.davem@davemloft.net>
-	<20120322221227.GA17849@redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 22 Mar 2012 19:34:59 -0400
+X-Authenticated: #9008106
+X-Provags-ID: V01U2FsdGVkX1/FW/ByNN7F06Nfjdf5fsaUlBr4gbaRWkqGaW7/SS
+	J+9rzq1Oa/72NZ
+Date: Fri, 23 Mar 2012 00:34:56 +0100
+From: Michael Brunner <mibru@gmx.de>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
+Message-ID: <20120323003456.6f7fea2e@mail.gmx.de>
+In-Reply-To: <4F6B9E7B.9090005@linux.intel.com>
+References: <20120322211903.6776ab18@mail.gmx.de>
+	<4F6B8E1B.9080802@linux.intel.com>
+	<20120322223112.291e0c59@mail.gmx.de>
+	<4F6B9E7B.9090005@linux.intel.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Mar 2012 16:34:09 -0700 (PDT)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Fri, 23 Mar 2012 00:12:28 +0200
+> OK, my board has DMI_BOARD_NAME as:
+> 
+> "nETXe-TT 1.0GHz E2 KDMS-FRI" but will also undergo a rename in the
+> near future. I'm concerned about colliding as I believe this kit may
+> use the same board you are working with. This COM Express module will
+> be renamed "COMe-mTT10" which will match your strstr compare.
 
-> OK, sorry about that. Can't fix right now as I'm not at
-> the box that has the key but this works for me with an old git:
+You are right, the development kit uses a customized version of the
+COMe-mTT10.
 
-Please fix it up so I can pull properly.
+> So what does your DMI_BIOS_VERSION report?
+
+The BIOS for the stock COMe-mTT10 is prefixed with NTC1.
+
+> I didn't like basing this on BIOS_VERSION, but I did so at Kontron's
+> preference. Now we're seeing the fallout (sooner than I expected).
+
+Basically this is not a wrong decision, as the FRI2 project code is
+unique for the firmware used on the development kit.
+
+> So the question is, do we treat these as separate devices (the board
+> and the development kit which I believe includes your board) or do we
+> lump them together.
+
+To be safe we should treat them as separate devices and make sure we
+are able to differentiate between them.
+
+> Since it is the firmware that ultimately decides what the initial
+> UARTCLK is, we can't base this on the hardware alone. The hardware in
+> fact should be default if a firmware match isn't found first. So, my
+> preference would be that you move your new comparison AFTER the FRI2
+> DMI_BIOS_VERSION comparison. This ensures the FRI2 doesn't match your
+> new comparison which might get a different UARTCLK in the future for
+> whatever reason.
+
+I understand your concerns and agree with you that in this case the BIOS
+version should be checked before the board name, same goes for the
+product name. So I will prepare a new patch that puts my BOARD_NAME
+comparison to the end.
+
+Michael
