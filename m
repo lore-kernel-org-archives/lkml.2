@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab2CVSoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 14:44:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40082 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750913Ab2CVSoT (ORCPT
+	id S1758911Ab2CVSpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 14:45:47 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55255 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758790Ab2CVSpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 14:44:19 -0400
-Date: Thu, 22 Mar 2012 18:44:15 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 4/4] clk: wm831x: Add initial WM831x clock driver
-Message-ID: <20120322184415.GA3291@opensource.wolfsonmicro.com>
-References: <1332360082-25092-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1332360082-25092-4-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120321222622.GG29317@pengutronix.de>
- <20120322111531.GA3091@opensource.wolfsonmicro.com>
- <20120322112613.GA3852@pengutronix.de>
- <20120322113356.GC3091@opensource.wolfsonmicro.com>
- <CAJOA=zOYfwy-smo6ukX7GSE2jrwz4UxwpgcFJiW876ga7ksShw@mail.gmail.com>
+	Thu, 22 Mar 2012 14:45:46 -0400
+Message-ID: <4F6B7358.60800@gmail.com>
+Date: Thu, 22 Mar 2012 14:45:44 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
-Content-Disposition: inline
-In-Reply-To: <CAJOA=zOYfwy-smo6ukX7GSE2jrwz4UxwpgcFJiW876ga7ksShw@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: lwoodman@redhat.com, Christoph Lameter <cl@linux.com>
+CC: linux-mm@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if
+ task is already on a correct node
+References: <4F6B6BFF.1020701@redhat.com>
+In-Reply-To: <4F6B6BFF.1020701@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC to Christoph.
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> While moving tasks between cpusets I noticed some strange behavior. Specifically if the nodes of the destination
+> cpuset are a subset of the nodes of the source cpuset do_migrate_pages() will move pages that are already on a node
+> in the destination cpuset. The reason for this is do_migrate_pages() does not check whether each node in the source
+> nodemask is in the destination nodemask before calling migrate_to_node(). If we simply do this check and skip them
+> when the source is in the destination moving we wont move nodes that dont need to be moved.
+>
+> Adding a little debug printk to migrate_to_node():
+>
+> Without this change migrating tasks from a cpuset containing nodes 0-7 to a cpuset containing nodes 3-4, we migrate
+> from ALL the nodes even if they are in the both the source and destination nodesets:
+>
+> Migrating 7 to 4
+> Migrating 6 to 3
+> Migrating 5 to 4
+> Migrating 4 to 3
+> Migrating 1 to 4
+> Migrating 3 to 4
+> Migrating 0 to 3
+> Migrating 2 to 3
 
-On Thu, Mar 22, 2012 at 11:35:29AM -0700, Turquette, Mike wrote:
+Wait.
 
-> I'm happy for the core to concatenate the strings when a struct device
-> *dev is passed in.  However the reason I dropped this in the first
-> place is that I have some ideas on providing something like clk_get
-> directly from the common clk core and I hadn't figured out all of the
-> details yet.  For now we can handle the string concatenation in the
-> core and figure out those tricky details if/when the time comes to
-> provide a clk_get which is more closely linked to the clock framework
-> implementation.
+This may be non-optimal for cpusets, but maybe optimal migrate_pages, especially
+the usecase is HPC. I guess this is intended behavior. I think we need to hear
+Christoph's intention.
 
-Yeah, it's that sort of feature that most pushes against doing it in the
-drivers - for example, the regulator API never ends up doing anything
-like the concatenation.
+But, I'm not against this if he has no objection.
 
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPa3L5AAoJEBus8iNuMP3dGjwP/2HLi7NkO63ADygSaGxOVHbi
-9LFC7ezbuRzL/bfvztxaexmZbSekxBgG9HnkEDiPsWuVLMAy6SuF1a8DEkDJIiu8
-6kmhnGYJeWkBJuIYet+E98dvuy80/V5+SaulYUocoKVRLbUlUDglnaMXjZoDiE6e
-nLqP8tX07/B//oUXPKsi+0EMZTWkzelaNfDAvnm88IQy5sZjFMkpbN2CXb/u5lPK
-SJ5rhCkjXTX7n55nJzhBnT1SYtUWmerOVXN4EhFXWt2HopP7NJjmTIUa3rxIQSU5
-6jc0IBKuzKdsDx2T56RPA8WlMbh6Bgiiw81QagY+ZgMmNKmsbfK5q12RU122Pub4
-njvS/AdDlMeWxMmeH4139mflcqXB32zSL6yE9/Qlnv+ojUtklHFdVlt8A/0NkLiH
-LRqmDZMxHZc+GEr0wCNqh16ODWJdPQn/FoOtWE0haChCkckayqDcjp6tIgwR4YVX
-NOA/AnSLz1lvUZSlkI4vgXMyRUoKsOTyAIXcNtLYQxohXLe4azojGv9mEr27SqxZ
-g11MjvL+u1KmTE+1Ymm3kpqxmutR4dG+ByZCf/w6JSns+awp8IK7V8JcEIPEuLy3
-g9gqzrrjj6hgRSi2IkSHmqCONeYC10/cSspTOTkjCuT4wNV12tg+l+FXd/JktFMD
-axxKJnfO+O9eZewA5jSY
-=pdKS
------END PGP SIGNATURE-----
 
---17pEHd4RhPHOinZp--
+>
+>
+> With this change we only migrate from nodes that are not in the destination nodesets:
+>
+> Migrating 7 to 4
+> Migrating 6 to 3
+> Migrating 5 to 4
+> Migrating 2 to 3
+> Migrating 1 to 4
+> Migrating 0 to 3
+>
+> Signed-off-by: Larry Woodman<lwoodman@redhat.com>
+>
+
