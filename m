@@ -1,146 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031195Ab2CVVxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:53:51 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:65326 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756276Ab2CVVxn (ORCPT
+	id S1031186Ab2CVVzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:55:00 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:36771 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030475Ab2CVVy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:53:43 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-127.messagelabs.com!1332453202!1248668!13
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: dma: ep93xx: check for spurious interrupts
-Date: Thu, 22 Mar 2012 14:53:23 -0700
-User-Agent: KMail/1.9.9
-CC: <mika.westerberg@iki.fi>, <dan.j.williams@intel.com>,
-        <vinod.koul@intel.com>
+	Thu, 22 Mar 2012 17:54:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201203221453.23796.hartleys@visionengravers.com>
+In-Reply-To: <20120322214157.GB12985@phenom.dumpdata.com>
+References: <20120322183845.GA17264@phenom.dumpdata.com> <20120322200918.GZ6589@ZenIV.linux.org.uk>
+ <20120322202445.GB6589@ZenIV.linux.org.uk> <20120322203658.GC6589@ZenIV.linux.org.uk>
+ <20120322214157.GB12985@phenom.dumpdata.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Mar 2012 14:54:37 -0700
+X-Google-Sender-Auth: QXiwB8l3C1RLfyEusgcgZWPRaYU
+Message-ID: <CA+55aFxBS3bJoB8BiUR3Ni2KqpK5ofxSBC9+LcgRRoxYGAMKjQ@mail.gmail.com>
+Subject: Re: Regression introduced by bfcfaa77bdf0f775263e906015982a608df01c76
+ (vfs: use 'unsigned long' accesses for dcache name comparison and hashing)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ep93xx dma controller generates spurious interrupts on dmachan1
-when used with the mmc_spi driver. These are causing random debug
-noise like:
+On Thu, Mar 22, 2012 at 2:41 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>
+> Works for me! Thanks for coming up with a patch so quickly. Please add
+>
+> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-    dma dma1chan1: got interrupt while active list is empty
+Goodie. Al, I can commit it as yours, but I'd want a sign-off and a
+commit message for that. Otherwise I'll take credit..
 
-Catch these early by making sure there is an interrupt to actually
-process.
-
-This was exposed when ep93xx was changed to MULTI_IRQ_HANDLER with
-the new handle_one_vic function that does a single read of the vic
-status register and then handles all pending interrupts in order
-from LSB first.
-
-Note, we still will get the spurious interrupts due to the handle_one_vic.
-But now they will not cause any unnecessary noise.  To see the spurious
-interrupt count check /proc/irq/*/spurious.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Tested-by: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-
----
-
-diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-index e6f133b..001e089 100644
---- a/drivers/dma/ep93xx_dma.c
-+++ b/drivers/dma/ep93xx_dma.c
-@@ -38,7 +38,7 @@
- #define M2P_CONTROL_ENABLE		BIT(4)
- #define M2P_CONTROL_ICE			BIT(6)
- 
--#define M2P_INTERRUPT			0x0004
-+#define M2X_INTERRUPT			0x0004	/* M2P and M2M */
- #define M2P_INTERRUPT_STALL		BIT(0)
- #define M2P_INTERRUPT_NFB		BIT(1)
- #define M2P_INTERRUPT_ERROR		BIT(3)
-@@ -78,7 +78,6 @@
- #define M2M_CONTROL_NO_HDSK		BIT(24)
- #define M2M_CONTROL_PWSC_SHIFT		25
- 
--#define M2M_INTERRUPT			0x0004
- #define M2M_INTERRUPT_DONEINT		BIT(1)
- 
- #define M2M_BCR0			0x0010
-@@ -187,7 +186,8 @@ struct ep93xx_dma_engine {
- 	int			(*hw_setup)(struct ep93xx_dma_chan *);
- 	void			(*hw_shutdown)(struct ep93xx_dma_chan *);
- 	void			(*hw_submit)(struct ep93xx_dma_chan *);
--	int			(*hw_interrupt)(struct ep93xx_dma_chan *);
-+	int			(*hw_interrupt)(struct ep93xx_dma_chan *,
-+						u32 irq_status);
- #define INTERRUPT_UNKNOWN	0
- #define INTERRUPT_DONE		1
- #define INTERRUPT_NEXT_BUFFER	2
-@@ -376,16 +376,15 @@ static void m2p_hw_submit(struct ep93xx_dma_chan *edmac)
- 	m2p_set_control(edmac, control);
- }
- 
--static int m2p_hw_interrupt(struct ep93xx_dma_chan *edmac)
-+static int m2p_hw_interrupt(struct ep93xx_dma_chan *edmac, u32 irq_status)
- {
--	u32 irq_status = readl(edmac->regs + M2P_INTERRUPT);
- 	u32 control;
- 
- 	if (irq_status & M2P_INTERRUPT_ERROR) {
- 		struct ep93xx_dma_desc *desc = ep93xx_dma_get_active(edmac);
- 
- 		/* Clear the error interrupt */
--		writel(1, edmac->regs + M2P_INTERRUPT);
-+		writel(1, edmac->regs + M2X_INTERRUPT);
- 
- 		/*
- 		 * It seems that there is no easy way of reporting errors back
-@@ -560,15 +559,15 @@ static void m2m_hw_submit(struct ep93xx_dma_chan *edmac)
- 	}
- }
- 
--static int m2m_hw_interrupt(struct ep93xx_dma_chan *edmac)
-+static int m2m_hw_interrupt(struct ep93xx_dma_chan *edmac, u32 irq_status)
- {
- 	u32 control;
- 
--	if (!(readl(edmac->regs + M2M_INTERRUPT) & M2M_INTERRUPT_DONEINT))
-+	if (!(irq_status & M2M_INTERRUPT_DONEINT))
- 		return INTERRUPT_UNKNOWN;
- 
- 	/* Clear the DONE bit */
--	writel(0, edmac->regs + M2M_INTERRUPT);
-+	writel(0, edmac->regs + M2X_INTERRUPT);
- 
- 	/* Disable interrupts and the channel */
- 	control = readl(edmac->regs + M2M_CONTROL);
-@@ -735,6 +734,12 @@ static irqreturn_t ep93xx_dma_interrupt(int irq, void *dev_id)
- 	struct ep93xx_dma_chan *edmac = dev_id;
- 	struct ep93xx_dma_desc *desc;
- 	irqreturn_t ret = IRQ_HANDLED;
-+	u32 irq_status;
-+
-+	/* Make sure we actually have an interrupt to process */
-+	irq_status = readl(edmac->regs + M2X_INTERRUPT);
-+	if (!irq_status)
-+		return IRQ_NONE;
- 
- 	spin_lock(&edmac->lock);
- 
-@@ -746,7 +751,7 @@ static irqreturn_t ep93xx_dma_interrupt(int irq, void *dev_id)
- 		return IRQ_NONE;
- 	}
- 
--	switch (edmac->edma->hw_interrupt(edmac)) {
-+	switch (edmac->edma->hw_interrupt(edmac, irq_status)) {
- 	case INTERRUPT_DONE:
- 		desc->complete = true;
- 		tasklet_schedule(&edmac->tasklet);
+                Linus
