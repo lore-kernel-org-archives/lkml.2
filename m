@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab2CVNyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 09:54:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52195 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab2CVNyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 09:54:33 -0400
-Date: Thu, 22 Mar 2012 14:54:29 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        mingo@elte.hu, paulus@samba.org, cjashfor@linux.vnet.ibm.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
-Message-ID: <20120322135428.GA3068@gmail.com>
-References: <1332267341-26338-4-git-send-email-jolsa@redhat.com>
- <1332269081.18960.444.camel@twins>
- <20120320204625.GA17142@gmail.com>
- <1332321311.18960.474.camel@twins>
- <20120321095211.GA11122@gmail.com>
- <1332330852.18960.482.camel@twins>
- <20120321121510.GA4386@gmail.com>
- <20120321151332.GD21163@infradead.org>
- <20120322075634.GD31810@gmail.com>
- <20120322124137.GF21163@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322124137.GF21163@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1030396Ab2CVN4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 09:56:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51126 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964942Ab2CVN4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 09:56:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="120463468"
+Message-ID: <1332424772.18717.37.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Mar 2012 15:59:32 +0200
+In-Reply-To: <20120322134253.GA19587@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <20120322095342.GC14485@quack.suse.cz>
+	 <1332410747.18717.12.camel@sauron.fi.intel.com>
+	 <20120322103309.GA14484@quack.suse.cz>
+	 <1332415537.18717.21.camel@sauron.fi.intel.com>
+	 <20120322134253.GA19587@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-6BVtAb9E12r9zLIiv0Rq"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+--=-6BVtAb9E12r9zLIiv0Rq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Em Thu, Mar 22, 2012 at 08:56:34AM +0100, Ingo Molnar escreveu:
-> > 
-> > * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > 
-> > > Em Wed, Mar 21, 2012 at 01:15:10PM +0100, Ingo Molnar escreveu:
-> > > > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > > > I would much prefer a syntax that's more natural but requires 
-> > > > > quoting than one that's quirky and tailor made to avoid 
-> > > > > whatever current bash does. For one, there's other shells out 
-> > > > > there that might have different quoting needs and bash is of 
-> > > > > course free to extend its syntax.
-> > > > 
-> > > > Well, they are unlikely to extend to '+', it would break a 
-> > > > boatload of scripts I suspect.
-> > > > 
-> > > > So the question would be, is a+b+c as event grouping a natural 
-> > > > syntax? If not then lets use a quoted one that is.
-> > > 
-> > >    -e groupname=event1,event2,event3
-> > > 
-> > > Seems intuitive, no?
-> > 
-> > Hm, if there's no use for 'groupname' later on then it's a 
-> > needlessly unspecified dimension. If this variant is picked then 
-> > I'd suggest to make it a fixed:
-> > 
-> >   -e group=event1,event2,event3
-> > 
-> > kind of thing instead.
-> 
-> Jiri mentioned a use for the group name, no?
+On Thu, 2012-03-22 at 14:42 +0100, Jan Kara wrote:
+> > But AFAIKC, the whole '__ext4_handle_dirty_super()' also falls-back to
+> > marking the superblock as dirty if the file-system has no journal for
+> > some reasons, right?
+>   Yes. And I wrote that if you do sync_buffer(EXT4_SB(sb)->s_sbh) instead
+> of marking superblock dirty, it would be fine.
 
-Only for perf stat output, right?
+OK, sorry for not reading carefully, I will take a look at this and all
+the places where we use 's_dirt' and try to think how to just eliminate
+them. But since I have 0 experience with ext4, I'll probably need some
+help, but let's see.
 
-Thanks,
+Thanks for reviewing and the feed-back!
 
-	Ingo
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-6BVtAb9E12r9zLIiv0Rq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPazBEAAoJECmIfjd9wqK0YXcP+wWZzC/pm9NSNez+KH2OncIU
+uXQvU0bfbCy01pPzmP+3CAzmyvtOms+x4pKlJ5A0Knvf6ddAg56Gk1+QO2WAngmP
+gdbUryti/7Zo7UflR4dJmkEM/zW5Ii0EixesJnYViTZZozi67cdM3YU6gp2TBceP
+3HVUfjivlkMyBeoADwUhwxU328AcZaGfcZt4Ma6TeeymGhE5Yn+vkMiYpSy21s04
+XHf4ZfsLTNzu7SsRZlEgwXJi3mq1GRjeSd1l90blGuSp8D0r0W79/Wb0kARHRvKS
+vvt1oWAwHrVeq4ZnVc8UqS8lfsKX4dyZNioBmMYS/HfetapivH+wCWwPdsmYOdnE
+aGCRS57Ba3oSsI08KdC7cZelSas/2cwpi0N7Fuhnq525MKMRh28M1C4Ti8fgxA7z
+tp545Z5oFbBoImDiTiXF6WIIo6Mj2QT7FP2NpDKkdDbe8NkQQJA0t3mcNcX/akQe
+Bwy00cLtYHAoUjXH2rVDXW81kKqPJUjnV+AHKBSGhx/6iJeqLaOm+hZfDb5le3wR
+FM/+aoOiFirphw6oe4ohoh3eniJiiPDkZgyJfNG9tex9YeJuPDc6oCAA2UaVmhKD
+YUVjT/L+lnfosoJ9aAGVNHBffjYcdVkEbuoJxHkMXg5ravP42fX6+6vYDPYJI0wi
+K5vW6ENPZqTWLCcD7pUt
+=MXFq
+-----END PGP SIGNATURE-----
+
+--=-6BVtAb9E12r9zLIiv0Rq--
+
