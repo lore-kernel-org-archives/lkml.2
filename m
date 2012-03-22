@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264Ab2CVRmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 13:42:35 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51673 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754447Ab2CVRmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 13:42:33 -0400
-Message-ID: <1332438152.4677.25.camel@joe2Laptop>
-Subject: Re: [PATCH 2/9] ext4: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+	id S1758456Ab2CVRnL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 13:43:11 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40885 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab2CVRnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 13:43:06 -0400
+From: Michael BRIGHT <mjbrightfr@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 22 Mar 2012 10:42:32 -0700
-In-Reply-To: <4F6B5B1E.9090402@suse.cz>
-References: <cover.1331856299.git.joe@perches.com>
-	 <ceb0e02f9f0c1548a654e8718fbadc147595f8ee.1331856300.git.joe@perches.com>
-	 <20120319040950.GG31682@thunk.org> <1332131137.23125.44.camel@joe2Laptop>
-	 <4F6762F1.7050902@gmail.com> <1332176943.1983.28.camel@joe2Laptop>
-	 <4F684673.1050309@suse.cz> <1332235315.7847.63.camel@joe2Laptop>
-	 <4F684D00.4040102@suse.cz> <1332236803.7847.85.camel@joe2Laptop>
-	 <4F6B5B1E.9090402@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Cc: Michael BRIGHT <mjbrightfr+git-kernel@gmail.com>
+Subject: [PATCH 1/1] USB: remove compile warning on gadget/inode.c
+Date: Thu, 22 Mar 2012 18:42:52 +0100
+Message-Id: <1332438172-20215-1-git-send-email-mjbrightfr+git-kernel@gmail.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 18:02 +0100, Jiri Slaby wrote:
-> On 03/20/2012 10:46 AM, Joe Perches wrote:
-> > On Tue, 2012-03-20 at 10:25 +0100, Jiri Slaby wrote:
-> >> On 03/20/2012 10:21 AM, Joe Perches wrote:
-> >>> the ath5k pr_ conversion patches are to
-> >>> standardize prefixes and to reduce code size by
-> >>> centralizing tests.
-> >> What is the "standard" prefix?
-> > KBUILD_MODNAME
-> 
-> Instead, we should switch as many printks to dev_* and similar as
-> possible, right?
+Removed unused "restart:" label, which was causing compiler warning.
 
-I believe logging message use should be selected
-to be as specific as possible (from high to low):
+Signed-off-by: Michael BRIGHT <mjbrightfr+git-kernel@gmail.com>
+---
+ drivers/usb/gadget/inode.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-o <subsystem>_<level>
-o netif_<level>
-o netdev_<level>
-o dev_<level>
-o pr_<level>
-o printk(KERN_<LEVEL>
-
-> They are standard and provide a good interface for
-> extensions: one has a device to work with. This is something what pr_*
-> does not offer.
-
-I completely agree.
-
-I'd like to see some new subsystem prefixes
-created and used as well.  Maybe:
-
-fs_<level> (like Ted's ext4_<foo>)
-io_<level> (scsi/ide/mtd)
-mm_<level>
-
-There are probably a few others like
-cpu/video/sound that might be useful.
-
-> Frankly, moving the debug code to a separate function should make the
-> code rather faster. By moving the unlikely code out of the instruction
-> cache.
-
-I think it's better still to eliminate debug
-code altogether via if (0) when reasonable
-or use dynamic_debug (jump_tables) when
-overall code size isn't an issue.
-
-cheers, Joe
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index 8793f32..e58b164 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1574,7 +1574,6 @@ static void destroy_ep_files (struct dev_data *dev)
+ 	DBG (dev, "%s %d\n", __func__, dev->state);
+ 
+ 	/* dev->state must prevent interference */
+-restart:
+ 	spin_lock_irq (&dev->lock);
+ 	while (!list_empty(&dev->epfiles)) {
+ 		struct ep_data	*ep;
+-- 
+1.7.9.1
 
