@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab2CVTda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:33:30 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33267 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab2CVTd2 convert rfc822-to-8bit (ORCPT
+	id S1756843Ab2CVThJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:37:09 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:53199 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab2CVThG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:33:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120322183845.GA17264@phenom.dumpdata.com>
-References: <20120322183845.GA17264@phenom.dumpdata.com>
-Date: Thu, 22 Mar 2012 15:33:27 -0400
-Message-ID: <CACLa4pt0iQDM14N8AwqBmuZESYaevy6Km8CF_0pEeP+ydH7xjw@mail.gmail.com>
-Subject: Re: Regression introduced by bfcfaa77bdf0f775263e906015982a608df01c76
- (vfs: use 'unsigned long' accesses for dcache name comparison and hashing)
-From: Eric Paris <eparis@parisplace.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Mar 2012 15:37:06 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
+To: lwoodman@redhat.com
+Cc: Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
+Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if task is already on a correct node
+In-Reply-To: Your message of "Thu, 22 Mar 2012 15:07:00 -0400."
+             <4F6B7854.1040203@redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home>
+            <4F6B7854.1040203@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332445016_39840P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 22 Mar 2012 15:36:56 -0400
+Message-ID: <40300.1332445016@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4F6B7F59.012F,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No idea if it is related and haven't bisected, but we are seeing
-similar ENOENT issues with things in selinuxfs.  And not a single bit
-of SELinux code has changed since v3.3.  So it's certainly a VFS
-problem.  This sounds likely.
+--==_Exmh_1332445016_39840P
+Content-Type: text/plain; charset=us-ascii
 
--Eric
+On Thu, 22 Mar 2012 15:07:00 -0400, Larry Woodman said:
 
-On Thu, Mar 22, 2012 at 2:38 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> Hey Linus,
->
-> I am not sure how to debug this but with v3.3 with just that git commit I can't
-> start an user space application called 'xenstored'. A bit of strace showed me:
-> [edit, also with todays linus/master I get the same issue, and if I revert
-> your patch it works again]
->
-> (right is 3.3, left is with your patch)
-> write(3, "Checking store complete.\n", 25) = 25                 write(3, "Checking store complete.\n", 25) = 25
-> sendto(9, "<11>Mar 22 18:00:27 xenstored: C"..., 55, MSG_NOSI | sendto(9, "<11>Mar 22 18:06:44 xenstored: C"..., 55, MSG_NOSI
-> open("/proc/xen/privcmd", O_RDWR)       = 10                    open("/proc/xen/privcmd", O_RDWR)       = 10
-> fcntl(10, F_GETFD)                      = 0                     fcntl(10, F_GETFD)                      = 0
-> fcntl(10, F_SETFD, FD_CLOEXEC)          = 0                     fcntl(10, F_SETFD, FD_CLOEXEC)          = 0
-> open("/dev/xen/evtchn", O_RDWR)         = 11                    open("/dev/xen/evtchn", O_RDWR)         = 11
-> open("/proc/xen/xsd_port", O_RDONLY)    = -1 ENOENT (No such  | open("/proc/xen/xsd_port", O_RDONLY)    = 12
-> write(2, "FATAL: ", 7FATAL: )                  = 7            | read(12, "25", 20)                      = 2
-> write(2, "Failed to initialize dom0 state:"..., 59Failed to i | close(12)                               = 0
-> ) = 59                                                        | ioctl(11, EVIOCGVERSION, 0x7fff4e3ffc70) = 41
-> close(10)                               = 0                   | write(3, "CREATE connection 0xe2e7b0\n", 27) = 27
-> close(5)                                = 0                   | open("/proc/xen/xsd_kva", O_RDWR)       = 12
-> close(4)                                = 0                   | mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, 12, 0) = 0
-> exit_group(1)                           = ?                   | close(12)                               = 0
->                                                              > ioctl(11, EVIOCGKEYCODE or EVIOCSKEYCODE, 0x7fff4e3ffc90) = 0
->                                                              > ioctl(11, 0x44500, 0x7fff4e3ffc90)      = 42
->                                                              > rt_sigaction(SIGHUP, {0x402180, [HUP], SA_RESTORER|SA_RESTART
->                                                              > select(12, [4 5 6 11], [], NULL, NULL)  = 1 (in [11])
->                                                              > read(11, ")\0\0\0", 4)                  = 4
->                                                              > write(11, ")\0\0\0", 4)                 = 4
->                                                              > select(12, [4 5 6 11], [], NULL, NULL <unfinished ...>
->
-> and if I ls /proc/xen (v3.3):
->
->> ls -al /proc/xen
-> total 0
-> drwxr-xr-x   2 root root 0 Mar 22 18:05 .
-> dr-xr-xr-x 126 root root 0 Mar 22 18:05 ..
-> -r--r--r--   1 root root 0 Mar 22 18:05 capabilities
-> -rw-------   1 root root 0 Mar 22 18:05 privcmd
-> -rw-------   1 root root 0 Mar 22 18:05 xenbus
-> -rw-------   1 root root 0 Mar 22 18:05 xsd_port
->
-> while v3.3 with your patch:
->
->
-> 8:01:09 # 10 :/proc/xen/
->> ls -al
-> ls: cannot access xsd_port: No such file or directory
-> total 0
-> drwxr-xr-x   2 root root 0 Mar 22 17:57 .
-> dr-xr-xr-x 126 root root 0 Mar 22 17:57 ..
-> -r--r--r--   1 root root 0 Mar 22 17:57 capabilities
-> -rw-------   1 root root 0 Mar 22 17:57 privcmd
-> -rw-------   1 root root 0 Mar 22 17:57 xenbus
-> -rw-------   1 root root 0 Mar 22 17:57 xsd_kva
-> -?????????   ? ?    ?    ?            ? xsd_port
->
->
-> Looking at the code that sets up 'xsd_port' it looks pretty innocent
-> and similar to other drivers (ibmasm for example).
->
-> Also attached is the .config
->
-> Note: to actually bootup the latest with Xen there are some fixes required
-> to fix the regressions introduced:
-> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=106b44388d8f76373149c4ea144f717b6d4d9a6d
-> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=a759ceb7d1dfe38f4dda147e233aa53c8f477e2a
-> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=1b34ba936c1adff3020eec1e1834ffa4cf89802f
-> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=6ac72c4bc49a9afb02b8176b48be019dff0560cd
+> So to be clear on this, in that case the intention would be move 3 to 4,
+> 4 to 5 and 5 to 6
+> to keep the node ordering the same?
+
+Would it make more sense to do 5->6, 4->5, 3->4?  If we move stuff
+from 3 to 4 before clearing the old 4 stuff out, it might get crowded?
+
+
+--==_Exmh_1332445016_39840P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT2t/VwdmEQWDXROgAQIkgg//WSjenDA84KouiK00Bf7PdzfwvRLox3kL
+3IN/CMMaPLbOIjjO1Uy8NpCJAgNRTrR40mpzAY3zLs3y7Ir6bYb9W2UtG72Xu/Io
+XdsTkXQQ4BQvBsOe21YSqKVORtziXLw9LhlDpfJRPog+ocDjIrlK5twCG4VpSisf
+Vl1RwbEkRMFlEJSHCbzwbzlaMNgG9CAdBxD+hnFsAgTgk+bXW37zEhw+v07tWtVU
+Foy1Cpa/QhHyxuuQ9MvMALu8jO8g4fzhUB10JRbLUa7e3AKZ9G/Sp0pBGIDpgMkd
+40HNg0Xf3Yv0PBRBtAjQSojiu+iFwohsA3ian1aPHZVR7Zp8pFi3RC1QVZcpI+lq
+3WAi5zvM9oeVnKxUTy1ya1w9cG8vf8XFgI1WOomtVfDIc0Ndd6yCvWU7DfLknkTb
+pDN1DdH0MtGZtym64C4DbRdp4Vy9cjcYOD9OcFN1+ZGx/pD3ggzUw9bPZcH5/AFh
+Hqlhrr+7bf+fTsdoIqspVXhs+NlrRQegQTyJjivOitTKcehrG6WcQYta8q51uLF7
+Jl6ms8dlPJWrLiXZSCSdfEMxf0AQj/yoyzSB7rtixPQyOPLrKGs6nkZhpjmjdO/D
+v3edqqnCHcoVyEtJS83UN3A6qU5a0qg5pM3npB2gHjP4uQp6HChWBIz+rMV/gCy0
+lDzYDAe23OE=
+=xLes
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1332445016_39840P--
+
