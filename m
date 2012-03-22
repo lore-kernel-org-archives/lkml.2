@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2CVISj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 04:18:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56071 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab2CVISe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 04:18:34 -0400
-Date: Thu, 22 Mar 2012 09:18:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][GIT PULL] tracing: Move the tracing_on/off()
- declarations into CONFIG_TRACING
-Message-ID: <20120322081830.GA14381@gmail.com>
-References: <1332283828.23924.17.camel@gandalf.stny.rr.com>
+	id S1756207Ab2CVITa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 04:19:30 -0400
+Received: from mta117.odn.ne.jp ([143.90.14.187]:43321 "EHLO cmta117.odn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754369Ab2CVIT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 04:19:26 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 04:19:26 EDT
+Message-ID: <4F6ADF5E.1010106@fire.name>
+Date: Thu, 22 Mar 2012 17:14:22 +0900
+From: black@fire.name
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332283828.23924.17.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gwendal Grignou <gwendal@google.com>
+CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
+ Sil3726
+References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp>
+In-Reply-To: <4F6AAC37.7040907@yahoo.co.jp>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry for my poor English.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+(2012/03/22 13:36), ANEZAKI, Akira wrote:
+> 3.2.x kernel sometimes breaks metadata and I have to fix them. I feel it
+> strange and cannot understand that the kernel sometimes breaks
+> metadatas/superblocks of RAIDs/file systems those don't include any HDDs
+> those don't connected to any PMP.
+... the kernel sometimes breaks metadata/superblock of RAID/file system.
+The kernel may break them even if those don't include a HDD that is
+connected to a PMP.
 
-> Ingo,
-> 
-> This fixes the bug you found with the config. I also added a test to my
-> test suite, that includes that config combination of having RING_BUFFER
-> enabled but TRACING not, to catch further bugs similar to this one.
-> 
-> -- Steve 
-> 
-> Please pull the latest tip/perf/core tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/core
-> 
-> Head SHA1: 93d68e52295fb8b65ded6db49e32e63b6a203e0b
-> 
-> 
-> Steven Rostedt (1):
->       tracing: Move the tracing_on/off() declarations into CONFIG_TRACING
+is correct.
 
-Pulled, thanks Steve!
-
-	Ingo
+Akira
