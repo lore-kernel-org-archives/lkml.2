@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2CVKuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:50:18 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:41012 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab2CVKuO convert rfc822-to-8bit (ORCPT
+	id S1754345Ab2CVKvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:51:53 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56824 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab2CVKvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:50:14 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 09/20] Input: atmel_mxt_ts - do not read extra (checksum) byte
-Date: Thu, 22 Mar 2012 10:18:20 -0000
-Message-ID: <7317DB9644E3CB42BFF8C23FFFF6D0DA0571E32B@hammb01.corp.atmel.com>
-In-Reply-To: <4F689D41.9080507@itdev.co.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 09/20] Input: atmel_mxt_ts - do not read extra (checksum) byte
-Thread-Index: Ac0GqzkG3H87cU5lQQGfZMu2bMrfewBaXG2g
-References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org> <1331640263-18935-10-git-send-email-djkurtz@chromium.org> <4F689D41.9080507@itdev.co.uk>
-From: "Bowens, Alan" <Alan.Bowens@atmel.com>
-To: "Nick Dyer" <nick.dyer@itdev.co.uk>, "Daniel Kurtz" <djkurtz@chromium.org>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Joonyoung Shim" <jy0922.shim@samsung.com>,
-        "Valkonen, Iiro" <iiro.valkonen@atmel.com>,
-        "Henrik Rydberg" <rydberg@euromail.se>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, "Benson Leung" <bleung@chromium.org>,
-        "Yufeng Shen" <miletus@chromium.org>,
-        "Tiwari, Atul" <Atul.Tiwari@atmel.com>
-X-OriginalArrivalTime: 22 Mar 2012 10:18:21.0929 (UTC) FILETIME=[1BEA5590:01CD0815]
+	Thu, 22 Mar 2012 06:51:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174717508"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tsoni@codeaurora.org, Ravi Kumar V <kumarrav@codeaurora.org>
+Subject: [PATCH v4 0/2] Add Qualcomm MSM ADM DMAEngine driver 
+Date: Thu, 22 Mar 2012 16:21:36 +0530
+Message-Id: <1332413496-8246-1-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just to confuse things, the checksum byte is available from the chip if
-required. Reading it involves a slightly different approach to normal
-message processor reads, in that the host needs to write the 16-bit
-address of the message processor, with the MSB set. It must then follow
-these two bytes with another byte consisting of the checksum of the
-previous two bytes.
+Following are the changes we have done from the previous
+v1 posted here: https://lkml.org/lkml/2011/12/22/148
 
-This functionality was added at a customer's request, although I don't
-know if any current customers actually use it.
+As our ADM Scatter-gather hardware needs
+-32-bit command configuration parameter
+ apart from
+-32-bit source address
+-32-bit destination address
+-16-bit length
 
+So,we have added new parameter in struct scatterlist to support xfer descriptor
+specific private data, and for supporting ADM Box mode DMA we added new
+API and data structure.
 
-Alan Bowens
-Section Manager / Atmel Corporation
-Tel: (+44) (0)1489-553-611
-alan.bowens@atmel.com / www.atmel.com
+Changes done from v2:
 
-The information contained in this email message may be privileged,
-confidential and/or protected from unauthorized disclosure. If you are
-not the intended recipient, any dissemination, distribution or copying
-is strictly prohibited. Please immediately notify the sender by reply if
-you received this email in error. Thank you for your cooperation. 
+As per our previous discussion you had suggested us to follow the below patch
+https://lkml.org/lkml/2012/1/26/405
+Please check the below link of our discussion
+https://lkml.org/lkml/2012/1/30/48
 
------Original Message-----
-From: Nick Dyer [mailto:nick.dyer@itdev.co.uk] 
-Sent: 20 March 2012 15:08
-To: Daniel Kurtz
-Cc: Dmitry Torokhov; Joonyoung Shim; Valkonen, Iiro; Henrik Rydberg;
-linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Benson Leung;
-Yufeng Shen; Tiwari, Atul; Bowens, Alan
-Subject: Re: [PATCH 09/20] Input: atmel_mxt_ts - do not read extra
-(checksum) byte
+So we have added the new context parameter in device_prep_dma_sg and
+device_prep_interleave_dma API's to support for passing client channel specific
+private data associated with every transfer descriptor.
 
-Daniel Kurtz wrote:
-> It isn't sent, nor checked anyway, so don't bother reading it.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+We are using
+Interleaved API for BOX type transfer.
+SG API for SG type transfer.
 
-This is fair enough, although IMO the checksum should be checked.
+Changes done from v3:
 
---
-Nick Dyer
-Software Engineer, ITDev Ltd
-Hardware and Software Development Consultancy
-Website: http://www.itdev.co.uk
+Implemented the wrappers as suggested by Russell King in following patch
+https://lkml.org/lkml/2012/2/3/269
+Fixed the dmaengine & client drivers to follow above changes
+
+Ravi Kumar V (2):
+  dmaengine: Add context parameter to prep_dma_sg and
+    prep_interleaved_dma
+  DMAEngine: Add DMAEngine driver based on old MSM ADM DMA APIs
+
+ arch/arm/mach-msm/include/mach/dma.h    |   35 ++
+ drivers/dma/Kconfig                     |   12 +
+ drivers/dma/Makefile                    |    1 +
+ drivers/dma/fsldma.c                    |    2 +-
+ drivers/dma/msm_adm_dma.c               |  728 +++++++++++++++++++++++++++++++
+ drivers/dma/sirf-dma.c                  |    2 +-
+ drivers/dma/ste_dma40.c                 |    2 +-
+ drivers/misc/carma/carma-fpga-program.c |    2 +-
+ drivers/misc/carma/carma-fpga.c         |    7 +-
+ include/linux/dmaengine.h               |   22 +-
+ 10 files changed, 803 insertions(+), 10 deletions(-)
+ create mode 100644 drivers/dma/msm_adm_dma.c
+
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
