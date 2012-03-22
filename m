@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab2CVJ3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:29:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49443 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754867Ab2CVJ3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:29:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="131893140"
-Message-ID: <1332408753.18717.1.camel@sauron.fi.intel.com>
-Subject: Re: linux-next: manual merge of the l2-mtd tree with the slave-dma
- tree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Vinod Koul <vinod.koul@intel.com>, Huang Shijie <b32955@freescale.com>
-Date: Thu, 22 Mar 2012 11:32:33 +0200
-In-Reply-To: <20120322140410.2f9af2f25906a3cdc9497d72@canb.auug.org.au>
-References: <20120322140410.2f9af2f25906a3cdc9497d72@canb.auug.org.au>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-dbBx2ff+7S19jSBBtGDx"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	id S1030937Ab2CVJa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:30:59 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:39410 "EHLO violet"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756598Ab2CVJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:30:55 -0400
+Date: Thu, 22 Mar 2012 10:27:27 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Cc: David Miller <davem@davemloft.net>, xiong@qca.qualcomm.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com,
+        kgiori@qca.qualcomm.com, chris.snook@gmail.com,
+        mathieu@qca.qualcomm.com, bryanh@quicinc.com,
+        Jesper Andersen <jespera@diku.dk>, Julia Lawall <julia@diku.dk>
+Subject: Re: [PATCH] net: add QCA alx Ethernet driver
+Message-ID: <20120322092727.GA21284@electric-eye.fr.zoreil.com>
+References: <157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com> <20120228.212857.797446903975232476.davem@davemloft.net> <157393863283F442885425D2C454285619415561@nasanexd02a.na.qualcomm.com> <20120228.223258.2261979237568571219.davem@davemloft.net> <CAB=NE6W-CYjEhbfYOv7XqXFGvdhZxRECqfAmgouaa5_j45gnOQ@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6W-CYjEhbfYOv7XqXFGvdhZxRECqfAmgouaa5_j45gnOQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Luis R. Rodriguez <rodrigue@qca.qualcomm.com> :
+> On Tue, Feb 28, 2012 at 7:32 PM, David Miller <davem@davemloft.net> wrote:
+[...]
+> > To be honest tg3, as one example, supports quite a large array of
+> > different pieces of hardware that use the same logical core.
+> 
+> At certain point it becomes a pain in the ass to support older
+> chipsets, and simply easier to leave the older driver to rot.
 
---=-dbBx2ff+7S19jSBBtGDx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I would avoid saying such things while trying to sell a plan for a bright
+future of drivers maintained and supported by $BIGCORP. :o)
 
-On Thu, 2012-03-22 at 14:04 +1100, Stephen Rothwell wrote:
-> Hi Artem,
->=20
-> Today's linux-next merge of the l2-mtd tree got a conflict in
-> drivers/mtd/nand/gpmi-nand/gpmi-lib.c between commit 16052827d98f
-> ("dmaengine/dma_slave: introduce inline wrappers") from the slave-dma
-> tree and commit c790d78c631f ("mxs-dma : rewrite the last parameter of
-> mxs_dma_prep_slave_sg()") from the l2-mtd tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary.
+[...]
+> Would it be worthwhile to consider alx upstream only for the newer
+> chipsets (regardless of the litmus test, which I do agree with on
+> technical grounds) in consideration for helping pave the way on
+> killing proprietary drivers?
 
-Looks like Vinod merged a lot of changes recently. Thanks for fixing
-this up in linux-next!
+What is the situation regarding the availability for public use of
+programming manuals and errata on older chipsets ?
 
---=20
-Best Regards,
-Artem Bityutskiy
+I am fine with Qualcomm being completely uninterested in maintaining
+code for old chipsets and dedicating manpower or $$$ on it, be it now,
+tomorrow or after a new arrival of management execs. However it sends
+a bad message if code for new chipsets comes in while users have to
+maintain their pile of poo in the dark.
 
---=-dbBx2ff+7S19jSBBtGDx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+The hardware stays for years. It's one of the engineering problems of
+the day. Killing proprietary drivers is an interesting goal but it is
+far, far away.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Qualcomm should imvho meet davem's remarks with more short termed
+deliverables.
 
-iQIcBAABAgAGBQJPavGxAAoJECmIfjd9wqK0xncP/RLr4rZh9PpHB5fBP9Z+2/4w
-Glqk/jOueZWOBjStrIfFV4EF/GD8t8nTZJy2N/gwS3pmBQUSTw5ZpZpfdwQZhuth
-JwhQII/Kolz9gXFcM+HeWeuofzGbPxr3ayrsg1kui7QntdRgqLmoxnFD7NEMklYF
-k3dUPv2NaCH2WIV6hVbMbr+SZh8w1ogZpAWbIk4Lx7NLGVPUSzv4slhaG/3SRUUG
-jscFgXoXN9wcS7xOUAR9oVffgtrhSRM5EJvspm5+gDKoPy+Vmu00WIDCJG7jP2Ry
-vsXwIvAw6ISuHZE6fGdg/NBcfzo0+1GhkjadmhBdkbHz5lqZ8Hm3eYvKuMMDi4Ds
-vZO+93dGbCA7/ht4ETe1ulDLUy8dccvSmKoWc0VifImDTZx144cNX0C2+5ezua66
-+wmwX5VU7dZ1n+E9DPCLE0ogIbJdLbLzosM9qt3sqor7gVvvi9dfo9oka0PNHnY2
-7S6tOcvFzLIdHKqyRH++RwfK20yyCxJrgPB4ZRII1CHjMTWNVWR0qfxzBg3oGAp6
-Jr+Z6bHhVRTvf1BMuXzXzK93hXe+Dj2AOQkMohvDlcQdyDRCQ6bLgaZ5FwtudTZe
-auNMa82tAXYO3Red9GHogFuefuIFuMr0UyyZtNBMwAOgFKYakRNA/dqkc5M8sr7b
-ox3kiJ5tn7DiqpRMr3s7
-=B4ms
------END PGP SIGNATURE-----
-
---=-dbBx2ff+7S19jSBBtGDx--
-
+-- 
+Ueimor
