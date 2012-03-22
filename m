@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030716Ab2CVJJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:09:15 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:42031 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964968Ab2CVJJL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:09:11 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH] regulator: gpio-regulator: Set the smallest voltage/current in the specified range
-Date: Thu, 22 Mar 2012 10:08:58 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1332396484.3842.2.camel@phoenix>
-In-Reply-To: <1332396484.3842.2.camel@phoenix>
+	id S1756690Ab2CVJLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:11:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49830 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756189Ab2CVJLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:11:49 -0400
+Date: Thu, 22 Mar 2012 10:11:47 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: memcg-devel updated for v3.3
+Message-ID: <20120322091147.GB18665@tiehlicka.suse.cz>
+References: <20120321094545.GA10450@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203221009.05902.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120321094545.GA10450@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 22. März 2012, 07:08:04 schrieb Axel Lin:
-> Do not assume the gpio regulator states map is sorted in any order.
-> This patch ensures we always set the smallest voltage/current that falls
-> within the specified range.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Wed 21-03-12 10:45:45, Michal Hocko wrote:
+[...]
+> Hugh Dickins (15):
+>       memcg-clear-pc-mem_cgorup-if-necessary-fix-2
+>       memcg-clear-pc-mem_cgorup-if-necessary fix 3
+>       memcg: fix page migration to reset_owner
+>       memcg: replace MEM_CONT by MEM_RES_CTLR
+>       memcg: replace mem and mem_cont stragglers
+>       memcg: lru_size instead of MEM_CGROUP_ZSTAT
+>       memcg: enum lru_list lru
+>       memcg: remove redundant returns
+>       idr: make idr_get_next() good for rcu_read_lock()
+>       cgroup: revert ss_id_lock to spinlock
+>       memcg: let css_get_next() rely upon rcu_read_lock()
+>       memcg: remove PCG_CACHE page_cgroup flag fix
+>       memcg: remove PCG_CACHE page_cgroup flag fix2
+>       memcg: remove PCG_FILE_MAPPED fix cosmetic fix
+>       memcg: fix GPF when cgroup removal races with last exit
 
-nice addition, thanks
+I have just noticed I forgot about one fix.
+Hugh Dickins (1):
+      memcg: fix deadlock by avoiding stat lock when anon
 
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+pushed and sorry
 
-> ---
->  drivers/regulator/gpio-regulator.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/regulator/gpio-regulator.c
-> b/drivers/regulator/gpio-regulator.c index 42e1cb1..b728b36 100644
-> --- a/drivers/regulator/gpio-regulator.c
-> +++ b/drivers/regulator/gpio-regulator.c
-> @@ -105,15 +105,15 @@ static int gpio_regulator_set_value(struct
-> regulator_dev *dev, int min, int max)
->  {
->  	struct gpio_regulator_data *data = rdev_get_drvdata(dev);
-> -	int ptr, target, state;
-> +	int ptr, target, state, best_val = INT_MAX;
-> 
-> -	target = -1;
->  	for (ptr = 0; ptr < data->nr_states; ptr++)
-> -		if (data->states[ptr].value >= min &&
-> +		if (data->states[ptr].value < best_val &&
-> +		    data->states[ptr].value >= min &&
->  		    data->states[ptr].value <= max)
->  			target = data->states[ptr].gpios;
-> 
-> -	if (target < 0)
-> +	if (best_val == INT_MAX)
->  		return -EINVAL;
-> 
->  	for (ptr = 0; ptr < data->nr_gpios; ptr++) {
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
