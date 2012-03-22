@@ -1,124 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab2CVP0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 11:26:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758196Ab2CVP0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 11:26:49 -0400
-Date: Thu, 22 Mar 2012 15:44:27 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 3/3] do_exit(): do not panic if exiting thread is not
- serving an interrupt
-Message-ID: <20120322144426.GF17233@dhcp-26-207.brq.redhat.com>
-References: <20120319161851.GK2147@dhcp-26-207.brq.redhat.com>
- <alpine.LFD.2.02.1203221139190.2542@ionos>
+	id S1758334Ab2CVP2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 11:28:40 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47155 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757161Ab2CVP2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 11:28:38 -0400
+Date: Thu, 22 Mar 2012 12:28:32 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf tools: Fix ordering with unstable tsc
+Message-ID: <20120322152832.GE25820@infradead.org>
+References: <20120206132546.GA30854@quad>
+ <1329583837-7469-1-git-send-email-fweisbec@gmail.com>
+ <20120314195535.GB13246@infradead.org>
+ <20120322001028.GA7024@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1203221139190.2542@ionos>
+In-Reply-To: <20120322001028.GA7024@somewhere.redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 12:56:55PM +0100, Thomas Gleixner wrote:
-> On Mon, 19 Mar 2012, Alexander Gordeev wrote:
-> 
-> > Currently a crashed and killed forced oneshot threaded handler hits
-> > in_interrupt() check in do_exit() and panics. As result, the code that
-> > cleans up IRQ descriptor never not get called and IRQ line stays masked.
-> > 
-> > Similarly non-forced oneshot threaded handlers that crashed while holding
-> > bh lock leave a IRQ line masked.
-> > 
-> > Regular threaded handlers that crashed while holding bh simply panic,
-> > although they could have just terminate loudly.
-> > 
-> > This fix allows IRQ threaded handlers get killed gracefully instead of
-> > panicking.
-> > 
-> > Since introduction of SOFTIRQ_DISABLE_OFFSET in 75e1056 we can differ
-> > between bh being serviced and bh being disabled. Use this ability to
-> > avoid unnecessary crashes when a exiting thread explicitly disabled bh
-> > and is not serving any softirq. Still we will get the regular warning
-> > that exiting thread is in atomic context.
-> 
-> Hmm, this applies for all threads which exit with bh disabled. We risk
-> data corruption this way as the crash of a task might happen within a
-> data set manipulation protected by bh_disable.
+Em Thu, Mar 22, 2012 at 01:10:31AM +0100, Frederic Weisbecker escreveu:
+> On Wed, Mar 14, 2012 at 04:55:35PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Sat, Feb 18, 2012 at 05:50:37PM +0100, Frederic Weisbecker escreveu:
+> > > +static int alloc_cpus_timestamp_array(struct perf_session *s,
+> > > +	if (sample->cpu < s->nr_cpus)
 
-True. But we live with this as we do exit with preemption disabled. Are bh are
-terribly different in this regard?
+> > Shouldn't we try to robustify this checking against HEADER_NRCPUS (if
+> > present)?
 
-Anyway, I do not have strong opinion here. My point is letting innocent devices
-on the shared irq line to go on worth considering.
+> Yeah I thought about that too. I can try to make that working.
+> I just thought this was an optimization that I could later add (ie: first
+> try to see if the core idea of the patch is accepted).
 
-> Not sure whether the chance to get debug information from the machine
-> is worth the risk of data corruption causes follow up problems.
+Right, I deferred that to tglx, but he must be busy as always :-P
+ 
+> Of course the real long term optimization is going to have one file per
+> CPU. There, the ordering will be much easier and deterministically
+> correct.
 
-I would judge: no ;)
+Yeah.
+ 
+> > > +		os->last_cpu_timestamp = realloc(os->last_cpu_timestamp,
+> > > +						 sizeof(u64) * nr_cpus);
+> > If realloc fails we return -ENOMEM, but leak the old buffer.
 
->  
-> Thanks,
-> 
-> 	tglx
-> 
-> 
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> > ---
-> >  include/linux/hardirq.h |    4 ++++
-> >  kernel/exit.c           |    2 +-
-> >  2 files changed, 5 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-> > index bb7f309..93aca12 100644
-> > --- a/include/linux/hardirq.h
-> > +++ b/include/linux/hardirq.h
-> > @@ -82,11 +82,15 @@
-> >   * Are we in a softirq context? Interrupt context?
-> >   * in_softirq - Are we currently processing softirq or have bh disabled?
-> >   * in_serving_softirq - Are we currently processing softirq?
-> > + * in_serving_interrupt - Are we currently processing softirq, nmi or
-> > + *                        hardware interrupt?
-> >   */
-> >  #define in_irq()		(hardirq_count())
-> >  #define in_softirq()		(softirq_count())
-> >  #define in_interrupt()		(irq_count())
-> >  #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
-> > +#define in_serving_interrupt()	(preempt_count() & (HARDIRQ_MASK \
-> > +					 | SOFTIRQ_OFFSET | NMI_MASK))
-> >  
-> >  /*
-> >   * Are we in NMI context?
-> > diff --git a/kernel/exit.c b/kernel/exit.c
-> > index 752d2c0..0c78ae6 100644
-> > --- a/kernel/exit.c
-> > +++ b/kernel/exit.c
-> > @@ -896,7 +896,7 @@ void do_exit(long code)
-> >  
-> >  	WARN_ON(blk_needs_flush_plug(tsk));
-> >  
-> > -	if (unlikely(in_interrupt()))
-> > +	if (unlikely(in_serving_interrupt()))
-> >  		panic("Aiee, killing interrupt handler!");
-> >  	if (unlikely(!tsk->pid))
-> >  		panic("Attempted to kill the idle task!");
-> > -- 
-> > 1.7.7.6
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+> Doh! the common trap with realloc...
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+:-)
+
+> > At some point we can have in the TUI/GUI a way for the user to ask for
+> > an specific perf.data file to be processed, if it fails to process due
+> > to the above realloc, we'll continue, allowing other perf.data files to
+> > be processed, but will have this leak.
+
+> Ok. Will fix.
+
+Thanks!
+
+- Arnaldo
