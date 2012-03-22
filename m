@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab2CVOI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 10:08:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab2CVOI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 10:08:27 -0400
-Date: Thu, 22 Mar 2012 15:07:25 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
-Message-ID: <20120322140725.GC1601@m.brq.redhat.com>
-References: <1332269081.18960.444.camel@twins>
- <20120320204625.GA17142@gmail.com>
- <1332321311.18960.474.camel@twins>
- <20120321095211.GA11122@gmail.com>
- <1332330852.18960.482.camel@twins>
- <20120321121510.GA4386@gmail.com>
- <20120321151332.GD21163@infradead.org>
- <20120322075634.GD31810@gmail.com>
- <20120322124137.GF21163@infradead.org>
- <20120322135428.GA3068@gmail.com>
+	id S964791Ab2CVOLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 10:11:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54272 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab2CVOLw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 10:11:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322135428.GA3068@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACKLOr03tTymT1vdTH7=nqEHu3OvAinPUHEusK+mR+J6Yc35mQ@mail.gmail.com>
+References: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
+	<1332344363.19804.12.camel@vkoul-udesk3>
+	<CACKLOr03tTymT1vdTH7=nqEHu3OvAinPUHEusK+mR+J6Yc35mQ@mail.gmail.com>
+Date: Thu, 22 Mar 2012 15:11:52 +0100
+Message-ID: <CACKLOr0JTgp+poXCNg8+8pXko3s2JWQhovMw8Z1j-q4aL4oaKQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/13] dmaengine: imx-dma: merge dma arch code into dmaengine.
+From: javier Martin <javier.martin@vista-silicon.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, linux@arm.linux.org.uk,
+        kernel@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 02:54:29PM +0100, Ingo Molnar wrote:
-> 
-> * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> 
-> > Em Thu, Mar 22, 2012 at 08:56:34AM +0100, Ingo Molnar escreveu:
-> > > 
-> > > * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > > 
-> > > > Em Wed, Mar 21, 2012 at 01:15:10PM +0100, Ingo Molnar escreveu:
-> > > > > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > > > > I would much prefer a syntax that's more natural but requires 
-> > > > > > quoting than one that's quirky and tailor made to avoid 
-> > > > > > whatever current bash does. For one, there's other shells out 
-> > > > > > there that might have different quoting needs and bash is of 
-> > > > > > course free to extend its syntax.
-> > > > > 
-> > > > > Well, they are unlikely to extend to '+', it would break a 
-> > > > > boatload of scripts I suspect.
-> > > > > 
-> > > > > So the question would be, is a+b+c as event grouping a natural 
-> > > > > syntax? If not then lets use a quoted one that is.
-> > > > 
-> > > >    -e groupname=event1,event2,event3
-> > > > 
-> > > > Seems intuitive, no?
-> > > 
-> > > Hm, if there's no use for 'groupname' later on then it's a 
-> > > needlessly unspecified dimension. If this variant is picked then 
-> > > I'd suggest to make it a fixed:
-> > > 
-> > >   -e group=event1,event2,event3
-> > > 
-> > > kind of thing instead.
-> > 
-> > Jiri mentioned a use for the group name, no?
-> 
-> Only for perf stat output, right?
-> 
+On 22 March 2012 10:39, javier Martin <javier.martin@vista-silicon.com> wrote:
+> On 21 March 2012 16:39, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+>> On Fri, 2012-03-09 at 16:20 +0100, Javier Martin wrote:
+>>> The following series have to be applied on top of the following patches:
+>>> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
+>>> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
+>>>
+>>> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
+>>> is deprecated and no new patches are accepted for it.
+>>>
+>>> This series merges this code into the imx-dma.c dmaengine driver.
+>>>
+>>> Notes for v3:
+>>>  - I send the whole series again despite some patches being the same. I think
+>>>  this is more comfortable for Vinod than just sending those patches that have
+>>>  been modified.
+>>>  - I've generated my series with the following command this time:
+>>>  'git format-patch -s -13 -M -B --subject-prefix="PATCH v3"' as suggested by
+>>>  Sascha but still removing two files in 01/13 generates a lot of noisy diffs.
+>>>  Sorry about that.
+>>>  - I don't include Sascha's Tested-by since maybe he wants to test this last
+>>>  version.
+>> This doesn't apply for me (starting with 6th) on current slave-dma.next
+>> due to obvious changes which have gone into imx.
+>>
+>> Can you quickly rebase the series and resend.
+>
+> Great,
+> now your 'next' branch is actually broken for imx-dma.
+>
+> I'm currently trying a bisect to find out what is the commit
+> responsible for that but I suspect it will be related to the cookie
+> changes submitted by Russell.
 
-right.. hm, using it in perf report would need to have it
-stored in the data file.. not sure thats worth the effort
+Here,
+take a look at this series:
 
-maybe let's start with 'group:mod=' and we can add later something
-like 'group/name:mod=' if there's need to see group name in output
+[PATCH v4 00/15] dmaengine: imx-dma: rebase of features for 3.4.
 
-I think it's better to have one event syntax for all commands
+I've included a new fix patch which solves the merge issue.
 
-jirka
+Regards.
+-- 
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
