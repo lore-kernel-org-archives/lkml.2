@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030397Ab2CVAb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 20:31:59 -0400
-Received: from 124-248-200-30.sunnyvision.com ([124.248.200.30]:38384 "EHLO
-	smtp3.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1030221Ab2CVAb5 (ORCPT
+	id S1030390Ab2CVAd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 20:33:59 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46928 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab2CVAd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 20:31:57 -0400
-X-Greylist: delayed 1229 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Mar 2012 20:31:57 EDT
-X-DKIM: OpenDKIM Filter v2.4.1 smtp3.edmhongkong.com E32AB50C1B
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com C888059413
-X-DomainKeys: Sendmail DomainKeys Filter v1.0.2 smtp1.edmhongkong.com C888059413
-Message-ID: <6U0Lff@pchome.com.tw>
-From: samuel@datacentre.com.hk
-To: TOTAL@vger.kernel.org, EMAIL@vger.kernel.org, LIST@vger.kernel.org
-Subject: Virtual Data Centre Rental Solution (Hong Kong Data Centre)
-X-Mailer: Mjs5w1R6vWN2PjWLpUr5QYEd
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Antivirus: avast! (VPS 120321-1, 2012/03/22), Outbound message
-X-Antivirus-Status: Clean
-Date: Thu, 22 Mar 2012 08:11:24 +0800 (HKT)
+	Wed, 21 Mar 2012 20:33:58 -0400
+Date: Thu, 22 Mar 2012 00:33:56 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] hugetlbfs: add err code in initializing module
+Message-ID: <20120322003356.GT6589@ZenIV.linux.org.uk>
+References: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q2M0W9Ul016212
 
-Dear Sir / Madam,
+On Sun, Mar 11, 2012 at 01:09:59PM +0800, Hillf Danton wrote:
+> Error code is added if fail to create inode kmem cache, and newly registered
+> hugetlb FS is unregistered if fail to mount, both for unlikely corner cases.
+> 
+> --- a/fs/hugetlbfs/inode.c	Sun Mar 11 12:46:38 2012
+> +++ b/fs/hugetlbfs/inode.c	Sun Mar 11 12:49:28 2012
+> @@ -1000,6 +1000,7 @@ static int __init init_hugetlbfs_fs(void
+>  	hugetlbfs_inode_cachep = kmem_cache_create("hugetlbfs_inode_cache",
+>  					sizeof(struct hugetlbfs_inode_info),
+>  					0, 0, init_once);
+> +	error = -ENOMEM;
+>  	if (hugetlbfs_inode_cachep == NULL)
+>  		goto out2;
+> 
+> @@ -1015,6 +1016,7 @@ static int __init init_hugetlbfs_fs(void
+>  	}
+> 
+>  	error = PTR_ERR(vfsmount);
+> +	unregister_filesystem(&hugetlbfs_fs_type);
 
-Good day, this is Samuel from Data Centre Hong Kong.
+Bloody bad idea, that...  Realistically, the proper action on failure here
+(as well as in sock_init(), etc.) is panic().  If we fail to OOM that early,
+the box is doomed anyway.
 
-Are you spending more time running IT than using it? Let the cloud take care of High Availability, resilience, security, backups and complete remote access and control. 
+Note that unregister_filesystem() in module init is *always* wrong; it's not
+an issue here (it's done too early to care about and realistically the box
+is not going anywhere - it'll panic when attempt to exec /sbin/init fails,
+if not earlier), but it's a damn bad example.
 
-Our Virtual Data Center Solutions are now on promotion; only USD $ 220/ month up and you can own your own Data Center with 7x24 professional support. Please check the features below.
+Consider a normal fs module.  Somebody loads it and in parallel with that
+we get a mount attempt on that fs type.  It comes between register and
+failure exits that causes unregister; at that point we are screwed since
+grabbing a reference to module as done by mount is enough to prevent
+exit, but not to prevent the failure of init.  As the result, module will
+get freed when init fails, mounted fs of that type be damned.
 
-"	5GB RAM
-"	10 CPU Cores
-"	250GB SAN Storage
-"	5 IP Addresses
-"	5TB Transfer
-"	USD $ 216/ month
+Again, this is not an issue here, but we had a bunch of real races of that
+sort - the fixes for those just went in.  We _still_ have b0rken ones -
+e.g. fuse and gfs2 are FUBAR in that respect and there's not a damn thing
+we can do with the current API - anything that registers several fs types
+can fail on the last register_filesystem() and that's it.
 
-All the service are hosting in Hong Kong ISO Certificated and TIA 942 Tier3+ Data Center.
-
-________________________________________
-If you are interested in the above server package, please feel free to contact me.
-The following is my contact information.
-Contact Number: (852) 6330 2444
-Email: samuel@datacentre.com.hk
-
-Best Regards
-Samuel Luk
-Data Centre Hong Kong
-
-
+BTW, why in the name of everything unholy does hugetlbfs have module_exit()?
+	* it's not a module
+	* it does kern_mount() in module_init, which pins it down anyway
+	* even if it wouldn't bother with kern_mount() (that can be worked
+around, by switching to simple_pin_fs() done on demand), we would still have
+the code in core kernel calling the functions in there.  Good luck working
+around _that_ in a race-free way...
