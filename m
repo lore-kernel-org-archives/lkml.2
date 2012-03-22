@@ -1,174 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2CVHpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 03:45:35 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33680 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2CVHpd (ORCPT
+	id S1755424Ab2CVHuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 03:50:21 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:63771 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2CVHuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 03:45:33 -0400
-Date: Thu, 22 Mar 2012 15:45:23 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Richard Zhao <richard.zhao@linaro.org>
-Subject: Re: [PATCH] ARM: dts: imx6q: add anatop regulators
-Message-ID: <20120322074520.GD2213@S2101-09.ap.freescale.net>
-References: <1332214139-6833-1-git-send-email-paul.liu@linaro.org>
+	Thu, 22 Mar 2012 03:50:18 -0400
+Date: Thu, 22 Mar 2012 08:50:13 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Michael J. Wang" <mjwang@broadcom.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/1] scheduler: minor improvement to
+ pick_next_highest_task_rt in linux-3.3
+Message-ID: <20120322075013.GB31810@gmail.com>
+References: <2EF88150C0EF2C43A218742ED384C1BC0FC83D6B@IRVEXCHMB08.corp.ad.broadcom.com>
+ <20120321014050.GA19766@zhy>
+ <2EF88150C0EF2C43A218742ED384C1BC0FC84327@IRVEXCHMB08.corp.ad.broadcom.com>
+ <20120321021229.GB19766@zhy>
+ <2EF88150C0EF2C43A218742ED384C1BC0FC8438B@IRVEXCHMB08.corp.ad.broadcom.com>
+ <1332320819.18960.468.camel@twins>
+ <2EF88150C0EF2C43A218742ED384C1BC0FC85433@IRVEXCHMB08.corp.ad.broadcom.com>
+ <1332358552.18960.501.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <1332214139-6833-1-git-send-email-paul.liu@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1332358552.18960.501.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 11:28:59AM +0800, Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, 2012-03-21 at 18:33 +0000, Michael J. Wang wrote:
+> > 
+> > OK.  Thanks.  I was afraid the details were too verbose when the fix
+> > was obvious to the experts.  Anyways, I now know the format you
+> > are expecting, so I will do better next time. 
 > 
-> Add anatop regulators to imx6q.dtsi for all imx6q platforms.
+> Since you took the trouble to write it, I thought it worth the trouble
+> to include.
 > 
-I would expect all those regulator device nodes be sorted by
-register offset, and for the devices sharing the same register they
-can be sorted by anatop-vol-bit-shift.
-
-I'm looking at the IMX6DQRM Rev. C, and commenting the differences
-I'm seeing from the document below.
-
-> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  arch/arm/boot/dts/imx6q.dtsi |   86 ++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 86 insertions(+), 0 deletions(-)
+> Very often Changelogs are way too spartan (my own included), I can't
+> recall the amount of times I've kicked myself for leaving out some - at
+> the time - obvious details.
 > 
-> diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-> index 263e8f3..dd41514 100644
-> --- a/arch/arm/boot/dts/imx6q.dtsi
-> +++ b/arch/arm/boot/dts/imx6q.dtsi
-> @@ -346,6 +346,92 @@
->  				compatible = "fsl,imx6q-anatop";
->  				reg = <0x020c8000 0x1000>;
->  				interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +
-> +				regulator-vddpu@140 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vddpu";
-> +					regulator-min-microvolt = <725000>;
-> +					regulator-max-microvolt = <1300000>;
-> +					regulator-always-on;
-> +					reg = <0x140>;
-> +					anatop-vol-bit-shift = <9>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <1>;
-> +					anatop-min-voltage = <725000>;
-> +					anatop-max-voltage = <1300000>;
+> So I prefer people to go overboard a bit and err on the side 
+> of too much information :-)
 
-1.450V
+Yeah. Current trends are: for every 1000 patches sent there's 
+maybe one patch that has a tad too much information in its 
+changelog - but instead offers good entertainment in the 
+changelog so it's still perfectly fine. 990 patches have too 
+little information. The remaining 9 are just fine.
 
-> +				};
-> +
-> +				regulator-vddcore@140 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "cpu";
-> +					regulator-min-microvolt = <725000>;
-> +					regulator-max-microvolt = <1300000>;
-> +					regulator-always-on;
-> +					reg = <0x140>;
-> +					anatop-vol-bit-shift = <0>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <1>;
-> +					anatop-min-voltage = <725000>;
-> +					anatop-max-voltage = <1300000>;
+Thanks,
 
-Ditto
-
-> +				};
-> +
-> +				regulator-vddsoc@140 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vddsoc";
-> +					regulator-min-microvolt = <725000>;
-> +					regulator-max-microvolt = <1300000>;
-> +					regulator-always-on;
-> +					reg = <0x140>;
-> +					anatop-vol-bit-shift = <18>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <1>;
-> +					anatop-min-voltage = <725000>;
-> +					anatop-max-voltage = <1300000>;
-
-Ditto
-
-> +				};
-> +
-> +				regulator-2p5@130 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vdd2p5";
-> +					regulator-min-microvolt = <2000000>;
-> +					regulator-max-microvolt = <2775000>;
-> +					regulator-always-on;
-> +					reg = <0x130>;
-> +					anatop-vol-bit-shift = <8>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <0>;
-> +					anatop-min-voltage = <2000000>;
-> +					anatop-max-voltage = <2775000>;
-
-2.75V
-
-> +				};
-> +
-> +				regulator-1p1@110 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vdd1p1";
-> +					regulator-min-microvolt = <800000>;
-> +					regulator-max-microvolt = <1400000>;
-> +					regulator-always-on;
-> +					reg = <0x110>;
-> +					anatop-vol-bit-shift = <8>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <4>;
-> +					anatop-min-voltage = <800000>;
-> +					anatop-max-voltage = <1400000>;
-
-1.375V
-
-> +				};
-> +
-> +				regulator-3p0@120 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vdd3p0";
-> +					regulator-min-microvolt = <2800000>;
-> +					regulator-max-microvolt = <3150000>;
-> +					regulator-always-on;
-> +					reg = <0x120>;
-> +					anatop-vol-bit-shift = <8>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <7>;
-
-0
-
-> +					anatop-min-voltage = <2800000>;
-
-2.625V
-
-> +					anatop-max-voltage = <3150000>;
-
-3.4V
-
-> +				};
->  			};
->  
->  			usbphy@020c9000 { /* USBPHY1 */
-> -- 
-> 1.7.9.1
-> 
-
--- 
-Regards,
-Shawn
+	Ingo
