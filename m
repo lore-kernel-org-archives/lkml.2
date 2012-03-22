@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759930Ab2CVUxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:53:21 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48836 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759880Ab2CVUxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:53:18 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH] Kbuild: centralize MKIMAGE and cmd_uimage definitions
-Date: Thu, 22 Mar 2012 16:53:13 -0400
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        nico@fluxnic.net, Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        Michal Simek <monstr@monstr.eu>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1331931835-12346-1-git-send-email-swarren@wwwdotorg.org> <4F6B7226.8000102@wwwdotorg.org>
-In-Reply-To: <4F6B7226.8000102@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1752955.pLbPd6Gma6";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1030890Ab2CVU5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:57:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:56960 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756892Ab2CVU5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 16:57:11 -0400
+Date: Thu, 22 Mar 2012 16:56:49 -0400 (EDT)
+Message-Id: <20120322.165649.32205268396882350.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, nyh@il.ibm.com,
+        nyh@math.technion.ac.il
+Subject: Re: [PULL] vhost-net/virtio: fixes for 3.4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120322082718.GA11258@redhat.com>
+References: <20120320145010.GA31570@redhat.com>
+	<20120322082718.GA11258@redhat.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203221653.19268.vapier@gentoo.org>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Mar 2012 13:56:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1752955.pLbPd6Gma6
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Thu, 22 Mar 2012 10:27:19 +0200
 
-On Thursday 22 March 2012 14:40:38 Stephen Warren wrote:
-> On 03/16/2012 03:03 PM, Stephen Warren wrote:
-> > All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
-> > to avoid duplication.
-> >=20
-> > All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
-> > parameterized version in Makefile.lib to avoid duplication.
->=20
-> Does this change look reasonable? It has acks from people working on 4
-> of the 7 affected architectures; would you prefer acks from all?
+> On Tue, Mar 20, 2012 at 04:50:41PM +0200, Michael S. Tsirkin wrote:
+>> The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
+>> 
+>>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
+>> 
+>> are available in the git repository at:
+>> 
+>>   ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
+>> 
+>>   (ssh url as git.kernel.org seems down at the moment, when it comes up
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
+>>    should be the equivalent).
 
-isn't that what linux-next is for ? ;)
-=2Dmike
+Neither of these URL's work for me:
 
---nextPart1752955.pLbPd6Gma6
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+[davem@drr net]$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
+fatal: Couldn't find remote ref for_davem
+[davem@drr net]$ git pull ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
+Enter passphrase for key '/home/davem/.ssh/davem': 
+Permission denied (publickey).
+fatal: The remote end hung up unexpectedly
+[davem@drr net]$ 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJPa5E/AAoJEEFjO5/oN/WBlkYQAJIXU15l2VlEyOx8RzoCS9jW
-Ki02NiRu2kwnisR+QR4/rQqemlL7tRSK5I2FX8CHnaUU7+RVubB72/gfgvZsNATW
-46cJA5mjcEzNHQanIkR/qGKYdDUKAlMhWvKojflEGer/ri935vxclxpJsUFPtaup
-0qYwdAzZRYiW6+NvZO38H8lUf5yx0hM7dBa6VRSaSxu/dk6B4WQfrvErq1FpYCZL
-5zaFNLSz5S6vszYKcIsAUIy6bnwjoCL7uQEoLVd7Y9eU6W+G4RJg1RsURYnX/YYZ
-qltVjIXkl+QHWddQZaausgxyZAAZCMvOEZ/stOquNUcp3UpCS2qmkJZXU9+GLjH2
-4eyScE6myq/IDGRdz67v9Lmw4iiyVVZF2LFatBs8fdlrS9+hkYBNqdv4tVEUC7gw
-SufZJ2nsnR73loViROh2hcvAz56/vRMWt7kASNQ8BM1APyOKpQ98LA6K1liu/MXy
-+ZR5+3SV7Rv/nMZ2CbSKslZCPcCDegwPLrKx6KvTG+XMHkh9AGsISnn/Q1vBr0t9
-6CXuN7iQBTwaeMXeP+o221fd+qgprWW8TB+cYL9VfT0gON7KowDupJJ3A4VOHH/B
-RGnbR+jZPdCn0dSa1qFmY/KgIwc6wnpqjJoQLhGlymJs+850KWWl4Eih+eOBqvOH
-RVn2rPjAGCnIKXc0NOe5
-=0sml
------END PGP SIGNATURE-----
-
---nextPart1752955.pLbPd6Gma6--
+If you're sending me signed pull requests that thus require a newer
+version of GIT, please don't.
