@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971Ab2CVJrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:47:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46342 "EHLO mx1.redhat.com"
+	id S1757177Ab2CVJrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43325 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab2CVJrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:47:00 -0400
-Subject: [PATCH] virtio-spec: fix typo
+	id S1754982Ab2CVJrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:47:15 -0400
+Subject: [RFC PATCH] virtio-spec: ack the announce notification through ctrl_vq
 To: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, mst@redhat.com
 From: Jason Wang <jasowang@redhat.com>
-Date: Thu, 22 Mar 2012 17:46:47 +0800
-Message-ID: <20120322094647.26280.72051.stgit@jason-ThinkPad-T400>
+Date: Thu, 22 Mar 2012 17:47:06 +0800
+Message-ID: <20120322094706.26303.83633.stgit@jason-ThinkPad-T400>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,39 +20,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+During link announcement, driver needs a method to notify device that it has
+received the notification and let it clear the VIRITO_NET_S_ANNOUNCE bit in the
+status field. Doing this through a dedicated command looks suitable for all
+platforms (especially for the ones who don't trap the status read or write) with
+a ctrl vq and can solve the race between host and guest.
+
+So this patch makes VIRTIO_NET_F_ANNOUNCE depends on VIRTIO_NET_F_CTRL_VQ and
+introduces a dedicated command VIRTIO_NET_CTRL_ANNOUNCE_ACK to let device clear
+the VIRTIO_NET_S_ANNOUNCE bit in the status field.
+
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- virtio-0.9.4.lyx |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ virtio-0.9.4.lyx |   63 +++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 57 insertions(+), 6 deletions(-)
 
 diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
-index 6c7bab1..9d30977 100644
+index 9d30977..d01284c 100644
 --- a/virtio-0.9.4.lyx
 +++ b/virtio-0.9.4.lyx
-@@ -58,6 +58,7 @@
- \html_be_strict false
- \author -608949062 "Rusty Russell,,," 
- \author 1531152142 "pbonzini" 
-+\author 2090695081 "Jason" 
- \end_header
- 
- \begin_body
-@@ -4657,9 +4658,14 @@ Control Virtqueue
- \end_layout
- 
- \begin_layout Standard
--The driver uses the control virtqueue (if VIRTIO_NET_F_VTRL_VQ is negotiated)
-- to send commands to manipulate various features of the device which would
-- not easily map into the configuration space.
-+The driver uses the control virtqueue (if VIRTIO_NET_F_
-+\change_inserted 2090695081 1332409259
-+C
-+\change_deleted 2090695081 1332409259
-+V
+@@ -4013,8 +4013,12 @@ configuration
+ layout Two configuration fields are currently defined.
+  The mac address field always exists (though is only valid if VIRTIO_NET_F_MAC
+  is set), and the status field only exists if VIRTIO_NET_F_STATUS is set.
+- Two bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP
+- and VIRTIO_NET_S_ANNOUNCE.
++ Two 
++\change_inserted 2090695081 1332406434
++read-only 
 +\change_unchanged
-+TRL_VQ is negotiated) to send commands to manipulate various features of
-+ the device which would not easily map into the configuration space.
++bits are currently defined for the status field: VIRTIO_NET_S_LINK_UP and
++ VIRTIO_NET_S_ANNOUNCE.
+  
+ \begin_inset listings
+ inline false
+@@ -4902,18 +4906,58 @@ Gratuitous Packet Sending
  \end_layout
  
  \begin_layout Standard
+-If the driver negotiates the VIRTIO_NET_F_GUEST_ANNOUNCE, it can ask the
+- guest to send gratuitous packets; this is usually done after the guest
+- has been physically migrated, and needs to announce its presence on the
+- new network links.
++If the driver negotiates the VIRTIO_NET_F_GUEST_ANNOUNCE
++\change_inserted 2090695081 1332407810
++ (depends on VIRTIO_NET_F_CTRL_VQ)
++\change_unchanged
++, it can ask the guest to send gratuitous packets; this is usually done
++ after the guest has been physically migrated, and needs to announce its
++ presence on the new network links.
+  (As hypervisor does not have the knowledge of guest network configuration
+  (eg.
+  tagged vlan) it is simplest to prod the guest in this way).
++\change_inserted 2090695081 1332405026
++
++\end_layout
++
++\begin_layout Standard
++
++\change_inserted 2090695081 1332405026
++\begin_inset listings
++inline false
++status open
++
++\begin_layout Plain Layout
++
++\change_inserted 2090695081 1332405658
++
++#define VIRTIO_NET_CTRL_ANNOUNCE       3
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 2090695081 1332407582
++
++ #define VIRTIO_NET_CTRL_ANNOUNCE_ACK             0
++\end_layout
++
++\end_inset
++
++
++\change_unchanged
++
+ \end_layout
+ 
+ \begin_layout Standard
+ The Guest needs to check VIRTIO_NET_S_ANNOUNCE bit in status field when
+  it notices the changes of device configuration.
++
++\change_inserted 2090695081 1332407079
++ The command VIRTIO_NET_CTRL_ANNOUNCE_ACK is used to indicate that driver
++ has recevied the notification and device would clear the VIRTIO_NET_S_ANNOUNCE
++ bit in the status filed after it received this command.
++\change_unchanged
++
+ \end_layout
+ 
+ \begin_layout Standard
+@@ -4921,7 +4965,14 @@ Processing this notification involves:
+ \end_layout
+ 
+ \begin_layout Enumerate
++
++\change_inserted 2090695081 1332405963
++Sending VIRTIO_NET_CTRL_ANNOUNCE_ACK command through control vq.
++ 
++\change_deleted 2090695081 1332405924
+ Clearing VIRTIO_NET_S_ANNOUNCE bit in the status field.
++\change_unchanged
++
+ \end_layout
+ 
+ \begin_layout Enumerate
 
