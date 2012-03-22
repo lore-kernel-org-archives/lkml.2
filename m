@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab2CVVBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:01:15 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36307 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab2CVVBN (ORCPT
+	id S1756330Ab2CVVCZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:02:25 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:50847 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab2CVVCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:01:13 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Julian Wollrath <jwollrath@web.de>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] usb: Put USB Kconfig items back under USB.
-Date: Thu, 22 Mar 2012 14:01:07 -0700
-Message-Id: <1332450067-16600-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Thu, 22 Mar 2012 17:02:24 -0400
+X-Greylist: delayed 1413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 17:02:23 EDT
+MIME-Version: 1.0
+Date: Thu, 22 Mar 2012 16:38:46 -0400
+Message-ID: <CAEwYmTJzzUi1qfRHYfZg77g1K7myNsAh2oDiY7hWxzRO5hQGHA@mail.gmail.com>
+Subject: sysfs binary attribute API flux
+From: Jonathan McCune <jonmccune@cmu.edu>
+To: linux-kernel@vger.kernel.org
+Cc: "Jonathan M. McCune" <jonmccune@cmu.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
+X-SMTP-Spam-Clean: 8% (
+ BODY_ENDS_IN_URL_NOT_WWW 0, BODY_SIZE_1000_1099 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_EDU_TLD 0, TO_NO_NAME 0, WEBMAIL_SOURCE 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HELO_GMAIL 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __RDNS_GMAIL 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_WWW 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Greetings,
 
-commit 53c6bc24fdc8db87109a5760579cbb060fa644cf (usb: Don't make
-USB_ARCH_HAS_{XHCI,OHCI,EHCI} depend on USB_SUPPORT.)  Removed the
-dependency of the USB_ARCH_HAS_* symbols on USB_SUPPORT.  However the
-resulting Kconfig somehow caused many of the USB configuration items
-to appear under the top level devices menu.
+I maintain a Linux kernel module for a research project*, where it is
+necessary to move some binary data from userspace into the kernel. I
+have been using sysfs's 'struct bin_attribute'.  Unfortunately, every
+few kernel versions, my code breaks because of a change in the
+definition of some elements in this struct.  For example, kernel
+versions 2.6.20, 2.6.32, and 2.6.38 each define the 'read' and 'write'
+function pointers differently. I will spare the inline diff, but they
+can each be seen here:
 
-To fix this we reunite the 'menuconfig USB_SUPPORT' with the 'if
-USB_SUPPORT', and the config items magically go back to their desired
-location.
+http://lxr.linux.no/linux+v2.6.32.59/include/linux/sysfs.h#L65
+http://lxr.linux.no/linux+v2.6.38.8/include/linux/sysfs.h#L88
+http://lxr.linux.no/linux+v2.6.20.21/include/linux/sysfs.h#L54
 
-Reported-by: Julian Wollrath <jwollrath@web.de>
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/usb/Kconfig |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+My question: is there some other interface that I should be using?  Am
+I using sysfs incorrectly?  All of the documentation I've been able to
+find seems to strongly encourage the use of sysfs.
 
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index e4405e0..437a77e 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -2,14 +2,6 @@
- # USB device configuration
- #
- 
--menuconfig USB_SUPPORT
--	bool "USB support"
--	depends on HAS_IOMEM
--	default y
--	---help---
--	  This option adds core support for Universal Serial Bus (USB).
--	  You will also need drivers from the following menu to make use of it.
--
- # many non-PCI SOC chips embed OHCI
- config USB_ARCH_HAS_OHCI
- 	boolean
-@@ -63,6 +55,14 @@ config USB_ARCH_HAS_XHCI
- 	boolean
- 	default PCI
- 
-+menuconfig USB_SUPPORT
-+	bool "USB support"
-+	depends on HAS_IOMEM
-+	default y
-+	---help---
-+	  This option adds core support for Universal Serial Bus (USB).
-+	  You will also need drivers from the following menu to make use of it.
-+
- if USB_SUPPORT
- 
- config USB_COMMON
--- 
-1.7.2.3
+http://kernel.org/doc/Documentation/filesystems/sysfs.txt
 
+cc appreciated in reply.
+
+Many thanks,
+-Jon
+
+* http://flickertcb.sourceforge.net/
