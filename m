@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031144Ab2CVV3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:29:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031055Ab2CVV3n (ORCPT
+	id S1031123Ab2CVVbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:31:18 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53658 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1031055Ab2CVVbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:29:43 -0400
-Date: Thu, 22 Mar 2012 14:29:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH] memcg: change behavior of moving charges at task move
-Message-Id: <20120322142941.01e601c0.akpm@linux-foundation.org>
-In-Reply-To: <4F69A4C4.4080602@jp.fujitsu.com>
-References: <4F69A4C4.4080602@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 22 Mar 2012 17:31:15 -0400
+X-Authenticated: #9008106
+X-Provags-ID: V01U2FsdGVkX19lYcIENF1llWxUdmE/NQ4AvlGdZlAColoSKPhcTy
+	Kx0FCv2IcUJ5VV
+Date: Thu, 22 Mar 2012 22:31:12 +0100
+From: Michael Brunner <mibru@gmx.de>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
+Message-ID: <20120322223112.291e0c59@mail.gmx.de>
+In-Reply-To: <4F6B8E1B.9080802@linux.intel.com>
+References: <20120322211903.6776ab18@mail.gmx.de>
+	<4F6B8E1B.9080802@linux.intel.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 18:52:04 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> These boards should already be supported by the following BIOS check.
+> As the DMI_BOARD_NAME was changing, it was Kontron's recommendation
+> to use the FRI2 prefix in the DMI_BIOS_VERSION.
+> 
+> 
+> >  	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
+> >  	if (cmp && strnstr(cmp, "FRI2", 4))
+> 
+> Is this not working for you? If not, what is the DMI_BIOS_VERSION
+> reported by your board?
+>
+> And for clarification, we are talking about this right:
+> http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
 
-> As discussed before, I post this to fix the spec and implementation of task moving.
-> Then, do you think what target kernel version should be ? 3.4/3.5 ?
-> but yes, it may be late for 3.4....
+My changes refer to the embedded module with the project code NTC1:
+<http://us.kontron.com/products/computeronmodules/com+express/com+express+mini/comemtt10.html>
 
-Well, the key information here is "what effect does the bug have upon
-users".
+So unfortunately the FRI2 checks won't work for this.
 
-> In documentation, it's said that 'shared anon are not moved'.
-> But in implementation, the check was wrong.
-> 
->   if (!move_anon() || page_mapcount(page) > 2)
-> 
-> Ah, memcg has been moving shared anon pages for a long time.
-> 
-> Then, here is a discussion about handling of shared anon pages.
-> 
->  - It's complex
->  - Now, shared file caches are moved in force.
->  - It adds unclear check as page_mapcount(). To do correct check,
->    we should check swap users, etc.
->  - No one notice this implementation behavior. So, no one get benefit
->    from the design.
->  - In general, once task is moved to a cgroup for running, it will not
->    be moved....
->  - Finally, we have control knob as memory.move_charge_at_immigrate.
-> 
-> Here is a patch to allow moving shared pages, completely. This makes
-> memcg simpler and fix current broken code.
-> 
-> Note:
->  IIUC, libcgroup's cgroup daemon moves tasks after exec().
->  So, it's not affected.
->  libcgroup's command "cgexec" does move itsef to a memcg and call exec()
->  without fork(). it's not affected.
-> 
-> Changelog:
->  - fixed PageAnon() check.
->  - remove call of lookup_swap_cache()
->  - fixed Documentation.
-
-But you forgot to tell us :(
-
+Michael
