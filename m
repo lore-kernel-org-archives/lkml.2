@@ -1,314 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030765Ab2CVDCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 23:02:03 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:60661 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964854Ab2CVDB5 (ORCPT
+	id S1030900Ab2CVDCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 23:02:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24279 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030799Ab2CVDCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 23:01:57 -0400
-Message-ID: <4F6A92FC.6060702@panasas.com>
-Date: Wed, 21 Mar 2012 19:48:28 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, <keyrings@linux-nfs.org>,
-        <linux-security-module@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout()
- API
-References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com>
-In-Reply-To: <4F691383.5040506@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Mar 2012 23:02:41 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: mingo@elte.hu, suresh.b.siddha@intel.com, jwboyer@redhat.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, yinghai@kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] x86/apic_ops: Replace apic_ops with x86_apic_ops.
+Date: Wed, 21 Mar 2012 22:58:09 -0400
+Message-Id: <1332385090-18056-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
+References: <1332294154.16101.97.camel@sbsiddha-desk.sc.intel.com>
+ <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F6A9647.008E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 04:32 PM, Boaz Harrosh wrote:
-> 
-> In the blasphemous occasions that a the Kernel must call a user-mode program
-> half of the times it is more robust to not wait forever but limit the wait
-> for a specified timeout.
-> 
-> So add a new  call_usermodehelper_timeout() that implements that.
-> (Users of this new API will be added once this API is in mainline)
-> 
-> call_usermodehelper_fns() is added an extra timeout parameter which
-> is then implemented in call_usermodehelper_exec. The few users of
-> call_usermodehelper_fns() are also changed in this patch.
-> 
-> Since now the executing threads might come back after the waiting
-> thread has returned, do to a timeout. I used a simple kref pattern
-> to govern the life time of the subprocess_info struct.
-> 
-> Should some wait-forever callers today, be converted to this new
-> schema?
-> 
-> CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-> ---
->  fs/exec.c                   |    2 +-
->  include/linux/kmod.h        |   15 +++++++++++++--
->  kernel/kmod.c               |   29 +++++++++++++++++++++--------
->  kernel/sys.c                |    2 +-
->  security/keys/request_key.c |    2 +-
->  5 files changed, 37 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 92ce83a..e696081 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -2197,7 +2197,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
->  		}
->  
->  		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
-> -					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
-> +					NULL, UMH_WAIT_EXEC, 0, umh_pipe_setup,
->  					NULL, &cprm);
->  		argv_free(helper_argv);
->  		if (retval) {
-> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-> index 5a89c00..eccc3f5 100644
-> --- a/include/linux/kmod.h
-> +++ b/include/linux/kmod.h
-> @@ -25,6 +25,7 @@
->  #include <linux/compiler.h>
->  #include <linux/workqueue.h>
->  #include <linux/sysctl.h>
-> +#include <linux/kref.h>
->  
->  #define KMOD_PATH_LEN 256
->  
-> @@ -55,12 +56,14 @@ enum umh_wait {
->  };
->  
->  struct subprocess_info {
-> +	struct kref kref;
->  	struct work_struct work;
->  	struct completion *complete;
->  	char *path;
->  	char **argv;
->  	char **envp;
->  	enum umh_wait wait;
-> +	unsigned long wait_timeout;
->  	int retval;
->  	int (*init)(struct subprocess_info *info, struct cred *new);
->  	void (*cleanup)(struct subprocess_info *info);
-> @@ -69,14 +72,22 @@ struct subprocess_info {
->  
->  extern int
->  call_usermodehelper_fns(char *path, char **argv, char **envp,
-> -			enum umh_wait wait,
-> +			enum umh_wait wait, unsigned long timeout,
->  			int (*init)(struct subprocess_info *info, struct cred *new),
->  			void (*cleanup)(struct subprocess_info *), void *data);
->  
->  static inline int
->  call_usermodehelper(char *path, char **argv, char **envp, enum umh_wait wait)
->  {
-> -	return call_usermodehelper_fns(path, argv, envp, wait,
-> +	return call_usermodehelper_fns(path, argv, envp, wait, 0,
-> +				       NULL, NULL, NULL);
-> +}
-> +
-> +static inline int
-> +call_usermodehelper_timeout(char *path, char **argv, char **envp,
-> +			    enum umh_wait wait, unsigned long timeout)
-> +{
-> +	return call_usermodehelper_fns(path, argv, envp, wait, timeout,
->  				       NULL, NULL, NULL);
->  }
->  
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 3cb7457..a72eefa 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -129,7 +129,7 @@ int __request_module(bool wait, const char *fmt, ...)
->  	trace_module_request(module_name, wait, _RET_IP_);
->  
->  	ret = call_usermodehelper_fns(modprobe_path, argv, envp,
-> -			wait ? UMH_WAIT_PROC : UMH_WAIT_EXEC,
-> +			wait ? UMH_WAIT_PROC : UMH_WAIT_EXEC, 0,
->  			NULL, NULL, NULL);
->  
->  	atomic_dec(&kmod_concurrent);
-> @@ -191,8 +191,11 @@ fail:
->  	do_exit(0);
->  }
->  
-> -static void call_usermodehelper_freeinfo(struct subprocess_info *info)
-> +static void call_usermodehelper_freeinfo(struct kref *kref)
->  {
-> +	struct subprocess_info *info =
-> +		container_of(kref, struct subprocess_info, kref);
-> +
->  	if (info->cleanup)
->  		(*info->cleanup)(info);
->  	kfree(info);
-> @@ -235,6 +238,7 @@ static int wait_for_helper(void *data)
->  	}
->  
->  	complete(sub_info->complete);
-> +	kref_put(&sub_info->kref, call_usermodehelper_freeinfo);
->  	return 0;
->  }
->  
-> @@ -258,7 +262,8 @@ static void __call_usermodehelper(struct work_struct *work)
->  
->  	switch (wait) {
->  	case UMH_NO_WAIT:
-> -		call_usermodehelper_freeinfo(sub_info);
-> +		kref_put(&sub_info->kref,  call_usermodehelper_freeinfo);
-> +		kref_put(&sub_info->kref,  call_usermodehelper_freeinfo);
->  		break;
->  
->  	case UMH_WAIT_PROC:
-> @@ -269,6 +274,7 @@ static void __call_usermodehelper(struct work_struct *work)
->  		if (pid < 0)
->  			sub_info->retval = pid;
->  		complete(sub_info->complete);
-> +		kref_put(&sub_info->kref, call_usermodehelper_freeinfo);
->  	}
->  }
->  
-> @@ -387,6 +393,7 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
->  	if (!sub_info)
->  		goto out;
->  
-> +	kref_init(&sub_info->kref);
->  	INIT_WORK(&sub_info->work, __call_usermodehelper);
->  	sub_info->path = path;
->  	sub_info->argv = argv;
-> @@ -452,22 +459,27 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info,
->  
->  	sub_info->complete = &done;
->  	sub_info->wait = wait;
-> +	if (!sub_info->wait_timeout)
-> +		sub_info->wait_timeout = MAX_SCHEDULE_TIMEOUT;
->  
-> +	/* Balanced in __call_usermodehelper or wait_for_helper */
-> +	kref_get(&sub_info->kref);
->  	queue_work(khelper_wq, &sub_info->work);
->  	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
->  		goto unlock;
-> -	wait_for_completion(&done);
-> -	retval = sub_info->retval;
-> -
-> +	if (likely(wait_for_completion_timeout(&done, sub_info->wait_timeout)))
-> +		retval = sub_info->retval;
-> +	else
-> +		retval = -ETIMEDOUT;
->  out:
-> -	call_usermodehelper_freeinfo(sub_info);
-> +	kref_put(&sub_info->kref, call_usermodehelper_freeinfo);
->  unlock:
->  	helper_unlock();
->  	return retval;
->  }
->  
->  int call_usermodehelper_fns(char *path, char **argv, char **envp,
-> -			enum umh_wait wait,
-> +			enum umh_wait wait, unsigned long timeout,
->  			int (*init)(struct subprocess_info *info, struct cred *new),
->  			void (*cleanup)(struct subprocess_info *), void *data)
->  {
-> @@ -480,6 +492,7 @@ int call_usermodehelper_fns(char *path, char **argv, char **envp,
->  		return -ENOMEM;
->  
->  	call_usermodehelper_setfns(info, init, cleanup, data);
-> +	info->wait_timeout = timeout;
->  
->  	return call_usermodehelper_exec(info, wait);
->  }
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 9947fb0..a9079d1 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -2013,7 +2013,7 @@ int orderly_poweroff(bool force)
->  		goto out;
->  	}
->  
-> -	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT,
-> +	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT, 0,
->  				      NULL, argv_cleanup, NULL);
->  
->    out:
-> diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-> index b8cc38c..28050ea 100644
-> --- a/security/keys/request_key.c
-> +++ b/security/keys/request_key.c
-> @@ -93,7 +93,7 @@ static void umh_keys_cleanup(struct subprocess_info *info)
->  static int call_usermodehelper_keys(char *path, char **argv, char **envp,
->  			 struct key *session_keyring, enum umh_wait wait)
->  {
-> -	return call_usermodehelper_fns(path, argv, envp, wait,
-> +	return call_usermodehelper_fns(path, argv, envp, wait, 0,
->  				       umh_keys_init, umh_keys_cleanup,
->  				       key_get(session_keyring));
->  }
+. which makes the code fit within the rest of the x86_ops functions.
 
-Hi Oleg, Tetsuo, and Andrew
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[v1: Changed x86_apic -> x86_ioapic per Yinghai Lu <yinghai@kernel.org> suggestion]
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/include/asm/io_apic.h  |   40 +++++++++++++++++++++--------
+ arch/x86/include/asm/x86_init.h |    8 ++++++
+ arch/x86/kernel/apic/io_apic.c  |   54 ++++----------------------------------
+ arch/x86/kernel/setup.c         |    2 +-
+ arch/x86/kernel/x86_init.c      |    8 ++++++
+ 5 files changed, 52 insertions(+), 60 deletions(-)
 
-Tetsuo Handa has brought to my attention the existence of this patch:
-	http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=ccc7cdcf6ecf7d92300dc83315dde0efb2907f39
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 190d8c2..ba1b11a 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -5,6 +5,7 @@
+ #include <asm/mpspec.h>
+ #include <asm/apicdef.h>
+ #include <asm/irq_vectors.h>
++#include <asm/x86_init.h>
+ 
+ /*
+  * Intel IO-APIC support for SMP and UP systems.
+@@ -21,15 +22,6 @@
+ #define IO_APIC_REDIR_LEVEL_TRIGGER	(1 << 15)
+ #define IO_APIC_REDIR_MASKED		(1 << 16)
+ 
+-struct io_apic_ops {
+-	void (*init)(void);
+-	unsigned int (*read)(unsigned int apic, unsigned int reg);
+-	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
+-	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
+-};
+-
+-void __init set_io_apic_ops(const struct io_apic_ops *);
+-
+ /*
+  * The structure of the IO-APIC:
+  */
+@@ -156,7 +148,6 @@ struct io_apic_irq_attr;
+ extern int io_apic_set_pci_routing(struct device *dev, int irq,
+ 		 struct io_apic_irq_attr *irq_attr);
+ void setup_IO_APIC_irq_extra(u32 gsi);
+-extern void ioapic_and_gsi_init(void);
+ extern void ioapic_insert_resources(void);
+ 
+ int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
+@@ -185,12 +176,35 @@ extern void mp_save_irq(struct mpc_intsrc *m);
+ 
+ extern void disable_ioapic_support(void);
+ 
++
++void __init native_ioapic_init_mappings(void);
++unsigned int native_ioapic_read(unsigned int apic, unsigned int reg);
++void native_ioapic_write(unsigned int apic, unsigned int reg,
++			 unsigned int val);
++void native_ioapic_modify(unsigned int apic, unsigned int reg,
++			  unsigned int val);
++
++static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
++{
++	return x86_ioapic.read(apic, reg);
++}
++
++static inline void io_apic_write(unsigned int apic, unsigned int reg,
++				 unsigned int value)
++{
++	x86_ioapic.write(apic, reg, value);
++}
++
++static inline void io_apic_modify(unsigned int apic, unsigned int reg,
++				  unsigned int value)
++{
++	x86_ioapic.modify(apic, reg, value);
++}
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+ #define setup_ioapic_ids_from_mpc x86_init_noop
+ static const int timer_through_8259 = 0;
+-static inline void ioapic_and_gsi_init(void) { }
+ static inline void ioapic_insert_resources(void) { }
+ #define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+@@ -212,6 +226,10 @@ static inline int restore_ioapic_entries(void)
+ 
+ static inline void mp_save_irq(struct mpc_intsrc *m) { };
+ static inline void disable_ioapic_support(void) { }
++#define native_ioapic_init_mappings NULL
++#define native_ioapic_read NULL
++#define native_ioapic_write NULL
++#define native_ioapic_modify NULL
+ #endif
+ 
+ #endif /* _ASM_X86_IO_APIC_H */
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 517d476..a3730cc 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -182,10 +182,18 @@ struct x86_msi_ops {
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
+ };
+ 
++struct x86_ioapic_ops {
++	void (*init)(void);
++	unsigned int (*read)(unsigned int apic, unsigned int reg);
++	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
++	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
++};
++
+ extern struct x86_init_ops x86_init;
+ extern struct x86_cpuinit_ops x86_cpuinit;
+ extern struct x86_platform_ops x86_platform;
+ extern struct x86_msi_ops x86_msi;
++extern struct x86_ioapic_ops x86_ioapic;
+ 
+ extern void x86_init_noop(void);
+ extern void x86_init_uint_noop(unsigned int unused);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index bf120234..9a15d4b 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -67,25 +67,6 @@
+ #define for_each_irq_pin(entry, head) \
+ 	for (entry = head; entry; entry = entry->next)
+ 
+-static void __init __ioapic_init_mappings(void);
+-static unsigned int __io_apic_read(unsigned int apic, unsigned int reg);
+-static void __io_apic_write(unsigned int apic, unsigned int reg,
+-			    unsigned int val);
+-static void __io_apic_modify(unsigned int apic, unsigned int reg,
+-			     unsigned int val);
+-
+-static struct io_apic_ops io_apic_ops = {
+-	.init = __ioapic_init_mappings,
+-	.read = __io_apic_read,
+-	.write = __io_apic_write,
+-	.modify = __io_apic_modify,
+-};
+-
+-void __init set_io_apic_ops(const struct io_apic_ops *ops)
+-{
+-	io_apic_ops = *ops;
+-}
+-
+ /*
+  *      Is the SiS APIC rmw bug present ?
+  *      -1 = don't know, 0 = no, 1 = yes
+@@ -313,24 +294,6 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+ 	irq_free_desc(at);
+ }
+ 
+-static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
+-{
+-	return io_apic_ops.read(apic, reg);
+-}
+-
+-static inline void io_apic_write(unsigned int apic, unsigned int reg,
+-				 unsigned int value)
+-{
+-	io_apic_ops.write(apic, reg, value);
+-}
+-
+-static inline void io_apic_modify(unsigned int apic, unsigned int reg,
+-				  unsigned int value)
+-{
+-	io_apic_ops.modify(apic, reg, value);
+-}
+-
+-
+ struct io_apic {
+ 	unsigned int index;
+ 	unsigned int unused[3];
+@@ -351,15 +314,15 @@ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
+ 	writel(vector, &io_apic->eoi);
+ }
+ 
+-static unsigned int __io_apic_read(unsigned int apic, unsigned int reg)
++unsigned int native_ioapic_read(unsigned int apic, unsigned int reg)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(reg, &io_apic->index);
+ 	return readl(&io_apic->data);
+ }
+ 
+-static void __io_apic_write(unsigned int apic, unsigned int reg,
+-			    unsigned int value)
++void native_ioapic_write(unsigned int apic, unsigned int reg,
++			 unsigned int value)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(reg, &io_apic->index);
+@@ -372,8 +335,8 @@ static void __io_apic_write(unsigned int apic, unsigned int reg,
+  *
+  * Older SiS APIC requires we rewrite the index register
+  */
+-static void __io_apic_modify(unsigned int apic, unsigned int reg,
+-			     unsigned int value)
++void native_ioapic_modify(unsigned int apic, unsigned int reg,
++			  unsigned int value)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 
+@@ -3910,12 +3873,7 @@ static struct resource * __init ioapic_setup_resources(int nr_ioapics)
+ 	return res;
+ }
+ 
+-void __init ioapic_and_gsi_init(void)
+-{
+-	io_apic_ops.init();
+-}
+-
+-static void __init __ioapic_init_mappings(void)
++void __init native_ioapic_init_mappings(void)
+ {
+ 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
+ 	struct resource *ioapic_res;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d7d5099..7eaef1a 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1016,7 +1016,7 @@ void __init setup_arch(char **cmdline_p)
+ 	init_cpu_to_node();
+ 
+ 	init_apic_mappings();
+-	ioapic_and_gsi_init();
++	x86_ioapic.init();
+ 
+ 	kvm_guest_init();
+ 
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 947a06c..df870d3 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -18,6 +18,7 @@
+ #include <asm/e820.h>
+ #include <asm/time.h>
+ #include <asm/irq.h>
++#include <asm/io_apic.h>
+ #include <asm/pat.h>
+ #include <asm/tsc.h>
+ #include <asm/iommu.h>
+@@ -117,3 +118,10 @@ struct x86_msi_ops x86_msi = {
+ 	.teardown_msi_irqs = default_teardown_msi_irqs,
+ 	.restore_msi_irqs = default_restore_msi_irqs,
+ };
++
++struct x86_ioapic_ops x86_ioapic = {
++	.init = native_ioapic_init_mappings,
++	.read = native_ioapic_read,
++	.write = native_ioapic_write,
++	.modify = native_ioapic_modify,
++};
+-- 
+1.7.7.5
 
-Author: Oleg Nesterov <oleg@redhat.com>
-Date:   Wed Mar 21 10:57:41 2012 +1100
-
-    usermodehelper: implement UMH_KILLABLE
-    
-    Implement UMH_KILLABLE, should be used along with UMH_WAIT_EXEC/PROC.  The
-    caller must ensure that subprocess_info->path/etc can not go away until
-    call_usermodehelper_freeinfo().
-    
-    call_usermodehelper_exec(UMH_KILLABLE) does wait_for_completion_killable.
-    If it fails, it uses xchg(&sub_info->complete, NULL) to serialize with
-    umh_complete() which does the same xhcg() to access sub_info->complete.
-    
-    If call_usermodehelper_exec wins, it can safely return.  umh_complete()
-    should get NULL and call call_usermodehelper_freeinfo().
-    
-    Otherwise we know that umh_complete() was already called, in this case
-    call_usermodehelper_exec() falls back to wait_for_completion() which
-    should succeed "very soon".
-    
-    Note: UMH_NO_WAIT == -1 but it obviously should not be used with
-    UMH_KILLABLE.  We delay the neccessary cleanup to simplify the back
-    porting.
-    
-    Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-    Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-    Cc: Rusty Russell <rusty@rustcorp.com.au>
-    Cc: Tejun Heo <tj@kernel.org>
-    Cc: David Rientjes <rientjes@google.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-And it's surrounding patchset.
-
-I think that my patch above does a much better/cleaner lifetime management of the 
-subprocess_info struct, with the use of a kref. Anyway I thought that we are not
-suppose to use xhcg() since it is not portable to all ARCHs. ;-)
-
-Please review my patchset above, and comment. If you guys want I can combine
-the two sets into one patchset ASAP. (Will try to finish an RFC tomorrow)
-Since we are inventing the same mechanisms for slightly different needs.
-But basically we both need support for the waiter to be returning before
-the child has completed.
-
-Thanks
-Boaz
