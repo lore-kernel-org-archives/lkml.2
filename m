@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab2CVCHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 22:07:48 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:54054 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250Ab2CVCHq (ORCPT
+	id S1757294Ab2CVCMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 22:12:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53959 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756860Ab2CVCMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 22:07:46 -0400
-Message-ID: <4F6A892D.1030601@ce.jp.nec.com>
-Date: Thu, 22 Mar 2012 11:06:37 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [dm-devel] [PATCH] Fix I/O counts in vmstat
-References: <Pine.LNX.4.64.1203202336370.15617@file.rdu.redhat.com> <4F69A798.4000200@ce.jp.nec.com> <Pine.LNX.4.64.1203211148220.23047@file.rdu.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1203211148220.23047@file.rdu.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Mar 2012 22:12:08 -0400
+Message-ID: <1332382320.13011.1.camel@phoenix>
+Subject: [PATCH] mfd: Move MFD_TPS65090 and TPS65911_COMPARATOR Kconfig
+ entries to proper location
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Thu, 22 Mar 2012 10:12:00 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mikulas,
+Group all TPSxxxx drivers together and sort by alphabetical order.
 
-On 03/22/12 00:50, Mikulas Patocka wrote:
-> On Wed, 21 Mar 2012, Jun'ichi Nomura wrote:
->>> The decision whether bio is counted or not is made by the code that
->>> submits the bio. This leads to some problems:
->>
->> How about convering dm targets to use generic_make_request?
-> 
-> The problem would be raid1 resynchronization. There are no incoming bios 
-> when resynchronizing, but the administrator still needs to see the 
-> resynchronization workload in vmstat. The code path that submits bios for 
-> resynchronization is the same as the path that handles write requests.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/Kconfig |   30 +++++++++++++++---------------
+ 1 files changed, 15 insertions(+), 15 deletions(-)
 
-Admins could see the workload with iostat or sar.
-If pgpgout does not increase but iostat shows disk activity,
-admins can tell resynchronization is going on.
-
-> Also dm-over-loop would still result in double-counting, even if we use 
-> generic_make_request in dm.
-
-It reflects the fact that writeback actually happens twice.
-
->> Since submit_bio counts vm events, it seems natural for
->> caller to decide which function to use.
->> Device driver does not know whether the requested I/O is
->> for vm-to-device or device-to-device.
->> We could still use iostat to measure throughput of individual
->> block devices. 
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 29f463c..f9e0353 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -143,6 +143,18 @@ config TPS6507X
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called tps6507x.
+ 
++config MFD_TPS65090
++	bool "TPS65090 Power Management chips"
++	depends on I2C=y && GENERIC_HARDIRQS
++	select MFD_CORE
++	select REGMAP_I2C
++	help
++	  If you say yes here you get support for the TPS65090 series of
++	  Power Management chips.
++	  This driver provides common support for accessing the device,
++	  additional drivers must be enabled in order to use the
++	  functionality of the device.
++
+ config MFD_TPS65217
+ 	tristate "TPS65217 Power Management / White LED chips"
+ 	depends on I2C
+@@ -182,6 +194,9 @@ config MFD_TPS65910
+ 	  if you say yes here you get support for the TPS65910 series of
+ 	  Power Management chips.
+ 
++config TPS65911_COMPARATOR
++	tristate
++
+ config MFD_TPS65912
+ 	bool
+ 	depends on GPIOLIB
+@@ -825,21 +840,6 @@ config MFD_PM8XXX_IRQ
+ 	  This is required to use certain other PM 8xxx features, such as GPIO
+ 	  and MPP.
+ 
+-config TPS65911_COMPARATOR
+-	tristate
+-
+-config MFD_TPS65090
+-	bool "TPS65090 Power Management chips"
+-	depends on I2C=y && GENERIC_HARDIRQS
+-	select MFD_CORE
+-	select REGMAP_I2C
+-	help
+-	  If you say yes here you get support for the TPS65090 series of
+-	  Power Management chips.
+-	  This driver provides common support for accessing the device,
+-	  additional drivers must be enabled in order to use the
+-	  functionality of the device.
+-
+ config MFD_AAT2870_CORE
+ 	bool "Support for the AnalogicTech AAT2870"
+ 	select MFD_CORE
 -- 
-Jun'ichi Nomura, NEC Corporation
+1.7.5.4
+
+
+
