@@ -1,179 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2CVA7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 20:59:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:21000 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab2CVA7r convert rfc822-to-8bit (ORCPT
+	id S1756371Ab2CVBOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 21:14:53 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44622 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756137Ab2CVBOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 20:59:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="80182021"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Index: AQHNB125/xsoHqoXeU+Ih9PUlOlVxJZ1feJA
-Date: Thu, 22 Mar 2012 00:59:40 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A05C092@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
-	 <1331718197.18960.106.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-	 <1331808391.18960.160.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
-	 <1331891364.18960.221.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
-	 <1332151397.18960.252.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com>
-	 <1332245842.18960.413.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05B485@SHSMSX101.ccr.corp.intel.com>
- <1332332739.18960.488.camel@twins>
-In-Reply-To: <1332332739.18960.488.camel@twins>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Mar 2012 21:14:52 -0400
+Message-ID: <4F6A7D04.6080906@us.ibm.com>
+Date: Wed, 21 Mar 2012 18:14:44 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
+To: Milton Miller <miltonm@bga.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] nohz: fix race allowing use of stale jiffies when waking
+References: <nohz-jiffies-update64-race@mdm.bga.com> <1326361755.2950.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <nohz-jiffies-race-reply1@mdm.bga.com>
+In-Reply-To: <nohz-jiffies-race-reply1@mdm.bga.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032201-6148-0000-0000-000004722E91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is the complete test patch. Just run the simpl_loop_onoffline.sh and simpl_loop_smpcalling.sh concurrently
-to reproduce the race.
+On 01/13/2012 09:02 PM, Milton Miller wrote:
+> On Thu, 12 Jan 2012 about 10:49:15 +0100 Eric Dumazet wrote:
+>> Le jeudi 12 janvier 2012 Ã  02:55 -0600, Milton Miller a Ã©crit :
+>>> When waking up from nohz mode, all cpus call tick_do_update_jiffies64
+>>> regardless of tick_do_timer_cpu as it could be no cpu was assigned.
+>>>
+>>> At the start of the function there is a quick lockless check to
+>>> determine if jiffies is current.  The check uses last_jiffies_update,
+>>> which is used to calculate when to perform the next increment.
+>>> Unfortunately it is updated when how many jiffies to advance the
+>>> clock is calculated, before the call to do_timer which actually
+>>> updates jiffies.  A second cpu waking up could use the (potentially
+>>> very) stale jiffies value during this window.
+>>>
+>>> This patch changes the check to be against tick_next_period, which
+>>> is updated after the call to do_timer completes.  It compares the
+>>> result of subtraction to zero, but this is safe as ktime_sub returns
+>>> ktime_t which is s64, as signed type.
+>>>
+>>> I found this race while trying to track down reports of network adapter
+>>> hangs on a large system.  I suspected premature false detection so
+>>> I added logging when the locked region determined a multiple jiffie
+>>> update would be required.  I noticed that it happened frequently when
+>>> tick_do_timer_cpu was NONE (-1), and realized the large update was
+>>> when all cpus were previously in nohz.  I then thought about what
+>>> would happen if multiple cpus woke up near close to each other in
+>>> time and decided the stale jiffies would be used.  (I later found at
+>>> least part of the hung adapter reports were due to faulty detection
+>>> logic that has since changed upstream.)
+>>>
+>>> Signed-off-by: Milton Miller<miltonm@bga.com>
+>>> Cc: stable@vger.kernel.org
+>>> ---
+>>> Patch was generated and tested against 2.6.36; I verified it applies
+>>> with offset -1 line to next-20120111.
+>>>
+>>> Index: src/kernel/time/tick-sched.c
+>>> ===================================================================
+>>> --- src.orig/kernel/time/tick-sched.c	2011-10-13 17:42:16.000000000 -0500
+>>> +++ src/kernel/time/tick-sched.c	2011-10-13 17:45:31.000000000 -0500
+>>> @@ -52,8 +52,8 @@ static void tick_do_update_jiffies64(kti
+>>>   	/*
+>>>   	 * Do a quick check without holding xtime_lock:
+>>>   	 */
+>>> -	delta = ktime_sub(now, last_jiffies_update);
+>>> -	if (delta.tv64<  tick_period.tv64)
+>>> +	delta = ktime_sub(now, tick_next_period);
+>>> +	if (delta.tv64<  0)
+>>>   		return;
+>>>
+>> Given ktime_t on 32bit arches is not an atomic type, I wonder how safe
+>> is this anyway...
+>>
+> Ok I admit I hadn't thought about it, and initially I was going to
+> think of something involving comparing the two timestamps, and
+> waiting if next_period<= next_jiffies_update (with approprate
+> subtract and compare).
+>
+> But then I thought some more and comparing the timestamp after the
+> update is safe:
+[snipped]
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] Test scripts to verify the race between CPU booting and smp_call
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/misc/Makefile            |    1 +
- drivers/misc/smp_call_test.c     |   61 ++++++++++++++++++++++++++++++++++++++
- scripts/simpl_loop_onoffline.sh  |    5 +++
- scripts/simpl_loop_smpcalling.sh |    5 +++
- 4 files changed, 72 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/smp_call_test.c
- create mode 100644 scripts/simpl_loop_onoffline.sh
- create mode 100644 scripts/simpl_loop_smpcalling.sh
+> There are a couple additional points to consider in this scenerio.
+> One is that the cpu still has xtime lock so any attempt to read a
+> high precision time will stall.  The second is if the cpu updating
+> the jiffies is stalled by the hypervisor, then it is not unique to
+> when it is waking from nohz and is likely happing when it owns
+> timer duty, so time will be subject to bunching and jumping jiffies
+> on a regular baasis.  About the most we could do is detect it, either
+> by taking periodic helath checks of jiffie by other cpus or noticing
+> that our tick update is constantly behind.
+>
+> So I think the updated racy check is fine, but will expand on the
+> racy check comment why it is safe if that is desired.
+>
+So,  what happened with this patch?   Is there a updated version with 
+the improved documentation covered in this mail?
 
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 571ffd1..003f883 100755
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -59,3 +59,4 @@ obj-$(CONFIG_MID_I2S_DEV)     += mid_i2s_dev/
- obj-$(CONFIG_EMMC_IPANIC)      += emmc_ipanic.o
- obj-$(CONFIG_SCU_LOGGING)      += intel_fabric_logging.o
- obj-$(CONFIG_UUID)     += uuid.o
-+obj-y                          += smp_call_test.o
-diff --git a/drivers/misc/smp_call_test.c b/drivers/misc/smp_call_test.c
-new file mode 100644
-index 0000000..95a14fc
---- /dev/null
-+++ b/drivers/misc/smp_call_test.c
-@@ -0,0 +1,61 @@
-+/*
-+ * drivers/misc/smp_call_test.c
-+ *
-+ * Author: chuansheng.liu@intel.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/device.h>
-+#include <linux/types.h>
-+#include <linux/delay.h>
-+#include <linux/sched.h>
-+#include <linux/debugfs.h>
-+#include <linux/fs.h>
-+#include <linux/proc_fs.h>
-+
-+static int smp_call_dbg_get(void *data, u64 *val)
-+{
-+       return 0;
-+}
-+
-+static void smp_call_func(void *info)
-+{
-+       return;
-+}
-+
-+static int smp_call_dbg_set(void *data, u64 val)
-+{
-+       smp_call_function(smp_call_func, NULL, 1);
-+       printk(KERN_ERR "test smp_call_function\n");
-+       return 0;
-+}
-+
-+
-+DEFINE_SIMPLE_ATTRIBUTE(smp_call_dbg_fops, smp_call_dbg_get, smp_call_dbg_set, "%llu\n");
-+
-+
-+int __init smp_call_test_init(void)
-+{
-+       debugfs_create_file("smp_call_test", 0644, NULL, NULL, &smp_call_dbg_fops);
-+       return 0;
-+}
-+
-+module_init(smp_call_test_init);
-+
-diff --git a/scripts/simpl_loop_onoffline.sh b/scripts/simpl_loop_onoffline.sh
-new file mode 100644
-index 0000000..c2c640d
---- /dev/null
-+++ b/scripts/simpl_loop_onoffline.sh
-@@ -0,0 +1,5 @@
-+while true
-+do
-+ echo 0 > /sys/devices/system/cpu/cpu1/online
-+ echo 1 > /sys/devices/system/cpu/cpu1/online
-+done
-diff --git a/scripts/simpl_loop_smpcalling.sh b/scripts/simpl_loop_smpcalling.sh
-new file mode 100644
-index 0000000..37cef74
---- /dev/null
-+++ b/scripts/simpl_loop_smpcalling.sh
-@@ -0,0 +1,5 @@
-+while true
-+do
-+echo 1 > /sys/kernel/debug/smp_call_test
-+usleep 500000
-+done
--- 
-1.7.0.4
+thanks
+-john
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:peterz@infradead.org]
-> Sent: Wednesday, March 21, 2012 8:26 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
-> Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-> 
-> 
-> Can you send me your exact kernel patch (the sysfs knob you use to trigger this)
-> and test scripts?
