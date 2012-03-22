@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964889Ab2CVAFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 20:05:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33632 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab2CVAFM (ORCPT
+	id S1754568Ab2CVAKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 20:10:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34899 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156Ab2CVAKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 20:05:12 -0400
-Date: Wed, 21 Mar 2012 17:04:48 -0700
-From: tip-bot for Thierry Reding <thierry.reding@avionic-design.de>
-Message-ID: <tip-be7d0457e2d4ae906e40141c931f88585c3e86b8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, thierry.reding@avionic-design.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, thierry.reding@avionic-design.de
-In-Reply-To: <1332366608-2695-2-git-send-email-thierry.reding@avionic-design.de>
-References: <1332366608-2695-2-git-send-email-thierry.reding@avionic-design.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-32:
-  Fix typo for mq_getsetattr in syscall table
-Git-Commit-ID: be7d0457e2d4ae906e40141c931f88585c3e86b8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 21 Mar 2012 20:10:37 -0400
+Date: Thu, 22 Mar 2012 01:10:31 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf tools: Fix ordering with unstable tsc
+Message-ID: <20120322001028.GA7024@somewhere.redhat.com>
+References: <20120206132546.GA30854@quad>
+ <1329583837-7469-1-git-send-email-fweisbec@gmail.com>
+ <20120314195535.GB13246@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Mar 2012 17:04:54 -0700 (PDT)
+In-Reply-To: <20120314195535.GB13246@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be7d0457e2d4ae906e40141c931f88585c3e86b8
-Gitweb:     http://git.kernel.org/tip/be7d0457e2d4ae906e40141c931f88585c3e86b8
-Author:     Thierry Reding <thierry.reding@avionic-design.de>
-AuthorDate: Wed, 21 Mar 2012 22:50:08 +0100
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 21 Mar 2012 16:51:33 -0700
+On Wed, Mar 14, 2012 at 04:55:35PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Sat, Feb 18, 2012 at 05:50:37PM +0100, Frederic Weisbecker escreveu:
+> > +static int alloc_cpus_timestamp_array(struct perf_session *s,
+> > +				      struct perf_sample *sample,
+> > +				      struct ordered_samples *os)
+> > +{
+> > +	int i;
+> > +	int nr_cpus;
+> > +
+> > +	if (sample->cpu < s->nr_cpus)
+> > +		return 0;
+> 
+> 
+> Shouldn't we try to robustify this checking against HEADER_NRCPUS (if
+> present)?
+> 
+> I just tried to see how to find that info, but unfortunately it just
+> prints it when calling perf_header__fprintf_info, it can be made to
+> work.
+> 
+> I need to work on storing those values in a struct accessible thru
+> perf_session or perf_evlist, so that I can show that info on the TUI,
+> perhaps at that time I can robustify this way.
 
-x86-32: Fix typo for mq_getsetattr in syscall table
+Yeah I thought about that too. I can try to make that working.
+I just thought this was an optimization that I could later add (ie: first
+try to see if the core idea of the patch is accepted).
 
-Syscall 282 was mistakenly named mq_getsetaddr instead of mq_getsetattr.
-When building uClibc against the Linux kernel this would result in a
-shared library that doesn't provide the mq_getattr() and mq_setattr()
-functions.
+Of course the real long term optimization is going to have one file per
+CPU. There, the ordering will be much easier and deterministically
+correct.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Link: http://lkml.kernel.org/r/1332366608-2695-2-git-send-email-thierry.reding@avionic-design.de
-Cc: <stable@vger.kernel.org> v3.3
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/syscalls/syscall_32.tbl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> > +
+> > +	nr_cpus = sample->cpu + 1;
+> > +
+> > +	if (!os->last_cpu_timestamp)
+> > +		os->last_cpu_timestamp = malloc(sizeof(u64) * nr_cpus);
+> > +	else
+> > +		os->last_cpu_timestamp = realloc(os->last_cpu_timestamp,
+> > +						 sizeof(u64) * nr_cpus);
+> 
+> If realloc fails we return -ENOMEM, but leak the old buffer.
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index ce98e28..e7e67cc 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -288,7 +288,7 @@
- 279	i386	mq_timedsend		sys_mq_timedsend		compat_sys_mq_timedsend
- 280	i386	mq_timedreceive		sys_mq_timedreceive		compat_sys_mq_timedreceive
- 281	i386	mq_notify		sys_mq_notify			compat_sys_mq_notify
--282	i386	mq_getsetaddr		sys_mq_getsetattr		compat_sys_mq_getsetattr
-+282	i386	mq_getsetattr		sys_mq_getsetattr		compat_sys_mq_getsetattr
- 283	i386	kexec_load		sys_kexec_load			compat_sys_kexec_load
- 284	i386	waitid			sys_waitid			compat_sys_waitid
- # 285 sys_setaltroot
+Doh! the common trap with realloc...
+
+> 
+> At some point we can have in the TUI/GUI a way for the user to ask for
+> an specific perf.data file to be processed, if it fails to process due
+> to the above realloc, we'll continue, allowing other perf.data files to
+> be processed, but will have this leak.
+
+Ok. Will fix.
+
+Thanks.
