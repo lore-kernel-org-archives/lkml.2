@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030564Ab2CVTlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:41:12 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:26301 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755562Ab2CVTlJ (ORCPT
+	id S1756896Ab2CVTpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:45:05 -0400
+Received: from hulk.biessmann.org ([62.75.166.25]:49137 "EHLO
+	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab2CVTpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:41:09 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Qg9CBcoVM1mpNN7MfWO3DFbiyXsPIHTPFJYaZBz9UIVV5vd
- b2kJrfNiBLMBrNIyvXPqwB1Cy1Fezf2rFSs0_iBoNHTFZYMm4EjBBdtukzHR
- HmeOXFSOX3VK5PSn2NHv440hEkqIjSttUrjYD98x60yuBs1dIEACBnUfCeas
- xuRpDDO84.DFx773G74RkB9..aEjARWEy4GbkduxuQy0AyEe3s3Lw0.DGSpX
- 0jMw9SIIv4i2OxNxGh0xLMWNmI7u76VXBZvNQVfILzA1U4ZnL794M.z408Ag
- 8zC7ZoUkIghF6hXsb4gCn.wO1HjSQv7Y8SLW0YxSGJaLLmasOI_.AcRzQlSo
- 1s5xbSMH7JqbZkl1vngNb4c5SVd65JjoHXnmLA0pus1NxiXoXffb9VxONg1H
- TA3CbO8jHHZ3xyWMFT3fpFJMCBwzvTbfrBlwJ
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 22 Mar 2012 14:41:05 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Valdis.Kletnieks@vt.edu
-cc: lwoodman@redhat.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
-Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if
- task is already on a correct node
-In-Reply-To: <40300.1332445016@turing-police.cc.vt.edu>
-Message-ID: <alpine.DEB.2.00.1203221440380.25011@router.home>
-References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home> <4F6B7854.1040203@redhat.com> <40300.1332445016@turing-police.cc.vt.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 22 Mar 2012 15:45:03 -0400
+Message-ID: <4F6B8118.2040608@biessmann.de>
+Date: Thu, 22 Mar 2012 20:44:24 +0100
+From: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas@biessmann.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Michal Marek <mmarek@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] x86, build: remove unused include
+References: <1329324589-26907-1-git-send-email-andreas@biessmann.de> <20120322101719.GC1406@localhost> <4F6B6FDB.80507@zytor.com>
+In-Reply-To: <4F6B6FDB.80507@zytor.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SPAM_bar: --
+X-SPAM_score: -28
+X-ChkData-Signature: 23bd1d5842f53ef3d5fc24c81abd7368
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Mar 2012, Valdis.Kletnieks@vt.edu wrote:
+On 22.03.12 19:30, H. Peter Anvin wrote:
+> On 03/22/2012 03:17 AM, Andreas Bießmann wrote:
+>> On Wed, Feb 15, 2012 at 05:49:49PM +0100, Andreas Bießmann wrote:
+>>> Commit 079f85e624189292d1c818b47764916bf8cf84a8 removed necessity for
+>>> sys/sysmacros.h include but missed to remove the include.
 
-> > So to be clear on this, in that case the intention would be move 3 to 4,
-> > 4 to 5 and 5 to 6
-> > to keep the node ordering the same?
->
-> Would it make more sense to do 5->6, 4->5, 3->4?  If we move stuff
-> from 3 to 4 before clearing the old 4 stuff out, it might get crowded?
+> An equivalent patch has been in tip:x86/build for a while and was just
+> pulled upstream by Linus.
 
-Right. I thought Paul did take care of that way back when it was written?
+sorry for the noise, I did only search for my patch in history and did
+not check the file.
 
+regards
 
+Andreas Bießmann
