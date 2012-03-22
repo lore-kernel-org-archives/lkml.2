@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab2CVCdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 22:33:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64087 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab2CVCdQ (ORCPT
+	id S932389Ab2CVCd3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 22:33:29 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17392 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757072Ab2CVCdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 22:33:16 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-To: joeyli <jlee@suse.com>
-Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1332380037.10557.398.camel@linux-s257.site>
-References: <1331608337.2267.67.camel@debian.Gayathri>
-	 <20120312175130.GA18002@srcf.ucam.org>
-	 <1331640592.3485.50.camel@debian.Gayathri>
-	 <20120313124738.GB10822@srcf.ucam.org>
-	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
-	 <20120313133458.GA11574@srcf.ucam.org>
-	 <1331688294.2577.19.camel@debian.Gayathri>
-	 <1331680373.10557.169.camel@linux-s257.site>
-	 <1331692996.3052.8.camel@debian.Gayathri>
-	 <1331704278.10557.190.camel@linux-s257.site>
-	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
-	 <1331798740.10557.245.camel@linux-s257.site>
-	 <1332047432.6304.13.camel@debian.Gayathri>
-	 <1332122514.10557.270.camel@linux-s257.site>
-	 <1332241764.10557.329.camel@linux-s257.site>
-	 <1332269710.3921.31.camel@debian.Gayathri>
-	 <1332298845.10557.343.camel@linux-s257.site>
-	 <1332356993.3103.23.camel@debian.Gayathri>
-	 <1332380037.10557.398.camel@linux-s257.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Mar 2012 08:03:43 +0530
-Message-ID: <1332383623.2622.6.camel@debian.Gayathri>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
-Content-Transfer-Encoding: 8bit
+	Wed, 21 Mar 2012 22:33:11 -0400
+To: Shaohua Li <shli@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, neilb@suse.de,
+        martin.petersen@oracle.com
+Subject: Re: [patch 1/2]block: handle merged discard request
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20120316073213.656519005@fusionio.com>
+	<20120316073512.485027511@fusionio.com>
+	<20120320162157.GE17071@redhat.com>
+	<CANejiEWecb58G--=mwez+A4Ra6nJ0qOHGMcJA-nOGH=jmGA3qQ@mail.gmail.com>
+	<4F69C62C.7020604@kernel.org>
+Date: Wed, 21 Mar 2012 22:32:54 -0400
+In-Reply-To: <4F69C62C.7020604@kernel.org> (Shaohua Li's message of "Wed, 21
+	Mar 2012 20:14:36 +0800")
+Message-ID: <yq18vitwejt.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F6A8F5A.0073,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 09:33 +0800, joeyli wrote:
-> 於 四，2012-03-22 於 00:39 +0530，Pradeep Subrahmanion 提到：
-> > > This new patch should remove acpi_video0 interface on your machine.
-> > > Please kindly provide your dmidecode:
-> > >  dmidecode > dmidecode.log
-> > >
-> > > And, 
-> > > please make should the patch really applied, you can do a bit change on
-> > > pr_info message by yourself.
-> > 
-> >    Sorry . I think there was some mistake . I tried the patch again. Now
-> > I see only intel_backlight inside /sys/class/backlight. There is no
-> > acer-wmi interface . Is this the expected behavior ? . Or am I missing
-> > anything ?
-> > 
-> 
-> Yes, this is the expected behavior! But, now I doubt your issue was
-> workaround by acpi_osi=Linux but not intel_backlight.
->
+>>>>> "Shaohua" == Shaohua Li <shli@kernel.org> writes:
 
-> > 
-> > 
-> > > 
-> > > > echo 5 > /sys/class/backlight/acpi_video0/brightness 
-> > > > echo 5 > /sys/class/backlight/intel_backlight/brightness
-> > > > 
-> > > > But it doesn't make any change . 
-> > > > 
-> > > > In my case  , 'acpi_backlight = vendor' does not make any difference since the hot key control 
-> > > > 
-> > > > already starts working with 'acpi_osi=Linux' option.
-> > > > 
-> > > > cat /proc/cmdline gives , 
-> > > > 
-> > > > BOOT_IMAGE=/boot/vmlinuz-3.3.0+
-> > > > root=UUID=f0197a59-c067-4fd8-ad90-c4d721816077 ro acpi_osi=Linux 
-> > > > 
-> > > > 
-> > > > Thanks , 
-> > > > 
-> > > > Pradeep Subrahmanion
-> > > > 
-> > > 
-> > > OK, that's more clearly, please remove acpi_osi=Linux then re-test, I
-> > > think the hotkey of backlight control only works with acpi_osi=Linux ?
-> > > 
-> 
-> Does your backlight control still work if you remove acpi_osi=Linux ?
+Shaohua> The SCSI discard implementation hacks the first bio of request
+Shaohua> to add payload, which makes blk_update_request() can't
+Shaohua> correctly mark bios finish.  The patch solves it. We set
+Shaohua> discard bio size to 0 and finish it after the hacked payload
+Shaohua> finishes.
 
-   If I remove acpi_osi=Linux , the hot key control stops working .
+Ick!
 
-> 
-> 
-> Thanks a lot!
-> Joey Lee
-> 
+Also, you can't muck with bi_size because if we get an I/O error and
+have to reissue the command we no longer know how much to write.
 
-Thanks , 
+I have had to deal with the same issue for WRITE SAME. And the only sane
+approach is to distinguish between the DMA transfer size and the blocks
+"affected" by the command. That's what I'm working on right now for copy
+offload...
 
-Pradeep Subrahmanion
+If this is something you want in 3.4 I guess we could temporarily add a
+separate length field to struct request. If you can wait I suggest we
+talk at LSF.
 
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
