@@ -1,163 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030924Ab2CVDDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 23:03:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:16808 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030850Ab2CVDCn (ORCPT
+	id S1030834Ab2CVDCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 23:02:41 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24255 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030731Ab2CVDCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 23:02:43 -0400
+	Wed, 21 Mar 2012 23:02:38 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: mingo@elte.hu, suresh.b.siddha@intel.com, jwboyer@redhat.com,
         linux-kernel@vger.kernel.org, hpa@zytor.com, yinghai@kernel.org
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/3] x86: add io_apic_ops to allow interception
-Date: Wed, 21 Mar 2012 22:58:08 -0400
-Message-Id: <1332385090-18056-2-git-send-email-konrad.wilk@oracle.com>
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot. [BZ#804347]
+Date: Wed, 21 Mar 2012 22:58:07 -0400
+Message-Id: <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1332294154.16101.97.camel@sbsiddha-desk.sc.intel.com>
 References: <1332294154.16101.97.camel@sbsiddha-desk.sc.intel.com>
- <1332385090-18056-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4F6A9647.001E,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F6A9647.007A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > Ingo, please take a look - and if you are OK with them please put in them
+> > the v3.4 queue - if you are not comfortable, then the above patch will have to
+> > suffice as a work-around for the regression.
+> > 
+> >  arch/x86/include/asm/io_apic.h  |   31 +++++++++++++++++++++++++++++--
+> >  arch/x86/include/asm/x86_init.h |    8 ++++++++
+> >  arch/x86/kernel/apic/io_apic.c  |   10 ++++++----
+> >  arch/x86/kernel/setup.c         |    2 +-
+> >  arch/x86/kernel/x86_init.c      |    8 ++++++++
+> >  arch/x86/xen/Makefile           |    2 +-
+> >  arch/x86/xen/apic.c             |   17 +++++++++++++++++
+> >  arch/x86/xen/enlighten.c        |    2 ++
+> >  arch/x86/xen/xen-ops.h          |    4 ++++
+> >  9 files changed, 76 insertions(+), 8 deletions(-)
+> > Jeremy Fitzhardinge (1):
+> >       x86: add io_apic_ops to allow interception
+> > 
+> > Konrad Rzeszutek Wilk (2):
+> >       x86/apic_ops: Replace apic_ops with x86_apic_ops.
+> >       xen/x86: Implement x86_apic_ops
+> > 
+> 
+> Ingo, Konrad was mentioning you didn't like this pieces before.
+> 
+> But for what Xen is trying to do, either we have to pursue this or
+> untangle the gsi and ioapic dependency.
+> 
+> I am ok with this path for now.
+> 
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Xen dom0 needs to paravirtualize IO operations to the IO APIC, so add
-a io_apic_ops for it to intercept.  Do this as ops structure because
-there's at least some chance that another paravirtualized environment
-may want to intercept these.
-
-[ Impact: indirect IO APIC access via io_apic_ops ]
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/io_apic.h |    9 +++++++
- arch/x86/kernel/apic/io_apic.c |   50 +++++++++++++++++++++++++++++++++++++--
- 2 files changed, 56 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 690d1cc..190d8c2 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -21,6 +21,15 @@
- #define IO_APIC_REDIR_LEVEL_TRIGGER	(1 << 15)
- #define IO_APIC_REDIR_MASKED		(1 << 16)
- 
-+struct io_apic_ops {
-+	void (*init)(void);
-+	unsigned int (*read)(unsigned int apic, unsigned int reg);
-+	void (*write)(unsigned int apic, unsigned int reg, unsigned int value);
-+	void (*modify)(unsigned int apic, unsigned int reg, unsigned int value);
-+};
-+
-+void __init set_io_apic_ops(const struct io_apic_ops *);
-+
- /*
-  * The structure of the IO-APIC:
-  */
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index fb07275..bf120234 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -67,6 +67,25 @@
- #define for_each_irq_pin(entry, head) \
- 	for (entry = head; entry; entry = entry->next)
- 
-+static void __init __ioapic_init_mappings(void);
-+static unsigned int __io_apic_read(unsigned int apic, unsigned int reg);
-+static void __io_apic_write(unsigned int apic, unsigned int reg,
-+			    unsigned int val);
-+static void __io_apic_modify(unsigned int apic, unsigned int reg,
-+			     unsigned int val);
-+
-+static struct io_apic_ops io_apic_ops = {
-+	.init = __ioapic_init_mappings,
-+	.read = __io_apic_read,
-+	.write = __io_apic_write,
-+	.modify = __io_apic_modify,
-+};
-+
-+void __init set_io_apic_ops(const struct io_apic_ops *ops)
-+{
-+	io_apic_ops = *ops;
-+}
-+
- /*
-  *      Is the SiS APIC rmw bug present ?
-  *      -1 = don't know, 0 = no, 1 = yes
-@@ -294,6 +313,24 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
- 	irq_free_desc(at);
- }
- 
-+static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-+{
-+	return io_apic_ops.read(apic, reg);
-+}
-+
-+static inline void io_apic_write(unsigned int apic, unsigned int reg,
-+				 unsigned int value)
-+{
-+	io_apic_ops.write(apic, reg, value);
-+}
-+
-+static inline void io_apic_modify(unsigned int apic, unsigned int reg,
-+				  unsigned int value)
-+{
-+	io_apic_ops.modify(apic, reg, value);
-+}
-+
-+
- struct io_apic {
- 	unsigned int index;
- 	unsigned int unused[3];
-@@ -314,14 +351,15 @@ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
- 	writel(vector, &io_apic->eoi);
- }
- 
--static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-+static unsigned int __io_apic_read(unsigned int apic, unsigned int reg)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(reg, &io_apic->index);
- 	return readl(&io_apic->data);
- }
- 
--static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
-+static void __io_apic_write(unsigned int apic, unsigned int reg,
-+			    unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(reg, &io_apic->index);
-@@ -334,7 +372,8 @@ static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned i
-  *
-  * Older SiS APIC requires we rewrite the index register
-  */
--static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
-+static void __io_apic_modify(unsigned int apic, unsigned int reg,
-+			     unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 
-@@ -3873,6 +3912,11 @@ static struct resource * __init ioapic_setup_resources(int nr_ioapics)
- 
- void __init ioapic_and_gsi_init(void)
- {
-+	io_apic_ops.init();
-+}
-+
-+static void __init __ioapic_init_mappings(void)
-+{
- 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
- 	struct resource *ioapic_res;
- 	int i;
--- 
-1.7.7.5
+Redid them per feedback. Please consider them for 3.4. Thanks!
 
