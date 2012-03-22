@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031239Ab2CVV4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:56:37 -0400
+	id S1031251Ab2CVV4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:56:45 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:57572 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031205Ab2CVV4b (ORCPT
+	with ESMTP id S1031205Ab2CVV4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:56:31 -0400
-Subject: [PATCH v6 3/7] mm: push lru index into shrink_[in]active_list()
+	Thu, 22 Mar 2012 17:56:39 -0400
+Subject: [PATCH v6 5/7] mm: remove lru type checks from __isolate_lru_page()
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 23 Mar 2012 01:56:27 +0400
-Message-ID: <20120322215627.27814.4499.stgit@zurg>
+Date: Fri, 23 Mar 2012 01:56:35 +0400
+Message-ID: <20120322215635.27814.30008.stgit@zurg>
 In-Reply-To: <20120322214944.27814.42039.stgit@zurg>
 References: <20120322214944.27814.42039.stgit@zurg>
 User-Agent: StGit/0.15
@@ -25,160 +25,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's toss lru index through call stack to isolate_lru_pages(),
-this is better than its reconstructing from individual bits.
+After patch "mm: forbid lumpy-reclaim in shrink_active_list()" we can completely
+remove anon/file and active/inactive lru type filters from __isolate_lru_page(),
+because isolation for 0-order reclaim always isolates pages from right lru list.
+And pages-isolation for lumpy shrink_inactive_list() or memory-compaction anyway
+allowed to isolate pages from all evictable lru lists.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
----
- mm/vmscan.c |   41 +++++++++++++++++------------------------
- 1 files changed, 17 insertions(+), 24 deletions(-)
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
 
+---
+
+add/remove: 0/0 grow/shrink: 0/3 up/down: 0/-148 (-148)
+function                                     old     new   delta
+shrink_inactive_list                        1259    1243     -16
+__isolate_lru_page                           301     253     -48
+static.isolate_lru_pages                    1055     971     -84
+---
+ include/linux/mmzone.h |   10 +++-------
+ include/linux/swap.h   |    2 +-
+ mm/compaction.c        |    4 ++--
+ mm/vmscan.c            |   27 +++++----------------------
+ 4 files changed, 11 insertions(+), 32 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 9316931..71d81b0 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -183,16 +183,12 @@ struct lruvec {
+ #define LRU_ALL_EVICTABLE (LRU_ALL_FILE | LRU_ALL_ANON)
+ #define LRU_ALL	     ((1 << NR_LRU_LISTS) - 1)
+ 
+-/* Isolate inactive pages */
+-#define ISOLATE_INACTIVE	((__force isolate_mode_t)0x1)
+-/* Isolate active pages */
+-#define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
+ /* Isolate clean file */
+-#define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
++#define ISOLATE_CLEAN		((__force isolate_mode_t)0x1)
+ /* Isolate unmapped file */
+-#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
++#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x2)
+ /* Isolate for asynchronous migration */
+-#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
++#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x4)
+ 
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index b86b5c2..bef952f 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -248,7 +248,7 @@ static inline void lru_cache_add_file(struct page *page)
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+-extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
++extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
+ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+ 						  gfp_t gfp_mask, bool noswap);
+ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 74a8c82..dd2fea5 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -261,7 +261,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
+-	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
++	isolate_mode_t mode = 0;
+ 
+ 	/* Do not scan outside zone boundaries */
+ 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+@@ -375,7 +375,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 			mode |= ISOLATE_ASYNC_MIGRATE;
+ 
+ 		/* Try isolate the page */
+-		if (__isolate_lru_page(page, mode, 0) != 0)
++		if (__isolate_lru_page(page, mode) != 0)
+ 			continue;
+ 
+ 		VM_BUG_ON(PageTransCompound(page));
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f4dca0c..fb6d54e 100644
+index fb6d54e..5f6ed98 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1127,15 +1127,14 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
-  * @nr_scanned:	The number of pages that were scanned.
-  * @sc:		The scan_control struct for this reclaim session
-  * @mode:	One of the LRU isolation modes
-- * @active:	True [1] if isolating active pages
-- * @file:	True [1] if isolating file [!anon] pages
-+ * @lru		LRU list id for isolating
+@@ -1028,29 +1028,14 @@ keep_lumpy:
   *
-  * returns how many pages were moved onto *@dst.
+  * returns 0 on success, -ve errno on failure.
   */
- static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		struct mem_cgroup_zone *mz, struct list_head *dst,
- 		unsigned long *nr_scanned, struct scan_control *sc,
--		isolate_mode_t mode, int active, int file)
-+		isolate_mode_t mode, enum lru_list lru)
+-int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
++int __isolate_lru_page(struct page *page, isolate_mode_t mode)
  {
- 	struct lruvec *lruvec;
- 	struct list_head *src;
-@@ -1144,13 +1143,9 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 	unsigned long nr_lumpy_dirty = 0;
- 	unsigned long nr_lumpy_failed = 0;
- 	unsigned long scan;
--	int lru = LRU_BASE;
-+	int file = is_file_lru(lru);
+-	bool all_lru_mode;
+ 	int ret = -EINVAL;
  
- 	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
--	if (active)
--		lru += LRU_ACTIVE;
--	if (file)
--		lru += LRU_FILE;
- 	src = &lruvec->lists[lru];
+ 	/* Only take pages on the LRU. */
+ 	if (!PageLRU(page))
+ 		return ret;
  
- 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
-@@ -1487,7 +1482,7 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
-  */
- static noinline_for_stack unsigned long
- shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
--		     struct scan_control *sc, int priority, int file)
-+		     struct scan_control *sc, int priority, enum lru_list lru)
- {
- 	LIST_HEAD(page_list);
- 	unsigned long nr_scanned;
-@@ -1498,6 +1493,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+-	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
+-		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+-
+-	/*
+-	 * When checking the active state, we need to be sure we are
+-	 * dealing with comparible boolean values.  Take the logical not
+-	 * of each.
+-	 */
+-	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
+-		return ret;
+-
+-	if (!all_lru_mode && !!page_is_file_cache(page) != file)
+-		return ret;
+-
+ 	/*
+ 	 * When this function is being called for lumpy reclaim, we
+ 	 * initially look into all LRU pages, active, inactive and
+@@ -1160,7 +1145,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 
+ 		VM_BUG_ON(!PageLRU(page));
+ 
+-		switch (__isolate_lru_page(page, mode, file)) {
++		switch (__isolate_lru_page(page, mode)) {
+ 		case 0:
+ 			mem_cgroup_lru_del(page);
+ 			list_move(&page->lru, dst);
+@@ -1218,7 +1203,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			    !PageSwapCache(cursor_page))
+ 				break;
+ 
+-			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
++			if (__isolate_lru_page(cursor_page, mode) == 0) {
+ 				unsigned int isolated_pages;
+ 
+ 				mem_cgroup_lru_del(cursor_page);
+@@ -1492,7 +1477,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 	unsigned long nr_file;
  	unsigned long nr_dirty = 0;
  	unsigned long nr_writeback = 0;
- 	isolate_mode_t isolate_mode = ISOLATE_INACTIVE;
-+	int file = is_file_lru(lru);
+-	isolate_mode_t isolate_mode = ISOLATE_INACTIVE;
++	isolate_mode_t isolate_mode = 0;
+ 	int file = is_file_lru(lru);
  	struct zone *zone = mz->zone;
  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
- 
-@@ -1523,7 +1519,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
- 	spin_lock_irq(&zone->lru_lock);
- 
- 	nr_taken = isolate_lru_pages(nr_to_scan, mz, &page_list, &nr_scanned,
--				     sc, isolate_mode, 0, file);
-+				     sc, isolate_mode, lru);
- 	if (global_reclaim(sc)) {
- 		zone->pages_scanned += nr_scanned;
- 		if (current_is_kswapd())
-@@ -1661,7 +1657,7 @@ static void move_active_pages_to_lru(struct zone *zone,
- static void shrink_active_list(unsigned long nr_to_scan,
- 			       struct mem_cgroup_zone *mz,
- 			       struct scan_control *sc,
--			       int priority, int file)
-+			       int priority, enum lru_list lru)
- {
- 	unsigned long nr_taken;
- 	unsigned long nr_scanned;
-@@ -1673,6 +1669,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
- 	unsigned long nr_rotated = 0;
- 	isolate_mode_t isolate_mode = ISOLATE_ACTIVE;
-+	int file = is_file_lru(lru);
- 	struct zone *zone = mz->zone;
- 
- 	lru_add_drain();
-@@ -1687,17 +1684,14 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 	spin_lock_irq(&zone->lru_lock);
- 
- 	nr_taken = isolate_lru_pages(nr_to_scan, mz, &l_hold, &nr_scanned, sc,
--				     isolate_mode, 1, file);
-+				     isolate_mode, lru);
- 	if (global_reclaim(sc))
- 		zone->pages_scanned += nr_scanned;
- 
- 	reclaim_stat->recent_scanned[file] += nr_taken;
- 
- 	__count_zone_vm_events(PGREFILL, zone, nr_scanned);
--	if (file)
--		__mod_zone_page_state(zone, NR_ACTIVE_FILE, -nr_taken);
--	else
--		__mod_zone_page_state(zone, NR_ACTIVE_ANON, -nr_taken);
-+	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -nr_taken);
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
- 	spin_unlock_irq(&zone->lru_lock);
- 
-@@ -1752,10 +1746,8 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 	 */
- 	reclaim_stat->recent_rotated[file] += nr_rotated;
- 
--	move_active_pages_to_lru(zone, &l_active, &l_hold,
--						LRU_ACTIVE + file * LRU_FILE);
--	move_active_pages_to_lru(zone, &l_inactive, &l_hold,
--						LRU_BASE   + file * LRU_FILE);
-+	move_active_pages_to_lru(zone, &l_active, &l_hold, lru);
-+	move_active_pages_to_lru(zone, &l_inactive, &l_hold, lru - LRU_ACTIVE);
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
- 	spin_unlock_irq(&zone->lru_lock);
- 
-@@ -1855,11 +1847,11 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 
- 	if (is_active_lru(lru)) {
- 		if (inactive_list_is_low(mz, file))
--			shrink_active_list(nr_to_scan, mz, sc, priority, file);
-+			shrink_active_list(nr_to_scan, mz, sc, priority, lru);
- 		return 0;
+@@ -1506,8 +1491,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
  	}
  
--	return shrink_inactive_list(nr_to_scan, mz, sc, priority, file);
-+	return shrink_inactive_list(nr_to_scan, mz, sc, priority, lru);
- }
+ 	set_reclaim_mode(priority, sc, false);
+-	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
+-		isolate_mode |= ISOLATE_ACTIVE;
  
- static int vmscan_swappiness(struct mem_cgroup_zone *mz,
-@@ -2110,7 +2102,8 @@ restart:
- 	 * rebalance the anon lru active/inactive ratio.
- 	 */
- 	if (inactive_anon_is_low(mz))
--		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
-+		shrink_active_list(SWAP_CLUSTER_MAX, mz,
-+				   sc, priority, LRU_ACTIVE_ANON);
+ 	lru_add_drain();
  
- 	/* reclaim/compaction might need reclaim to continue */
- 	if (should_continue_reclaim(mz, nr_reclaimed,
-@@ -2550,7 +2543,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc,
+@@ -1668,7 +1651,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 	struct page *page;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+ 	unsigned long nr_rotated = 0;
+-	isolate_mode_t isolate_mode = ISOLATE_ACTIVE;
++	isolate_mode_t isolate_mode = 0;
+ 	int file = is_file_lru(lru);
+ 	struct zone *zone = mz->zone;
  
- 		if (inactive_anon_is_low(&mz))
- 			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
--					   sc, priority, 0);
-+					   sc, priority, LRU_ACTIVE_ANON);
- 
- 		memcg = mem_cgroup_iter(NULL, memcg, NULL);
- 	} while (memcg);
 
