@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030758Ab2CVB2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 21:28:33 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47294 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030626Ab2CVB22 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 21:28:28 -0400
+	id S1030653Ab2CVBdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 21:33:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:47382 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1030529Ab2CVBdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 21:33:08 -0400
+X-IronPort-AV: E=Sophos;i="4.73,627,1325433600"; 
+   d="scan'208";a="4593081"
+Message-ID: <4F6A7AC8.5080604@cn.fujitsu.com>
+Date: Thu, 22 Mar 2012 09:05:12 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20120228.223258.2261979237568571219.davem@davemloft.net>
-References: <157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com>
- <20120228.212857.797446903975232476.davem@davemloft.net> <157393863283F442885425D2C454285619415561@nasanexd02a.na.qualcomm.com>
- <20120228.223258.2261979237568571219.davem@davemloft.net>
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Date: Wed, 21 Mar 2012 18:28:07 -0700
-X-Google-Sender-Auth: fwNi4I6gp6viqYKGpPkGbCjmmfk
-Message-ID: <CAB=NE6W-CYjEhbfYOv7XqXFGvdhZxRECqfAmgouaa5_j45gnOQ@mail.gmail.com>
-Subject: Re: [PATCH] net: add QCA alx Ethernet driver
-To: David Miller <davem@davemloft.net>
-Cc: xiong@qca.qualcomm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qca-linux-team@qualcomm.com,
-        nic-devel@qualcomm.com, kgiori@qca.qualcomm.com, chris.snook@gmail.com,
-        mathieu@qca.qualcomm.com, bryanh@quicinc.com,
-        Jesper Andersen <jespera@diku.dk>, Julia Lawall <julia@diku.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Avi Kivity <avi@redhat.com>, minyard@acm.org,
+        Gleb Natapov <gleb@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Corey Minyard <tcminyard@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com> <4F6854F4.3060703@cn.fujitsu.com> <20120320154517.GG27928@redhat.com> <4F692723.8050904@cn.fujitsu.com> <20120321091127.GO22368@redhat.com> <4F69FF48.3010200@acm.org> <4F6A00EC.3060706@redhat.com> <4F6A29C6.2070708@redhat.com>
+In-Reply-To: <4F6A29C6.2070708@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-22 09:00:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-22 09:01:18,
+	Serialize complete at 2012-03-22 09:01:18
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 7:32 PM, David Miller <davem@davemloft.net> wrote:
-> From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-> Date: Wed, 29 Feb 2012 03:11:14 +0000
->
->> We understand your concern.  To support the new chipset, do you
->> think it's reasonable to upstream it as a new driver, not a
->> replacement ?
->
-> It depends upon how similar the chips are.
+At 03/22/2012 03:19 AM, Anthony Liguori Wrote:
+> On 03/21/2012 11:25 AM, Avi Kivity wrote:
+>> On 03/21/2012 06:18 PM, Corey Minyard wrote:
+>>>
+>>>> Look at drivers/char/ipmi/ipmi_msghandler.c. It has code to send panic
+>>>> event over IMPI. The code is pretty complex. Of course if we a going to
+>>>> implement something more complex than simple hypercall for panic
+>>>> notification we better do something more interesting with it than just
+>>>> saying "panic happened", like sending stack traces on all cpus for
+>>>> instance.
+>>>
+>>> I doubt that's the best example, unfortunately.  The IPMI event log
+>>> has limited space and it has to be send a little piece at a time since
+>>> each log entry is 14 bytes.  It just prints the panic string, nothing
+>>> else.  Not that it isn't useful, it has saved my butt before.
+>>>
+>>> You have lots of interesting options with paravirtualization.  You
+>>> could, for instance, create a console driver that delivered all
+>>> console output efficiently through a hypercall.  That would be really
+>>> easy.  Or, as you mention, a custom way to deliver panic information.
+>>> Collecting information like stack traces would be harder to
+>>> accomplish, as I don't think there is currently a way to get it except
+>>> by sending it to printk.
+>>
+>> That already exists; virtio-console (or serial console emulation) can do
+>> the job.
+> 
+> I think the use case here is pretty straight forward: if the guest finds
+> itself in bad place, it wants to indicate that to the host.
+> 
+> We shouldn't rely on any device drivers or complex code.  It should be
+> as close to a single instruction as possible that can run even if
+> interrupts are disabled.
+> 
+> An out instruction fits this very well.  I think a simple protocol like:
 
-OK.
+This solution is more simple than using virtio-serial.
 
-> To be honest tg3, as one example, supports quite a large array of
-> different pieces of hardware that use the same logical core.
+> 
+> inl PORT -> returns a magic number indicating the presence of qemucalls
 
-At certain point it becomes a pain in the ass to support older
-chipsets, and simply easier to leave the older driver to rot.
+I donot understantd this instruction's purpose.
 
-> So that would be my litmus test about how different a chip needs
-> to be to deserve an entirely new driver.
+> inl PORT+1 -> returns a bitmap of supported features
 
-Understood.
+Hmm, we can execute this instruction when guest starts. If the userspace
+does not process panicked event, there is no need to notify it.
 
-> I strongly suggest you try to get atl1c working properly.
+> 
+> outl PORT+1 -> data reg1
+> outl PORT+2 -> data reg2
+> outl PORT+N -> data regN
 
-This is what I have recommended since the alx driver was rejected, and
-our team has been working on the atl1c driver now but we need to get
-the legal approval to get contributions out to atl1c (I know this is
-silly, but hey just letting you know).
+We can get the register value from vmcs. So there is no need to tell
+the register value to the host.
 
-Anyway, in the meantime another topic has creeped up, and that is to
-share with BSD and also help kill proprietary drivers [0]. Me and
-Adrian intend on sharing our thoughts on how we intend on doing this
-at LF collab but was in hopes we can use alx as a test case. We've
-gone back to the drawing board for another simple driver to test our
-work against but... we come back to alx.
+If we decide to avoid touching hypervisor, I agree with this solution.
 
-Would it be worthwhile to consider alx upstream only for the newer
-chipsets (regardless of the litmus test, which I do agree with on
-technical grounds) in consideration for helping pave the way on
-killing proprietary drivers?
+Thanks
+Wen Congyang
+> 
+> outl PORT -> qemucall of index value with arguments 1..N
+> 
+> Regards,
+> 
+> Anthony Liguori
+> 
+>>
+>> In fact the feature can be implemented 100% host side by searching for a
+>> panic string signature in the console logs.
+>>
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-[0] https://events.linuxfoundation.org/events/collaboration-summit/rodriguez-chadd
-
- Luis
