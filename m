@@ -1,122 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab2CVUDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:03:51 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44868 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab2CVUDr convert rfc822-to-8bit (ORCPT
+	id S1758528Ab2CVUEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:04:39 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63525 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753816Ab2CVUEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:03:47 -0400
+	Thu, 22 Mar 2012 16:04:38 -0400
+Date: Thu, 22 Mar 2012 22:03:39 +0200
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Rafal Prylowski <prylowski@metasoft.pl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Message-ID: <20120322200339.GA5812@mwesterb-mobl.ger.corp.intel.com>
+References: <4F683B36.8090101@metasoft.pl>
+ <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
+ <20120321193231.GA3740@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48AB1@AUSP01VMBX24.collaborationhost.net>
+ <20120322073750.GA637@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48CAF@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-In-Reply-To: <CACLa4pt0iQDM14N8AwqBmuZESYaevy6Km8CF_0pEeP+ydH7xjw@mail.gmail.com>
-References: <20120322183845.GA17264@phenom.dumpdata.com>
-	<CACLa4pt0iQDM14N8AwqBmuZESYaevy6Km8CF_0pEeP+ydH7xjw@mail.gmail.com>
-Date: Thu, 22 Mar 2012 16:03:45 -0400
-Message-ID: <CACLa4psVGvymuLGJTV+e=n3mYY2h4=nBhb6FGD_PjjE=xMtZgg@mail.gmail.com>
-Subject: Re: Regression introduced by bfcfaa77bdf0f775263e906015982a608df01c76
- (vfs: use 'unsigned long' accesses for dcache name comparison and hashing)
-From: Eric Paris <eparis@parisplace.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020696D48CAF@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reverting this patch also fixed the spurious ENOENT problems (and
-related boot failures) from SELinux.
+On Thu, Mar 22, 2012 at 01:52:52PM -0500, H Hartley Sweeten wrote:
 
-Easy reproducer with SELinux enabled (although might I suggest
-permissive/enforcing=0 since the box can't boot otherwise):
+> I hacked this back to the handle_one_vic function. It looks like every time
+> I get the message above the stat read in that function shows an active
+> interrupt for DMAM2M0 (the dma rx channel) and DMAM2M1 (the dma
+> tx channel). Because of the way handle_one_vic processes the irq's, the
+> DMAM2M0 interrupt gets handled first. When it's done it must be clearing
+> the DMAM2M1 interrupt automatically for some reason. So, when it's
+> handled there is no interrupt pending so we get the message.
+> 
+> The "cleanest" fix I can think of is the following patch.  This is against
+> linux-next.
 
-compute_create system_u:system_r:kernel_t:s0
-system_u:object_r:init_exec_t:s0 process
+I can't figure out any better fix unless we move ep93xx back to use
+!MULTI_IRQ_HANDLER which obviously is not good thing to do.
 
-If you get back system_u:object_r:init_exec_t:s0 it failed and you'll
-see under strace the ENOENT stat() failure.
+> From: H Hartley Sweeten <hsweeten@visionengravers.com>
+> 
+> dma: ep93xx: check for spurious interrupts
+> 
+> The ep93xx dma controller generates spurious interrupts on dma1chan1 when
+> used with the mmc_spi driver. Catch these early by making sure there is an
+> interrupt to actually process.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-If you get back system_u:object_r:init_t:s0 it means it worked...
+Tested-by: Mika Westerberg <mika.westerberg@iki.fi>
 
--Eric
+Thanks for investigating this. You missed one thing though, see below.
+Otherwise it doesn't compile :)
 
-
-On Thu, Mar 22, 2012 at 3:33 PM, Eric Paris <eparis@parisplace.org> wrote:
-> No idea if it is related and haven't bisected, but we are seeing
-> similar ENOENT issues with things in selinuxfs.  And not a single bit
-> of SELinux code has changed since v3.3.  So it's certainly a VFS
-> problem.  This sounds likely.
->
-> -Eric
->
-> On Thu, Mar 22, 2012 at 2:38 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
->> Hey Linus,
->>
->> I am not sure how to debug this but with v3.3 with just that git commit I can't
->> start an user space application called 'xenstored'. A bit of strace showed me:
->> [edit, also with todays linus/master I get the same issue, and if I revert
->> your patch it works again]
->>
->> (right is 3.3, left is with your patch)
->> write(3, "Checking store complete.\n", 25) = 25                 write(3, "Checking store complete.\n", 25) = 25
->> sendto(9, "<11>Mar 22 18:00:27 xenstored: C"..., 55, MSG_NOSI | sendto(9, "<11>Mar 22 18:06:44 xenstored: C"..., 55, MSG_NOSI
->> open("/proc/xen/privcmd", O_RDWR)       = 10                    open("/proc/xen/privcmd", O_RDWR)       = 10
->> fcntl(10, F_GETFD)                      = 0                     fcntl(10, F_GETFD)                      = 0
->> fcntl(10, F_SETFD, FD_CLOEXEC)          = 0                     fcntl(10, F_SETFD, FD_CLOEXEC)          = 0
->> open("/dev/xen/evtchn", O_RDWR)         = 11                    open("/dev/xen/evtchn", O_RDWR)         = 11
->> open("/proc/xen/xsd_port", O_RDONLY)    = -1 ENOENT (No such  | open("/proc/xen/xsd_port", O_RDONLY)    = 12
->> write(2, "FATAL: ", 7FATAL: )                  = 7            | read(12, "25", 20)                      = 2
->> write(2, "Failed to initialize dom0 state:"..., 59Failed to i | close(12)                               = 0
->> ) = 59                                                        | ioctl(11, EVIOCGVERSION, 0x7fff4e3ffc70) = 41
->> close(10)                               = 0                   | write(3, "CREATE connection 0xe2e7b0\n", 27) = 27
->> close(5)                                = 0                   | open("/proc/xen/xsd_kva", O_RDWR)       = 12
->> close(4)                                = 0                   | mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, 12, 0) = 0
->> exit_group(1)                           = ?                   | close(12)                               = 0
->>                                                              > ioctl(11, EVIOCGKEYCODE or EVIOCSKEYCODE, 0x7fff4e3ffc90) = 0
->>                                                              > ioctl(11, 0x44500, 0x7fff4e3ffc90)      = 42
->>                                                              > rt_sigaction(SIGHUP, {0x402180, [HUP], SA_RESTORER|SA_RESTART
->>                                                              > select(12, [4 5 6 11], [], NULL, NULL)  = 1 (in [11])
->>                                                              > read(11, ")\0\0\0", 4)                  = 4
->>                                                              > write(11, ")\0\0\0", 4)                 = 4
->>                                                              > select(12, [4 5 6 11], [], NULL, NULL <unfinished ...>
->>
->> and if I ls /proc/xen (v3.3):
->>
->>> ls -al /proc/xen
->> total 0
->> drwxr-xr-x   2 root root 0 Mar 22 18:05 .
->> dr-xr-xr-x 126 root root 0 Mar 22 18:05 ..
->> -r--r--r--   1 root root 0 Mar 22 18:05 capabilities
->> -rw-------   1 root root 0 Mar 22 18:05 privcmd
->> -rw-------   1 root root 0 Mar 22 18:05 xenbus
->> -rw-------   1 root root 0 Mar 22 18:05 xsd_port
->>
->> while v3.3 with your patch:
->>
->>
->> 8:01:09 # 10 :/proc/xen/
->>> ls -al
->> ls: cannot access xsd_port: No such file or directory
->> total 0
->> drwxr-xr-x   2 root root 0 Mar 22 17:57 .
->> dr-xr-xr-x 126 root root 0 Mar 22 17:57 ..
->> -r--r--r--   1 root root 0 Mar 22 17:57 capabilities
->> -rw-------   1 root root 0 Mar 22 17:57 privcmd
->> -rw-------   1 root root 0 Mar 22 17:57 xenbus
->> -rw-------   1 root root 0 Mar 22 17:57 xsd_kva
->> -?????????   ? ?    ?    ?            ? xsd_port
->>
->>
->> Looking at the code that sets up 'xsd_port' it looks pretty innocent
->> and similar to other drivers (ibmasm for example).
->>
->> Also attached is the .config
->>
->> Note: to actually bootup the latest with Xen there are some fixes required
->> to fix the regressions introduced:
->> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=106b44388d8f76373149c4ea144f717b6d4d9a6d
->> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=a759ceb7d1dfe38f4dda147e233aa53c8f477e2a
->> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=1b34ba936c1adff3020eec1e1834ffa4cf89802f
->> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=6ac72c4bc49a9afb02b8176b48be019dff0560cd
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index e1cc87a..614bff4 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -751,7 +751,7 @@ static irqreturn_t ep93xx_dma_interrupt(int irq, void *dev_id)
+ 		return IRQ_NONE;
+ 	}
+ 
+-	switch (edmac->edma->hw_interrupt(edmac)) {
++	switch (edmac->edma->hw_interrupt(edmac, irq_status)) {
+ 	case INTERRUPT_DONE:
+ 		desc->complete = true;
+ 		tasklet_schedule(&edmac->tasklet);
