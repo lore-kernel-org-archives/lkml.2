@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab2CVLuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:50:10 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:56163 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2CVLuG (ORCPT
+	id S1757591Ab2CVLuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:50:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48927 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757357Ab2CVLuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:50:06 -0400
-X-Nat-Received: from [202.181.97.72]:59376 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1332416914.8445
-To: bharrosh@panasas.com
-Cc: akpm@linux-foundation.org, oleg@redhat.com, rjw@sisk.pl,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        sbhamare@panasas.com, dhowells@redhat.com, eparis@redhat.com,
-        srivatsa.bhat@linux.vnet.ibm.com, kay.sievers@vrfy.org,
-        jmorris@namei.org, ebiederm@xmission.com, gregkh@linuxfoundation.org,
-        rusty@rustcorp.com.au, tj@kernel.org, rientjes@google.com
-Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout()API
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <4F691059.30405@panasas.com>
-	<4F691383.5040506@panasas.com>
-	<4F6A92FC.6060702@panasas.com>
-In-Reply-To: <4F6A92FC.6060702@panasas.com>
-Message-Id: <201203222048.HDB56245.JFOMVHQFSOOtLF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 22 Mar 2012 20:48:31 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 22032012 #7374757, status: clean
+	Thu, 22 Mar 2012 07:50:12 -0400
+Date: Thu, 22 Mar 2012 11:50:09 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: gpio-regulator: Set the smallest
+ voltage/current in the specified range
+Message-ID: <20120322115009.GG3091@opensource.wolfsonmicro.com>
+References: <1332396484.3842.2.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5L6AZ1aJH5mDrqCQ"
+Content-Disposition: inline
+In-Reply-To: <1332396484.3842.2.camel@phoenix>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh wrote:
-> > @@ -452,22 +459,27 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info,
-> >  
-> >  	sub_info->complete = &done;
-> >  	sub_info->wait = wait;
-> > +	if (!sub_info->wait_timeout)
-> > +		sub_info->wait_timeout = MAX_SCHEDULE_TIMEOUT;
-> >  
-> > +	/* Balanced in __call_usermodehelper or wait_for_helper */
-> > +	kref_get(&sub_info->kref);
-> >  	queue_work(khelper_wq, &sub_info->work);
-> >  	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
-> >  		goto unlock;
-> > -	wait_for_completion(&done);
-> > -	retval = sub_info->retval;
-> > -
-> > +	if (likely(wait_for_completion_timeout(&done, sub_info->wait_timeout)))
-> > +		retval = sub_info->retval;
-> > +	else
-> > +		retval = -ETIMEDOUT;
 
-This patch is incomplete because sub_info->complete refers on-stack variable.
-Returning without waiting for completion will overwrite stack memory later.
+--5L6AZ1aJH5mDrqCQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Anyway I thought that we are not
-> suppose to use xhcg() since it is not portable to all ARCHs. ;-)
+On Thu, Mar 22, 2012 at 02:08:04PM +0800, Axel Lin wrote:
+> Do not assume the gpio regulator states map is sorted in any order.
+> This patch ensures we always set the smallest voltage/current that falls within
+> the specified range.
 
-Don't worry. xchg() is used in many places. ;-)
-http://tomoyo.sourceforge.jp/cgi-bin/lxr/ident?i=xchg
+Applied, thanks.
 
-> But basically we both need support for the waiter to be returning before
-> the child has completed.
+--5L6AZ1aJH5mDrqCQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I think basically we should not give up unless fatal events (e.g. SIGKILL or
-TIF_MEMDIE) occur. Thus, I feel UMH_KILLABLE is sufficient.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPaxHZAAoJEBus8iNuMP3dNFcP/iBt9y7sPeK9A8OH0cF1tfi5
+cdSA0oJBKCZomO+lSD3sD5Ax8TiJqO7wiTwoDyXTrCfqWJ/7ayADvlBJD0yGhCXJ
+v6l1++YK7Ex/GJUJF6Y7yHZSInqNLE4t+tDJpXZqdd08jCuHNsCwuOKuFdBxua0Y
+NSWoKoiNhoUQGAz137ru2Svqj0/X/DI9Fl+eqpGhgRFF1ggwaSw96kvRPN/PxMtA
+uGuYlU3yLl0lcHnRyn4Kdgj2n9ZrNBF9yVyA+p5FD/YlPCcxk6rKNf5zCM0zVLtp
+CV+TwNZY9XpGxfYfVQaSu/ZmiSZ1a33IEhzOrCctMaPkaQQyKFAJVC9K+gymt9+M
+059CLszG7mGLicPNxP70zVALwrFCq0IXqAq2ZUq0pwxUzewLJunA6Ymz2+MqV779
+rAh2WjT9eAsHjdBraWdR1PiIsZRNoP4ajxc5OZLiTnimzb7YvXc7mmkTeocT+qnT
+VdbM7sZCB8tbo+jHtC/rldTMq+JaOdNiGeAjc6ufBI5rmDc919I//KhH7Wv3qiwp
+Qmh6MnBfi19QmCrvneqEUSxMskfXD34qj1tZyNSoe0vUzb1ZAvB/qRcyeNSezb0k
+OVW6rID9p6KD7UaHO1isajF5rs0K8ROa4vEs+K9RzqrKSbgcGdn9mitUOsBy+WZt
+Xz2zaDVGUBb/yHwpLXYP
+=rLWe
+-----END PGP SIGNATURE-----
+
+--5L6AZ1aJH5mDrqCQ--
