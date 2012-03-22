@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab2CVS4p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 14:56:45 -0400
-Received: from gw.danplanet.com ([50.43.125.66]:53343 "EHLO mail.danplanet.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759125Ab2CVS4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 14:56:41 -0400
-From: Dan Smith <danms@us.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] AutoNUMA alpha6
-References: <20120316182511.GJ24602@redhat.com> <87k42edenh.fsf@danplanet.com>
-	<20120321021239.GQ24602@redhat.com> <87fwd2d2kp.fsf@danplanet.com>
-	<20120321124937.GX24602@redhat.com> <87limtboet.fsf@danplanet.com>
-	<20120321225242.GL24602@redhat.com>
-	<20120322001722.GQ24602@redhat.com> <873990buuy.fsf@danplanet.com>
-	<20120322142735.GE24602@redhat.com>
-	<20120322184925.GT24602@redhat.com>
-Date: Thu, 22 Mar 2012 11:56:37 -0700
-In-Reply-To: <20120322184925.GT24602@redhat.com> (Andrea Arcangeli's message
-	of "Thu, 22 Mar 2012 19:49:25 +0100")
-Message-ID: <87limsa2hm.fsf@danplanet.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759231Ab2CVTAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:00:33 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59754 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751341Ab2CVTAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 15:00:30 -0400
+Message-ID: <1332442828.5636.39.camel@joe2Laptop>
+Subject: Re: [PATCH 1/1] checkpatch.pl: thou shalt not use () or (...) in
+ function declarations
+From: Joe Perches <joe@perches.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Jiri Slaby <jslaby@suse.cz>, Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        apw@canonical.com, hpa@zytor.com, linux-kernel@vger.kernel.org
+Date: Thu, 22 Mar 2012 12:00:28 -0700
+In-Reply-To: <6258.1332436627@turing-police.cc.vt.edu>
+References: <1332430038-21057-1-git-send-email-ext-phil.2.carmody@nokia.com>
+	 <4F6B51C9.6010904@suse.cz> <4517.1332434943@turing-police.cc.vt.edu>
+	 <4F6B598A.7090909@suse.cz> <6258.1332436627@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AA> but now it's time to go back coding and add THP native
-AA> migration. That will benefit everyone, from cpuset in userland to
-AA> numa/sched.
+On Thu, 2012-03-22 at 13:17 -0400, Valdis.Kletnieks@vt.edu wrote:
+> Those can be 'int foo(void)' can't they?  The other historical usage is for
+> 'int foo()' to denote an old K&R-style varargs list, which is like disco - a
+> bad idea from long agon that's never coming back. ;)
+> 
+> Of course, if we add this to checkpatch, we'll have a flood of fixup patches.
 
-I dunno about everyone else, but I think the thing I'd like to see most
-(other than more interesting benchmarks) is a broken out and documented
-set of patches instead of the monolithic commit you have now. I know you
-weren't probably planning to do that until numasched came along, but it
-sure would help me digest the differences in the two approaches.
+Not really, more like a mist than a flood.
+There just aren't many in-kernel uses.
+There are 10 in drivers/, 15 in arch/, none in include/
 
--- 
-Dan Smith
-IBM Linux Technology Center
+$ grep -rP --include=*.[ch] "^\w+\s+\w+\s*\(\s*(?:\.\.\.){0,1}\s*\)" *
+
+A single trivial patch should work for all of them.
+
+> Maybe we just need to say "3.5 will be the int foo() housecleaning release" and
+> be done with it?
+
+Sensible.
+
