@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809Ab2CVLUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:20:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59878 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932154Ab2CVLUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:20:36 -0400
-Date: Thu, 22 Mar 2012 11:20:34 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: Add TPS65090 regulator driver
-Message-ID: <20120322112033.GB3091@opensource.wolfsonmicro.com>
-References: <1332315326-11354-1-git-send-email-vbyravarasu@nvidia.com>
- <20120321085125.GA10935@opensource.wolfsonmicro.com>
- <D958900912E20642BCBC71664EFECE3E6DD3127F90@BGMAIL02.nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
-Content-Disposition: inline
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD3127F90@BGMAIL02.nvidia.com>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964872Ab2CVLXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:23:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33815 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751526Ab2CVLXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 07:23:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="120415668"
+Message-ID: <1332415537.18717.21.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Mar 2012 13:25:37 +0200
+In-Reply-To: <20120322103309.GA14484@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <20120322095342.GC14485@quack.suse.cz>
+	 <1332410747.18717.12.camel@sauron.fi.intel.com>
+	 <20120322103309.GA14484@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-m7BzqZp205qfFoP0txw4"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---v9Ux+11Zm5mwPlX6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-m7BzqZp205qfFoP0txw4
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 22, 2012 at 11:35:24AM +0530, Venu Byravarasu wrote:
+On Thu, 2012-03-22 at 11:33 +0100, Jan Kara wrote:
+> > However, if there is _no_ journal, the 'write_super' is initialized, an=
+d
+> > in many places the 's_dirt' flag is set, and thus VFS services seem to
+> > be actively used.
+>   Which many places are you speaking about? Grep shows 4 places with
+> sb->s_dirt =3D 1;
 
-> As the MFD got merged in linux-next, can you please review the regulator=
-=20
-> driver patch I sent.
+Well, with 'ext4_mark_super_dirty()' there are still 6 or something
+places.
 
-Two things:
+>   You remove two of those in your cleanups so only
+> __ext4_handle_dirty_super() remains. That is called from 3 (4 after your
+> cleanups) places and they happen so rarely (during filesystem resize or
+> when we start using some feature on the filesystem) that if you use
+> sync_buffer() from all of them, it should be fine.
 
- - Never top post.
- - You appear to be replying to my review...
+But AFAIKC, the whole '__ext4_handle_dirty_super()' also falls-back to
+marking the superblock as dirty if the file-system has no journal for
+some reasons, right?. But I do not really understand what
+'ext4_handle_valid()' does. If I grep for 'ext4_handle_dirty_super()' -
+there are many places places where it is used, and a few are obviously
+for the superblocks.
 
---v9Ux+11Zm5mwPlX6
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-m7BzqZp205qfFoP0txw4
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPawrJAAoJEBus8iNuMP3dDjIP/0bQ3cGrRKjwaJHq6n1W3LqB
-xXAaqAMM9fk2V5yDDeGLQBKl5WY/XYMECS2cFvIH+Z3jFWe1xi/FbOPie1rJWdSf
-5VDXrwLnBb+fT8jfv4oTQFws1vD7ffDkv6Ytz7djaT5FSLzU5NTgmig/PdII9A4d
-5UY1EJPLEBDJl9tfEaELuEcEkIQTLCs+d3W54Znu6DMsZes9tIqODz6/5ko9bL9c
-Y3qD2pihxgpdM3a8Dlkueq34adnud5UcmD+vjWanwTUztrbpA7Qy+gmgCQoTGIaB
-A5ZGEGYbzoIJlzpkGTQtoBeRzk/0uDa30a1JMnXU5kObnJN4/l/nFsgF9vFfgym9
-ejt1Asm59JYsCllFcFd4xDHUGCC934B6F3f85fJjmrwPG5PPpoVmn645wfcEZzMG
-Op+AR/E6GX0KA1LzMFpKVin52vdWSwF3DpKTVWK1Lgy6wXsJd7g4o8UccApVoyki
-U28ajhN8i5FZVuDiAm/bh3xbU1Mmhm4SH+DhoLuAqPh4GWwgCMSzm7ZAMi1gjDty
-ca3Qm+/Y9PKuVlBsyKLSVr2YGKTiOHX7drVL5Xz5wRiR5UXJd7PtP4muEUwSS7+S
-F8wUp1RGNjMsLAap0ZhkTyI+J6FAEtpSE6Y1EbjRv2xAWXSB3kOagUCJUn9UIxtB
-QZYnp8QkjW+ZxP/2KWej
-=HtU2
+iQIcBAABAgAGBQJPawwxAAoJECmIfjd9wqK0LJEP/1KCA9fBdQvnZuoRMKsCCEom
+rFsuWStPynTbB95PruUj3C7tJs4H3NrqPIZTfZ9p5F2mULSd+VVhHaAEJz/xOEy4
+4MLboIgRkJTtO73LbXW9x2UngP1yKohti3R9wYbHvMnwJFCgDA+HY54JHURd+6mG
+eJ2cWphuyZy6rTJbBkruXhvhb0qS/Iqmdp9aj2/tvf+23WSU9j41qejrqH7ZVxpg
+NiAtP4ErdzEfi9OBEEYHJkMvyuXZtBfeZatqKGGVnR0eA9WjGLWArAFCxXiZ7UXV
+EqYLKZjSIhA9m2RUWfM6IX9/ZEKyct3klXQPEvKwpDGJ1mZh23AQDWOEZC0b/HYo
+JH1r8GnZ2VXP7cgGh1xmjt78aH0nLGHaHrXZOA9eED+F22zB89EgbdLv0Kr3P0Tr
+Pye59QjhKH4n6ntJPlJWjLQx1XMSRnN7sToBxMu31HXH8ua8wc6pbTEOv6bRUSh8
+Yd8nyystKXV6+JQkcbz836sNQSKG1moljCGfOCO3u6WqaktkkpjMSUy5BEaTVNFM
+fm0GMmMTgTvtYM+NDehtFpMAH6WMASTRZQR8SwU/qwF91kyvRsOjIowUzZblsF5j
+SOBRDo8/C8Y2YtJ27dKWQpjJ/cv35se438fMeuoYJ78s9/a+S0qVFIyVDg5RrzsO
+ujYHLJhzm3PBqifaGRN0
+=FB1n
 -----END PGP SIGNATURE-----
 
---v9Ux+11Zm5mwPlX6--
+--=-m7BzqZp205qfFoP0txw4--
+
