@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759809Ab2CVUkl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:40:41 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54395 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759749Ab2CVUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:40:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="122142743"
-Message-ID: <4F6B8E1B.9080802@linux.intel.com>
-Date: Thu, 22 Mar 2012 13:39:55 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1759833Ab2CVUmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:42:50 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51579 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759748Ab2CVUms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 16:42:48 -0400
 MIME-Version: 1.0
-To: Michael Brunner <mibru@gmx.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
-References: <20120322211903.6776ab18@mail.gmx.de>
-In-Reply-To: <20120322211903.6776ab18@mail.gmx.de>
-X-Enigmail-Version: 1.4
+In-Reply-To: <20120322203658.GC6589@ZenIV.linux.org.uk>
+References: <20120322183845.GA17264@phenom.dumpdata.com> <20120322200918.GZ6589@ZenIV.linux.org.uk>
+ <20120322202445.GB6589@ZenIV.linux.org.uk> <20120322203658.GC6589@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Mar 2012 13:42:27 -0700
+X-Google-Sender-Auth: mI0TNOuaV9eqoQZNwDWSk2qa3uc
+Message-ID: <CA+55aFzTMTXboyJxmFWrPmv6ckt5m3-9rovwg1_8Y+3Osk9uxA@mail.gmail.com>
+Subject: Re: Regression introduced by bfcfaa77bdf0f775263e906015982a608df01c76
+ (vfs: use 'unsigned long' accesses for dcache name comparison and hashing)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 22, 2012 at 1:36 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Guys, could you check if this fixes it?
 
+Yup, that's the patch I was thinking of too.
 
-On 03/22/2012 01:19 PM, Michael Brunner wrote:
-> Add UART clock quirk for the Kontron COMe-mTT10 module.
-> The board has previously been called nanoETXexpress-TT, therefore this
-> is also checked. 
-> 
-> This patch follows the patchset submitted by Darren Hart at
-> commit a46f5533ecfc7bbdd646d84fdab8656031a715c6.
-> 
-> Signed-off-by: Michael Brunner <mibru@gmx.de>
-> ---
->  drivers/tty/serial/pch_uart.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-> index 332f2eb..0ab5295 100644
-> --- a/drivers/tty/serial/pch_uart.c
-> +++ b/drivers/tty/serial/pch_uart.c
-> @@ -210,6 +210,7 @@ enum {
->  #define CMITC_UARTCLK   192000000 /* 192.0000 MHz */
->  #define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
->  #define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
-> +#define NTC1_UARTCLK     64000000 /*  64.0000 MHz */
->  
->  struct pch_uart_buffer {
->  	unsigned char *buf;
-> @@ -379,6 +380,10 @@ static int pch_uart_get_uartclk(void)
->  	cmp = dmi_get_system_info(DMI_BOARD_NAME);
->  	if (cmp && strstr(cmp, "CM-iTC"))
->  		return CMITC_UARTCLK;
-> +	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
-> +	if (cmp && (strstr(cmp, "COMe-mTT") ||
-> +		    strstr(cmp, "nanoETXexpress-TT")))
-> +		return NTC1_UARTCLK;
+But I didn't test it. And considering that apparently I don't have
+anything that ever triggers this, I guess I should write some
+user-space harness thing for this.
 
-These boards should already be supported by the following BIOS check. As
-the DMI_BOARD_NAME was changing, it was Kontron's recommendation to use
-the FRI2 prefix in the DMI_BIOS_VERSION.
+I actually wrote some *other* user-space testing functions (checking
+that the hash values we generated were good), but I never tested the
+"unimportant and totally obvious" full_name_hash() function.
 
+Btw, about test harnesses: I do have a patch to the kernel that
+exposes the dentry hash chains through /proc. Interesting to anybody
+else? I decided that I didn't want to try to simulate the dentry
+hashing in user space, since part of the final hash function is the
+'parent' dentry pointer itself (the name hash part is user-spaceable,
+but I wanted to see the distribution of those parent bits too).
 
->  	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
->  	if (cmp && strnstr(cmp, "FRI2", 4))
-
-Is this not working for you? If not, what is the DMI_BIOS_VERSION
-reported by your board?
-
-And for clarification, we are talking about this right:
-http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+                          Linus
