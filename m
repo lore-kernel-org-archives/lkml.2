@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2CVHiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 03:38:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57751 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab2CVHiU convert rfc822-to-8bit (ORCPT
+	id S1755210Ab2CVHio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 03:38:44 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40630 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab2CVHin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 03:38:20 -0400
+	Thu, 22 Mar 2012 03:38:43 -0400
+Date: Thu, 22 Mar 2012 09:37:50 +0200
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Rafal Prylowski <prylowski@metasoft.pl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Message-ID: <20120322073750.GA637@mwesterb-mobl.ger.corp.intel.com>
+References: <4F683B36.8090101@metasoft.pl>
+ <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
+ <20120321193231.GA3740@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48AB1@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <alpine.DEB.2.00.1203210953220.20482@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	<1332338318-5958-13-git-send-email-fweisbec@gmail.com>
-	<alpine.DEB.2.00.1203210953220.20482@router.home>
-Date: Thu, 22 Mar 2012 09:38:19 +0200
-Message-ID: <CAOtvUMdkU92t0nj9OXsnzCenuOyjb12x6s11xR_GGJu1aJJ7GA@mail.gmail.com>
-Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs it
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020696D48AB1@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 4:54 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Wed, 21 Mar 2012, Frederic Weisbecker wrote:
->
->> If RCU is waiting for the current CPU to complete a grace
->> period, don't turn off the tick. Unlike dynctik-idle, we
->> are not necessarily going to enter into rcu extended quiescent
->> state, so we may need to keep the tick to note current CPU's
->> quiescent states.
->
-> Is there any way for userspace to know that the tick is not off yet due to
-> this? It would make sense for us to have busy loop in user space that
-> waits until the OS has completed all processing if that avoids future
-> latencies for the application.
->
+On Wed, Mar 21, 2012 at 07:47:52PM -0500, H Hartley Sweeten wrote:
 
-I previously suggested having the user register to receive a signal
-when the tick
-is turned off. Since the tick is always turned off the user task is
-the current task
-by design, *I think* you can simply mark the signal pending when you
-turn the tick off.
+> I think you misunderstood my comment above.
+> 
+> With this patch applied I get the "unknown interrupt!" storm. These messages
+> keep getting spewed until I power off the board.
 
-The user would register a signal handler to set a flag when it is
-called and then busy
-loop waiting for a flag to clear.
+Ah, right you are. Sorry.
 
-Checking this approach is on my todo list, but alas I had no progress
-with it yet :-)
+With my Sim.One board, I don't see any interrupt storms at all and I also have
+mmc_spi with DMA enabled.
 
-Gilad
+> Without this patch I get the "got interrupt while active list is empty" messages
+> but only occasionally. Other than the messages the mmc_spi driver seems to
+> be working ok with dma.
+> 
+> I hacked in a dump of the DMA Global Interrupt register when I get the
+> "got interrupt while active list is empty" messages and get this:
+> 
+> dma dma1chan1: got interrupt while active list is empty (00000000)
 
+In addition to these messages my board hangs almost every boot.
 
+> So, according to the DMAGlInt register, there are no channels with an
+> active interrupt.
+> 
+> Are we missing a write to the INTERRUPT registers somewhere to clear the
+> current interrupt?
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+In the current code we only enable DONE interrupt and we always clear that at
+the beginning of the ISR.
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+The VIC code was changed in 3.3. Its behaviour is different now as it tries to
+handle as many IRQs as possible in one go whereas before it only handled one
+IRQ at a time. Could it be that the VIC in ep93xx doesn't cope with that?
