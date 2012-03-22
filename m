@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab2CVKqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:46:13 -0400
-Received: from 124-248-200-64.sunnyvision.com ([124.248.200.64]:58040 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750966Ab2CVKqM (ORCPT
+	id S1753362Ab2CVKuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:50:18 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:41012 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2CVKuO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:46:12 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 50E72E2C36
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 6F7A64FB37
-Message-ID: <IhLmuFYI@tpts5.seed.net.tw>
-From: boris@cloudluca.com
-Subject: Server Rental Service in Hong Kong
-X-Mailer: PPQovRW5HzDsV5lPLAQxHMlt
+	Thu, 22 Mar 2012 06:50:14 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
 Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Thu, 22 Mar 2012 18:11:54 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 09/20] Input: atmel_mxt_ts - do not read extra (checksum) byte
+Date: Thu, 22 Mar 2012 10:18:20 -0000
+Message-ID: <7317DB9644E3CB42BFF8C23FFFF6D0DA0571E32B@hammb01.corp.atmel.com>
+In-Reply-To: <4F689D41.9080507@itdev.co.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 09/20] Input: atmel_mxt_ts - do not read extra (checksum) byte
+Thread-Index: Ac0GqzkG3H87cU5lQQGfZMu2bMrfewBaXG2g
+References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org> <1331640263-18935-10-git-send-email-djkurtz@chromium.org> <4F689D41.9080507@itdev.co.uk>
+From: "Bowens, Alan" <Alan.Bowens@atmel.com>
+To: "Nick Dyer" <nick.dyer@itdev.co.uk>, "Daniel Kurtz" <djkurtz@chromium.org>
+Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Joonyoung Shim" <jy0922.shim@samsung.com>,
+        "Valkonen, Iiro" <iiro.valkonen@atmel.com>,
+        "Henrik Rydberg" <rydberg@euromail.se>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "Benson Leung" <bleung@chromium.org>,
+        "Yufeng Shen" <miletus@chromium.org>,
+        "Tiwari, Atul" <Atul.Tiwari@atmel.com>
+X-OriginalArrivalTime: 22 Mar 2012 10:18:21.0929 (UTC) FILETIME=[1BEA5590:01CD0815]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q2MAkM1e019643
 
-Dear All,
+Just to confuse things, the checksum byte is available from the chip if
+required. Reading it involves a slightly different approach to normal
+message processor reads, in that the host needs to write the 16-bit
+address of the message processor, with the MSB set. It must then follow
+these two bytes with another byte consisting of the checksum of the
+previous two bytes.
 
-We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
-
-Dell? PowerEdge? EnterpriseRack Mount Server
--Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
--8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
--500GB, 3.5", 6Gbps SAS x 2
--Raid 1 Mirroring Protection
--Remote KVM (iDRAC6 Enterprise)
-
-Dell(TM) PowerEdge(TM) R410 Rack Mount Server
--Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
--4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
--500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
--iDRAC6 Enterprise or Express (Remote KVM Management)
-
-Every Dedicated Server Hosting Solution Also Includes: 
- 
-Software Specification 
-- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
-- Full root-level access 
-- Data Center Facilities 
-- Shared Local & International Bandwidth 
-- 2 IP Addresses Allocation 
-- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
-- FM200¡§based fire suppression system 
-- 24x7 CRAC Air Conditioning and Humidity Control 
-- 24x7 Security Control 
-- 24x7 Remote Hand Service 
-
-Pls send us email for further information.Thanks,
-
-Boris 
-boris@cloudluca.com
-
-If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+This functionality was added at a customer's request, although I don't
+know if any current customers actually use it.
 
 
+Alan Bowens
+Section Manager / Atmel Corporation
+Tel: (+44) (0)1489-553-611
+alan.bowens@atmel.com / www.atmel.com
+
+The information contained in this email message may be privileged,
+confidential and/or protected from unauthorized disclosure. If you are
+not the intended recipient, any dissemination, distribution or copying
+is strictly prohibited. Please immediately notify the sender by reply if
+you received this email in error. Thank you for your cooperation. 
+
+-----Original Message-----
+From: Nick Dyer [mailto:nick.dyer@itdev.co.uk] 
+Sent: 20 March 2012 15:08
+To: Daniel Kurtz
+Cc: Dmitry Torokhov; Joonyoung Shim; Valkonen, Iiro; Henrik Rydberg;
+linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Benson Leung;
+Yufeng Shen; Tiwari, Atul; Bowens, Alan
+Subject: Re: [PATCH 09/20] Input: atmel_mxt_ts - do not read extra
+(checksum) byte
+
+Daniel Kurtz wrote:
+> It isn't sent, nor checked anyway, so don't bother reading it.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+
+This is fair enough, although IMO the checksum should be checked.
+
+--
+Nick Dyer
+Software Engineer, ITDev Ltd
+Hardware and Software Development Consultancy
+Website: http://www.itdev.co.uk
