@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab2CVSd2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 14:33:28 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:42907 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755983Ab2CVSdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 14:33:22 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: eqqlUUQVM1mDbOSDWqM.ooEkTkW.4UQVd3nxHbU4d21puLG
- WHW9b8wxchERgR0dv46WhJmYsyW6T11fMCSeg0i9g3cHmDwYCdgJTY7voX9O
- .HmYfGjZxWcy3hUV7zQe3e9m7wG7W_m.T_.8hluKHVcX4MID45OaLB5knO32
- Qn.p6rwJFjYKT4RtIjTD.mmY2ToIbt3yfG8VsdgzpkvlpQScWMO_XT9iY8UL
- 5adhuLSCxTdRdFKy3T3oQvwuwT_lOIIupEyo3ijCtsQKUhTLGkrrsFgRcIMh
- WGTslR7bahGJWMnRa_7KJye3yaHZ_oih7EaD46Ee2yECoMRT5_y2yTNamhhh
- afEYbES.Sye9bAqgZDMNGDsLyEMFlkvCTphsM8eugn.Y443vIQ3jCasT8KYY
- 4ayb5swGxsIpR4zAO8yCtJleRjnyHXCzg_y_L
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 22 Mar 2012 13:33:18 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Borislav Petkov <bp@amd64.org>
-cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 2/2] tools: Add a toplevel Makefile
-In-Reply-To: <1332435713-32143-3-git-send-email-bp@amd64.org>
-Message-ID: <alpine.DEB.2.00.1203221332390.25011@router.home>
-References: <1332435713-32143-1-git-send-email-bp@amd64.org> <1332435713-32143-3-git-send-email-bp@amd64.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756714Ab2CVSfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 14:35:54 -0400
+Received: from na3sys009aob129.obsmtp.com ([74.125.149.136]:33285 "EHLO
+	na3sys009amx259.postini.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754053Ab2CVSfw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 14:35:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120322113356.GC3091@opensource.wolfsonmicro.com>
+References: <1332360082-25092-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1332360082-25092-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20120321222622.GG29317@pengutronix.de> <20120322111531.GA3091@opensource.wolfsonmicro.com>
+ <20120322112613.GA3852@pengutronix.de> <20120322113356.GC3091@opensource.wolfsonmicro.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 22 Mar 2012 11:35:29 -0700
+Message-ID: <CAJOA=zOYfwy-smo6ukX7GSE2jrwz4UxwpgcFJiW876ga7ksShw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] clk: wm831x: Add initial WM831x clock driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Mar 2012, Borislav Petkov wrote:
+On Thu, Mar 22, 2012 at 4:33 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Mar 22, 2012 at 12:26:13PM +0100, Sascha Hauer wrote:
+>> On Thu, Mar 22, 2012 at 11:15:31AM +0000, Mark Brown wrote:
+>
+>> > No, that's not sensible.  We shouldn't be open coding this into each
+>> > individual driver that provides clocks, and we shouldn't have clock
+>> > users having to guess at what scheme the driver author used to dedupe
+>> > the clocks.  As a driver author you would assume that the reason we're
+>
+>> It seems they got dropped. Currently the clock framework does nothing
+>> with the device argument. But right, it could use this argument to
+>> generate a suitable name.
+>
+> Indeed, and as with adding the stub clk_unregister() it seems like it's
+> better at this point to just code the drivers as we'd expect them to
+> work and fill out the framework to handle this rather than introducing
+> workarounds in the drivers.
 
-> index 000000000000..97631367e0db
-> --- /dev/null
-> +++ b/tools/Makefile
-> @@ -0,0 +1,24 @@
-> +include scripts/Makefile.lib
-> +
-> +perf firewire lguest slub usb virtio: FORCE
-> +	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
-> +
-> +cpupower: FORCE
-> +	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
-> +
-> +turbostat x86_energy_perf_policy: FORCE
-> +	$(QUIET_SUBDIR0)power/x86/$@/ $(QUIET_SUBDIR1)
-> +
-> +firewire_clean lguest_clean perf_clean slub_clean usb_clean virtio_clean:
-> +	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-> +
-> +cp_clean:
-> +	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
-> +
-> +turbostat_clean x86_energy_perf_policy_clean:
-> +	$(QUIET_SUBDIR0)power/x86/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-> +
-> +clean: cp_clean firewire_clean lguest_clean perf_clean slub_clean turbostat_clean \
+Agreed.  I put this off some time back, but I figured the WM831X
+driver would bring the issue back up.
 
-slub_clean? Where is that target defined?
+I'm happy for the core to concatenate the strings when a struct device
+*dev is passed in.  However the reason I dropped this in the first
+place is that I have some ideas on providing something like clk_get
+directly from the common clk core and I hadn't figured out all of the
+details yet.  For now we can handle the string concatenation in the
+core and figure out those tricky details if/when the time comes to
+provide a clk_get which is more closely linked to the clock framework
+implementation.
 
-> diff --git a/tools/slub/Makefile b/tools/slub/Makefile
-> new file mode 100644
-> index 000000000000..b2cf6b467bbe
-> --- /dev/null
-> +++ b/tools/slub/Makefile
-> @@ -0,0 +1,4 @@
-> +slabinfo: slabinfo.c
-> +
-> +clean:
-> +	rm -rf slabinfo
+I'll roll in a patch for my fixes series.
 
-That portion looks okay.
-
+Regards,
+Mike
