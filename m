@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab2CVVRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:17:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19750 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab2CVVRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:17:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="120643374"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>, jeremy@goop.org
-Subject: [PATCH] x86, paravirt: Remove CONFIG_PARAVIRT_DEBUG
-Date: Thu, 22 Mar 2012 14:17:14 -0700
-Message-Id: <1332451034-28437-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S932441Ab2CVVST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:18:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41964 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab2CVVSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 17:18:16 -0400
+Date: Thu, 22 Mar 2012 14:17:56 -0700
+From: tip-bot for Gerlando Falauto <gerlando.falauto@keymile.com>
+Message-ID: <tip-8c9cf542b8a66c231747a550573d910daf17f0e9@git.kernel.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, gerlando.falauto@keymile.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, gerlando.falauto@keymile.com
+In-Reply-To: <1330330101-8618-1-git-send-email-gerlando.falauto@keymile.com>
+References: <1330330101-8618-1-git-send-email-gerlando.falauto@keymile.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracing: Do not select FRAME_POINTER on PPC
+Git-Commit-ID: 8c9cf542b8a66c231747a550573d910daf17f0e9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 22 Mar 2012 14:18:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Commit-ID:  8c9cf542b8a66c231747a550573d910daf17f0e9
+Gitweb:     http://git.kernel.org/tip/8c9cf542b8a66c231747a550573d910daf17f0e9
+Author:     Gerlando Falauto <gerlando.falauto@keymile.com>
+AuthorDate: Mon, 27 Feb 2012 09:08:21 +0100
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 27 Feb 2012 08:45:11 -0500
 
-CONFIG_PARAVIRT_DEBUG seems rather useless. It only has a single BUG_ON
-on a NULL pointer and that is directly in front of code that references
-that pointer anyways and would nicely oops if anything was wrong.
+tracing: Do not select FRAME_POINTER on PPC
 
-So remove that option.
+On PowerPC, FUNCTION_TRACER selects FRAME_POINTER, even
+though the architecture does not support it.
 
-Cc: jeremy@goop.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+This causes the following warning:
+warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP && FUNCTION_TRACER && KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies (DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS)
+
+So remove the warning by adding the extra condition
+"if !PPC" to FUNCTION_TRACER for FRAME_POINTER selection
+
+Link: http://lkml.kernel.org/r/1330330101-8618-1-git-send-email-gerlando.falauto@keymile.com
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/Kconfig                      |    7 -------
- arch/x86/include/asm/paravirt_types.h |    8 --------
- 2 files changed, 0 insertions(+), 15 deletions(-)
+ kernel/trace/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..ad52be6 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -628,13 +628,6 @@ config PARAVIRT_CLOCK
- 
- endif
- 
--config PARAVIRT_DEBUG
--	bool "paravirt-ops debugging"
--	depends on PARAVIRT && DEBUG_KERNEL
--	---help---
--	  Enable to debug paravirt_ops internals.  Specifically, BUG if
--	  a paravirt_op is missing when it is called.
--
- config NO_BOOTMEM
- 	def_bool y
- 
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 8e8b9a4..fa317c2 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -526,18 +526,11 @@ int paravirt_disable_iospace(void);
- #define VEXTRA_CLOBBERS	 , "rax", "r8", "r9", "r10", "r11"
- #endif	/* CONFIG_X86_32 */
- 
--#ifdef CONFIG_PARAVIRT_DEBUG
--#define PVOP_TEST_NULL(op)	BUG_ON(op == NULL)
--#else
--#define PVOP_TEST_NULL(op)	((void)op)
--#endif
--
- #define ____PVOP_CALL(rettype, op, clbr, call_clbr, extra_clbr,		\
- 		      pre, post, ...)					\
- 	({								\
- 		rettype __ret;						\
- 		PVOP_CALL_ARGS;						\
--		PVOP_TEST_NULL(op);					\
- 		/* This is 32-bit specific, but is okay in 64-bit */	\
- 		/* since this condition will never hold */		\
- 		if (sizeof(rettype) > sizeof(unsigned long)) {		\
-@@ -577,7 +570,6 @@ int paravirt_disable_iospace(void);
- #define ____PVOP_VCALL(op, clbr, call_clbr, extra_clbr, pre, post, ...)	\
- 	({								\
- 		PVOP_VCALL_ARGS;					\
--		PVOP_TEST_NULL(op);					\
- 		asm volatile(pre					\
- 			     paravirt_alt(PARAVIRT_CALL)		\
- 			     post					\
--- 
-1.7.7.6
-
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index cd31345..a1d2849 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -141,7 +141,7 @@ if FTRACE
+ config FUNCTION_TRACER
+ 	bool "Kernel Function Tracer"
+ 	depends on HAVE_FUNCTION_TRACER
+-	select FRAME_POINTER if !ARM_UNWIND && !S390 && !MICROBLAZE
++	select FRAME_POINTER if !ARM_UNWIND && !PPC && !S390 && !MICROBLAZE
+ 	select KALLSYMS
+ 	select GENERIC_TRACER
+ 	select CONTEXT_SWITCH_TRACER
