@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab2CVID1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 04:03:27 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:39637 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab2CVIDT convert rfc822-to-8bit (ORCPT
+	id S964773Ab2CVIJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 04:09:48 -0400
+Received: from torres.zugschlus.de ([85.214.131.164]:54846 "EHLO
+	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369Ab2CVIJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 04:03:19 -0400
-From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Subject: 3.3 and hidepid feature problem - options not always applied at mount
-Date: Thu, 22 Mar 2012 09:03:15 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-final-dirty; KDE/4.8.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
+	Thu, 22 Mar 2012 04:09:36 -0400
+X-Greylist: delayed 2107 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 04:09:36 EDT
+Date: Thu, 22 Mar 2012 08:34:28 +0100
+From: Marc Haber <mh+linux-kernel@zugschlus.de>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: IPv6 flapping with kernel 3.3 (regression from 3.2.9)
+Message-ID: <20120322073428.GA11510@torres.zugschlus.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203220903.15360.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
 Hi,
 
-I'm trying to use hidepid feature in 3.3 kernel but I'm getting weird
-things like options not being applied _sometimes_ at mount.
+I have a host which has IPv6 misbehaving when running with Linux 3.3.
+It is flawlessly working with Linux 3.2.9.
 
-[@ ~]# cat /proc/mounts
-sh: cat: /proc/mounts: No such file or directory
-[@ ~]# strace -e mount -f -F -s 200 mount none /proc -t proc -o hidepid=2,gid=17                            
-mount("none", "/proc", "proc", MS_MGC_VAL, "hidepid=2,gid=17") = 0
-[@ ~]# cat /proc/mounts
-rootfs / rootfs rw 0 0
-/dev/sda3 / xfs rw,relatime,attr2,noquota 0 0
-run /run tmpfs rw,relatime 0 0
-none /proc proc rw,relatime 0 0
+The host
+- is running Debian stable (x64_64) with a few locally built and/or
+  backported packages, including the kernel.
+- has native IPv6 connectivity on eth0
+- is not doing SLAAC on eth0, both IP address (from 2a01/16) and
+  default gateway (fe80::1) are statically configured
+- is running a handful of VMs using KVM/libvirt
+- has IPv6 forwarding enabled
+- does IPv4 NAT
+- has a handful of iptables rules, both for v4 and v6. ICMP and ICMPv6
+  are fully open
 
-No hidepid, no gid - huh?
+- the gateway is not under my control
+- the VMs are either bridged to br0 or to br1
+- both br0 and br1 have an IPv6 /64 and radvd running to provide IPv6
+  to the VMs
 
-[@ ~]# mount /proc -o remount,hidepid=2,gid=17
-[@ ~]# cat /proc/mounts
-rootfs / rootfs rw 0 0
-/dev/sda3 / xfs rw,relatime,attr2,noquota 0 0
-run /run tmpfs rw,relatime 0 0
-none /proc proc rw,relatime,gid=17,hidepid=2 0 0
+This setup is unique in my machine list, my other machines either are
+no KVM hosts or do only have IPv6 tunneled.
 
-remount and hidepid/gid is there
+When I run the box with kernel 3.3, it drops off the IPv6 network
+every few minutes and is not responding to pings any more. This state
+stays like 30 seconds to a minute and then IPv6 resumes. It looks to
+me that the box does not lose its default route though. Once in a
+while, I see "fe80::1 dev eth0  router FAILED" in the ip neigh output.
 
-[@ ~]# umount /proc
-[@ ~]# strace -e mount -f -F -s 200 mount none /proc -t proc -o hidepid=2,gid=17                            
-mount("none", "/proc", "proc", MS_MGC_VAL, "hidepid=2,gid=17") = 0
-[@ ~]# cat /proc/mounts
-rootfs / rootfs rw 0 0
-/dev/sda3 / xfs rw,relatime,attr2,noquota 0 0
-run /run tmpfs rw,relatime 0 0
-none /proc proc rw,relatime,gid=17,hidepid=2 0 0
+Running a continuous ping in either direction doesn't seem to help.
 
-and now I'm lost - every new umount & mount gets hidepid/gid right.
+Booting the box back to 3.2.9 immediately fixes the issue.
 
-Any ideas why initial mount fails to get hidepid/gid options applied?
-The syscall seems correct.
+I have not yet re-tried going back to 3.3 since a few of the VMs are
+too important to reboot again today. I tried running tcpdump on eth0
+over night but hit br1 instead, so I don't have any packet dumps to
+show.
+
+I guess that something goes wrong with neighbor detection regarding
+the IPv6 gateway.
+
+Was there a relevant change between 3.2.9 and 3.3? Where do I look for
+the issue?
+
+Greetings
+Marc
+
 -- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+-----------------------------------------------------------------------------
+Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 31958061
+Nordisch by Nature |  How to make an American Quilt | Fax: *49 621 31958062
