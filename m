@@ -1,58 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031048Ab2CVV0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:26:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60747 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758358Ab2CVV0t (ORCPT
+	id S965177Ab2CVV13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:27:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42088 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964911Ab2CVV11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:26:49 -0400
-Date: Thu, 22 Mar 2012 14:26:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-Message-Id: <20120322142647.42395398.akpm@linux-foundation.org>
-In-Reply-To: <4F69D496.2040509@openvz.org>
-References: <20120321065140.13852.52315.stgit@zurg>
-	<20120321100602.GA5522@barrios>
-	<4F69D496.2040509@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Mar 2012 17:27:27 -0400
+Date: Thu, 22 Mar 2012 14:27:13 -0700
+From: tip-bot for Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Message-ID: <tip-29a2e2836ff9ea65a603c89df217f4198973a74f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        dmitry.adamushko@gmail.com, tglx@linutronix.de, oleg@redhat.com,
+        roland@hack.frob.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        dmitry.adamushko@gmail.com, roland@hack.frob.com, tglx@linutronix.de,
+        oleg@redhat.com
+In-Reply-To: <1332448765.2299.68.camel@dimm>
+References: <1332448765.2299.68.camel@dimm>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-32:
+  Fix endless loop when processing signals for kernel tasks
+Git-Commit-ID: 29a2e2836ff9ea65a603c89df217f4198973a74f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 22 Mar 2012 14:27:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 17:16:06 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+Commit-ID:  29a2e2836ff9ea65a603c89df217f4198973a74f
+Gitweb:     http://git.kernel.org/tip/29a2e2836ff9ea65a603c89df217f4198973a74f
+Author:     Dmitry Adamushko <dmitry.adamushko@gmail.com>
+AuthorDate: Thu, 22 Mar 2012 21:39:25 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 22 Mar 2012 13:50:25 -0700
 
-> Minchan Kim wrote:
-> > Hi Konstantin,
-> >
-> > It seems to be nice clean up to me and you are a volunteer we have been wanted
-> > for a long time. Thanks!
-> > I am one of people who really want to expand vm_flags to 64 bit but when KOSAKI
-> > tried it, Linus said his concerning, I guess you already saw that.
-> >
-> > He want to tidy vm_flags's usage up rather than expanding it.
-> > Without the discussion about that, just expanding vm_flags would make us use
-> > it up easily so that we might need more space.
-> 
-> Strictly speaking, my pachset does not expands vm_flags, it just prepares to this.
-> Anyway vm_flags_t looks better than hard-coded "unsigned long" and messy type-casts around it.
+x86-32: Fix endless loop when processing signals for kernel tasks
 
-It would be nice to find some way of triggering compiler warnings or
-sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
-thoughts on this?
+The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task
+returns from a system call with a pending signal.
 
-(Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
-describe it)
+A real-life scenario is a child of 'khelper' returning from a failed
+kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
+kernel_execve() fails due to a pending SIGKILL, which is the result of
+"kill -9 -1" (at least, busybox's init does it upon reboot).
+
+The loop is as follows:
+
+* syscall_exit_work:
+ - work_pending:            // start_of_the_loop
+ - work_notify_sig:
+   - do_notify_resume()
+     - do_signal()
+       - if (!user_mode(regs)) return;
+ - resume_userspace         // TIF_SIGPENDING is still set
+ - work_pending             // so we call work_pending => goto
+                            // start_of_the_loop
+
+More information can be found in another LKML thread:
+http://www.serverphorums.com/read.php?12,457826
+
+[1] the problem was also seen on MIPS.
+
+Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Link: http://lkml.kernel.org/r/1332448765.2299.68.camel@dimm
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/entry_32.S |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 79d97e6..7b784f4 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -98,12 +98,6 @@
+ #endif
+ .endm
+ 
+-#ifdef CONFIG_VM86
+-#define resume_userspace_sig	check_userspace
+-#else
+-#define resume_userspace_sig	resume_userspace
+-#endif
+-
+ /*
+  * User gs save/restore
+  *
+@@ -327,10 +321,19 @@ ret_from_exception:
+ 	preempt_stop(CLBR_ANY)
+ ret_from_intr:
+ 	GET_THREAD_INFO(%ebp)
+-check_userspace:
++resume_userspace_sig:
++#ifdef CONFIG_VM86
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+ 	movb PT_CS(%esp), %al
+ 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
++#else
++	/*
++	 * We can be coming here from a syscall done in the kernel space,
++	 * e.g. a failed kernel_execve().
++	 */
++	movl PT_CS(%esp), %eax
++	andl $SEGMENT_RPL_MASK, %eax
++#endif
+ 	cmpl $USER_RPL, %eax
+ 	jb resume_kernel		# not returning to v8086 or userspace
+ 
