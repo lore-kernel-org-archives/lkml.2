@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab2CVLeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:34:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39534 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754957Ab2CVLd6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:33:58 -0400
-Date: Thu, 22 Mar 2012 11:33:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] clk: wm831x: Add initial WM831x clock driver
-Message-ID: <20120322113356.GC3091@opensource.wolfsonmicro.com>
-References: <1332360082-25092-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1332360082-25092-4-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120321222622.GG29317@pengutronix.de>
- <20120322111531.GA3091@opensource.wolfsonmicro.com>
- <20120322112613.GA3852@pengutronix.de>
+	id S1756183Ab2CVLgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:36:12 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61290 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755030Ab2CVLgI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 07:36:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
-Content-Disposition: inline
-In-Reply-To: <20120322112613.GA3852@pengutronix.de>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1332409996.18960.511.camel@twins>
+References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
+	<1332409996.18960.511.camel@twins>
+Date: Thu, 22 Mar 2012 13:36:06 +0200
+Message-ID: <CAEbykaUbkgCEcufTx4ZBSdqwrifVbV384Ru4xTyF7BXYtJ85Zg@mail.gmail.com>
+Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
+From: Ari Savolainen <ari.m.savolainen@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+22. maaliskuuta 2012 11.53 Peter Zijlstra <a.p.zijlstra@chello.nl> kirjoitti:
+> On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
+>> The warning below is printed when executing a command like
+>> sudo perf record su - user -c "echo hello"
+>>
+>> It's fixed by moving the call of perf_event_comm to be protected
+>> by the task lock.
+>
+> That seems like a rather poor solution since it increases the lock hold
+> time for no explained reason.
+>
+>> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
+>
+>>  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
+>>  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
+>
+> So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
+> so I presume its before that.
 
---ncSAzJYg3Aa9+CRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think the warning comes from this source-level call path:
 
-On Thu, Mar 22, 2012 at 12:26:13PM +0100, Sascha Hauer wrote:
-> On Thu, Mar 22, 2012 at 11:15:31AM +0000, Mark Brown wrote:
+perf_event_comm ->
+  perf_event_enable_on_exec ->
+    perf_cgroup_sched_out ->
+      perf_cgroup_from_task ->
+        task_subsys_state ->
+          task_subsys_state_check
 
-> > No, that's not sensible.  We shouldn't be open coding this into each
-> > individual driver that provides clocks, and we shouldn't have clock
-> > users having to guess at what scheme the driver author used to dedupe
-> > the clocks.  As a driver author you would assume that the reason we're
+It seems there that path does not take rcu_read_lock(). Where should
+rcu_read_lock/unlock be added? In perf_group_sched_out around the
+calls of perf_cgroup_from_task? Like this:
 
-> It seems they got dropped. Currently the clock framework does nothing
-> with the device argument. But right, it could use this argument to
-> generate a suitable name.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1b5c081..bbb4abc 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -409,6 +409,8 @@ static inline void perf_cgroup_sched_out(struct
+task_struct *task,
+        struct perf_cgroup *cgrp1;
+        struct perf_cgroup *cgrp2 = NULL;
 
-Indeed, and as with adding the stub clk_unregister() it seems like it's
-better at this point to just code the drivers as we'd expect them to
-work and fill out the framework to handle this rather than introducing
-workarounds in the drivers.
++       rcu_read_lock();
++
+        /*
+         * we come here when we know perf_cgroup_events > 0
+         */
+@@ -421,6 +423,8 @@ static inline void perf_cgroup_sched_out(struct
+task_struct *task,
+        if (next)
+                cgrp2 = perf_cgroup_from_task(next);
 
---ncSAzJYg3Aa9+CRW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
++       rcu_read_unlock();
++
+        /*
+         * only schedule out current cgroup events if we know
+         * that we are switching to a different cgroup. Otherwise,
+--
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPaw4cAAoJEBus8iNuMP3dg8YP/2NJCsHhOfv9UswymYuNGBqi
-G/NZUWZQ5YT5NiZvS06mvHTRj3KOG1puxBSA3YCcvP/rolWPlycBs4yW5SQfZKy/
-WpYNH4lpGwMvYaG5uiuH65tOINT6wOJacWcKCWbx7bVDg0RyhaWWsVV5GmEM4L0a
-I2DuDnYaXlSQQ0qQwgdviNaavE6zLGKXX/ZvFjIqPxZFIHAtNTxXzIGrmGNRA9Ai
-tUzlbHXYlSFyuwtIc9JFkhEdlXNPe/1Y2dbPDeFRs50qTXr1UdZzICGVv4AjFCAI
-35yBktlQrnHDnWna5bIuBJRQ1T2Xi6EkVRqoxVOSzX042TFkwHst2pAkyvc2xG0Z
-g/fA/Lm6DWQgNBuAL6HK0ZZiN3ZwZy8jopgBrFCY/n9K+bEwUBJ3jwrTW0z/Mo0A
-foUo45SbRy+yydlFQbdRAYpmo0hNYgjb3eVVXhXn9gGhzf0BySIKfWWNvfmpZp5C
-oOE07Q+Zr4kWZjUVqVj8Lclgxm98w1NSCaIi5S9UTqVE+76egoMW4TKYy9kQOABA
-Qyps3U147nAM3sA/6uiSLm0kmYWYGY00JmoarTKeZfnt7/bEe7uFvslks6EZUWvi
-fB/wfEbBltGnGY3AwMh43zva+oFYKII/BjcO1/Z+vQOWprqcbhFGSAJSBDLfR0ew
-evwNVGfaedpOjDEHBs39
-=B3gB
------END PGP SIGNATURE-----
-
---ncSAzJYg3Aa9+CRW--
+Ari
