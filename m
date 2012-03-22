@@ -1,128 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab2CVHKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 03:10:21 -0400
-Received: from server.atrad.com.au ([150.101.241.2]:43603 "EHLO
-	server.atrad.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab2CVHKR (ORCPT
+	id S1754090Ab2CVHMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 03:12:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53805 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab2CVHMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 03:10:17 -0400
-X-Greylist: delayed 1751 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 03:10:17 EDT
-Date: Thu, 22 Mar 2012 17:11:00 +1030
-From: Jonathan Woithe <jwoithe@just42.net>
-To: linux-kernel@vger.kernel.org
-Cc: jwoithe@just42.net
-Subject: [PATCH] Email/web address change
-Message-ID: <20120322064100.GA22857@marvin.atrad.com.au>
+	Thu, 22 Mar 2012 03:12:09 -0400
+Date: Thu, 22 Mar 2012 15:11:54 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Nancy Chen <Nancy.Chen@freescale.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH v13] Regulator: Add Anatop regulator driver
+Message-ID: <20120322071152.GC2213@S2101-09.ap.freescale.net>
+References: <1331692152-9256-1-git-send-email-paul.liu@linaro.org>
+ <20120322052449.GB2213@S2101-09.ap.freescale.net>
+ <4F6ACB80.10809@linaro.org>
 MIME-Version: 1.0
+In-Reply-To: <4F6ACB80.10809@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+On Thu, Mar 22, 2012 at 02:49:36PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+...
+> Ouch. I'll prepare a separate patch to add back the documentation.
+> 
+I just gave a quick testing on the driver with the dts change you
+posted on imx6.  There is some little problem we may need to address.
 
-Below is a trivial patch against the kernel tree which updates occurances of
-my email address in the kernel tree.  However, I am not certain what the
-acceptable practice is when addresses of contributors are updated -
-particularly for addresses inside individual source files - so if some of
-these changes are out of order please let me know and I'll redo the patch
-accordingly.
+prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-vddpu@140
+vddpu: 725 <--> 1300 mV at 1100 mV
+prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-vddcore@140
+cpu: 725 <--> 1300 mV at 1100 mV
+prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-vddsoc@140
+vddsoc: 725 <--> 1300 mV at 1100 mV
+prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-2p5@130
+vdd2p5: 2000 <--> 2775 mV at 2400 mV
+prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-1p1@110
+vdd1p1: 800 <--> 1400 mV at 1100 mV
+prom_parse: Bad cell count for /soc/aips-bus@02000000/anatop@020c8000/regulator-3p0@120
+vdd3p0: 2800 <--> 3150 mV at 3000 mV
 
-Please CC me on replies - thanks.
+The DT core function __of_translate_address will give some annoying
+error messages.  We call of_platform_populate from anatop mfd driver
+to populate regulator device, and during the call, DT core tries to
+translate "reg" property to address resource, and will complain if
+!(#size-cells > 0). 
 
-Regards
-  jonathan
+To fix that, we may want to rename "reg" property to something else,
+e.g. "anatop-reg-offset".  I tested the following changes removed the
+error messages above.
 
-diff -ru linux-3.3-orig//CREDITS linux-3.3//CREDITS
---- linux-3.3-orig//CREDITS	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//CREDITS	2012-03-22 16:55:14.475424237 +1030
-@@ -3814,8 +3814,8 @@
- D: Author of the longest-living linux bug
- 
- N: Jonathan Woithe
--E: jwoithe@physics.adelaide.edu.au
--W: http://www.physics.adelaide.edu.au/~jwoithe
-+E: jwoithe@just42.net
-+W: http://www.just42.net/jwoithe
- D: ALS-007 sound card extensions to Sound Blaster driver
- S: 20 Jordan St
- S: Valley View, SA 5093
-diff -ru linux-3.3-orig//Documentation/sound/oss/ALS linux-3.3//Documentation/sound/oss/ALS
---- linux-3.3-orig//Documentation/sound/oss/ALS	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//Documentation/sound/oss/ALS	2012-03-22 16:57:02.831630212 +1030
-@@ -57,10 +57,10 @@
-     DSP/PCM/audio out (L&R), FM (L&R) and Mic in (mono).
- 
- Jonathan Woithe
--jwoithe@physics.adelaide.edu.au
-+jwoithe@just42.net
- 30 March 1998
- 
- Modified 2000-02-26 by Dave Forrest, drf5n@virginia.edu to add ALS100/ALS200
- Modified 2000-04-10 by Paul Laufer, pelaufer@csupomona.edu to add ISAPnP info.
--Modified 2000-11-19 by Jonathan Woithe, jwoithe@physics.adelaide.edu.au
-+Modified 2000-11-19 by Jonathan Woithe, jwoithe@just42.net
-  - updated information for kernel 2.4.x.
-diff -ru linux-3.3-orig//MAINTAINERS linux-3.3//MAINTAINERS
---- linux-3.3-orig//MAINTAINERS	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//MAINTAINERS	2012-03-22 16:55:40.799474266 +1030
-@@ -2853,7 +2853,7 @@
- F:	arch/frv/
- 
- FUJITSU LAPTOP EXTRAS
--M:	Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-+M:	Jonathan Woithe <jwoithe@just42.net>
- L:	platform-driver-x86@vger.kernel.org
- S:	Maintained
- F:	drivers/platform/x86/fujitsu-laptop.c
-diff -ru linux-3.3-orig//drivers/platform/x86/fujitsu-laptop.c linux-3.3//drivers/platform/x86/fujitsu-laptop.c
---- linux-3.3-orig//drivers/platform/x86/fujitsu-laptop.c	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//drivers/platform/x86/fujitsu-laptop.c	2012-03-22 16:57:34.735690881 +1030
-@@ -1,7 +1,7 @@
- /*-*-linux-c-*-*/
- 
- /*
--  Copyright (C) 2007,2008 Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-+  Copyright (C) 2007,2008 Jonathan Woithe <jwoithe@just42.net>
-   Copyright (C) 2008 Peter Gruber <nokos@gmx.net>
-   Copyright (C) 2008 Tony Vroon <tony@linx.net>
-   Based on earlier work:
-diff -ru linux-3.3-orig//drivers/usb/storage/unusual_devs.h linux-3.3//drivers/usb/storage/unusual_devs.h
---- linux-3.3-orig//drivers/usb/storage/unusual_devs.h	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//drivers/usb/storage/unusual_devs.h	2012-03-22 16:57:53.099725805 +1030
-@@ -110,7 +110,7 @@
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
- 
--/* Deduced by Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-+/* Deduced by Jonathan Woithe <jwoithe@just42.net>
-  * Entry needed for flags: US_FL_FIX_INQUIRY because initial inquiry message
-  * always fails and confuses drive.
-  */
-diff -ru linux-3.3-orig//sound/isa/als100.c linux-3.3//sound/isa/als100.c
---- linux-3.3-orig//sound/isa/als100.c	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//sound/isa/als100.c	2012-03-22 16:58:32.631800997 +1030
-@@ -7,7 +7,7 @@
-     Thanks to Pierfrancesco 'qM2' Passerini.
- 
-     Generalised for soundcards based on DT-0196 and ALS-007 chips
--    by Jonathan Woithe <jwoithe@physics.adelaide.edu.au>: June 2002.
-+    by Jonathan Woithe <jwoithe@just42.net>: June 2002.
- 
-     This program is free software; you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-diff -ru linux-3.3-orig//sound/pci/hda/patch_realtek.c linux-3.3//sound/pci/hda/patch_realtek.c
---- linux-3.3-orig//sound/pci/hda/patch_realtek.c	2012-03-19 09:45:34.000000000 +1030
-+++ linux-3.3//sound/pci/hda/patch_realtek.c	2012-03-22 16:59:01.051855061 +1030
-@@ -6,7 +6,7 @@
-  * Copyright (c) 2004 Kailang Yang <kailang@realtek.com.tw>
-  *                    PeiSen Hou <pshou@realtek.com.tw>
-  *                    Takashi Iwai <tiwai@suse.de>
-- *                    Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-+ *                    Jonathan Woithe <jwoithe@just42.net>
-  *
-  *  This driver is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
+diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+index 56d3c16..65bad45 100644
+--- a/arch/arm/boot/dts/imx6q.dtsi
++++ b/arch/arm/boot/dts/imx6q.dtsi
+@@ -346,16 +346,14 @@
+                                compatible = "fsl,imx6q-anatop";
+                                reg = <0x020c8000 0x1000>;
+                                interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
+-                               #address-cells = <1>;
+-                               #size-cells = <0>;
+
+-                               regulator-vddpu@140 {
++                               regulator-vddpu {
+                                        compatible = "fsl,anatop-regulator";
+                                        regulator-name = "vddpu";
+                                        regulator-min-microvolt = <725000>;
+                                        regulator-max-microvolt = <1300000>;
+                                        regulator-always-on;
+-                                       reg = <0x140>;
++                                       anatop-reg-offset = <0x140>;
+                                        anatop-vol-bit-shift = <9>;
+                                        anatop-vol-bit-width = <5>;
+                                        anatop-min-bit-val = <1>;
+@@ -363,13 +361,13 @@
+                                        anatop-max-voltage = <1300000>;
+                                };
+
+-                               regulator-vddcore@140 {
++                               regulator-vddcore {
+                                        compatible = "fsl,anatop-regulator";
+                                        regulator-name = "cpu";
+                                        regulator-min-microvolt = <725000>;
+                                        regulator-max-microvolt = <1300000>;
+                                        regulator-always-on;
+-                                       reg = <0x140>;
++                                       anatop-reg-offset = <0x140>;
+                                        anatop-vol-bit-shift = <0>;
+                                        anatop-vol-bit-width = <5>;
+                                        anatop-min-bit-val = <1>;
+@@ -377,13 +375,13 @@
+                                        anatop-max-voltage = <1300000>;
+                                };
+
+-                               regulator-vddsoc@140 {
++                               regulator-vddsoc {
+                                        compatible = "fsl,anatop-regulator";
+                                        regulator-name = "vddsoc";
+                                        regulator-min-microvolt = <725000>;
+                                        regulator-max-microvolt = <1300000>;
+                                        regulator-always-on;
+-                                       reg = <0x140>;
++                                       anatop-reg-offset = <0x140>;
+                                        anatop-vol-bit-shift = <18>;
+                                        anatop-vol-bit-width = <5>;
+                                        anatop-min-bit-val = <1>;
+@@ -391,13 +389,13 @@
+                                        anatop-max-voltage = <1300000>;
+                                };
+
+-                               regulator-2p5@130 {
++                               regulator-2p5 {
+                                        compatible = "fsl,anatop-regulator";
+                                        regulator-name = "vdd2p5";
+                                        regulator-min-microvolt = <2000000>;
+                                        regulator-max-microvolt = <2775000>;
+                                        regulator-always-on;
+-                                       reg = <0x130>;
++                                       anatop-reg-offset = <0x130>;
+                                        anatop-vol-bit-shift = <8>;
+                                        anatop-vol-bit-width = <5>;
+                                        anatop-min-bit-val = <0>;
+@@ -405,13 +403,13 @@
+                                        anatop-max-voltage = <2775000>;
+                                };
+
+-                               regulator-1p1@110 {
++                               regulator-1p1 {
+                                        compatible = "fsl,anatop-regulator";
+                                        regulator-name = "vdd1p1";
+                                        regulator-min-microvolt = <800000>;
+                                        regulator-max-microvolt = <1400000>;
+                                        regulator-always-on;
+-                                       reg = <0x110>;
++                                       anatop-reg-offset = <0x110>;
+                                        anatop-vol-bit-shift = <8>;
+                                        anatop-vol-bit-width = <5>;
+                                        anatop-min-bit-val = <4>;
+@@ -419,13 +417,13 @@
+                                        anatop-max-voltage = <1400000>;
+                                };
+
+-                               regulator-3p0@120 {
++                               regulator-3p0 {
+                                        compatible = "fsl,anatop-regulator";
+                                        regulator-name = "vdd3p0";
+                                        regulator-min-microvolt = <2800000>;
+                                        regulator-max-microvolt = <3150000>;
+                                        regulator-always-on;
+-                                       reg = <0x120>;
++                                       anatop-reg-offset = <0x120>;
+                                        anatop-vol-bit-shift = <8>;
+                                        anatop-vol-bit-width = <5>;
+                                        anatop-min-bit-val = <7>;
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index 17499a5..632c087 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -138,9 +138,9 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+        rdesc->type = REGULATOR_VOLTAGE;
+        rdesc->owner = THIS_MODULE;
+        sreg->mfd = anatopmfd;
+-       ret = of_property_read_u32(np, "reg", &sreg->control_reg);
++       ret = of_property_read_u32(np, "anatop-reg-offset", &sreg->control_reg);
+        if (ret) {
+-               dev_err(dev, "no reg property set\n");
++               dev_err(dev, "no anatop-reg-offset property set\n");
+                goto anatop_probe_end;
+        }
+        ret = of_property_read_u32(np, "anatop-vol-bit-width",
+
+
+-- 
+Regards,
+Shawn
