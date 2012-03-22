@@ -1,92 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab2CVPDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 11:03:49 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36145 "EHLO gir.skynet.ie"
+	id S1030181Ab2CVPEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 11:04:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37942 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756804Ab2CVPDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 11:03:47 -0400
-Date: Thu, 22 Mar 2012 15:03:45 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+	id S1757671Ab2CVPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 11:04:34 -0400
+Date: Thu, 22 Mar 2012 12:04:09 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [git pull] drm nouveau destaging + Kelper modesetting support
-Message-ID: <alpine.DEB.2.00.1203221458351.20827@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Subject: Re: [PATCHv2] perf, tool: Fix diff command to work with new hists
+ design
+Message-ID: <20120322150409.GG21163@infradead.org>
+References: <1332422814-4965-1-git-send-email-jolsa@redhat.com>
+ <20120322133726.GB1601@m.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322133726.GB1601@m.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Thu, Mar 22, 2012 at 02:37:26PM +0100, Jiri Olsa escreveu:
+> aaargh... I was too fast and did not send the last version..
+> please take v2 ;)
 
-Hi Linus,
+Thanks,
 
-This pull request is unexpected and not something I had mentioned 
-previously.
+As we discussed on IRC when perf diff was written we had just one hists
+instance per perf_session.
 
-so NVIDIA announced new Kepler GPUs this morning, and Ben has killed
-himself getting modesetting support for them together to have on launch 
-day. Most of the code to support the new chips has already gone in, 
-however this pull contains a few more pieces along with the final enables
-so the driver binds to the new Kepler cards. Its quite amazing that 
-nouveau can support a GPU on its launch day even if its just unaccelerated
-modesetting, and I'd like to have support in the next kernel.
+Later I added support for multiple hists trees, one per event but didn't
+update perf diff, that remained working for perf.data files with just
+one event.
 
-In order to sweeten the deal, Ben has also requested nouveau destage and
-become ABI stable, the only change is the version number bump which he
-prepared userspace for quite a long time ago. The driver hasn't broken ABI 
-since that one big break that caused a lot of fuss.
+So for multi event perf.data files we need to iterate over both
+perf.data and perf.data.old (or whatever name users gave to the
+perf.data files being diffed) and do what it does now for each pair.
 
-It's also quite a small set of code, and not likely to break anything.
+If we have cycles in the old file, find the right "cycles" hists rb_tree
+in the new file and do the diff dance rinse repeat for each event in the
+old perf.data file.
 
-Dave.
+Warn the user if some event is present only in one of the files and also
+allow the user to specify an event list for diffing i.e.:
 
-The following changes since commit 5466c7b1683a23dbbcfb7ee4a71c4f23886001c7:
+perf diff -e cycles
 
-  drm/i915: use DDC_ADDR instead of hard-coding it (2012-03-21 10:20:38 +0000)
+would, by default, use perf.data.old and perf.data and would do the diff
+just for the "cycles" hists rb_tree.
 
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux drm-nouveau-destage
+When I added support for threaded addition and sorting of entries I
+updated it only halfway, making the events be added to the per event
+hists tree, b00m.
 
-Ben Skeggs (14):
-      drm/nouveau/ttm: always do buffer moves on kernel channel
-      drm/nouveau: remove subchannel names from places where it doesn't matter
-      drm/nouveau: move fence sequence check to start of loop
-      drm/nvc0-/disp: reimplement flip completion method as fifo method
-      drm/nouveau: remove m2mf creation on userspace channels
-      drm/nouveau: inform userspace of new kernel subchannel requirements
-      drm/nouveau: oops, increase channel dispc_vma to 4
-      drm/nvd0/disp: ignore clock set if no pclk
-      drm/nouveau: bump version to 1.0.0
-      drm/nouveau: move out of staging drivers
-      drm/nouveau: add bios connector type for dms59
-      drm/nve0: initial modesetting support for kepler chipsets
-      drm/nve0/disp: nvidia randomly decided to move the dithering method
-      drm/nouveau/dp: support version 4.0 of DP table
+Your fix makes it work again for files with just one event, so I'm
+applying it as a short term fix, thanks,
 
-Dave Airlie (1):
-      Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-next
-
- drivers/gpu/drm/Kconfig                     |    2 +
- drivers/gpu/drm/nouveau/nouveau_bios.c      |    3 +-
- drivers/gpu/drm/nouveau/nouveau_bios.h      |    2 +
- drivers/gpu/drm/nouveau/nouveau_bo.c        |   11 +--
- drivers/gpu/drm/nouveau/nouveau_channel.c   |   34 +++---
- drivers/gpu/drm/nouveau/nouveau_connector.c |   13 +--
- drivers/gpu/drm/nouveau/nouveau_display.c   |   14 ++-
- drivers/gpu/drm/nouveau/nouveau_dma.c       |   61 +-----------
- drivers/gpu/drm/nouveau/nouveau_dma.h       |    4 +-
- drivers/gpu/drm/nouveau/nouveau_dp.c        |   11 ++
- drivers/gpu/drm/nouveau/nouveau_drv.h       |   40 +++++---
- drivers/gpu/drm/nouveau/nouveau_fence.c     |   35 +++---
- drivers/gpu/drm/nouveau/nouveau_gem.c       |   10 +--
- drivers/gpu/drm/nouveau/nouveau_state.c     |  152 +++++++++++++++++++++++----
- drivers/gpu/drm/nouveau/nv50_display.c      |   12 +-
- drivers/gpu/drm/nouveau/nvc0_fifo.c         |   36 ++++++-
- drivers/gpu/drm/nouveau/nvc0_graph.c        |    9 --
- drivers/gpu/drm/nouveau/nvd0_display.c      |   23 ++++-
- drivers/staging/Kconfig                     |    2 -
- 19 files changed, 288 insertions(+), 186 deletions(-)
+- Arnaldo
+ 
+> jirka
+> 
+> 
+> ---
+> The perf diff command is broken since:
+>   perf hists: Threaded addition and sorting of entries
+>   commit 1980c2ebd7020d82c024b8c4046849b38e78e7da
+> 
+> Several places were broken:
+>   - hists data need to be collected into opened sessions instead
+>     of into events
+>   - session's hists data need to be initialized properly when the
+>     session is created
+>   - hist_entry__pcnt_snprintf: the percentage and displacement
+>     buffer preparation must not use 'ret' because it's used
+>     as a pointer to the final buffer
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/builtin-diff.c |   60 ++++++++++++++++++++++++++------------------
+>  tools/perf/util/evsel.c   |    2 +-
+>  tools/perf/util/evsel.h   |    2 +
+>  tools/perf/util/hist.c    |    8 +++---
+>  tools/perf/util/session.c |    1 +
+>  5 files changed, 43 insertions(+), 30 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index 4f19513..d29d350 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -24,6 +24,11 @@ static char	  diff__default_sort_order[] = "dso,symbol";
+>  static bool  force;
+>  static bool show_displacement;
+>  
+> +struct perf_diff {
+> +	struct perf_tool tool;
+> +	struct perf_session *session;
+> +};
+> +
+>  static int hists__add_entry(struct hists *self,
+>  			    struct addr_location *al, u64 period)
+>  {
+> @@ -32,12 +37,14 @@ static int hists__add_entry(struct hists *self,
+>  	return -ENOMEM;
+>  }
+>  
+> -static int diff__process_sample_event(struct perf_tool *tool __used,
+> +static int diff__process_sample_event(struct perf_tool *tool,
+>  				      union perf_event *event,
+>  				      struct perf_sample *sample,
+>  				      struct perf_evsel *evsel __used,
+>  				      struct machine *machine)
+>  {
+> +	struct perf_diff *_diff = container_of(tool, struct perf_diff, tool);
+> +	struct perf_session *session = _diff->session;
+>  	struct addr_location al;
+>  
+>  	if (perf_event__preprocess_sample(event, machine, &al, sample, NULL) < 0) {
+> @@ -49,24 +56,26 @@ static int diff__process_sample_event(struct perf_tool *tool __used,
+>  	if (al.filtered || al.sym == NULL)
+>  		return 0;
+>  
+> -	if (hists__add_entry(&evsel->hists, &al, sample->period)) {
+> +	if (hists__add_entry(&session->hists, &al, sample->period)) {
+>  		pr_warning("problem incrementing symbol period, skipping event\n");
+>  		return -1;
+>  	}
+>  
+> -	evsel->hists.stats.total_period += sample->period;
+> +	session->hists.stats.total_period += sample->period;
+>  	return 0;
+>  }
+>  
+> -static struct perf_tool perf_diff = {
+> -	.sample	= diff__process_sample_event,
+> -	.mmap	= perf_event__process_mmap,
+> -	.comm	= perf_event__process_comm,
+> -	.exit	= perf_event__process_task,
+> -	.fork	= perf_event__process_task,
+> -	.lost	= perf_event__process_lost,
+> -	.ordered_samples = true,
+> -	.ordering_requires_timestamps = true,
+> +static struct perf_diff diff = {
+> +	.tool = {
+> +		.sample	= diff__process_sample_event,
+> +		.mmap	= perf_event__process_mmap,
+> +		.comm	= perf_event__process_comm,
+> +		.exit	= perf_event__process_task,
+> +		.fork	= perf_event__process_task,
+> +		.lost	= perf_event__process_lost,
+> +		.ordered_samples = true,
+> +		.ordering_requires_timestamps = true,
+> +	},
+>  };
+>  
+>  static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
+> @@ -107,12 +116,6 @@ static void hists__resort_entries(struct hists *self)
+>  	self->entries = tmp;
+>  }
+>  
+> -static void hists__set_positions(struct hists *self)
+> -{
+> -	hists__output_resort(self);
+> -	hists__resort_entries(self);
+> -}
+> -
+>  static struct hist_entry *hists__find_entry(struct hists *self,
+>  					    struct hist_entry *he)
+>  {
+> @@ -146,30 +149,37 @@ static void hists__match(struct hists *older, struct hists *newer)
+>  static int __cmd_diff(void)
+>  {
+>  	int ret, i;
+> +#define older (session[0])
+> +#define newer (session[1])
+>  	struct perf_session *session[2];
+>  
+> -	session[0] = perf_session__new(input_old, O_RDONLY, force, false, &perf_diff);
+> -	session[1] = perf_session__new(input_new, O_RDONLY, force, false, &perf_diff);
+> +	older = perf_session__new(input_old, O_RDONLY, force, false,
+> +				  &diff.tool);
+> +	newer = perf_session__new(input_new, O_RDONLY, force, false,
+> +				  &diff.tool);
+>  	if (session[0] == NULL || session[1] == NULL)
+>  		return -ENOMEM;
+>  
+>  	for (i = 0; i < 2; ++i) {
+> -		ret = perf_session__process_events(session[i], &perf_diff);
+> +		diff.session = session[i];
+> +		ret = perf_session__process_events(session[i], &diff.tool);
+>  		if (ret)
+>  			goto out_delete;
+> +		hists__output_resort(&session[i]->hists);
+>  	}
+>  
+> -	hists__output_resort(&session[1]->hists);
+>  	if (show_displacement)
+> -		hists__set_positions(&session[0]->hists);
+> +		hists__resort_entries(&older->hists);
+>  
+> -	hists__match(&session[0]->hists, &session[1]->hists);
+> -	hists__fprintf(&session[1]->hists, &session[0]->hists,
+> +	hists__match(&older->hists, &newer->hists);
+> +	hists__fprintf(&newer->hists, &older->hists,
+>  		       show_displacement, true, 0, 0, stdout);
+>  out_delete:
+>  	for (i = 0; i < 2; ++i)
+>  		perf_session__delete(session[i]);
+>  	return ret;
+> +#undef older
+> +#undef newer
+>  }
+>  
+>  static const char * const diff_usage[] = {
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index 0221700..d9da62a 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -34,7 +34,7 @@ int __perf_evsel__sample_size(u64 sample_type)
+>  	return size;
+>  }
+>  
+> -static void hists__init(struct hists *hists)
+> +void hists__init(struct hists *hists)
+>  {
+>  	memset(hists, 0, sizeof(*hists));
+>  	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
+> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+> index 3158ca3..3d6b3e4 100644
+> --- a/tools/perf/util/evsel.h
+> +++ b/tools/perf/util/evsel.h
+> @@ -170,4 +170,6 @@ static inline int perf_evsel__sample_size(struct perf_evsel *evsel)
+>  	return __perf_evsel__sample_size(evsel->attr.sample_type);
+>  }
+>  
+> +void hists__init(struct hists *hists);
+> +
+>  #endif /* __PERF_EVSEL_H */
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 5fb1901..c61235f 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -891,9 +891,9 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+>  		diff = new_percent - old_percent;
+>  
+>  		if (fabs(diff) >= 0.01)
+> -			ret += scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
+> +			scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
+>  		else
+> -			ret += scnprintf(bf, sizeof(bf), " ");
+> +			scnprintf(bf, sizeof(bf), " ");
+>  
+>  		if (sep)
+>  			ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+> @@ -902,9 +902,9 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+>  
+>  		if (show_displacement) {
+>  			if (displacement)
+> -				ret += scnprintf(bf, sizeof(bf), "%+4ld", displacement);
+> +				scnprintf(bf, sizeof(bf), "%+4ld", displacement);
+>  			else
+> -				ret += scnprintf(bf, sizeof(bf), " ");
+> +				scnprintf(bf, sizeof(bf), " ");
+>  
+>  			if (sep)
+>  				ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 002ebbf..9412e3b 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -140,6 +140,7 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+>  	INIT_LIST_HEAD(&self->ordered_samples.sample_cache);
+>  	INIT_LIST_HEAD(&self->ordered_samples.to_free);
+>  	machine__init(&self->host_machine, "", HOST_KERNEL_ID);
+> +	hists__init(&self->hists);
+>  
+>  	if (mode == O_RDONLY) {
+>  		if (perf_session__open(self, force) < 0)
+> -- 
+> 1.7.7.6
