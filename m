@@ -1,143 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab2CVIhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 04:37:39 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39183 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463Ab2CVIhL (ORCPT
+	id S1030977Ab2CVIoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 04:44:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64251 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964898Ab2CVIna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 04:37:11 -0400
-Message-ID: <4F6AE48D.4070508@linux.vnet.ibm.com>
-Date: Thu, 22 Mar 2012 14:06:29 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] x86, mce: Add persistent MCE event
-References: <1332340496-21658-1-git-send-email-bp@amd64.org> <1332340496-21658-3-git-send-email-bp@amd64.org>
-In-Reply-To: <1332340496-21658-3-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12032122-1396-0000-0000-000000DA2259
+	Thu, 22 Mar 2012 04:43:30 -0400
+From: Weiping Pan <panweiping3@gmail.com>
+To: netdev@vger.kernel.org
+Cc: fubar@us.ibm.com, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        Weiping Pan <panweiping3@gmail.com>
+Subject: [PATCH net V2 1/2] bonding:delete rlb entry if bond's ip is deleted
+Date: Thu, 22 Mar 2012 16:37:50 +0800
+Message-Id: <a63c50701cc26f4cba7867513adfe6803092b038.1332405098.git.panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <cover.1332405098.git.panweiping3@gmail.com>
+References: <cover.1332405098.git.panweiping3@gmail.com>
+In-Reply-To: <cover.1332405098.git.panweiping3@gmail.com>
+References: <cover.1332405098.git.panweiping3@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2012 08:04 PM, Borislav Petkov wrote:
+When the ip of bonding is deleted, its rlb table still contains old invalid
+mappings, just delete them to avoid poisoning other clients arp cache.
 
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Add the necessary glue to enable the mce_record tracepoint on boot,
-> turning it into a persistent event. This exports the MCE buffer through
-> a debugfs per-CPU file which a userspace daemon can read and then
-> process the received error data further.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   53 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 53 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 5a11ae2e9e91..791c4633d771 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -95,6 +95,13 @@ static DECLARE_WAIT_QUEUE_HEAD(mce_chrdev_wait);
->  static DEFINE_PER_CPU(struct mce, mces_seen);
->  static int			cpu_missing;
-> 
-> +static struct perf_event_attr pattr = {
-> +	.type           = PERF_TYPE_TRACEPOINT,
-> +	.size           = sizeof(pattr),
-> +	.sample_type    = PERF_SAMPLE_RAW,
-> +	.persistent     = 1,
-> +};
-> +
->  /* MCA banks polled by the period polling timer for corrected events */
->  DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
->  	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
-> @@ -102,6 +109,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
-> 
->  static DEFINE_PER_CPU(struct work_struct, mce_work);
-> 
-> +static DEFINE_PER_CPU(struct pers_event_desc, mce_ev);
-> +
->  /*
->   * CPU/chipset specific EDAC code can register a notifier call here to print
->   * MCE errors in a human-readable form.
-> @@ -2109,6 +2118,50 @@ static void __cpuinit mce_reenable_cpu(void *h)
->  	}
->  }
-> 
-> +static __init int mcheck_init_persistent_event(void)
-> +{
-> +
-> +#define MCE_RECORD_FNAME_SZ 14
-> +#define MCE_BUF_PAGES 4
-> +
-> +	int cpu, err = 0;
-> +	char buf[MCE_RECORD_FNAME_SZ];
-> +
-> +	pattr.config = event_mce_record.event.type;
-> +	pattr.sample_period = 1;
-> +	pattr.wakeup_events = 1;
-> +
-> +	get_online_cpus();
-> +
-> +	for_each_online_cpu(cpu) {
-> +		struct pers_event_desc *d = &per_cpu(mce_ev, cpu);
-> +
-> +		snprintf(buf, MCE_RECORD_FNAME_SZ, "mce_record%d", cpu);
-> +		d->dfs_name = buf;
-> +		d->pattr = &pattr;
-> +
-> +		if (perf_add_persistent_on_cpu(cpu, d, mce_get_debugfs_dir(),
-> +					       MCE_BUF_PAGES))
-> +			goto err_unwind;
-> +	}
-> +	goto unlock;
-> +
-> +err_unwind:
-> +	err = -EINVAL;
-> +	for (--cpu; cpu >= 0; cpu--)
-> +		perf_rm_persistent_on_cpu(cpu, &per_cpu(mce_ev, cpu));
-> +
+Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+---
+ drivers/net/bonding/bond_alb.c  |   35 +++++++++++++++++++++++++++++++++++
+ drivers/net/bonding/bond_alb.h  |    2 ++
+ drivers/net/bonding/bond_main.c |    1 +
+ 3 files changed, 38 insertions(+), 0 deletions(-)
 
-
-*Totally* theoretical question: How do you know that the cpu_online_mask isn't
-sparse? In other words, what if some CPUs weren't booted? Then this for-loop
-wouldn't be very good..
-
-Oh, now I see that perf_rm_persistent_on_cpu() probably handles that case well..
-So no issues I guess.. ?
-
-(Moreover, we will probably have bigger issues at hand if some CPU didn't
-boot..)
-
-(The code looked funny, so I thought of pointing it out, whether or not it
-actually is worrisome. Sorry for the noise, if any).
-
-> +unlock:
-> +	put_online_cpus();
-> +
-> +	return err;
-> +}
-> +
-> +/*
-> + * This has to run after event_trace_init()
-> + */
-> +device_initcall(mcheck_init_persistent_event);
-> +
->  /* Get notified when a cpu comes on/off. Be hotplug friendly. */
->  static int __cpuinit
->  mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index f820b26..bca1039 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -853,6 +853,41 @@ static void rlb_clear_vlan(struct bonding *bond, unsigned short vlan_id)
+ 	_unlock_rx_hashtbl_bh(bond);
+ }
+ 
++/* delete all rlb entries whose ip_src equals ip */
++void bond_alb_delete_entry(struct bonding *bond, __be32 ip)
++{
++	struct alb_bond_info *bond_info = &(BOND_ALB_INFO(bond));
++	u32 curr_index;
++
++	_lock_rx_hashtbl_bh(bond);
++
++	curr_index = bond_info->rx_hashtbl_head;
++	while (curr_index != RLB_NULL_INDEX) {
++		struct rlb_client_info *curr = &(bond_info->rx_hashtbl[curr_index]);
++		u32 next_index = bond_info->rx_hashtbl[curr_index].next;
++		u32 prev_index = bond_info->rx_hashtbl[curr_index].prev;
++		if (curr->assigned && (curr->ip_src == ip)) {
++			if (curr_index == bond_info->rx_hashtbl_head) {
++				bond_info->rx_hashtbl_head = next_index;
++			}
++
++			if (prev_index != RLB_NULL_INDEX) {
++				bond_info->rx_hashtbl[prev_index].next = next_index;
++			}
++
++			if (next_index != RLB_NULL_INDEX) {
++				bond_info->rx_hashtbl[next_index].prev = prev_index;
++			}
++
++			rlb_init_table_entry(curr);
++		}
++
++		curr_index = next_index;
++	}
++
++	_unlock_rx_hashtbl_bh(bond);
++}
++
+ /*********************** tlb/rlb shared functions *********************/
+ 
+ static void alb_send_learning_packets(struct slave *slave, u8 mac_addr[])
+diff --git a/drivers/net/bonding/bond_alb.h b/drivers/net/bonding/bond_alb.h
+index 90f140a..38863fc 100644
+--- a/drivers/net/bonding/bond_alb.h
++++ b/drivers/net/bonding/bond_alb.h
+@@ -163,5 +163,7 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev);
+ void bond_alb_monitor(struct work_struct *);
+ int bond_alb_set_mac_address(struct net_device *bond_dev, void *addr);
+ void bond_alb_clear_vlan(struct bonding *bond, unsigned short vlan_id);
++
++void bond_alb_delete_entry(struct bonding *bond, __be32 ip);
+ #endif /* __BOND_ALB_H__ */
+ 
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 435984a..ec071b9 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3315,6 +3315,7 @@ static int bond_inetaddr_event(struct notifier_block *this, unsigned long event,
+ 				return NOTIFY_OK;
+ 			case NETDEV_DOWN:
+ 				bond->master_ip = 0;
++				bond_alb_delete_entry(bond, ifa->ifa_local);
+ 				return NOTIFY_OK;
+ 			default:
+ 				return NOTIFY_DONE;
+-- 
+1.7.4
 
