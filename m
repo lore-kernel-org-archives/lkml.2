@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759788Ab2CVUjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:39:43 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50500 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759731Ab2CVUjj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:39:39 -0400
-Subject: [PATCH, RFC] endless loop when processing signals for kernel-space
- tasks
-From: dimm <dmitry.adamushko@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Mar 2012 21:39:25 +0100
-Message-ID: <1332448765.2299.68.camel@dimm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1759809Ab2CVUkl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:40:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54395 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759749Ab2CVUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 16:40:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="122142743"
+Message-ID: <4F6B8E1B.9080802@linux.intel.com>
+Date: Thu, 22 Mar 2012 13:39:55 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Michael Brunner <mibru@gmx.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
+References: <20120322211903.6776ab18@mail.gmx.de>
+In-Reply-To: <20120322211903.6776ab18@mail.gmx.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-
-The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task returns from a system call with a pending signal.
-
-A real-life scenario is a child of 'khelper' returning from a failed kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
-kernel_execve() fails due to a pending SIGKILL, which is the result of "kill -9 -1" (at least, busybox's init does it upon reboot).
-
-The loop is as follows:
-
-* syscall_exit_work:
- - work_pending:            // start_of_the_loop
- - work_notify_sig:
-   - do_notify_resume()
-     - do_signal()
-       - if (!user_mode(regs)) return;
- - resume_userspace         // TIF_SIGPENDING is still set
- - work_pending             // so we call work_pending => goto 
-                            // start_of_the_loop
-
-More information can be found in another LKML thread: http://www.serverphorums.com/read.php?12,457826
-
-[1] the problem was also seen on MIPS.
-
-Thanks in advance for any feedback!
 
 
-Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-CC: Roland McGrath <roland@hack.frob.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
+On 03/22/2012 01:19 PM, Michael Brunner wrote:
+> Add UART clock quirk for the Kontron COMe-mTT10 module.
+> The board has previously been called nanoETXexpress-TT, therefore this
+> is also checked. 
+> 
+> This patch follows the patchset submitted by Darren Hart at
+> commit a46f5533ecfc7bbdd646d84fdab8656031a715c6.
+> 
+> Signed-off-by: Michael Brunner <mibru@gmx.de>
+> ---
+>  drivers/tty/serial/pch_uart.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+> index 332f2eb..0ab5295 100644
+> --- a/drivers/tty/serial/pch_uart.c
+> +++ b/drivers/tty/serial/pch_uart.c
+> @@ -210,6 +210,7 @@ enum {
+>  #define CMITC_UARTCLK   192000000 /* 192.0000 MHz */
+>  #define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
+>  #define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
+> +#define NTC1_UARTCLK     64000000 /*  64.0000 MHz */
+>  
+>  struct pch_uart_buffer {
+>  	unsigned char *buf;
+> @@ -379,6 +380,10 @@ static int pch_uart_get_uartclk(void)
+>  	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+>  	if (cmp && strstr(cmp, "CM-iTC"))
+>  		return CMITC_UARTCLK;
+> +	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
+> +	if (cmp && (strstr(cmp, "COMe-mTT") ||
+> +		    strstr(cmp, "nanoETXexpress-TT")))
+> +		return NTC1_UARTCLK;
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 79d97e6..7b784f4 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -98,12 +98,6 @@
- #endif
- .endm
- 
--#ifdef CONFIG_VM86
--#define resume_userspace_sig	check_userspace
--#else
--#define resume_userspace_sig	resume_userspace
--#endif
--
- /*
-  * User gs save/restore
-  *
-@@ -327,10 +321,19 @@ ret_from_exception:
- 	preempt_stop(CLBR_ANY)
- ret_from_intr:
- 	GET_THREAD_INFO(%ebp)
--check_userspace:
-+resume_userspace_sig:
-+#ifdef CONFIG_VM86
- 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
- 	movb PT_CS(%esp), %al
- 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
-+#else
-+	/*
-+	 * We can be coming here from a syscall done in the kernel space,
-+	 * e.g. a failed kernel_execve().
-+	 */
-+	movl PT_CS(%esp), %eax
-+	andl $SEGMENT_RPL_MASK, %eax
-+#endif
- 	cmpl $USER_RPL, %eax
- 	jb resume_kernel		# not returning to v8086 or userspace
- 
+These boards should already be supported by the following BIOS check. As
+the DMI_BOARD_NAME was changing, it was Kontron's recommendation to use
+the FRI2 prefix in the DMI_BIOS_VERSION.
 
 
+>  	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
+>  	if (cmp && strnstr(cmp, "FRI2", 4))
+
+Is this not working for you? If not, what is the DMI_BIOS_VERSION
+reported by your board?
+
+And for clarification, we are talking about this right:
+http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
