@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030212Ab2CVVQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:16:05 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49468 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759949Ab2CVVQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:16:01 -0400
-Date: Thu, 22 Mar 2012 22:15:57 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/2] tools: Add Makefile.lib
-Message-ID: <20120322211557.GB1462@aftab>
-References: <1332435713-32143-1-git-send-email-bp@amd64.org>
- <1332435713-32143-2-git-send-email-bp@amd64.org>
- <20120322210732.GA21154@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322210732.GA21154@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932428Ab2CVVRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:17:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19750 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932096Ab2CVVRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 17:17:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="120643374"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>, jeremy@goop.org
+Subject: [PATCH] x86, paravirt: Remove CONFIG_PARAVIRT_DEBUG
+Date: Thu, 22 Mar 2012 14:17:14 -0700
+Message-Id: <1332451034-28437-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 10:07:32PM +0100, Sam Ravnborg wrote:
-> On Thu, Mar 22, 2012 at 06:01:52PM +0100, Borislav Petkov wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > Put generic enough build settings which could be reused by other tools
-> > into a common Makefile.lib file.
-> 
-> I assume that the reason to use the filename "Makefile.lib" is that
-> scripts/Makefile.lib uses the same extension.
+From: Andi Kleen <ak@linux.intel.com>
 
-Yep.
+CONFIG_PARAVIRT_DEBUG seems rather useless. It only has a single BUG_ON
+on a NULL pointer and that is directly in front of code that references
+that pointer anyways and would nicely oops if anything was wrong.
 
-> But whoever idiot(*) that decided to use that extension deserve to be shot!
+So remove that option.
 
-Ye^W^W.. oops, oh no, please no! :-)
+Cc: jeremy@goop.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/Kconfig                      |    7 -------
+ arch/x86/include/asm/paravirt_types.h |    8 --------
+ 2 files changed, 0 insertions(+), 15 deletions(-)
 
-> It is not a library per see, it is just a bunch of stuff you include
-> in another makefile.
-> So Makefile.include would be better - and as an added benefit vim
-> does not barf on it.
-
-Makes sense, will do, thanks.
-
-> (*) I actually shave him quite often...
-
-LOL.
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..ad52be6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -628,13 +628,6 @@ config PARAVIRT_CLOCK
+ 
+ endif
+ 
+-config PARAVIRT_DEBUG
+-	bool "paravirt-ops debugging"
+-	depends on PARAVIRT && DEBUG_KERNEL
+-	---help---
+-	  Enable to debug paravirt_ops internals.  Specifically, BUG if
+-	  a paravirt_op is missing when it is called.
+-
+ config NO_BOOTMEM
+ 	def_bool y
+ 
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 8e8b9a4..fa317c2 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -526,18 +526,11 @@ int paravirt_disable_iospace(void);
+ #define VEXTRA_CLOBBERS	 , "rax", "r8", "r9", "r10", "r11"
+ #endif	/* CONFIG_X86_32 */
+ 
+-#ifdef CONFIG_PARAVIRT_DEBUG
+-#define PVOP_TEST_NULL(op)	BUG_ON(op == NULL)
+-#else
+-#define PVOP_TEST_NULL(op)	((void)op)
+-#endif
+-
+ #define ____PVOP_CALL(rettype, op, clbr, call_clbr, extra_clbr,		\
+ 		      pre, post, ...)					\
+ 	({								\
+ 		rettype __ret;						\
+ 		PVOP_CALL_ARGS;						\
+-		PVOP_TEST_NULL(op);					\
+ 		/* This is 32-bit specific, but is okay in 64-bit */	\
+ 		/* since this condition will never hold */		\
+ 		if (sizeof(rettype) > sizeof(unsigned long)) {		\
+@@ -577,7 +570,6 @@ int paravirt_disable_iospace(void);
+ #define ____PVOP_VCALL(op, clbr, call_clbr, extra_clbr, pre, post, ...)	\
+ 	({								\
+ 		PVOP_VCALL_ARGS;					\
+-		PVOP_TEST_NULL(op);					\
+ 		asm volatile(pre					\
+ 			     paravirt_alt(PARAVIRT_CALL)		\
+ 			     post					\
 -- 
-Regards/Gruss,
-Boris.
+1.7.7.6
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
