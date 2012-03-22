@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030741Ab2CVJ4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:56:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:41704 "EHLO ozlabs.org"
+	id S1757389Ab2CVJ6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:58:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52456 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757287Ab2CVJ4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:56:11 -0400
-Date: Thu, 22 Mar 2012 20:55:56 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 05/17] pseries: Enabled the PFO-based RNG accelerator
-Message-ID: <20120322205556.054c6169@kryten>
-In-Reply-To: <1332365949.3858.32.camel@key-ThinkPad-W510>
-References: <1332365297.3858.5.camel@key-ThinkPad-W510>
-	<1332365949.3858.32.camel@key-ThinkPad-W510>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757125Ab2CVJ6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:58:21 -0400
+Date: Thu, 22 Mar 2012 10:58:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 1/9] ext4: do not mark superblock as dirty
+ unnecessarily
+Message-ID: <20120322095819.GD14485@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+ <1332254489-2300-2-git-send-email-dedekind1@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332254489-2300-2-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 20-03-12 16:41:21, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> 
+> Commit a0375156ca1041574b5d47cc7e32f10b891151b0 cleaned up superblock dirtying
+> handling, but missed one place. This patch does what was intended: if we have
+> the journal, then we update the superblock through the journal rather than
+> doing this directly.
+> 
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+  Looks OK.
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Hi,
-
-+#if defined(CONFIG_HW_RANDOM_PSERIES) || \
-+	defined(CONFIG_HW_RANDOM_PSERIES_MODULE)
-+#define OV5_PFO_HW_RNG		0x80	/* PFO Random Number
-Generator */ +#else
-+#define OV5_PFO_HW_RNG		0x00
-+#endif
-
-Milton tipped me off about this. We really don't want to be doing
-ibm,client-architecture reboots every time a config option is changed.
-
-Let's just hardwire it on.
-
-Anton
+								Honza
+> ---
+>  fs/ext4/inode.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index feaa82f..e040403 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -3924,10 +3924,8 @@ static int ext4_do_update_inode(handle_t *handle,
+>  			ext4_update_dynamic_rev(sb);
+>  			EXT4_SET_RO_COMPAT_FEATURE(sb,
+>  					EXT4_FEATURE_RO_COMPAT_LARGE_FILE);
+> -			sb->s_dirt = 1;
+>  			ext4_handle_sync(handle);
+> -			err = ext4_handle_dirty_metadata(handle, NULL,
+> -					EXT4_SB(sb)->s_sbh);
+> +			err = ext4_handle_dirty_super(handle, sb);
+>  		}
+>  	}
+>  	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
