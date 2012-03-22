@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab2CVI1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 04:27:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932133Ab2CVI1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 04:27:14 -0400
-Date: Thu, 22 Mar 2012 10:27:19 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, nyh@il.ibm.com,
-        nyh@math.technion.ac.il
-Subject: Re: [PULL] vhost-net/virtio: fixes for 3.4
-Message-ID: <20120322082718.GA11258@redhat.com>
-References: <20120320145010.GA31570@redhat.com>
+	id S1030813Ab2CVIcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 04:32:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6963 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932078Ab2CVIcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 04:32:10 -0400
+X-IronPort-AV: E=Sophos;i="4.73,629,1325433600"; 
+   d="scan'208";a="4598329"
+Message-ID: <4F6AE403.8070500@cn.fujitsu.com>
+Date: Thu, 22 Mar 2012 16:34:11 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120320145010.GA31570@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Avi Kivity <avi@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Northup <digitaleric@google.com>, kvm list <kvm@vger.kernel.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F60726E.3090807@cn.fujitsu.com> <4F607325.6050607@redhat.com> <20120314104608.GU2304@redhat.com> <4F607789.4010109@redhat.com> <4F607CE4.2060809@cn.fujitsu.com> <4F609822.7050502@redhat.com> <20120314131415.GB2304@redhat.com> <4F609A15.5020902@redhat.com> <20120314132552.GC2304@redhat.com> <CAG7+5M0gEpoJ_jnC8_4Ae-xe2rr7+CJLZh3JjAhh=p=-2bEAcA@mail.gmail.com> <20120315103923.GL2304@redhat.com> <4F61D1AF.4040603@siemens.com> <4F61D688.5040406@redhat.com> <4F6A2832.9080306@codemonkey.ws>
+In-Reply-To: <4F6A2832.9080306@codemonkey.ws>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-22 16:29:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-22 16:29:58,
+	Serialize complete at 2012-03-22 16:29:58
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 04:50:41PM +0200, Michael S. Tsirkin wrote:
-> The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
+At 03/22/2012 03:12 AM, Anthony Liguori Wrote:
+> On 03/15/2012 06:46 AM, Avi Kivity wrote:
+>> On 03/15/2012 01:25 PM, Jan Kiszka wrote:
+>>>>>
+>>>> There was such vm exit (KVM_EXIT_HYPERCALL), but it was deemed to be a
+>>>> bad idea.
+>>>
+>>> BTW, this would help a lot in emulating hypercalls of other hypervisors
+>>> (or of KVM's VAPIC in the absence of in-kernel irqchip - I had to jump
+>>> through hoops therefore) in user space. Not all those hypercall handlers
+>>> actually have to reside in the KVM module.
+>>>
+>>
+>> That is true.  On the other hand the hypercall ABI might go to pieces if
+>> there was no central implementation.
 > 
->   Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
-> 
-> are available in the git repository at:
-> 
->   ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
-> 
->   (ssh url as git.kernel.org seems down at the moment, when it comes up
->    git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
->    should be the equivalent).
-> 
-> for you to fetch changes up to ea5d404655ba3b356d0c06d6a3c4f24112124522:
-> 
->   vhost: fix release path lockdep checks (2012-02-28 09:13:22 +0200)
-> 
-> ----------------------------------------------------------------
-> vhost/virtio: fixes for 3.4
-> 
-> This includes a couple of vhost-net bugfixes,
-> and fixes tools/virtio making it useful again.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> ----------------------------------------------------------------
+> Just declare that outl 0x505 is a megaultracall and s/vmcall/outb/g and
+> call it a day.
 
-Dave, just checking - not sure I made it clear that this pull request
-is intended to go in through your tree.
-If you see any issues pls let me know so I can fix them.
-Thanks!
+Why use 0x505? Is it a reserved port, and it will not be used by any device?
 
-> Michael S. Tsirkin (4):
->       tools/virtio: add linux/module.h stub
->       tools/virtio: add linux/hrtimer.h stub
->       tools/virtio: stub out strong barriers
->       vhost: fix release path lockdep checks
+How can I get all reserved port?
+
+Thanks
+Wen Congyang
+
 > 
-> Nadav Har'El (1):
->       vhost: don't forget to schedule()
+> The performance difference between vmcall and outl is so tiny compared
+> to the cost of dropping to userspace that it really doesn't matter which
+> instruction is used.
 > 
->  drivers/vhost/net.c         |    2 +-
->  drivers/vhost/vhost.c       |   11 +++++++----
->  drivers/vhost/vhost.h       |    2 +-
->  tools/virtio/linux/virtio.h |    3 +++
->  4 files changed, 12 insertions(+), 6 deletions(-)
->  create mode 100644 tools/virtio/linux/hrtimer.h
->  create mode 100644 tools/virtio/linux/module.h
+> Regards,
+> 
+> Anthony Liguori
+> 
+>>
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
