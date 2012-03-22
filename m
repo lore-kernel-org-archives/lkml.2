@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031120Ab2CVVw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:52:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965161Ab2CVVwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:52:24 -0400
-Date: Thu, 22 Mar 2012 17:52:11 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Mandeep Singh Baines <msb@chromium.org>
-cc: device-mapper development <dm-devel@redhat.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Elly Jones <ellyjones@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>
-Subject: Re: [dm-devel] [PATCH] dm: remake of the verity target
-In-Reply-To: <20120322174101.GM27051@google.com>
-Message-ID: <Pine.LNX.4.64.1203221739060.11979@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
- <20120306215947.GB27051@google.com> <Pine.LNX.4.64.1203131742230.24876@file.rdu.redhat.com>
- <20120320154159.GD27051@google.com> <Pine.LNX.4.64.1203202045150.23255@file.rdu.redhat.com>
- <Pine.LNX.4.64.1203202233250.6371@file.rdu.redhat.com>
- <CACBanvrjZbDY+aUUyp9-YuG8KoEd9k-cn50kn8N=3DQxKf7QFA@mail.gmail.com>
- <Pine.LNX.4.64.1203202340160.15617@file.rdu.redhat.com>
- <CACBanvqYb3MU=Zy7HNJ2oMekQE6FZY5ZtN7QAaAv0M=tVH=cXw@mail.gmail.com>
- <Pine.LNX.4.64.1203211304550.7011@file.rdu.redhat.com> <20120322174101.GM27051@google.com>
+	id S1031176Ab2CVVwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:52:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39972 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030475Ab2CVVwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 17:52:53 -0400
+X-Sasl-enc: wSE/ccaHBoBEMF7BqJ310ApAVJ3ZFEZDX95N3ma+H1zu 1332453173
+Date: Thu, 22 Mar 2012 14:52:23 -0700
+From: Greg KH <greg@kroah.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Regression introduced in v3.2.12 stable
+Message-ID: <20120322215223.GA18689@kroah.com>
+References: <4F6B7A37.3020300@canonical.com>
+ <20120322212644.GA30888@kroah.com>
+ <4F6B9D0E.2040308@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6B9D0E.2040308@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 22 Mar 2012, Mandeep Singh Baines wrote:
-
-> Mikulas Patocka (mpatocka@redhat.com) wrote:
+On Thu, Mar 22, 2012 at 05:43:42PM -0400, Joseph Salisbury wrote:
+> On 03/22/2012 05:26 PM, Greg KH wrote:
+> > On Thu, Mar 22, 2012 at 03:15:03PM -0400, Joseph Salisbury wrote:
+> >> I figured I'd send a heads up regarding a possible regression in v3.2.12
+> >> stable.  The issue prevents systems from booting.
+> >>
+> >> There have been a few bugs[0] reported against the Ubuntu kernel, which
+> >> was recently rebased to 3.2.12.  We're in the process of bisecting now
+> >> and will post an update..
 > > 
-> > This is improved patch that supports both the old format and the new 
-> > format. I checked that it is interoperable with with the old Google 
-> > userspace tool and with the original Google kernel driver.
+> > What specifically happens here when the system does not boot?  Any error
+> > message?  Are you sure this isn't the known pci express issue showing up
+> > here?
 > > 
+> > Can you run 'git bisect' to trace it down to a specific patch please?
+> > 
+> > thanks,
+> > 
+> > greg k-h
 > 
-> Thanks much for doing this:)
+> Hi Greg,
 > 
-> This looks good but would a prepend/append flag be better?
+> Thanks for the response.
+> 
+> We did some bisecting/testing and identified the bad commit in 3.2.12 as
+> the following:
+> 
+> f043ddb60c84ea64a23b755004572afe922e653c PCI: ignore pre-1.1 ASPM
+> quirking when ASPM is disabled
 
-It does more than changing prepend/append salt. I changed alignment in the 
-new format so that it doesn't have to use a multiply instruction.
+Yup, that's the known problem one.  But, note that it does solve other
+people's problems at the moment, so you can't just ignore it :)
 
-In the old format, if digest size is not a power of two, all digests are 
-placed first and the rest of the block is padded with zeros. In the new 
-format, each digest is padded with zeros to a power of two.
-
-For example, when using sha1, the old format padding looks like this:
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbbccccccccccccccccccccccccccccccccccccccccdddddddd
-dddddddddddddddddddddddddddddddd00000000000000000000000000000000
-0000000000000000000000000000000000000000000000000000000000000000
-
-... and the new format padding looks like this:
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb000000000000000000000000
-cccccccccccccccccccccccccccccccccccccccc000000000000000000000000
-dddddddddddddddddddddddddddddddddddddddd000000000000000000000000
-
-The version "0" (first argument in the target line) actually means the old 
-style padding and the salt is hashed after the data. The version "1" means 
-new style padding and the salt is hashed before the data. If someone comes 
-with another format, we can use version "2" for it, etc.
-
-Mikulas
+greg k-h
