@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2CVKTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:19:08 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:39176 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750920Ab2CVKTC (ORCPT
+	id S1754321Ab2CVKYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:24:11 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46861 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab2CVKYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:19:02 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH] x86, efi: Fix processor-specific memcpy() build error
-Date: Thu, 22 Mar 2012 10:18:54 +0000
-Message-Id: <1332411534-10130-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 22 Mar 2012 06:24:10 -0400
+Message-ID: <4F6AFD92.4030603@linux.vnet.ibm.com>
+Date: Thu, 22 Mar 2012 15:53:14 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: masami.hiramatsu.pt@hitachi.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, acme@infradead.org
+CC: ananth@in.ibm.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        rostedt@goodmis.org
+Subject: [PATCH] perf - probe finder fails to resolve function name to address
+References: <4F6AF410.1010400@linux.vnet.ibm.com>
+In-Reply-To: <4F6AF410.1010400@linux.vnet.ibm.com>
+X-Forwarded-Message-Id: <4F6AF410.1010400@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032210-6148-0000-0000-000004740589
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+probe finder fails to resolve valid function names into addresses for
+functions which have more than one die entries in DWARF info.
 
-Building for Athlon/Duron/K7 results in the following build error,
+It is valid for DWARF info to contain more than 1 entries for a given
+function name, where one entry corresponds to definition which has code
+address/range attributes and remaining entries (which are only
+declarations) does not have code address/range attributes.
+(example: do_fork, sys_write, sys_wait4, sys_sync etc)
 
-arch/x86/boot/compressed/eboot.o: In function `__constant_memcpy3d':
-eboot.c:(.text+0x385): undefined reference to `_mmx_memcpy'
-arch/x86/boot/compressed/eboot.o: In function `efi_main':
-eboot.c:(.text+0x1a22): undefined reference to `_mmx_memcpy'
+If die entries corresponding to declarations appear before definition
+entry, probe finder returns error instead of continuing to look further
+for a definition entry.
 
-because the boot stub code doesn't link with the kernel proper, and
-therefore doesn't have access to the 3DNow version of memcpy. So,
-follow the example of misc.c and #undef memcpy so that we use the
-version provided by misc.c.
+This patch ensures we reach to the die entry corresponding to the
+definition and get the function address. I have also removed the
+warning as this is a valid thing to happen.
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
 ---
- arch/x86/boot/compressed/eboot.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index fec216f..3481574 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -14,6 +14,8 @@
- 
- #include "eboot.h"
- 
-+#undef memcpy			/* Use memcpy from misc.c */
-+
- static efi_system_table_t *sys_table;
- 
- static efi_status_t __get_map(efi_memory_desc_t **map, unsigned long *map_size,
--- 
-1.7.4.4
+ tools/perf/util/probe-finder.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 5d73262..5e1e6f7 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -984,10 +984,7 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ 			param->retval = find_probe_point_lazy(sp_die, pf);
+ 		else {
+ 			if (dwarf_entrypc(sp_die, &pf->addr) != 0) {
+-				pr_warning("Failed to get entry address of "
+-					   "%s.\n", dwarf_diename(sp_die));
+-				param->retval = -ENOENT;
+-				return DWARF_CB_ABORT;
++				return DWARF_CB_OK;
+ 			}
+ 			pf->addr += pp->offset;
+ 			/* TODO: Check the address in this function */
 
