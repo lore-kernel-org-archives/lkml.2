@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030621Ab2CVT4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:56:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56127 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964910Ab2CVT4G (ORCPT
+	id S1757583Ab2CVUDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:03:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44868 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab2CVUDr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:56:06 -0400
-Message-ID: <4F6B83D3.4000607@canonical.com>
-Date: Thu, 22 Mar 2012 15:56:03 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120313 Thunderbird/11.0
+	Thu, 22 Mar 2012 16:03:47 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Regression introduced in v3.2.12 stable
-References: <4F6B7A37.3020300@canonical.com>
-In-Reply-To: <4F6B7A37.3020300@canonical.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <CACLa4pt0iQDM14N8AwqBmuZESYaevy6Km8CF_0pEeP+ydH7xjw@mail.gmail.com>
+References: <20120322183845.GA17264@phenom.dumpdata.com>
+	<CACLa4pt0iQDM14N8AwqBmuZESYaevy6Km8CF_0pEeP+ydH7xjw@mail.gmail.com>
+Date: Thu, 22 Mar 2012 16:03:45 -0400
+Message-ID: <CACLa4psVGvymuLGJTV+e=n3mYY2h4=nBhb6FGD_PjjE=xMtZgg@mail.gmail.com>
+Subject: Re: Regression introduced by bfcfaa77bdf0f775263e906015982a608df01c76
+ (vfs: use 'unsigned long' accesses for dcache name comparison and hashing)
+From: Eric Paris <eparis@parisplace.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2012 03:15 PM, Joseph Salisbury wrote:
-> Hello,
-> 
-> I figured I'd send a heads up regarding a possible regression in v3.2.12
-> stable.  The issue prevents systems from booting.
-> 
-> There have been a few bugs[0] reported against the Ubuntu kernel, which
-> was recently rebased to 3.2.12.  We're in the process of bisecting now
-> and will post an update..
-> 
-> Thanks,
-> 
-> Joe
-> 
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/961482
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Reverting this patch also fixed the spurious ENOENT problems (and
+related boot failures) from SELinux.
 
-It's also been noted that this bug happens in the latest version of v3.3.
+Easy reproducer with SELinux enabled (although might I suggest
+permissive/enforcing=0 since the box can't boot otherwise):
+
+compute_create system_u:system_r:kernel_t:s0
+system_u:object_r:init_exec_t:s0 process
+
+If you get back system_u:object_r:init_exec_t:s0 it failed and you'll
+see under strace the ENOENT stat() failure.
+
+If you get back system_u:object_r:init_t:s0 it means it worked...
+
+-Eric
+
+
+On Thu, Mar 22, 2012 at 3:33 PM, Eric Paris <eparis@parisplace.org> wrote:
+> No idea if it is related and haven't bisected, but we are seeing
+> similar ENOENT issues with things in selinuxfs.  And not a single bit
+> of SELinux code has changed since v3.3.  So it's certainly a VFS
+> problem.  This sounds likely.
+>
+> -Eric
+>
+> On Thu, Mar 22, 2012 at 2:38 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+>> Hey Linus,
+>>
+>> I am not sure how to debug this but with v3.3 with just that git commit I can't
+>> start an user space application called 'xenstored'. A bit of strace showed me:
+>> [edit, also with todays linus/master I get the same issue, and if I revert
+>> your patch it works again]
+>>
+>> (right is 3.3, left is with your patch)
+>> write(3, "Checking store complete.\n", 25) = 25                 write(3, "Checking store complete.\n", 25) = 25
+>> sendto(9, "<11>Mar 22 18:00:27 xenstored: C"..., 55, MSG_NOSI | sendto(9, "<11>Mar 22 18:06:44 xenstored: C"..., 55, MSG_NOSI
+>> open("/proc/xen/privcmd", O_RDWR)       = 10                    open("/proc/xen/privcmd", O_RDWR)       = 10
+>> fcntl(10, F_GETFD)                      = 0                     fcntl(10, F_GETFD)                      = 0
+>> fcntl(10, F_SETFD, FD_CLOEXEC)          = 0                     fcntl(10, F_SETFD, FD_CLOEXEC)          = 0
+>> open("/dev/xen/evtchn", O_RDWR)         = 11                    open("/dev/xen/evtchn", O_RDWR)         = 11
+>> open("/proc/xen/xsd_port", O_RDONLY)    = -1 ENOENT (No such  | open("/proc/xen/xsd_port", O_RDONLY)    = 12
+>> write(2, "FATAL: ", 7FATAL: )                  = 7            | read(12, "25", 20)                      = 2
+>> write(2, "Failed to initialize dom0 state:"..., 59Failed to i | close(12)                               = 0
+>> ) = 59                                                        | ioctl(11, EVIOCGVERSION, 0x7fff4e3ffc70) = 41
+>> close(10)                               = 0                   | write(3, "CREATE connection 0xe2e7b0\n", 27) = 27
+>> close(5)                                = 0                   | open("/proc/xen/xsd_kva", O_RDWR)       = 12
+>> close(4)                                = 0                   | mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, 12, 0) = 0
+>> exit_group(1)                           = ?                   | close(12)                               = 0
+>>                                                              > ioctl(11, EVIOCGKEYCODE or EVIOCSKEYCODE, 0x7fff4e3ffc90) = 0
+>>                                                              > ioctl(11, 0x44500, 0x7fff4e3ffc90)      = 42
+>>                                                              > rt_sigaction(SIGHUP, {0x402180, [HUP], SA_RESTORER|SA_RESTART
+>>                                                              > select(12, [4 5 6 11], [], NULL, NULL)  = 1 (in [11])
+>>                                                              > read(11, ")\0\0\0", 4)                  = 4
+>>                                                              > write(11, ")\0\0\0", 4)                 = 4
+>>                                                              > select(12, [4 5 6 11], [], NULL, NULL <unfinished ...>
+>>
+>> and if I ls /proc/xen (v3.3):
+>>
+>>> ls -al /proc/xen
+>> total 0
+>> drwxr-xr-x   2 root root 0 Mar 22 18:05 .
+>> dr-xr-xr-x 126 root root 0 Mar 22 18:05 ..
+>> -r--r--r--   1 root root 0 Mar 22 18:05 capabilities
+>> -rw-------   1 root root 0 Mar 22 18:05 privcmd
+>> -rw-------   1 root root 0 Mar 22 18:05 xenbus
+>> -rw-------   1 root root 0 Mar 22 18:05 xsd_port
+>>
+>> while v3.3 with your patch:
+>>
+>>
+>> 8:01:09 # 10 :/proc/xen/
+>>> ls -al
+>> ls: cannot access xsd_port: No such file or directory
+>> total 0
+>> drwxr-xr-x   2 root root 0 Mar 22 17:57 .
+>> dr-xr-xr-x 126 root root 0 Mar 22 17:57 ..
+>> -r--r--r--   1 root root 0 Mar 22 17:57 capabilities
+>> -rw-------   1 root root 0 Mar 22 17:57 privcmd
+>> -rw-------   1 root root 0 Mar 22 17:57 xenbus
+>> -rw-------   1 root root 0 Mar 22 17:57 xsd_kva
+>> -?????????   ? ?    ?    ?            ? xsd_port
+>>
+>>
+>> Looking at the code that sets up 'xsd_port' it looks pretty innocent
+>> and similar to other drivers (ibmasm for example).
+>>
+>> Also attached is the .config
+>>
+>> Note: to actually bootup the latest with Xen there are some fixes required
+>> to fix the regressions introduced:
+>> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=106b44388d8f76373149c4ea144f717b6d4d9a6d
+>> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=a759ceb7d1dfe38f4dda147e233aa53c8f477e2a
+>> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=1b34ba936c1adff3020eec1e1834ffa4cf89802f
+>> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=6ac72c4bc49a9afb02b8176b48be019dff0560cd
