@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab2CVJxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:53:24 -0400
-Received: from msa101.auone-net.jp ([61.117.18.161]:59009 "EHLO
-	msa101.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab2CVJxT (ORCPT
+	id S1030573Ab2CVJxe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 05:53:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37695 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757287Ab2CVJxc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:53:19 -0400
-Date: Thu, 22 Mar 2012 18:53:17 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] deb-pkg: Update git repository URL
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Message-Id: <20120322095318.272823E403B@msa101.auone-net.jp>
+	Thu, 22 Mar 2012 05:53:32 -0400
+Message-ID: <1332409996.18960.511.camel@twins>
+Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ari Savolainen <ari.m.savolainen@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 22 Mar 2012 10:53:16 +0100
+In-Reply-To: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
+References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- scripts/package/builddeb |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
+> The warning below is printed when executing a command like
+> sudo perf record su - user -c "echo hello"
+> 
+> It's fixed by moving the call of perf_event_comm to be protected
+> by the task lock.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 3c6c0b1..335ec15 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -186,7 +186,7 @@ ftp://ftp.kernel.org/pub/linux/kernel
- Copyright: 1991 - 2009 Linus Torvalds and others.
- 
- The git repository for mainline kernel development is at:
--git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
- 
-     This program is free software; you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
--- 
-1.7.9.1
+That seems like a rather poor solution since it increases the lock hold
+time for no explained reason.
 
+> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
+
+>  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
+>  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
+
+So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
+so I presume its before that.
