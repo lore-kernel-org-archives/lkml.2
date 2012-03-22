@@ -1,45 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965062Ab2CVOWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 10:22:34 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39443 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab2CVOWU (ORCPT
+	id S1758248Ab2CVOXH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 10:23:07 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:34689 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181Ab2CVOXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 10:22:20 -0400
-Date: Thu, 22 Mar 2012 14:22:12 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Matt Helsley <matt.helsley@gmail.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH v3 10/12] ima: defer calling __fput()
-Message-ID: <20120322142212.GV6589@ZenIV.linux.org.uk>
-References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Mar 2012 10:23:02 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174778519"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tsoni@codeaurora.org, Li Yang <leoli@freescale.com>,
+        Zhang Wei <zw@zh-kernel.org>, Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>, linuxppc-dev@lists.ozlabs.org,
+        Ravi Kumar V <kumarrav@codeaurora.org>
+Subject: [PATCH v5 1/2] dmaengine: Add context parameter to prep_dma_sg and prep_interleaved_dma
+Date: Thu, 22 Mar 2012 19:52:47 +0530
+Message-Id: <1332426167-25213-1-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 02:54:15PM -0400, Mimi Zohar wrote:
-> If a file is closed before it is munmapped, __fput() is called with
-> the mmap_sem taken.  With IMA-appraisal enabled, this results in an
-> mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count
-> to defer __fput() being called until after the mmap_sem is released.
+Add new context parameter to DMA SG and Interleaveid mode for passing
+per transfer specific private data, using this it enables the
+dma devices which needs to pass the parameters which changes per
+each transfer
 
-NAK.  It's far too heavy-weight for what's a very common path.  Worse,
-it causes different locking conditions on IMA and non-IMA kernels and makes
-bugs harder to spot.  Rejected with extreme prejudice; please, fix your
-locking instead.
+Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+---
+ drivers/dma/fsldma.c                    |    2 +-
+ drivers/dma/sirf-dma.c                  |    2 +-
+ drivers/dma/ste_dma40.c                 |    2 +-
+ drivers/misc/carma/carma-fpga-program.c |    2 +-
+ drivers/misc/carma/carma-fpga.c         |    7 +++----
+ include/linux/dmaengine.h               |   22 ++++++++++++++++++++--
+ 6 files changed, 27 insertions(+), 10 deletions(-)
 
-BTW, you've missed several other places in mm/* doing fput(), so it wouldn't
-be enough to paper over your problem anyway.
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index b98070c..f9f77db 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -645,7 +645,7 @@ fail:
+ static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
+ 	struct scatterlist *dst_sg, unsigned int dst_nents,
+ 	struct scatterlist *src_sg, unsigned int src_nents,
+-	unsigned long flags)
++	unsigned long flags, void *context)
+ {
+ 	struct fsl_desc_sw *first = NULL, *prev = NULL, *new = NULL;
+ 	struct fsldma_chan *chan = to_fsl_chan(dchan);
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 2333810..ff4d344 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -428,7 +428,7 @@ sirfsoc_dma_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+ 
+ static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
+ 	struct dma_chan *chan, struct dma_interleaved_template *xt,
+-	unsigned long flags)
++	unsigned long flags, void *context)
+ {
+ 	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+ 	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index cc5ecbc..2f58ba9 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2287,7 +2287,7 @@ static struct dma_async_tx_descriptor *
+ d40_prep_memcpy_sg(struct dma_chan *chan,
+ 		   struct scatterlist *dst_sg, unsigned int dst_nents,
+ 		   struct scatterlist *src_sg, unsigned int src_nents,
+-		   unsigned long dma_flags)
++		   unsigned long dma_flags, void *context)
+ {
+ 	if (dst_nents != src_nents)
+ 		return NULL;
+diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
+index a2d25e4..3739a12 100644
+--- a/drivers/misc/carma/carma-fpga-program.c
++++ b/drivers/misc/carma/carma-fpga-program.c
+@@ -530,7 +530,7 @@ static noinline int fpga_program_dma(struct fpga_dev *priv)
+ 	}
+ 
+ 	/* setup and submit the DMA transaction */
+-	tx = chan->device->device_prep_dma_sg(chan,
++	tx = chan->device->dmaengine_prep_dma_sg(chan,
+ 					      table.sgl, num_pages,
+ 					      vb->sglist, vb->sglen, 0);
+ 	if (!tx) {
+diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+index 14e974b2..be0baf6 100644
+--- a/drivers/misc/carma/carma-fpga.c
++++ b/drivers/misc/carma/carma-fpga.c
+@@ -638,10 +638,9 @@ static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
+ 	 */
+ 
+ 	/* setup the scatterlist to scatterlist transfer */
+-	tx = chan->device->device_prep_dma_sg(chan,
+-					      dst_sg, dst_nents,
+-					      src_sg, src_nents,
+-					      0);
++	tx = dmaengine_prep_dma_sg(chan, dst_sg, dst_nents,
++					 src_sg, src_nents,
++					 0);
+ 	if (!tx) {
+ 		dev_err(priv->dev, "unable to prep scatterlist DMA\n");
+ 		return -ENOMEM;
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 679b349..68a57da 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -570,7 +570,7 @@ struct dma_device {
+ 		struct dma_chan *chan,
+ 		struct scatterlist *dst_sg, unsigned int dst_nents,
+ 		struct scatterlist *src_sg, unsigned int src_nents,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 
+ 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+ 		struct dma_chan *chan, struct scatterlist *sgl,
+@@ -581,7 +581,7 @@ struct dma_device {
+ 		size_t period_len, enum dma_transfer_direction direction);
+ 	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+ 		struct dma_chan *chan, struct dma_interleaved_template *xt,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		unsigned long arg);
+ 
+@@ -615,6 +615,24 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
+ 	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
+ }
+ 
++static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_sg(
++			struct dma_chan *chan, struct scatterlist *dst_sg,
++			unsigned int dst_nents,	struct scatterlist *src_sg,
++			unsigned int src_nents,	unsigned long flags)
++{
++	return chan->device->device_prep_dma_sg(chan, dst_sg, dst_nents,
++					src_sg, src_nents, flags, NULL);
++}
++
++static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
++			struct dma_chan *chan,
++			struct dma_interleaved_template *xt,
++			unsigned long flags)
++{
++	return chan->device->device_prep_interleaved_dma(chan, xt,
++							flags, NULL);
++}
++
+ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ {
+ 	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Final fput() *can* happen under mmap_sem.  Period.
