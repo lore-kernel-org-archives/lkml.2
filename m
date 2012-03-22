@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201Ab2CVEEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 00:04:07 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:56124 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750873Ab2CVEEE (ORCPT
+	id S1751474Ab2CVEFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 00:05:16 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37925 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab2CVEFN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 00:04:04 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/JuM4HBJXJCPZciRK8hVI2cq4ADlTR9lRnhCGtSR
-	7cEW9PtLG+hm/c
-Message-ID: <1332389033.5759.52.camel@marge.simpson.net>
-Subject: Re: [PATCH 07/32] cpuset: Set up interface for nohz flag
-From: Mike Galbraith <efault@gmx.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Date: Thu, 22 Mar 2012 05:03:53 +0100
-In-Reply-To: <alpine.DEB.2.00.1203210949440.20482@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	 <1332338318-5958-9-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1203210949440.20482@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 22 Mar 2012 00:05:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK2p4sJ4LJGJ6moqrZ9En6SLRsw0k6EbWqJ19dUzN9BRvsz39g@mail.gmail.com>
+References: <1330067945-9128-1-git-send-email-santoshsy@gmail.com> <CAK2p4sJ4LJGJ6moqrZ9En6SLRsw0k6EbWqJ19dUzN9BRvsz39g@mail.gmail.com>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Thu, 22 Mar 2012 09:34:50 +0530
+Message-ID: <CALMYJDuHUhybFtw1Bn-K7jP_zv1UzS5XTwteuqCzaCXZCfBpSQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] [SCSI] ufshcd: UFS Host Controller Driver
+To: Deepak Saxena <dsaxena@linaro.org>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
+        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
+        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
+        yejin.moon@samsung.com, ilho215.lee@samsung.com, nala.la@samsung.com,
+        stephen.doel@linaro.org, sreekumar.c@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 09:50 -0500, Christoph Lameter wrote: 
-> On Wed, 21 Mar 2012, Frederic Weisbecker wrote:
-> 
-> > Prepare the interface to implement the nohz cpuset flag.
-> > This flag, once set, will tell the system to try to
-> > shutdown the periodic timer tick when possible.
-> >
-> > We use here a per cpu refcounter. As long as a CPU
-> > is contained into at least one cpuset that has the
-> > nohz flag set, it is part of the set of CPUs that
-> > run into adaptive nohz mode.
-> 
-> What are the drawbacks for nohz?
+On Thu, Mar 22, 2012 at 7:17 AM, Deepak Saxena <dsaxena@linaro.org> wrote:
+> On 23 February 2012 23:19, Santosh Y <santoshsy@gmail.com> wrote:
+>> From: Santosh Yaraganavi <santoshsy@gmail.com>
+>>
+>> UFS:
+>> Universal Flash Storage is a storage specification for flash devices.
+>> It is aimed to provide a universal storage interface for both
+>> embedded and removable flash memory based storage in mobile
+>> devices such as smart phones and tablet computers. The specification
+>> is defined by JEDEC Solid State Technology Association. UFS is based
+>> on MIPI M-PHY physical layer standard. UFS uses MIPI M-PHY as the
+>> physical layer and MIPI Unipro as the link layer.
+>
+> Hi Santosh, James et all,
+>
+> I've not seen many comments on these patches. It looks like just a few minor
+> issues that may need to be resolved. It's probably too late to get this into
+> 3.4, but could we get this pulled into scsi tree's for linux-next  branch once
+> these issue are resolved? Santosh, do you have a new version of the patches
+> to post with these updates?
+>
+> Thanks,
+> ~Deepak
 
-For nohz in general, latency.  To make it at all usable for rt loads, I
-had to make isolated cores immune from playing load balancer.  Even so,
-to achieve target latency, I had to hack up cpusets to let the user
-dynamically switch nohz off for specified sets (and the tick has to be
-skewed in both cases or you can just forget it).  With nohz, I can't
-quite achieve 30us jitter target, turn it off, I get single digit.  Out
-of the current box, triple digit for simple synchronized frame timers +
-compute worker-bees load on 64 cores.  Patch 4 probably helps that, but
-don't _think_ it'll fix it.  If you (currently) ever become balancer,
-you're latency target is smoking wreckage.
+Hi Deepak,
 
--Mike
+UFSHCD v3 patches incorporate the changes for the comments received on
+v2 patches and were posted on Feb 29th, 2012.
 
+Regards,
+Santosh
