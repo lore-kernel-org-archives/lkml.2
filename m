@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759376Ab2CVTM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:12:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757448Ab2CVTMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:12:24 -0400
-Date: Thu, 22 Mar 2012 20:11:21 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Dan Smith <danms@us.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] AutoNUMA alpha6
-Message-ID: <20120322191121.GA6661@redhat.com>
-References: <20120321021239.GQ24602@redhat.com>
- <87fwd2d2kp.fsf@danplanet.com>
- <20120321124937.GX24602@redhat.com>
- <87limtboet.fsf@danplanet.com>
- <20120321225242.GL24602@redhat.com>
- <20120322001722.GQ24602@redhat.com>
- <873990buuy.fsf@danplanet.com>
- <20120322142735.GE24602@redhat.com>
- <20120322184925.GT24602@redhat.com>
- <87limsa2hm.fsf@danplanet.com>
+	id S1030273Ab2CVTPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:15:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55977 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757542Ab2CVTPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 15:15:06 -0400
+Message-ID: <4F6B7A37.3020300@canonical.com>
+Date: Thu, 22 Mar 2012 15:15:03 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120313 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87limsa2hm.fsf@danplanet.com>
+To: linux-kernel@vger.kernel.org
+Subject: Regression introduced in v3.2.12 stable
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 11:56:37AM -0700, Dan Smith wrote:
-> AA> but now it's time to go back coding and add THP native
-> AA> migration. That will benefit everyone, from cpuset in userland to
-> AA> numa/sched.
-> 
-> I dunno about everyone else, but I think the thing I'd like to see most
-> (other than more interesting benchmarks) is a broken out and documented
-> set of patches instead of the monolithic commit you have now. I know you
-> weren't probably planning to do that until numasched came along, but it
-> sure would help me digest the differences in the two approaches.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I uploaded AutoNUMA public to my git tree autonuma branch, the day
-before numa/sched was posted to allow people to start testing it. I
-didn't announce it yet because I wasn't sure if it was worth posting
-it until I had the time to split the patches. Then I changed my mind
-and posted it as the monolith that it was.
+Hello,
 
-I think I'll try to attack the THP native migration, if it looks like
-it takes more than one or two days to do it, I'll abort it and do the
-patch-splitting/cleanup/documentation work first so you can review
-review the code better ASAP.
+I figured I'd send a heads up regarding a possible regression in v3.2.12
+stable.  The issue prevents systems from booting.
 
-The advantage of doing it sooner is, it gets more of the testing that
-is going on right now from you and everyone else, plus I dislike
-leaving that important feature missing while many benchmarks are being
-run, as it's going to certainly be measurable when the workload
-changes massively and lots of hugepages are moved around by
-knuma_migrated. Boosting khugepaged tends to hide it for now though
-(as shown by specjbb).
+There have been a few bugs[0] reported against the Ubuntu kernel, which
+was recently rebased to 3.2.12.  We're in the process of bisecting now
+and will post an update..
 
 Thanks,
-Andrea
+
+Joe
+
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/961482
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPa3o3AAoJEGzvPSfKWxQeiXEQAMFKzJj+urC+JyVXfTOOjV/z
+iv7/nMAHFPvKgNpDFpk+SM3pFDgZJ/7JZn5Bjl6nidycJy79uCoYxBehBycohtkn
+De3Qvefq4lUvIdVpxbM1GhjxRphru8tnGmUOsC1a9S30aYPhRKcHSIGpZZyaSE7k
+XmdbI3XEtu1pNiML4Q7lJku5VbOrAt4mm0vBoNpczdTikaAsuLsNnLPju94el3iR
+z0Ra7U5buxM06d4T81xoOqVRmcVU8kVsC9Rebp7W2Cfo8VBkkzdlyRsmCCVFL7j/
+3Hi5Ir0DCSY7nvPgnlcmOPvF9J4TwgCDkpAheNFkQQph3jc9q7XrlsG3310LeAW7
+7w4dtTt+m7FmkmveRmvkC54av2YdqgabcJDMDPlXQ6GC6tdYU7H3dvvKJsz1NbT0
+H5JlURCE0zmnMEUnErVLhMCrNm3AFdQQGpJkut3roapSxJfARatowu5Vu+eFzmhV
+DCwZpRUKjdvCd88dn+blSBRTb2BLDGYTSP5/Lp2gehdeStrLs3QVJDq8VDGHQUq5
+b5zAM1BAmgtT8eCyJHLGVrjO7dmuMRVBqitn4IGbcAeUbd9bSNxuZ4fnkjrVlW4f
+Qy1xzws5qGqSYQt39tIG0uvSYar2U4UBUmJERr1FBAEb5FvnGnA5enB75RFWqwR1
+q8dxiWcHxI9jG4/wVFq7
+=3Uid
+-----END PGP SIGNATURE-----
