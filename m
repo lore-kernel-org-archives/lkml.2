@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab2CVFi1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 01:38:27 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:30875
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753000Ab2CVFiZ (ORCPT
+	id S1755209Ab2CVFkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 01:40:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40625 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809Ab2CVFkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 01:38:25 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 22 Mar 2012 13:49:29 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sjg@chromium.org" <sjg@chromium.org>,
+	Thu, 22 Mar 2012 01:40:07 -0400
+Date: Thu, 22 Mar 2012 14:39:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 3/6] pinctrl: core device tree mapping table parsing
- support
-Message-ID: <20120322054928.GD840@shlinux2.ap.freescale.net>
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
- <1332265479-1260-3-git-send-email-swarren@wwwdotorg.org>
- <20120321073116.GE3191@shlinux2.ap.freescale.net>
- <4F69F844.3060102@wwwdotorg.org>
- <4F6A0F05.90104@wwwdotorg.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+Message-ID: <20120322053958.GA5278@barrios>
+References: <20120321065140.13852.52315.stgit@zurg>
+ <20120321100602.GA5522@barrios>
+ <4F69D496.2040509@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F6A0F05.90104@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4F69D496.2040509@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 01:25:25AM +0800, Stephen Warren wrote:
-> On 03/21/2012 09:48 AM, Stephen Warren wrote:
-> > On 03/21/2012 01:31 AM, Dong Aisheng wrote:
-> >> On Wed, Mar 21, 2012 at 01:44:36AM +0800, Stephen Warren wrote:
-> ...
-> >>> +int pinctrl_dt_to_map(struct pinctrl *p)
-> >>> +{
-> >>> +	struct device_node *np = p->dev->of_node;
-> >>> +	int state, ret;
-> >>> +	char *propname;
-> >>> +	struct property *prop;
-> >>> +	const char *statename;
-> >>> +	const __be32 *list;
-> >>> +	int size, config;
-> >>> +	phandle phandle;
-> >>> +	struct device_node *np_config;
-> >>> +	struct pinctrl_dt_map *dt_map;
-> >>
-> >> Add NULL np checking?
-> > 
-> > Oops yes. I though I had that somewhere, but evidently not...
+On Wed, Mar 21, 2012 at 05:16:06PM +0400, Konstantin Khlebnikov wrote:
+> Minchan Kim wrote:
+> >Hi Konstantin,
+> >
+> >It seems to be nice clean up to me and you are a volunteer we have been wanted
+> >for a long time. Thanks!
+> >I am one of people who really want to expand vm_flags to 64 bit but when KOSAKI
+> >tried it, Linus said his concerning, I guess you already saw that.
+> >
+> >He want to tidy vm_flags's usage up rather than expanding it.
+> >Without the discussion about that, just expanding vm_flags would make us use
+> >it up easily so that we might need more space.
 > 
-> It turns out this isn't needed; of_node_get() and of_find_property()
-> both handle a NULL np just fine. Still, I suppose this might not always
-> be true for arbitrary code that's in pinctrl_dt_to_map(), so perhaps we
-> should add this anyway.
-> 
-Yes, and it's meaningless to keep going forward if np is NULL.
+> Strictly speaking, my pachset does not expands vm_flags, it just prepares to this.
+> Anyway vm_flags_t looks better than hard-coded "unsigned long" and messy type-casts around it.
 
-> >>> +		}
-> >>> +
-> >>> +		/* For every referenced pin configuration node in it */
-> >>> +		for (config = 0; config < size; config++) {
-> >>> +			phandle = be32_to_cpup(list++);
-> >>> +
-> >>> +			/* Look up the pin configuration node */
-> >>> +			np_config = of_find_node_by_phandle(phandle);
-> >>
-> >> One option is using of_parse_phandle, then we do not need calculate
-> >> the phandle offset by ourselves.
-> >> Like:
-> >> np_config = of_parse_phandle(propname , config);
-> > 
-> > Yes, that's a good idea. I'll try that.
-> 
-> I looked at this more, and the existing code is a lot more efficient;
-> of_parse_phandle() internally calls of_find_property() each time, which
-> this pinctrl code has already done. I'd rather just leave this as it is.
-> Are you OK with that?
-> 
-Yes, i'm ok with it.
+Indeed.
 
-Regards
-Dong Aisheng
+> 
+> >
+> >Readahead flags are good candidate to move into another space and arch-specific flags, I guess.
+> >Another candidate I think of is THP flag. It's just for only anonymous vma now
+> >(But I am not sure we have a plan to support it for file-backed pages in future)
+> >so we can move it to anon_vma or somewhere.
+> >I think other guys might find more somethings
+> >
+> >The point is that at least, we have to discuss about clean up current vm_flags's
+> >use cases before expanding it unconditionally.
+> 
+> Seems like we can easily remove VM_EXECUTABLE
+> (count in mm->num_exe_file_vmas amount of vmas with vma->vm_file == mm->exe_file
+> instead of vmas with VM_EXECUTABLE bit)
+> 
+> And probably VM_CAN_NONLINEAR...
 
+I think we can also unify VM_MAPPED_COPY(nommu) and VM_SAO(powerpc) with one VM_ARCH_1
+Okay. After this series is merged, let's try to remove flags we can do. Then, other guys
+might suggest another ideas.
+
+Thanks.
