@@ -1,199 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2CVOHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 10:07:07 -0400
-Received: from mga10.intel.com ([192.55.52.92]:59424 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752786Ab2CVOHD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 10:07:03 -0400
+	id S1755265Ab2CVOI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 10:08:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752669Ab2CVOI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 10:08:27 -0400
+Date: Thu, 22 Mar 2012 15:07:25 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] perf, tool: Add new event group management
+Message-ID: <20120322140725.GC1601@m.brq.redhat.com>
+References: <1332269081.18960.444.camel@twins>
+ <20120320204625.GA17142@gmail.com>
+ <1332321311.18960.474.camel@twins>
+ <20120321095211.GA11122@gmail.com>
+ <1332330852.18960.482.camel@twins>
+ <20120321121510.GA4386@gmail.com>
+ <20120321151332.GD21163@infradead.org>
+ <20120322075634.GD31810@gmail.com>
+ <20120322124137.GF21163@infradead.org>
+ <20120322135428.GA3068@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<1332356057-3356-11-git-send-email-zohar@linux.vnet.ibm.com>
-Date: Thu, 22 Mar 2012 16:07:00 +0200
-Message-ID: <CALLzPKax1Kmuec+F1w9fK0GbRap6FQJjFXbcZsfXBThB8kw4bA@mail.gmail.com>
-Subject: Re: [PATCH v3 10/12] ima: defer calling __fput()
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Matt Helsley <matt.helsley@gmail.com>, Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322135428.GA3068@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Mar 22, 2012 at 02:54:29PM +0100, Ingo Molnar wrote:
+> 
+> * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> 
+> > Em Thu, Mar 22, 2012 at 08:56:34AM +0100, Ingo Molnar escreveu:
+> > > 
+> > > * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> > > 
+> > > > Em Wed, Mar 21, 2012 at 01:15:10PM +0100, Ingo Molnar escreveu:
+> > > > > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > > > > I would much prefer a syntax that's more natural but requires 
+> > > > > > quoting than one that's quirky and tailor made to avoid 
+> > > > > > whatever current bash does. For one, there's other shells out 
+> > > > > > there that might have different quoting needs and bash is of 
+> > > > > > course free to extend its syntax.
+> > > > > 
+> > > > > Well, they are unlikely to extend to '+', it would break a 
+> > > > > boatload of scripts I suspect.
+> > > > > 
+> > > > > So the question would be, is a+b+c as event grouping a natural 
+> > > > > syntax? If not then lets use a quoted one that is.
+> > > > 
+> > > >    -e groupname=event1,event2,event3
+> > > > 
+> > > > Seems intuitive, no?
+> > > 
+> > > Hm, if there's no use for 'groupname' later on then it's a 
+> > > needlessly unspecified dimension. If this variant is picked then 
+> > > I'd suggest to make it a fixed:
+> > > 
+> > >   -e group=event1,event2,event3
+> > > 
+> > > kind of thing instead.
+> > 
+> > Jiri mentioned a use for the group name, no?
+> 
+> Only for perf stat output, right?
+> 
 
+right.. hm, using it in perf report would need to have it
+stored in the data file.. not sure thats worth the effort
 
-On Wed, Mar 21, 2012 at 8:54 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> If a file is closed before it is munmapped, __fput() is called with
-> the mmap_sem taken.  With IMA-appraisal enabled, this results in an
-> mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count
-> to defer __fput() being called until after the mmap_sem is released.
->
+maybe let's start with 'group:mod=' and we can add later something
+like 'group/name:mod=' if there's need to see group name in output
 
-Have you noticed any performance implications?
+I think it's better to have one event syntax for all commands
 
-
-> Changelog v3:
-> - use slab mempool (suggested by Dmitry Kasatkin)
-> - renamed a few functions based on Matt Helsley's review
-> - define ima_fput_mempool as static (fix sparse error)
-> - fix ima_defer_fput() stub definition
->
-> Changelog v2:
-> - based on discussions with: Tyler Hicks (use workqueues),
->  Dave Hansen (defer only IMA related files), and
->  Dmitry Kasatkin (add new IMA hook)
-> - use slab memory for allocating work
->
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> ---
->  include/linux/ima.h                   |    5 ++
->  mm/mmap.c                             |    1 +
->  security/integrity/ima/ima_appraise.c |   84 +++++++++++++++++++++++++++++++++
->  3 files changed, 90 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/ima.h b/include/linux/ima.h
-> index 2c7223d..af8cb3b 100644
-> --- a/include/linux/ima.h
-> +++ b/include/linux/ima.h
-> @@ -47,6 +47,7 @@ extern void ima_inode_post_setattr(struct dentry *dentry);
->  extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
->                       const void *xattr_value, size_t xattr_value_len);
->  extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
-> +extern void ima_defer_fput(struct file *file);
->  #else
->  static inline void ima_inode_post_setattr(struct dentry *dentry)
->  {
-> @@ -66,5 +67,9 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
->  {
->        return 0;
->  }
-> +static inline void ima_defer_fput(struct file *file)
-> +{
-> +       return;
-> +}
->  #endif /* CONFIG_IMA_APPRAISE_H */
->  #endif /* _LINUX_IMA_H */
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 4c16a0a..c1accd4 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -232,6 +232,7 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
->        if (vma->vm_ops && vma->vm_ops->close)
->                vma->vm_ops->close(vma);
->        if (vma->vm_file) {
-> +               ima_defer_fput(vma->vm_file); /* drop mmap_sem first */
->                fput(vma->vm_file);
->                if (vma->vm_flags & VM_EXECUTABLE)
->                        removed_exe_file_vma(vma->vm_mm);
-> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-> index becc7e0..a100a3c 100644
-> --- a/security/integrity/ima/ima_appraise.c
-> +++ b/security/integrity/ima/ima_appraise.c
-> @@ -11,6 +11,7 @@
->  #include <linux/module.h>
->  #include <linux/file.h>
->  #include <linux/fs.h>
-> +#include <linux/mempool.h>
->  #include <linux/xattr.h>
->  #include <linux/magic.h>
->  #include <linux/ima.h>
-> @@ -226,3 +227,86 @@ int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
->        }
->        return result;
->  }
-> +
-> +struct ima_fput_req {
-> +       struct file *file;
-> +       struct work_struct work;
-> +};
-> +static struct kmem_cache *ima_fput_slab;
-> +static mempool_t *ima_fput_mempool;
-> +
-> +static void ima_deferred_fput(struct work_struct *work)
-> +{
-> +       struct ima_fput_req *deferred = container_of(work, struct ima_fput_req,
-> +                                                    work);
-> +
-> +       fput(deferred->file);
-> +       mempool_free(deferred, ima_fput_mempool);
-> +}
-> +
-> +/**
-> + * ima_defer_fput - defer calling __fput() for mmaped files
-> + * @file: pointer to file structure to be freed
-> + *
-> + * The i_mutex is taken by ima_file_free(), called on  __fput(), to
-> + * update 'security.ima' to reflect the current file data hash.  When
-> + * a file is closed before it is munmapped, __fput() is called with
-> + * the mmap_sem taken, resulting in an mmap_sem/i_mutex lockdep.
-> + * This function defers calling __fput() until after the mmap_sem is
-> + * released.
-> + */
-> +void ima_defer_fput(struct file *file)
-> +{
-> +       struct dentry *dentry = file->f_path.dentry;
-> +       struct inode *inode = dentry->d_inode;
-> +       struct ima_fput_req *defer;
-> +       int rc;
-> +
-> +       if (!IS_IMA(inode))
-> +               return;
-> +
-> +       defer = mempool_alloc(ima_fput_mempool, GFP_NOIO);
-> +       if (!defer)
-> +               return;
-> +
-> +       get_file(file);
-> +
-> +       defer->file = file;
-> +       INIT_WORK(&defer->work, ima_deferred_fput);
-> +       rc = schedule_work(&defer->work);
-> +       if (rc == 0) {
-> +               pr_info("ima: schedule work failed\n");
-> +               mempool_free(defer, ima_fput_mempool);
-> +               fput_atomic(file);
-> +       }
-> +}
-> +
-> +static int __init ima_fput_mempool_create(void)
-> +{
-> +       ima_fput_slab = kmem_cache_create("ima_fput",
-> +                                          sizeof(struct ima_fput_req),
-> +                                          0, 0, NULL);
-> +       if (!ima_fput_slab) {
-> +               pr_info("ima: failed kmem_cache_create\n");
-> +               goto err_out;
-> +       }
-> +
-> +       ima_fput_mempool = mempool_create_slab_pool(1, ima_fput_slab);
-> +       if (!ima_fput_mempool)  {
-> +               pr_info("ima: failed mempool_create_slab_pool\n");
-> +               goto free_slab;
-> +       }
-> +       return 0;
-> +
-> +free_slab:
-> +       kmem_cache_destroy(ima_fput_slab);
-> +err_out:
-> +       return -ENOMEM;
-> +}
-> +
-> +static void __exit ima_fput_mempool_destroy(void)
-> +{
-> +       mempool_destroy(ima_fput_mempool);
-> +       kmem_cache_destroy(ima_fput_slab);
-> +}
-
-Is it really needed? I think it will never be called if not a module...
-
-> +security_initcall(ima_fput_mempool_create);
-> --
-> 1.7.6.5
->
+jirka
