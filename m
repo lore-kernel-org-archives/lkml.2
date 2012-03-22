@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758656Ab2CVQsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 12:48:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60571 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab2CVQsk (ORCPT
+	id S1758564Ab2CVQtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 12:49:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55306 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab2CVQts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 12:48:40 -0400
-Date: Thu, 22 Mar 2012 17:47:51 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Ted Ts'o" <tytso@mit.edu>, Artem Bityutskiy <dedekind1@gmail.com>,
-        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-ext4@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ext2: Don't export ext2_mask_flags() to user space
-Message-ID: <20120322164751.GA17885@avionic-0098.adnet.avionic-design.de>
-References: <1332366608-2695-1-git-send-email-thierry.reding@avionic-design.de>
- <20120321222357.GB24330@quack.suse.cz>
- <20120321231651.GC32041@thunk.org>
- <20120322055354.GA3942@avionic-0098.mockup.avionic-design.de>
- <1332396053.3058.2.camel@koala>
- <20120322162825.GA4028@thunk.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-In-Reply-To: <20120322162825.GA4028@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:jY+W7HlQfaKKOhjqXmUz8TfuyUuAcCZHDxQ0ciil+Vb
- 2m1sk6n+aT5b7XbG/M2C2EOVUSDyWMEj4iemn/CAqp4D+fFFD+
- tTsZooGYhWgradamrohfWJMcatReU+JV8qancF4dcrxKQ2GcXC
- hahq6ZMO34LyN8MGQVvuxDu5d5JFtcgm24NXSm8kdkeisVmtGc
- o+WKxNn6fE8/QJW49+eRxAxD6xEEhS+U19WUS4/OwctxxuUgBc
- 3pRhiI5vXfYiXnrQhRd6Hemwz+L3jdbhsiVD0MdkM/elewzN0Z
- 0gxk8nGIdnngMgj4HEGVG76FidYRmbfaS5VbWPfNagJiL2yCk3
- sRYX3L+ZIHJU07FvRR9xVvKv2NfNjov+tooGxwQL/C7xI257f5
- djZdHfqnVqzz3MuImpSL6pq72TmUEMwsl8=
+	Thu, 22 Mar 2012 12:49:48 -0400
+From: Colin King <colin.king@canonical.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI: Allow pcie_aspm=force to work even when FADT indicates it is unsupported
+Date: Thu, 22 Mar 2012 16:49:45 +0000
+Message-Id: <1332434985-11522-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Colin Ian King <colin.king@canonical.com>
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
+ASPM is unsupported.  However, the semantics of force should probably allow
+for this, especially as they did before the ASPM disable rework with commit
+3c076351c4027a56d5005a39a0b518a4ba393ce2
 
-* Ted Ts'o wrote:
-> On Thu, Mar 22, 2012 at 08:00:41AM +0200, Artem Bityutskiy wrote:
-> > On Thu, 2012-03-22 at 06:53 +0100, Thierry Reding wrote:
-> > > What's the recommended fix for packages that cannot or will not use
-> > > libext2fs, like busybox? Copy the required parts into a private header
-> > > and use that instead?
-> >=20
-> > The normal way is to just keep a private copy of the whole header file.
-> > Because the on-disk format stays compatible, those programs do not have
-> > to update the header very often - only rarely if they want to support
-> > some new feature.
->=20
-> Even if they're not iwlling to use libext2fs (for space reasons, I
-> would assume?  It can't be because of license compatibility issues
-> since they are both GPLv2), they could just simply grab the ext2_fs.h
-> from e2fsprogs.  That has all of the file system definitions for ext2,
-> ext3, and ext4.
+This patch just skips the clearing of any ASPM setup that the firmware has
+carried out on this bus if pcie_aspm=force is being used.
 
-In fact there is already a file, e2fs_defs.h, that seems to be based on the
-contents of the ext2_fs.h from the kernel. I've posted two patches to the
-busybox mailing list that fix the build without using linux/ext2_fs.h. For
-reference, they can be found here:
+BugLink: https://bugs.launchpad.net/ubuntu/+bug/962038
 
-	http://lists.busybox.net/pipermail/busybox/2012-March/077563.html
-	http://lists.busybox.net/pipermail/busybox/2012-March/077562.html
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ drivers/pci/pcie/aspm.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Do you still want me to prepare a patch to unexport ext2_fs.h or will you
-take care of it?
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 24f049e..e406429 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -783,6 +783,9 @@ void pcie_clear_aspm(struct pci_bus *bus)
+ {
+ 	struct pci_dev *child;
+ 
++	if (aspm_force)
++		return;
++
+ 	/*
+ 	 * Clear any ASPM setup that the firmware has carried out on this bus
+ 	 */
+-- 
+1.7.9.1
 
-Thierry
-
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk9rV7cACgkQZ+BJyKLjJp8ezACcDWZGEuBwWcNpoayziNPZeHt3
-l/sAn1n8pBb2zDyCfkhuRoq+4BdzZ5J7
-=teNS
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
