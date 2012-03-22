@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab2CVBrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 21:47:51 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43222 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2CVBrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 21:47:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
-References: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
-Date: Wed, 21 Mar 2012 18:47:47 -0700
-Message-ID: <CAK2p4sJ4LJGJ6moqrZ9En6SLRsw0k6EbWqJ19dUzN9BRvsz39g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] [SCSI] ufshcd: UFS Host Controller Driver
-From: Deepak Saxena <dsaxena@linaro.org>
-To: Santosh Y <santoshsy@gmail.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        yejin.moon@samsung.com, ilho215.lee@samsung.com, nala.la@samsung.com,
-        stephen.doel@linaro.org, sreekumar.c@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030629Ab2CVBuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 21:50:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39953 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030577Ab2CVBuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 21:50:17 -0400
+Message-ID: <1332381004.2982.65.camel@pasglop>
+Subject: Re: [PATCH 14/17] powerpc: crypto: nx driver code supporting nx
+ encryption
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kent Yoder <key@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Date: Thu, 22 Mar 2012 12:50:04 +1100
+In-Reply-To: <20120321221517.GB30748@kroah.com>
+References: <1332365297.3858.5.camel@key-ThinkPad-W510>
+	 <1332366068.3858.50.camel@key-ThinkPad-W510>
+	 <20120321221517.GB30748@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 February 2012 23:19, Santosh Y <santoshsy@gmail.com> wrote:
-> From: Santosh Yaraganavi <santoshsy@gmail.com>
->
-> UFS:
-> Universal Flash Storage is a storage specification for flash devices.
-> It is aimed to provide a universal storage interface for both
-> embedded and removable flash memory based storage in mobile
-> devices such as smart phones and tablet computers. The specification
-> is defined by JEDEC Solid State Technology Association. UFS is based
-> on MIPI M-PHY physical layer standard. UFS uses MIPI M-PHY as the
-> physical layer and MIPI Unipro as the link layer.
+On Wed, 2012-03-21 at 15:15 -0700, Greg KH wrote:
+> 
+> Really?  vio drivers are supposed to look like this with the .name and
+> .owner field manually being set in the static initialization of the
+> driver?  That's sad, and should be fixed, the vio core should do this
+> type of thing for you. 
 
-Hi Santosh, James et all,
+Yeah, they still do it the old way, nobody got to fix that yet, should
+be pretty easy though.
 
-I've not seen many comments on these patches. It looks like just a few minor
-issues that may need to be resolved. It's probably too late to get this into
-3.4, but could we get this pulled into scsi tree's for linux-next  branch once
-these issue are resolved? Santosh, do you have a new version of the patches
-to post with these updates?
+Cheers,
+Ben.
 
-Thanks,
-~Deepak
+
