@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030256Ab2CVWUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 18:20:34 -0400
-Received: from out06.mta.xmission.com ([166.70.13.236]:38871 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751849Ab2CVWUd (ORCPT
+	id S1031320Ab2CVWYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 18:24:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57156 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932254Ab2CVWYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 18:20:33 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <20120313005855.GA24639@redhat.com>
-	<CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
-	<20120318192755.GB6589@ZenIV.linux.org.uk>
-Date: Thu, 22 Mar 2012 15:24:04 -0700
-In-Reply-To: <20120318192755.GB6589@ZenIV.linux.org.uk> (Al Viro's message of
-	"Sun, 18 Mar 2012 19:27:55 +0000")
-Message-ID: <m1sjh0z33v.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 22 Mar 2012 18:24:35 -0400
+Message-ID: <4F6BA69F.1040707@openvz.org>
+Date: Fri, 23 Mar 2012 02:24:31 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX188Fzv5VqWNE8os02I/VFFzqLbby6gVUGE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2833]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: **
-Subject: Re: [3.3-rc7] sys_poll use after free (hibernate)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+References: <20120321065140.13852.52315.stgit@zurg> <20120321100602.GA5522@barrios>	<4F69D496.2040509@openvz.org> <20120322142647.42395398.akpm@linux-foundation.org> <20120322212810.GE6589@ZenIV.linux.org.uk> <20120322144122.59d12051.akpm@linux-foundation.org> <4F6BA221.8020602@openvz.org>
+In-Reply-To: <4F6BA221.8020602@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
-
-> On Sun, Mar 18, 2012 at 12:02:04PM -0700, Linus Torvalds wrote:
->> and that load is from
->> 
->>     poll_wait(filp, &table->poll->wait, wait);
->> 
->> where the testing of %rsi and %rcx are the "if (p && wait_address)"
->> check in poll_wait(), and %rsi is "table->poll" if I read it all
->> correctly.
->> 
->> And the 6b6b6b6b6b6b6b6b pattern is obviously POISON_FREE, so
->> apparently 'table' has already been freed.
->> 
->> I suspect the whole sysctl 'poll' code is seriously broken, since it
->> seems to depend on those ctl_table pointers being stable over the
->> whole open/close sequence, but if somebody unregisters the sysctl,
->> it's all gone. The ctl_table doesn't have any refcounting etc, and I
->> suspect that your hibernate sequence ends up unregistering some sysctl
->> (perhaps as part of a module unload?)
+Konstantin Khlebnikov wrote:
+> Andrew Morton wrote:
+>> On Thu, 22 Mar 2012 21:28:11 +0000
+>> Al Viro<viro@ZenIV.linux.org.uk>   wrote:
+>>
+>>> On Thu, Mar 22, 2012 at 02:26:47PM -0700, Andrew Morton wrote:
+>>>> It would be nice to find some way of triggering compiler warnings or
+>>>> sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
+>>>> thoughts on this?
+>>>>
+>>>> (Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
+>>>> describe it)
+>>>
+>>> Use __bitwise for that - check how gfp_t is handled.
+>>
+>> So what does __nocast do?
 >
-> Ewww...  The way it was supposed to work (prio to ->poll() madness) was
-> that actual IO gets wrapped into grab_header()/sysctl_head_finish()
-> pair.  proc_sys_poll() doesn't do it, so yes, that post-mortem is
-> very likely to be correct.
+> Actually it forbid any non-forced casts, but its implementation in sparse seems buggy:
+> __nocast generates some strange false positives. For example it sometimes forgot about
+> type attributes in function arguments, I saw this for vm_flags argument in ksm_madvise().
+> I can reproduce this bug, if somebody interested.
+>
 
-> Looking at that sucker a bit more: what the hell is proc_sys_setattr()
-> doing with vmtruncate(), of all things???  Unless something has changed
-> very much and very badly, it does *not* use page cache at all...
+1.c:
 
-sysctl continues not to use the page cache.  The vmtruncate was a generic
-vfs level push down that has not been removed as unnecessary in
-proc_sysctl.c yet.
+# define __nocast	__attribute__((nocast))
 
-The question of how to cleanly implement suppoort for byte level
-read/writes of sysctl entries remains an open problem.  But even that
-looks like a job for seq_file or cousin of seq_file rather than the page
-cache.
+typedef long __nocast long_t;
 
-> Incidentally, I wonder if we want the whole thing in fs/proc; the argument
-> against splitoff to a separate fs used to be "that would break userland
-> setups - can't ask people to update /etc/fstab or init scripts to mount
-> that thing on /proc/sys".  Fair enough, but... what's to stop us from slapping
-> ->d_automount() on /proc/sys like that:
-> 	struct vfsmount *mnt = vfs_kern_mount(&sysctlfs_type, 0, "sysctl", 0);
-> 	if (!IS_ERR(mnt))
-> 		mntget(mnt);
-> 	return mnt;
-> and we are all set.  IOW, now that ->d_automount() stuff is there, we can
-> do that easily without any userland breakage.  Comments?
+static void f(long_t *x)
+{
+}
 
-Is that something we could do with /proc/<pid>/net as well?
+static void g(void)
+{
+	long_t x;
 
-I am looking at what it will take to move /proc/sys into /proc/<pid>/sys
-so that we can remove the namespace inspired dcache weirdness.  With my
-recent cleanups that should be a pretty simple change.
+	f(&x);
+}
 
-I remember attempting that once before for /proc/<pid>/net and the
-review got stalled in getting the expiry logic right.
+$ sparse 1.c
+1.c:13:12: warning: incorrect type in argument 1 (different modifiers)
+1.c:13:12:    expected int [nocast] [usertype] *x
+1.c:13:12:    got int *<noident>
+1.c:13:12: warning: implicit cast to nocast type
 
-Eric
+Is this ok?
+
