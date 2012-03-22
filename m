@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab2CVJ6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 05:58:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52456 "EHLO mx2.suse.de"
+	id S1757452Ab2CVKAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:00:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52497 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757125Ab2CVJ6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 05:58:21 -0400
-Date: Thu, 22 Mar 2012 10:58:19 +0100
+	id S1755516Ab2CVJ75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 05:59:57 -0400
+Date: Thu, 22 Mar 2012 10:59:55 +0100
 From: Jan Kara <jack@suse.cz>
 To: Artem Bityutskiy <dedekind1@gmail.com>
 Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 1/9] ext4: do not mark superblock as dirty
- unnecessarily
-Message-ID: <20120322095819.GD14485@quack.suse.cz>
+Subject: Re: [PATCH v1 2/9] ext4: write superblock only once on unmount
+Message-ID: <20120322095955.GE14485@quack.suse.cz>
 References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
- <1332254489-2300-2-git-send-email-dedekind1@gmail.com>
+ <1332254489-2300-3-git-send-email-dedekind1@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332254489-2300-2-git-send-email-dedekind1@gmail.com>
+In-Reply-To: <1332254489-2300-3-git-send-email-dedekind1@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-03-12 16:41:21, Artem Bityutskiy wrote:
+On Tue 20-03-12 16:41:22, Artem Bityutskiy wrote:
 > From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 > 
-> Commit a0375156ca1041574b5d47cc7e32f10b891151b0 cleaned up superblock dirtying
-> handling, but missed one place. This patch does what was intended: if we have
-> the journal, then we update the superblock through the journal rather than
-> doing this directly.
-> 
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-  Looks OK.
+> In some rather rare cases it is possible that ext4 may the superblock to the
+> media twice. This patch makes sure this does not happen. This should speed up
+> unmounting in those cases.
+  This cleanup looks OK.
 Reviewed-by: Jan Kara <jack@suse.cz>
 
 								Honza
-> ---
->  fs/ext4/inode.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
+
 > 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index feaa82f..e040403 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -3924,10 +3924,8 @@ static int ext4_do_update_inode(handle_t *handle,
->  			ext4_update_dynamic_rev(sb);
->  			EXT4_SET_RO_COMPAT_FEATURE(sb,
->  					EXT4_FEATURE_RO_COMPAT_LARGE_FILE);
-> -			sb->s_dirt = 1;
->  			ext4_handle_sync(handle);
-> -			err = ext4_handle_dirty_metadata(handle, NULL,
-> -					EXT4_SB(sb)->s_sbh);
-> +			err = ext4_handle_dirty_super(handle, sb);
->  		}
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> ---
+>  fs/ext4/super.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index 502c61f..c1f5111 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -808,9 +808,6 @@ static void ext4_put_super(struct super_block *sb)
+>  	destroy_workqueue(sbi->dio_unwritten_wq);
+>  
+>  	lock_super(sb);
+> -	if (sb->s_dirt)
+> -		ext4_commit_super(sb, 1);
+> -
+>  	if (sbi->s_journal) {
+>  		err = jbd2_journal_destroy(sbi->s_journal);
+>  		sbi->s_journal = NULL;
+> @@ -827,8 +824,10 @@ static void ext4_put_super(struct super_block *sb)
+>  	if (!(sb->s_flags & MS_RDONLY)) {
+>  		EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+>  		es->s_state = cpu_to_le16(sbi->s_mount_state);
+> -		ext4_commit_super(sb, 1);
 >  	}
->  	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
+> +	if (sb->s_dirt || !(sb->s_flags & MS_RDONLY))
+> +		ext4_commit_super(sb, 1);
+> +
+>  	if (sbi->s_proc) {
+>  		remove_proc_entry(sb->s_id, ext4_proc_root);
+>  	}
 > -- 
 > 1.7.7.6
 > 
