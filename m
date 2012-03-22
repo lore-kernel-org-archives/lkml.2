@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030653Ab2CVBdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 21:33:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:47382 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1030529Ab2CVBdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 21:33:08 -0400
-X-IronPort-AV: E=Sophos;i="4.73,627,1325433600"; 
-   d="scan'208";a="4593081"
-Message-ID: <4F6A7AC8.5080604@cn.fujitsu.com>
-Date: Thu, 22 Mar 2012 09:05:12 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Avi Kivity <avi@redhat.com>, minyard@acm.org,
-        Gleb Natapov <gleb@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Corey Minyard <tcminyard@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Qemu-devel] [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F66E14F.3040809@cn.fujitsu.com> <4F6854F4.3060703@cn.fujitsu.com> <20120320154517.GG27928@redhat.com> <4F692723.8050904@cn.fujitsu.com> <20120321091127.GO22368@redhat.com> <4F69FF48.3010200@acm.org> <4F6A00EC.3060706@redhat.com> <4F6A29C6.2070708@redhat.com>
-In-Reply-To: <4F6A29C6.2070708@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-22 09:00:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-22 09:01:18,
-	Serialize complete at 2012-03-22 09:01:18
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757019Ab2CVBf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 21:35:56 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:18647 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab2CVBfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Mar 2012 21:35:53 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: joeyli <jlee@suse.com>
+To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1332356993.3103.23.camel@debian.Gayathri>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+	 <1332122514.10557.270.camel@linux-s257.site>
+	 <1332241764.10557.329.camel@linux-s257.site>
+	 <1332269710.3921.31.camel@debian.Gayathri>
+	 <1332298845.10557.343.camel@linux-s257.site>
+	 <1332356993.3103.23.camel@debian.Gayathri>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Mar 2012 09:33:57 +0800
+Message-ID: <1332380037.10557.398.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/22/2012 03:19 AM, Anthony Liguori Wrote:
-> On 03/21/2012 11:25 AM, Avi Kivity wrote:
->> On 03/21/2012 06:18 PM, Corey Minyard wrote:
->>>
->>>> Look at drivers/char/ipmi/ipmi_msghandler.c. It has code to send panic
->>>> event over IMPI. The code is pretty complex. Of course if we a going to
->>>> implement something more complex than simple hypercall for panic
->>>> notification we better do something more interesting with it than just
->>>> saying "panic happened", like sending stack traces on all cpus for
->>>> instance.
->>>
->>> I doubt that's the best example, unfortunately.  The IPMI event log
->>> has limited space and it has to be send a little piece at a time since
->>> each log entry is 14 bytes.  It just prints the panic string, nothing
->>> else.  Not that it isn't useful, it has saved my butt before.
->>>
->>> You have lots of interesting options with paravirtualization.  You
->>> could, for instance, create a console driver that delivered all
->>> console output efficiently through a hypercall.  That would be really
->>> easy.  Or, as you mention, a custom way to deliver panic information.
->>> Collecting information like stack traces would be harder to
->>> accomplish, as I don't think there is currently a way to get it except
->>> by sending it to printk.
->>
->> That already exists; virtio-console (or serial console emulation) can do
->> the job.
+於 四，2012-03-22 於 00:39 +0530，Pradeep Subrahmanion 提到：
+> > This new patch should remove acpi_video0 interface on your machine.
+> > Please kindly provide your dmidecode:
+> >  dmidecode > dmidecode.log
+> >
+> > And, 
+> > please make should the patch really applied, you can do a bit change on
+> > pr_info message by yourself.
 > 
-> I think the use case here is pretty straight forward: if the guest finds
-> itself in bad place, it wants to indicate that to the host.
+>    Sorry . I think there was some mistake . I tried the patch again. Now
+> I see only intel_backlight inside /sys/class/backlight. There is no
+> acer-wmi interface . Is this the expected behavior ? . Or am I missing
+> anything ?
 > 
-> We shouldn't rely on any device drivers or complex code.  It should be
-> as close to a single instruction as possible that can run even if
-> interrupts are disabled.
-> 
-> An out instruction fits this very well.  I think a simple protocol like:
 
-This solution is more simple than using virtio-serial.
+Yes, this is the expected behavior! But, now I doubt your issue was
+workaround by acpi_osi=Linux but not intel_backlight.
 
 > 
-> inl PORT -> returns a magic number indicating the presence of qemucalls
-
-I donot understantd this instruction's purpose.
-
-> inl PORT+1 -> returns a bitmap of supported features
-
-Hmm, we can execute this instruction when guest starts. If the userspace
-does not process panicked event, there is no need to notify it.
-
 > 
-> outl PORT+1 -> data reg1
-> outl PORT+2 -> data reg2
-> outl PORT+N -> data regN
+> > 
+> > > echo 5 > /sys/class/backlight/acpi_video0/brightness 
+> > > echo 5 > /sys/class/backlight/intel_backlight/brightness
+> > > 
+> > > But it doesn't make any change . 
+> > > 
+> > > In my case  , 'acpi_backlight = vendor' does not make any difference since the hot key control 
+> > > 
+> > > already starts working with 'acpi_osi=Linux' option.
+> > > 
+> > > cat /proc/cmdline gives , 
+> > > 
+> > > BOOT_IMAGE=/boot/vmlinuz-3.3.0+
+> > > root=UUID=f0197a59-c067-4fd8-ad90-c4d721816077 ro acpi_osi=Linux 
+> > > 
+> > > 
+> > > Thanks , 
+> > > 
+> > > Pradeep Subrahmanion
+> > > 
+> > 
+> > OK, that's more clearly, please remove acpi_osi=Linux then re-test, I
+> > think the hotkey of backlight control only works with acpi_osi=Linux ?
+> > 
 
-We can get the register value from vmcs. So there is no need to tell
-the register value to the host.
+Does your backlight control still work if you remove acpi_osi=Linux ?
 
-If we decide to avoid touching hypervisor, I agree with this solution.
 
-Thanks
-Wen Congyang
-> 
-> outl PORT -> qemucall of index value with arguments 1..N
-> 
-> Regards,
-> 
-> Anthony Liguori
-> 
->>
->> In fact the feature can be implemented 100% host side by searching for a
->> panic string signature in the console logs.
->>
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Thanks a lot!
+Joey Lee
 
