@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab2CVNv7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 09:51:59 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58516 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754559Ab2CVNv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 09:51:57 -0400
-Message-ID: <1332424311.2946.15.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v3 0/5] [SCSI] ufshcd: UFS Host Controller Driver
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Santosh Y <santoshsy@gmail.com>
-Cc: linux-scsi@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd.bergmann@linaro.org, saugata.das@linaro.org, dsaxena@linaro.org,
-        stephen.doel@linaro.org, venkat@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, girish.shivananjappa@linaro.org,
-        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
-        sreekumar.c@samsung.com, vinholikatti@gmail.com, linkinjeon@gmail.com,
-        michaelc@cs.wisc.edu
-Date: Thu, 22 Mar 2012 13:51:51 +0000
-In-Reply-To: <1330497714-26504-1-git-send-email-santoshsy@gmail.com>
-References: <1330497714-26504-1-git-send-email-santoshsy@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 8bit
+	id S1030224Ab2CVNxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 09:53:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56770 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756293Ab2CVNxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 09:53:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="120462478"
+Message-ID: <1332424585.18717.34.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Mar 2012 15:56:25 +0200
+In-Reply-To: <20120322133521.GA25897@thunk.org>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <20120322133521.GA25897@thunk.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ytg7KFuShKKG6Wjql7yG"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-29 at 12:11 +0530, Santosh Y wrote:
-> From: Santosh Yaraganavi <santoshsy@gmail.com>
-> 
-> UFS:
-> Universal Flash Storage is a storage specification for flash devices.
-> It is aimed to provide a universal storage interface for both
-> embedded and removable flash memory based storage in mobile
-> devices such as smart phones and tablet computers. The specification
-> is defined by JEDEC Solid State Technology Association. UFS is based
-> on MIPI M-PHY physical layer standard. UFS uses MIPI M-PHY as the
-> physical layer and MIPI Unipro as the link layer.
 
-This doesn't compile correctly on a 32 bit platform:
+--=-ytg7KFuShKKG6Wjql7yG
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-  CC [M]  drivers/scsi/ufs/ufshcd.o
-drivers/scsi/ufs/ufshcd.c: In function ‘ufshcd_map_sg’:
-drivers/scsi/ufs/ufshcd.c:555:5: warning: right shift count >= width of
-type [enabled by default]
-drivers/scsi/ufs/ufshcd.c: In function ‘ufshcd_host_memory_configure’:
-drivers/scsi/ufs/ufshcd.c:831:5: warning: right shift count >= width of
-type [enabled by default]
-drivers/scsi/ufs/ufshcd.c: In function ‘ufshcd_initialize_hba’:
-drivers/scsi/ufs/ufshcd.c:1037:2: warning: right shift count >= width of
-type [enabled by default]
-drivers/scsi/ufs/ufshcd.c:1041:2: warning: right shift count >= width of
-type [enabled by default]
+On Thu, 2012-03-22 at 09:35 -0400, Ted Ts'o wrote:
+> Just as a quick FYI, I tried applying your patch series on top of my
+> development tree, and ran into problems when I ran the regression test
+> (using xfstests).  When I backed out your changes and reran, the tests
+> completed without any problems.
 
-That's because you use >> 32 for the upper address bits.
+Thanks Ted, I'll take a look at xfstests and run them next time before
+sending out v2.
 
-I did the replacement below to use macros which do this correctly
-(basically trick the compiler).
+> I'm rerunning the tests since the first failure looks like it might
+> not be related to your patch series (and yet it went away once I
+> backed out your patch).  The second failure however looks definitely
+> related to your changes.  It looks like you don't wait to make sure
+> the workqueue is flushed out before the file system gets unmounted,
+> and that can lead to a panic.
 
-James
+Hmm, I thought the whole DIO workqueue would be flushed so I do not have
+to do anything. I'll take a look.
 
----
+> Since we're already in the 3.3 has already been released, I suspect
+> this patch series will probably need to wait until the next merge
+> window.  We might be able to pull in some of the obviously safe
+> patches, however.
 
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index 07ec973..52b96e8 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -550,9 +550,9 @@ static int ufshcd_map_sg(struct ufshcd_lrb *lrbp)
- 			prd_table[i].size  =
- 				cpu_to_le32(((u32) sg_dma_len(sg))-1);
- 			prd_table[i].base_addr =
--				cpu_to_le32(sg->dma_address);
-+				cpu_to_le32(lower_32_bits(sg->dma_address));
- 			prd_table[i].upper_addr =
--				cpu_to_le32((sg->dma_address >> 32));
-+				cpu_to_le32(upper_32_bits(sg->dma_address));
- 		}
- 	} else {
- 		lrbp->utr_descriptor_ptr->prd_table_length = 0;
-@@ -826,9 +826,9 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
- 		cmd_desc_element_addr =
- 				(cmd_desc_dma_addr + (cmd_desc_size * i));
- 		utrdlp[i].command_desc_base_addr_lo =
--				cpu_to_le32(cmd_desc_element_addr);
-+				cpu_to_le32(lower_32_bits(cmd_desc_element_addr));
- 		utrdlp[i].command_desc_base_addr_hi =
--				cpu_to_le32(cmd_desc_element_addr >> 32);
-+				cpu_to_le32(upper_32_bits(cmd_desc_element_addr));
- 
- 		/* Response upiu and prdt offset should be in double words */
- 		utrdlp[i].response_upiu_offset =
-@@ -1034,11 +1034,11 @@ static int ufshcd_initialize_hba(struct ufs_hba *hba)
- 	/* Configure UTRL and UTMRL base address registers */
- 	writel(hba->utrdl_dma_addr,
- 	       (hba->mmio_base + REG_UTP_TRANSFER_REQ_LIST_BASE_L));
--	writel((hba->utrdl_dma_addr >> 32),
-+	writel(lower_32_bits(hba->utrdl_dma_addr),
- 	       (hba->mmio_base + REG_UTP_TRANSFER_REQ_LIST_BASE_H));
- 	writel(hba->utmrdl_dma_addr,
- 	       (hba->mmio_base + REG_UTP_TASK_REQ_LIST_BASE_L));
--	writel((hba->utmrdl_dma_addr >> 32),
-+	writel(upper_32_bits(hba->utmrdl_dma_addr),
- 	       (hba->mmio_base + REG_UTP_TASK_REQ_LIST_BASE_H));
- 
- 	/* Initialize unipro link startup procedure */
+Sure, that's fine.
 
+But I wonder, since this is cross-FS story, where I need to first do
+small VFS change (export the variable), then change all file-systems,
+and then remove whole 's_dirt'/'write_supers()' stuff from VFS, how this
+would be handled?
+
+IMO, the best way would be to make everything go in via one single tree,
+granted I could get all the acks, do you feel like ext4 tree could be
+the one?
+
+Also, I am working on top of vanilla 3.3, do you prefer me to work with
+your tree instead? I guess this tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
+
+but which branch?
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-ytg7KFuShKKG6Wjql7yG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPay+JAAoJECmIfjd9wqK0SBQP/ivGQ2rENpj4UVAl10mM3l2M
+IBES4BhG7SrlCb4QfmFfJyHP8RG0UqKkf+srfnhon0SPe8UDz9mvaZ7ga41SGlRv
+n2YQW2sip+MWZDpSi4zjmr1kKhFXIfduAE24d9YEXjJ7LF8tBkVfxVgX5pcfn3Ka
+PfdvFC3CM+tHDjQfgvkGJX8YXZLOnPcNTMokQvmWeBX+yCO4E+pHPVgpGN9+rJY3
+ny553dak8y8n4EWYGSa4e3LtiVeqheDSupYVrn2zG1AlS1pTuIjqpSeEF5hQlaha
+6UpigId3/5etugK0NFzdfeWvdFmpHP02yHwkRzM125qiek7jAi984ScJO9lpSNma
+1+0zOKpIcongnqTM3kNMl+tucBDozPCuFQ81papg+4ttdDg92ma4gAg97zVT6fda
+rrhpaRXPVUu0mjFt3gel8gPcMPh1a4nOWuhY8unp+ww1h/eJ0HBkq1a0X2U+Z9/9
+IhyVl9QYpV2S6aLpPY42GjrbFhUZzk6M4TkBlKFSHK08MAtSF2dNxf4PrJ6cqHz+
+k4xc1NcbAN9xn5ngVjgkjfrVe7VzFH/FVG282cVpQ5aRt3vilgUYtBGraoRCZbIa
+/p1s0oDYR3htlCOP7g8qtttBUjuUjQ6qFqdzWQlNBUZ5TfIpyfUpEPciyGJZR9tm
+zO27tq5pEFTfsL2/NKdE
+=FdDl
+-----END PGP SIGNATURE-----
+
+--=-ytg7KFuShKKG6Wjql7yG--
 
