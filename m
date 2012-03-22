@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab2CVFkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 01:40:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40625 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab2CVFkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 01:40:07 -0400
-Date: Thu, 22 Mar 2012 14:39:59 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-Message-ID: <20120322053958.GA5278@barrios>
-References: <20120321065140.13852.52315.stgit@zurg>
- <20120321100602.GA5522@barrios>
- <4F69D496.2040509@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F69D496.2040509@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964853Ab2CVFkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 01:40:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57683 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755294Ab2CVFkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 01:40:16 -0400
+Message-ID: <1332394796.2982.78.camel@pasglop>
+Subject: Re: [PATCH 14/17] powerpc: crypto: nx driver code supporting nx
+ encryption
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kent Yoder <key@linux.vnet.ibm.com>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        rcj@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
+Date: Thu, 22 Mar 2012 16:39:56 +1100
+In-Reply-To: <20120322033957.GA16914@kroah.com>
+References: <1332365297.3858.5.camel@key-ThinkPad-W510>
+	 <1332366068.3858.50.camel@key-ThinkPad-W510>
+	 <20120321221517.GB30748@kroah.com> <1332381004.2982.65.camel@pasglop>
+	 <1332385050.2982.71.camel@pasglop> <20120322033957.GA16914@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 05:16:06PM +0400, Konstantin Khlebnikov wrote:
-> Minchan Kim wrote:
-> >Hi Konstantin,
-> >
-> >It seems to be nice clean up to me and you are a volunteer we have been wanted
-> >for a long time. Thanks!
-> >I am one of people who really want to expand vm_flags to 64 bit but when KOSAKI
-> >tried it, Linus said his concerning, I guess you already saw that.
-> >
-> >He want to tidy vm_flags's usage up rather than expanding it.
-> >Without the discussion about that, just expanding vm_flags would make us use
-> >it up easily so that we might need more space.
+On Wed, 2012-03-21 at 20:39 -0700, Greg KH wrote:
+> On Thu, Mar 22, 2012 at 01:57:30PM +1100, Benjamin Herrenschmidt wrote:
+> > +int __vio_register_driver(struct vio_driver *viodrv, struct module *owner,
+> > +			const char *mod_name)
+> >  {
+> >  	viodrv->driver.bus = &vio_bus_type;
+> > +	viodrv->driver.name = viodrv->name;
+> > +	viodrv->driver.bus = &vio_bus_type;
+> > +	viodrv->driver.owner = owner;
+> > +	viodrv->driver.mod_name = mod_name;
 > 
-> Strictly speaking, my pachset does not expands vm_flags, it just prepares to this.
-> Anyway vm_flags_t looks better than hard-coded "unsigned long" and messy type-casts around it.
+> Any reason you set .bus twice?
 
-Indeed.
+Nope, just a typo. I'll fix it up, when I have feedback from Dave.
 
-> 
-> >
-> >Readahead flags are good candidate to move into another space and arch-specific flags, I guess.
-> >Another candidate I think of is THP flag. It's just for only anonymous vma now
-> >(But I am not sure we have a plan to support it for file-backed pages in future)
-> >so we can move it to anon_vma or somewhere.
-> >I think other guys might find more somethings
-> >
-> >The point is that at least, we have to discuss about clean up current vm_flags's
-> >use cases before expanding it unconditionally.
-> 
-> Seems like we can easily remove VM_EXECUTABLE
-> (count in mm->num_exe_file_vmas amount of vmas with vma->vm_file == mm->exe_file
-> instead of vmas with VM_EXECUTABLE bit)
-> 
-> And probably VM_CAN_NONLINEAR...
+Cheers,
+Ben.
 
-I think we can also unify VM_MAPPED_COPY(nommu) and VM_SAO(powerpc) with one VM_ARCH_1
-Okay. After this series is merged, let's try to remove flags we can do. Then, other guys
-might suggest another ideas.
 
-Thanks.
