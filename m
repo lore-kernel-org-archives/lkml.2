@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031295Ab2CVWAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 18:00:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32789 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031165Ab2CVWAU (ORCPT
+	id S1760076Ab2CVWF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 18:05:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39710 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756437Ab2CVWFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 18:00:20 -0400
-Date: Thu, 22 Mar 2012 15:00:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, <eric.dumazet@gmail.com>,
-        <vapier@gentoo.org>, <asharma@fb.com>
-Subject: Re: [PATCH] fs/notify/notification.c: make subsys_initcall function
- static
-Message-Id: <20120322150019.eff74bc8.akpm@linux-foundation.org>
-In-Reply-To: <201203211145.17416.hartleys@visionengravers.com>
-References: <201203211145.17416.hartleys@visionengravers.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 22 Mar 2012 18:05:25 -0400
+Message-ID: <4F6BA221.8020602@openvz.org>
+Date: Fri, 23 Mar 2012 02:05:21 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+References: <20120321065140.13852.52315.stgit@zurg> <20120321100602.GA5522@barrios>	<4F69D496.2040509@openvz.org> <20120322142647.42395398.akpm@linux-foundation.org> <20120322212810.GE6589@ZenIV.linux.org.uk> <20120322144122.59d12051.akpm@linux-foundation.org>
+In-Reply-To: <20120322144122.59d12051.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Mar 2012 11:45:17 -0700
-H Hartley Sweeten <hartleys@visionengravers.com> wrote:
+Andrew Morton wrote:
+> On Thu, 22 Mar 2012 21:28:11 +0000
+> Al Viro<viro@ZenIV.linux.org.uk>  wrote:
+>
+>> On Thu, Mar 22, 2012 at 02:26:47PM -0700, Andrew Morton wrote:
+>>> It would be nice to find some way of triggering compiler warnings or
+>>> sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
+>>> thoughts on this?
+>>>
+>>> (Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
+>>> describe it)
+>>
+>> Use __bitwise for that - check how gfp_t is handled.
+>
+> So what does __nocast do?
 
-> subsys_initcall functions should be marked static.
-
-Well, I suppose there are legitimate situations where they could be
-non-static(?), although those would be rather bizarre.
-
-A better reason for making this static is that it has no references
-outside this file.
-
+Actually it forbid any non-forced casts, but its implementation in sparse seems buggy:
+__nocast generates some strange false positives. For example it sometimes forgot about
+type attributes in function arguments, I saw this for vm_flags argument in ksm_madvise().
+I can reproduce this bug, if somebody interested.
