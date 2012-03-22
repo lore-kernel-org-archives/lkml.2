@@ -1,117 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759391Ab2CVTXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 15:23:42 -0400
-Received: from 8bytes.org ([88.198.83.132]:34573 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab2CVTXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 15:23:41 -0400
-Date: Thu, 22 Mar 2012 20:23:36 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU updates for Linux 3.4
-Message-ID: <20120322192334.GA2919@8bytes.org>
+	id S1759418Ab2CVT3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 15:29:36 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46255 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab2CVT3d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 15:29:33 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: tun oops dereferencing garbage nsproxy-> address.
+Date: Thu, 22 Mar 2012 20:29:27 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.7.4; x86_64; ; )
+Cc: Dave Jones <davej@redhat.com>, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>, serue@us.ibm.com
+References: <20120313034201.GA13156@redhat.com> <201203182102.15877.maciej.rutecki@gmail.com> <m1obrp2sn1.fsf@fess.ebiederm.org>
+In-Reply-To: <m1obrp2sn1.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203222029.27595.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On czwartek, 22 marca 2012 o 04:58:58 Eric W. Biederman wrote:
+> Maciej Rutecki <maciej.rutecki@gmail.com> writes:
+> > On wtorek, 13 marca 2012 o 04:42:02 Dave Jones wrote:
+> >> BUG: unable to handle kernel paging request at 0000000100000029
+> >> IP: [<ffffffffa06ec54f>] tun_chr_open+0x4f/0x80 [tun]
+> >> PGD 5ae4f067 PUD 0
+> >> Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> >> CPU 1
+> >> Modules linked in: tun binfmt_misc can_bcm cmtp kernelcapi nfnetlink
+> >> bnep can_raw af_802154 phonet bluetooth can pppoe pppox ppp_generic
+> >> slhc irda crc_ccitt rds af_key rose ax25 appletalk atm ipx p8022 psnap
+> >> llc p8023 tcp_lp iwlwifi mac80211 cfg80211 nfs fscache auth_rpcgss
+> >> nfs_acl fuse lockd ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
+> >> ip6table_filter ip6_tables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state
+> >> nf_conntrack xts gf128mul dm_crypt dm_mirror dm_region_hash dm_log arc4
+> >> snd_hda_codec_hdmi uvcvideo snd_hda_codec_idt videobuf2_core
+> >> snd_usb_audio snd_hda_intel videodev snd_hda_codec dell_wmi
+> >> sparse_keymap media snd_usbmidi_lib snd_hwdep v4l2_compat_ioctl32
+> >> snd_rawmidi cdc_ether videobuf2_vmalloc videobuf2_memops snd_seq usbnet
+> >> cdc_wdm mii cdc_acm snd_seq_device snd_pcm dell_laptop dcdbas joydev
+> >> microcode snd_timer tg3 snd pcspkr i2c_i801 iTCO_wdt
+> >> iTCO_vendor_support soundcore snd_page_alloc rfkill wmi sunrpc i915
+> >> drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
+> >> cfg80211]
+> >> 
+> >> Pid: 15413, comm: trinity Not tainted 3.3.0-rc7+ #54 Dell Inc. Adamo 13
+> >> /0N70T0 RIP: 0010:[<ffffffffa06ec54f>]  [<ffffffffa06ec54f>]
+> >> tun_chr_open+0x4f/0x80 [tun] RSP: 0018:ffff8800a5e29bc8  EFLAGS:
+> >> 00010286 RAX: ffff88012036fd88 RBX: ffff8801084c4dc0 RCX:
+> >> 0000000000000006 RDX: 0000000100000001 RSI: ffff88000fd9abc8 RDI:
+> >> 0000000000000292 RBP: ffff8800a5e29bd8 R08: 0000000000000000 R09:
+> >> 0000000000000001 R10: 0000000000000000 R11: 0000000000000000 R12:
+> >> ffff8801084c4dc0 R13: ffff88012eb10d20 R14: ffffffffa06f0000 R15:
+> >> ffffffff81856ae0 FS:  00007f3ebcb1a700(0000) GS:ffff88013b400000(0000)
+> >> knlGS:0000000000000000 CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> >> CR2: 0000000100000029 CR3: 00000000032bb000 CR4: 00000000000406e0
+> >> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> >> Process trinity (pid: 15413, threadinfo ffff8800a5e28000, task
+> >> 
+> >> ffff88000fd9a4a0) Stack:
+> >>  00000000000000c8 0000000000000000 ffff8800a5e29c38 ffffffff813fcf38
+> >>  ffffffff81c54838 0000000000000001 ffff8800a5e29c18 ffffffff816a1afd
+> >>  ffff8801084c4dc0 ffff8801396bbab8 ffff88012eb10d20 0000000000000000
+> >> 
+> >> Call Trace:
+> >>  [<ffffffff813fcf38>] misc_open+0x1d8/0x670
+> >>  [<ffffffff816a1afd>] ? sub_preempt_count+0x9d/0xd0
+> >>  [<ffffffff811c2978>] chrdev_open+0x258/0x350
+> >>  [<ffffffff811baa04>] __dentry_open+0x384/0x550
+> >>  [<ffffffff816a1afd>] ? sub_preempt_count+0x9d/0xd0
+> >>  [<ffffffff811c2720>] ? cdev_put+0x30/0x30
+> >>  [<ffffffff811bc224>] nameidata_to_filp+0x74/0x80
+> >>  [<ffffffff811ce59c>] do_last+0x26c/0x930
+> >>  [<ffffffff811ced76>] path_openat+0xd6/0x3e0
+> >>  [<ffffffff810a6298>] ? sched_clock_cpu+0xb8/0x130
+> >>  [<ffffffff811cf1a2>] do_filp_open+0x42/0xa0
+> >>  [<ffffffff8169d845>] ? _raw_spin_unlock+0x35/0x60
+> >>  [<ffffffff811dd7cd>] ? alloc_fd+0x18d/0x210
+> >>  [<ffffffff811bc328>] do_sys_open+0xf8/0x1d0
+> >>  [<ffffffff810faadc>] ? __audit_syscall_entry+0xcc/0x310
+> >>  [<ffffffff811bc421>] sys_open+0x21/0x30
+> >>  [<ffffffff816a5a69>] system_call_fastpath+0x16/0x1b
+> >> 
+> >> Code: 00 00 00 e8 64 8d ab e0 48 85 c0 74 46 c7 00 00 00 00 00 48 c7 40
+> >> 08 00 00 00 00 65 48 8b 14 25 00 c9 00 00 48 8b 92 50 05 00 00 <48> 8b
+> >> 52 28 f0 ff 42 04 48 89 50 10 48 89 83 28 01 00 00 31 c0 RIP
+> >> [<ffffffffa06ec54f>] tun_chr_open+0x4f/0x80 [tun]
+> >> 
+> >>  RSP <ffff8800a5e29bc8>
+> >> 
+> >> CR2: 0000000100000029
+> >> Disabling lock debugging due to kernel taint
+> >> ---[ end trace 9e00e91b0629ad80 ]---
+> >> 
+> >> 
+> >> oops happened here..
+> >> 
+> >>         tfile->net = get_net(current->nsproxy->net_ns);
+> >>      
+> >>      548:       48 8b 92 50 05 00 00    mov    0x550(%rdx),%rdx
+> >>      54f:       48 8b 52 28             mov    0x28(%rdx),%rdx
+> >> 
+> >> My guess is the fuzzer called some syscall that set current->nsproxy
+> >> to garbage (0x0000000100000001), which later got dereferenced when it
+> >> subsequently randomly did an open() on tun.
+> >> 
+> >> Any thoughts ?
+> >> 
+> >> 	Dave
+> > 
+> > I created a Bugzilla entry at
+> > https://bugzilla.kernel.org/show_bug.cgi?id=42960
+> > for your bug/regression report, please add your address to the CC list in
+> > there, thanks!
+> 
+> There is not enough information here to track this as any kind of bug to
+> be fixed.   This problem can be neither reproduced nor is it a
+> direct consequence of anything obvious in the code.  The bug should
+> simply be closed with "can not reproduce".  There is no evidence
+> that this is any kind of regression.
+> 
+> If there is a system to track weird failures and note strange
+> occurrences and to start looking for patterns this might be interesting,
+> but I don't believe that system is the kernel bugzilla system.
+> 
+> This was all covered in the discussion of this issue before you put it
+> in the kernel bugzilla so I don't understand why you bothered.  There is
+> simply too little information to do anything interesting with this
+> failure.  Most likely this is the result of a kernel memory stomp
+> triggered by an unprivileged process.
+> 
+> I think such memory stomps suck but there is not enough information in
+> this thread to really even start looking and there is a lot of kernel
+> code to look through.  You don't seem to be interested in digging into
+> this yourself so adding this to bugzilla simply appears to be a waste
+> of time.
+> 
+> Eric
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok. Closed
 
-Hi Linus,
-
-The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
-
-  Linux 3.3 (2012-03-18 16:15:34 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git next
-
-or as a signed tag at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu-updates-v3.4
-
-Gerard Snitselaar (1):
-      iommu/amd: Fix section mismatch
-
-Hiroshi DOYU (2):
-      ARM: IOMMU: Tegra20: Add iommu_ops for GART driver
-      ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
-
-Joerg Roedel (7):
-      iommu/amd: Split amd_iommu_init function
-      iommu/amd: Fix double free of mem-region in error-path
-      iommu/amd: Update git-tree in MAINTAINERS
-      iommu/amd: Don't initialize IOMMUv2 resources when not required
-      iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
-      iommu/amd: Move interrupt setup code into seperate function
-      Merge branches 'iommu/fixes', 'arm/tegra' and 'x86/amd' into next
-
-Lucas Stach (1):
-      iommu/tegra-gart: fix spin_unlock in map failure path
-
-Steffen Persvold (1):
-      iommu/amd: Fix section warning for prealloc_protection_domains
-
- MAINTAINERS                             |    2 +-
- arch/arm/mach-tegra/include/mach/smmu.h |   63 ++
- drivers/iommu/Kconfig                   |   20 +
- drivers/iommu/Makefile                  |    2 +
- drivers/iommu/amd_iommu.c               |    2 +-
- drivers/iommu/amd_iommu_init.c          |  187 ++++--
- drivers/iommu/amd_iommu_v2.c            |   14 +-
- drivers/iommu/tegra-gart.c              |  451 ++++++++++++++
- drivers/iommu/tegra-smmu.c              | 1034 +++++++++++++++++++++++++++++++
- include/linux/amd-iommu.h               |    2 +-
- 10 files changed, 1709 insertions(+), 68 deletions(-)
- create mode 100644 arch/arm/mach-tegra/include/mach/smmu.h
- create mode 100644 drivers/iommu/tegra-gart.c
- create mode 100644 drivers/iommu/tegra-smmu.c
-
-The IOMMU updates for this round are not very large patch-wise. But
-they contain two new IOMMU drivers for the ARM Tegra 2 and 3 platforms.
-Besides that there are also a few patches for the AMD IOMMU which
-prepare the driver for adding intr-remapping support and a couple of
-fixes.
-
-The top-commit of the next branch on my local machine is
-
-	7de473066f1512e52ea806e3c9698e5ea325b26c
-
-Please pull.
-
-Thanks,
-
-	Joerg
-
-
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPa3w2AAoJECvwRC2XARrjO/YP/2+eGJ0/HmfyVXH9dsY5FHOV
-mjy25Edkw+4dWghx3j8fB3TtHKIraayJBSFr6MvB5RwAMldneyreE5WbqzZi8W4e
-3wsjOcW/jvIhBs/QzaqE+5LAE8S57Ktj/reF/EWcreZK9kNf2N8Dc3fmdVaJDtK/
-XcAODhzHiBYUCsYcYC7G4RHr4zHe8on97uRbNvLx1JZ9ZkOQXecYd0A0JdZKyyZt
-hwANgn2qojCA3ikBu9WYoLRE3X56/CBASGe0QeeuBfg66akItBW06epiEtToOSf5
-7y2ANivHe4KHrwquxzEvjes2K4CtiOtynxJTZKwhqsaOfGQaTZA+bOkFdcEVOBhq
-JwMqpSDxblHzyFJPCIjF7SWRwRNrFjFliq5JEUdvZQth8lnGVQbI8GzJXRtQFM9s
-saIyqZ7D8pbQ2U2sf9Pi1i1shDuDo1uzWRmBFWoGkeh7ujaMR+3wUKNhjgONXDgs
-fHqt2AbEU627sxhGdzHGcxorJ2mAjf1AspwFpX3z4CKmvems6BsrP2XdURQiSvIH
-Fli1MBzdNlrXg4Y10wn3zcmsUVMhvxiHgX18Gs9y3kS7hQdPQd+XYCZSr+4Oxhul
-95lwWG108bSqFNu8rwVtjaYHm4StHAl9PmMw+qf0ykeMcry+l5DIouMYIHAH0++3
-6YqOlRTlEoP2MXnnX2h2
-=Wetq
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
+Regards
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
