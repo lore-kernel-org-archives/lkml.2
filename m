@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2CVCZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Mar 2012 22:25:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36667 "EHLO
+	id S932412Ab2CVCdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Mar 2012 22:33:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64087 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab2CVCZX (ORCPT
+	with ESMTP id S1757339Ab2CVCdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Mar 2012 22:25:23 -0400
-Message-ID: <1332383117.13011.3.camel@phoenix>
-Subject: [PATCH] mfd: rc5t583: Improve readability of volatile_reg function
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Thu, 22 Mar 2012 10:25:17 +0800
+	Wed, 21 Mar 2012 22:33:16 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1332380037.10557.398.camel@linux-s257.site>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+	 <1332122514.10557.270.camel@linux-s257.site>
+	 <1332241764.10557.329.camel@linux-s257.site>
+	 <1332269710.3921.31.camel@debian.Gayathri>
+	 <1332298845.10557.343.camel@linux-s257.site>
+	 <1332356993.3103.23.camel@debian.Gayathri>
+	 <1332380037.10557.398.camel@linux-s257.site>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 22 Mar 2012 08:03:43 +0530
+Message-ID: <1332383623.2622.6.camel@debian.Gayathri>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, we have some duplicate entries in current code:
-RC5T583_GPIO_GPEDGE1, RC5T583_GPIO_GPEDGE2, RC5T583_GPIO_EN_INT are also in the
-range of ((reg >= RC5T583_GPIO_IOSEL) && (reg <= RC5T583_GPIO_GPOFUNC)).
+On Thu, 2012-03-22 at 09:33 +0800, joeyli wrote:
+> 於 四，2012-03-22 於 00:39 +0530，Pradeep Subrahmanion 提到：
+> > > This new patch should remove acpi_video0 interface on your machine.
+> > > Please kindly provide your dmidecode:
+> > >  dmidecode > dmidecode.log
+> > >
+> > > And, 
+> > > please make should the patch really applied, you can do a bit change on
+> > > pr_info message by yourself.
+> > 
+> >    Sorry . I think there was some mistake . I tried the patch again. Now
+> > I see only intel_backlight inside /sys/class/backlight. There is no
+> > acer-wmi interface . Is this the expected behavior ? . Or am I missing
+> > anything ?
+> > 
+> 
+> Yes, this is the expected behavior! But, now I doubt your issue was
+> workaround by acpi_osi=Linux but not intel_backlight.
+>
 
-Let's just list the cases to return false in volatile_reg function.
-Otherwise, the default is to return true.
+> > 
+> > 
+> > > 
+> > > > echo 5 > /sys/class/backlight/acpi_video0/brightness 
+> > > > echo 5 > /sys/class/backlight/intel_backlight/brightness
+> > > > 
+> > > > But it doesn't make any change . 
+> > > > 
+> > > > In my case  , 'acpi_backlight = vendor' does not make any difference since the hot key control 
+> > > > 
+> > > > already starts working with 'acpi_osi=Linux' option.
+> > > > 
+> > > > cat /proc/cmdline gives , 
+> > > > 
+> > > > BOOT_IMAGE=/boot/vmlinuz-3.3.0+
+> > > > root=UUID=f0197a59-c067-4fd8-ad90-c4d721816077 ro acpi_osi=Linux 
+> > > > 
+> > > > 
+> > > > Thanks , 
+> > > > 
+> > > > Pradeep Subrahmanion
+> > > > 
+> > > 
+> > > OK, that's more clearly, please remove acpi_osi=Linux then re-test, I
+> > > think the hotkey of backlight control only works with acpi_osi=Linux ?
+> > > 
+> 
+> Does your backlight control still work if you remove acpi_osi=Linux ?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/rc5t583.c |   33 +++++++++------------------------
- 1 files changed, 9 insertions(+), 24 deletions(-)
+   If I remove acpi_osi=Linux , the hot key control stops working .
 
-diff --git a/drivers/mfd/rc5t583.c b/drivers/mfd/rc5t583.c
-index 99ef944..ad2c204 100644
---- a/drivers/mfd/rc5t583.c
-+++ b/drivers/mfd/rc5t583.c
-@@ -241,32 +241,17 @@ static bool volatile_reg(struct device *dev, unsigned int reg)
- 	case RC5T583_INT_EN_ADC1:
- 	case RC5T583_INT_EN_ADC2:
- 	case RC5T583_INT_EN_ADC3:
--	case RC5T583_GPIO_GPEDGE1:
--	case RC5T583_GPIO_GPEDGE2:
--	case RC5T583_GPIO_EN_INT:
-+	/* Enable caching in gpio registers, except RC5T583_GPIO_MON_IOIN which
-+	 * is gpio input register */
-+	case RC5T583_GPIO_IOSEL ... RC5T583_GPIO_EN_INT:
-+	case RC5T583_GPIO_GPOFUNC:
-+	/* Enable caching in sleep seq registers */
-+	case RC5T583_SLPSEQ1 ... RC5T583_SLPSEQ11:
-+	/* Enable caching of regulator registers */
-+	case RC5T583_REG_DC0CTL ... RC5T583_REG_SR3CTL:
-+	case RC5T583_REG_LDOEN1 ... RC5T583_REG_LDO9DAC_DS:
- 		return false;
--
--	case RC5T583_GPIO_MON_IOIN:
--		/* This is gpio input register */
--		return true;
--
- 	default:
--		/* Enable caching in gpio registers */
--		if ((reg >= RC5T583_GPIO_IOSEL) &&
--				(reg <= RC5T583_GPIO_GPOFUNC))
--			return false;
--
--		/* Enable caching in sleep seq registers */
--		if ((reg >= RC5T583_SLPSEQ1) && (reg <= RC5T583_SLPSEQ11))
--			return false;
--
--		/* Enable caching of regulator registers */
--		if ((reg >= RC5T583_REG_DC0CTL) && (reg <= RC5T583_REG_SR3CTL))
--			return false;
--		if ((reg >= RC5T583_REG_LDOEN1) &&
--					(reg <= RC5T583_REG_LDO9DAC_DS))
--			return false;
--
- 		break;
- 	}
- 
--- 
-1.7.5.4
+> 
+> 
+> Thanks a lot!
+> Joey Lee
+> 
 
+Thanks , 
+
+Pradeep Subrahmanion
 
 
