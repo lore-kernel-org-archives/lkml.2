@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab2CVNZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 09:25:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40654 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab2CVNZ3 (ORCPT
+	id S1756947Ab2CVN0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 09:26:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33482 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394Ab2CVN0L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 09:25:29 -0400
-Date: Thu, 22 Mar 2012 09:21:02 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/xenbus: Add quirk to deal with
- misconfigured backends.
-Message-ID: <20120322132102.GA22545@phenom.dumpdata.com>
-References: <1332385189-29029-1-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.00.1203221040030.15151@kaball-desktop>
- <1332413546.8817.64.camel@zakaz.uk.xensource.com>
+	Thu, 22 Mar 2012 09:26:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332413546.8817.64.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090208.4F6B2841.00E1,ss=1,re=0.000,fgs=0
+In-Reply-To: <20120322003356.GT6589@ZenIV.linux.org.uk>
+References: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
+	<20120322003356.GT6589@ZenIV.linux.org.uk>
+Date: Thu, 22 Mar 2012 21:26:11 +0800
+Message-ID: <CAJd=RBC=ajApxw_+tfOoY9KpTNW2Y+_B5MxDOjBH3Y5-PDW2jg@mail.gmail.com>
+Subject: Re: [PATCH] hugetlbfs: add err code in initializing module
+From: Hillf Danton <dhillf@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 10:52:26AM +0000, Ian Campbell wrote:
-> On Thu, 2012-03-22 at 10:44 +0000, Stefano Stabellini wrote:
-> > On Thu, 22 Mar 2012, Konrad Rzeszutek Wilk wrote:
-> > > A rather annoying and common case is when booting a PVonHVM guest
-> > > and exposing the PV KBD and PV VFB - as both of those do not
-> > > make any sense. The HVM guest is using the VGA driver and the emulated
-> > > keyboard for this. So we provide a very basic quirk framework
-> > > (can be expanded in the future) to not wait for 6 minutes for those devices
-> > > to initialize - they never wont.
-> > > 
-> > > To trigger this, put this in your guest config:
-> > > 
-> > > vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
-> > > 
-> > > instead of this:
-> > > vnc=1
-> > > vnclisten="0.0.0.0"
-> > 
-> > While I do understand the issue you are trying to solve, it actually
-> > makes sense to have PV KBD (and PV VFB maybe in the future) in a PVonHVM
-> > guest. In particular PV KVB is already enabled in upstream QEMU for
-> > PVonHVM guests because it allows users to have a keyboard and mouse
+On Thu, Mar 22, 2012 at 8:33 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Sun, Mar 11, 2012 at 01:09:59PM +0800, Hillf Danton wrote:
+>> Error code is added if fail to create inode kmem cache, and newly registered
+>> hugetlb FS is unregistered if fail to mount, both for unlikely corner cases.
+>>
+>> --- a/fs/hugetlbfs/inode.c    Sun Mar 11 12:46:38 2012
+>> +++ b/fs/hugetlbfs/inode.c    Sun Mar 11 12:49:28 2012
+>> @@ -1000,6 +1000,7 @@ static int __init init_hugetlbfs_fs(void
+>>       hugetlbfs_inode_cachep = kmem_cache_create("hugetlbfs_inode_cache",
+>>                                       sizeof(struct hugetlbfs_inode_info),
+>>                                       0, 0, init_once);
+>> +     error = -ENOMEM;
+>>       if (hugetlbfs_inode_cachep == NULL)
+>>               goto out2;
+>>
+>> @@ -1015,6 +1016,7 @@ static int __init init_hugetlbfs_fs(void
+>>       }
+>>
+>>       error = PTR_ERR(vfsmount);
+>> +     unregister_filesystem(&hugetlbfs_fs_type);
+>
+> Bloody bad idea, that...  Realistically, the proper action on failure here
+> (as well as in sock_init(), etc.) is panic().  If we fail to OOM that early,
+> the box is doomed anyway.
+>
+> Note that unregister_filesystem() in module init is *always* wrong; it's not
+> an issue here (it's done too early to care about and realistically the box
+> is not going anywhere - it'll panic when attempt to exec /sbin/init fails,
+> if not earlier), but it's a damn bad example.
+>
+Thanks for your review, Al.
 
-How about looking for a particular Xen version? The patch
-could check for anything less than 4.2 (does 4.2 use that version of
-QEMU that has this implemented?). I can't find any way to get the QEMU
-version from within the guest - DMI reports:
+Due to bad idea and bad example, please issue Nack, then the patch
+that was not well prepared will be dropped.
 
-DMI: Xen HVM domU, BIOS 4.1-120322 03/22/2012
-
-> > without USB emulation, that requires lots of wakes up in QEMU.
-> > 
-> > Maybe we could just reduce the timeout in general for all the PV
-> > devices? After all, why are we waiting 6 minutes? I could understand 6
-> > seconds, but 6 minutes seem really too much.
-> 
-> This was increased based on empirical evidence, way back (circa
-> 150:09c88868e344 in linux-2.6.18-xen.hg)
-> 
-> It really can happen when starting lots of guests on a heavily loaded
-> dom0 that you timeout when connecting devices, at which point the guest
-> fails to boot if it happened to contain the root filesystem.
-> 
-> Maybe a halfway house would be to wait a the longer time for more
-> critical devices (like disks and nics)?
-> 
-> Ian.
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+-hd
