@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629Ab2CVL6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 07:58:10 -0400
-Received: from mail.windriver.com ([147.11.1.11]:60559 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab2CVL6F (ORCPT
+	id S1757702Ab2CVL6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 07:58:37 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48735 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab2CVL6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 07:58:05 -0400
-Message-ID: <4F6B13BC.2070406@windriver.com>
-Date: Thu, 22 Mar 2012 06:57:48 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 22 Mar 2012 07:58:35 -0400
+Message-ID: <4F6B13BC.7090102@linux.vnet.ibm.com>
+Date: Thu, 22 Mar 2012 17:27:48 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>,
-        <tim.bird@am.sony.com>
-Subject: Re: [PATCH 2/2] kgdb,debug_core,kgdbts: End DEBUG_RODATA limitation
- using kprobe breakpoints
-References: <1332352536-29186-1-git-send-email-jason.wessel@windriver.com> <1332352536-29186-3-git-send-email-jason.wessel@windriver.com> <4F6A9444.4050603@hitachi.com>
-In-Reply-To: <4F6A9444.4050603@hitachi.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Borislav Petkov <bp@amd64.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, mce: Add persistent MCE event
+References: <1332340496-21658-1-git-send-email-bp@amd64.org> <1332340496-21658-3-git-send-email-bp@amd64.org> <4F6AE48D.4070508@linux.vnet.ibm.com> <20120322114051.GB30026@aftab>
+In-Reply-To: <20120322114051.GB30026@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12032211-2674-0000-0000-000003CCA34E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2012 09:53 PM, Masami Hiramatsu wrote:
-> (2012/03/22 2:55), Jason Wessel wrote:
->> There has long been a limitation using software breakpoints with a
->> kernel compiled with CONFIG_DEBUG_RODATA.  The kprobe breakpoint code
->> has its own text_poke() function which accommodates writing a
->> breakpoint into a read-only page.  The debug_core can make use of the
->> text_poke() capabilities by using the kprobes API, specifically
->> arch_arm_kprobe() and arch_disarm_kprobe().  For now it is safe to use
->> a single statically allocated kprobe structure to call the kprobes API
->> because the debug_core breakpoint API is only used when the kernel is
->> in the debug state.
-> 
-> You might misunderstand it. arch_*_kprobe() are not open APIs.
-> Those are kprobes internal APIs (which means that those functions
-> should be used only by kprobes).
-> 
+On 03/22/2012 05:10 PM, Borislav Petkov wrote:
 
-
-I was looking for an interface that solved the problem, without having
-to use text_poke directly which is arch specific.  Eventually I would
-like to use the kprobes high level API, but it cannot not be used
-without taking a mutex presently.  This is a separate problem to deal
-with at a later time, because the generic use of kprobes would be
-aimed at having robust single stepping.
-
-> 
->> The debug_core will first attempt to use the traditional
->> probe_kernel_write(), and next try using a kprobe breakpoint.  The
->> kgdb test suite was updated to run all the software breakpoint tests
->> when using a kernel with built with CONFIG_DEBUG_RODATA.
+> On Thu, Mar 22, 2012 at 02:06:29PM +0530, Srivatsa S. Bhat wrote:
+>>> +err_unwind:
+>>> +	err = -EINVAL;
+>>> +	for (--cpu; cpu >= 0; cpu--)
+>>> +		perf_rm_persistent_on_cpu(cpu, &per_cpu(mce_ev, cpu));
+>>> +
 >>
->> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+>>
+>> *Totally* theoretical question: How do you know that the cpu_online_mask isn't
+>> sparse? In other words, what if some CPUs weren't booted? Then this for-loop
+>> wouldn't be very good..
+>>
+>> Oh, now I see that perf_rm_persistent_on_cpu() probably handles that case well..
+>> So no issues I guess.. ?
 > 
-> Nak.
+> Right, this could theoretically come around to bite us in some obscure
+> cases, so we probably fix it from the get-go.
 > 
-> No, please don't use kprobes internal function this way, because
-> you can't ensure that the arch_arm_kprobe() has no side-effect.
+>> (Moreover, we will probably have bigger issues at hand if some CPU didn't
+>> boot..)
+>>
+>> (The code looked funny, so I thought of pointing it out, whether or not it
+>> actually is worrisome. Sorry for the noise, if any).
 > 
-> Why don't you use text_poke()? I see that the text_poke()
-> is only for x86, but you already have arch/x86/kernel/kgdb.c for
-> making your own wrapper function.
-
-I will use the arch specific provision to override the
-kgdb_arch_set_breakpoint() and use the text_poke() directly.
-
-Eventually I would like to use the same software breakpoint
-reservation system as kprobes, and that would happen if kgdb ever
-starts using kprobes for single stepping.  A few years back we solved
-the problem for hardware breakpoints reservations where the kernel
-debugger, perf, ptrace, and kprobes all play nice.
+> Right, no, thanks for pointing it out.
+> 
+> I'll probably do something like the following:
+> 
+> 	for (--cpu; cpu >= 0; cpu--)
+> 		if (cpu_online(cpu))
+> 			perf_rm_persistent_on_cpu(cpu, &per_cpu(mce_ev, cpu));
+> 
+> to be on the safe side from that perspective.
+> 
 
 
-Thanks,
-Jason.
+You can do that or something like the following, to make it more readable:
+
+int cpunum;
+
+for_each_online_cpu(cpunum) {
+	if (cpunum == cpu)
+		break;
+	perf_rm_persistent_on_cpu(cpunum, &per_cpu(mce_ev, cpunum));
+}
+
+It is of course, up to you.. whichever form you prefer..
+
+Regards,
+Srivatsa S. Bhat
+
