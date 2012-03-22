@@ -1,74 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030540Ab2CVP0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 11:26:13 -0400
-Received: from mail-pb0-f66.google.com ([209.85.160.66]:50171 "EHLO
-	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758232Ab2CVP0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 11:26:08 -0400
-Message-ID: <4F6B448A.4020808@gmail.com>
-Date: Thu, 22 Mar 2012 23:26:02 +0800
-From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1758310Ab2CVP0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 11:26:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758196Ab2CVP0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 11:26:49 -0400
+Date: Thu, 22 Mar 2012 15:44:27 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 3/3] do_exit(): do not panic if exiting thread is not
+ serving an interrupt
+Message-ID: <20120322144426.GF17233@dhcp-26-207.brq.redhat.com>
+References: <20120319161851.GK2147@dhcp-26-207.brq.redhat.com>
+ <alpine.LFD.2.02.1203221139190.2542@ionos>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, "Ren, Yongjie" <yongjie.ren@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        Casey DeLorme <cdelorme@gmail.com>,
-        David TECHER <davidtecher@yahoo.fr>, ubuntu.fan.2012@gmail.com
-Subject: [MUST WATCH YOUTUBE VIDEO] [SUCCESS REPORT] Xen VGA Passthrough to
- Windows 8 Consumer Preview HVM Virtual Machine with Xen 4.2-unstable Changeset
- 25070 and Linux Kernel 3.3.0 in Ubuntu 11.10 amd64 dom0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1203221139190.2542@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Xen Users and David Techer,
+On Thu, Mar 22, 2012 at 12:56:55PM +0100, Thomas Gleixner wrote:
+> On Mon, 19 Mar 2012, Alexander Gordeev wrote:
+> 
+> > Currently a crashed and killed forced oneshot threaded handler hits
+> > in_interrupt() check in do_exit() and panics. As result, the code that
+> > cleans up IRQ descriptor never not get called and IRQ line stays masked.
+> > 
+> > Similarly non-forced oneshot threaded handlers that crashed while holding
+> > bh lock leave a IRQ line masked.
+> > 
+> > Regular threaded handlers that crashed while holding bh simply panic,
+> > although they could have just terminate loudly.
+> > 
+> > This fix allows IRQ threaded handlers get killed gracefully instead of
+> > panicking.
+> > 
+> > Since introduction of SOFTIRQ_DISABLE_OFFSET in 75e1056 we can differ
+> > between bh being serviced and bh being disabled. Use this ability to
+> > avoid unnecessary crashes when a exiting thread explicitly disabled bh
+> > and is not serving any softirq. Still we will get the regular warning
+> > that exiting thread is in atomic context.
+> 
+> Hmm, this applies for all threads which exit with bh disabled. We risk
+> data corruption this way as the crash of a task might happen within a
+> data set manipulation protected by bh_disable.
 
-It is only in the last few days that I have had great success with Xen 
-VGA Passthrough to Windows 8 Consumer Preview HVM Virtual Machine with 
-Xen 4.2-unstable Changeset 25070 and Linux Kernel 3.3.0 in Ubuntu 11.10 
-amd64 dom0.
+True. But we live with this as we do exit with preemption disabled. Are bh are
+terribly different in this regard?
 
-Please do watch my Youtube video on successful Xen VGA Passthrough to 
-Windows 8 Consumer Preview HVM domU.
+Anyway, I do not have strong opinion here. My point is letting innocent devices
+on the shared irq line to go on worth considering.
 
-Youtube video link: http://www.youtube.com/watch?v=kGH05ZoMk6o
+> Not sure whether the chance to get debug information from the machine
+> is worth the risk of data corruption causes follow up problems.
 
-The duration of my home made video is only 26 minutes. My Youtube video 
-demonstrates Xen VGA Passthrough of my Palit NVIDIA Geforce 8400 GS PCI 
-Express x16 to Windows 8 Consumer Preview HVM.
+I would judge: no ;)
 
-Also read the documentation I have written for Xen, Linux Kernel and Xen 
-VGA Passthrough.
+>  
+> Thanks,
+> 
+> 	tglx
+> 
+> 
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > ---
+> >  include/linux/hardirq.h |    4 ++++
+> >  kernel/exit.c           |    2 +-
+> >  2 files changed, 5 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+> > index bb7f309..93aca12 100644
+> > --- a/include/linux/hardirq.h
+> > +++ b/include/linux/hardirq.h
+> > @@ -82,11 +82,15 @@
+> >   * Are we in a softirq context? Interrupt context?
+> >   * in_softirq - Are we currently processing softirq or have bh disabled?
+> >   * in_serving_softirq - Are we currently processing softirq?
+> > + * in_serving_interrupt - Are we currently processing softirq, nmi or
+> > + *                        hardware interrupt?
+> >   */
+> >  #define in_irq()		(hardirq_count())
+> >  #define in_softirq()		(softirq_count())
+> >  #define in_interrupt()		(irq_count())
+> >  #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
+> > +#define in_serving_interrupt()	(preempt_count() & (HARDIRQ_MASK \
+> > +					 | SOFTIRQ_OFFSET | NMI_MASK))
+> >  
+> >  /*
+> >   * Are we in NMI context?
+> > diff --git a/kernel/exit.c b/kernel/exit.c
+> > index 752d2c0..0c78ae6 100644
+> > --- a/kernel/exit.c
+> > +++ b/kernel/exit.c
+> > @@ -896,7 +896,7 @@ void do_exit(long code)
+> >  
+> >  	WARN_ON(blk_needs_flush_plug(tsk));
+> >  
+> > -	if (unlikely(in_interrupt()))
+> > +	if (unlikely(in_serving_interrupt()))
+> >  		panic("Aiee, killing interrupt handler!");
+> >  	if (unlikely(!tsk->pid))
+> >  		panic("Attempted to kill the idle task!");
+> > -- 
+> > 1.7.7.6
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
 
-Article 1: Building and Installing Xen 4.x and Linux Kernel 3.x on 
-Ubuntu and Debian Linux
-Version: 1.3
-Filename of attachment: Building and Installing Xen 4.x and Linux Kernel 
-3.x on Ubuntu and Debian Linux - Version 1.3.pdf
-
-Article 2: Xen VGA Passthrough to Windows 8 Consumer Preview 64-bit 
-English HVM domU and Windows XP Home Edition SP3 HVM domU with Xen 
-4.2-unstable Changeset 25070 and Linux Kernel 3.3.0 in Ubuntu 11.10 
-oneiric ocelot amd64 Final Release Dom0
-Version: 1.3
-Filename of attachment: Xen VGA Passthrough - Version 1.3.pdf
-
-Please read the following xen-user and xen-devel mailing list threads:
-
-(1) http://lists.xen.org/archives/html/xen-users/2012-03/msg00510.html
-(2) http://lists.xen.org/archives/html/xen-devel/2012-03/msg01863.html
-
-Thank you very much for your kind attention.
-
-Yours sincerely,
-
-Teo En Ming (Zhang Enming)
-Singapore
-
-
-
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
