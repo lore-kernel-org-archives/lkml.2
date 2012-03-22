@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2CVSHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 14:07:43 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58511 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab2CVSHj (ORCPT
+	id S1755023Ab2CVSJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 14:09:00 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:37334 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab2CVSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 14:07:39 -0400
-Message-ID: <4F6B6A67.7040905@gmail.com>
-Date: Thu, 22 Mar 2012 11:07:35 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 22 Mar 2012 14:08:55 -0400
+Subject: [PATCH 1/2] cciss: Fix scsi tape io with more than 255 scatter gather
+	elements
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Date: Thu, 22 Mar 2012 13:08:52 -0500
+Message-ID: <20120322180852.14453.3206.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-CC: "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "hskinnemoen@gmail.com" <hskinnemoen@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Rade Bozic <rade.bozic.ext@nsn.com>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>,
-        "bigeasy@linutronix.de" <bigeasy@linutronix.de>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "Daney, David" <David.Daney@caviumnetworks.com>
-Subject: Re: [PATCH 2/2] i2c: Dynamically assign adapter id if it wasn't explictly
- specified
-References: <1331900343-6743-1-git-send-email-k.lewandowsk@samsung.com> <1331900343-6743-3-git-send-email-k.lewandowsk@samsung.com> <4F6B4532.7090806@samsung.com> <4F6B5A22.1090204@cavium.com> <4F6B65D0.1030506@samsung.com>
-In-Reply-To: <4F6B65D0.1030506@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2012 10:48 AM, Karol Lewandowski wrote:
-> On 22.03.2012 17:58, David Daney wrote:
->
-[...]
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
->>>> diff --git a/drivers/i2c/busses/i2c-octeon.c
->>>> b/drivers/i2c/busses/i2c-octeon.c
->>>> index ee139a5..8470232 100644
->>>> --- a/drivers/i2c/busses/i2c-octeon.c
->>>> +++ b/drivers/i2c/busses/i2c-octeon.c
->>>> @@ -581,7 +581,7 @@ static int __devinit octeon_i2c_probe(struct
->>>> platform_device *pdev)
->>>>
->>>>        i2c->adap = octeon_i2c_ops;
->>>>        i2c->adap.dev.parent =&pdev->dev;
->>>> -    i2c->adap.nr = pdev->id>= 0 ? pdev->id : 0;
->>>> +    i2c->adap.nr = pdev->id;
->>
->> I guess the OCTEON bit seems sane enough.  I don't fully understand why
->> this needs changing, because OCTEON platform code always passes a
->> non-negative pdev->id.
->
->
-> i2c controllers instantiated from device tree seem to have -1 as id.
-> Thus, trying to register more than one controller will fail as both
-> will try to register on bus 0.
->
-> However, I've just found that you got rid of this line altogether and
-> switched to dynamic id allocation (i2c_add_adapter() instead of
-> _numbered_ variant) in "MIPS: Octeon: Use Device Tree." RFC.
-> Found here:
->
->    http://thread.gmane.org/gmane.linux.kernel/1104062
->
-> In the light of above my (octeon-)fixup becomes redundant.
->
-> Shall I repost this patch without octeon changes or is ok anyway?
+The total number of scatter gather elements in the CISS command
+used by the scsi tape code was being cast to a u8, which can hold
+at most 255 scatter gather elements.  It should have been cast to
+a u16.  Without this patch the command gets rejected by the controller
+since the total scatter gather count did not add up to the right
+value resulting in an i/o error.
 
-My preference would be to omit the OCTEON portion from your patch.  As 
-you noted, I plan to blow all that code away in the very near future, 
-and the patch is not needed for correctness as far as I can see.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/block/cciss_scsi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-David Daney
+diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+index e820b68..1162f7b 100644
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -1410,7 +1410,7 @@ static void cciss_scatter_gather(ctlr_info_t *h, CommandList_struct *c,
+ 	/* track how many SG entries we are using */
+ 	if (request_nsgs > h->maxSG)
+ 		h->maxSG = request_nsgs;
+-	c->Header.SGTotal = (__u8) request_nsgs + chained;
++	c->Header.SGTotal = (u16) request_nsgs + chained;
+ 	if (request_nsgs > h->max_cmd_sgentries)
+ 		c->Header.SGList = h->max_cmd_sgentries;
+ 	else
 
-
->
-> Thanks!
->
->>   But since you asked for it:
->>
->> Acked-by: David Daney<david.daney@cavium.com>
->>
