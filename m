@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2CVRWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 13:22:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50576 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab2CVRWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 13:22:30 -0400
-Message-ID: <4F6B5FD1.4040702@wwwdotorg.org>
-Date: Thu, 22 Mar 2012 11:22:25 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	id S1755380Ab2CVRZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 13:25:10 -0400
+Received: from mail.fuel7.com ([74.222.0.51]:56409 "EHLO mail.fuel7.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967Ab2CVRZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 13:25:08 -0400
+X-Greylist: delayed 1505 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 13:25:08 EDT
+Message-ID: <4F6B5A90.6030808@fuel7.com>
+Date: Thu, 22 Mar 2012 12:00:00 -0500
+From: Kyle Manna <kyle.manna@fuel7.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sjg@chromium.org" <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 6/6] pinctrl: tegra: Add complete device tree support
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org> <1332265479-1260-6-git-send-email-swarren@wwwdotorg.org> <20120321093504.GA12118@shlinux2.ap.freescale.net> <4F69FCBF.3050708@wwwdotorg.org> <20120322040730.GC840@shlinux2.ap.freescale.net>
-In-Reply-To: <20120322040730.GC840@shlinux2.ap.freescale.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stefano Babic <sbabic@denx.de>
+CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@ti.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: OMAP: Add support for AM35xx UART4/ttyO3
+References: <1318963661-27755-1-git-send-email-kyle.manna@fuel7.com> <4F6B4D4A.2040103@denx.de>
+In-Reply-To: <4F6B4D4A.2040103@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2012 10:07 PM, Dong Aisheng wrote:
-> On Thu, Mar 22, 2012 at 12:07:27AM +0800, Stephen Warren wrote:
->> On 03/21/2012 03:35 AM, Dong Aisheng wrote:
->>> On Wed, Mar 21, 2012 at 01:44:39AM +0800, Stephen Warren wrote:
->>>> Implement pinctrl_ops dt_node_to_map() and dt_free_map(). These allow
->>>> complete specification of the desired pinmux configuration using device
->>>> tree.
-...
->>>> +	for_each_child_of_node(np_config, np) {
->>>> +		ret = of_property_read_string(np, "nvidia,function", &function);
->>>> +		if (ret < 0)
->>>> +			function = NULL;
->>>> +
->>>> +		for (i = 0; i < ARRAY_SIZE(cfg_params); i++) {
->>>> +			ret = of_property_read_u32(np, cfg_params[i].property,
->>>> +						   &val);
->>>> +			if (!ret) {
->>>> +				config = TEGRA_PINCONF_PACK(
->>>> +						cfg_params[i].param, val);
->>>> +				ret = add_config(&configs, &num_configs,
->>>> +						 config);
->>>> +				if (ret < 0)
->>>> +					goto error;
->>>> +			}
->>>> +		}
->>>> +
->>>> +		of_property_for_each_string(np, "nvidia,pins", prop, group) {
->>>
->>> If we calculate out the strings count and allocate corresponding size array, we may not
->>> need to keep krealloc the maps and configs array size for each entry.
->>> And this may be a little higher efficient.
+On 03/22/2012 11:03 AM, Stefano Babic wrote:
+> On 18/10/2011 20:47, Kyle Manna wrote:
+>> Add hwmod support to enable access to UART4 of the AM35xx series of
+>> chips.  The UART4 device referenced from the TRM will show up as ttyO3.
 >>
->> That's true. However, it'd require the code to loop once to determine
->> how many properties are present and how many entries there are in the
->> pin list. Then, loop again to actually construct the mapping table
->> array. This is all added complexity that doesn't affect correctness. I'd
->> rather get the simple code going first, and then refine it later if
->> there turns out to be a performance issue.
+>> This was tested on an AM3505.
 >>
-> Can we use of_property_count_strings?
+>> Signed-off-by: Kyle Manna<kyle.manna@fuel7.com>
+>> ---
+> Hi Kyle,
+>
+>>   arch/arm/mach-omap2/clock3xxx_data.c       |   11 ++++++
+>>   arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   52 ++++++++++++++++++++++++++++
+>>   arch/arm/mach-omap2/prcm-common.h          |    2 +
+>>   arch/arm/plat-omap/include/plat/irqs.h     |    2 +-
+>>   arch/arm/plat-omap/include/plat/serial.h   |    1 +
+>>   5 files changed, 67 insertions(+), 1 deletions(-)
+> Can I gently ask you which pinmux setup do you use to test your patch ?
+>
+> I am trying to make uart4 working on a am3517 with mainline kernel
+> (3.3+, your patch is merged). However, on my board the uart4 pins are
+> shared with the camera, and not with SD, as maybe is more common. I set
+> the pinmux to switch the pins (gpio_95 / gpio_96 / gpio_97 /gpio_98) to
+> the uart4, and ttyO3 is registered and available, and thanks your patch
+> both clocks iclk and fclk are active. However, I cannot see activity on
+> the tx line if I try to send some characters.
+>
+> Maybe do you use the same pinmux and am I forgetting something else ?
 
-It'd be possible to avoid some of the reallocs this way. We could
-realloc once per node rather than once per (node, pin). It does make the
-code a bit more complex though, since you have to reserve space up-front
-during the one realloc and so have to store separate num_maps and
-num_maps_allocated. I'll see how bad it gets, and maybe include it in v3
-if it isn't horrible.
+My pin mux is configured in u-boot and is as follows:
+
+     /* CCDC_FIELD: gpio_95, uP-TXD4 */ \
+     MUX_VAL(CP(CCDC_FIELD),     (IDIS | PTD | DIS | M2)) \
+     /* CCDC_HD: gpio_96, uP-RTS4# */ \
+     MUX_VAL(CP(CCDC_HD),        (IDIS | PTD | DIS | M2)) \
+     /* CCDC_VD: gpio_97, uP-CTS4# */ \
+     MUX_VAL(CP(CCDC_VD),        (IEN  | PTD | EN  | M2)) \
+     /* CCDC_WEN: gpio_98, uP-RXD4 */ \
+     MUX_VAL(CP(CCDC_WEN),       (IEN  | PTD | DIS | M2)) \
+
+I've just validated my AM3505 board does in fact toggle the TX line and 
+writes valid data.  The running kernel is based on a linux-omap-3.1 and 
+was the source for that patch.
+
+Since it sounds like you have the same pinmux, perhaps something changed 
+elsewhere in the kernel?  Have you tried validating that your hardware 
+can toggle the pin as a GPIO first to eliminate any possibility of shorts?
+
+- Kyle
