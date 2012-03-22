@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725Ab2CVSjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 14:39:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52581 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754111Ab2CVSjK (ORCPT
+	id S1758798Ab2CVSkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 14:40:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39068 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758713Ab2CVSkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 14:39:10 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] mfd: tps65090: Don't use I2C-specific suspend and resume operations
-Date: Thu, 22 Mar 2012 18:39:01 +0000
-Message-Id: <1332441541-28197-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1332441541-28197-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1332441541-28197-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Thu, 22 Mar 2012 14:40:43 -0400
+Message-ID: <4F6B7226.8000102@wwwdotorg.org>
+Date: Thu, 22 Mar 2012 12:40:38 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>
+CC: Russell King <linux@arm.linux.org.uk>, nico@fluxnic.net,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] Kbuild: centralize MKIMAGE and cmd_uimage definitions
+References: <1331931835-12346-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1331931835-12346-1-git-send-email-swarren@wwwdotorg.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The legacy suspend operations have been deprecated and printing warnings
-on boot for over a year now.
+On 03/16/2012 03:03 PM, Stephen Warren wrote:
+> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
+> to avoid duplication.
+> 
+> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
+> parameterized version in Makefile.lib to avoid duplication.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+Michal,
 
-It's not clear to me that we should have these operations at all...
+Does this change look reasonable? It has acks from people working on 4
+of the 7 affected architectures; would you prefer acks from all?
 
- drivers/mfd/tps65090.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index ac7e8b1..6dc4c345 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -335,21 +335,27 @@ static int __devexit tps65090_i2c_remove(struct i2c_client *client)
- }
- 
- #ifdef CONFIG_PM_SLEEP
--static int tps65090_i2c_suspend(struct i2c_client *client, pm_message_t state)
-+static int tps65090_suspend(struct device *dev)
- {
-+	struct i2c_client *client = to_i2c_client(dev);
- 	if (client->irq)
- 		disable_irq(client->irq);
- 	return 0;
- }
- 
--static int tps65090_i2c_resume(struct i2c_client *client)
-+static int tps65090_resume(struct device *dev)
- {
-+	struct i2c_client *client = to_i2c_client(dev);
- 	if (client->irq)
- 		enable_irq(client->irq);
- 	return 0;
- }
- #endif
- 
-+static const struct dev_pm_ops tps65090_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(tps65090_suspend, tps65090_resume)
-+};
-+
- static const struct i2c_device_id tps65090_id_table[] = {
- 	{ "tps65090", 0 },
- 	{ },
-@@ -360,13 +366,10 @@ static struct i2c_driver tps65090_driver = {
- 	.driver	= {
- 		.name	= "tps65090",
- 		.owner	= THIS_MODULE,
-+		.pm	= &tps65090_pm_ops,
- 	},
- 	.probe		= tps65090_i2c_probe,
- 	.remove		= __devexit_p(tps65090_i2c_remove),
--#ifdef CONFIG_PM_SLEEP
--	.suspend	= tps65090_i2c_suspend,
--	.resume		= tps65090_i2c_resume,
--#endif
- 	.id_table	= tps65090_id_table,
- };
- 
--- 
-1.7.9.1
-
+Thanks.
