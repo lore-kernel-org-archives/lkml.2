@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab2CVRZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 13:25:10 -0400
-Received: from mail.fuel7.com ([74.222.0.51]:56409 "EHLO mail.fuel7.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab2CVRZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 13:25:08 -0400
-X-Greylist: delayed 1505 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Mar 2012 13:25:08 EDT
-Message-ID: <4F6B5A90.6030808@fuel7.com>
-Date: Thu, 22 Mar 2012 12:00:00 -0500
-From: Kyle Manna <kyle.manna@fuel7.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1755985Ab2CVRb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 13:31:59 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60697 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab2CVRb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 13:31:57 -0400
+Date: Thu, 22 Mar 2012 17:31:50 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Ted Ts'o" <tytso@mit.edu>, Artem Bityutskiy <dedekind1@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] ext2: Don't export ext2_mask_flags() to user space
+Message-ID: <20120322173150.GY6589@ZenIV.linux.org.uk>
+References: <1332366608-2695-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120321222357.GB24330@quack.suse.cz>
+ <20120321231651.GC32041@thunk.org>
+ <20120322055354.GA3942@avionic-0098.mockup.avionic-design.de>
+ <1332396053.3058.2.camel@koala>
+ <20120322162825.GA4028@thunk.org>
 MIME-Version: 1.0
-To: Stefano Babic <sbabic@denx.de>
-CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@ti.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: OMAP: Add support for AM35xx UART4/ttyO3
-References: <1318963661-27755-1-git-send-email-kyle.manna@fuel7.com> <4F6B4D4A.2040103@denx.de>
-In-Reply-To: <4F6B4D4A.2040103@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322162825.GA4028@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2012 11:03 AM, Stefano Babic wrote:
-> On 18/10/2011 20:47, Kyle Manna wrote:
->> Add hwmod support to enable access to UART4 of the AM35xx series of
->> chips.  The UART4 device referenced from the TRM will show up as ttyO3.
->>
->> This was tested on an AM3505.
->>
->> Signed-off-by: Kyle Manna<kyle.manna@fuel7.com>
->> ---
-> Hi Kyle,
->
->>   arch/arm/mach-omap2/clock3xxx_data.c       |   11 ++++++
->>   arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   52 ++++++++++++++++++++++++++++
->>   arch/arm/mach-omap2/prcm-common.h          |    2 +
->>   arch/arm/plat-omap/include/plat/irqs.h     |    2 +-
->>   arch/arm/plat-omap/include/plat/serial.h   |    1 +
->>   5 files changed, 67 insertions(+), 1 deletions(-)
-> Can I gently ask you which pinmux setup do you use to test your patch ?
->
-> I am trying to make uart4 working on a am3517 with mainline kernel
-> (3.3+, your patch is merged). However, on my board the uart4 pins are
-> shared with the camera, and not with SD, as maybe is more common. I set
-> the pinmux to switch the pins (gpio_95 / gpio_96 / gpio_97 /gpio_98) to
-> the uart4, and ttyO3 is registered and available, and thanks your patch
-> both clocks iclk and fclk are active. However, I cannot see activity on
-> the tx line if I try to send some characters.
->
-> Maybe do you use the same pinmux and am I forgetting something else ?
+On Thu, Mar 22, 2012 at 12:28:25PM -0400, Ted Ts'o wrote:
+> On Thu, Mar 22, 2012 at 08:00:41AM +0200, Artem Bityutskiy wrote:
+> > On Thu, 2012-03-22 at 06:53 +0100, Thierry Reding wrote:
+> > > What's the recommended fix for packages that cannot or will not use
+> > > libext2fs, like busybox? Copy the required parts into a private header
+> > > and use that instead?
+> > 
+> > The normal way is to just keep a private copy of the whole header file.
+> > Because the on-disk format stays compatible, those programs do not have
+> > to update the header very often - only rarely if they want to support
+> > some new feature.
+> 
+> Even if they're not iwlling to use libext2fs (for space reasons, I
+> would assume?  It can't be because of license compatibility issues
+> since they are both GPLv2), they could just simply grab the ext2_fs.h
+> from e2fsprogs.  That has all of the file system definitions for ext2,
+> ext3, and ext4.
 
-My pin mux is configured in u-boot and is as follows:
+Ho-hum...  Then we could kill a lot of lines in include/linux/ext2_fs.h.
+I wonder how much of what remains has any business being outside of
+fs/ext2, actually - AFAICS, there are very few places that might possibly
+care:
 
-     /* CCDC_FIELD: gpio_95, uP-TXD4 */ \
-     MUX_VAL(CP(CCDC_FIELD),     (IDIS | PTD | DIS | M2)) \
-     /* CCDC_HD: gpio_96, uP-RTS4# */ \
-     MUX_VAL(CP(CCDC_HD),        (IDIS | PTD | DIS | M2)) \
-     /* CCDC_VD: gpio_97, uP-CTS4# */ \
-     MUX_VAL(CP(CCDC_VD),        (IEN  | PTD | EN  | M2)) \
-     /* CCDC_WEN: gpio_98, uP-RXD4 */ \
-     MUX_VAL(CP(CCDC_WEN),       (IEN  | PTD | DIS | M2)) \
+arch/blackfin/kernel/setup.c:595:       if (*((unsigned short *)(mtd_phys + 0x438)) == EXT2_SUPER_MAGIC)
+fs/nfsd/nfs3proc.c:599:         case EXT2_SUPER_MAGIC:  
+fs/nfsd/nfs3proc.c:600:                 resp->p_link_max = EXT2_LINK_MAX;
+fs/nfsd/nfs3proc.c:601:                 resp->p_name_max = EXT2_NAME_LEN;
+init/do_mounts_rd.c:57: struct ext2_super_block *ext2sb;
+init/do_mounts_rd.c:70: ext2sb = (struct ext2_super_block *) buf;
+init/do_mounts_rd.c:153:        if (ext2sb->s_magic == cpu_to_le16(EXT2_SUPER_MAGIC)) {
+init/do_mounts_rd.c:155:                       "RAMDISK: ext2 filesystem found at block %d\n",
+init/do_mounts_rd.c:157:                nblocks = le32_to_cpu(ext2sb->s_blocks_count) <<
+init/do_mounts_rd.c:158:                        le32_to_cpu(ext2sb->s_log_block_size);
+security/selinux/hooks.c:2974:  case EXT2_IOC_GETFLAGS:
+security/selinux/hooks.c:2976:  case EXT2_IOC_GETVERSION:
+security/selinux/hooks.c:2980:  case EXT2_IOC_SETFLAGS:
+security/selinux/hooks.c:2982:  case EXT2_IOC_SETVERSION:
 
-I've just validated my AM3505 board does in fact toggle the TX line and 
-writes valid data.  The running kernel is based on a linux-omap-3.1 and 
-was the source for that patch.
+and that's it.  blackfin and do_mounts_rd are doing the same thing (blackfin -
+buggy, AFAICS).  Looks like both are  asking for something along the lines of
+sector_t detect_ext2(void *image), returning 0 if it's not one and size in
+kilobytes if it is...  nfsd one is just plain weird; what the hell is going
+on there?  And selinux wants to know 4 ioctl numbers.
 
-Since it sounds like you have the same pinmux, perhaps something changed 
-elsewhere in the kernel?  Have you tried validating that your hardware 
-can toggle the pin as a GPIO first to eliminate any possibility of shorts?
-
-- Kyle
+Everything else doesn't go beyond fs/ext2; there's a couple of odd macros
+in ext[34]_fs.h (EXT._FEATURE_COMPAT_SUPP) using EXT2_FEATURE_COMPAT_EXT_ATTR,
+but they are not used anywhere *and* EXT2_FEATURE_COMPAT_EXT_ATTR is not
+available in the places that include those headers...
+*and* 
