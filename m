@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2CVVni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:43:38 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:52024 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2CVVnf (ORCPT
+	id S1755147Ab2CVVnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:43:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56454 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2CVVns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:43:35 -0400
-Message-ID: <4F6B9CF3.7000803@linux.vnet.ibm.com>
-Date: Thu, 22 Mar 2012 16:43:15 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	Thu, 22 Mar 2012 17:43:48 -0400
+Message-ID: <4F6B9D0E.2040308@canonical.com>
+Date: Thu, 22 Mar 2012 17:43:42 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120313 Thunderbird/11.0
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Nitin Gupta <ngupta@vflare.org>, Konrad Wilk <konrad.wilk@oracle.com>,
-        riel@redhat.com, Chris Mason <chris.mason@oracle.com>,
-        Akshay Karle <akshay.a.karle@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: zcache preliminary benchmark results
-References: <cb50b439-1e5f-443e-9369-4f7c989d3565@default>
-In-Reply-To: <cb50b439-1e5f-443e-9369-4f7c989d3565@default>
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Regression introduced in v3.2.12 stable
+References: <4F6B7A37.3020300@canonical.com> <20120322212644.GA30888@kroah.com>
+In-Reply-To: <20120322212644.GA30888@kroah.com>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032221-6148-0000-0000-00000478D802
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2012 06:30 PM, Dan Magenheimer wrote:
-> Last November, in an LKML thread I would rather forget*, James
-> Bottomley and others asked for some benchmarking to be done for
-> zcache (among other things).  For various reasons, that benchmarking
-> is just now getting underway and more will be done, but it might be
-> useful to publish some interesting preliminary results now.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I'd also like to post some zcache performance numbers that suggest
-that zcache makes an even more impressive change to the amount
-of total I/O when the system is under light to moderate memory
-pressure.
+On 03/22/2012 05:26 PM, Greg KH wrote:
+> On Thu, Mar 22, 2012 at 03:15:03PM -0400, Joseph Salisbury wrote:
+>> I figured I'd send a heads up regarding a possible regression in v3.2.12
+>> stable.  The issue prevents systems from booting.
+>>
+>> There have been a few bugs[0] reported against the Ubuntu kernel, which
+>> was recently rebased to 3.2.12.  We're in the process of bisecting now
+>> and will post an update..
+> 
+> What specifically happens here when the system does not boot?  Any error
+> message?  Are you sure this isn't the known pci express issue showing up
+> here?
+> 
+> Can you run 'git bisect' to trace it down to a specific patch please?
+> 
+> thanks,
+> 
+> greg k-h
 
-Test machine:
-Gentoo w/ kernel v3.3 + frontswap (cleancache disabled)
-Quad-core i5-2500 @ 3.3GHz
-1GB DDR3 1600MHz (limited with mem=1024m on boot)
-Filesystem and swap on 2x80G RAID0
-majflt are major page faults reported by "time"
-pswpin/out is the delta of pswpin/out from /proc/vmstat before and after
-the make -jN
+Hi Greg,
 
-Each run started with with swapoff/on and
-echo 3 > /proc/sys/vm/drop_caches
+Thanks for the response.
 
-I/O									
-	normal				zcache				change
-N	pswpin	pswpout	majflt	I/O sum	pswpin	pswpout	majflt	I/O sum	%I/O
-8	0	133	1781	1914	0	0	1835	1835	4%
-12	10	1140	1871	3021	0	5	1886	1891	37%
-16	675	1978	2330	4983	21	63	3771	3855	23%
-20	3420	6197	3421	13038	265	786	5218	6269	52%
-24	28358	51884	8865	89107	3944	6227	36048	46219	48%
-28	44132	62182	11931	118245	6094	11362	74323	91779	22%
-32	94163	125086	22526	241775	22534	32803	179164	234501	3%
-									
-Runtime									
-N	normal	zcache	%change						
-8	284	280	1%						
-12	283	281	1%						
-16	281	280	0%						
-20	289	310	-7%						
-24	322	311	3%						
-28	347	325	6%						
-32	437	378	14%						
-									
-%CPU utilization (out of 400% on 4 cpus)
-N	normal	zcache	%change						
-8	245	245	0%						
-12	249	251	-1%						
-16	252	252	0%						
-20	247	255	-3%						
-24	221	230	-4%						
-28	204	219	-7%						
-32	162	187	-15%						
+We did some bisecting/testing and identified the bad commit in 3.2.12 as
+the following:
 
-Some of my runtime curve N vs %change doesn't match up with
-Dan's probably due to differing swap device speeds and I think
-my .config had less to build so the runtime magnitudes are less.
+f043ddb60c84ea64a23b755004572afe922e653c PCI: ignore pre-1.1 ASPM
+quirking when ASPM is disabled
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 1cfbf22..24f049e 100644
+- --- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -500,6 +500,9 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
+        int pos;
+        u32 reg32;
 
-Runtime %change will be effected by the swap device speed. But
-the I/O reductions are less related to swap device speed and, IMHO,
-really show the value of zcache.
++       if (aspm_disabled)
++               return 0;
++
+        /*
+         * Some functions in a slot might not all be PCIe functions,
+         * very strange. Disable ASPM for the whole slot
 
-Environments with shared storage could particularly like this.
-You could enable swap on your machines and frontswap+zcache
-would give you an early warning system for memory pressure.
-If frontswap starts picking up pages, the admin can get a
-warning and zcache will mitigate the swap I/O impacting the
-SAN while something is done to relieve the memory pressure.
 
---
-Seth
+Building a test kernel with this commit reverted allows the machines to
+boot.  I see there has already been some discussion on this commit[0]
 
+Thanks,
+
+Joe
+
+[0] https://lkml.org/lkml/2012/3/19/408
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPa50OAAoJEGzvPSfKWxQe1owP/2esbjlmY9UsZwNTRUeH2Ujz
+uNejdESt+Wj40pEvofs8xSWYLik/G7ogn9jpSBkjo0D9sgESKeQENtSRzACmy4dr
+ZmLiIp46uvLhFLIokMYOle6/OZ73A9GFAkr++MqPzYV7XGWSCxxDS9ly73CBT1wy
+vfZGWg9l/qDXdHmJDiJYiR+GQsno0pFJtroAdqNqDEXTRjJCWVcD03aotxXw8BWy
+MxOVBQHsq61IUFPRyf7IrEOhj1myxzAdVqwuUubJ5Yvzo1/6NWY7y6CB3YJ/gtnZ
+uaQ4fNdzAY2jIoKE2fBLz/fFPETW/vkb1tsh4of4Jalcsf2Whh6cPAgYeGPRNB+C
+ToQ0VLiIkKKm1en+PmUQ+bOqkyh3dvIppUFiyIEX85YeuCxSOryJ9WXDcUuWNLbn
+h2ru9HkSW0pctUuU+quR7tyo5mYlxgxR7Ox9oMO0i86BW6HMVeGDDc1BSZgzHYcj
+WClxLysuVkXvMHG3p3wCrJpSSyLS23+S3278RnnqmxM4Xul0VCxLDLZfQG5hZB2L
+sZYVwjlPphZJOoNdnRLqTdPeBjVKRM2r9nSe21naxhDXI0MbaDpzpJTDx9h1n7Pb
+9D7pzeEiprUi/5/9qnwVtjuhTRdB7QwYUA6rKWBqyf0lOItDOU6n3iPqp2llx7EJ
+GK6MOek8ODPzV2smclb7
+=IDuC
+-----END PGP SIGNATURE-----
