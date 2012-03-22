@@ -1,35 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab2CVKCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 06:02:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49190 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101Ab2CVKCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 06:02:47 -0400
-Date: Thu, 22 Mar 2012 10:02:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-Message-ID: <20120322100236.GS15988@n2100.arm.linux.org.uk>
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com> <20120319130445.GN15988@n2100.arm.linux.org.uk> <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com> <20120319132623.GO15988@n2100.arm.linux.org.uk> <4F696011.7080409@linaro.org> <CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com> <CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932510Ab2CVKDC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 06:03:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26319 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932101Ab2CVKC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 06:02:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="131902874"
+Message-ID: <1332410747.18717.12.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Mar 2012 12:05:47 +0200
+In-Reply-To: <20120322095342.GC14485@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <20120322095342.GC14485@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-hVBE7/oaZRTSff8XIQjX"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 02:46:31PM +0530, Ajeet Yadav wrote:
-> Hi John,
-> On our target  ARCH_USES_GETTIMEOFFSET=y, can you please help me how
-> can I useIRQSOFF_TRACER, PREEMPT_TRACER ?
 
-If you have ARCH_USES_GETTIMEOFFSET=y, the simple answer is: you can't.
+--=-hVBE7/oaZRTSff8XIQjX
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Your solution is to update your platform to use clock sources and clock
-events and disable the obsolete ARCH_USES_GETTIMEOFFSET option.
+On Thu, 2012-03-22 at 10:53 +0100, Jan Kara wrote:
+> On Tue 20-03-12 16:41:20, Artem Bityutskiy wrote:
+> > This patch-set makes ext4 independent of the VFS superblock management
+> > services. Namely, ext4 does not require to register the 'write_super()'=
+ VFS
+> > call-back.
+> >=20
+> > The reason of this exercises is to get rid of the 'sync_supers()' kerne=
+l thread
+> > which wakes up every 5 seconds (by default) even if all superblocks are=
+ clean.
+> > This is wasteful from power management POW (unnecessary wake-ups).
+> >=20
+> > Note, I tried to optimize 'sync_supers()' instead in 2010, but Al wante=
+d me
+> > to get rid of it instead. See https://lkml.org/lkml/2010/6/6/87
+> > And I think this is right because many file-systems do not need this, f=
+or
+> > example btrfs does not use VFS superblock management services at all, s=
+o on a
+> > btrfs-based system we currently end-up useless periodic wake-ups source=
+.
+> >=20
+> > Changes for other file-systems are coming later.
+> >=20
+> > The patch-set structure.
+> > 1. patches 1,2,3 are independent ext4 cleanups and I ask Ted to merge t=
+hem as
+> >    soon/long as they are OK. I sent them also independently in order to=
+ get
+> >    early comments, but did not get so far, so re-sending.
+> > 2. patch 4 exports 'dirty_writeback_interval' and it would be very usef=
+ul to
+> >    have it merged ASAP to simplify further work
+> > 3. patch 5 is also and independent VFS clean-up
+> > 4. patches 6-9 actually make ext4 independent on the 'sync_supers()' th=
+read.
+>   Artem, if you look at places where ext4 sets s_dirt you will notice the=
+y
+> are rather rare events and all of them actually take care of writing
+> superblock themselves (at least if my memory serves well). So ext4
+> shouldn't need sync_supers() at all...
+
+Hmm, if there is journal, then ext4 does not initialize the
+'->write_super()' VFS call-back and indeed takes care of the SB itself.
+Indeed. So 'sync_supers()' wakes up every 5 seconds for nothing.
+
+However, if there is _no_ journal, the 'write_super' is initialized, and
+in many places the 's_dirt' flag is set, and thus VFS services seem to
+be actively used.
+
+I do not ext4 well enough, but the SB dirtying looks a bit messy, and I
+am happy to do some clean-ups, just need a bit more of direction :-)
+
+Thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-hVBE7/oaZRTSff8XIQjX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPavl7AAoJECmIfjd9wqK0fgkP+wa6qxkm+qg6wYbdEuIi2+/g
+TPD8cERKUUvx82w4yS9Smh2bL55DWMzdcq5NsoVayTQJPZhKv8i5A7d5Mnfa9KDN
+9hx8mBTdzI0uGXDu9CbopE3BWvj7kA3ImxZxUhssyQ7mjtHuhXqbMiBf1hIvrSlo
+Ffo6GQTrLSCaLBqq9dRXjw7+s7Vma3ya3JZWkUJUyX4alFDRi/isdtC6md0Xsw+5
+f1TT3PXDu5rRIzuZbgYhlEW7D12crATUU/nUdra66ggSChswGWSN29tJZVQADZge
+PTh6pMZRyIHrmbAmdrPXGuSMcy7qMiKh3eIpLog5GNjwRYy+JnsdfTnQRlvj+y8D
+vHcoMC+WBt9JCRYsjHqhm2gXANx8sKV2jgGXQlhm8X1z4BeDQkbECu4cURteUDop
+oSSQUFuCBER6SyqCYA3KOuxkO2wRS1tc+juVG3QxcYHbWCnq1N3r2ewiWGKJTwxR
+lMcDuAAo4hD731H8xziz6QLruIUaW5Ay3+qZSmHHWXUtrKHNINfjT/V+n9Nn4egi
+cs3JIcOrKCtzlP664HQgqbIZxk9r1okC+0IUbI4x9kAnyoLwJl8V1TPg8AYQMvCi
+bNgy1Eiy4sV/8OS1iR924+8A2igzRFF3QhpVn16GgIQis5QXCpngZ9JXbR7gv83t
+1IxpDnpICH9mdltmL36L
+=UbCh
+-----END PGP SIGNATURE-----
+
+--=-hVBE7/oaZRTSff8XIQjX--
+
