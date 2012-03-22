@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab2CVUiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:38:54 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62160 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758619Ab2CVUiu convert rfc822-to-8bit (ORCPT
+	id S1759788Ab2CVUjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:39:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50500 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759731Ab2CVUjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:38:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120322202445.GB6589@ZenIV.linux.org.uk>
-References: <20120322183845.GA17264@phenom.dumpdata.com> <20120322200918.GZ6589@ZenIV.linux.org.uk>
- <20120322202445.GB6589@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 22 Mar 2012 13:38:28 -0700
-X-Google-Sender-Auth: HkG37sOWft9PUhvO1Ly9ZB_vp84
-Message-ID: <CA+55aFyiNKdkkvK0FH1ibo1iJj1HF9RjLEw3VOEjVwc0eiX8Sw@mail.gmail.com>
-Subject: Re: Regression introduced by bfcfaa77bdf0f775263e906015982a608df01c76
- (vfs: use 'unsigned long' accesses for dcache name comparison and hashing)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Mar 2012 16:39:39 -0400
+Subject: [PATCH, RFC] endless loop when processing signals for kernel-space
+ tasks
+From: dimm <dmitry.adamushko@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Mar 2012 21:39:25 +0100
+Message-ID: <1332448765.2299.68.camel@dimm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 1:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> OK, full_name_hash()/hash_name() definitely have a mismatch and it's on the
-> names of length 8*n: trivial experiment shows that we have
-> name hash_name full_name_hash
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
 
-Good catch, guys.
+The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task returns from a system call with a pending signal.
 
-Ugh. And I never noticed despite having run this code on my machines
-for several weeks, because I don't think I have anything that uses the
-"full_name_hash()" function. And it looked so obviously the same.
+A real-life scenario is a child of 'khelper' returning from a failed kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
+kernel_execve() fails due to a pending SIGKILL, which is the result of "kill -9 -1" (at least, busybox's init does it upon reboot).
 
-> Linus, which way do you prefer to shift it?  Should hash_name() change to
-> match full_name_hash() or should it be the other way round?
->
-> What happens is that you get multiplication by 9 and adding 0 in the former,
-> after having added the last full word.  In the latter we add the last full
-> word, see that there's nothing left and bugger off.
+The loop is as follows:
 
-Yes. I think we should make things match "hash_name()", because that's
-the one that is critical and we want to really generate good code for.
+* syscall_exit_work:
+ - work_pending:            // start_of_the_loop
+ - work_notify_sig:
+   - do_notify_resume()
+     - do_signal()
+       - if (!user_mode(regs)) return;
+ - resume_userspace         // TIF_SIGPENDING is still set
+ - work_pending             // so we call work_pending => goto 
+                            // start_of_the_loop
 
-I think you can just move the "*=9" down in full_name_hash(), so that
-we always "pre-multiply" the hash for the next round.  But I'll have
-to double-check my logic.
+More information can be found in another LKML thread: http://www.serverphorums.com/read.php?12,457826
 
-                 Linus
+[1] the problem was also seen on MIPS.
+
+Thanks in advance for any feedback!
+
+
+Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+CC: Roland McGrath <roland@hack.frob.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 79d97e6..7b784f4 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -98,12 +98,6 @@
+ #endif
+ .endm
+ 
+-#ifdef CONFIG_VM86
+-#define resume_userspace_sig	check_userspace
+-#else
+-#define resume_userspace_sig	resume_userspace
+-#endif
+-
+ /*
+  * User gs save/restore
+  *
+@@ -327,10 +321,19 @@ ret_from_exception:
+ 	preempt_stop(CLBR_ANY)
+ ret_from_intr:
+ 	GET_THREAD_INFO(%ebp)
+-check_userspace:
++resume_userspace_sig:
++#ifdef CONFIG_VM86
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+ 	movb PT_CS(%esp), %al
+ 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
++#else
++	/*
++	 * We can be coming here from a syscall done in the kernel space,
++	 * e.g. a failed kernel_execve().
++	 */
++	movl PT_CS(%esp), %eax
++	andl $SEGMENT_RPL_MASK, %eax
++#endif
+ 	cmpl $USER_RPL, %eax
+ 	jb resume_kernel		# not returning to v8086 or userspace
+ 
+
+
