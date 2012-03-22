@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab2CVUEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:04:39 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63525 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753816Ab2CVUEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:04:38 -0400
-Date: Thu, 22 Mar 2012 22:03:39 +0200
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Rafal Prylowski <prylowski@metasoft.pl>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Message-ID: <20120322200339.GA5812@mwesterb-mobl.ger.corp.intel.com>
-References: <4F683B36.8090101@metasoft.pl>
- <ADE657CA350FB648AAC2C43247A983F0020696D488E3@AUSP01VMBX24.collaborationhost.net>
- <20120321193231.GA3740@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48AB1@AUSP01VMBX24.collaborationhost.net>
- <20120322073750.GA637@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48CAF@AUSP01VMBX24.collaborationhost.net>
+	id S1030664Ab2CVUF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 16:05:29 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:39909 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030392Ab2CVUF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 16:05:28 -0400
+Date: Thu, 22 Mar 2012 22:01:44 +0200
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Peter Seebach <peter.seebach@windriver.com>
+Cc: "ext H. Peter Anvin" <hpa@zytor.com>, Jiri Slaby <jslaby@suse.cz>,
+        apw@canonical.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] checkpatch.pl: thou shalt not use () or (...) in
+ function declarations
+Message-ID: <20120322200144.GF19970@pcarmody2.research.nokia.com>
+References: <1332430038-21057-1-git-send-email-ext-phil.2.carmody@nokia.com>
+ <4F6B51C9.6010904@suse.cz>
+ <4F6B5902.1080607@zytor.com>
+ <20120322174802.GE19970@pcarmody2.research.nokia.com>
+ <20120322141005.1abe7b1e@wrlaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020696D48CAF@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120322141005.1abe7b1e@wrlaptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 01:52:52PM -0500, H Hartley Sweeten wrote:
-
-> I hacked this back to the handle_one_vic function. It looks like every time
-> I get the message above the stat read in that function shows an active
-> interrupt for DMAM2M0 (the dma rx channel) and DMAM2M1 (the dma
-> tx channel). Because of the way handle_one_vic processes the irq's, the
-> DMAM2M0 interrupt gets handled first. When it's done it must be clearing
-> the DMAM2M1 interrupt automatically for some reason. So, when it's
-> handled there is no interrupt pending so we get the message.
+On 22/03/12 14:10 -0500, ext Peter Seebach wrote:
+> On Thu, 22 Mar 2012 19:48:02 +0200
+> Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
 > 
-> The "cleanest" fix I can think of is the following patch.  This is against
-> linux-next.
-
-I can't figure out any better fix unless we move ep93xx back to use
-!MULTI_IRQ_HANDLER which obviously is not good thing to do.
-
-> From: H Hartley Sweeten <hsweeten@visionengravers.com>
+> > While empty paramter lists in function definitions are not technically
+> > wrong, those situations are rare enough that it's worth encouraging
+> > people towards a more uniform, always unambiguous, style.
 > 
-> dma: ep93xx: check for spurious interrupts
+> Typo here ("paramter").
 > 
-> The ep93xx dma controller generates spurious interrupts on dma1chan1 when
-> used with the mmc_spi driver. Catch these early by making sure there is an
-> interrupt to actually process.
+> You don't need to check for (...).  That doesn't actually exist, and
+> gcc rejects it (as it should).  The description of () as meaning (...)
+> is a (slight) oversimplification.
+
+Thanks, and thanks, yup. I just got carried away by HPA's wonderful tale, 
+I took it too literally.
+
+>  As to the () case:
 > 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> The rules here are complicated.  Complicated enough that I don't even
+> TRY to remember them.  Fundamentally, f() is equivalent to either
+> f(void) or f(please do unpleasant things to me with railroad spikes).
+> I would definitely endorse a policy discouraging its use.
 
-Tested-by: Mika Westerberg <mika.westerberg@iki.fi>
+It appears we have quite broad agreement, it's just the details that
+need to be polished.
 
-Thanks for investigating this. You missed one thing though, see below.
-Otherwise it doesn't compile :)
+> I can only think of one exception, and it's inapplicable.  The
+> exception:  Imagine that you wish to write a wrapper for a function
+> like scandir, which takes a function pointer as an argument, and you
+> wish the wrapper to work on two systems where the arguments passed to
+> the function pointer are of different types, but you yourself will
+> never actually see or care about the arguments; you just want to pass
+> the function pointer around.  Then it could make sense to declare the
+> argument as int (*compar)().  But that's a once-a-lifetime use case,
+> give or take.
 
-diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-index e1cc87a..614bff4 100644
---- a/drivers/dma/ep93xx_dma.c
-+++ b/drivers/dma/ep93xx_dma.c
-@@ -751,7 +751,7 @@ static irqreturn_t ep93xx_dma_interrupt(int irq, void *dev_id)
- 		return IRQ_NONE;
- 	}
- 
--	switch (edmac->edma->hw_interrupt(edmac)) {
-+	switch (edmac->edma->hw_interrupt(edmac, irq_status)) {
- 	case INTERRUPT_DONE:
- 		desc->complete = true;
- 		tasklet_schedule(&edmac->tasklet);
+Maybe WG14 should introduce (...) for just that case! :-D
+
+Cheers for your input Seebs,
+Phil
