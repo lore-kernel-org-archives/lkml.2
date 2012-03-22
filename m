@@ -1,869 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030556Ab2CVOYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 10:24:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6274 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075Ab2CVOYC (ORCPT
+	id S1030598Ab2CVO1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 10:27:22 -0400
+Received: from mga05.intel.com ([192.55.52.89]:21000 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030518Ab2CVO1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 10:24:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6656"; a="174778811"
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tsoni@codeaurora.org, Ravi Kumar V <kumarrav@codeaurora.org>
-Subject: [PATCH v5 2/2] DMAEngine: Add DMAEngine driver based on old MSM ADM DMA APIs
-Date: Thu, 22 Mar 2012 19:53:36 +0530
-Message-Id: <1332426216-25273-1-git-send-email-kumarrav@codeaurora.org>
-X-Mailer: git-send-email 1.7.8
+	Thu, 22 Mar 2012 10:27:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332356057-3356-6-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1332356057-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1332356057-3356-6-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Thu, 22 Mar 2012 16:27:17 +0200
+Message-ID: <CALLzPKa2-mxMv-j850jALxDC=gdeDf1Vnd1Y2DxJF4BzfaWiAg@mail.gmail.com>
+Subject: Re: [PATCH v3 05/12] ima: add appraise action keywords and default rules
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2MERPoJ021720
 
-Add DMAEngine based driver using the old MSM ADM DMA APIs internally.
-The benefit of this approach is that not all the drivers
-have to get converted to DMAEngine APIs simultaneosly while
-both the drivers can stay enabled in the kernel. The client
-drivers using the old MSM APIs directly can now convert to
-DMAEngine one by one.
+On Wed, Mar 21, 2012 at 8:54 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> Unlike the IMA measurement policy, the appraise policy can not be dependent
+> on runtime process information, such as the task uid, as the 'security.ima'
+> xattr is written on file close and must be updated each time the file changes,
+> regardless of the current task uid.
+>
+> This patch extends the policy language with 'fowner', defines an appraise
+> policy, which appraises all files owned by root, and defines 'ima_appraise_tcb',
+> a new boot command line option, to enable the appraise policy.
+>
+> Changelog v3:
+> - separate the measure from the appraise rules in order to support measuring
+>  without appraising and appraising without measuring.
+> - change appraisal default for filesystems without xattr support to fail
+> - update default appraise policy for cgroups
+>
+> Changelog v1:
+> - don't appraise RAMFS (Dmitry Kasatkin)
+> - merged rest of "ima: ima_must_appraise_or_measure API change" commit
+>  (Dmtiry Kasatkin)
+>
+>  ima_must_appraise_or_measure() called ima_match_policy twice, which
+>  searched the policy for a matching rule.  Once for a matching measurement
+>  rule and subsequently for an appraisal rule. Searching the policy twice
+>  is unnecessary overhead, which could be noticeable with a large policy.
+>
+>  The new version of ima_must_appraise_or_measure() does everything in a
+>  single iteration using a new version of ima_match_policy().  It returns
+>  IMA_MEASURE, IMA_APPRAISE mask.
+>
+>  With the use of action mask only one efficient matching function
+>  is enough.  Removed other specific versions of matching functions.
+>
+> Changelog:
+> - change 'owner' to 'fowner' to conform to the new LSM conditions posted by
+>  Roberto Sassu.
+> - fix calls to ima_log_string()
+>
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 
-Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
----
- arch/arm/mach-msm/include/mach/dma.h |   35 ++
- drivers/dma/Kconfig                  |   12 +
- drivers/dma/Makefile                 |    1 +
- drivers/dma/msm_adm_dma.c            |  728 ++++++++++++++++++++++++++++++++++
- 4 files changed, 776 insertions(+), 0 deletions(-)
- create mode 100644 drivers/dma/msm_adm_dma.c
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-diff --git a/arch/arm/mach-msm/include/mach/dma.h b/arch/arm/mach-msm/include/mach/dma.h
-index 05583f5..95b7b15 100644
---- a/arch/arm/mach-msm/include/mach/dma.h
-+++ b/arch/arm/mach-msm/include/mach/dma.h
-@@ -18,6 +18,36 @@
- #include <linux/list.h>
- #include <mach/msm_iomap.h>
- 
-+#define sg_dma_offset(sg)               ((sg)->offset)
-+#define box_dma_row_address(box)        ((box)->dma_row_address)
-+#define box_dma_row_len(box)            ((box)->dma_row_len)
-+#define box_dma_row_num(box)            ((box)->dma_row_num)
-+#define box_dma_row_offset(box)         ((box)->dma_row_offset)
-+
-+#define MSM_DMA_CMD_MASK		0x9FFF8
-+#define MSM_DMA_CMD_SHIFT		0
-+#define MSM_BOX_SRC_RLEN_MASK		0xFFFF
-+#define MSM_BOX_SRC_RLEN_SHIFT		16
-+#define MSM_BOX_SRC_RNUM_MASK		0xFFFF
-+#define MSM_BOX_SRC_RNUM_SHIFT		16
-+#define MSM_BOX_SRC_ROFFSET_MASK	0xFFFF
-+#define MSM_BOX_SRC_ROFFSET_SHIFT	16
-+#define MSM_BOX_DST_RLEN_MASK		0xFFFF
-+#define MSM_BOX_DST_RNUM_MASK		0xFFFF
-+#define MSM_BOX_DST_ROFFSET_MASK	0xFFFF
-+#define MSM_BOX_MODE_CMD		0x3
-+
-+enum adm_flush_type {
-+	ADM_FORCED_FLUSH,
-+	ADM_GRACEFUL_FLUSH,
-+};
-+
-+enum adm_dma_type {
-+	ADM_SINGLE_MODE,
-+	ADM_SG_MODE,
-+	ADM_BOX_MODE,
-+};
-+
- struct msm_dmov_errdata {
- 	uint32_t flush[6];
- };
-@@ -32,6 +62,11 @@ struct msm_dmov_cmd {
- 	void *data;
- };
- 
-+struct msm_adm_cmd_config {
-+	uint32_t num_cmd;
-+	uint32_t *cmd_cntrl;
-+};
-+
- #ifndef CONFIG_ARCH_MSM8X60
- void msm_dmov_enqueue_cmd(unsigned id, struct msm_dmov_cmd *cmd);
- void msm_dmov_stop_cmd(unsigned id, struct msm_dmov_cmd *cmd, int graceful);
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index f1a2749..1f99362 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -252,6 +252,18 @@ config EP93XX_DMA
- 	help
- 	  Enable support for the Cirrus Logic EP93xx M2P/M2M DMA controller.
- 
-+config MSM_ADM_DMA
-+	tristate "Qualcomm MSM ADM DMA support"
-+	depends on ARCH_MSM
-+	select DMA_ENGINE
-+	help
-+	  Support the Qualcomm DMA engine. This engine is integrated into
-+	  Qualcomm chips.
-+
-+	  Say Y here if you have such a chipset.
-+
-+	  If unsure, say N.
-+
- config DMA_ENGINE
- 	bool
- 
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index 009a222..f55fb57 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_COH901318) += coh901318.o coh901318_lli.o
- obj-$(CONFIG_AMCC_PPC440SPE_ADMA) += ppc4xx/
- obj-$(CONFIG_IMX_SDMA) += imx-sdma.o
- obj-$(CONFIG_IMX_DMA) += imx-dma.o
-+obj-$(CONFIG_MSM_ADM_DMA) += msm_adm_dma.o
- obj-$(CONFIG_MXS_DMA) += mxs-dma.o
- obj-$(CONFIG_TIMB_DMA) += timb_dma.o
- obj-$(CONFIG_SIRF_DMA) += sirf-dma.o
-diff --git a/drivers/dma/msm_adm_dma.c b/drivers/dma/msm_adm_dma.c
-new file mode 100644
-index 0000000..55038d1
---- /dev/null
-+++ b/drivers/dma/msm_adm_dma.c
-@@ -0,0 +1,728 @@
-+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
-+#include <linux/dmapool.h>
-+#include <linux/dmaengine.h>
-+#include <linux/dma-mapping.h>
-+
-+#include <mach/dma.h>
-+
-+#define SD3_CHAN_START			0
-+#define MSM_DMOV_CRCI_COUNT		16
-+#define MSM_DMA_MAX_CHANS_PER_DEVICE	16
-+#define MAX_TRANSFER_LENGTH		65535
-+#define NO_ERR_CHAN_STATUS		0x80000002
-+#define to_msm_chan(chan) container_of(chan, struct msm_dma_chan, channel)
-+
-+struct msm_dma_chan {
-+	int chan_id;
-+	dma_cookie_t completed_cookie;
-+	dma_cookie_t error_cookie;
-+	spinlock_t lock;
-+	struct list_head active_list;
-+	struct list_head pending_list;
-+	struct dma_chan channel;
-+	struct dma_pool *desc_pool;
-+	struct device *dev;
-+	int max_len;
-+	int err;
-+	struct tasklet_struct tasklet;
-+};
-+
-+struct msm_dma_device {
-+	void __iomem *base;
-+	struct device *dev;
-+	struct dma_device common;
-+	struct msm_dma_chan *chan[MSM_DMA_MAX_CHANS_PER_DEVICE];
-+};
-+
-+struct msm_dma_desc_hw {
-+	unsigned int cmd_list_ptr;
-+} __aligned(8);
-+
-+/* Single Item Mode */
-+struct adm_cmd_t {
-+	unsigned int cmd_cntrl;
-+	unsigned int src;
-+	unsigned int dst;
-+	unsigned int len;
-+};
-+
-+struct adm_box_cmd_t {
-+	uint32_t cmd_cntrl;
-+	uint32_t src_row_addr;
-+	uint32_t dst_row_addr;
-+	uint32_t src_dst_len;
-+	uint32_t num_rows;
-+	uint32_t row_offset;
-+};
-+
-+struct msm_dma_desc_sw {
-+	struct msm_dma_desc_hw hw;
-+	struct adm_cmd_t *vaddr_cmd;
-+	struct adm_box_cmd_t *vaddr_box_cmd;
-+	size_t coherent_size;
-+	dma_addr_t paddr_cmd_list;
-+	struct list_head node;
-+	struct msm_dmov_cmd dmov_cmd;
-+	struct dma_async_tx_descriptor async_tx;
-+} __aligned(8);
-+
-+static int msm_dma_alloc_chan_resources(struct dma_chan *dchan)
-+{
-+	struct msm_dma_chan *chan = to_msm_chan(dchan);
-+
-+	/* Has this channel already been allocated? */
-+	if (chan->desc_pool)
-+		return 1;
-+
-+	/*
-+	 * We need the descriptor to be aligned to 8bytes
-+	 * for meeting ADM specification requirement.
-+	 */
-+	chan->desc_pool = dma_pool_create("msm_dma_desc_pool",
-+					chan->dev,
-+					sizeof(struct msm_dma_desc_sw),
-+				__alignof__(struct msm_dma_desc_sw), 0);
-+	if (!chan->desc_pool) {
-+		dev_err(chan->dev, "unable to allocate channel %d "
-+				"descriptor pool\n", chan->chan_id);
-+		return -ENOMEM;
-+	}
-+
-+	chan->completed_cookie = 1;
-+	dchan->cookie = 1;
-+
-+	/* there is at least one descriptor free to be allocated */
-+	return 1;
-+}
-+
-+static void msm_dma_free_desc_list(struct msm_dma_chan *chan,
-+						struct list_head *list)
-+{
-+	struct msm_dma_desc_sw *desc, *_desc;
-+
-+	list_for_each_entry_safe(desc, _desc, list, node) {
-+		list_del(&desc->node);
-+		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
-+	}
-+}
-+
-+static void msm_dma_free_chan_resources(struct dma_chan *dchan)
-+{
-+	struct msm_dma_chan *chan = to_msm_chan(dchan);
-+	unsigned long flags;
-+
-+	dev_dbg(chan->dev, "Free all channel resources.\n");
-+	spin_lock_irqsave(&chan->lock, flags);
-+	msm_dma_free_desc_list(chan, &chan->active_list);
-+	msm_dma_free_desc_list(chan, &chan->pending_list);
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	dma_pool_destroy(chan->desc_pool);
-+	chan->desc_pool = NULL;
-+}
-+
-+static enum dma_status msm_dma_desc_status(struct msm_dma_chan *chan,
-+					struct msm_dma_desc_sw *desc)
-+{
-+	return dma_async_is_complete(desc->async_tx.cookie,
-+					chan->completed_cookie,
-+					chan->channel.cookie);
-+}
-+
-+static void msm_chan_desc_cleanup(struct msm_dma_chan *chan)
-+{
-+	struct msm_dma_desc_sw *desc, *_desc;
-+	unsigned long flags;
-+
-+	dev_dbg(chan->dev, "Cleaning completed descriptor of channel %d\n",
-+							chan->chan_id);
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	list_for_each_entry_safe(desc, _desc, &chan->active_list, node) {
-+		dma_async_tx_callback callback;
-+		void *callback_param;
-+
-+		if (msm_dma_desc_status(chan, desc) == DMA_IN_PROGRESS)
-+			break;
-+
-+		/* Remove from the list of running transactions */
-+		list_del(&desc->node);
-+
-+		/* Run the link descriptor callback function */
-+		callback = desc->async_tx.callback;
-+		callback_param = desc->async_tx.callback_param;
-+		if (callback) {
-+			spin_unlock_irqrestore(&chan->lock, flags);
-+			callback(callback_param);
-+			spin_lock_irqsave(&chan->lock, flags);
-+		}
-+
-+		/* Run any dependencies, then free the descriptor */
-+		dma_run_dependencies(&desc->async_tx);
-+		spin_unlock_irqrestore(&chan->lock, flags);
-+
-+		if (desc->vaddr_cmd) {
-+			dma_free_coherent(chan->dev, desc->coherent_size,
-+						(void *)desc->vaddr_cmd,
-+							desc->paddr_cmd_list);
-+		} else {
-+			dma_free_coherent(chan->dev, desc->coherent_size,
-+						(void *)desc->vaddr_box_cmd,
-+							desc->paddr_cmd_list);
-+		}
-+		spin_lock_irqsave(&chan->lock, flags);
-+		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
-+	}
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+static void dma_do_tasklet(unsigned long data)
-+{
-+	struct msm_dma_chan *chan = (struct msm_dma_chan *)data;
-+	msm_chan_desc_cleanup(chan);
-+}
-+
-+static void
-+msm_dma_complete_func(struct msm_dmov_cmd *cmd,
-+				unsigned int result,
-+				struct msm_dmov_errdata *err)
-+{
-+	unsigned long flags;
-+	struct msm_dma_desc_sw *desch = container_of(cmd,
-+				struct msm_dma_desc_sw, dmov_cmd);
-+	struct msm_dma_chan *chan = to_msm_chan(desch->async_tx.chan);
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	if ((result != NO_ERR_CHAN_STATUS) && err)
-+		chan->error_cookie = desch->async_tx.cookie;
-+	chan->completed_cookie = desch->async_tx.cookie;
-+
-+	tasklet_schedule(&chan->tasklet);
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/*
-+ *  Passes transfer descriptors to DMA hardware.
-+ */
-+static void msm_dma_issue_pending(struct dma_chan *dchan)
-+{
-+	struct msm_dma_chan *chan = to_msm_chan(dchan);
-+	struct msm_dma_desc_sw *desch;
-+	unsigned long flags;
-+
-+	if (chan->err)
-+		return;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	if (list_empty(&chan->pending_list))
-+		goto out_unlock;
-+
-+	desch = list_first_entry(&chan->pending_list, struct msm_dma_desc_sw,
-+									node);
-+	list_del(&desch->node);
-+	desch->dmov_cmd.complete_func = msm_dma_complete_func;
-+	desch->dmov_cmd.execute_func = NULL;
-+	desch->dmov_cmd.cmdptr = DMOV_CMD_ADDR(desch->async_tx.phys);
-+	list_add_tail(&desch->node, &chan->active_list);
-+	mb();
-+	msm_dmov_enqueue_cmd(chan->chan_id, &desch->dmov_cmd);
-+out_unlock:
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/*
-+ *  Assignes cookie for each transfer descriptor passed.
-+ *  Returns
-+ *	Assigend cookie for success.
-+ *	Error value for failure.
-+ */
-+static dma_cookie_t msm_dma_tx_submit(struct dma_async_tx_descriptor *tx)
-+{
-+	struct msm_dma_chan *chan = to_msm_chan(tx->chan);
-+	struct msm_dma_desc_sw *desc = container_of(tx,
-+	struct msm_dma_desc_sw, async_tx);
-+	unsigned long flags;
-+	dma_cookie_t cookie = -EBUSY;
-+
-+	if (chan->err)
-+		return cookie;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	/*
-+	 * assign cookies to all of the software descriptors
-+	 * that make up this transaction
-+	 */
-+	cookie = chan->channel.cookie;
-+	cookie++;
-+	if (cookie < 0)
-+		cookie = DMA_MIN_COOKIE;
-+
-+	desc->async_tx.cookie = cookie;
-+	chan->channel.cookie = cookie;
-+
-+	/* put this transaction onto the tail of the pending queue */
-+	list_add_tail(&desc->node, &chan->pending_list);
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	return cookie;
-+}
-+
-+/*
-+ *  Returns the DMA transfer status of a particular cookie
-+ */
-+static enum dma_status msm_tx_status(struct dma_chan *dchan,
-+					dma_cookie_t cookie,
-+				struct dma_tx_state *txstate)
-+{
-+	struct msm_dma_chan *chan = to_msm_chan(dchan);
-+	dma_cookie_t last_used;
-+	dma_cookie_t last_complete;
-+	enum dma_status status;
-+
-+	last_used = dchan->cookie;
-+	last_complete = chan->completed_cookie;
-+
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
-+
-+	status = dma_async_is_complete(cookie, last_complete, last_used);
-+
-+	if (status != DMA_IN_PROGRESS)
-+		if (chan->error_cookie == cookie)
-+			status = DMA_ERROR;
-+
-+	return status;
-+}
-+
-+static struct msm_dma_desc_sw *msm_dma_alloc_descriptor(
-+				struct msm_dma_chan *chan,
-+				int cmd_cnt,
-+				enum adm_dma_type mask)
-+{
-+	struct msm_dma_desc_sw *desc;
-+	dma_addr_t pdesc_addr;
-+	dma_addr_t paddr_cmd_list;
-+	void *err = NULL;
-+
-+	desc = dma_pool_alloc(chan->desc_pool, GFP_ATOMIC, &pdesc_addr);
-+	if (!desc) {
-+		dev_dbg(chan->dev, "out of memory for desc\n");
-+		return ERR_CAST(desc);
-+	}
-+
-+	memset(desc, 0, sizeof(*desc));
-+	desc->async_tx.phys = pdesc_addr;
-+
-+	if (mask == ADM_BOX_MODE) {
-+		desc->coherent_size = sizeof(struct adm_box_cmd_t);
-+		desc->vaddr_box_cmd = dma_alloc_coherent(chan->dev,
-+				sizeof(struct adm_box_cmd_t),
-+				&paddr_cmd_list, GFP_ATOMIC);
-+		if (!desc->vaddr_box_cmd) {
-+			dev_dbg(chan->dev, "out of memory for desc\n");
-+			err = desc->vaddr_box_cmd;
-+			goto fail;
-+		}
-+	} else {
-+		desc->coherent_size = sizeof(struct adm_cmd_t)*cmd_cnt;
-+
-+		desc->vaddr_cmd = dma_alloc_coherent(chan->dev,
-+				sizeof(struct adm_cmd_t)*cmd_cnt,
-+				&paddr_cmd_list, GFP_ATOMIC);
-+
-+		if (!desc->vaddr_cmd) {
-+			dev_dbg(chan->dev, "out of memory for desc\n");
-+			err = desc->vaddr_cmd;
-+			goto fail;
-+		}
-+	}
-+
-+	dma_async_tx_descriptor_init(&desc->async_tx, &chan->channel);
-+	desc->async_tx.tx_submit = msm_dma_tx_submit;
-+	desc->paddr_cmd_list = paddr_cmd_list;
-+	desc->hw.cmd_list_ptr = (paddr_cmd_list >> 3) | CMD_PTR_LP;
-+	return desc;
-+fail:
-+	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
-+	return ERR_CAST(err);
-+}
-+
-+/*
-+ *  Prepares the transfer descriptors for SG transaction.
-+ *  Returns
-+ *	address of dma_async_tx_descriptor for success.
-+ *	Pointer of error value for failure.
-+ */
-+static struct dma_async_tx_descriptor *msm_dma_prep_sg(
-+		struct dma_chan *dchan,
-+		struct scatterlist *dst_sg, unsigned int dst_nents,
-+		struct scatterlist *src_sg, unsigned int src_nents,
-+		unsigned long flags, void *context)
-+{
-+
-+	struct msm_dma_chan *chan;
-+	struct msm_dma_desc_sw *new;
-+	size_t copy, len;
-+	int cmd_cnt = 0;
-+	int first = 0;
-+	int i;
-+	dma_addr_t src;
-+	dma_addr_t dst;
-+	struct adm_cmd_t *cmdlist_vaddr;
-+	struct scatterlist *sg;
-+	struct msm_adm_cmd_config *cmd_config = context;
-+
-+	if (!dchan)
-+		return NULL;
-+
-+	if (dst_nents == 0 || src_nents == 0)
-+		return NULL;
-+	if (!dst_sg || !src_sg)
-+		return NULL;
-+
-+	if ((dst_nents != src_nents) || (cmd_config->num_cmd != src_nents))
-+		return NULL;
-+
-+	chan = to_msm_chan(dchan);
-+
-+	cmd_cnt = src_nents;
-+	for (i = 0; i < src_nents; i++) {
-+		len = sg_dma_len(src_sg + i);
-+		if (len != MAX_TRANSFER_LENGTH)
-+			cmd_cnt += len/MAX_TRANSFER_LENGTH;
-+	}
-+
-+	new = msm_dma_alloc_descriptor(chan, cmd_cnt, ADM_SG_MODE);
-+
-+	if (!new) {
-+		dev_err(chan->dev,
-+			"No free memory for link descriptor\n");
-+		return NULL;
-+	}
-+
-+	cmdlist_vaddr = new->vaddr_cmd;
-+
-+	for_each_sg(src_sg, sg, src_nents, i) {
-+		len = sg_dma_len(sg);
-+		src = sg_dma_address(sg);
-+		do {
-+			copy = (len >= MAX_TRANSFER_LENGTH) ?
-+						MAX_TRANSFER_LENGTH : len;
-+			cmdlist_vaddr->src = src;
-+			cmdlist_vaddr->len = copy;
-+			cmdlist_vaddr->cmd_cntrl =
-+					*(cmd_config->cmd_cntrl + i) &
-+							MSM_DMA_CMD_MASK;
-+			if (first == 0) {
-+				if (cmd_cnt == 1)
-+					cmdlist_vaddr->cmd_cntrl |= CMD_LC;
-+				else
-+					cmdlist_vaddr->cmd_cntrl |= CMD_OCB;
-+				first = 1;
-+			}
-+			cmdlist_vaddr++;
-+			len -= copy;
-+			src += copy;
-+		} while (len);
-+	}
-+	if (cmd_cnt > 1) {
-+		cmdlist_vaddr--;
-+		cmdlist_vaddr->cmd_cntrl |= CMD_LC | CMD_OCU;
-+	}
-+
-+	cmdlist_vaddr = new->vaddr_cmd;
-+
-+	for_each_sg(dst_sg, sg, src_nents, i) {
-+		len = sg_dma_len(sg);
-+		dst = sg_dma_address(sg);
-+		do {
-+			copy = (len >= MAX_TRANSFER_LENGTH) ?
-+					MAX_TRANSFER_LENGTH : len;
-+			cmdlist_vaddr->dst = dst;
-+			cmdlist_vaddr++;
-+			len -= copy;
-+			dst += copy;
-+		} while (len);
-+
-+	}
-+
-+#ifdef DEBUG
-+	cmdlist_vaddr = new->vaddr_cmd;
-+	i = 0;
-+	do {
-+		dev_dbg(chan->dev, "cmd %d src 0x%x dst 0x%x len 0x%x "
-+						"cntrl 0x%x\n",
-+				i, cmdlist_vaddr->src, cmdlist_vaddr->dst,
-+				cmdlist_vaddr->len, cmdlist_vaddr->cmd_cntrl);
-+			cmdlist_vaddr++;
-+	} while (!((cmdlist_vaddr-1)->cmd_cntrl & CMD_LC));
-+#endif
-+	new->async_tx.flags = flags;
-+	new->async_tx.cookie = -EBUSY;
-+
-+	return &new->async_tx;
-+}
-+
-+struct dma_async_tx_descriptor *msm_dma_prep_interleaved(
-+				struct dma_chan *dchan,
-+				struct dma_interleaved_template *xt,
-+				unsigned long flags,
-+				void *context)
-+{
-+
-+	struct msm_dma_chan *chan;
-+	struct msm_dma_desc_sw *new;
-+	struct adm_box_cmd_t *box_cmd_vaddr;
-+	struct msm_adm_cmd_config *cmd_config = context;
-+
-+	if (!dchan)
-+		return NULL;
-+
-+	if (!xt)
-+		return NULL;
-+
-+	chan = to_msm_chan(dchan);
-+
-+	new = msm_dma_alloc_descriptor(chan, 1, ADM_BOX_MODE);
-+
-+	if (!new) {
-+		dev_err(chan->dev,
-+			"No free memory for link descriptor\n");
-+		return NULL;
-+	}
-+
-+	box_cmd_vaddr = new->vaddr_box_cmd;
-+
-+
-+	box_cmd_vaddr->src_row_addr = xt->src_start;
-+	box_cmd_vaddr->dst_row_addr = xt->dst_start;
-+	box_cmd_vaddr->src_dst_len =
-+			((xt->sgl[0].size & MSM_BOX_SRC_RLEN_MASK) <<
-+					MSM_BOX_SRC_RLEN_SHIFT) |
-+				(xt->sgl[0].size & MSM_BOX_DST_RLEN_MASK);
-+
-+	box_cmd_vaddr->cmd_cntrl =
-+			(cmd_config->cmd_cntrl[0] & MSM_DMA_CMD_MASK) |
-+						MSM_BOX_MODE_CMD | CMD_LC;
-+
-+	box_cmd_vaddr->num_rows =
-+			((xt->numf & MSM_BOX_SRC_RNUM_MASK) <<
-+			MSM_BOX_SRC_RNUM_SHIFT) |
-+			(xt->numf & MSM_BOX_DST_RNUM_MASK);
-+
-+	if ((xt->src_sgl) && (xt->src_inc))
-+		box_cmd_vaddr->row_offset =
-+				((xt->sgl[0].size + xt->sgl[0].icg) &
-+				MSM_BOX_SRC_ROFFSET_MASK) <<
-+				MSM_BOX_SRC_ROFFSET_SHIFT;
-+	else if ((!xt->src_sgl) && (xt->src_inc))
-+		box_cmd_vaddr->row_offset = ((xt->sgl[0].size) &
-+				MSM_BOX_SRC_ROFFSET_MASK) <<
-+				MSM_BOX_SRC_ROFFSET_SHIFT;
-+	else
-+		box_cmd_vaddr->row_offset =
-+			(0 & MSM_BOX_SRC_ROFFSET_MASK) <<
-+			MSM_BOX_SRC_ROFFSET_SHIFT;
-+
-+
-+	if ((xt->dst_sgl) && (xt->dst_inc))
-+		box_cmd_vaddr->row_offset |=
-+			((xt->sgl[0].size + xt->sgl[0].icg) &
-+			MSM_BOX_DST_ROFFSET_MASK);
-+	else if ((!xt->dst_sgl) && (xt->dst_inc))
-+		box_cmd_vaddr->row_offset |= ((xt->sgl[0].size) &
-+					MSM_BOX_DST_ROFFSET_MASK);
-+	else
-+		box_cmd_vaddr->row_offset |= (0 & MSM_BOX_DST_ROFFSET_MASK);
-+
-+	new->async_tx.flags = flags;
-+	new->async_tx.cookie = -EBUSY;
-+
-+	return &new->async_tx;
-+}
-+
-+/*
-+ *  Controlling the hardware channel like stopping, flushing.
-+ */
-+static int msm_dma_chan_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-+							unsigned long arg)
-+{
-+	enum adm_flush_type cmd_type = arg;
-+
-+	if (cmd == DMA_TERMINATE_ALL) {
-+		switch (cmd_type) {
-+		case ADM_GRACEFUL_FLUSH:
-+				msm_dmov_stop_cmd(chan->chan_id, NULL, 1);
-+			break;
-+		case ADM_FORCED_FLUSH:
-+			/*
-+			 * We treate default as forced flush
-+			 * so we fall through
-+			 */
-+		default:
-+				msm_dmov_stop_cmd(chan->chan_id, NULL, 0);
-+			break;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static void msm_dma_chan_remove(struct msm_dma_chan *chan)
-+{
-+	tasklet_kill(&chan->tasklet);
-+	list_del(&chan->channel.device_node);
-+	kfree(chan);
-+}
-+
-+static __devinit int msm_dma_chan_probe(struct msm_dma_device *qdev,
-+					int channel)
-+{
-+	struct msm_dma_chan *chan;
-+
-+	chan = kzalloc(sizeof(*chan), GFP_KERNEL);
-+	if (!chan) {
-+		dev_err(qdev->dev, "no free memory for DMA channels!\n");
-+		return -ENOMEM;
-+	}
-+
-+	spin_lock_init(&chan->lock);
-+	INIT_LIST_HEAD(&chan->pending_list);
-+	INIT_LIST_HEAD(&chan->active_list);
-+
-+	chan->chan_id = channel;
-+	chan->completed_cookie = 0;
-+	chan->channel.cookie = 0;
-+	chan->max_len = MAX_TRANSFER_LENGTH;
-+	chan->err = 0;
-+	qdev->chan[channel] = chan;
-+	chan->channel.device = &qdev->common;
-+	chan->dev = qdev->dev;
-+
-+	tasklet_init(&chan->tasklet, dma_do_tasklet, (unsigned long)chan);
-+
-+	list_add_tail(&chan->channel.device_node, &qdev->common.channels);
-+	qdev->common.chancnt++;
-+
-+	return 0;
-+}
-+
-+static int __devinit msm_dma_probe(struct platform_device *pdev)
-+{
-+	struct msm_dma_device *qdev;
-+	int i;
-+	int ret = 0;
-+
-+	qdev = kzalloc(sizeof(*qdev), GFP_KERNEL);
-+	if (!qdev) {
-+		dev_err(&pdev->dev, "Not enough memory for device\n");
-+		return -ENOMEM;
-+	}
-+
-+	qdev->dev = &pdev->dev;
-+	INIT_LIST_HEAD(&qdev->common.channels);
-+	qdev->common.device_alloc_chan_resources =
-+				msm_dma_alloc_chan_resources;
-+	qdev->common.device_free_chan_resources =
-+				msm_dma_free_chan_resources;
-+	dma_cap_set(DMA_SG, qdev->common.cap_mask);
-+	dma_cap_set(DMA_INTERLEAVE, qdev->common.cap_mask);
-+
-+	qdev->common.device_prep_dma_sg = msm_dma_prep_sg;
-+	qdev->common.device_prep_interleaved_dma = msm_dma_prep_interleaved;
-+	qdev->common.device_issue_pending = msm_dma_issue_pending;
-+	qdev->common.dev = &pdev->dev;
-+	qdev->common.device_tx_status = msm_tx_status;
-+	qdev->common.device_control = msm_dma_chan_control;
-+
-+	for (i = SD3_CHAN_START; i < MSM_DMA_MAX_CHANS_PER_DEVICE; i++) {
-+		ret = msm_dma_chan_probe(qdev, i);
-+		if (ret) {
-+			dev_err(&pdev->dev, "channel %d probe failed\n", i);
-+			goto chan_free;
-+		}
-+	}
-+
-+	dev_info(&pdev->dev, "registering dma device\n");
-+
-+	ret = dma_async_device_register(&qdev->common);
-+
-+	if (ret) {
-+		dev_err(&pdev->dev, "Registering Dma device failed\n");
-+		goto chan_free;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, qdev);
-+	return 0;
-+chan_free:
-+	for (i = SD3_CHAN_START; i < MSM_DMA_MAX_CHANS_PER_DEVICE; i++) {
-+		if (qdev->chan[i])
-+			msm_dma_chan_remove(qdev->chan[i]);
-+	}
-+	kfree(qdev);
-+	return ret;
-+}
-+
-+static int  __devexit msm_dma_remove(struct platform_device *pdev)
-+{
-+	struct msm_dma_device *qdev = platform_get_drvdata(pdev);
-+	int i;
-+
-+	dma_async_device_unregister(&qdev->common);
-+
-+	for (i = SD3_CHAN_START; i < MSM_DMA_MAX_CHANS_PER_DEVICE; i++) {
-+		if (qdev->chan[i])
-+			msm_dma_chan_remove(qdev->chan[i]);
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, NULL);
-+	kfree(qdev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver msm_dma_driver = {
-+	.remove = __devexit_p(msm_dma_remove),
-+	.driver = {
-+		.name = "msm_dma",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static __init int msm_dma_init(void)
-+{
-+	return platform_driver_probe(&msm_dma_driver, msm_dma_probe);
-+}
-+subsys_initcall(msm_dma_init);
-+
-+static void __exit msm_dma_exit(void)
-+{
-+	platform_driver_unregister(&msm_dma_driver);
-+}
-+module_exit(msm_dma_exit);
-+
-+MODULE_DESCRIPTION("Qualcomm DMA driver");
-+MODULE_LICENSE("GPL v2");
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+> ---
+>  Documentation/ABI/testing/ima_policy  |   25 +++++-
+>  Documentation/kernel-parameters.txt   |    4 +
+>  security/integrity/ima/ima_appraise.c |    5 +-
+>  security/integrity/ima/ima_policy.c   |  149 ++++++++++++++++++++++++---------
+>  4 files changed, 139 insertions(+), 44 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+> index 6cd6dae..dcff822 100644
+> --- a/Documentation/ABI/testing/ima_policy
+> +++ b/Documentation/ABI/testing/ima_policy
+> @@ -12,11 +12,14 @@ Description:
+>                then closing the file.  The new policy takes effect after
+>                the file ima/policy is closed.
+>
+> +               IMA appraisal, if configured, uses these file measurements
+> +               for local measurement appraisal.
+> +
+>                rule format: action [condition ...]
+>
+> -               action: measure | dont_measure
+> +               action: measure | dont_measure | appraise | dont_appraise
+>                condition:= base | lsm
+> -                       base:   [[func=] [mask=] [fsmagic=] [uid=]]
+> +                       base:   [[func=] [mask=] [fsmagic=] [uid=] [fowner]]
+>                        lsm:    [[subj_user=] [subj_role=] [subj_type=]
+>                                 [obj_user=] [obj_role=] [obj_type=]]
+>
+> @@ -24,36 +27,50 @@ Description:
+>                        mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
+>                        fsmagic:= hex value
+>                        uid:= decimal value
+> +                       fowner:=decimal value
+>                lsm:    are LSM specific
+>
+>                default policy:
+>                        # PROC_SUPER_MAGIC
+>                        dont_measure fsmagic=0x9fa0
+> +                       dont_appraise fsmagic=0x9fa0
+>                        # SYSFS_MAGIC
+>                        dont_measure fsmagic=0x62656572
+> +                       dont_appraise fsmagic=0x62656572
+>                        # DEBUGFS_MAGIC
+>                        dont_measure fsmagic=0x64626720
+> +                       dont_appraise fsmagic=0x64626720
+>                        # TMPFS_MAGIC
+>                        dont_measure fsmagic=0x01021994
+> +                       dont_appraise fsmagic=0x01021994
+> +                       # RAMFS_MAGIC
+> +                       dont_measure fsmagic=0x858458f6
+> +                       dont_appraise fsmagic=0x858458f6
+>                        # SECURITYFS_MAGIC
+>                        dont_measure fsmagic=0x73636673
+> +                       dont_appraise fsmagic=0x73636673
+>
+>                        measure func=BPRM_CHECK
+>                        measure func=FILE_MMAP mask=MAY_EXEC
+>                        measure func=FILE_CHECK mask=MAY_READ uid=0
+> +                       appraise fowner=0
+>
+>                The default policy measures all executables in bprm_check,
+>                all files mmapped executable in file_mmap, and all files
+> -               open for read by root in do_filp_open.
+> +               open for read by root in do_filp_open.  The default appraisal
+> +               policy appraises all files owned by root.
+>
+>                Examples of LSM specific definitions:
+>
+>                SELinux:
+>                        # SELINUX_MAGIC
+> -                       dont_measure fsmagic=0xF97CFF8C
+> +                       dont_measure fsmagic=0xf97cff8c
+> +                       dont_appraise fsmagic=0xf97cff8c
+>
+>                        dont_measure obj_type=var_log_t
+> +                       dont_appraise obj_type=var_log_t
+>                        dont_measure obj_type=auditd_log_t
+> +                       dont_appraise obj_type=auditd_log_t
+>                        measure subj_user=system_u func=FILE_CHECK mask=MAY_READ
+>                        measure subj_role=system_r func=FILE_CHECK mask=MAY_READ
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index a86765d..6c00491 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1008,6 +1008,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>                        Format: { "off" | "enforce" | "fix" }
+>                        default: "enforce"
+>
+> +       ima_appraise_tcb [IMA]
+> +                       The builtin appraise policy appraises all files
+> +                       owned by uid=0.
+> +
+>        ima_audit=      [IMA]
+>                        Format: { "0" | "1" }
+>                        0 -- integrity auditing messages. (Default)
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index 4865f61..681cb6e 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -36,7 +36,10 @@ __setup("ima_appraise=", default_appraise_setup);
+>  */
+>  int ima_must_appraise(struct inode *inode, enum ima_hooks func, int mask)
+>  {
+> -       return 0;
+> +       if (!ima_appraise)
+> +               return 0;
+> +
+> +       return ima_match_policy(inode, func, mask, IMA_APPRAISE);
+>  }
+>
+>  static void ima_fix_xattr(struct dentry *dentry,
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index 8ee301c..238aa2b 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+> @@ -24,6 +24,7 @@
+>  #define IMA_MASK       0x0002
+>  #define IMA_FSMAGIC    0x0004
+>  #define IMA_UID                0x0008
+> +#define IMA_FOWNER     0x0010
+>
+>  #define UNKNOWN                        0
+>  #define MEASURE                        1       /* same as IMA_MEASURE */
+> @@ -38,7 +39,7 @@ enum lsm_rule_types { LSM_OBJ_USER, LSM_OBJ_ROLE, LSM_OBJ_TYPE,
+>        LSM_SUBJ_USER, LSM_SUBJ_ROLE, LSM_SUBJ_TYPE
+>  };
+>
+> -struct ima_measure_rule_entry {
+> +struct ima_rule_entry {
+>        struct list_head list;
+>        int action;
+>        unsigned int flags;
+> @@ -46,6 +47,7 @@ struct ima_measure_rule_entry {
+>        int mask;
+>        unsigned long fsmagic;
+>        uid_t uid;
+> +       uid_t fowner;
+>        struct {
+>                void *rule;     /* LSM file metadata specific */
+>                int type;       /* audit type */
+> @@ -54,7 +56,7 @@ struct ima_measure_rule_entry {
+>
+>  /*
+>  * Without LSM specific knowledge, the default policy can only be
+> - * written in terms of .action, .func, .mask, .fsmagic, and .uid
+> + * written in terms of .action, .func, .mask, .fsmagic, .uid, and .fowner
+>  */
+>
+>  /*
+> @@ -63,7 +65,7 @@ struct ima_measure_rule_entry {
+>  * normal users can easily run the machine out of memory simply building
+>  * and running executables.
+>  */
+> -static struct ima_measure_rule_entry default_rules[] = {
+> +static struct ima_rule_entry default_rules[] = {
+>        {.action = DONT_MEASURE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+>        {.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
+>        {.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
+> @@ -79,19 +81,39 @@ static struct ima_measure_rule_entry default_rules[] = {
+>         .flags = IMA_FUNC | IMA_MASK | IMA_UID},
+>  };
+>
+> -static LIST_HEAD(measure_default_rules);
+> -static LIST_HEAD(measure_policy_rules);
+> -static struct list_head *ima_measure;
+> +static struct ima_rule_entry default_appraise_rules[] = {
+> +       {.action = DONT_APPRAISE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = SELINUX_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = DONT_APPRAISE,.fsmagic = CGROUP_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+> +       {.action = APPRAISE,.fowner = 0,.flags = IMA_FOWNER},
+> +};
+> +
+> +static LIST_HEAD(ima_default_rules);
+> +static LIST_HEAD(ima_policy_rules);
+> +static struct list_head *ima_rules;
+>
+> -static DEFINE_MUTEX(ima_measure_mutex);
+> +static DEFINE_MUTEX(ima_rules_mutex);
+>
+>  static bool ima_use_tcb __initdata;
+> -static int __init default_policy_setup(char *str)
+> +static int __init default_measure_policy_setup(char *str)
+>  {
+>        ima_use_tcb = 1;
+>        return 1;
+>  }
+> -__setup("ima_tcb", default_policy_setup);
+> +__setup("ima_tcb", default_measure_policy_setup);
+> +
+> +static bool ima_use_appraise_tcb __initdata;
+> +static int __init default_appraise_policy_setup(char *str)
+> +{
+> +       ima_use_appraise_tcb = 1;
+> +       return 1;
+> +}
+> +__setup("ima_appraise_tcb", default_appraise_policy_setup);
+>
+>  /**
+>  * ima_match_rules - determine whether an inode matches the measure rule.
+> @@ -102,7 +124,7 @@ __setup("ima_tcb", default_policy_setup);
+>  *
+>  * Returns true on rule match, false on failure.
+>  */
+> -static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+> +static bool ima_match_rules(struct ima_rule_entry *rule,
+>                            struct inode *inode, enum ima_hooks func, int mask)
+>  {
+>        struct task_struct *tsk = current;
+> @@ -118,6 +140,8 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+>                return false;
+>        if ((rule->flags & IMA_UID) && rule->uid != cred->uid)
+>                return false;
+> +       if ((rule->flags & IMA_FOWNER) && rule->fowner != inode->i_uid)
+> +               return false;
+>        for (i = 0; i < MAX_LSM_RULES; i++) {
+>                int rc = 0;
+>                u32 osid, sid;
+> @@ -170,10 +194,10 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+>  int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+>                     int flags)
+>  {
+> -       struct ima_measure_rule_entry *entry;
+> +       struct ima_rule_entry *entry;
+>        int action = 0, actmask = flags | (flags << 1);
+>
+> -       list_for_each_entry(entry, ima_measure, list) {
+> +       list_for_each_entry(entry, ima_rules, list) {
+>
+>                if (!(entry->action & actmask))
+>                        continue;
+> @@ -194,22 +218,31 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+>  /**
+>  * ima_init_policy - initialize the default measure rules.
+>  *
+> - * ima_measure points to either the measure_default_rules or the
+> - * the new measure_policy_rules.
+> + * ima_rules points to either the ima_default_rules or the
+> + * the new ima_policy_rules.
+>  */
+>  void __init ima_init_policy(void)
+>  {
+> -       int i, entries;
+> +       int i, measure_entries, appraise_entries;
+>
+>        /* if !ima_use_tcb set entries = 0 so we load NO default rules */
+> -       if (ima_use_tcb)
+> -               entries = ARRAY_SIZE(default_rules);
+> -       else
+> -               entries = 0;
+> -
+> -       for (i = 0; i < entries; i++)
+> -               list_add_tail(&default_rules[i].list, &measure_default_rules);
+> -       ima_measure = &measure_default_rules;
+> +       measure_entries = ima_use_tcb ? ARRAY_SIZE(default_rules) : 0;
+> +       appraise_entries = ima_use_appraise_tcb ?
+> +                        ARRAY_SIZE(default_appraise_rules) : 0;
+> +
+> +       for (i = 0; i < measure_entries + appraise_entries; i++) {
+> +               if (i < measure_entries)
+> +                       list_add_tail(&default_rules[i].list,
+> +                                     &ima_default_rules);
+> +               else {
+> +                       int j = i - measure_entries;
+> +
+> +                       list_add_tail(&default_appraise_rules[j].list,
+> +                                     &ima_default_rules);
+> +               }
+> +       }
+> +
+> +       ima_rules = &ima_default_rules;
+>  }
+>
+>  /**
+> @@ -226,8 +259,8 @@ void ima_update_policy(void)
+>        int result = 1;
+>        int audit_info = 0;
+>
+> -       if (ima_measure == &measure_default_rules) {
+> -               ima_measure = &measure_policy_rules;
+> +       if (ima_rules == &ima_default_rules) {
+> +               ima_rules = &ima_policy_rules;
+>                cause = "complete";
+>                result = 0;
+>        }
+> @@ -238,14 +271,17 @@ void ima_update_policy(void)
+>  enum {
+>        Opt_err = -1,
+>        Opt_measure = 1, Opt_dont_measure,
+> +       Opt_appraise, Opt_dont_appraise,
+>        Opt_obj_user, Opt_obj_role, Opt_obj_type,
+>        Opt_subj_user, Opt_subj_role, Opt_subj_type,
+> -       Opt_func, Opt_mask, Opt_fsmagic, Opt_uid
+> +       Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner
+>  };
+>
+>  static match_table_t policy_tokens = {
+>        {Opt_measure, "measure"},
+>        {Opt_dont_measure, "dont_measure"},
+> +       {Opt_appraise, "appraise"},
+> +       {Opt_dont_appraise, "dont_appraise"},
+>        {Opt_obj_user, "obj_user=%s"},
+>        {Opt_obj_role, "obj_role=%s"},
+>        {Opt_obj_type, "obj_type=%s"},
+> @@ -256,10 +292,11 @@ static match_table_t policy_tokens = {
+>        {Opt_mask, "mask=%s"},
+>        {Opt_fsmagic, "fsmagic=%s"},
+>        {Opt_uid, "uid=%s"},
+> +       {Opt_fowner, "fowner=%s"},
+>        {Opt_err, NULL}
+>  };
+>
+> -static int ima_lsm_rule_init(struct ima_measure_rule_entry *entry,
+> +static int ima_lsm_rule_init(struct ima_rule_entry *entry,
+>                             char *args, int lsm_rule, int audit_type)
+>  {
+>        int result;
+> @@ -283,7 +320,7 @@ static void ima_log_string(struct audit_buffer *ab, char *key, char *value)
+>        audit_log_format(ab, " ");
+>  }
+>
+> -static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+> +static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+>  {
+>        struct audit_buffer *ab;
+>        char *p;
+> @@ -292,6 +329,7 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+>        ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_INTEGRITY_RULE);
+>
+>        entry->uid = -1;
+> +       entry->fowner = -1;
+>        entry->action = UNKNOWN;
+>        while ((p = strsep(&rule, " \t")) != NULL) {
+>                substring_t args[MAX_OPT_ARGS];
+> @@ -320,11 +358,27 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+>
+>                        entry->action = DONT_MEASURE;
+>                        break;
+> +               case Opt_appraise:
+> +                       ima_log_string(ab, "action", "appraise");
+> +
+> +                       if (entry->action != UNKNOWN)
+> +                               result = -EINVAL;
+> +
+> +                       entry->action = APPRAISE;
+> +                       break;
+> +               case Opt_dont_appraise:
+> +                       ima_log_string(ab, "action", "dont_appraise");
+> +
+> +                       if (entry->action != UNKNOWN)
+> +                               result = -EINVAL;
+> +
+> +                       entry->action = DONT_APPRAISE;
+> +                       break;
+>                case Opt_func:
+>                        ima_log_string(ab, "func", args[0].from);
+>
+>                        if (entry->func)
+> -                               result  = -EINVAL;
+> +                               result = -EINVAL;
+>
+>                        if (strcmp(args[0].from, "FILE_CHECK") == 0)
+>                                entry->func = FILE_CHECK;
+> @@ -389,6 +443,23 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+>                                        entry->flags |= IMA_UID;
+>                        }
+>                        break;
+> +               case Opt_fowner:
+> +                       ima_log_string(ab, "fowner", args[0].from);
+> +
+> +                       if (entry->fowner != -1) {
+> +                               result = -EINVAL;
+> +                               break;
+> +                       }
+> +
+> +                       result = strict_strtoul(args[0].from, 10, &lnum);
+> +                       if (!result) {
+> +                               entry->fowner = (uid_t) lnum;
+> +                               if (entry->fowner != lnum)
+> +                                       result = -EINVAL;
+> +                               else
+> +                                       entry->flags |= IMA_FOWNER;
+> +                       }
+> +                       break;
+>                case Opt_obj_user:
+>                        ima_log_string(ab, "obj_user", args[0].from);
+>                        result = ima_lsm_rule_init(entry, args[0].from,
+> @@ -440,7 +511,7 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+>  }
+>
+>  /**
+> - * ima_parse_add_rule - add a rule to measure_policy_rules
+> + * ima_parse_add_rule - add a rule to ima_policy_rules
+>  * @rule - ima measurement policy rule
+>  *
+>  * Uses a mutex to protect the policy list from multiple concurrent writers.
+> @@ -450,12 +521,12 @@ ssize_t ima_parse_add_rule(char *rule)
+>  {
+>        const char *op = "update_policy";
+>        char *p;
+> -       struct ima_measure_rule_entry *entry;
+> +       struct ima_rule_entry *entry;
+>        ssize_t result, len;
+>        int audit_info = 0;
+>
+>        /* Prevent installed policy from changing */
+> -       if (ima_measure != &measure_default_rules) {
+> +       if (ima_rules != &ima_default_rules) {
+>                integrity_audit_msg(AUDIT_INTEGRITY_STATUS, NULL,
+>                                    NULL, op, "already exists",
+>                                    -EACCES, audit_info);
+> @@ -488,9 +559,9 @@ ssize_t ima_parse_add_rule(char *rule)
+>                return result;
+>        }
+>
+> -       mutex_lock(&ima_measure_mutex);
+> -       list_add_tail(&entry->list, &measure_policy_rules);
+> -       mutex_unlock(&ima_measure_mutex);
+> +       mutex_lock(&ima_rules_mutex);
+> +       list_add_tail(&entry->list, &ima_policy_rules);
+> +       mutex_unlock(&ima_rules_mutex);
+>
+>        return len;
+>  }
+> @@ -498,12 +569,12 @@ ssize_t ima_parse_add_rule(char *rule)
+>  /* ima_delete_rules called to cleanup invalid policy */
+>  void ima_delete_rules(void)
+>  {
+> -       struct ima_measure_rule_entry *entry, *tmp;
+> +       struct ima_rule_entry *entry, *tmp;
+>
+> -       mutex_lock(&ima_measure_mutex);
+> -       list_for_each_entry_safe(entry, tmp, &measure_policy_rules, list) {
+> +       mutex_lock(&ima_rules_mutex);
+> +       list_for_each_entry_safe(entry, tmp, &ima_policy_rules, list) {
+>                list_del(&entry->list);
+>                kfree(entry);
+>        }
+> -       mutex_unlock(&ima_measure_mutex);
+> +       mutex_unlock(&ima_rules_mutex);
+>  }
+> --
+> 1.7.6.5
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
