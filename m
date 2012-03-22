@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2CVGBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 02:01:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62225 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab2CVGA4 (ORCPT
+	id S1754349Ab2CVGDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 02:03:25 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41422 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab2CVGDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 02:00:56 -0400
-Subject: Re: [PATCH] ext2: Don't export ext2_mask_flags() to user space
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-ext4@vger.kernel.org, stable@vger.kernel.org
-Date: Thu, 22 Mar 2012 08:00:41 +0200
-In-Reply-To: <20120322055354.GA3942@avionic-0098.mockup.avionic-design.de>
-References: <1332366608-2695-1-git-send-email-thierry.reding@avionic-design.de>
-	 <20120321222357.GB24330@quack.suse.cz> <20120321231651.GC32041@thunk.org>
-	 <20120322055354.GA3942@avionic-0098.mockup.avionic-design.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-g4Ckn/ZiVNiAM4sXbNMR"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1332396053.3058.2.camel@koala>
-Mime-Version: 1.0
+	Thu, 22 Mar 2012 02:03:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332113668-4364-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1332113668-4364-1-git-send-email-daniel.vetter@ffwll.ch>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Thu, 22 Mar 2012 11:33:01 +0530
+Message-ID: <CAO_48GF_x+B0pZeFZ+URU6arX9Fw3=VAvFFrkyHpm6Lp-3n6Tg@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 1/4] dma-buf: don't hold the mutex around
+ map/unmap calls
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-g4Ckn/ZiVNiAM4sXbNMR
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2012-03-22 at 06:53 +0100, Thierry Reding wrote:
-> What's the recommended fix for packages that cannot or will not use
-> libext2fs, like busybox? Copy the required parts into a private header
-> and use that instead?
-
-The normal way is to just keep a private copy of the whole header file.
-Because the on-disk format stays compatible, those programs do not have
-to update the header very often - only rarely if they want to support
-some new feature.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-g4Ckn/ZiVNiAM4sXbNMR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJPasAJAAoJEJtuLFy+q7feStkH/17W4b8bH+4qfZTy9GxWX6Hi
-T+PXFP/VJ2fiJjIkNNsw7DffVtUl1XaM3kTebOUNrBYKCi9U3VlcFumHICpgYCl/
-d+GvqvznywdTvlcsxmB6hWq+dUa4CX8MEpep934NSkjCLJqCkpd8nDUMAHK6bU7j
-Z3dQ9wZlwb3NPWCXHRfNAJ6Wlrf0okGyWocdKMgiWsn+cOcFP6lLSnB3+yckDeM7
-Tm4TBHHhvl576zvuQgwMkC0wLAEGf9A7u3pv9iVCj3mpSoUWIhJVx9Vx7qVVEObe
-miWm3xaVL/3q/Kw5q6c78j+KdVRM6KTfy53i68XQ/Odb8MehF6su7ZXpMb2jRz4=
-=4qxT
------END PGP SIGNATURE-----
-
---=-g4Ckn/ZiVNiAM4sXbNMR--
-
+On 19 March 2012 05:04, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> The mutex protects the attachment list and hence needs to be held
+> around the callbakc to the exporters (optional) attach/detach
+> functions.
+>
+> Holding the mutex around the map/unmap calls doesn't protect any
+> dma_buf state. Exporters need to properly protect any of their own
+> state anyway (to protect against calls from their own interfaces).
+> So this only makes the locking messier (and lockdep easier to anger).
+>
+> Therefore let's just drop this.
+>
+> v2: Rebased on top of latest dma-buf-next git.
+>
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Reviewed-by: Rob Clark <rob.clark@linaro.org>
+Thanks; Applied to for-next.
+> ---
+<snip>
+BR,
+~Sumit.
