@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030890Ab2CVU5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 16:57:13 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56960 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756892Ab2CVU5L (ORCPT
+	id S1755756Ab2CVVBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:01:15 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36307 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab2CVVBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 16:57:11 -0400
-Date: Thu, 22 Mar 2012 16:56:49 -0400 (EDT)
-Message-Id: <20120322.165649.32205268396882350.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, nyh@il.ibm.com,
-        nyh@math.technion.ac.il
-Subject: Re: [PULL] vhost-net/virtio: fixes for 3.4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120322082718.GA11258@redhat.com>
-References: <20120320145010.GA31570@redhat.com>
-	<20120322082718.GA11258@redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Mar 2012 13:56:53 -0700 (PDT)
+	Thu, 22 Mar 2012 17:01:13 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Julian Wollrath <jwollrath@web.de>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH] usb: Put USB Kconfig items back under USB.
+Date: Thu, 22 Mar 2012 14:01:07 -0700
+Message-Id: <1332450067-16600-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 22 Mar 2012 10:27:19 +0200
+From: David Daney <david.daney@cavium.com>
 
-> On Tue, Mar 20, 2012 at 04:50:41PM +0200, Michael S. Tsirkin wrote:
->> The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
->> 
->>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
->> 
->> are available in the git repository at:
->> 
->>   ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
->> 
->>   (ssh url as git.kernel.org seems down at the moment, when it comes up
->>    git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
->>    should be the equivalent).
+commit 53c6bc24fdc8db87109a5760579cbb060fa644cf (usb: Don't make
+USB_ARCH_HAS_{XHCI,OHCI,EHCI} depend on USB_SUPPORT.)  Removed the
+dependency of the USB_ARCH_HAS_* symbols on USB_SUPPORT.  However the
+resulting Kconfig somehow caused many of the USB configuration items
+to appear under the top level devices menu.
 
-Neither of these URL's work for me:
+To fix this we reunite the 'menuconfig USB_SUPPORT' with the 'if
+USB_SUPPORT', and the config items magically go back to their desired
+location.
 
-[davem@drr net]$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_davem
-fatal: Couldn't find remote ref for_davem
-[davem@drr net]$ git pull ra.kernel.org:/pub/scm/linux/kernel/git/mst/vhost.git for_davem
-Enter passphrase for key '/home/davem/.ssh/davem': 
-Permission denied (publickey).
-fatal: The remote end hung up unexpectedly
-[davem@drr net]$ 
+Reported-by: Julian Wollrath <jwollrath@web.de>
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/usb/Kconfig |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-If you're sending me signed pull requests that thus require a newer
-version of GIT, please don't.
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index e4405e0..437a77e 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -2,14 +2,6 @@
+ # USB device configuration
+ #
+ 
+-menuconfig USB_SUPPORT
+-	bool "USB support"
+-	depends on HAS_IOMEM
+-	default y
+-	---help---
+-	  This option adds core support for Universal Serial Bus (USB).
+-	  You will also need drivers from the following menu to make use of it.
+-
+ # many non-PCI SOC chips embed OHCI
+ config USB_ARCH_HAS_OHCI
+ 	boolean
+@@ -63,6 +55,14 @@ config USB_ARCH_HAS_XHCI
+ 	boolean
+ 	default PCI
+ 
++menuconfig USB_SUPPORT
++	bool "USB support"
++	depends on HAS_IOMEM
++	default y
++	---help---
++	  This option adds core support for Universal Serial Bus (USB).
++	  You will also need drivers from the following menu to make use of it.
++
+ if USB_SUPPORT
+ 
+ config USB_COMMON
+-- 
+1.7.2.3
+
