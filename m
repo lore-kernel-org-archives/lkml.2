@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759761Ab2CVVud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 17:50:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10302 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754570Ab2CVVub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 17:50:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="120654582"
-Message-ID: <4F6B9E7B.9090005@linux.intel.com>
-Date: Thu, 22 Mar 2012 14:49:47 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Michael Brunner <mibru@gmx.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
-References: <20120322211903.6776ab18@mail.gmx.de> <4F6B8E1B.9080802@linux.intel.com> <20120322223112.291e0c59@mail.gmx.de>
-In-Reply-To: <20120322223112.291e0c59@mail.gmx.de>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760038Ab2CVVvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 17:51:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32776 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab2CVVvX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 17:51:23 -0400
+Date: Thu, 22 Mar 2012 14:51:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>
+Subject: Re: [PATCH] backlight: Use id->driver_data to differentiate lp855x
+ chips
+Message-Id: <20120322145122.7d2f75e9.akpm@linux-foundation.org>
+In-Reply-To: <1332324687.12310.2.camel@phoenix>
+References: <1332324687.12310.2.camel@phoenix>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 21 Mar 2012 18:11:27 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
 
-
-On 03/22/2012 02:31 PM, Michael Brunner wrote:
->> These boards should already be supported by the following BIOS check.
->> As the DMI_BOARD_NAME was changing, it was Kontron's recommendation
->> to use the FRI2 prefix in the DMI_BIOS_VERSION.
->>
->>
->>>  	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
->>>  	if (cmp && strnstr(cmp, "FRI2", 4))
->>
->> Is this not working for you? If not, what is the DMI_BIOS_VERSION
->> reported by your board?
->>
->> And for clarification, we are talking about this right:
->> http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
+> Current code has corresponding driver_data settings for different chip types.
+> Use the driver_data to differentiate lp855x chips.
 > 
-> My changes refer to the embedded module with the project code NTC1:
-> <http://us.kontron.com/products/computeronmodules/com+express/com+express+mini/comemtt10.html>
+> Also make lp855x_is_valid_rom_area() return bool instead of int.
 > 
-> So unfortunately the FRI2 checks won't work for this.
-> 
-> Michael
+> -static int lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
+> +static bool lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
+>  {
+>
+> ...
+>
+> -	return (addr >= start && addr <= end) ? 1 : 0;
+> +	return (addr >= start && addr <= end) ? true : false;
+>  }
 
-OK, my board has DMI_BOARD_NAME as:
+This:
 
-"nETXe-TT 1.0GHz E2 KDMS-FRI" but will also undergo a rename in the near
-future. I'm concerned about colliding as I believe this kit may use the
-same board you are working with. This COM Express module will be renamed
-"COMe-mTT10" which will match your strstr compare.
+--- a/drivers/video/backlight/lp855x_bl.c~backlight-use-id-driver_data-to-differentiate-lp855x-chips-fix
++++ a/drivers/video/backlight/lp855x_bl.c
+@@ -82,7 +82,7 @@ static bool lp855x_is_valid_rom_area(str
+ 		return false;
+ 	}
+ 
+-	return (addr >= start && addr <= end) ? true : false;
++	return (addr >= start && addr <= end);
+ }
+ 
+ static int lp855x_init_registers(struct lp855x *lp)
+_
 
-So what does your DMI_BIOS_VERSION report?
-
-I didn't like basing this on BIOS_VERSION, but I did so at Kontron's
-preference. Now we're seeing the fallout (sooner than I expected).
-
-So the question is, do we treat these as separate devices (the board and
-the development kit which I believe includes your board) or do we lump
-them together.
-
-Since it is the firmware that ultimately decides what the initial
-UARTCLK is, we can't base this on the hardware alone. The hardware in
-fact should be default if a firmware match isn't found first. So, my
-preference would be that you move your new comparison AFTER the FRI2
-DMI_BIOS_VERSION comparison. This ensures the FRI2 doesn't match your
-new comparison which might get a different UARTCLK in the future for
-whatever reason.
-
-Thanks,
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
