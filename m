@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030396Ab2CWUMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 16:12:55 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:55190 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757860Ab2CWUMy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 16:12:54 -0400
-Date: Fri, 23 Mar 2012 20:12:52 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Chris Holland <bandidoirlandes@gmail.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org
-Subject: Re: IDE DVD and CD drive seem to not work with Linux desktop
- 3.3.0-030300-generic
-Message-ID: <20120323201251.GA28567@srcf.ucam.org>
-References: <20120323162930.GB23376@srcf.ucam.org>
- <CAMfrEMb9R8V=VagAzi1DJWXrSOJ-dSptdt9aQX=_igjBXF1USw@mail.gmail.com>
- <20120323165118.GA24014@srcf.ucam.org>
- <CAMfrEMa6EAsLMMvG-Yq03E0Qhc7jdk2WH5fvQUB16W-5=Qgfbw@mail.gmail.com>
- <20120323172053.GA24571@srcf.ucam.org>
- <CAMfrEMYFMtSuWPwJ+YVMEBAWwR7tAmrNrSqOhHAZmZAmR6D7yQ@mail.gmail.com>
- <20120323191716.GA27307@srcf.ucam.org>
- <CAMfrEMbhQCFAFG-RFhHcRQiZMNYPpT-MbA6hHsDHu-Y_51bYSg@mail.gmail.com>
- <20120323192152.GA27457@srcf.ucam.org>
- <CAMfrEMbcy-s1WiJqDCDb6BywDzR4HW77i0V7e9B_yRMweQZKCg@mail.gmail.com>
+	id S1759919Ab2CWUSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 16:18:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756605Ab2CWUSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 16:18:33 -0400
+Date: Fri, 23 Mar 2012 16:18:20 -0400
+From: David Teigland <teigland@redhat.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
+        cluster-devel@redhat.com, bpoirier@suse.de
+Subject: Re: GFS2: Pre-pull patch posting (merge window)
+Message-ID: <20120323201820.GE24746@redhat.com>
+References: <1332152728-4027-1-git-send-email-swhiteho@redhat.com>
+ <4F674696.7030602@xenotime.net>
+ <1332169153.2689.20.camel@menhir>
+ <4F674E4F.5080904@xenotime.net>
+ <1332171247.2689.28.camel@menhir>
+ <20120323194152.GD24746@redhat.com>
+ <4F6CD7AD.9030306@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMfrEMbcy-s1WiJqDCDb6BywDzR4HW77i0V7e9B_yRMweQZKCg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4F6CD7AD.9030306@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 03:10:14PM -0500, Chris Holland wrote:
-
-> I think I had the commit 4949be16822e92a18ea0cc1616319926628092ee
-> removed when I applied the patch.
+On Fri, Mar 23, 2012 at 01:06:05PM -0700, Randy Dunlap wrote:
+> >> GFS2_FS selects DLM (if GFS2_FS_LOCKING_DLM, which is enabled).
+> >> GFS2_FS selects IP_SCTP if DLM_SCTP, which is not enabled and not
+> >> used anywhere else in the kernel tree AFAICT.
+> >> DLM just always selects IP_SCTP.
+> > 
+> > Here's what we have now:
+> > 
+> > config GFS2_FS
+> >         tristate "GFS2 file system support"
+> >         depends on (64BIT || LBDAF)
+> >         select DLM if GFS2_FS_LOCKING_DLM
+> >         select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+> >         select SYSFS if GFS2_FS_LOCKING_DLM
+> >         select IP_SCTP if DLM_SCTP
+> >         select FS_POSIX_ACL
+> >         select CRC32
+> >         select QUOTACTL
+> > 
+> > menuconfig DLM
+> >         tristate "Distributed Lock Manager (DLM)"
+> >         depends on EXPERIMENTAL && INET
+> >         depends on SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n)
+> >         select IP_SCTP
+> > 
+> > Why does gfs2 Kconfig bother with SCTP at all?  It seems that line should
+> > just be removed.  I'll also remove EXPERIMENTAL.  I don't understand the
+> > vagaries of Kconfig, so a dumb question, how could sctp_do_peeloff
+> > possibly be undefined if we're selecting SCTP.
 > 
-> I did a
-> git reset --hard v3.3
-> applied the patch and am rebuilding.
+> What is selecting SCTP?  DLM?  so GFS2 selects DLM, but selects
+> don't follow dependency chains.  Also, the "select IP_SCTP if DLM_SCTP"
+> in GFS2 is meaningless since there is no DLM_SCTP.
 
-Thanks - let me know if it helps!
+https://lkml.org/lkml/2012/3/8/222 seems to have caused this by adding
+the new dependency on the sctp module without any Kconfig changes.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Should that patch have added depends IP_SCTP to the dlm and gfs2?
+
