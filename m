@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab2CWDX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 23:23:27 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40992 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab2CWDXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 23:23:25 -0400
-Message-ID: <4F6BECA7.7030007@linaro.org>
-Date: Thu, 22 Mar 2012 20:23:19 -0700
+	id S1753330Ab2CWD2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 23:28:12 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:37728 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2CWD2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 23:28:09 -0400
+Message-ID: <4F6BEDC1.60006@linaro.org>
+Date: Thu, 22 Mar 2012 20:28:01 -0700
 From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
@@ -20,29 +21,20 @@ In-Reply-To: <CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032303-7182-0000-0000-0000011A54A1
+x-cbid: 12032303-7282-0000-0000-000007997E07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 03/22/2012 03:25 AM, Ajeet Yadav wrote:
-> I understand your point,
-> Our target (2.6) always had ARCH_USES_GETTIMEOFFSET=y , but still we
-> were able to use the TRACER in past until the patch "kill
-> GENERIC_TIMER" published, anyone will ask me remove this patch and use
-> TRACER, becaue it was working before. :)
+> If I set  ARCH_USES_GETTIMEOFFSET=n to use this feature, my target
+> fail to boot. (reason I well understand from our past discussions)
+And this point I'm not sure I'm following. Why exactly does disabling 
+ARCH_USES_GETTIMEOFFSET cause boot failures? Could you expand on the 
+details here?
 
-Ajeet,
-     Sorry, by TRACER, do you mean PREEMPT_TRACER or something else? And 
-what specific 2.6.X kernel were you using?
-
-Steven, I'm seeing:
-config PREEMPT_TRACER
-         bool "Preemption-off Latency Tracer"
-         default n
-         depends on !ARCH_USES_GETTIMEOFFSET
-
-Do you have any context as to why is !ARCH_USES_GETTIMEOFFSET flagged here?
+You should just end up using the jiffies clocksource, which would give 
+you low-res HZ granular timestamps, but shouldn't get in the way of booting.
 
 thanks
 -john
