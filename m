@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab2CWD4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 23:56:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43484 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab2CWD4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 23:56:04 -0400
-Date: Thu, 22 Mar 2012 23:56:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: MTRR cleanup output
-Message-ID: <20120323035601.GB12180@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751259Ab2CWEAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 00:00:10 -0400
+Received: from hermod.sentelic.com ([203.69.18.19]:8360 "EHLO
+	hermod.sentelic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2CWEAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 00:00:07 -0400
+From: Tai-hwa Liang <avatar@sentelic.com>
+To: Oskari Saarenmaa <os@ohmu.fi>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/5] Input: sentelic - multiple finger output support
+Date: Fri, 23 Mar 2012 11:52:16 +0800
+Message-Id: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While noticing that MSR spew, I also noticed this machine is really
-verbose in it's output from the MTRR sanitiser.
+Hi,
 
-http://codemonkey.org.uk/junk/dmesg.txt
+This patch set (against for-linus) is intended to add support for newer
+Sentelic FSP(hardware revision Cx/Dx).  The relative coordinates output
+mode is retained for supporting older hardware(prior to Cx release).
 
-Could we do better there? Or is this a case where specifying by hand is
-the only solution ?
+Patch set v2 are mostly identical to the previous submission except:
+- fsp_packet_debug() parameter fixing up in patch #5
+- acknowledge the work done by Oskari Saarenmaa <os@ohmu.fi>
 
-	Dave
+Tai-hwa Liang (5):
+  Input: sentelic - code refactorying for upcoming new hardware support
+  Input: sentelic - enabling absolute coordinates output for newer
+    hardware
+  Input: sentelic - enabling hardware supported gesture ID output
+  Input: sentelic - minor code cleaning up
+  Input: sentelic - improving packet debugging information
+
+ drivers/input/mouse/sentelic.c |  297 ++++++++++++++++++++++++++++++++--------
+ drivers/input/mouse/sentelic.h |  108 ++++++++++++++-
+ 2 files changed, 347 insertions(+), 58 deletions(-)
+
+-- 
+1.7.9
 
