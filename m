@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2CWV0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 17:26:05 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:44011 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679Ab2CWV0C (ORCPT
+	id S1755327Ab2CWV3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 17:29:36 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62606 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755001Ab2CWV3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 17:26:02 -0400
-Date: Fri, 23 Mar 2012 14:25:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] RCU changes for v3.4
-Message-ID: <20120323212550.GA11791@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120319152317.GA3932@gmail.com>
- <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
- <20120320033300.GH2393@linux.vnet.ibm.com>
- <CA+55aFzXAdNRqNHm3-wx02au4b_Ze_WM-gCtOk+gJdGMsn3Zbg@mail.gmail.com>
- <20120323192143.GY2450@linux.vnet.ibm.com>
- <CA+55aFzgno-7AcHxKMWGYrr2QAwEzXOieSghnsEfPQJ5aed-yQ@mail.gmail.com>
- <20120323211638.GA2450@linux.vnet.ibm.com>
+	Fri, 23 Mar 2012 17:29:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120323211638.GA2450@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032321-7408-0000-0000-000003AE0346
+In-Reply-To: <CA+55aFx+dXoJ=MGmpyzepDjBDv8LpXqdxUBCbdrakMKBsKpmTw@mail.gmail.com>
+References: <20120322144817.796e3a8a@jbarnes-desktop>
+	<CAE9FiQV96Uz9fU=v4=eBbAogOeehuBM3eHgSr0QW_C68ceADcQ@mail.gmail.com>
+	<CA+55aFx+dXoJ=MGmpyzepDjBDv8LpXqdxUBCbdrakMKBsKpmTw@mail.gmail.com>
+Date: Fri, 23 Mar 2012 14:29:33 -0700
+X-Google-Sender-Auth: owgF0ten7fO3bLW7IR2TMkQ2F9Q
+Message-ID: <CAE9FiQVs5+BVmn46xeXR_GwOYBkYy73-aSKYHQUv3EoTTiUtYQ@mail.gmail.com>
+Subject: Re: [git pull] PCI changes (including maintainer change)
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 02:16:38PM -0700, Paul E. McKenney wrote:
-> On Fri, Mar 23, 2012 at 12:39:59PM -0700, Linus Torvalds wrote:
-> > On Fri, Mar 23, 2012 at 12:21 PM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> > >>
-> > >> Please? Every time I look at some profiles, that silly rcu_read_lock
-> > >> is there in the profile. It's annoying. I'd rather see it in the
-> > >> function that invokes it.
-> > >
-> > > Let me see what I can do...
-> > 
-> > Thanks. To some degree, rcu_read_lock() is the more critical one,
-> > because it is often in the much more critical path in the caller. In
-> > particular, it's often at the beginning of a function, where a number
-> > of arguments are "live", and calling it out-of-line also forces the
-> > compiler to then save/restore those arguments (because they are
-> > clobbered by the function call).
-> > 
-> > rcu_read_unlock() is *usually* not as critical, and is obviously much
-> > harder to inline anyway due to the whole complexity with needing to
-> > check if an RCU sequence has ended. It often is at the end of the
-> > function call in the caller, when the only thing like is often just
-> > the single return value (if that). So it seldom looks nearly as bad in
-> > any profiles, because it doesn't tend to have the same kind of bad
-> > impact on the call site.
-> 
-> Very good to hear!  Especially since I am not seeing how to move
-> ->rcu_read_unlock_special to a per-CPU variable given that rcu_boost()
-> needs cross-task access to it.  There is probably some obvious trick,
-> but I will start with just __rcu_read_lock() for now.
+On Fri, Mar 23, 2012 at 2:10 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Mar 23, 2012 at 12:58 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> There are some merge conflicts. Hope attached patch could help Linus a
+>> little bit.
+>
+> Hmm. My merge does not agree with yours at all in the MIPS
+> pcibios_fixup_bus() area.
+>
+> Your patch re-introduces the device resource fixup that Bjorn removed,
+> for example.
+>
+> I think my merge is correct, but hey, people should double-check.
 
-And one obvious trick is a per-CPU pointer to the task-structure variable.
-But __rcu_read_lock() first.
+yes, you are right.
 
-							Thanx, Paul
-
+Yinghai
