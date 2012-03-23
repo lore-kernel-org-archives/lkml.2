@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab2CWQYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 12:24:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:58259 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236Ab2CWQYq (ORCPT
+	id S1756979Ab2CWQ3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 12:29:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53106 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756479Ab2CWQ3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 12:24:46 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
-Subject: [GIT PULL] KGDB/KDB updates for the 3.4 merge window
-Date: Fri, 23 Mar 2012 11:24:19 -0500
-Message-ID: <1332519859-9306-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.7.9.4
+	Fri, 23 Mar 2012 12:29:33 -0400
+Date: Fri, 23 Mar 2012 16:29:30 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Chris Holland <bandidoirlandes@gmail.com>, linux-kernel@vger.kernel.org,
+        jbarnes@virtuousgeek.org
+Subject: Re: IDE DVD and CD drive seem to not work with Linux desktop
+ 3.3.0-030300-generic
+Message-ID: <20120323162930.GB23376@srcf.ucam.org>
+References: <CAMfrEMaV03CEZ-h7k9K78c8+T+AC47=QypnyhQG7LFgrQQ32tA@mail.gmail.com>
+ <4F6AAC57.3090507@gmail.com>
+ <CAMfrEMbUsdnQ3Roe89YaV5F2xhTwbgRhWcM9E1jizqUEbCi=QQ@mail.gmail.com>
+ <CADLC3L29fiago4Nkxbb3Ey8iS3GGp_G_NP77esdAqQVYHFLBLw@mail.gmail.com>
+ <CAMfrEMYUWG39Z-y8sU+7eDdePQWg9U5kow_ipZANwD-s=BOh_A@mail.gmail.com>
+ <CAMfrEMZ27UWKTASUFaEG1KLysRgAukVruOx2Q-s-FXzOQJe_zA@mail.gmail.com>
+ <CAMfrEMa65+X1zA5fQ7R+Zt8tGjf9XtcHnPodiJgy+9bwO-nFkg@mail.gmail.com>
+ <CADLC3L2XSJoPtt3g+GAc=JvMz3OjFewnt-BPBPyrVG+ZcxvW4w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADLC3L2XSJoPtt3g+GAc=JvMz3OjFewnt-BPBPyrVG+ZcxvW4w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
+Can you provide lspci -vvv for the working and non-working cases?
 
-  Linux 3.3 (2012-03-18 16:15:34 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/kgdb.git tags/for_linus-3.4-rc1
-
-for you to fetch changes up to 1ba0c1720eb0de2d0f3abf84c0b128d10af520d1:
-
-  kdb: Add message about CONFIG_DEBUG_RODATA on failure to install breakpoint (2012-03-22 15:07:16 -0500)
-
-----------------------------------------------------------------
-Fixes:
-- Fix KDB keyboard repeat scan codes and leaked keyboard events
-- Fix kernel crash with kdb_printf() for users who compile new kdb_printf()'s
-  in early code
-- Return all segment registers to gdb on x86_64
-Features:
-- KDB/KGDB hook the reboot notifier and end user can control if it stops,
-  detaches or does nothing (updated docs as well)
-- Notify users who use CONFIG_DEBUG_RODATA to use hw breakpoints
-
-----------------------------------------------------------------
-Andrei Warkentin (1):
-      KDB: Fix usability issues relating to the 'enter' key.
-
-Jan Kiszka (2):
-      kgdb: x86: Return all segment registers also in 64-bit mode
-      kgdb: Respect that flush op is optional
-
-Jason Wessel (3):
-      kgdb,debug-core,gdbstub: Hook the reboot notifier for debugger detach
-      kgdb,debug_core: add the ability to control the reboot notifier
-      kdb: Add message about CONFIG_DEBUG_RODATA on failure to install breakpoint
-
-Tim Bird (1):
-      kdb: Avoid using dbg_io_ops until it is initialized
-
- Documentation/DocBook/kgdb.tmpl |   17 +++++++
- arch/x86/include/asm/kgdb.h     |   10 +++--
- arch/x86/kernel/kgdb.c          |    6 ++-
- kernel/debug/debug_core.c       |   33 ++++++++++++++
- kernel/debug/gdbstub.c          |   10 ++++-
- kernel/debug/kdb/kdb_bp.c       |    7 +++
- kernel/debug/kdb/kdb_io.c       |    2 +-
- kernel/debug/kdb/kdb_keyboard.c |   95 ++++++++++++++++++++++++++++++---------
- kernel/debug/kdb/kdb_main.c     |    3 ++
- kernel/debug/kdb/kdb_private.h  |    7 +++
- 10 files changed, 161 insertions(+), 29 deletions(-)
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
