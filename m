@@ -1,67 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab2CWGsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 02:48:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59006 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab2CWGrw (ORCPT
+	id S1754858Ab2CWGzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 02:55:00 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:25042 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab2CWGy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 02:47:52 -0400
-Date: Fri, 23 Mar 2012 10:47:48 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [patch 1/2] c/r: prctl: Add ability to set new
- mm_struct::exe_file
-Message-ID: <20120323064748.GA8029@moon>
-References: <20120316205556.595309230@openvz.org>
- <20120316210343.925446961@openvz.org>
- <20120319151507.93bab32a.akpm@linux-foundation.org>
- <20120319223941.GJ19594@moon>
- <CAFLxGvxEDs=RG7tX+j6XEUx2+wEvuCGipUzh2vSp3rj15Rq6zA@mail.gmail.com>
- <20120319154649.0687f545.akpm@linux-foundation.org>
- <20120320065543.GB14269@moon>
- <m14ntgxl30.fsf@fess.ebiederm.org>
- <20120323064136.GA6766@moon>
+	Fri, 23 Mar 2012 02:54:56 -0400
+Message-ID: <4F6C1C9B.8010806@snapgear.com>
+Date: Fri, 23 Mar 2012 16:47:55 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120323064136.GA6766@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [PATCH v2 04/16] mm/nommu: use vm_flags_t for vma flags
+References: <20120321065629.13852.5630.stgit@zurg> <20120321115632.4571.77859.stgit@zurg>
+In-Reply-To: <20120321115632.4571.77859.stgit@zurg>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 10:41:36AM +0400, Cyrill Gorcunov wrote:
-> On Thu, Mar 22, 2012 at 04:38:43PM -0700, Eric W. Biederman wrote:
-> > >
-> > > Andrew, take a look please, will the changelog and comments look
-> > > better?
-> > 
-> > Can you change this to take an actual address and get the exe_file
-> > from an mmapped area and make certain that the mmaped_area is already
-> > mapped MAP_EXEC.
-> > 
-> > That will prevent out-right lies.
-> > 
-> > At least then we will know that exe_file will at least be a file that is
-> > mapped executable in the process's address space.  It's not a lot better
-> > but it makes /proc/<pid>/exe at almost as trustable as it is now.
-> 
-> This won't work for all cases. When we restore a program we map new
-> VM_EXEC areas _without_ vma::vm_file field.
-> 
+Hi Konstantin,
 
-Well, it's not complete true ;) At moment all exec areas we re-map during
-restore do correspond to executable files. but I think having ability to
-set this symlink without requirement such as 'every VM_EXEC should be
-mapped with file' is a win. That said I would prefer to leave this interface
-as is, until there strong objections.
+On 21/03/12 22:01, Konstantin Khlebnikov wrote:
+> v2: fix compilation
+>
+> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> Cc: David Howells<dhowells@redhat.com>
+> Cc: Greg Ungerer<gerg@uclinux.org>
+>
+> ---
+>
+> This time, I honestly checked the compiling for arm/at91x40_defconfig
+> last linux-next is broken, but my parts are ok.
 
-	Cyrill
+This looks ok to me.
+
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+
+Regards
+Greg
+
+
+
+> ---
+>   fs/proc/nommu.c      |   14 ++++++++------
+>   fs/proc/task_nommu.c |   14 ++++++++------
+>   mm/nommu.c           |   19 ++++++++++---------
+>   3 files changed, 26 insertions(+), 21 deletions(-)
+>
+> diff --git a/fs/proc/nommu.c b/fs/proc/nommu.c
+> index b1822dd..6046ddb 100644
+> --- a/fs/proc/nommu.c
+> +++ b/fs/proc/nommu.c
+> @@ -39,9 +39,10 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
+>   	unsigned long ino = 0;
+>   	struct file *file;
+>   	dev_t dev = 0;
+> -	int flags, len;
+> +	int len;
+> +	vm_flags_t vm_flags;
+>
+> -	flags = region->vm_flags;
+> +	vm_flags = region->vm_flags;
+>   	file = region->vm_file;
+>
+>   	if (file) {
+> @@ -54,10 +55,11 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
+>   		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+>   		   region->vm_start,
+>   		   region->vm_end,
+> -		   flags&  VM_READ ? 'r' : '-',
+> -		   flags&  VM_WRITE ? 'w' : '-',
+> -		   flags&  VM_EXEC ? 'x' : '-',
+> -		   flags&  VM_MAYSHARE ? flags&  VM_SHARED ? 'S' : 's' : 'p',
+> +		   vm_flags&  VM_READ ? 'r' : '-',
+> +		   vm_flags&  VM_WRITE ? 'w' : '-',
+> +		   vm_flags&  VM_EXEC ? 'x' : '-',
+> +		   vm_flags&  VM_MAYSHARE ?
+> +			vm_flags&  VM_SHARED ? 'S' : 's' : 'p',
+>   		   ((loff_t)region->vm_pgoff)<<  PAGE_SHIFT,
+>   		   MAJOR(dev), MINOR(dev), ino,&len);
+>
+> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+> index 74fe164..9447caa 100644
+> --- a/fs/proc/task_nommu.c
+> +++ b/fs/proc/task_nommu.c
+> @@ -142,10 +142,11 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+>   	unsigned long ino = 0;
+>   	struct file *file;
+>   	dev_t dev = 0;
+> -	int flags, len;
+> +	int len;
+> +	vm_flags_t vm_flags;
+>   	unsigned long long pgoff = 0;
+>
+> -	flags = vma->vm_flags;
+> +	vm_flags = vma->vm_flags;
+>   	file = vma->vm_file;
+>
+>   	if (file) {
+> @@ -159,10 +160,11 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+>   		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+>   		   vma->vm_start,
+>   		   vma->vm_end,
+> -		   flags&  VM_READ ? 'r' : '-',
+> -		   flags&  VM_WRITE ? 'w' : '-',
+> -		   flags&  VM_EXEC ? 'x' : '-',
+> -		   flags&  VM_MAYSHARE ? flags&  VM_SHARED ? 'S' : 's' : 'p',
+> +		   vm_flags&  VM_READ ? 'r' : '-',
+> +		   vm_flags&  VM_WRITE ? 'w' : '-',
+> +		   vm_flags&  VM_EXEC ? 'x' : '-',
+> +		   vm_flags&  VM_MAYSHARE ?
+> +			vm_flags&  VM_SHARED ? 'S' : 's' : 'p',
+>   		   pgoff,
+>   		   MAJOR(dev), MINOR(dev), ino,&len);
+>
+> diff --git a/mm/nommu.c b/mm/nommu.c
+> index f59e170..33d0ab7 100644
+> --- a/mm/nommu.c
+> +++ b/mm/nommu.c
+> @@ -130,7 +130,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>   		     int *retry)
+>   {
+>   	struct vm_area_struct *vma;
+> -	unsigned long vm_flags;
+> +	vm_flags_t vm_flags;
+>   	int i;
+>
+>   	/* calculate required read or write permissions.
+> @@ -658,13 +658,13 @@ static void put_nommu_region(struct vm_region *region)
+>   /*
+>    * update protection on a vma
+>    */
+> -static void protect_vma(struct vm_area_struct *vma, unsigned long flags)
+> +static void protect_vma(struct vm_area_struct *vma, vm_flags_t vm_flags)
+>   {
+>   #ifdef CONFIG_MPU
+>   	struct mm_struct *mm = vma->vm_mm;
+>   	long start = vma->vm_start&  PAGE_MASK;
+>   	while (start<  vma->vm_end) {
+> -		protect_page(mm, start, flags);
+> +		protect_page(mm, start, vm_flags);
+>   		start += PAGE_SIZE;
+>   	}
+>   	update_protections(mm);
+> @@ -1060,12 +1060,12 @@ static int validate_mmap_request(struct file *file,
+>    * we've determined that we can make the mapping, now translate what we
+>    * now know into VMA flags
+>    */
+> -static unsigned long determine_vm_flags(struct file *file,
+> -					unsigned long prot,
+> -					unsigned long flags,
+> -					unsigned long capabilities)
+> +static vm_flags_t determine_vm_flags(struct file *file,
+> +				     unsigned long prot,
+> +				     unsigned long flags,
+> +				     unsigned long capabilities)
+>   {
+> -	unsigned long vm_flags;
+> +	vm_flags_t vm_flags;
+>
+>   	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
+>   	/* vm_flags |= mm->def_flags; */
+> @@ -1243,7 +1243,8 @@ unsigned long do_mmap_pgoff(struct file *file,
+>   	struct vm_area_struct *vma;
+>   	struct vm_region *region;
+>   	struct rb_node *rb;
+> -	unsigned long capabilities, vm_flags, result;
+> +	unsigned long capabilities, result;
+> +	vm_flags_t vm_flags;
+>   	int ret;
+>
+>   	kenter(",%lx,%lx,%lx,%lx,%lx", addr, len, prot, flags, pgoff);
+>
+>
+>
+>
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
