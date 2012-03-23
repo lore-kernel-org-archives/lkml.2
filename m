@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab2CWVDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 17:03:23 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40633 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab2CWVDV (ORCPT
+	id S1753228Ab2CWVLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 17:11:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46603 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab2CWVK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 17:03:21 -0400
-Date: Fri, 23 Mar 2012 14:02:55 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ingo Molnar <mingo@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: [PATCH] x86: stop recursive fault in print_context_stack after stack
- overflow
-Message-ID: <alpine.LSU.2.00.1203231355040.1940@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 23 Mar 2012 17:10:58 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAE9FiQV96Uz9fU=v4=eBbAogOeehuBM3eHgSr0QW_C68ceADcQ@mail.gmail.com>
+References: <20120322144817.796e3a8a@jbarnes-desktop> <CAE9FiQV96Uz9fU=v4=eBbAogOeehuBM3eHgSr0QW_C68ceADcQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 23 Mar 2012 14:10:36 -0700
+X-Google-Sender-Auth: ffOhPBmVWUEJmaWNqXMms9mvhqo
+Message-ID: <CA+55aFx+dXoJ=MGmpyzepDjBDv8LpXqdxUBCbdrakMKBsKpmTw@mail.gmail.com>
+Subject: Re: [git pull] PCI changes (including maintainer change)
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After printing out the first line of a stack backtrace,
-print_context_stack() calls print_ftrace_graph_addr() to check if it's
-making a graph of function calls, usually not the case.  But unfortunate
-ordering of assignments causes this to oops if an earlier stack overflow
-corrupted threadinfo->task.  Reorder to avoid that irritation.
+On Fri, Mar 23, 2012 at 12:58 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>
+> There are some merge conflicts. Hope attached patch could help Linus a
+> little bit.
 
-(The fact that there was a stack overflow may often be more interesting
-than the stack that can now be shown; but integrating that information
-with this stacktrace is awkward, so leave it to overflow reporting.)
+Hmm. My merge does not agree with yours at all in the MIPS
+pcibios_fixup_bus() area.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+Your patch re-introduces the device resource fixup that Bjorn removed,
+for example.
 
- arch/x86/kernel/dumpstack.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+I think my merge is correct, but hey, people should double-check.
 
---- linux.git/arch/x86/kernel/dumpstack.c	2012-03-18 16:15:34.000000000 -0700
-+++ linux/arch/x86/kernel/dumpstack.c	2012-03-23 10:43:28.196084684 -0700
-@@ -37,13 +37,16 @@ print_ftrace_graph_addr(unsigned long ad
- 			const struct stacktrace_ops *ops,
- 			struct thread_info *tinfo, int *graph)
- {
--	struct task_struct *task = tinfo->task;
-+	struct task_struct *task;
- 	unsigned long ret_addr;
--	int index = task->curr_ret_stack;
-+	int index;
- 
- 	if (addr != (unsigned long)return_to_handler)
- 		return;
- 
-+	task = tinfo->task;
-+	index = task->curr_ret_stack;
-+
- 	if (!task->ret_stack || index < *graph)
- 		return;
- 
+                       Linus
