@@ -1,109 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2CWU7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 16:59:14 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58139 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474Ab2CWU7M (ORCPT
+	id S1757190Ab2CWU72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 16:59:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51446 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756558Ab2CWU7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 16:59:12 -0400
-Date: Fri, 23 Mar 2012 13:59:08 -0700
+	Fri, 23 Mar 2012 16:59:25 -0400
+Date: Fri, 23 Mar 2012 13:59:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net
-Subject: Linux 3.0.26
-Message-ID: <20120323205908.GA32316@kroah.com>
+Subject: Re: Linux 3.0.26
+Message-ID: <20120323205921.GB32316@kroah.com>
+References: <20120323205908.GA32316@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120323205908.GA32316@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 3.0.26 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
-;a=3Dsummary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                     |    2 -
- arch/powerpc/platforms/powermac/smp.c        |    2 -
- drivers/net/wireless/iwlegacy/iwl-3945.c     |    7 +++---
- drivers/net/wireless/iwlegacy/iwl3945-base.c |    2 -
- fs/afs/internal.h                            |    2 -
- fs/afs/rxrpc.c                               |    3 ++
- fs/nilfs2/the_nilfs.c                        |    1=20
- net/ipv4/syncookies.c                        |   30 ++++++++++++++--------=
------
- net/ipv4/tcp_ipv4.c                          |   10 ++++++---
- net/ipv6/mcast.c                             |    1=20
- tools/perf/util/sort.c                       |    3 ++
- 11 files changed, 38 insertions(+), 25 deletions(-)
-
-Anton Blanchard (3):
-      afs: Read of file returns EBADMSG
-      afs: Remote abort can cause BUG in rxrpc code
-      perf tools: Incorrect use of snprintf results in SEGV
-
-Benjamin Herrenschmidt (1):
-      powerpc/pmac: Fix SMP kernels on pre-core99 UP machines
-
-Eric Dumazet (1):
-      tcp: fix syncookie regression
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.26
-
-RongQing.Li (1):
-      ipv6: Don't dev_hold(dev) in ip6_mc_find_dev_rcu.
-
-Ryusuke Konishi (1):
-      nilfs2: fix NULL pointer dereference in nilfs_load_super_block()
-
-Stanislaw Gruszka (1):
-      iwl3945: fix possible il->txq NULL pointer dereference in delayed wor=
-ks
-
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPbOQcAAoJEDjbvchgkmk+3dQP/iL9IlSnk+2wdoqVWZEDdPqP
-IlekzngDkxU5ObArCqUZRRLPxYHPE1dsQpSRejfmCj0zZRrK/kw1+rZgClXlxzNg
-GJmI28pzXlfThIXbruWUT7uX9/2f6GTTUuHhr9R1rBTOW0Q5L0cR6vqs+4j6OYSv
-pWTgpvAv61bBdfFLyEHs3aWGmaWdfheUWYqGNrQ6n1rTjZriSsa/dDdmAQYFRcxW
-eOeKvzBwM/s6Ilk7UCMp6wctTG9ThAM+c0Q1W6Tty4LGbYCZ4ipqXX6HjmYRd1Sp
-aXQ4vHA1p5eVrb3oNQuqCZIus4yDUBiMdg4Lua/je2S0s9O2uK3pGYWehhqvbHKc
-05WDOiEjTkqdMMBAco0IWDNX7dATxu753N59tLdcySFQ+omFvBxsXmwD+dw6/mvC
-3qkqPhEohV7mqCKOzNV8oYiEWBk/NhukabLE1Q4ecJgCplsmb5EdGp31bmq9FFsN
-6MWzgZy7VFCdY0l9+O1j8B0VcNn7tn777mNF/AOvLeF5bQAhp9RZV7vuh+tR8y8J
-gmeUKsXAG7769ZMLWEKyDWsLImalvoAB+1/lkkRueNKV6Ml8UvrTvb7FEOs4muxQ
-Yi4/Gjg9TBMQPac6N0JUM2D2KeaclbPoY1j4DeSqo3fHXZ5j1jRaXqr3yB8uW5lL
-xvTi4jTu5uexY8nQ/zXy
-=TJPK
------END PGP SIGNATURE-----
-
---NzB8fVQJ5HfG6fxh--
+diff --git a/Makefile b/Makefile
+index 0fb2b58..a04eef4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 25
++SUBLEVEL = 26
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/arch/powerpc/platforms/powermac/smp.c b/arch/powerpc/platforms/powermac/smp.c
+index db092d7..53a6be7 100644
+--- a/arch/powerpc/platforms/powermac/smp.c
++++ b/arch/powerpc/platforms/powermac/smp.c
+@@ -414,7 +414,7 @@ static struct irqaction psurge_irqaction = {
+ 
+ static void __init smp_psurge_setup_cpu(int cpu_nr)
+ {
+-	if (cpu_nr != 0)
++	if (cpu_nr != 0 || !psurge_start)
+ 		return;
+ 
+ 	/* reset the entry point so if we get another intr we won't
+diff --git a/drivers/net/wireless/iwlegacy/iwl-3945.c b/drivers/net/wireless/iwlegacy/iwl-3945.c
+index dcc1552..effeabb 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-3945.c
++++ b/drivers/net/wireless/iwlegacy/iwl-3945.c
+@@ -1872,11 +1872,12 @@ static void iwl3945_bg_reg_txpower_periodic(struct work_struct *work)
+ 	struct iwl_priv *priv = container_of(work, struct iwl_priv,
+ 					     _3945.thermal_periodic.work);
+ 
+-	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+-		return;
+-
+ 	mutex_lock(&priv->mutex);
++	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
++		goto out;
++
+ 	iwl3945_reg_txpower_periodic(priv);
++out:
+ 	mutex_unlock(&priv->mutex);
+ }
+ 
+diff --git a/drivers/net/wireless/iwlegacy/iwl3945-base.c b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+index a935585..101a2c2 100644
+--- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
++++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+@@ -2763,7 +2763,7 @@ static void iwl3945_bg_alive_start(struct work_struct *data)
+ 	    container_of(data, struct iwl_priv, alive_start.work);
+ 
+ 	mutex_lock(&priv->mutex);
+-	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
++	if (test_bit(STATUS_EXIT_PENDING, &priv->status) || priv->txq == NULL)
+ 		goto out;
+ 
+ 	iwl3945_alive_start(priv);
+diff --git a/fs/afs/internal.h b/fs/afs/internal.h
+index 5a9b684..1f3624d 100644
+--- a/fs/afs/internal.h
++++ b/fs/afs/internal.h
+@@ -109,7 +109,7 @@ struct afs_call {
+ 	unsigned		reply_size;	/* current size of reply */
+ 	unsigned		first_offset;	/* offset into mapping[first] */
+ 	unsigned		last_to;	/* amount of mapping[last] */
+-	unsigned short		offset;		/* offset into received data store */
++	unsigned		offset;		/* offset into received data store */
+ 	unsigned char		unmarshall;	/* unmarshalling phase */
+ 	bool			incoming;	/* T if incoming call */
+ 	bool			send_pages;	/* T if data from mapping should be sent */
+diff --git a/fs/afs/rxrpc.c b/fs/afs/rxrpc.c
+index e45a323..8ad8c2a 100644
+--- a/fs/afs/rxrpc.c
++++ b/fs/afs/rxrpc.c
+@@ -314,6 +314,7 @@ int afs_make_call(struct in_addr *addr, struct afs_call *call, gfp_t gfp,
+ 	struct msghdr msg;
+ 	struct kvec iov[1];
+ 	int ret;
++	struct sk_buff *skb;
+ 
+ 	_enter("%x,{%d},", addr->s_addr, ntohs(call->port));
+ 
+@@ -380,6 +381,8 @@ int afs_make_call(struct in_addr *addr, struct afs_call *call, gfp_t gfp,
+ 
+ error_do_abort:
+ 	rxrpc_kernel_abort_call(rxcall, RX_USER_ABORT);
++	while ((skb = skb_dequeue(&call->rx_queue)))
++		afs_free_skb(skb);
+ 	rxrpc_kernel_end_call(rxcall);
+ 	call->rxcall = NULL;
+ error_kill_call:
+diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
+index d327140..35a8970 100644
+--- a/fs/nilfs2/the_nilfs.c
++++ b/fs/nilfs2/the_nilfs.c
+@@ -515,6 +515,7 @@ static int nilfs_load_super_block(struct the_nilfs *nilfs,
+ 		brelse(sbh[1]);
+ 		sbh[1] = NULL;
+ 		sbp[1] = NULL;
++		valid[1] = 0;
+ 		swp = 0;
+ 	}
+ 	if (!valid[swp]) {
+diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
+index 4382629..895f215 100644
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -277,6 +277,7 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb,
+ 	struct rtable *rt;
+ 	__u8 rcv_wscale;
+ 	bool ecn_ok = false;
++	struct flowi4 fl4;
+ 
+ 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
+ 		goto out;
+@@ -344,20 +345,16 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb,
+ 	 * hasn't changed since we received the original syn, but I see
+ 	 * no easy way to do this.
+ 	 */
+-	{
+-		struct flowi4 fl4;
+-
+-		flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+-				   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+-				   inet_sk_flowi_flags(sk),
+-				   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+-				   ireq->loc_addr, th->source, th->dest);
+-		security_req_classify_flow(req, flowi4_to_flowi(&fl4));
+-		rt = ip_route_output_key(sock_net(sk), &fl4);
+-		if (IS_ERR(rt)) {
+-			reqsk_free(req);
+-			goto out;
+-		}
++	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
++			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
++			   inet_sk_flowi_flags(sk),
++			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
++			   ireq->loc_addr, th->source, th->dest);
++	security_req_classify_flow(req, flowi4_to_flowi(&fl4));
++	rt = ip_route_output_key(sock_net(sk), &fl4);
++	if (IS_ERR(rt)) {
++		reqsk_free(req);
++		goto out;
+ 	}
+ 
+ 	/* Try to redo what tcp_v4_send_synack did. */
+@@ -371,5 +368,10 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb,
+ 	ireq->rcv_wscale  = rcv_wscale;
+ 
+ 	ret = get_cookie_sock(sk, skb, req, &rt->dst);
++	/* ip_queue_xmit() depends on our flow being setup
++	 * Normal sockets get it right from inet_csk_route_child_sock()
++	 */
++	if (ret)
++		inet_sk(ret)->cork.fl.u.ip4 = fl4;
+ out:	return ret;
+ }
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 04c6592..53a5af6 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1454,9 +1454,13 @@ struct sock *tcp_v4_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 		inet_csk(newsk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+ 	newinet->inet_id = newtp->write_seq ^ jiffies;
+ 
+-	if (!dst && (dst = inet_csk_route_child_sock(sk, newsk, req)) == NULL)
+-		goto put_and_exit;
+-
++	if (!dst) {
++		dst = inet_csk_route_child_sock(sk, newsk, req);
++		if (!dst)
++			goto put_and_exit;
++	} else {
++		/* syncookie case : see end of cookie_v4_check() */
++	}
+ 	sk_setup_caps(newsk, dst);
+ 
+ 	tcp_mtup_init(newsk);
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index ee7839f..2257366 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -257,7 +257,6 @@ static struct inet6_dev *ip6_mc_find_dev_rcu(struct net *net,
+ 
+ 		if (rt) {
+ 			dev = rt->rt6i_dev;
+-			dev_hold(dev);
+ 			dst_release(&rt->dst);
+ 		}
+ 	} else
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index f44fa54..0ffbc8e 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -122,6 +122,9 @@ static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
+ 		}
+ 	}
+ 	va_end(ap);
++
++	if (n >= (int)size)
++		return size - 1;
+ 	return n;
+ }
+ 
