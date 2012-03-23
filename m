@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab2CWSdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 14:33:43 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:20452 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab2CWSdl (ORCPT
+	id S1759485Ab2CWSpZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 14:45:25 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44571 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759426Ab2CWSpY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 14:33:41 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OIsRm3QaL/j9EMhVkl6J1
-Date: Fri, 23 Mar 2012 11:33:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: mathieu.poirier@linaro.org
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH 5/9] tty/serial/omap: console can only be built-in
-Message-ID: <20120323183339.GH9859@atomide.com>
-References: <1332522836-29517-1-git-send-email-mathieu.poirier@linaro.org>
- <1332522836-29517-6-git-send-email-mathieu.poirier@linaro.org>
+	Fri, 23 Mar 2012 14:45:24 -0400
+From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
+Date: Fri, 23 Mar 2012 19:45:19 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-final-dirty; KDE/4.8.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+References: <201203220903.15360.a.miskiewicz@gmail.com> <20120323171058.GA3279@albatros>
+In-Reply-To: <20120323171058.GA3279@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332522836-29517-6-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201203231945.19501.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* mathieu.poirier@linaro.org <mathieu.poirier@linaro.org> [120323 10:16]:
-> From: Arnd Bergmann <arnd@arndb.de>
-> 
-> When the omap serial driver is built as a module, we must
-> not allow the console driver to be selected, because consoles
-> can not be loadable modules.
+On Friday 23 of March 2012, Vasiliy Kulikov wrote:
 
-Looks valid to me, this should get posted and merged via
-linux-serial@vger.kernel.org.
+> Thanks for the report.  Please test the following patch.
 
-Tony
+Seems to be working fine, now - thanks!
+
+
 
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> Acked-by: Govindraj.R <govindraj.raja@ti.com>
+> --------------------------------------------------------------
+> From: Vasiliy Kulikov <segoon@openwall.com>
+> Date: Fri, 23 Mar 2012 20:56:42 +0400
+> Subject: [PATCH] proc: fix mount -t proc -o AAA
+> 
+> proc_parse_options() inside of proc_mount() runs only once at the boot
+> time without any given options.  So, following umount(2)+mount(2) ignore
+> mount options: proc_parse_options() is not called as ->s_root is already
+> initialized.  To fix that parse mount options unconditionally.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Reported-by: Arkadiusz Miśkiewicz <a.miskiewicz@gmail.com>
 > ---
->  drivers/tty/serial/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  fs/proc/root.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> index 2de9924..bcf7e24 100644
-> --- a/drivers/tty/serial/Kconfig
-> +++ b/drivers/tty/serial/Kconfig
-> @@ -1041,7 +1041,7 @@ config SERIAL_OMAP
->  
->  config SERIAL_OMAP_CONSOLE
->  	bool "Console on OMAP serial port"
-> -	depends on SERIAL_OMAP
-> +	depends on SERIAL_OMAP=y
->  	select SERIAL_CORE_CONSOLE
->  	help
->  	  Select this option if you would like to use omap serial port as
-> -- 
-> 1.7.5.4
+> diff --git a/fs/proc/root.c b/fs/proc/root.c
+> index 46a15d8..eed44bf 100644
+> --- a/fs/proc/root.c
+> +++ b/fs/proc/root.c
+> @@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct
+> file_system_type *fs_type, if (IS_ERR(sb))
+>  		return ERR_CAST(sb);
 > 
+> +	if (!proc_parse_options(options, ns)) {
+> +		deactivate_locked_super(sb);
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+>  	if (!sb->s_root) {
+>  		sb->s_flags = flags;
+> -		if (!proc_parse_options(options, ns)) {
+> -			deactivate_locked_super(sb);
+> -			return ERR_PTR(-EINVAL);
+> -		}
+>  		err = proc_fill_super(sb);
+>  		if (err) {
+>  			deactivate_locked_super(sb);
+
+
+-- 
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
