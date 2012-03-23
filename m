@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab2CWNDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 09:03:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37905 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2CWNDY (ORCPT
+	id S1752680Ab2CWNFN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 09:05:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51604 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2CWNFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 09:03:24 -0400
-Date: Sat, 24 Mar 2012 00:03:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20120324000308.4707673cf4fb3994e2b72f82@canb.auug.org.au>
-In-Reply-To: <4F6C715B.2080104@windriver.com>
-References: <20120323155114.a1779aa050fa05f6191b7dae@canb.auug.org.au>
-	<4F6C715B.2080104@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__24_Mar_2012_00_03_08_+1100_h2wuHw77.QTuZFt2"
+	Fri, 23 Mar 2012 09:05:11 -0400
+Message-ID: <4F6C74C6.2090002@kernel.dk>
+Date: Fri, 23 Mar 2012 14:04:06 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH block/for-3.4/core] cfq: fix cfqg ref handling when BLK_CGROUP
+ && !CFQ_GROUP_IOSCHED
+References: <20120315094945.GA3205@localhost> <20120315163546.GA32137@google.com>
+In-Reply-To: <20120315163546.GA32137@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__24_Mar_2012_00_03_08_+1100_h2wuHw77.QTuZFt2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/15/2012 05:35 PM, Tejun Heo wrote:
+> When BLK_CGROUP is enabled but CFQ_GROUP_IOSCHED is, cfq ends up
+> calling blkg_get/put() on dummy cfqg leading to the following crash.
+> 
+>   BUG: unable to handle kernel NULL pointer dereference at 00000000000000b0
+>   IP: [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
+>   PGD 0
+>   Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>   CPU 0
+>   Modules linked in:
+> 
+>   Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc6-work+ #125 Bochs Bochs
+>   RIP: 0010:[<ffffffff813d44d8>]  [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
+>   RSP: 0018:ffff88001f9dfd80  EFLAGS: 00010046
+>   RAX: ffff88001aefbbf0 RBX: ffff88001aeedbf0 RCX: 0000000000000100
+>   RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff820ffd40
+>   RBP: ffff88001f9dfdd0 R08: 0000000000000000 R09: 0000000000000001
+>   R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
+>   R13: 0000000000000009 R14: ffff88001aefbc30 R15: 0000000000000003
+>   FS:  0000000000000000(0000) GS:ffff88001fc00000(0000) knlGS:0000000000000000
+>   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>   CR2: 00000000000000b0 CR3: 000000000206f000 CR4: 00000000000006f0
+>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>   Process swapper/0 (pid: 1, threadinfo ffff88001f9de000, task ffff88001f9dc040)
+>   Stack:
+>    ffff88001aeedbf0 ffff88001aefbdb0 ffff88001aef1548 ffff88001aefbbf0
+>    ffff88001f9dfdd0 ffff88001aef1548 ffffffff820d6320 ffffffff8165ce30
+>    ffffffff82c555e0 ffff88001aeebbf0 ffff88001f9dfe00 ffffffff813b0507
+>   Call Trace:
+>    [<ffffffff813b0507>] elevator_init+0xd7/0x140
+>    [<ffffffff813b83d5>] blk_init_allocated_queue+0x125/0x150
+>    [<ffffffff813b94d3>] blk_init_queue_node+0x43/0x80
+>    [<ffffffff813b9523>] blk_init_queue+0x13/0x20
+>    [<ffffffff821aec00>] floppy_init+0x82/0xec7
+>    [<ffffffff810001d2>] do_one_initcall+0x42/0x170
+>    [<ffffffff821835fc>] kernel_init+0xcb/0x14f
+>    [<ffffffff81b40b24>] kernel_thread_helper+0x4/0x10
+>   Code: 00 e8 1d 9e 76 00 48 8b 43 48 48 85 c0 48 89 83 28 03 00 00 74 07 4c 8b a0 10 ff ff ff 8b 15 b0 2e d0 00 85 d2 0f 85 49 01 00 00 <41> 8b 84 24 b0 00 00 00 85 c0 0f 8e 8c 01 00 00 83 e8 01 85 c0
+>   RIP  [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
+> 
+> Because cfq's blkcg support has a on/off switch, CFQ_GROUP_IOSCHED,
+> separate from BLK_CGROUP, blkg access through cfqg needs to be
+> conditioned on it.
+> 
+> * Make blkg_to_cfqg() and cfqg_to_blkg() conditioned on
+>   CFQ_GROUP_IOSCHED.  If disabled, they always return %NULL.
+> 
+> * Introduce cfqg_get() and cfqg_put() conditioned on
+>   CFQ_GROUP_IOSCHED.  If disabled, they are noops.
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+> Yeap, forgot to test that config combination.  Fengguang, can you
+> please test this patch?  Jens, once Fengguang confirms the fix, can
+> you please apply this on top of for-3.4/core along with the pending
+> stats updates?
 
-Hi Paul,
+Added to for-3.5/core, thanks.
 
-On Fri, 23 Mar 2012 08:49:31 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
-> Too bad the radeon commits weren't in linux-next, then we'd not
-> have to be fixing these in the merge window...
+-- 
+Jens Axboe
 
-Well, yeah, but I understand that they came in late.
-
-> I think it makes sense for me to fold this into:
->=20
-> commit 50af5ead3b44ccf8bd2b4d2a50c1b610f557c480
-> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Date:   Fri Jan 20 18:35:53 2012 -0500
->=20
->     bug.h: add include of it to various implicit C users
->=20
-> in the bug-3.4 tree before requesting it to be pulled.
-
-Except that this file does not exist in your tree currently, so you would
-have to merge Linux' tree first (and put this in the merge commit).  It's
-probably better to just mention this to Linus when you request the pull
-(along with the one in fs/reiserfs/reiserfs.h).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sat__24_Mar_2012_00_03_08_+1100_h2wuHw77.QTuZFt2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPbHSMAAoJEECxmPOUX5FEZZIP+wYsdgsxcfU5IjxkMbXk7ZzH
-q6R4R9/44OIGXRVApHy5vYYPxhqDT+4C5wwQKZ0R7YlPgBNk1OjwVyAhRzqbyEy1
-nQWhyvSg7qz83aKdvR3SBVFp9XleqNKMUZPQOXGh2PD+uL9svQYgsgA/Ifuv6sJK
-3brMMO+kTTi0x5wmns/+K0zSxxHsLmpmdzm754EM2BDk30lWG8tumkMM83OgcFY1
-hFH1uUdvi9lKdlIf14HBMP1leAnxw8AaxRYHu7wmQoJ+ervhXK1hsx8+Q+8Nsoqu
-emKV/mZsDohGUfOpSoD4A0lGgYN+3qyJTunrHp3cJG/aajFgOd+lLCxKKCsKyk4k
-6pgOUzYCgbQRSvi+ow0XHR3s/SW3LyzragINbKIGRXoGij24bF+vsahdDtKIbnHw
-FoE2OnOCkeA7yFnqDXgh6E4CqJdnDstMV1CwuFwbMptiKX122Za/zE9UhW1+Ti1E
-xzTESHmASskbVRjJtKsS0ueNXwYdiE9Jx3tYWl+9n/bxhZ+zwqWapghyp3VbhWYe
-Si0YioMIBnFnwLiOGoRej/41SNcxuoicXPFI6oO698YTNMvl1TbtUHni1PfWB2/G
-ct/KH5hpTAKG594EhKpaArBR9nka9ugwteNKtNSS7poMK8S/WFW24sDQ4JTHeTWC
-K/xmg7Jyz1KvfgSEk0mI
-=i0sj
------END PGP SIGNATURE-----
-
---Signature=_Sat__24_Mar_2012_00_03_08_+1100_h2wuHw77.QTuZFt2--
