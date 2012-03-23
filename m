@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642Ab2CWQjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 12:39:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53297 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754163Ab2CWQjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 12:39:20 -0400
-Date: Fri, 23 Mar 2012 17:30:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        akpm@linux-foundation.org, rjw@sisk.pl, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Trond.Myklebust@netapp.com, sbhamare@panasas.com, dhowells@redhat.com,
-        eparis@redhat.com, srivatsa.bhat@linux.vnet.ibm.com,
-        kay.sievers@vrfy.org, jmorris@namei.org, ebiederm@xmission.com,
-        gregkh@linuxfoundation.org, rusty@rustcorp.com.au, tj@kernel.org,
-        rientjes@google.com
-Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new
-	call_usermodehelper_timeout()API
-Message-ID: <20120323163046.GA16562@redhat.com>
-References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com> <4F6A92FC.6060702@panasas.com> <20120322142758.GA12370@redhat.com> <4F6B789C.8020201@panasas.com> <201203230716.GFE32712.StOJOVFHMQOFFL@I-love.SAKURA.ne.jp> <4F6C0092.1010901@panasas.com>
+	id S1758842Ab2CWQlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 12:41:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51847 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab2CWQlW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 12:41:22 -0400
 MIME-Version: 1.0
+Message-ID: <2d2c494d-64e3-4968-a406-a8ede7eb39bb@default>
+Date: Fri, 23 Mar 2012 09:40:15 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Konrad Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-mm@kvack.org
+Subject: [GIT PULL] staging: ramster: unbreak my heart
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6C0092.1010901@panasas.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F6CA7AD.0083,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22, Boaz Harrosh wrote:
->
-> On 03/22/2012 03:16 PM, Tetsuo Handa wrote:
->
-> > I think you should use a fork()ed wrapper in userspace for implementing
-> > timeout.
->
-> I did that actually. But I would like not to be dependent on it. I would like
-> the Kernel to be independent and simple timeout and recover,
+Hey Greg  --
 
-Tetsuo, Boaz, since I do not understand the problem space, I am not
-going to discuss the "do we need the timeout" thing.
+The just-merged ramster staging driver was dependent on a cleanup patch in
+cleancache, so was marked CONFIG_BROKEN until that patch could be
+merged.  That cleancache patch is now merged (and the correct SHA of the
+cleancache patch is 3167760f83899ccda312b9ad9306ec9e5dda06d4 rather than
+the one shown in the comment removed in the patch below).
 
-But, just in case, perhaps there is no need to change kmod.c ? I do
-not know if it works for you, but you can simply do something like
+So remove the CONFIG_BROKEN now and the comment that is no longer true...
 
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-	struct kill_work {
-		struct delayed_work work;
-		struct pid *pid;
-	};
-
-	void kill_work_func(struct work_struct *_work)
-	{
-		struct kill_work *work = container_of(_work, struct kill_work, work);
-		kill_pid(work->pid, SIGKILL);
-		put_pid(work->pid);
-		kfree(work);
-	}
-
-	int unh_setup_timeout(struct subprocess_info *info, struct cred *new)
-	{
-		struct kill_work *work = kmalloc(sizeof(struct kill_work));
-		if (!work)
-			return -ENOMEM;
-
-		INIT_WORK(&work->work, kill_work_func);
-		work->pid = get_pid(task_pid(current));
-		schedule_delayed_work(&work->work, (long)info->data);
-
-		return 0;
-	}
-
-Now you can do
-
-	call_usermodehelper_fns(init => unh_setup_timeout,
-				data => (void*)timeout);
-
-Oleg.
-
+diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
+index 8b57b87..4af1f8d 100644
+--- a/drivers/staging/ramster/Kconfig
++++ b/drivers/staging/ramster/Kconfig
+@@ -1,10 +1,6 @@
+-# Dependency on CONFIG_BROKEN is because there is a commit dependency
+-# on a cleancache naming change to be submitted by Konrad Wilk
+-# a39c00ded70339603ffe1b0ffdf3ade85bcf009a "Merge branch 'stable/cleancache.v13'
+-# into linux-next.  Once this commit is present, BROKEN can be removed
+ config RAMSTER
+ 	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
+-	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM && BROKEN
++	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	default n
