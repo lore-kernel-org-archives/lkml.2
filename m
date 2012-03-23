@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759029Ab2CWRLF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 13:11:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35572 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758972Ab2CWRLD (ORCPT
+	id S1759122Ab2CWROH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 13:14:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758996Ab2CWROE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 13:11:03 -0400
-Date: Fri, 23 Mar 2012 21:10:58 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH] proc: fix mount -t proc -o AAA
-Message-ID: <20120323171058.GA3279@albatros>
-References: <201203220903.15360.a.miskiewicz@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201203220903.15360.a.miskiewicz@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 23 Mar 2012 13:14:04 -0400
+From: mathieu.poirier@linaro.org
+To: tony@atomide.com
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: [PATCH 0/9] omap randconfig fixes for v3.3
+Date: Fri, 23 Mar 2012 11:13:47 -0600
+Message-Id: <1332522836-29517-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arkadiusz,
+From: "Arnd Bergmann" <arnd@arndb.de>
 
-On Thu, Mar 22, 2012 at 09:03 +0100, Arkadiusz Miśkiewicz wrote:
-> Hi,
-> 
-> I'm trying to use hidepid feature in 3.3 kernel but I'm getting weird
-> things like options not being applied _sometimes_ at mount.
-> 
-> [@ ~]# cat /proc/mounts
-> sh: cat: /proc/mounts: No such file or directory
-> [@ ~]# strace -e mount -f -F -s 200 mount none /proc -t proc -o hidepid=2,gid=17                            
-> mount("none", "/proc", "proc", MS_MGC_VAL, "hidepid=2,gid=17") = 0
-> [@ ~]# cat /proc/mounts
-> rootfs / rootfs rw 0 0
-> /dev/sda3 / xfs rw,relatime,attr2,noquota 0 0
-> run /run tmpfs rw,relatime 0 0
-> none /proc proc rw,relatime 0 0
-> 
-> No hidepid, no gid - huh?
-> 
-> [@ ~]# mount /proc -o remount,hidepid=2,gid=17
-> [@ ~]# cat /proc/mounts
-> rootfs / rootfs rw 0 0
-> /dev/sda3 / xfs rw,relatime,attr2,noquota 0 0
-> run /run tmpfs rw,relatime 0 0
-> none /proc proc rw,relatime,gid=17,hidepid=2 0 0
-> 
-> remount and hidepid/gid is there
-> 
-> [@ ~]# umount /proc
-> [@ ~]# strace -e mount -f -F -s 200 mount none /proc -t proc -o hidepid=2,gid=17                            
-> mount("none", "/proc", "proc", MS_MGC_VAL, "hidepid=2,gid=17") = 0
-> [@ ~]# cat /proc/mounts
-> rootfs / rootfs rw 0 0
-> /dev/sda3 / xfs rw,relatime,attr2,noquota 0 0
-> run /run tmpfs rw,relatime 0 0
-> none /proc proc rw,relatime,gid=17,hidepid=2 0 0
-> 
-> and now I'm lost - every new umount & mount gets hidepid/gid right.
-> 
-> Any ideas why initial mount fails to get hidepid/gid options applied?
-> The syscall seems correct.
+The following is a set of patches that have been sent
+out during the 3.1 cycle that were not acked or merged.
 
-Thanks for the report.  Please test the following patch.
+Sending again for completeness.  
 
---------------------------------------------------------------
-From: Vasiliy Kulikov <segoon@openwall.com>
-Date: Fri, 23 Mar 2012 20:56:42 +0400
-Subject: [PATCH] proc: fix mount -t proc -o AAA
+Tony, please pull if there are no objections:
 
-proc_parse_options() inside of proc_mount() runs only once at the boot
-time without any given options.  So, following umount(2)+mount(2) ignore
-mount options: proc_parse_options() is not called as ->s_root is already
-initialized.  To fix that parse mount options unconditionally.
+The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Reported-by: Arkadiusz Miśkiewicz <a.miskiewicz@gmail.com>
----
- fs/proc/root.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+  Linux 3.3 (2012-03-18 16:15:34 -0700)
 
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 46a15d8..eed44bf 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
- 	if (IS_ERR(sb))
- 		return ERR_CAST(sb);
+are available in the git repository at:
+  git://git.linaro.org/people/mpoirier/linux.git randconfig-omap
  
-+	if (!proc_parse_options(options, ns)) {
-+		deactivate_locked_super(sb);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	if (!sb->s_root) {
- 		sb->s_flags = flags;
--		if (!proc_parse_options(options, ns)) {
--			deactivate_locked_super(sb);
--			return ERR_PTR(-EINVAL);
--		}
- 		err = proc_fill_super(sb);
- 		if (err) {
- 			deactivate_locked_super(sb);
+
+Arnd Bergmann (8):
+  arm/omap: enable building omap2 without omap2420/2430
+  omap: fix visibility of omap2_mbox_iva_priv
+  ARM: omap2+: fix building without i2c
+  tty/serial/omap: console can only be built-in
+  omap2: select twl4030 support on boards that need it
+  omap2plus: ensure that one of omap2/3/4 is selected
+  arm: OMAP depends on MMU
+  ARM: omap: select CPU_FREQ_TABLE where needed
+
+Russell King (1):
+  ARM: omap2/n8x0: work around modular omap mmc
+
+ arch/arm/Kconfig                           |    1 +
+ arch/arm/mach-omap2/Kconfig                |   19 +++++++++++++++++++
+ arch/arm/mach-omap2/board-n8x0.c           |    6 ++++--
+ arch/arm/mach-omap2/mailbox.c              |    2 +-
+ arch/arm/mach-omap2/omap_hwmod_2420_data.c |    2 +-
+ arch/arm/mach-omap2/omap_hwmod_2430_data.c |    2 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    2 +-
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    2 +-
+ arch/arm/plat-omap/Kconfig                 |    5 +++++
+ arch/arm/plat-omap/include/plat/multi.h    |    5 +++++
+ drivers/tty/serial/Kconfig                 |    2 +-
+ 11 files changed, 40 insertions(+), 8 deletions(-)
+
 -- 
-1.7.0.4
+1.7.5.4
 
