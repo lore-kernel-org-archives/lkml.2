@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2CWInO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 04:43:14 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60322 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2CWInJ (ORCPT
+	id S1756487Ab2CWIrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 04:47:25 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34223 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab2CWIrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 04:43:09 -0400
-Date: Fri, 23 Mar 2012 09:43:04 +0100
+	Fri, 23 Mar 2012 04:47:16 -0400
+Date: Fri, 23 Mar 2012 09:47:12 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Chris Zankel <chris@zankel.net>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] config: simplify INLINE_SPIN_UNLOCK
-Message-ID: <20120323084304.GD2886@gmail.com>
-References: <20120322095502.30866.75756.sendpatchset@codeblue>
- <4F6C170A.4070305@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: mmap_page capabilities and docs
+Message-ID: <20120323084712.GE2886@gmail.com>
+References: <1332433596.2487.33.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F6C170A.4070305@linux.vnet.ibm.com>
+In-Reply-To: <1332433596.2487.33.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On 03/22/2012 03:25 PM, Raghavendra K T wrote:
-> >From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
-> >
-> >Patch simplifies current INLINE_SPIN_UNLOCK. compile tested on x86_64
-> >
-> >Change log:
-> >get rid of INLINE_SPIN_UNLOCK entirely replacing it with UNINLINE_SPIN_UNLOCK
-> >instead with the reverse meaning.
-> >
-> >whover wants to uninline the spinlocks (like spinlock debugging, paravirt etc
-> >all just do select UNINLINE_SPIN_UNLOCK
-> typo:
-> Whoever wants to uninline the spinlocks (like spinlock debugging,
-> paravirt etc) just do select UNINLINE_SPIN_UNLOCK.
+> Usage:
 > 
-> >
-> >Suggested-by: Linus Torvalds<torvalds@linux-foundation.org>
-> >Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
-> >---
-> >  Please refer : https://lkml.org/lkml/2012/3/21/357
+>   gcc -finstrument-functions -o my_prog main.c
+>   LD_PRELOAD=profviz.so ./my_prog
 > 
-> Linus, Please let me know if this is what you were looking for or
-> Did I really mess it up :(
+>   xdot prof.dot
+> or
+>   dot -Tsvg prof.svg prof.dot
+> 
+> The attached prof.svg it example output of:
+> 
+>   LD_PRELOAD=./profviz.so ./perf report
 
-Looks sane to me at first sight - will process it once the merge 
-window calms down a bit.
+Nifty. Could we integrate this into 'perf profviz <myprog>' or 
+so [feel free to use a better sub-tool name - 'perf selfprof' ?] 
+and thus make it available to mere mortals as well?
+
+'perf selfprof' could also warn about apps that were not built 
+with -finstrument-functions.
 
 Thanks,
 
