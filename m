@@ -1,112 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab2CWCyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:54:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17891 "EHLO mga14.intel.com"
+	id S1757139Ab2CWC5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:57:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53252 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab2CWCyr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:54:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="122266564"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [PATCH v2] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Topic: [PATCH v2] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Index: AczAiGvqkE33aB24TxWfj60400kzKxIF6llw
-Date: Fri, 23 Mar 2012 02:54:43 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCF3733@SHSMSX102.ccr.corp.intel.com>
-References: <BC00F5384FCFC9499AF06F92E8B78A9E28907BAB30@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E28907BAB30@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754850Ab2CWC5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 22:57:38 -0400
+Message-ID: <4F6BE694.1030509@redhat.com>
+Date: Fri, 23 Mar 2012 10:57:24 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, qemu-devel@nongnu.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Qemu-devel] [PATCH] virtio-spec: clarify ro/rw bits and updating
+ rule of virtio-net status field
+References: <20120320062020.12815.61342.stgit@jason-ThinkPad-T400> <87ty1jpm6p.fsf@rustcorp.com.au> <20120320224805.GA4997@redhat.com> <87ty1ializ.fsf@rustcorp.com.au> <20120321063746.GA6773@redhat.com> <87aa399s0x.fsf@rustcorp.com.au>
+In-Reply-To: <87aa399s0x.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, David
+On 03/22/2012 12:30 PM, Rusty Russell wrote:
+> On Wed, 21 Mar 2012 08:37:46 +0200, "Michael S. Tsirkin"<mst@redhat.com>  wrote:
+>> Ah. Right, we need to trap for host to clear the bit.
+>> OK, so let's make the bit RO, and add
+>> VIRTIO_NET_CTRL_ANNOUNCED to acknowledge that we've
+>> seen VIRTIO_NET_S_ANNOUNCE using the control VQ?
+> Thanks, that's nice.  Guest should send arp packets first, then send
+> VIRTIO_NET_CTRL_ANNOUNCED, and ignore the bit being set in the meantime.
+>
+> Thanks,
+> Rusty.
+Sure, I would update and re-send the spec updating patch.
 
-Any other comments for this patch? Or can you check-in it in your iommu tree?
+Thanks
 
-Thanks,
--Xudong
-
-> -----Original Message-----
-> From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On
-> Behalf Of Hao, Xudong
-> Sent: Thursday, December 22, 2011 5:18 PM
-> To: Chris Wright
-> Cc: dwmw2@infradead.org; iommu@lists.linux-foundation.org;
-> linux-kernel@vger.kernel.org; Zhang, Xiantao; kvm@vger.kernel.org
-> Subject: [PATCH v2] intel-iommu: Add device info into list before doing context
-> mapping
-> 
-> Add device info into list before do context mapping, because device info will be
-> used by iommu_enable_dev_iotlb function, in this function, pci_enable_ats
-> would not be called without this patch.
-> 
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
-> Acked-by: Chris Wright <chrisw@sous-sol.org>
-> ---
->  drivers/iommu/intel-iommu.c |   17 +++++++++++------
->  1 files changed, 11 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c index
-> bdc447f..ccf347f 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -2267,12 +2267,6 @@ static int domain_add_dev_info(struct
-> dmar_domain *domain,
->  	if (!info)
->  		return -ENOMEM;
-> 
-> -	ret = domain_context_mapping(domain, pdev, translation);
-> -	if (ret) {
-> -		free_devinfo_mem(info);
-> -		return ret;
-> -	}
-> -
->  	info->segment = pci_domain_nr(pdev->bus);
->  	info->bus = pdev->bus->number;
->  	info->devfn = pdev->devfn;
-> @@ -2285,6 +2279,17 @@ static int domain_add_dev_info(struct
-> dmar_domain *domain,
->  	pdev->dev.archdata.iommu = info;
->  	spin_unlock_irqrestore(&device_domain_lock, flags);
-> 
-> +	ret = domain_context_mapping(domain, pdev, translation);
-> +	if (ret) {
-> +		spin_lock_irqsave(&device_domain_lock, flags);
-> +		list_del(&info->link);
-> +		list_del(&info->global);
-> +		pdev->dev.archdata.iommu = NULL;
-> +		spin_unlock_irqrestore(&device_domain_lock, flags);
-> +		free_devinfo_mem(info);
-> +		return ret;
-> +	}
-> +
->  	return 0;
->  }
-> 
-> --
-> 1.6.0.rc1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in the body of a
-> message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
