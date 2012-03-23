@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab2CWXWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 19:22:55 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:45469 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754276Ab2CWXWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 19:22:53 -0400
-Message-ID: <4F6D05CA.2050801@xenotime.net>
-Date: Fri, 23 Mar 2012 16:22:50 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1757952Ab2CWX2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 19:28:20 -0400
+Received: from ozlabs.org ([203.10.76.45]:60560 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754903Ab2CWX2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 19:28:18 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: CPU Hotplug rework
+In-Reply-To: <20120322224919.GW2450@linux.vnet.ibm.com>
+References: <4F674649.2000300@linux.vnet.ibm.com> <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins> <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins> <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Sat, 24 Mar 2012 09:57:32 +1030
+Message-ID: <877gya99uj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: [PATCH] x86: remove CONFIG_TR from defconfigs
-References: <tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org> <4F6CD38B.1010602@xenotime.net> <20120323195520.GA7222@gmail.com>
-In-Reply-To: <20120323195520.GA7222@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2012 12:55 PM, Ingo Molnar wrote:
-
+On Thu, 22 Mar 2012 15:49:20 -0700, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Mar 22, 2012 at 02:55:04PM +1030, Rusty Russell wrote:
+> > On Wed, 21 Mar 2012 10:01:59 +0100, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > Thing is, if its really too much for some people, they can orchestrate
+> > > it such that its not. Just move everybody in a cpuset, clear the to be
+> > > offlined cpu from the cpuset's mask -- this will migrate everybody away.
+> > > Then hotplug will find an empty runqueue and its fast, no?
+> > 
+> > I like this solution better.
 > 
-> Yeah, now that the defconfigs are much smaller we can do such 
-> things. Mind resending the patch and possibly checking all the 
-> other options as well?
+> As long as we have some way to handle kthreads that are algorithmically
+> tied to a given CPU.  There are coding conventions to handle this, for
+> example, do everything with preemption disabled and just after each
+> preempt_disable() verify that you are in fact running on the correct
+> CPU, but it is easy to imagine improvements.
 
+I don't think we should move per-cpu kthreads at all.  Let's stop trying
+to save a few bytes of memory, and just leave them frozen.  They'll run
+again if/when the CPU returns.
 
-
-
-OK, I reviewed both x86 defconfigs.  I didn't come up with anything
-else that obviously should be removed, so here is the CONFIG_TR patch.
-(applies on top of your defconfig updates)
-
----
-From: Randy Dunlap <rdunlap@xenotime.net>
-
-Remove CONFIG_TR from defconfigs for x86 since it
-is antiquated and obsolete.
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- arch/x86/configs/i386_defconfig   |    1 -
- arch/x86/configs/x86_64_defconfig |    1 -
- 2 files changed, 2 deletions(-)
-
---- lnx-33.orig/arch/x86/configs/i386_defconfig
-+++ lnx-33/arch/x86/configs/i386_defconfig
-@@ -183,7 +183,6 @@ CONFIG_8139TOO=y
- # CONFIG_8139TOO_PIO is not set
- CONFIG_R8169=y
- CONFIG_FDDI=y
--CONFIG_TR=y
- CONFIG_INPUT_POLLDEV=y
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_EVDEV=y
---- lnx-33.orig/arch/x86/configs/x86_64_defconfig
-+++ lnx-33/arch/x86/configs/x86_64_defconfig
-@@ -176,7 +176,6 @@ CONFIG_SKY2=y
- CONFIG_FORCEDETH=y
- CONFIG_8139TOO=y
- CONFIG_FDDI=y
--CONFIG_TR=y
- CONFIG_INPUT_POLLDEV=y
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_EVDEV=y
+Cheers,
+Rusty.
+-- 
+  How could I marry someone with more hair than me?  http://baldalex.org
