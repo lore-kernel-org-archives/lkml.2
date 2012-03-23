@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab2C1R1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 13:27:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57924 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab2C1R1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 13:27:54 -0400
-Date: Wed, 28 Mar 2012 19:27:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Trevor Turner <turn3r.tr3v0r@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: K7/Athlon Optimization Causes Build Fail on Kernel 3.3 i686
-Message-ID: <20120328172759.GC6765@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Trevor Turner <turn3r.tr3v0r@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <CANYHJ6jjuO7yV_kbPsnJ6X+KXrsz2PRPPXHN4Rkr-vgoSG-E4A@mail.gmail.com>
- <20120328111957.GA6765@x1.osrc.amd.com>
- <CANYHJ6j6cxz47TGk8kdU58eau17Fi1K=fH2icmd=v19VjNggKw@mail.gmail.com>
- <20120328171059.GA7919@x1.osrc.amd.com>
- <4F7346BB.9020907@xenotime.net>
+	id S1758615Ab2C1R3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 13:29:06 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36270 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab2C1R3F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 13:29:05 -0400
+Message-ID: <4F6CA298.4000301@jp.fujitsu.com>
+Date: Fri, 23 Mar 2012 12:19:36 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F7346BB.9020907@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: viro@ZenIV.linux.org.uk
+CC: akpm@linux-foundation.org, khlebnikov@openvz.org, minchan@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com, benh@kernel.crashing.org,
+        linux@arm.linux.org.uk
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+References: <20120321065140.13852.52315.stgit@zurg> <20120321100602.GA5522@barrios> <4F69D496.2040509@openvz.org> <20120322142647.42395398.akpm@linux-foundation.org> <20120322212810.GE6589@ZenIV.linux.org.uk>
+In-Reply-To: <20120322212810.GE6589@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 10:13:31AM -0700, Randy Dunlap wrote:
-> > in your config. K7 and EFI are from different epochs anyway and cannot
-> > obviously be enabled both on the same system with the current Kconfig
-> > for EFI.
+On 3/22/2012 5:28 PM, Al Viro wrote:
+> On Thu, Mar 22, 2012 at 02:26:47PM -0700, Andrew Morton wrote:
+>> It would be nice to find some way of triggering compiler warnings or
+>> sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
+>> thoughts on this?
+>>
+>> (Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
+>> describe it)
+> 
+> Use __bitwise for that - check how gfp_t is handled.
 
-> but the Kconfig files shouldn't allow such a failing .config to be
-> created, or the Makefiles are inadequate, or <mumble something>....
+Hmm..
 
-Yeah, something like the following:
+If now we activate __bitwise, really plenty driver start create lots warnings.
+Does it make sense?
 
-config MK7
-	bool "Athlon/Duron/K7"
-	depends on X86_32 && !EFI_STUB
+In fact, x86-32 keep 32bit vma_t forever. thus all x86 specific driver don't
+need any change. Moreover many ancient drivers has no maintainer and I can't
+expect such driver will be fixed even though a warning occur.
 
-or the other way around:
-
-config EFI_STUB
-       bool "EFI stub support"
-       depends on EFI && !MK7
-
-Hmm...
-
--- 
-Regards/Gruss,
-Boris.
+So, I think __nocast weakness is better than strict __bitwise annotation for
+this situation.
