@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab2CWDeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 23:34:36 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60132 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab2CWDed (ORCPT
+	id S1755998Ab2CWDgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 23:36:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41242 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2CWDgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 23:34:33 -0400
-Date: Thu, 22 Mar 2012 23:34:26 -0400 (EDT)
-Message-Id: <20120322.233426.51094636300419378.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sandeep.kumar@freescale.com
-Subject: Re: [PATCH] gianfar: Fix possible overrun and simplify interrupt
- name field creation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120321.223457.641438956547942596.davem@davemloft.net>
-References: <17d93e9eb16cbad75b20cdbcaf38f268260d6fd5.1332010469.git.joe@perches.com>
-	<20120321.223457.641438956547942596.davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 22 Mar 2012 23:36:25 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1332298845.10557.343.camel@linux-s257.site>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+	 <1331704278.10557.190.camel@linux-s257.site>
+	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
+	 <1331798740.10557.245.camel@linux-s257.site>
+	 <1332047432.6304.13.camel@debian.Gayathri>
+	 <1332122514.10557.270.camel@linux-s257.site>
+	 <1332241764.10557.329.camel@linux-s257.site>
+	 <1332269710.3921.31.camel@debian.Gayathri>
+	 <1332298845.10557.343.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Mar 2012 09:06:51 +0530
+Message-ID: <1332473811.3051.5.camel@debian.Gayathri>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Mar 2012 20:34:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Wed, 21 Mar 2012 22:34:57 -0400 (EDT)
+On Wed, 2012-03-21 at 11:00 +0800, joeyli wrote:
+> think the hotkey of backlight control only works with acpi_osi=Linux ?
 
-> From: Joe Perches <joe@perches.com>
-> Date: Sat, 17 Mar 2012 12:05:38 -0700
-> 
->> Space allocated for int_name_<foo> is unsufficient for
->> maximal device name, expand it.
->> 
->> Code to create int_name_<foo> is obscure, simplify it
->> by using sprintf.
->> 
->> Found by looking for unnecessary \ line continuations.
->> Uncompiled, untested.
->> 
->> Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> Can a gianfar expert please review and test this patch?
+yes , hot key control only works with this option.Any ideas about where
+the hot key events gets handled ? I tried logging inside
+'acpi_video_device_notify' method in video.c . But the control does not
+seem to reach here . 
 
-If you gianfar guys don't show a sign of life in the next 24 hours I'm
-just going to apply Joe's patch as-is.  I refuse to just let it rot in
-patchwork like this.
+Thanks, 
 
-And then you don't get to complain if his change breaks your driver
-because I asked multiple times for testing and/or review.
+Pradeep Subrahmanion
+
