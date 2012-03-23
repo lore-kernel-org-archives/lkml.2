@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab2CWEAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 00:00:10 -0400
-Received: from hermod.sentelic.com ([203.69.18.19]:8360 "EHLO
+	id S1752432Ab2CWEAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 00:00:15 -0400
+Received: from hermod.sentelic.com ([203.69.18.19]:12544 "EHLO
 	hermod.sentelic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab2CWEAH (ORCPT
+	with ESMTP id S1750891Ab2CWEAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 00:00:07 -0400
+	Fri, 23 Mar 2012 00:00:11 -0400
 From: Tai-hwa Liang <avatar@sentelic.com>
 To: Oskari Saarenmaa <os@ohmu.fi>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/5] Input: sentelic - multiple finger output support
-Date: Fri, 23 Mar 2012 11:52:16 +0800
-Message-Id: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
+Subject: [PATCH v2 4/5] Input: sentelic - minor code cleaning up
+Date: Fri, 23 Mar 2012 11:52:20 +0800
+Message-Id: <1332474741-19426-5-git-send-email-avatar@sentelic.com>
 X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
+References: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Improving code readability by converting yet another magic number into a
+pre-defined constant.
 
-This patch set (against for-linus) is intended to add support for newer
-Sentelic FSP(hardware revision Cx/Dx).  The relative coordinates output
-mode is retained for supporting older hardware(prior to Cx release).
+Signed-off-by: Tai-hwa Liang <avatar@sentelic.com>
+---
+ drivers/input/mouse/sentelic.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Patch set v2 are mostly identical to the previous submission except:
-- fsp_packet_debug() parameter fixing up in patch #5
-- acknowledge the work done by Oskari Saarenmaa <os@ohmu.fi>
-
-Tai-hwa Liang (5):
-  Input: sentelic - code refactorying for upcoming new hardware support
-  Input: sentelic - enabling absolute coordinates output for newer
-    hardware
-  Input: sentelic - enabling hardware supported gesture ID output
-  Input: sentelic - minor code cleaning up
-  Input: sentelic - improving packet debugging information
-
- drivers/input/mouse/sentelic.c |  297 ++++++++++++++++++++++++++++++++--------
- drivers/input/mouse/sentelic.h |  108 ++++++++++++++-
- 2 files changed, 347 insertions(+), 58 deletions(-)
-
+diff --git a/drivers/input/mouse/sentelic.c b/drivers/input/mouse/sentelic.c
+index 0b57fe4..4fe9474 100644
+--- a/drivers/input/mouse/sentelic.c
++++ b/drivers/input/mouse/sentelic.c
+@@ -767,7 +767,7 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
+ 	case FSP_PKT_TYPE_NORMAL_OPC:
+ 		/* on-pad click, filter it if necessary */
+ 		if ((ad->flags & FSPDRV_FLAG_EN_OPC) != FSPDRV_FLAG_EN_OPC)
+-			packet[0] &= ~BIT(0);
++			packet[0] &= ~FSP_PB0_LBTN;
+ 		/* fall through */
+ 
+ 	case FSP_PKT_TYPE_NORMAL:
 -- 
-1.7.9
+1.7.9.1
 
