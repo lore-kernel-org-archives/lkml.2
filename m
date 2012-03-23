@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030418Ab2CWTup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 15:50:45 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46173 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030290Ab2CWTun convert rfc822-to-8bit (ORCPT
+	id S1757650Ab2CWTz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 15:55:26 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61380 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab2CWTzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 15:50:43 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: Regression: black screen on VGA w/ nouveau in Linux 3.3
-Date: Fri, 23 Mar 2012 20:50:38 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20120319143548.GA27172@elliptictech.com>
-In-Reply-To: <20120319143548.GA27172@elliptictech.com>
+	Fri, 23 Mar 2012 15:55:25 -0400
+Date: Fri, 23 Mar 2012 20:55:20 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig: Update defconfigs
+Message-ID: <20120323195520.GA7222@gmail.com>
+References: <tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org>
+ <4F6CD38B.1010602@xenotime.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203232050.38332.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6CD38B.1010602@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 19 marca 2012 o 15:35:48 Nick Bowler wrote:
-> Hi folks,
-> 
-> Just upgraded to Linux 3.3 on my desktop and noticed that the VGA output
-> on my card w/ nouveau is totally black (both at the console and in X).
-> Almost everything appears to work normally: DPMS works, modesetting
-> works, DDC works... all messages indicate that things are working --
-> just the image is completely black.
-> 
-> The VGA is one of two outputs in use: the other (DVI) output works
-> normally.  The card also has an unused TV-out port, FWIW.
-> 
-> The card is an NV36 generation (Geforce FX5700 AGP).  This is a
-> regression from Linux 3.2 -- unfortunately, bisection has proved
-> extremely difficult because the intermediate kernels git is asking me
-> to test panic immediately on boot (and compiling Linux takes a fairly
-> long time on this box too).  The failed attempt went like this:
-> 
->   git bisect start 'drivers/gpu'
->   # bad: [c16fa4f2ad19908a47c63d8fa436a1178438c7e7] Linux 3.3
->   git bisect bad c16fa4f2ad19908a47c63d8fa436a1178438c7e7
->   # good: [805a6af8dba5dfdd35ec35dc52ec0122400b2610] Linux 3.2
->   git bisect good 805a6af8dba5dfdd35ec35dc52ec0122400b2610
->   # skip: [5d56fe5fd794a98c4f446f8665fd06b82e93ff64] Merge branch
-> 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6
-> into drm-core-next git bisect skip
-> 5d56fe5fd794a98c4f446f8665fd06b82e93ff64
->   # good: [dffc9ceb55695f121adc57dd1fde7304c3afe81e] gma500: kill virtual
-> mapping support git bisect good dffc9ceb55695f121adc57dd1fde7304c3afe81e
->   # skip: [5c2a5ce689c99037771a6c110374461781a6f042] drm: add missing
-> exports for i810 driver. git bisect skip
-> 5c2a5ce689c99037771a6c110374461781a6f042
->   # skip: [44517c44496062180a6376cc704b33129441ce60] drm/radeon/kms: Add an
-> MSI quirk for Dell RS690 git bisect skip
-> 44517c44496062180a6376cc704b33129441ce60
-> 
->   (I stopped at this point)
-> 
-> I'm running the latest git xf86-video-nouveau, but since the issue
-> occurs at the console it's probably not too important...
-> 
-> Let me know if you need any more info,
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42983
-for your bug/regression report, please add your address to the CC list in 
-there, thanks!
+* Randy Dunlap <rdunlap@xenotime.net> wrote:
 
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+> On 03/23/2012 12:43 PM, tip-bot for Ingo Molnar wrote:
+> 
+> > Commit-ID:  280fb016bfb098f33df96016cfaa840db77ba2d0
+> > Gitweb:     http://git.kernel.org/tip/280fb016bfb098f33df96016cfaa840db77ba2d0
+> > Author:     Ingo Molnar <mingo@kernel.org>
+> > AuthorDate: Fri, 23 Mar 2012 13:12:38 +0100
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Fri, 23 Mar 2012 13:14:53 +0100
+> > 
+> > x86/kconfig: Update defconfigs
+> > 
+> > Link: http://lkml.kernel.org/n/tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org
+> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > ---
+> >  arch/x86/configs/i386_defconfig   |   65 ++++++++++++-----------------------
+> >  arch/x86/configs/x86_64_defconfig |   68 +++++++++++++------------------------
+> >  2 files changed, 47 insertions(+), 86 deletions(-)
+> > 
+> > diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+> > index 2bf18059f..2d56282 100644
+> > --- a/arch/x86/configs/i386_defconfig
+> > +++ b/arch/x86/configs/i386_defconfig
+> > -CONFIG_TR=y
+> > +CONFIG_TR=y
+> 
+> 
+> 
+> > diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+> > index 058a35b..3cf137a 100644
+> > --- a/arch/x86/configs/x86_64_defconfig
+> > +++ b/arch/x86/configs/x86_64_defconfig
+> > -CONFIG_TR=y
+> > +CONFIG_TR=y
+> 
+> 
+> Hmph.  On 2009-oct-20, I sent a patch to disable CONFIG_TR 
+> from these defconfigs.  I still think that should be done.
+
+Yeah, now that the defconfigs are much smaller we can do such 
+things. Mind resending the patch and possibly checking all the 
+other options as well?
+
+Thanks,
+
+	Ingo
