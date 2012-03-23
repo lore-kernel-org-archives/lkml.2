@@ -1,148 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2CWWdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 18:33:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50657 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab2CWWdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 18:33:15 -0400
+	id S1756974Ab2CWWdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 18:33:40 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:46228 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755271Ab2CWWdU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 18:33:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120323201251.GA28567@srcf.ucam.org>
-References: <20120323162930.GB23376@srcf.ucam.org>
-	<CAMfrEMb9R8V=VagAzi1DJWXrSOJ-dSptdt9aQX=_igjBXF1USw@mail.gmail.com>
-	<20120323165118.GA24014@srcf.ucam.org>
-	<CAMfrEMa6EAsLMMvG-Yq03E0Qhc7jdk2WH5fvQUB16W-5=Qgfbw@mail.gmail.com>
-	<20120323172053.GA24571@srcf.ucam.org>
-	<CAMfrEMYFMtSuWPwJ+YVMEBAWwR7tAmrNrSqOhHAZmZAmR6D7yQ@mail.gmail.com>
-	<20120323191716.GA27307@srcf.ucam.org>
-	<CAMfrEMbhQCFAFG-RFhHcRQiZMNYPpT-MbA6hHsDHu-Y_51bYSg@mail.gmail.com>
-	<20120323192152.GA27457@srcf.ucam.org>
-	<CAMfrEMbcy-s1WiJqDCDb6BywDzR4HW77i0V7e9B_yRMweQZKCg@mail.gmail.com>
-	<20120323201251.GA28567@srcf.ucam.org>
-Date: Fri, 23 Mar 2012 17:33:14 -0500
-Message-ID: <CAMfrEMbuGY5Gkts_YO1weeij6s-7i87Dx2Oy8KUcKR9zS0cLdA@mail.gmail.com>
-Subject: Re: IDE DVD and CD drive seem to not work with Linux desktop 3.3.0-030300-generic
-From: Chris Holland <bandidoirlandes@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org
+In-Reply-To: <4F6CF555.4080109@codeaurora.org>
+References: <1331878280-2758-1-git-send-email-mturquette@linaro.org>
+ <1331878280-2758-3-git-send-email-mturquette@linaro.org> <20120320140220.GE32469@S2101-09.ap.freescale.net>
+ <efca11f1b68186dbf1771c09fe3a2f0a.squirrel@www.codeaurora.org>
+ <CAJOA=zNmgSQfYAUZ-vqqTk0w3s3eKz3tjVOpyDgO35Q_Ogkz0g@mail.gmail.com>
+ <4F6946AA.4070201@codeaurora.org> <4F6CEC0C.4060704@codeaurora.org>
+ <CAJOA=zNDKesFtuRgv+6brmBvmbQQecKEOJ89EiG-+YzXVTosWw@mail.gmail.com> <4F6CF555.4080109@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Fri, 23 Mar 2012 15:32:58 -0700
+Message-ID: <CAJOA=zOnR1NwZ1Cmkfb+b7f7=N_vg+txAUqKXF2Nf2nVYFMjjg@mail.gmail.com>
+Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Paul Walmsley <paul@pwsan.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 3:12 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Fri, Mar 23, 2012 at 03:10:14PM -0500, Chris Holland wrote:
->
->> I think I had the commit 4949be16822e92a18ea0cc1616319926628092ee
->> removed when I applied the patch.
+On Fri, Mar 23, 2012 at 3:12 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 03/23/2012 02:39 PM, Turquette, Mike wrote:
+>> __clk_recalc_rates is called by __clk_reparent which is called by
+>> clk_set_parent.  __clk_recalc_rates is also called by clk_set_rate.
 >>
->> I did a
->> git reset --hard v3.3
->> applied the patch and am rebuilding.
+>> Does this not handle the old cached clk->rate for you?
 >
-> Thanks - let me know if it helps!
->
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
+> For the set_parent case, ops->recalc_rate() is called twice. Once for
+> PRE_CHANGE and once for POST_CHANGE. For this clock, I can only really
+> recalc the rate during the POST_CHANGE call. So, how should I differentiate
+> the two cases?
 
-That did not work for me after I build I still dont get the cd and dvd in dmesg
+.recalc_rate serves two purposes: first it recalculates the rate after
+the rate has changed and you pass in a new parent_rate argument.  The
+second purpose is to "speculate" a rate change.  You can pass in any
+rate for the parent_rate parameter when you call .recalc_rates.  This
+is what __speculate_rates does before the rate changes.  For
+clk_set_parent we call,
 
-And cat /var/log/dmesg | egrep '(CD|DVD)'
-[    0.000000] Linux version 3.3.0+ (root@desktop) (gcc version 4.6.1
-(Ubuntu/Linaro 4.6.1-9ubuntu3) ) #10 SMP Fri Mar 23 16:09:17 CDT 2012
-[    0.000000]   CD000-EFFFF uncachable
+__clk_speculate_rates(clk, parent->rate);
 
-What I did
+Where parent above is the *new* parent.  So this will let us propagate
+pre-rate change notifiers with the new rate.
 
-git reset --hard v3.3
-git apply patch1
-make oldconfig
-fakeroot make deb-pkg
-install reboot
+Your .recalc_rate callback doesn't need to differentiate between the
+two calls to .recalc_rate.  It should just take in the parent_rate
+value and do the calculation required of it.
 
-git diff
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 24f049e..04eb680 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -185,6 +185,7 @@ static void
-pcie_aspm_configure_common_clock(struct pcie_link_state *link)
-        int ppos, cpos, same_clock = 1;
-        u16 reg16, parent_reg, child_reg[8];
-        unsigned long start_jiffies;
-+       bool retrain = false;
-        struct pci_dev *child, *parent = link->pdev;
-        struct pci_bus *linkbus = parent->subordinate;
-        /*
-@@ -215,7 +216,10 @@ static void
-pcie_aspm_configure_common_clock(struct pcie_link_state *link)
-                        reg16 |= PCI_EXP_LNKCTL_CCC;
-                else
-                        reg16 &= ~PCI_EXP_LNKCTL_CCC;
--               pci_write_config_word(child, cpos + PCI_EXP_LNKCTL, reg16);
-+               if (reg16 != child_reg[PCI_FUNC(child->devfn)]) {
-+                       retrain = true;
-+                       pci_write_config_word(child, cpos +
-PCI_EXP_LNKCTL, reg16);
-+               }
-        }
+Take a look at __clk_speculate_rates and __clk_recalc_rates and you'll
+see how to use it.
 
-        /* Configure upstream component */
-@@ -225,9 +229,15 @@ static void
-pcie_aspm_configure_common_clock(struct pcie_link_state *link)
-                reg16 |= PCI_EXP_LNKCTL_CCC;
-        else
-                reg16 &= ~PCI_EXP_LNKCTL_CCC;
--       pci_write_config_word(parent, ppos + PCI_EXP_LNKCTL, reg16);
-+       if (reg16 != parent_reg) {
-+               retrain = true;
-+               pci_write_config_word(parent, ppos + PCI_EXP_LNKCTL, reg16);
-+       }
+> On a separate note:
+> Sorry if I missed any earlier discussion on this, but what's the reason for
+> calling recalc_rate() pre-change and post-change but without giving it the
+> ability to differentiate between the two?
 
-        /* Retrain link */
-+       if (!retrain)
-+               return;
-+
-        reg16 |= PCI_EXP_LNKCTL_RL;
-        pci_write_config_word(parent, ppos + PCI_EXP_LNKCTL, reg16);
+I think my answer above covers this.  The .recalc_rate callback only
+exists to perform a hardware-specific calculation.  The context of
+pre- or post-change is irrelevant since the parent_rate passed in
+could be the actual rate of the parent or a future rate of the parent.
 
-@@ -436,13 +446,16 @@ static void pcie_aspm_cap_init(struct
-pcie_link_state *link, int blacklist)
+> I think it's quite useful for recalc_rate to be called pre/post change (some
+> steps have to be done pre/post change depending on whether the parent rate
+> is increasing or decreasing). But I don't see the "msg" being passed along.
 
- static void pcie_config_aspm_dev(struct pci_dev *pdev, u32 val)
- {
--       u16 reg16;
-+       u16 reg16, orig_reg16;
-        int pos = pci_pcie_cap(pdev);
+What kind of steps?  Does your .recalc_rate perform these steps?  I
+need more details to understand your requirements.
 
-        pci_read_config_word(pdev, pos + PCI_EXP_LNKCTL, &reg16);
-+       orig_reg16 = reg16;
-        reg16 &= ~0x3;
-        reg16 |= val;
--       pci_write_config_word(pdev, pos + PCI_EXP_LNKCTL, reg16);
-+
-+       if (reg16 != orig_reg16)
-+               pci_write_config_word(pdev, pos + PCI_EXP_LNKCTL, reg16);
- }
+> Also, I noticed that clk_set_parent() is treating a NULL as an invalid
+> clock. Should that be fixed? set_parent(NULL) could be treated as a
+> grounding the clock. Should we let the ops->set_parent determine if NULL is
+> valid option?
 
- static void pcie_config_aspm_link(struct pcie_link_state *link, u32 state)
+We must be looking at different code.  clk_set_parent doesn't return
+any error if parent == NULL.  Bringing this to my attention does show
+that we do deref the parent pointer without a check though...
 
+Do you have a real use case for this?  Due to the way that we match
+the parent pointer with the cached clk->parents member it would be
+painful to support NULL parents as valid.
 
-git status
-# On branch master
-# Your branch is behind 'origin/master' by 3856 commits, and can be
-fast-forwarded.
-#
-# Changes not staged for commit:
-#   (use "git add <file>..." to update what will be committed)
-#   (use "git checkout -- <file>..." to discard changes in working directory)
-#
-#	modified:   drivers/pci/pcie/aspm.c
-#
-# Untracked files:
-#   (use "git add <file>..." to include in what will be committed)
-#
-#	patch1
-no changes added to commit (use "git add" and/or "git commit -a")
+It is also worth considering whether clk_set_parent is really the
+correct operation for grounding a clock.  clk_unprepare might be a
+better candidate.
+
+Regards,
+Mike
