@@ -1,504 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2CWUyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 16:54:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49598 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab2CWUyN convert rfc822-to-8bit (ORCPT
+	id S1756528Ab2CWU7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 16:59:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58139 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab2CWU7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 16:54:13 -0400
+	Fri, 23 Mar 2012 16:59:12 -0400
+Date: Fri, 23 Mar 2012 13:59:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 3.0.26
+Message-ID: <20120323205908.GA32316@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1332512984-79664-1-git-send-email-trenn@suse.de>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de>
-Date: Fri, 23 Mar 2012 13:54:12 -0700
-X-Google-Sender-Auth: olzPbBD9I0tvcEEq0nnvIpjS8pk
-Message-ID: <CAE9FiQVFd=Zef2bH_3MinLEV_V+cEShrmRTe7Sr8HT2R46yHHw@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, hpa@zytor.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 7:29 AM, Thomas Renninger <trenn@suse.de> wrote:
-> Details can be found in:
-> Documentation/acpi/initrd_table_override.txt
->
-> Additional dmesg output of a booted system with
-> FACP (FADT), DSDT and SSDT (the 9th dynamically loaded one)
-> tables overridden (with ### marked comments):
->
-> ### ACPI tables found glued to initrd
-> DSDT ACPI table found in initrd - size: 16234
-> FACP ACPI table found in initrd - size: 116
-> SSDT ACPI table found in initrd - size: 334
-> ### Re-printed e820 map via e820_update() with additionally created
-> ### ACPI data section at 0xcff55000 where the ACPI tables passed via
-> ### initrd where copied to
-> modified physical RAM map:
-> ...
->  ### New ACPI data section:
->  modified: 00000000cff55000 - 00000000cff5912c (ACPI data)
->  ### BIOS e820 provided ACPI data section:
->  modified: 00000000cff60000 - 00000000cff69000 (ACPI data)
-> ...
-> ### Total size of all ACPI tables glued to initrd
-> ### The address is initrd_start which gets updated to
-> ### initrd_start = initrd_start + "size of all ACPI tables glued to initrd"
-> Found acpi tables of size: 16684 at 0xffff8800374c4000
->
-> Disabling lock debugging due to kernel taint
-> ### initrd provided FACP and DSDT tables are used instead of BIOS provided ones
-> ACPI: FACP @ 0x00000000cff68dd8 Phys table override, replaced with:
-> ACPI: FACP 00000000cff58f6a 00074 (v01 INTEL  TUMWATER 06040000 PTL  00000003)
-> ACPI: DSDT @ 0x00000000cff649d4 Phys table override, replaced with:
-> ACPI: DSDT 00000000cff55000 04404 (v01  Intel BLAKFORD 06040000 MSFT 0100000E)
-> ...
-> ### Much later, the 9th (/sys/firmware/acpi/table/dynamic/SSDT9) dynamically
-> ### loaded ACPI table matches and gets overridden:
-> ACPI: SSDT @ 0x00000000cff64824 Phys table override, replaced with:
-> ACPI: SSDT 00000000cff58fde 0014E (v01  PmRef  Cpu7Ist 00003000 INTL 20110316)
-> ACPI: Dynamic OEM Table Load:
-> ACPI: SSDT           (null) 0014E (v01  PmRef  Cpu7Ist 00003000 INTL 20110316)
-> ...
->
-> If the initrd does not start with a valid ACPI table signature or the ACPI
-> table's checksum is wrong, there is no functional change.
 
-great. that is very good feature for development and debug.
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-will not need to ask for testbios ...
+I'm announcing the release of the 3.0.26 kernel.
 
->
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> CC: linux-acpi@vger.kernel.org
-> CC: linux-kernel@vger.kernel.org
-> CC: x86@kernel.org
-> CC: Lin Ming <ming.m.lin@intel.com>
-> CC: lenb@kernel.org
-> CC: robert.moore@intel.com
-> CC: hpa@zytor.com
-> ---
->  Documentation/acpi/initrd_table_override.txt |  110 +++++++++++++++++++
->  arch/x86/kernel/setup.c                      |   18 ++-
->  arch/x86/mm/init.c                           |    6 +
->  drivers/acpi/Kconfig                         |   10 ++
->  drivers/acpi/osl.c                           |  152 +++++++++++++++++++++++++-
->  include/linux/acpi.h                         |    4 +
->  include/linux/initrd.h                       |    3 +
->  7 files changed, 294 insertions(+), 9 deletions(-)
->  create mode 100644 Documentation/acpi/initrd_table_override.txt
->
-> diff --git a/Documentation/acpi/initrd_table_override.txt b/Documentation/acpi/initrd_table_override.txt
-> new file mode 100644
-> index 0000000..7b29d5f
-> --- /dev/null
-> +++ b/Documentation/acpi/initrd_table_override.txt
-> @@ -0,0 +1,110 @@
-> +Overriding ACPI tables via initrd
-> +=================================
-> +
-> +1) Introduction (What is this about)
-> +2) What is this for
-> +3) How does it work
-> +4) References (Where to retrieve userspace tools)
-> +
-> +1) What is this about
-> +---------------------
-> +
-> +If ACPI_INITRD_TABLE_OVERRIDE compile option is true, it is possible to
-> +override nearly any ACPI table provided by the BIOS with an instrumented,
-> +modified one.
-> +
-> +Up to 10 arbitrary ACPI tables can be passed.
-> +For a full list of ACPI tables that can be overridden, take a look at
-> +the char *table_sigs[MAX_ACPI_SIGNATURE]; definition in drivers/acpi/osl.c
-> +All ACPI tables iasl (Intel's ACPI compiler and disassembler) knows should
-> +be overridable, except:
-> +   - ACPI_SIG_RSDP (has a signature of 6 bytes)
-> +   - ACPI_SIG_FACS (does not have an ordinary ACPI table header)
-> +Both could get implemented as well.
-> +
-> +
-> +2) What is this for
-> +-------------------
-> +
-> +Please keep in mind that this is a debug option.
-> +ACPI tables should not get overridden for productive use.
-> +If BIOS ACPI tables are overridden the kernel will get tainted with the
-> +TAINT_OVERRIDDEN_ACPI_TABLE flag.
-> +Complain to your platform/BIOS vendor if you find a bug which is that sever
-> +that a workaround is not accepted in the Linus kernel.
-> +
-> +Still, it can and should be enabled in any kernel, because:
-> +  - There is no functional change with not instrumented initrds
-> +  - It provides a powerful feature to easily debug and test ACPI BIOS table
-> +    compatibility with the Linux kernel.
-> +
-> +Until now it was only possible to override the DSDT by compiling it into
-> +the kernel. This is a nightmare when trying to work on ACPI related bugs
-> +and a lot bugs got stuck because of that.
-> +Even for people with enough kernel knowledge, building a kernel to try out
-> +things is very time consuming. Also people may have to browse and modify the
-> +ACPI interpreter code to find a possible BIOS bug. With this feature, people
-> +can correct the ACPI tables and try out quickly whether this is the root cause
-> +that needs to get addressed in the kernel.
-> +
-> +This could even ease up testing for BIOS providers who could flush their BIOS
-> +to test, but overriding table via initrd is much easier and quicker.
-> +For example one could prepare different initrds overriding NUMA tables with
-> +different affinity settings. Set up a script, let the machine reboot and
-> +run tests over night and one can get a picture how these settings influence
-> +the Linux kernel and which values are best.
-> +
-> +People can instrument the dynamic ACPI (ASL) code (for example with debug
-> +statements showing up in syslog when the ACPI code is processed, etc.),
-> +to better understand BIOS to OS interfaces, to hunt down ACPI BIOS code related
-> +bugs quickly or to easier develop ACPI based drivers.
-> +
-> +Intstrumenting ACPI code in SSDTs is now much easier. Before, one had to copy
-> +all SSDTs into the DSDT to compile it into the kernel for testing
-> +(because only DSDT could get overridden). That's what the acpi_no_auto_ssdt
-> +boot param is for: the BIOS provided SSDTs are ignored and all have to get
-> +copied into the DSDT, complicated and time consuming.
-> +
-> +Much more use cases, depending on which ACPI parts you are working on...
-> +
-> +
-> +3) How does it work
-> +-------------------
-> +
-> +# Extract the machine's ACPI tables:
-> +acpidump >acpidump
-> +acpixtract -a acpidump
-> +# Disassemble, modify and recompile them:
-> +iasl -d *.dat
-> +# For example add this statement into a _PRT (PCI Routing Table) function
-> +# of the DSDT:
-> +Store("Hello World", debug)
-> +iasl -sa *.dsl
-> +# glue them together with the initrd. ACPI tables go first, original initrd
-> +# goes on top:
-> +cat TBL1.dat >>instrumented_initrd
-> +cat TBL2.dat >>instrumented_initrd
-> +cat TBL3.dat >>instrumented_initrd
-> +cat /boot/initrd >>instrumented_initrd
-> +# reboot with increased acpi debug level, e.g. boot params:
-> +acpi.debug_level=0x2 acpi.debug_layer=0xFFFFFFFF
-> +# and check your syslog:
-> +[    1.268089] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
-> +[    1.272091] [ACPI Debug]  String [0x0B] "HELLO WORLD"
-> +
-> +iasl is able to disassemble and recompile quite a lot different,
-> +also static ACPI tables.
-> +
-> +4) Where to retrieve userspace tools
-> +------------------------------------
-> +
-> +iasl and acpixtract are part of Intel's ACPICA project:
-> +http://acpica.org/
-> +and should be packaged by distributions (for example in the acpica package
-> +on SUSE).
-> +
-> +acpidump can be found in Len Browns pmtools:
-> +ftp://kernel.org/pub/linux/kernel/people/lenb/acpi/utils/pmtools/acpidump
-> +This tool is also part of the acpica package on SUSE.
-> +Alternatively used ACPI tables can be retrieved via sysfs in latest kernels:
-> +/sys/firmware/acpi/tables
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index d7d5099..5a5a33f 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -412,12 +412,20 @@ static void __init reserve_initrd(void)
->                 */
->                initrd_start = ramdisk_image + PAGE_OFFSET;
->                initrd_end = initrd_start + ramdisk_size;
-> -               return;
-> +       } else {
-> +               relocate_initrd();
-> +               memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
->        }
-> -
-> -       relocate_initrd();
-> -
-> -       memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
-> +#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-> +       acpi_initrd_offset = acpi_initrd_table_override((void *)initrd_start,
-> +                                                       (void *)initrd_end);
-> +       if (!acpi_initrd_offset)
-> +               return;
-> +       printk(KERN_INFO "Found acpi tables of size: %lu at 0x%lx\n",
-> +              acpi_initrd_offset, initrd_start);
-> +       initrd_start += acpi_initrd_offset;
-> +       return;
-> +#endif
->  }
->  #else
->  static void __init reserve_initrd(void)
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 6cabf65..8df3fda 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -391,6 +391,12 @@ void free_initrd_mem(unsigned long start, unsigned long end)
->         *   - relocate_initrd()
->         * So here We can do PAGE_ALIGN() safely to get partial page to be freed
->         */
-> +#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-> +       if (acpi_initrd_offset)
-> +               free_init_pages("initrd memory", start - acpi_initrd_offset,
-> +                               PAGE_ALIGN(end));
-> +       else
-> +#endif
+All users of the 3.0 kernel series must upgrade.
 
-table already get copied to allocated ram, So you don't need to keep
-the portion in initrd range.
+The updated 3.0.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
 
->        free_init_pages("initrd memory", start, PAGE_ALIGN(end));
->  }
->  #endif
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 7556913..7113327 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -261,6 +261,16 @@ config ACPI_CUSTOM_DSDT
->        bool
->        default ACPI_CUSTOM_DSDT_FILE != ""
->
-> +config ACPI_INITRD_TABLE_OVERRIDE
-> +       bool
-> +       depends on X86
-> +       default y
-> +       help
-> +         This option provides functionality to override arbitrary ACPI tables
-> +         via initrd. No functional change if no ACPI tables are glued to the
-> +         initrd, therefore it's safe to say Y.
-> +         See Documentation/acpi/initrd_table_override.txt for details
-> +
->  config ACPI_BLACKLIST_YEAR
->        int "Disable ACPI for systems before Jan 1st this year" if X86_32
->        default 0
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index ad92131..a78b6f6 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -45,6 +45,7 @@
->  #include <linux/list.h>
->  #include <linux/jiffies.h>
->  #include <linux/semaphore.h>
-> +#include <linux/memblock.h>
->
->  #include <asm/io.h>
->  #include <asm/uaccess.h>
-> @@ -534,6 +535,107 @@ acpi_os_predefined_override(const struct acpi_predefined_names *init_val,
->        return AE_OK;
->  }
->
-> +#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-> +#include <asm/e820.h>
-> +
-> +#define ACPI_OVERRIDE_TABLES 10
-> +
-> +static unsigned long acpi_table_override_offset[ACPI_OVERRIDE_TABLES];
-> +static u64 acpi_tables_inram;
-> +
-> +unsigned long acpi_initrd_offset;
-> +
-> +/* Copied from acpica/tbutils.c:acpi_tb_checksum() */
-> +u8 __init acpi_table_checksum(u8 *buffer, u32 length)
-> +{
-> +       u8 sum = 0;
-> +       u8 *end = buffer + length;
-> +
-> +       while (buffer < end)
-> +               sum = (u8) (sum + *(buffer++));
-> +       return sum;
-> +}
-> +
-> +/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
-> +#define MAX_ACPI_SIGNATURE 35
-> +static const char *table_sigs[MAX_ACPI_SIGNATURE] = {
-> +       ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
-> +       ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
-> +       ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
-> +       ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
-> +       ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
-> +       ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
-> +       ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
-> +       ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
-> +       ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT };
-> +
-> +int __init acpi_initrd_table_override(void *start_addr, void *end_addr)
-> +{
-> +       int table_nr, sig;
-> +       unsigned long offset = 0, max_len = end_addr - start_addr;
-> +       char *p;
-> +
-> +       for (table_nr = 0; table_nr < ACPI_OVERRIDE_TABLES; table_nr++) {
-> +               struct acpi_table_header *table;
-> +               if (max_len < offset + sizeof(struct acpi_table_header)) {
-> +                       WARN_ON(1);
-> +                       return 0;
-> +               }
-> +               table = start_addr + offset;
-> +
-> +               for (sig = 0; sig < MAX_ACPI_SIGNATURE; sig++)
-> +                       if (!memcmp(table->signature, table_sigs[sig], 4))
-> +                               break;
-> +
-> +               if (sig >= MAX_ACPI_SIGNATURE)
-> +                       break;
-> +
-> +               if (max_len < offset + table->length) {
-> +                       WARN_ON(1);
-> +                       return 0;
-> +               }
-> +
-> +               if (acpi_table_checksum(start_addr + offset, table->length)) {
-> +                       WARN(1, "%4.4s has invalid checksum\n",
-> +                            table->signature);
-> +                       continue;
-> +               }
-> +               printk(KERN_INFO "%4.4s ACPI table found in initrd"
-> +                      " - size: %d\n", table->signature, table->length);
-> +
-> +               offset += table->length;
-> +               acpi_table_override_offset[table_nr] = offset;
-> +       }
-> +       if (!offset)
-> +               return 0;
-> +
-> +       acpi_tables_inram =
-> +               memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
-> +                                      offset, PAGE_SIZE);
+thanks,
 
-please don't use max_low_pfn_mapped. that will leave another blocker
-to allocate kdump block with 512M.
+greg k-h
 
-could use max_low_pfn, and use io_remap to access it for copying purpose.
+------------
+
+ Makefile                                     |    2 -
+ arch/powerpc/platforms/powermac/smp.c        |    2 -
+ drivers/net/wireless/iwlegacy/iwl-3945.c     |    7 +++---
+ drivers/net/wireless/iwlegacy/iwl3945-base.c |    2 -
+ fs/afs/internal.h                            |    2 -
+ fs/afs/rxrpc.c                               |    3 ++
+ fs/nilfs2/the_nilfs.c                        |    1=20
+ net/ipv4/syncookies.c                        |   30 ++++++++++++++--------=
+-----
+ net/ipv4/tcp_ipv4.c                          |   10 ++++++---
+ net/ipv6/mcast.c                             |    1=20
+ tools/perf/util/sort.c                       |    3 ++
+ 11 files changed, 38 insertions(+), 25 deletions(-)
+
+Anton Blanchard (3):
+      afs: Read of file returns EBADMSG
+      afs: Remote abort can cause BUG in rxrpc code
+      perf tools: Incorrect use of snprintf results in SEGV
+
+Benjamin Herrenschmidt (1):
+      powerpc/pmac: Fix SMP kernels on pre-core99 UP machines
+
+Eric Dumazet (1):
+      tcp: fix syncookie regression
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.26
+
+RongQing.Li (1):
+      ipv6: Don't dev_hold(dev) in ip6_mc_find_dev_rcu.
+
+Ryusuke Konishi (1):
+      nilfs2: fix NULL pointer dereference in nilfs_load_super_block()
+
+Stanislaw Gruszka (1):
+      iwl3945: fix possible il->txq NULL pointer dereference in delayed wor=
+ks
 
 
+--NzB8fVQJ5HfG6fxh
+Content-Type: application/pgp-signature
 
-> +       if (!acpi_tables_inram)
-> +               panic("Cannot find place for ACPI override tables\n");
-> +
-> +       /*
-> +        * Only calling e820_add_reserve does not work and the
-> +        * tables are invalid (memory got used) later.
-> +        * memblock_x86_reserve_range works as expected and the tables
-> +        * won't get modified. But it's not enough because ioremap will
-> +        * complain later (used by acpi_os_map_memory) that the pages
-> +        * that should get mapped are not marked "reserved".
-> +        * Both memblock_x86_reserve_range and e820_add_region works fine.
-> +        */
-> +       memblock_reserve(acpi_tables_inram, acpi_tables_inram + offset);
-> +       e820_add_region(acpi_tables_inram, offset, E820_ACPI);
-> +       update_e820();
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-could use __weak function to avoid use e820 related calling here in osl.c
+iQIcBAEBAgAGBQJPbOQcAAoJEDjbvchgkmk+3dQP/iL9IlSnk+2wdoqVWZEDdPqP
+IlekzngDkxU5ObArCqUZRRLPxYHPE1dsQpSRejfmCj0zZRrK/kw1+rZgClXlxzNg
+GJmI28pzXlfThIXbruWUT7uX9/2f6GTTUuHhr9R1rBTOW0Q5L0cR6vqs+4j6OYSv
+pWTgpvAv61bBdfFLyEHs3aWGmaWdfheUWYqGNrQ6n1rTjZriSsa/dDdmAQYFRcxW
+eOeKvzBwM/s6Ilk7UCMp6wctTG9ThAM+c0Q1W6Tty4LGbYCZ4ipqXX6HjmYRd1Sp
+aXQ4vHA1p5eVrb3oNQuqCZIus4yDUBiMdg4Lua/je2S0s9O2uK3pGYWehhqvbHKc
+05WDOiEjTkqdMMBAco0IWDNX7dATxu753N59tLdcySFQ+omFvBxsXmwD+dw6/mvC
+3qkqPhEohV7mqCKOzNV8oYiEWBk/NhukabLE1Q4ecJgCplsmb5EdGp31bmq9FFsN
+6MWzgZy7VFCdY0l9+O1j8B0VcNn7tn777mNF/AOvLeF5bQAhp9RZV7vuh+tR8y8J
+gmeUKsXAG7769ZMLWEKyDWsLImalvoAB+1/lkkRueNKV6Ml8UvrTvb7FEOs4muxQ
+Yi4/Gjg9TBMQPac6N0JUM2D2KeaclbPoY1j4DeSqo3fHXZ5j1jRaXqr3yB8uW5lL
+xvTi4jTu5uexY8nQ/zXy
+=TJPK
+-----END PGP SIGNATURE-----
 
-> +
-> +       p = early_ioremap(acpi_tables_inram, offset);
-> +       memcpy(p, start_addr, offset);
-> +       early_iounmap(p, offset);
-> +       return offset;
-> +}
-> +
-> +#endif
-> +
->  acpi_status
->  acpi_os_table_override(struct acpi_table_header * existing_table,
->                       struct acpi_table_header ** new_table)
-> @@ -559,12 +661,54 @@ acpi_os_table_override(struct acpi_table_header * existing_table,
->
->  acpi_status
->  acpi_os_physical_table_override(struct acpi_table_header *existing_table,
-> -                               acpi_physical_address * new_address,
-> -                               u32 *new_table_length)
-> +                               acpi_physical_address *address,
-> +                               u32 *table_length)
->  {
-> -       return AE_SUPPORT;
-> -}
-> +#ifndef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-> +       *table_length = 0;
-> +       *address = 0;
-> +       return AE_OK;
-> +#endif
-> +
-> +       int table_nr = 0;
-> +       *table_length = 0;
-> +       *address = 0;
-> +       for (; table_nr < ACPI_OVERRIDE_TABLES &&
-> +                    acpi_table_override_offset[table_nr]; table_nr++) {
-> +               int table_offset;
-> +               int table_len;
-> +               struct acpi_table_header *table;
-> +
-> +               if (table_nr == 0)
-> +                       table_offset = 0;
-> +               else
-> +                       table_offset = acpi_table_override_offset[table_nr - 1];
->
-> +               table_len = acpi_table_override_offset[table_nr] - table_offset;
-> +
-> +               table = acpi_os_map_memory(acpi_tables_inram + table_offset,
-> +                                          table_len);
-> +
-
-maybe could have dmi checking for more strict checking.
-
-also would help if have one boot command that could skip overriding.
-
-> +               if (memcmp(existing_table->signature, table->signature, 4)) {
-> +                       acpi_os_unmap_memory(table, table_len);
-> +                       continue;
-> +               }
-> +
-> +               /* Only override tables with matching oem id */
-> +               if (memcmp(table->oem_table_id, existing_table->oem_table_id,
-> +                          ACPI_OEM_TABLE_ID_SIZE)) {
-> +                       acpi_os_unmap_memory(table, table_len);
-> +                       continue;
-> +               }
-> +
-> +               acpi_os_unmap_memory(table, table_len);
-> +               *address = acpi_tables_inram + table_offset;
-> +               *table_length = table_len;
-> +               add_taint(TAINT_OVERRIDDEN_ACPI_TABLE);
-> +               break;
-> +       }
-> +       return AE_OK;
-> +}
->
->  static irqreturn_t acpi_irq(int irq, void *dev_id)
->  {
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 104eda7..12bda6a 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -76,6 +76,10 @@ typedef int (*acpi_table_handler) (struct acpi_table_header *table);
->
->  typedef int (*acpi_table_entry_handler) (struct acpi_subtable_header *header, const unsigned long end);
->
-> +#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-> +int __init acpi_initrd_table_override(void *start_addr, void *end_addr);
-
-> +#endif
-
-if you have
-#else
-static inline int __init acpi_initrd_table_override(void *start_addr,
-void *end_addr) { return 0 }
-#endif
-
-here, you can avoid one #ifdef in .c
-
-Thanks
-
-Yinghai
+--NzB8fVQJ5HfG6fxh--
