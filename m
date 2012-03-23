@@ -1,73 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2CWDct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 23:32:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52042 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2CWDcq (ORCPT
+	id S1755776Ab2CWDdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 23:33:01 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60122 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab2CWDc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 23:32:46 -0400
-Date: Fri, 23 Mar 2012 14:32:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-Id: <20120323143237.9b5917955cb42951f0368ec4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 22 Mar 2012 23:32:58 -0400
+Date: Thu, 22 Mar 2012 23:32:54 -0400 (EDT)
+Message-Id: <20120322.233254.1188476332090385245.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__23_Mar_2012_14_32_37_+1100_4FRUJ3ty06d2KS3a"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Mar 2012 20:32:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Mar_2012_14_32_37_+1100_4FRUJ3ty06d2KS3a
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Samuel,
+1) L2TP doesn't get autoloaded when you try to open an L2TP socket
+   due to a missing module alias, fix from Benjamin LaHaise.
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/mfd/twl-core.c between commits 5769089ac725 ("mfd: twl-core.c:
-Fix the number of interrupts managed by twl4030"), 75294957be1d
-("irq_domain: Remove 'new' irq_domain in favour of the ppc one") and
-964dba283439 ("devicetree: Add empty of_platform_populate() for !
-CONFIG_OF_ADDRESS (sparc)") from Linus' tree and commits 9e1786202704
-("mfd: Make twl-core not depend on pdata->irq_base/end") and 78518ffa08fc
-("mfd: Move twl-core IRQ allocation into twl[4030|6030]-irq files") from
-the mfd tree.
+2) Netlabel and RDS should propagate gfp flags given to them by
+   callers, fixes from Dan Carpeneter.
 
-I *think* that the right thing to do is to use the version from the mfd
-tree ...
+3) Recursive locking fix in usbnet wasn't bulletproof and can result
+   in objects going away mid-flight due to races, fix from
+   Ming Lei.
 
-I do wonder why I only got this now (in the merge window) ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+4) Fix up some confusion about a bool module parameter in netfilter's
+   iptable_filter and ip6table_filter, from Rusty Russell.
 
---Signature=_Fri__23_Mar_2012_14_32_37_+1100_4FRUJ3ty06d2KS3a
-Content-Type: application/pgp-signature
+5) If SKB recycling is used via napi_reuse_skb() we end up with
+   different amounts of headroom reserved than we had at the original
+   SKB allocation.  Fix from Eric Dumazet.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+6) Fix races in TG3 driver ring refilling, from Michael Chan.
 
-iQIcBAEBCAAGBQJPa+7VAAoJEECxmPOUX5FEf5wP/1Us67YqHVnSO0uwjvgPTqw2
-7uwRxruqzAFT0fgZo0CHfvgI1e0zOy2M57FVZxmWi78rfJyO3eNWJZ6YsGZQQsbY
-Q8TFmy/IQHBV+k7afcO7pRpnbG8uqFck30CmSovd++JL0r616HgVMduPXfrR8Arn
-Q6JVuIj/AnYlitF5OKvkW570pxO1wWOC0ZfbpjiYem1Ix6nFyIRCBtoEIHaUbGX5
-IRCxLKv5D9SUvabLpYisM5Wdk2BkYmwUNl/ekzFtRub7FL86CGs0amPAfXmwbEvW
-yj0tNQXYbfSMP6dtSZbgPjNFori7EamplckyToXGPY1vIMBc/NAtw0BxVOia+XgM
-CTs3fkBu1W+QyMlYRk+lw8rF/3iNOc2UmsYdO+qHgX9VjSVd6oC/HRrLaymKW2gI
-YmxO6RItrHKQy0QzUPD+yXXU/V9UtCSrOw/0jfXRJg492s+oiIsxY+/BGnpjgiTO
-LhqJZ21u9EUwSEBUeJvMxwewkzh/9oGcPzE8BJZ1zfbcnTU9XktKxZKEHX0+57Kg
-iY+4RUoUsvbTuHVlNevOu3lmIrFvTopbyg/KaenjwvkFI/34kwdLHWYJ7z6929x+
-640yulMLMTGaUMvKfRSnWx7xXBpl8MD+tj6tNBwub4GljNwSdZMGuRs+BQPQIJ5A
-jUmZlhE0HnQfXa/dNDX8
-=xCvn
------END PGP SIGNATURE-----
+7) We have callbacks for IPSEC replay notifiers, but some call sites
+   were not using the ops method and instead were calling one of the
+   implementations directly.  Oops.  Fix from Steffen Klassert.
 
---Signature=_Fri__23_Mar_2012_14_32_37_+1100_4FRUJ3ty06d2KS3a--
+8) Fix IP address validation properly in the bonding driver, the previous
+   fix only works with netlink where the subnet mask and IP address are
+   changed in one atomic operation.  When 'ifconfig' ioctls are used
+   the IP address and the subnet mask are changed in two distinct
+   operations.  Fix from Andy Gospodarek.
+
+9) Provide a sky2 module operation to work around power management
+   issues with some BIOSes.  From Stephen Hemminger.
+
+Please pull, thanks a lot.
+
+The following changes since commit 4f5b1affdda3e0c48cac674182f52004137b0ffc:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/lliubbo/blackfin (2012-03-22 18:20:02 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Andy Gospodarek (1):
+      bonding: remove entries for master_ip and vlan_ip and query devices instead
+
+Benjamin LaHaise (1):
+      l2tp: enable automatic module loading for l2tp_ppp
+
+Dan Carpenter (2):
+      netlabel: use GFP flags from caller instead of GFP_ATOMIC
+      RDS: use gfp flags from caller in conn_alloc()
+
+Eric Dumazet (1):
+      net: fix napi_reuse_skb() skb reserve
+
+Michael Chan (2):
+      tg3: Fix RSS ring refill race condition
+      cnic: Fix parity error code conflict
+
+Oliver Neukum (1):
+      usbnet: consider device busy at each recieved packet
+
+Rusty Russell (1):
+      netfilter: remove forward module param confusion.
+
+Steffen Klassert (2):
+      xfrm: Remove unused xfrm_state from xfrm_state_check_space
+      xfrm: Access the replay notify functions via the registered callbacks
+
+stephen hemminger (1):
+      sky2: override for PCI legacy power management
+
+tom.leiming@gmail.com (2):
+      usbnet: increase URB reference count before usb_unlink_urb
+      usbnet: don't clear urb->dev in tx_complete
+
+ drivers/net/bonding/bond_main.c           |   82 +++++-----------------------
+ drivers/net/bonding/bonding.h             |   18 ++++++-
+ drivers/net/ethernet/broadcom/cnic.c      |   12 +++--
+ drivers/net/ethernet/broadcom/cnic_defs.h |   28 +---------
+ drivers/net/ethernet/broadcom/cnic_if.h   |    4 +-
+ drivers/net/ethernet/broadcom/tg3.c       |   25 ++++++++-
+ drivers/net/ethernet/broadcom/tg3.h       |    1 +
+ drivers/net/ethernet/marvell/sky2.c       |   11 ++++
+ drivers/net/usb/usbnet.c                  |   11 ++++-
+ drivers/scsi/bnx2fc/bnx2fc_constants.h    |    1 +
+ drivers/scsi/bnx2i/57xx_iscsi_constants.h |    1 +
+ net/core/dev.c                            |    3 +-
+ net/ipv4/devinet.c                        |    1 +
+ net/ipv4/netfilter/iptable_filter.c       |    9 +---
+ net/ipv6/netfilter/ip6table_filter.c      |    9 +---
+ net/l2tp/l2tp_ppp.c                       |    1 +
+ net/netlabel/netlabel_kapi.c              |    2 +-
+ net/rds/ib_cm.c                           |    2 +-
+ net/rds/iw_cm.c                           |    2 +-
+ net/rds/loop.c                            |    2 +-
+ net/xfrm/xfrm_output.c                    |    4 +-
+ net/xfrm/xfrm_replay.c                    |    6 +-
+ 22 files changed, 104 insertions(+), 131 deletions(-)
