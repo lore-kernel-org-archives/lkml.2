@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2CWCBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:01:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20932 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab2CWCBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:01:02 -0400
-Date: Thu, 22 Mar 2012 22:00:52 -0400
-From: Dave Jones <davej@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@elte.hu, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: excessive MSR print out during boot.
-Message-ID: <20120323020052.GA11519@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Yinghai Lu <yinghai@kernel.org>, mingo@elte.hu,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753587Ab2CWCMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:12:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62522 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab2CWCMt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 22:12:49 -0400
+From: Takahiro Shimizu <tshimizu818@gmail.com>
+To: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
+        richardcochran@gmail.com, arnd@arndb.de, khc@pm.waw.pl,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Takahiro Shimizu <tshimizu818@gmail.com>
+Subject: [PATCH 1/2] ptp/ptp_pch: Modified according to the mainter's comments
+Date: Fri, 23 Mar 2012 11:12:39 +0900
+Message-Id: <1332468760-2525-1-git-send-email-tshimizu818@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During bootup, I now have 162 messages like this..
 
-[    0.227346]  MSR0000001b: 00000000fee00900
-[    0.227465]  MSR00000021: 0000000000000001
-[    0.227584]  MSR0000002a: 00000000c1c81400
+Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
+---
+ drivers/ptp/ptp_pch.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-commit 21c3fcf3e39353d4f21d50e257cc74f3204b1988 looks suspect.
-It claims that it will only print these out if show_msr= is passed,
-but that doesn't seem to be the case.
-
-	Dave
+diff --git a/drivers/ptp/ptp_pch.c b/drivers/ptp/ptp_pch.c
+index 375eb04..212381e 100644
+--- a/drivers/ptp/ptp_pch.c
++++ b/drivers/ptp/ptp_pch.c
+@@ -261,6 +261,7 @@ u64 pch_rx_snap_read(struct pci_dev *pdev)
+ 
+ 	ns = ((u64) hi) << 32;
+ 	ns |= lo;
++	ns <<= TICKS_NS_SHIFT;
+ 
+ 	return ns;
+ }
+@@ -277,6 +278,7 @@ u64 pch_tx_snap_read(struct pci_dev *pdev)
+ 
+ 	ns = ((u64) hi) << 32;
+ 	ns |= lo;
++	ns <<= TICKS_NS_SHIFT;
+ 
+ 	return ns;
+ }
+@@ -649,8 +651,6 @@ pch_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	iowrite32(1, &chip->regs->trgt_lo);
+ 	iowrite32(0, &chip->regs->trgt_hi);
+ 	iowrite32(PCH_TSE_TTIPEND, &chip->regs->event);
+-	/* Version: IEEE1588 v1 and IEEE1588-2008,  Mode: All Evwnt, Locked  */
+-	iowrite32(0x80020000, &chip->regs->ch_control);
+ 
+ 	pch_eth_enable_set(chip);
+ 
+-- 
+1.7.4.4
 
