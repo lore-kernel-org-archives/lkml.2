@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab2CWQIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 12:08:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209Ab2CWQID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 12:08:03 -0400
-Date: Fri, 23 Mar 2012 17:28:07 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, mst@redhat.com,
-        nyh@il.ibm.com, nyh@math.technion.ac.il
-Subject: [PULL net] vhost-net/virtio: fixes for 3.4
-Message-ID: <20120323152807.GA6037@redhat.com>
+	id S1755252Ab2CWQK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 12:10:28 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:53076 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab2CWQK0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 12:10:26 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-127.messagelabs.com!1332519025!1310688!2
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+CC: Rafal Prylowski <prylowski@metasoft.pl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Date: Fri, 23 Mar 2012 11:09:50 -0500
+Subject: RE: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Thread-Topic: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Thread-Index: Ac0Iw14w+fHMD1dNTVuZD4yln9FKNgAS7+WA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
+References: <4F683B36.8090101@metasoft.pl>
+ <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
+ <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
+In-Reply-To: <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Friday, March 23, 2012 12:05 AM, Mika Westerberg wrote:
+> On Thu, Mar 22, 2012 at 09:19:10PM -0500, H Hartley Sweeten wrote:
+>
+>> Did you test this patch or just review it?
+>
+> I tested and reviewed it.
 
-The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
+OK. What kernel? My tests so far have been with 3.3.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
+>> On my system it doesn't work. I think it has something to do with the
+>> changes to m2m_hw_interrupt but I haven't tracked it down yet.
+>> 
+>> It looks like what's missing is a:
+>> 
+>> 	edmac->edma->hw_submit(edmac);
+>> 
+>> But, maybe that's not needed with double buffering?
+>
+> Did you try without your patch and adding my VIC hack? That's what I did when
+> I first got this patch and I saw no problems. I tested with audio (M2P),
+> mmc_spi (M2M) and dmatest (M2M).
 
-are available in the git repository at:
+No, I have not applied your VIC hack.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+Until we get a working solution, without any hacks, I don't want this to go in.
 
-for you to fetch changes up to ea5d404655ba3b356d0c06d6a3c4f24112124522:
+Regards,
+Hartley
 
-  vhost: fix release path lockdep checks (2012-02-28 09:13:22 +0200)
-
-----------------------------------------------------------------
-vhost/virtio: fixes for 3.4
-
-This includes a couple of vhost-net bugfixes,
-and fixes tools/virtio making it useful again.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-----------------------------------------------------------------
-Michael S. Tsirkin (4):
-      tools/virtio: add linux/module.h stub
-      tools/virtio: add linux/hrtimer.h stub
-      tools/virtio: stub out strong barriers
-      vhost: fix release path lockdep checks
-
-Nadav Har'El (1):
-      vhost: don't forget to schedule()
-
- drivers/vhost/net.c         |    2 +-
- drivers/vhost/vhost.c       |   11 +++++++----
- drivers/vhost/vhost.h       |    2 +-
- tools/virtio/linux/virtio.h |    3 +++
- 4 files changed, 12 insertions(+), 6 deletions(-)
- create mode 100644 tools/virtio/linux/hrtimer.h
- create mode 100644 tools/virtio/linux/module.h
