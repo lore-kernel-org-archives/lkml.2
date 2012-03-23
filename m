@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab2CWBVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 21:21:13 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57724 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab2CWBVL (ORCPT
+	id S1752759Ab2CWBnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 21:43:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49952 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2CWBnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 21:21:11 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
-To: lwoodman@redhat.com
-Cc: Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
-Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if task is already on a correct node
-In-Reply-To: Your message of "Thu, 22 Mar 2012 16:14:04 -0400."
-             <4F6B880C.7000805@redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home> <4F6B7854.1040203@redhat.com> <40300.1332445016@turing-police.cc.vt.edu>
-            <4F6B880C.7000805@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1332465660_1929P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 22 Mar 2012 21:21:00 -0400
-Message-ID: <3879.1332465660@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.4F6BCFFF.0049,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 22 Mar 2012 21:43:04 -0400
+Date: Fri, 23 Mar 2012 01:42:51 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Christopher Li <sparse@chrisli.org>
+Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
+Message-ID: <20120323014251.GH6589@ZenIV.linux.org.uk>
+References: <20120321100602.GA5522@barrios>
+ <4F69D496.2040509@openvz.org>
+ <20120322142647.42395398.akpm@linux-foundation.org>
+ <20120322212810.GE6589@ZenIV.linux.org.uk>
+ <20120322144122.59d12051.akpm@linux-foundation.org>
+ <4F6BA221.8020602@openvz.org>
+ <4F6BA69F.1040707@openvz.org>
+ <CA+55aFz4hWfT5c93rUWvN4OsYHjOSAjmNtoT7Rkjz7kYsaC7xg@mail.gmail.com>
+ <4F6BAD15.90802@openvz.org>
+ <20120322160944.ad06e559.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322160944.ad06e559.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1332465660_1929P
-Content-Type: text/plain; charset=us-ascii
+On Thu, Mar 22, 2012 at 04:09:44PM -0700, Andrew Morton wrote:
 
-On Thu, 22 Mar 2012 16:14:04 -0400, Larry Woodman said:
-> On 03/22/2012 03:36 PM, Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 22 Mar 2012 15:07:00 -0400, Larry Woodman said:
-> >
-> >> So to be clear on this, in that case the intention would be move 3 to 4,
-> >> 4 to 5 and 5 to 6
-> >> to keep the node ordering the same?
-> > Would it make more sense to do 5->6, 4->5, 3->4?  If we move stuff
-> > from 3 to 4 before clearing the old 4 stuff out, it might get crowded?
-> >
-> Yes, I didnt try to imply the order in which pages were moved just
-> the additional moving necessary.
+> > Thanks. Looks like "__nocast" totally undocumented.
+> > It would be nice to add something about this into Documentation/sparse.txt
+> 
+> Yup, Chris has added this to his todo list (thanks!).
 
-Oh, OK.. :)
-
-
---==_Exmh_1332465660_1929P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT2vP/AdmEQWDXROgAQIsnxAAumBOMgzOwiTT4rJs98vgUg8KKeo6ciYc
-9thofQqjYmfJnHc/7nmhJSQASfUYLVHh16tL47ky+mazjYZgKCXY0Tfp7S1JXZX4
-n/OV7AX1o2IezoufzrIFcBtEMh6UxwzR6DYifqBCgem6YBbePvBlCxKfve0Arxo3
-QPoyxl+OYEh35SUXZFVDHzKuhX3NRxMsRaS2HMrGpeKxj7gLkovr6iDTGemDYvyU
-sCGBpw8IRpUnkxcGXz/LFaf9MIenVEIeyZIW+ZYEqDzKbl3LYNiwWz66xzUhv4lw
-/hoIz307L3Cw445C0vzBXQDCeXLDzoZ8A/c8bpvWItb4c2z9byeF/WZprW4I6j8z
-aE1EUBicrdQQM9M2h8nhAe7bck+Zkl2onVtrLGZbVqcO6JQdGrxsnrcRr4B1Go1p
-ASsfGMqjWK6Fj3dFQpz6wgyL9mMMoIGOwRFFDMD6QrTx5Xlr41JW/dOTNIiBBqvw
-NBJ7u9UzAPoceefwfnzt95mwUlcGI7mWHzgpNN/9NK6fgJ2ukBE70/Q0TV68EcbH
-2bBxEd+B6HlNcQQ+lt82EGLMocZ6gpnBF/W2dxJ7T2X87q0mhhQ2LuDb7QSe6+vs
-tCA4VQL6AHA5E8tLOMlBkiyHfb8VR3rarN+/nIbBhyLQieiI6oqAJ552kVKhMRbn
-CsxnZJWsTwA=
-=8fMF
------END PGP SIGNATURE-----
-
---==_Exmh_1332465660_1929P--
-
+Alternatively, we could just remove the remaining instances in the kernel -
+cputime_t is the only borderline reasonable one there; xfs ones should be
+__bitwise and so should zd_addr_t thing (with cpu_to_le16() moved from
+uses of those suckers to macro definitions).  Hell knows - I suspect that
+cputime_t also might've been turned into __bitwise u64, but I hadn't checked
+if we ever do plain arithmetics on those...
