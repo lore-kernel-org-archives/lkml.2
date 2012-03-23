@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab2CWJ7o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 05:59:44 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35159 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab2CWJ7m (ORCPT
+	id S1755727Ab2CWKCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 06:02:48 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:8653 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752480Ab2CWKCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 05:59:42 -0400
-Date: Fri, 23 Mar 2012 10:01:49 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Tai-hwa Liang <avatar@sentelic.com>
-Cc: Oskari Saarenmaa <os@ohmu.fi>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] Input: sentelic - enabling absolute coordinates
- output for newer hardware
-Message-ID: <20120323100149.338deb94@pyramind.ukuu.org.uk>
-In-Reply-To: <1332474741-19426-3-git-send-email-avatar@sentelic.com>
-References: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
-	<1332474741-19426-3-git-send-email-avatar@sentelic.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Mar 2012 06:02:46 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] regmap: rbtree: Fix register default look-up in sync
+Date: Fri, 23 Mar 2012 11:04:57 +0100
+Message-ID: <1332497097-17846-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On the other hand, the FSP found on UX21/31 doesn't have hardware capability
-> register other than PnP ID, which means that we'll have to figure out an
-> alternative approach to identify such pad correctly; otherwise, blindly
-> adding INPUT_PROP_BUTTONPAD property may compatability issues amongst
-> existing FSPs.
+The code currently passes the register offset in the current block to
+regcache_lookup_reg. This works fine as long as there is only one block and with
+base register of 0, but in all other cases it will look-up the default for a
+wrong register, which can cause unnecessary register writes. This patch fixes
+it by passing the actual register number to regcache_lookup_reg.
 
-If its tied to specific boards then the DMI data from the BIOS may be
-what you need for that. It'll let you identify boards/vendors.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/base/regmap/regcache-rbtree.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Alan
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 8d51916..de7241c 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -395,7 +395,7 @@ static int regcache_rbtree_sync(struct regmap *map, unsigned int min,
+ 							   map->cache_word_size);
+ 
+ 			/* Is this the hardware default?  If so skip. */
+-			ret = regcache_lookup_reg(map, i);
++			ret = regcache_lookup_reg(map, regtmp);
+ 			if (ret >= 0 && val == map->reg_defaults[ret].def)
+ 				continue;
+ 
+-- 
+1.7.9.1
+
+
