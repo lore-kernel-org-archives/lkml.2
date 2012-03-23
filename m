@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377Ab2CWKHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 06:07:35 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:38417 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753022Ab2CWKHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 06:07:18 -0400
-X-Authenticated: #9008106
-X-Provags-ID: V01U2FsdGVkX1/r/X5wQxrrHQaGK0n5HB6jvrfR7BuPDWgEziW9ss
-	I+s+7KUA32yXh3
-Date: Fri, 23 Mar 2012 11:06:37 +0100
-From: Michael Brunner <mibru@gmx.de>
-To: Darren Hart <dvhart@linux.intel.com>
+	id S1757834Ab2CWKOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 06:14:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46818 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753138Ab2CWKOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 06:14:39 -0400
+Date: Fri, 23 Mar 2012 11:14:31 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: [PATCHv2] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
-Message-ID: <20120323110637.63aa2f64@hyperion>
-In-Reply-To: <4F6B9E7B.9090005@linux.intel.com>
-References: <20120322211903.6776ab18@mail.gmx.de>
-	<4F6B8E1B.9080802@linux.intel.com>
-	<20120322223112.291e0c59@mail.gmx.de>
-	<4F6B9E7B.9090005@linux.intel.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+        "Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org
+Subject: Re: Tracking regressions for next release(s)
+Message-ID: <20120323101431.GA8832@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org
+References: <CAG9S4UjTtm_Zx89udbB=Qew7vToWkE_GHc_f78Q-kbOuqh4NRg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAG9S4UjTtm_Zx89udbB=Qew7vToWkE_GHc_f78Q-kbOuqh4NRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add UART clock quirk for the Kontron COMe-mTT10 module.
+On Fri, Mar 23, 2012 at 07:01:19AM +0100, Maciej Rutecki wrote:
+> I am interested in the opinion of the developers, testers, and
+> everyone involved in the development of the kernel, if they thing that
+> tracking regressions and monitoring the quality makes sense,
 
-The board has previously been called nanoETXexpress-TT, therefore this
-is also checked.
+Absolutely.
 
-As suggested by Darren Hart the comparison in this patch version is
-placed after the FRI2 checks to ensure it will also work with possible
-upcoming changes to the FRI2 firmware.
+> especially since I met several times (put it mildly) dislike of such
+> work and the bugs are repaired relatively slowly.
 
-This patch follows the patchset submitted by Darren Hart at
-commit a46f5533ecfc7bbdd646d84fdab8656031a715c6.
+I can imagine people getting cranky when someone points out that there's
+a "boring" bug they need to fix instead of them working on the cool new
+feature they have thought of. It is the same old story we've been having
+since forever: people don't really love to fix bugs, especially if the
+code works for them and the bug doesn't appear on their boxes.
 
-Signed-off-by: Michael Brunner <mibru@gmx.de>
----
- drivers/tty/serial/pch_uart.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> Perhaps someone has comments or proposals for change (in the way of
+> work or me).
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 332f2eb..dd69c95 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -210,6 +210,7 @@ enum {
- #define CMITC_UARTCLK   192000000 /* 192.0000 MHz */
- #define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
- #define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
-+#define NTC1_UARTCLK     64000000 /*  64.0000 MHz */
- 
- struct pch_uart_buffer {
- 	unsigned char *buf;
-@@ -388,6 +389,12 @@ static int pch_uart_get_uartclk(void)
- 	if (cmp && strstr(cmp, "Fish River Island II"))
- 		return FRI2_48_UARTCLK;
- 
-+	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
-+	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-+	if (cmp && (strstr(cmp, "COMe-mTT") ||
-+		    strstr(cmp, "nanoETXexpress-TT")))
-+		return NTC1_UARTCLK;
-+
- 	return DEFAULT_UARTCLK;
- }
- 
+Yeah, we need a big bad assh*le :) who screams at everyone until their
+bugs is fixed.
+
+But serioulsy, this hasn't changed: we definitely need a regression
+list, I think it works even better when Linus goes over it and says
+this is fixed, that is this commit, etc. because he pulls all the trees
+in the end, ... so yeah, I think what you guys are doing is good and
+important.
+
+It would be even cooler if this list be expanded also to regressions in
+kernel performance which people have noticed from running benchmarks on
+different -rcs and have noticed differences there, maybe a website (not
+bugzilla) which lists all those regressions for interested parties to
+fix in addition to the LKML mails..., etc...
+
+Thanks for your hard work, btw.
+
+-- 
+Regards/Gruss,
+    Boris.
