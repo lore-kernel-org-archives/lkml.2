@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab2CWDPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 23:15:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62844 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab2CWDPq (ORCPT
+	id S1757541Ab2CWDQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 23:16:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50882 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab2CWDQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 23:15:46 -0400
-Date: Thu, 22 Mar 2012 20:15:32 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Elly Jones <ellyjones@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        taysom@chromium.org
-Subject: Re: [dm-devel] [PATCH] dm: remake of the verity target
-Message-ID: <20120323031532.GP27051@google.com>
-References: <Pine.LNX.4.64.1203131742230.24876@file.rdu.redhat.com>
- <20120320154159.GD27051@google.com>
- <Pine.LNX.4.64.1203202045150.23255@file.rdu.redhat.com>
- <Pine.LNX.4.64.1203202233250.6371@file.rdu.redhat.com>
- <CACBanvrjZbDY+aUUyp9-YuG8KoEd9k-cn50kn8N=3DQxKf7QFA@mail.gmail.com>
- <Pine.LNX.4.64.1203202340160.15617@file.rdu.redhat.com>
- <CACBanvqYb3MU=Zy7HNJ2oMekQE6FZY5ZtN7QAaAv0M=tVH=cXw@mail.gmail.com>
- <Pine.LNX.4.64.1203211304550.7011@file.rdu.redhat.com>
- <20120322174101.GM27051@google.com>
- <Pine.LNX.4.64.1203221739060.11979@file.rdu.redhat.com>
+	Thu, 22 Mar 2012 23:16:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1203221739060.11979@file.rdu.redhat.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <1332461414.2982.90.camel@pasglop>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Mar 2012 20:15:59 -0700
+X-Google-Sender-Auth: fcRFWdbqCyKAQa1WDcbZe_YB0B8
+Message-ID: <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikulas Patocka (mpatocka@redhat.com) wrote:
-> 
-> 
-> On Thu, 22 Mar 2012, Mandeep Singh Baines wrote:
-> 
-> > Mikulas Patocka (mpatocka@redhat.com) wrote:
-> > > 
-> > > This is improved patch that supports both the old format and the new 
-> > > format. I checked that it is interoperable with with the old Google 
-> > > userspace tool and with the original Google kernel driver.
-> > > 
-> > 
-> > Thanks much for doing this:)
-> > 
-> > This looks good but would a prepend/append flag be better?
-> 
-> It does more than changing prepend/append salt. I changed alignment in the 
-> new format so that it doesn't have to use a multiply instruction.
-> 
-> In the old format, if digest size is not a power of two, all digests are 
-> placed first and the rest of the block is padded with zeros. In the new 
-> format, each digest is padded with zeros to a power of two.
-> 
-> For example, when using sha1, the old format padding looks like this:
-> aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb
-> bbbbbbbbbbbbbbbbccccccccccccccccccccccccccccccccccccccccdddddddd
-> dddddddddddddddddddddddddddddddd00000000000000000000000000000000
-> 0000000000000000000000000000000000000000000000000000000000000000
-> 
-> ... and the new format padding looks like this:
-> aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000
-> bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb000000000000000000000000
-> cccccccccccccccccccccccccccccccccccccccc000000000000000000000000
-> dddddddddddddddddddddddddddddddddddddddd000000000000000000000000
-> 
-> The version "0" (first argument in the target line) actually means the old 
-> style padding and the salt is hashed after the data. The version "1" means 
-> new style padding and the salt is hashed before the data. If someone comes 
-> with another format, we can use version "2" for it, etc.
-> 
+On Thu, Mar 22, 2012 at 5:10 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+> That means that everything gets constantly rebased, and it makes life
+> very much harder for us working with this.
 
-+cc taysom
+Ben, thanks for pointing this out.
 
-Makes sense.
+I will not be pulling this tree at all. It's pure and utter shit, and
+I wonder how long (forever?) this has been going on.
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+The particular issue that upsets *me* is only indirectly the problem
+Ben is mentioning. No, the thing that makes me go "uhhuh, no way in
+*hell* should I pull this" is that you have apparently totally broken
+all sign-offs.
 
-Speaking of V2, one idea a colleague of mine (taysom) just had was to
-drop the power of 2 alignment. For SHA-1, this shrinks the tree by 37.5 %.
-You have to replace the shifts with divides but the reduction in I/O
-more than makes up. For the different levels, you could pre-calculate
-the divisor.
+Avi, you ABSOLUTELY MUST NOT rebase other peoples commits. That's a
+total no-no. And one thing I notice when I look through the commits is
+that you have totally broken the Signed-off-by: series in the process,
+exactly because what you do is crap, crap, CRAP.
 
-Regards,
-Mandeep
+The sign-off chain should be very simple: the first person to sign off
+should be the author, and the last person to sign off should be the
+committer.
 
-> Mikulas
+That's simply not true in your tree. Maybe because you have rebased
+other peoples (Alexander's) commits? I see commits where the sign-off
+ends with Alexander, but then the committer is you. WTF?
+
+Fix your f*cking broken shit *now*.
+
+I'm not pulling crap like this. And it makes me unhappy to realize
+that this has probably happened a long time and I haven't even
+noticed.
+
+The whole "you MUST NOT rebase other peoples commits" is the thing
+I've been telling people for *years* now. Why the hell is it still
+going on?
+
+                       Linus
