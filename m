@@ -1,71 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030247Ab2CWR7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 13:59:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42730 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964928Ab2CWR7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 13:59:37 -0400
-Date: Fri, 23 Mar 2012 18:51:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120323175157.GA20675@redhat.com>
-References: <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com> <20120113152010.GA19215@redhat.com> <20120113182750.GD18166@google.com> <20120114173648.GA32543@redhat.com> <20120118231742.GS18166@google.com> <20120119154522.GA14058@redhat.com> <20120320193414.GA21277@redhat.com> <20120321185955.GK27051@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120321185955.GK27051@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758105Ab2CWSG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 14:06:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41790 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab2CWSG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 14:06:58 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf tools: Fix display of first level of callchains
+Date: Fri, 23 Mar 2012 19:06:50 +0100
+Message-Id: <1332526010-15400-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21, Mandeep Singh Baines wrote:
->
-> Oleg Nesterov (oleg@redhat.com) wrote:
-> > +/*
-> > + * rcu-safe, but should start at ->group_leader.
-> > + * thread_group_leader(g) protects against the race with exec which
-> > + * removes the leader from list.
-> > + * smp_rmb() pairs with implicit mb() implied by unlock + lock in
-> > + * de_thread()->release_task() path.
-> > + */
-> > +#define while_each_thread_rcu(g, t)				\
-> > +	while ((t = next_thread(t)) != g &&			\
-> > +		({ smp_rmb(); thread_group_leader(g); }))
-> > +
->
-> Couldn't you miss the exec_thread if:
->
-> t = exec_thread && !thread_group_leader(g)
+The callchain stdio mode display was written using a sorted by
+symbol report. In this mode we have only one callchain root per
+hist so we forgot to handle cases where we have multiple callchain
+root, as in per dso sorting for example.
 
-Yes, we already discussed this, iirc.
+Fix this by handling these roots like any other branch, with the
+hist as the parent.
 
-I was going to write that this is fine, but then I changed my mind.
-Indeed, it is not good while_each_thread_rcu() can miss the new leader.
+Before:
 
-> Could we change do_prlimit()? Especially since its slow path.
+     1.97%  libpthread-2.12.1.so
+            |
+            --- __libc_write
+                create_worker
+                bench_sched_messaging
+                cmd_bench
+                run_builtin
+                main
+                __libc_start_main
 
-But do_prlimit() is correct. It sees the unhashed task under tasklist,
-task->group_leader should be correct.
+            |
+            --- __libc_read
+                create_worker
+                bench_sched_messaging
+                cmd_bench
+                run_builtin
+                main
+                __libc_start_main
 
-> I really like you're earlier solution (ignoring barrier):
->
-> #define while_each_thread(g, t) \
-> 	while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
+After:
 
-The problem is "ignoring barrier and races".
+     1.97%  libpthread-2.12.1.so
+            |
+            |--36.97%-- __libc_write
+            |          create_worker
+            |          bench_sched_messaging
+            |          cmd_bench
+            |          run_builtin
+            |          main
+            |          __libc_start_main
+            |
+            |--31.47%-- __libc_read
+            |          create_worker
+            |          bench_sched_messaging
+            |          cmd_bench
+            |          run_builtin
+            |          main
+            |          __libc_start_main
+           ...
 
-OK, I'll try to think again.
+Single roots keep their entry without percentage because they have
+the same overhead than the hist they refer to. ie: 100% in fractal
+mode and the percentage of the hist in graph mode:
 
-Oleg.
+     0.00%  [k] reschedule_interrupt
+            |
+            --- default_idle
+                amd_e400_idle
+                cpu_idle
+                start_secondary
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/hist.c |  159 ++++++++++++++++++++++++++++--------------------
+ 1 files changed, 94 insertions(+), 65 deletions(-)
+
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 2c624ad..7509bc6 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -607,7 +607,7 @@ static void init_rem_hits(void)
+ 	rem_hits.ms.sym = rem_sq_bracket;
+ }
+ 
+-static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
++static size_t __callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 					 u64 total_samples, int depth,
+ 					 int depth_mask, int left_margin)
+ {
+@@ -615,21 +615,16 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
+ 	struct callchain_node *child;
+ 	struct callchain_list *chain;
+ 	int new_depth_mask = depth_mask;
+-	u64 new_total;
+ 	u64 remaining;
+ 	size_t ret = 0;
+ 	int i;
+ 	uint entries_printed = 0;
+ 
+-	if (callchain_param.mode == CHAIN_GRAPH_REL)
+-		new_total = self->children_hit;
+-	else
+-		new_total = total_samples;
+-
+-	remaining = new_total;
++	remaining = total_samples;
+ 
+-	node = rb_first(&self->rb_root);
++	node = rb_first(root);
+ 	while (node) {
++		u64 new_total;
+ 		u64 cumul;
+ 
+ 		child = rb_entry(node, struct callchain_node, rb_node);
+@@ -657,11 +652,17 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
+ 		list_for_each_entry(chain, &child->val, list) {
+ 			ret += ipchain__fprintf_graph(fp, chain, depth,
+ 						      new_depth_mask, i++,
+-						      new_total,
++						      total_samples,
+ 						      cumul,
+ 						      left_margin);
+ 		}
+-		ret += __callchain__fprintf_graph(fp, child, new_total,
++
++		if (callchain_param.mode == CHAIN_GRAPH_REL)
++			new_total = child->children_hit;
++		else
++			new_total = total_samples;
++
++		ret += __callchain__fprintf_graph(fp, &child->rb_root, new_total,
+ 						  depth + 1,
+ 						  new_depth_mask | (1 << depth),
+ 						  left_margin);
+@@ -671,61 +672,75 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
+ 	}
+ 
+ 	if (callchain_param.mode == CHAIN_GRAPH_REL &&
+-		remaining && remaining != new_total) {
++		remaining && remaining != total_samples) {
+ 
+ 		if (!rem_sq_bracket)
+ 			return ret;
+ 
+ 		new_depth_mask &= ~(1 << (depth - 1));
+-
+ 		ret += ipchain__fprintf_graph(fp, &rem_hits, depth,
+-					      new_depth_mask, 0, new_total,
++					      new_depth_mask, 0, total_samples,
+ 					      remaining, left_margin);
+ 	}
+ 
+ 	return ret;
+ }
+ 
+-static size_t callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
++static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 				       u64 total_samples, int left_margin)
+ {
++	struct callchain_node *cnode;
+ 	struct callchain_list *chain;
++	u32 entries_printed = 0;
+ 	bool printed = false;
++	struct rb_node *node;
+ 	int i = 0;
+-	int ret = 0;
+-	u32 entries_printed = 0;
+-
+-	list_for_each_entry(chain, &self->val, list) {
+-		if (!i++ && sort__first_dimension == SORT_SYM)
+-			continue;
+-
+-		if (!printed) {
+-			ret += callchain__fprintf_left_margin(fp, left_margin);
+-			ret += fprintf(fp, "|\n");
+-			ret += callchain__fprintf_left_margin(fp, left_margin);
+-			ret += fprintf(fp, "---");
+-
+-			left_margin += 3;
+-			printed = true;
+-		} else
+-			ret += callchain__fprintf_left_margin(fp, left_margin);
++	int ret;
+ 
+-		if (chain->ms.sym)
+-			ret += fprintf(fp, " %s\n", chain->ms.sym->name);
+-		else
+-			ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
++	/*
++	 * If have one single callchain root, don't bother printing
++	 * its percentage (100 % in fractal mode and the same percentage
++	 * than the hist in graph mode). This also avoid one level of column.
++	 */
++	node = rb_first(root);
++	if (node && !rb_next(node)) {
++		cnode = rb_entry(node, struct callchain_node, rb_node);
++		list_for_each_entry(chain, &cnode->val, list) {
++			/*
++			 * If we sort by symbol, the first entry is the same than
++			 * the symbol. No need to print it otherwise it appears as
++			 * displayed twice.
++			 */
++			if (!i++ && sort__first_dimension == SORT_SYM)
++				continue;
++			if (!printed) {
++				ret += callchain__fprintf_left_margin(fp, left_margin);
++				ret += fprintf(fp, "|\n");
++				ret += callchain__fprintf_left_margin(fp, left_margin);
++				ret += fprintf(fp, "---");
++				left_margin += 3;
++				printed = true;
++			} else
++				ret += callchain__fprintf_left_margin(fp, left_margin);
++
++			if (chain->ms.sym)
++				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
++			else
++				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
+ 
+-		if (++entries_printed == callchain_param.print_limit)
+-			break;
++			if (++entries_printed == callchain_param.print_limit)
++				break;
++		}
++		root = &cnode->rb_root;
+ 	}
+ 
+-	ret += __callchain__fprintf_graph(fp, self, total_samples, 1, 1, left_margin);
+-
+-	return ret;
++	return __callchain__fprintf_graph(fp, root, total_samples,
++					  1, 1, left_margin);
+ }
+ 
+-static size_t callchain__fprintf_flat(FILE *fp, struct callchain_node *self,
+-				      u64 total_samples)
++static size_t __callchain__fprintf_flat(FILE *fp,
++					struct callchain_node *self,
++					u64 total_samples)
+ {
+ 	struct callchain_list *chain;
+ 	size_t ret = 0;
+@@ -733,7 +748,7 @@ static size_t callchain__fprintf_flat(FILE *fp, struct callchain_node *self,
+ 	if (!self)
+ 		return 0;
+ 
+-	ret += callchain__fprintf_flat(fp, self->parent, total_samples);
++	ret += __callchain__fprintf_flat(fp, self->parent, total_samples);
+ 
+ 
+ 	list_for_each_entry(chain, &self->val, list) {
+@@ -749,44 +764,58 @@ static size_t callchain__fprintf_flat(FILE *fp, struct callchain_node *self,
+ 	return ret;
+ }
+ 
+-static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
+-					    u64 total_samples, int left_margin,
+-					    FILE *fp)
++static size_t callchain__fprintf_flat(FILE *fp, struct rb_root *self,
++				      u64 total_samples)
+ {
+-	struct rb_node *rb_node;
+-	struct callchain_node *chain;
+ 	size_t ret = 0;
+ 	u32 entries_printed = 0;
++	struct rb_node *rb_node;
++	struct callchain_node *chain;
+ 
+-	rb_node = rb_first(&he->sorted_chain);
++	rb_node = rb_first(self);
+ 	while (rb_node) {
+ 		double percent;
+ 
+ 		chain = rb_entry(rb_node, struct callchain_node, rb_node);
+ 		percent = chain->hit * 100.0 / total_samples;
+-		switch (callchain_param.mode) {
+-		case CHAIN_FLAT:
+-			ret += percent_color_fprintf(fp, "           %6.2f%%\n",
+-						     percent);
+-			ret += callchain__fprintf_flat(fp, chain, total_samples);
+-			break;
+-		case CHAIN_GRAPH_ABS: /* Falldown */
+-		case CHAIN_GRAPH_REL:
+-			ret += callchain__fprintf_graph(fp, chain, total_samples,
+-							left_margin);
+-		case CHAIN_NONE:
+-		default:
+-			break;
+-		}
++
++		ret = percent_color_fprintf(fp, "           %6.2f%%\n", percent);
++		ret += __callchain__fprintf_flat(fp, chain, total_samples);
+ 		ret += fprintf(fp, "\n");
+ 		if (++entries_printed == callchain_param.print_limit)
+ 			break;
++
+ 		rb_node = rb_next(rb_node);
+ 	}
+ 
+ 	return ret;
+ }
+ 
++static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
++					    u64 total_samples, int left_margin,
++					    FILE *fp)
++{
++	switch (callchain_param.mode) {
++	case CHAIN_GRAPH_REL:
++		return callchain__fprintf_graph(fp, &he->sorted_chain, he->period,
++						left_margin);
++		break;
++	case CHAIN_GRAPH_ABS:
++		return callchain__fprintf_graph(fp, &he->sorted_chain, total_samples,
++						left_margin);
++		break;
++	case CHAIN_FLAT:
++		return callchain__fprintf_flat(fp, &he->sorted_chain, total_samples);
++		break;
++	case CHAIN_NONE:
++		break;
++	default:
++		pr_err("Bad callchain mode\n");
++	}
++
++	return 0;
++}
++
+ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
+ {
+ 	struct rb_node *next = rb_first(&hists->entries);
+-- 
+1.7.5.4
 
