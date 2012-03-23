@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030472Ab2CWU1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 16:27:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283Ab2CWU1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 16:27:18 -0400
-Date: Fri, 23 Mar 2012 16:27:13 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: jim.cromie@gmail.com
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [00/11] pr_debug during module initialization
-Message-ID: <20120323202713.GA6039@redhat.com>
-References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+	id S1759945Ab2CWUh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 16:37:29 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33638 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759894Ab2CWUh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 16:37:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1332529371-3994-1-git-send-email-alexg@meprolight.com>
+References: <1332529371-3994-1-git-send-email-alexg@meprolight.com>
+Date: Fri, 23 Mar 2012 17:37:26 -0300
+Message-ID: <CAOMZO5Cf11Z3JNnsDU2c1YX5Fh=4qznc+26xndKHB1wQMDMu_g@mail.gmail.com>
+Subject: Re: [PATCH v1] i.MX35-PDK: Add Camera support
+From: Fabio Estevam <festevam@gmail.com>
+To: Alex Gershgorin <alexgershgorin@gmail.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, s.hauer@pengutronix.de,
+        g.liakhovetski@gmx.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        Alex Gershgorin <alexg@meprolight.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 05:01:55PM -0600, jim.cromie@gmail.com wrote:
-> This is 3rd revision of the dyndbg modinit patches, previously sent
-> Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
-> this set reworks the remainder.
-> 
-> It implements the "fake" module param approach proposed by
-> Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
-> 
+Hi Alex,
 
-Hi,
+On Fri, Mar 23, 2012 at 4:02 PM, Alex Gershgorin
+<alexgershgorin@gmail.com> wrote:
+> Yes, yesterday I sended to Sascha and ARM mailing list another patch
+> i.MX35-PDK-Add-regulator-support, this also will need be used.
 
-I'm wondering, if we leave the cmdline parameter: 'ddebug_query=' around
-for a bit before removing it, so it doesn't get dropped too suddenly.
-Perhaps, we add a warning msg, for people that are still using it
-for a few releases warning that it is deprecated, before dropping it.
+Ok, good. I saw that patch as well.
 
-Also, let's add the 'dyndbg=' syntax to Documentation/kernel-parameters.txt.
+It would be really nice if you could fix the I2C issues you reported
+earlier in software.
 
-A previous version had a build-time error if a module used 'dyndbg' as a
-module param - why did that get dropped?
+Otherwise the camera will only work on your own modified mx35pdk ;-)
 
-Thanks!
+Regards,
 
--Jason
+Fabio Estevam
