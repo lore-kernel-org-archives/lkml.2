@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030181Ab2CWRzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 13:55:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54389 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab2CWRzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 13:55:39 -0400
-Date: Fri, 23 Mar 2012 17:55:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Ted Ts'o" <tytso@mit.edu>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext2: No longer export ext2_fs.h to user space
-Message-ID: <20120323175534.GI6589@ZenIV.linux.org.uk>
-References: <20120322183135.GC4028@thunk.org>
- <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
- <20120323131331.GA29631@thunk.org>
+	id S1030247Ab2CWR7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 13:59:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964928Ab2CWR7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 13:59:37 -0400
+Date: Fri, 23 Mar 2012 18:51:57 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20120323175157.GA20675@redhat.com>
+References: <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com> <20120113152010.GA19215@redhat.com> <20120113182750.GD18166@google.com> <20120114173648.GA32543@redhat.com> <20120118231742.GS18166@google.com> <20120119154522.GA14058@redhat.com> <20120320193414.GA21277@redhat.com> <20120321185955.GK27051@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120323131331.GA29631@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120321185955.GK27051@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 09:13:31AM -0400, Ted Ts'o wrote:
-> On Fri, Mar 23, 2012 at 10:27:36AM +0100, Thierry Reding wrote:
-> > Since the on-disk format has been stable for quite some time, users
-> > should either use the headers provided by libext2fs or keep a private
-> > copy of this header. For the full discussion, see this thread:
-> > 
-> > 	https://lkml.org/lkml/2012/3/21/516
-> > 
-> > While at it, this commit removes all __KERNEL__ guards, which are now
-> > unnecessary.
-> > 
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > Cc: Al Viro <viro@zeniv.linux.org.uk>
-> > Cc: Jan Kara <jack@suse.cz>
-> > Cc: Ted Ts'o <tytso@mit.edu>
-> > Cc: Artem Bityutskiy <dedekind1@gmail.com>
-> > Cc: Andreas Dilger <aedilger@gmail.com>
-> > Cc: linux-ext4@vger.kernel.org
-> 
-> Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-> 
-> Thanks!!
-> 
-> Al, do you want to take this in the VFS tree, or do you want me to
-> carry this in the ext4 tree?  Or Jan could carry it in the ext2 tree.
-> I don't really have strong feelings about who picks it up.  I will if
-> no one else wants to...
+On 03/21, Mandeep Singh Baines wrote:
+>
+> Oleg Nesterov (oleg@redhat.com) wrote:
+> > +/*
+> > + * rcu-safe, but should start at ->group_leader.
+> > + * thread_group_leader(g) protects against the race with exec which
+> > + * removes the leader from list.
+> > + * smp_rmb() pairs with implicit mb() implied by unlock + lock in
+> > + * de_thread()->release_task() path.
+> > + */
+> > +#define while_each_thread_rcu(g, t)				\
+> > +	while ((t = next_thread(t)) != g &&			\
+> > +		({ smp_rmb(); thread_group_leader(g); }))
+> > +
+>
+> Couldn't you miss the exec_thread if:
+>
+> t = exec_thread && !thread_group_leader(g)
 
-Applied.  I'll probably add a followup moving most of that stuff to
-fs/ext2/ext2.h on top of that commit...
+Yes, we already discussed this, iirc.
+
+I was going to write that this is fine, but then I changed my mind.
+Indeed, it is not good while_each_thread_rcu() can miss the new leader.
+
+> Could we change do_prlimit()? Especially since its slow path.
+
+But do_prlimit() is correct. It sees the unhashed task under tasklist,
+task->group_leader should be correct.
+
+> I really like you're earlier solution (ignoring barrier):
+>
+> #define while_each_thread(g, t) \
+> 	while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
+
+The problem is "ignoring barrier and races".
+
+OK, I'll try to think again.
+
+Oleg.
+
