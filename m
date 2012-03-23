@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab2CWRiN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 13:38:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57917 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab2CWRiL (ORCPT
+	id S1757593Ab2CWRpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 13:45:00 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:12962 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756919Ab2CWRo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 13:38:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 7/9] omap2plus: ensure that one of omap2/3/4 is selected
-Date: Fri, 23 Mar 2012 17:38:05 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: mathieu.poirier@linaro.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1332522836-29517-1-git-send-email-mathieu.poirier@linaro.org> <1332522836-29517-8-git-send-email-mathieu.poirier@linaro.org> <20120323172845.GC9859@atomide.com>
-In-Reply-To: <20120323172845.GC9859@atomide.com>
+	Fri, 23 Mar 2012 13:44:59 -0400
+Date: Fri, 23 Mar 2012 11:44:57 -0600
+From: Khalid Aziz <khalid@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org
+Subject: [PATCH] MAINTAINERS: Adding PCDP console maintainer information
+Message-ID: <20120323174457.GA12579@hp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203231738.05742.arnd@arndb.de>
-X-Provags-ID: V02:K0:53iC14r9OUBaZiaYzy8LTtZPoF17LcxYOQEfdAoAk9j
- +Uz/uOQPX6I7GrjJn8IcvvTSmgxkm1xT/WLhC1845ySG/GV53p
- SUZ703tCFTr9Gp5tfQCirunRqOaLWmqaxfJIW6G/KtmI1HZDpb
- gFyg2AKHLZfLtBjaVAwbhGVmVrS62mwYUNH7VCi065wFbfNjjL
- 1EvorqGSKAD1YIMFs/0UbeSmBLeIyHI+jzJwJkiinP96hnocqt
- +8aKGCDRhegDkGa4Ai3SHPWjta05QGRsfK0noa5K76CM9wRYmh
- nnjSBK3VpmsI2BD8TSSemBK2m/4pK5dbcUmJp1P8U+L6A/68if
- xvNCt9NYuwD3z6qoNX2Q=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 March 2012, Tony Lindgren wrote:
-> >  
-> > +config ARCH_OMAP2_AUTO
-> > +     bool
-> > +     depends on !ARCH_OMAP3 && !ARCH_OMAP4
-> > +     select ARCH_OMAP2
-> > +     default y
-> > +     help
-> > +       At least one of OMAP2/OMAP3/OMAP4 needs to be enabled, this
-> > +       selects OMAP2 if nothing else gets selected, to avoid non-building
-> > +       configurations.
-> > +
-> >  comment "OMAP Core Type"
-> >       depends on ARCH_OMAP2
-> 
-> Hmm yeah omap2 makes the smallest build, so randconfig builds
-> faster than it would for omap3 or 4.
-> 
-> But isn't there now still a chance that randconfig does not
-> select ARCH_OMAP2_AUTO either?
+This patch adds missing maintainer info for PCDP console code.
 
-No. ARCH_OMAP2_AUTO is only disabled if one of OMAP3 or OMAP4
-are enabled.
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+---
+ MAINTAINERS |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-	Arnd
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 95eba31..3fc5aaa 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5112,6 +5112,11 @@ F:	drivers/i2c/busses/i2c-pca-*
+ F:	include/linux/i2c-algo-pca.h
+ F:	include/linux/i2c-pca-platform.h
+ 
++PCDP CONSOLE
++M:	Khalid Aziz <khalid.aziz@hp.com>
++S:	Maintained
++F:	drivers/firmware/pcdp.*
++
+ PCI ERROR RECOVERY
+ M:     Linas Vepstas <linasvepstas@gmail.com>
+ L:	linux-pci@vger.kernel.org
+-- 
+1.7.8.3
+
