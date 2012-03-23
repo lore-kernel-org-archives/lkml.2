@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab2CWE7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 00:59:37 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62024 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2CWE7e convert rfc822-to-8bit (ORCPT
+	id S1755333Ab2CWFOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 01:14:36 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43101 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab2CWFOe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 00:59:34 -0400
+	Fri, 23 Mar 2012 01:14:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F6BECA7.7030007@linaro.org>
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
-	<20120319130445.GN15988@n2100.arm.linux.org.uk>
-	<CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
-	<20120319132623.GO15988@n2100.arm.linux.org.uk>
-	<4F696011.7080409@linaro.org>
-	<CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
-	<CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
-	<20120322100236.GS15988@n2100.arm.linux.org.uk>
-	<CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
-	<4F6BECA7.7030007@linaro.org>
-Date: Fri, 23 Mar 2012 10:29:33 +0530
-Message-ID: <CAB4K4y7zGex+1u-_PBVwVzHu6OYGQfL=Cv9aFfEG2_Q0-S-evA@mail.gmail.com>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4F6B679C.60004@yahoo.co.jp>
+References: <4F5ECD06.3000608@yahoo.co.jp>
+	<4F5F7C4C.7080800@teksavvy.com>
+	<4F662AFB.9050106@yahoo.co.jp>
+	<CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com>
+	<4F6AAC37.7040907@yahoo.co.jp>
+	<4F6B30D9.2070805@yahoo.co.jp>
+	<CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com>
+	<4F6B679C.60004@yahoo.co.jp>
+Date: Fri, 23 Mar 2012 13:14:33 +0800
+Message-ID: <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com>
+Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port
+ Multiplier Sil3726
+From: Gwendal Grignou <gwendal@google.com>
+To: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
+Cc: "IDE/ATA development list" <linux-ide@vger.kernel.org>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 8:53 AM, John Stultz <john.stultz@linaro.org> wrote:
-> On 03/22/2012 03:25 AM, Ajeet Yadav wrote:
+On Fri, Mar 23, 2012 at 1:55 AM, ANEZAKI, Akira
+<fireblade1230@yahoo.co.jp> wrote:
+> Hello Gwendal,
+>
+> Thank you for your information.
+> I think ata8 might different from other 3 PMPs. I'll try to update all
+> firmware but it is running resync on broken RAID now. So I can't do it soon.
+> By the way, both of ata8 and ata9 loses some HDDs also. Are those
+> affected by PMPs on ata7 and ata10? Why 3.1.x driver can work?
+>
+> Best Regards,
+> Akira
+>
+>> Now I see your problem. Indeed on ata7, ata10, we have a problem.
+I should have said ata7-ata10. The PMP on these 4 enclosures do not
+like SRST at all.
+It works with 3.1.x because it does not send SRST with this PMP; but
+as I said before, that is not a good behavior [no staggered spin-up,
+problem with drives slow to spin-up]
+
+Gwendal.
+>> I notice however some messages I did not see before:
+>>>> [ � �4.856382] ata7.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
+>>>> [ � �4.858742] ata7.00: hard resetting link
+>>>> [ � 14.843039] ata7.00: softreset failed (timeout)
+>>>> [ � 17.836402] ata7.15: qc timeout (cmd 0xe4)
+>> The later indicates that the PMP is stuck and the host can not read
+>> its internal register.
+>> Is it possible that the PMP in these 4 enclosures you are using have a
+>> different firmware than the other ones?
+>> Firmware 1.0114 is available at:
+>> http://www.siliconimage.com/support/searchresults.aspx?pid=26&cat=23
 >>
->> I understand your point,
->> Our target (2.6) always had ARCH_USES_GETTIMEOFFSET=y , but still we
->> were able to use the TRACER in past until the patch "kill
->> GENERIC_TIMER" published, anyone will ask me remove this patch and use
->> TRACER, becaue it was working before. :)
->
->
-> Ajeet,
->    Sorry, by TRACER, do you mean PREEMPT_TRACER or something else? And what
-> specific 2.6.X kernel were you using?
-IRQSOFF_TRACER and PREEMPT_TRACER, our old kernel was 2.6.35.
->
-> Steven, I'm seeing:
->
-> config PREEMPT_TRACER
->        bool "Preemption-off Latency Tracer"
->        default n
->        depends on !ARCH_USES_GETTIMEOFFSET
->
-> Do you have any context as to why is !ARCH_USES_GETTIMEOFFSET flagged here?
->
-> thanks
-> -john
+>> From the release notes:
+>> """- Fix SRST and initial two RegFIS Problem."""
+>>
+>> Gwendal.
 >
