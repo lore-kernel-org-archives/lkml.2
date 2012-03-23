@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab2CWIUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 04:20:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63194 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757236Ab2CWIUa (ORCPT
+	id S1756696Ab2CWI3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 04:29:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45760 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab2CWI3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 04:20:30 -0400
-Date: Fri, 23 Mar 2012 09:20:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/4] perf/core cleanups and fixes
-Message-ID: <20120323082025.GA2886@gmail.com>
-References: <1332441183-9514-1-git-send-email-acme@infradead.org>
+	Fri, 23 Mar 2012 04:29:35 -0400
+Date: Fri, 23 Mar 2012 01:28:57 -0700
+From: tip-bot for Borislav Petkov <bp@amd64.org>
+Message-ID: <tip-842f07f6127afa48cca6b2ce9021b985e8eb9068@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, bp@amd64.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, bp@amd64.org
+In-Reply-To: <1332339347-21342-1-git-send-email-bp@amd64.org>
+References: <1332339347-21342-1-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: Simplify event_read_id exit path
+Git-Commit-ID: 842f07f6127afa48cca6b2ce9021b985e8eb9068
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1332441183-9514-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Mar 2012 01:29:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  842f07f6127afa48cca6b2ce9021b985e8eb9068
+Gitweb:     http://git.kernel.org/tip/842f07f6127afa48cca6b2ce9021b985e8eb9068
+Author:     Borislav Petkov <bp@amd64.org>
+AuthorDate: Wed, 21 Mar 2012 15:15:47 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 22 Mar 2012 15:10:42 -0300
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+perf tools: Simplify event_read_id exit path
 
-> Hi Ingo,
-> 
-> 	Please consider pulling.
-> 
-> - Arnaldo
-> 
-> The following changes since commit 0d09eb7a9a2ca4d7ed32f7b440bea78c0622814a:
-> 
->   Merge branch 'perf/urgent' into perf/core (2012-03-22 15:09:08 -0300)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 4bf9ce1b5ecffffeb8b9d7e925bac3e6b10109aa:
-> 
->   perf diff: Fix to work with new hists design (2012-03-22 15:12:09 -0300)
-> 
-> ----------------------------------------------------------------
-> Cleanups and fixes for perf/core:
-> 
-> . Short term fix for 'diff' tool breakage related to perf.data files
->   with multiple events. From Jiri Olsa
-> 
-> . Cleanup for event id tracepoint reading routine, from Borislav Petkov
-> 
-> . 32-bit compilation fixes from Jiri Olsa
-> 
-> . Event parsing modifier assignment fixes from Jiri Olsa
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Borislav Petkov (1):
->       perf tools: Simplify event_read_id exit path
-> 
-> Jiri Olsa (3):
->       perf tools: Fix various casting issues for 32 bits
->       perf tools: Fix modifier to be applied on correct events
->       perf diff: Fix to work with new hists design
-> 
->  tools/perf/builtin-diff.c            |   60 +--
->  tools/perf/builtin-test.c            |  116 +++++-
->  tools/perf/util/evsel.c              |    2 +-
->  tools/perf/util/evsel.h              |    2 +
->  tools/perf/util/header.c             |    2 +-
->  tools/perf/util/hist.c               |    8 +-
->  tools/perf/util/parse-events-bison.c |  675 +++++++++++++++++++---------------
->  tools/perf/util/parse-events-bison.h |   15 +-
->  tools/perf/util/parse-events.c       |   29 +-
->  tools/perf/util/parse-events.h       |    7 +-
->  tools/perf/util/parse-events.y       |   40 +-
->  tools/perf/util/session.c            |    1 +
->  tools/perf/util/trace-event-parse.c  |   10 +-
->  13 files changed, 592 insertions(+), 375 deletions(-)
+We're freeing the token in any case so simplify the exit path by
+unifying it.
 
-Pulled, thanks Arnaldo!
+No functional change.
 
-Btw., the SOB chain in commit 641cc93 is broken:
+Signed-off-by: Borislav Petkov <bp@amd64.org>
+Link: http://lkml.kernel.org/r/1332339347-21342-1-git-send-email-bp@amd64.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/trace-event-parse.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-Author:     Jiri Olsa <jolsa@redhat.com>
-Commit:     Arnaldo Carvalho de Melo <acme@redhat.com>
-    Acked-by: Peter Zijlstra <peterz@infradead.org>
-    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-    Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-    Link: http://lkml.kernel.org/n/tip-vhdk5y2hyype9j63prymty36@git.kernel.org
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-The first SOB by PeterZ is probably bogus.
-
-Please be more careful about this in the future.
-
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index a4088ce..dfd1bd8 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -722,7 +722,7 @@ static char *event_read_name(void)
+ static int event_read_id(void)
+ {
+ 	char *token;
+-	int id;
++	int id = -1;
+ 
+ 	if (read_expected_item(EVENT_ITEM, "ID") < 0)
+ 		return -1;
+@@ -731,15 +731,13 @@ static int event_read_id(void)
+ 		return -1;
+ 
+ 	if (read_expect_type(EVENT_ITEM, &token) < 0)
+-		goto fail;
++		goto free;
+ 
+ 	id = strtoul(token, NULL, 0);
+-	free_token(token);
+-	return id;
+ 
+- fail:
++ free:
+ 	free_token(token);
+-	return -1;
++	return id;
+ }
+ 
+ static int field_is_string(struct format_field *field)
