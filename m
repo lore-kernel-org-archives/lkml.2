@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab2CWK24 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 06:28:56 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60001 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757136Ab2CWK2y convert rfc822-to-8bit (ORCPT
+	id S1758101Ab2CWK3x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 06:29:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55028 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab2CWK3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 06:28:54 -0400
+	Fri, 23 Mar 2012 06:29:51 -0400
+Date: Fri, 23 Mar 2012 03:29:26 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: linux-next: Tree for Mar 23: doubled patch in vmscan.c
+In-Reply-To: <20120323172333.9af9b678fcde0e6e75b5f6dd@canb.auug.org.au>
+Message-ID: <alpine.LSU.2.00.1203230303260.31362@eggly.anvils>
+References: <20120323172333.9af9b678fcde0e6e75b5f6dd@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <E1SAzcK-0001aj-CS.shc_work-mail-ru@f287.mail.ru>
-References: <1332487384-13803-1-git-send-email-shc_work@mail.ru>
-	<CAMuHMdXoJhWVoRrhgYzVcv3tbThzmtiZ4ZY6pjUM2eji5XuK2A@mail.gmail.com>
-	<E1SAzcK-0001aj-CS.shc_work-mail-ru@f287.mail.ru>
-Date: Fri, 23 Mar 2012 11:28:53 +0100
-X-Google-Sender-Auth: 3wMRIj3AhPiaZy3Ew0OC64kU5Og
-Message-ID: <CAMuHMdXjs=Vg2V1zLKYKUYntCESKejSq45D09eXH1zBw2dpMfQ@mail.gmail.com>
-Subject: Re: Re[2]: [PATCH] Fix build error with !SMP && !GENERIC_HARDIRQS
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 09:13, Alexander Shiyan <shc_work@mail.ru> wrote:
-> Fri, 23 Mar 2012 08:46:15 +0100 от Geert Uytterhoeven <geert@linux-m68k.org>:
->> On Fri, Mar 23, 2012 at 08:23, Alexander Shiyan <shc_work@mail.ru> wrote:
->> > When compile kernel with !SMP && !GENERIC_HARDIRQS we are have
->> > following error:
->> Is this on uniprocessor s390?
-> No. I trying to fix other problem with ARM Cirrus Logic EP7312 that do not work since 2.6.30-rc1.
+On Fri, 23 Mar 2012, Stephen Rothwell wrote:
+> 
+> Changes since 20120322:
+> 
+> The akpm tree lost lots of patches that turned up elsewhere (mostly in
+> Linus' tree).
 
-Then it should not happen, as s390 is the sole remaining arch that doesn't use
-generic hardirqs.
+I'm amused to notice that your merging process is as impatient as akpm,
+and just cannot wait for Mel to remove lumpy reclaim from mm/vmscan.c.
 
-Gr{oetje,eeting}s,
+It has chosen to do so itself, by duplicating Konstantin's "mm: forbid
+lumpy-reclaim in shrink_active_list()" (we had expected that to be held
+back, but it's gone in anyway, oh well) into shrink_inactive_list(),
+overriding the set_reclaim_mode() a few lines above with a spurious
+reset_reclaim_mode(sc).
 
-                        Geert
+I expect that will sort itself out automatically once you get an update
+from akpm, but something to beware of meanwhile (probably just a matter
+of deleting Konstantin's patch from your trove now it's in Linus's tree).
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Corrective patch below for illustration, but would need to be applied
+with care: I wouldn't be surprised if it chose to do exactly the wrong
+thing when applied automatically.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Hugh
+
+--- linux-next/mm/vmscan.c.orig	2012-03-23 01:29:33.312011679 -0700
++++ linux-next/mm/vmscan.c	2012-03-23 03:00:08.688142469 -0700
+@@ -1528,8 +1528,6 @@ shrink_inactive_list(unsigned long nr_to
+ 
+ 	lru_add_drain();
+ 
+-	reset_reclaim_mode(sc);
+-
+ 	if (!sc->may_unmap)
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
