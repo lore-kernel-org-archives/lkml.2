@@ -1,145 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab2CWJqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 05:46:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35748 "EHLO mx2.suse.de"
+	id S1755496Ab2CWJ7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 05:59:09 -0400
+Received: from mta103.odn.ne.jp ([143.90.14.143]:47140 "EHLO cmta103.odn.ne.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753258Ab2CWJp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 05:45:59 -0400
-Date: Fri, 23 Mar 2012 10:45:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH] memcg: change behavior of moving charges at task move
-Message-ID: <20120323094557.GA5123@tiehlicka.suse.cz>
-References: <4F69A4C4.4080602@jp.fujitsu.com>
- <20120322143610.e4df49c9.akpm@linux-foundation.org>
- <4F6BC166.80407@jp.fujitsu.com>
- <20120322173000.f078a43f.akpm@linux-foundation.org>
- <4F6BC94C.80301@jp.fujitsu.com>
- <20120323085301.GA1739@cmpxchg.org>
- <4F6C3BB2.6090108@jp.fujitsu.com>
+	id S1753713Ab2CWJ7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 05:59:06 -0400
+Message-ID: <4F6C4967.80309@yahoo.co.jp>
+Date: Fri, 23 Mar 2012 18:59:03 +0900
+From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6C3BB2.6090108@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gwendal Grignou <gwendal@google.com>
+CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
+ Sil3726
+References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com>
+In-Reply-To: <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-03-12 18:00:34, KAMEZAWA Hiroyuki wrote:
-> (2012/03/23 17:53), Johannes Weiner wrote:
-> 
-> > On Fri, Mar 23, 2012 at 09:52:28AM +0900, KAMEZAWA Hiroyuki wrote:
-> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >> index b2ee6df..ca8b3a1 100644
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -5147,7 +5147,7 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> >>  		return NULL;
-> >>  	if (PageAnon(page)) {
-> >>  		/* we don't move shared anon */
-> >> -		if (!move_anon() || page_mapcount(page) > 2)
-> >> +		if (!move_anon())
-> >>  			return NULL;
-> >>  	} else if (!move_file())
-> >>  		/* we ignore mapcount for file pages */
-> >> @@ -5158,26 +5158,32 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> >>  	return page;
-> >>  }
-> >>  
-> >> +#ifdef CONFFIG_SWAP
-> > 
-> > That will probably disable it for good :)
-> > 
-> 
-> 
-> Thank you for your good eyes.. I feel I can't trust my eyes ;(
-> 
-> 
-> ==
-> From d7ed385bad22d352bb28aeb9380591b72ec5bec5 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Wed, 21 Mar 2012 19:03:40 +0900
-> Subject: [PATCH] memcg: fix/change behavior of shared anon at moving task.
-> 
-> This patch changes memcg's behavior at task_move().
-> 
-> At task_move(), the kernel scans a task's page table and move
-> the changes for mapped pages from source cgroup to target cgroup.
+Hello Gwendal,
 
-charges?
+(2012/03/23 17:31), Gwendal Grignou wrote:
+>>>>> I notice however some messages I did not see before:
+>>>>>>> [    4.856382] ata7.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
+>>>>>>> [    4.858742] ata7.00: hard resetting link
+>>>>>>> [   14.843039] ata7.00: softreset failed (timeout)
+>>>>>>> [   17.836402] ata7.15: qc timeout (cmd 0xe4)
+>>>>> The later indicates that the PMP is stuck and the host can not read
+>>>>> its internal register.
+>>>>> Is it possible that the PMP in these 4 enclosures you are using have a
+>>>>> different firmware than the other ones?
+>>>>> Firmware 1.0114 is available at:
+>>>>> http://www.siliconimage.com/support/searchresults.aspx?pid=26&cat=23
+>>>>>
+>>>>> From the release notes:
+>>>>> """- Fix SRST and initial two RegFIS Problem."""
+>>
+>> I'm still fixing broken RAID. Sorry for my slow response.
 
-> There has been a bug at handling shared anonymous pages for a long time.
-> 
-> Before patch:
->   - The spec says 'shared anonymous pages are not moved.'
->   - The implementation was 'shared anonymoys pages may be moved'.
->     If page_mapcount <=2, shared anonymous pages's charge were moved.
-> 
-> After patch:
->   - The spec says 'all anonymous pages are moved'.
->   - The implementation is 'all anonymous pages are moved'.
-> 
-> Considering usage of memcg, this will not affect user's experience.
-> 'shared anonymous' pages only exists between a tree of processes
-> which don't do exec(). Moving one of process without exec() seems
-> not sane. 
+I checked those firmware version. All of them use version 1.0114.
 
-Why it wouldn't be sane?
-
-> For example, libcgroup will not be affected by this change.
-> (Anyway, no one noticed the implementation for a long time...)
-> 
-> Below is a discussion log:
-> 
->  - current spec/implementation are complex
->  - Now, shared file caches are moved
->  - It adds unclear check as page_mapcount(). To do correct check,
->    we should check swap users, etc.
->  - No one notice this implementation behavior. So, no one get benefit
->    from the design.
->  - In general, once task is moved to a cgroup for running, it will not
->    be moved....
->  - Finally, we have control knob as memory.move_charge_at_immigrate.
-> 
-> Here is a patch to allow moving shared pages, completely. This makes
-> memcg simpler and fix current broken code.
-> 
-> Changelog:
->   - fixed CONFFIG_SWAP...
-> Changelog:
->   - fixed comment around find_get_page()
->   - changed CONFIG_SWAP handling
->   - updated patch description
-
-Anyway the patch looks good to me and I agree that we should make anon
-moving easier.
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> 
-> Suggested-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  Documentation/cgroups/memory.txt |    9 ++++-----
->  include/linux/swap.h             |    9 ---------
->  mm/memcontrol.c                  |   22 ++++++++++++++--------
->  mm/swapfile.c                    |   31 -------------------------------
->  4 files changed, 18 insertions(+), 53 deletions(-)
-> 
-[...]
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Best Regards,
+Akira
