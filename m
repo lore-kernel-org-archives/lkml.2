@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758615Ab2CWMq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 08:46:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56124 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757612Ab2CWMqZ (ORCPT
+	id S1758581Ab2CWMuC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 08:50:02 -0400
+Received: from mail.windriver.com ([147.11.1.11]:51277 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab2CWMuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 08:46:25 -0400
-Date: Fri, 23 Mar 2012 13:46:21 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] x86: io_apic: Move and reenable irq only when
- CONFIG_GENERIC_PENDING_IRQ=y
-Message-ID: <20120323124621.GA6272@gmail.com>
-References: <20120320141935.GA24806@dhcp-26-207.brq.redhat.com>
- <20120323123503.GH13920@gmail.com>
- <20120323124525.GB21907@dhcp-26-207.brq.redhat.com>
+	Fri, 23 Mar 2012 08:50:00 -0400
+Message-ID: <4F6C715B.2080104@windriver.com>
+Date: Fri, 23 Mar 2012 08:49:31 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120323124525.GB21907@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the moduleh tree
+References: <20120323155114.a1779aa050fa05f6191b7dae@canb.auug.org.au>
+In-Reply-To: <20120323155114.a1779aa050fa05f6191b7dae@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alexander Gordeev <agordeev@redhat.com> wrote:
-
-> On Fri, Mar 23, 2012 at 01:35:03PM +0100, Ingo Molnar wrote:
-> > 
-> > * Alexander Gordeev <agordeev@redhat.com> wrote:
-> > 
-> > > When CONFIG_GENERIC_PENDING_IRQ=n irq move and reenable code 
-> > > is never get executed, nor do_unmask_irq variable updates its 
-> > > init value. Move the code under CONFIG_GENERIC_PENDING_IRQ 
-> > > macro.
-> > 
-> > It's not clear from the changelog what it does though, and the
-> > #ifdefs are quite a mess. Does the patch fix some real bug? Or 
-> > does it remove dead code from certain .config variations?
+On 12-03-23 12:51 AM, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> It just removes a dead code. Can reword if it worth it.
+> After merging the moduleh tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/gpu/drm/radeon/si_blit_shaders.c:252:1: error: implicit declaration of function 'BUILD_BUG_ON_ZERO' [-Werror=implicit-function-declaration]
+> drivers/gpu/drm/radeon/si_blit_shaders.c:252:1: error: initializer element is not constant
+> 
+> Caused by commit 48c0c902e2e6 ("drm/radeon/kms: add support for CP setup
+> on SI") from Linus' tree interacting with commit 6c03438edeb5 ("kernel.h:
+> doesn't explicitly use bug.h, so don't include it").
 
-No need to resend, I'll add this detail.
+Thanks Stephen,
 
-Thanks,
+Too bad the radeon commits weren't in linux-next, then we'd not
+have to be fixing these in the merge window...
 
-	Ingo
+I think it makes sense for me to fold this into:
+
+commit 50af5ead3b44ccf8bd2b4d2a50c1b610f557c480
+Author: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date:   Fri Jan 20 18:35:53 2012 -0500
+
+    bug.h: add include of it to various implicit C users
+
+in the bug-3.4 tree before requesting it to be pulled.
+
+Paul.
+--
+
+> 
+> ARRAY_SIZE in kernel.h uses __must_be_array from compiler{-ggc,-intel}.h
+> which uses BUILD_BUG_ON_ZERO ...  I don;t know if we want to include
+> bug.h in compiler.h ...
+> 
+> So, for today, I have added the following patch:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 23 Mar 2012 15:47:07 +1100
+> Subject: [PATCH] kernel.h: using ARRAY_SIZE needs to include bug.h
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/gpu/drm/radeon/si_blit_shaders.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/radeon/si_blit_shaders.c b/drivers/gpu/drm/radeon/si_blit_shaders.c
+> index a7124b4..ec415e7 100644
+> --- a/drivers/gpu/drm/radeon/si_blit_shaders.c
+> +++ b/drivers/gpu/drm/radeon/si_blit_shaders.c
+> @@ -25,6 +25,7 @@
+>   */
+>  
+>  #include <linux/types.h>
+> +#include <linux/bug.h>
+>  #include <linux/kernel.h>
+>  
+>  const u32 si_default_state[] =
