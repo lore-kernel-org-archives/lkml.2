@@ -1,70 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab2CWCTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:19:17 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:29364 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab2CWCTM convert rfc822-to-8bit (ORCPT
+	id S1756479Ab2CWCTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:19:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60759 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab2CWCT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:19:12 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-16.tower-127.messagelabs.com!1332469151!1259297!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>,
-        Rafal Prylowski <prylowski@metasoft.pl>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Date: Thu, 22 Mar 2012 21:19:10 -0500
-Subject: RE: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Topic: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Index: Ac0HmlVGFVuPiR9pRw68t72aAyUeXgA9g+tQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
-References: <4F683B36.8090101@metasoft.pl>
- <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
-In-Reply-To: <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Mar 2012 22:19:26 -0400
+From: Marc Reilly <marc@cpdesign.com.au>
+Reply-To: marc@cpdesign.com.au
+Organization: Creative Product Design
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] regulator: i.MX35-PDK Add regulator support
+Date: Fri, 23 Mar 2012 12:23:09 +1100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Alex <alexgershgorin@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel@vger.kernel.org, Alex <alexg@meprolight.com>
+References: <1332460334-11173-1-git-send-email-alexg@meprolight.com>
+In-Reply-To: <1332460334-11173-1-git-send-email-alexg@meprolight.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203231223.10043.marc@cpdesign.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 21, 2012 12:39 PM, Mika Westerberg wrote:
-> On Tue, Mar 20, 2012 at 09:09:26AM +0100, Rafal Prylowski wrote:
->> Implement double buffering for M2M DMA channels.
->> 
->> Signed-off-by: Rafal Prylowski <prylowski@metasoft.pl>
->
-> The subject line prefix should probably be 'dmaengine/ep93xx_dma: ' but
-> otherwise this looks good.
->
-> Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+Hi,
 
-Mika,
+I'm not very experienced with the regulator driver, but noticed a couple of 
+minor things with your patch..
 
-Did you test this patch or just review it?
+<snip>
 
-On my system it doesn't work. I think it has something to do with the
-changes to m2m_hw_interrupt but I haven't tracked it down yet.
+> 
+>  static const struct imxuart_platform_data uart_pdata __initconst = {
+> @@ -55,7 +58,7 @@ static struct physmap_flash_data mx35pdk_flash_data = {
+> 
+>  static struct resource mx35pdk_flash_resource = {
+>  	.start	= MX35_CS0_BASE_ADDR,
+> -	.end	= MX35_CS0_BASE_ADDR + SZ_64M - 1,
+> +	.end    = MX35_CS0_BASE_ADDR + SZ_64M - 1,
 
-It looks like what's missing is a:
+did you mean to change this?
 
-	edmac->edma->hw_submit(edmac);
+>  	.flags	= IORESOURCE_MEM,
+>  };
+> 
+> @@ -120,8 +123,214 @@ static iomux_v3_cfg_t mx35pdk_pads[] = {
+>  	/* I2C1 */
+>  	MX35_PAD_I2C1_CLK__I2C1_SCL,
+>  	MX35_PAD_I2C1_DAT__I2C1_SDA,
+> +	/*PMIC IRQ*/
+> +	MX35_PAD_GPIO2_0__GPIO2_0,
+>  };
+> 
+> +static struct regulator_init_data sw1_init = {
+> +	.constraints = {
+> +		.name = "SW1",
+> +		.min_uV = 600000,
+> +		.max_uV = 1375000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.valid_modes_mask = 0,
+> +		.always_on = 1,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data sw2_init = {
+> +	.constraints = {
+> +		.name = "SW2",
+> +		.min_uV = 900000,
+> +		.max_uV = 1850000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.always_on = 1,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data sw3_init = {
+> +	.constraints = {
+> +		.name = "SW3",
+> +		.min_uV = 1100000,
+> +		.max_uV = 1850000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.always_on = 1,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data sw4_init = {
+> +	.constraints = {
+> +		.name = "SW4",
+> +		.min_uV = 1100000,
+> +		.max_uV = 1850000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.always_on = 1,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data viohi_init = {
+> +	.constraints = {
+> +		.name = "VIOHI",
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vusb_init = {
+> +	.constraints = {
+> +		.name = "VUSB",
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vdig_init = {
+> +	.constraints = {
+> +		.name = "VDIG",
+> +		.min_uV = 1050000,
+> +		.max_uV = 1800000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vpll_init = {
+> +	.constraints = {
+> +		.name = "VPLL",
+> +		.min_uV = 1050000,
+> +		.max_uV = 1800000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vusb2_init = {
+> +	.constraints = {
+> +		.name = "VUSB2",
+> +		.min_uV = 2400000,
+> +		.max_uV = 2775000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.boot_on = 1,
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vvideo_init = {
+> +	.constraints = {
+> +		.name = "VVIDEO",
+> +		.min_uV = 2500000,
+> +		.max_uV = 2775000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.boot_on = 1
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vaudio_init = {
+> +	.constraints = {
+> +		.name = "VAUDIO",
+> +		.min_uV = 2300000,
+> +		.max_uV = 3000000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +		.boot_on = 1
+> +	}
+> +};
+> +
+> +static struct regulator_init_data vsd_init = {
+> +	.constraints = {
+> +		.name = "VSD",
+> +		.min_uV = 1800000,
+> +		.max_uV = 3150000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+> +	}
+> +};
 
-But, maybe that's not needed with double buffering?
+I think this is on at power up too (for imx35)
 
-Regards,
-Hartley
-
-
+Cheers,
+Marc
