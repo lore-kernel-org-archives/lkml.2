@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab2CWIrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 04:47:25 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34223 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab2CWIrQ (ORCPT
+	id S1757115Ab2CWItI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 04:49:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57865 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab2CWItC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 04:47:16 -0400
-Date: Fri, 23 Mar 2012 09:47:12 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: mmap_page capabilities and docs
-Message-ID: <20120323084712.GE2886@gmail.com>
-References: <1332433596.2487.33.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332433596.2487.33.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Mar 2012 04:49:02 -0400
+From: Colin King <colin.king@canonical.com>
+To: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg@redhat.com>,
+        linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI, APEI, fix ERST table size checking
+Date: Fri, 23 Mar 2012 08:48:47 +0000
+Message-Id: <1332492527-30702-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Colin Ian King <colin.king@canonical.com>
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Check ERST size against acpi_table_erst rather than
+acpi_table_einj.  The original code just so happened to work
+because the ERST and EINJ headers are the same size.
 
-> Usage:
-> 
->   gcc -finstrument-functions -o my_prog main.c
->   LD_PRELOAD=profviz.so ./my_prog
-> 
->   xdot prof.dot
-> or
->   dot -Tsvg prof.svg prof.dot
-> 
-> The attached prof.svg it example output of:
-> 
->   LD_PRELOAD=./profviz.so ./perf report
+I'm re-sending this patch as it didn't seem to get picked up when I first
+sent it to the list back in September 2011.
 
-Nifty. Could we integrate this into 'perf profviz <myprog>' or 
-so [feel free to use a better sub-tool name - 'perf selfprof' ?] 
-and thus make it available to mere mortals as well?
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Cc: stable@kernel.org
+---
+ drivers/acpi/apei/erst.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-'perf selfprof' could also warn about apps that were not built 
-with -finstrument-functions.
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index eb9fab5..e4d9d24 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -917,7 +917,7 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ {
+ 	if ((erst_tab->header_length !=
+ 	     (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
+-	    && (erst_tab->header_length != sizeof(struct acpi_table_einj)))
++	    && (erst_tab->header_length != sizeof(struct acpi_table_erst)))
+ 		return -EINVAL;
+ 	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
+ 		return -EINVAL;
+-- 
+1.7.0.4
 
-Thanks,
-
-	Ingo
