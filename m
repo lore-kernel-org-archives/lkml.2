@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab2CWO0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 10:26:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16358 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754458Ab2CWO0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 10:26:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="120908135"
-Message-ID: <4F6C87CA.3010203@linux.intel.com>
-Date: Fri, 23 Mar 2012 07:25:14 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Michael Brunner <mibru@gmx.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCHv2] pch_uart: Add Kontron COMe-mTT10 uart clock quirk
-References: <20120322211903.6776ab18@mail.gmx.de> <4F6B8E1B.9080802@linux.intel.com> <20120322223112.291e0c59@mail.gmx.de> <4F6B9E7B.9090005@linux.intel.com> <20120323110637.63aa2f64@hyperion>
-In-Reply-To: <20120323110637.63aa2f64@hyperion>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756300Ab2CWO2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 10:28:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33700 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab2CWO2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 10:28:18 -0400
+X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=hkKkbzRNYrQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Nl0ru5l6gPP0KfZKCS0A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332512896.23924.66.camel@gandalf.stny.rr.com>
+Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 23 Mar 2012 10:28:16 -0400
+In-Reply-To: <CAB4K4y4DvUb+908P4NJoyJbDa35R2jP5cHqnoNWr9HRZJYyj4w@mail.gmail.com>
+References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
+	 <20120319130445.GN15988@n2100.arm.linux.org.uk>
+	 <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
+	 <20120319132623.GO15988@n2100.arm.linux.org.uk>
+	 <4F696011.7080409@linaro.org>
+	 <CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
+	 <CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
+	 <20120322100236.GS15988@n2100.arm.linux.org.uk>
+	 <CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
+	 <4F6BECA7.7030007@linaro.org>
+	 <CAB4K4y4DvUb+908P4NJoyJbDa35R2jP5cHqnoNWr9HRZJYyj4w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-03-23 at 14:40 +0530, Ajeet Yadav wrote:
+
+> linux-3.0.20/kernel/trace/Kconfig
+> linux-3.0.20-dirty/kernel/trace/Kconfig
+> --- linux-3.0.20/kernel/trace/Kconfig   2012-02-06 23:01:45.000000000 +0530
+> +++ linux-3.0.20-dirty/kernel/trace/Kconfig     2012-03-19
+> 18:21:41.000000000 +0530
+> @@ -173,7 +173,6 @@ config IRQSOFF_TRACER
+>        bool "Interrupts-off Latency Tracer"
+>        default n
+>        depends on TRACE_IRQFLAGS_SUPPORT
+> -       depends on !ARCH_USES_GETTIMEOFFSET
+>        select TRACE_IRQFLAGS
+>        select GENERIC_TRACER
+>        select TRACER_MAX_TRACE
+> @@ -195,7 +194,6 @@ config IRQSOFF_TRACER
+>  config PREEMPT_TRACER
+>        bool "Preemption-off Latency Tracer"
+>        default n
+> -       depends on !ARCH_USES_GETTIMEOFFSET
+>        depends on PREEMPT
+>        select GENERIC_TRACER
+>        select TRACER_MAX_TRACE
+
+A little history here.
+
+When I converted the irqsoff/preemptoff latency tracers from the
+original -rt patch (written by Ingo), these options originally had
+"depends on GENERIC_TIME". I just checked, and this goes at least back
+to 2.6.22.1-rt9 (long before ftrace).
+
+When I ported these to ftrace, I kept the dependencies. They probably
+are not needed and are only there for historical reasons.
+
+If this patch works fine for you, and that you are my only test case for
+this patch. I'd just say:
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
 
 
-On 03/23/2012 03:06 AM, Michael Brunner wrote:
-> Add UART clock quirk for the Kontron COMe-mTT10 module.
->
-> The board has previously been called nanoETXexpress-TT, therefore this
-> is also checked.
->
-> As suggested by Darren Hart the comparison in this patch version is
-> placed after the FRI2 checks to ensure it will also work with possible
-> upcoming changes to the FRI2 firmware.
->
-> This patch follows the patchset submitted by Darren Hart at
-> commit a46f5533ecfc7bbdd646d84fdab8656031a715c6.
->
-> Signed-off-by: Michael Brunner <mibru@gmx.de>
-> ---
->  drivers/tty/serial/pch_uart.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-> index 332f2eb..dd69c95 100644
-> --- a/drivers/tty/serial/pch_uart.c
-> +++ b/drivers/tty/serial/pch_uart.c
-> @@ -210,6 +210,7 @@ enum {
->  #define CMITC_UARTCLK   192000000 /* 192.0000 MHz */
->  #define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
->  #define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
-> +#define NTC1_UARTCLK     64000000 /*  64.0000 MHz */
->
->  struct pch_uart_buffer {
->  	unsigned char *buf;
-> @@ -388,6 +389,12 @@ static int pch_uart_get_uartclk(void)
->  	if (cmp && strstr(cmp, "Fish River Island II"))
->  		return FRI2_48_UARTCLK;
->
-> +	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
-> +	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> +	if (cmp && (strstr(cmp, "COMe-mTT") ||
-> +		    strstr(cmp, "nanoETXexpress-TT")))
-> +		return NTC1_UARTCLK;
-> +
-
-I don't know the cost of a dmi_get_system_info() call, since we already
-grabbed BOARD_NAME, would it make sense to reuse that value by using a
-dedicated cmp string?
-
-...
-
-Hrm, just appears to be an array lookup...
-
-	return dmi_ident[field];
-
-No real loss there.
-
-Acked-by: Darren Hart <dvhart@linux.intel.com>
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
