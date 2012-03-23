@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab2CWQij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 12:38:39 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:56580
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753856Ab2CWQig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 12:38:36 -0400
-Date: Fri, 23 Mar 2012 17:38:32 +0100 (CET)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Add design document for UBIFS secure deletion
-In-Reply-To: <1332517132.18717.102.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1203231705500.22944@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>    <1329152067.22240.214.camel@sauron.fi.intel.com>    <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>    <alpine.DEB.2.00.1202231628360.13720@eristoteles.iwoars.net>  
- <1331277476.22872.2.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203191752300.22256@eristoteles.iwoars.net>  <1332346218.14983.20.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203231448520.22944@eristoteles.iwoars.net>
- <1332517132.18717.102.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757642Ab2CWQjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 12:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754163Ab2CWQjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 12:39:20 -0400
+Date: Fri, 23 Mar 2012 17:30:46 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        akpm@linux-foundation.org, rjw@sisk.pl, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Trond.Myklebust@netapp.com, sbhamare@panasas.com, dhowells@redhat.com,
+        eparis@redhat.com, srivatsa.bhat@linux.vnet.ibm.com,
+        kay.sievers@vrfy.org, jmorris@namei.org, ebiederm@xmission.com,
+        gregkh@linuxfoundation.org, rusty@rustcorp.com.au, tj@kernel.org,
+        rientjes@google.com
+Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new
+	call_usermodehelper_timeout()API
+Message-ID: <20120323163046.GA16562@redhat.com>
+References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com> <4F6A92FC.6060702@panasas.com> <20120322142758.GA12370@redhat.com> <4F6B789C.8020201@panasas.com> <201203230716.GFE32712.StOJOVFHMQOFFL@I-love.SAKURA.ne.jp> <4F6C0092.1010901@panasas.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6C0092.1010901@panasas.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll answer some quickly here now while they're fresh in mind and add them
-to the doc later.
+On 03/22, Boaz Harrosh wrote:
+>
+> On 03/22/2012 03:16 PM, Tetsuo Handa wrote:
+>
+> > I think you should use a fork()ed wrapper in userspace for implementing
+> > timeout.
+>
+> I did that actually. But I would like not to be dependent on it. I would like
+> the Kernel to be independent and simple timeout and recover,
 
->
-> > In particular, it does not behave like a
-> > +log-structured file system: when a KSA LEB is updated, its contents are
-> > +written to a new physical location on the flash memory, UBI's logical map is
-> > +then updated to this new physical address and the previous version of the KSA
-> > +LEB is then erased.
->
-> Am I right that you basically wanted to say that when you update a KSA
-> LEB, you make sure that the physical flash does not contain the old
-> contents of this LEB? Would be nice to re-phrase.
->
-> Side question - how do you do this?
+Tetsuo, Boaz, since I do not understand the problem space, I am not
+going to discuss the "do we need the timeout" thing.
 
-Here I'm just spelling out atomic update, so nothing fancy except
-leb_change() to replace the keys.
+But, just in case, perhaps there is no need to change kmod.c ? I do
+not know if it works for you, but you can simply do something like
 
->
-> > Thus, except while updating the KSA, only one copy of the
-> > +data in the KSA is available on the storage medium.  When the file system is
-> > +created, cryptographically-suitable random data is written from random_bytes()
-> > +to each of the KSA's LEBs and all the keys are marked as unused. Purging
-> > +writes new versions of the KSA LEBs using UBI's atomic update feature.
->
-> Just a general question about: I guess you have to call ubi_sync() then
-> to make sure the old version is actually erased, right?
 
-There was an ioctl I think I was using, but I suspect ubi_sync is
-more elegant. Is it already performed after UBIFS commit?
+	struct kill_work {
+		struct delayed_work work;
+		struct pid *pid;
+	};
 
->
-> Read this far, and have 2 big questions:
->
-> 1. How keys are marked as deleted (I guess in some in-memory data
-> structure)
-> 2. When deleted keys are removed from the medium (probably on commit?)
+	void kill_work_func(struct work_struct *_work)
+	{
+		struct kill_work *work = container_of(_work, struct kill_work, work);
+		kill_pid(work->pid, SIGKILL);
+		put_pid(work->pid);
+		kfree(work);
+	}
 
-1. Yeah, 2bit for key state
-2. During commit, the KSA LEBs are rewritten.
+	int unh_setup_timeout(struct subprocess_info *info, struct cred *new)
+	{
+		struct kill_work *work = kmalloc(sizeof(struct kill_work));
+		if (!work)
+			return -ENOMEM;
 
->
-> I guess I'll find the answers below.
->
-> > +When a new data node is written to the storage medium, an unused key is
-> > +selected from the KSA and its position is written to the data node's header.
->
-> Questions arises - how the key is selected?
+		INIT_WORK(&work->work, kill_work_func);
+		work->pid = get_pid(task_pid(current));
+		schedule_delayed_work(&work->work, (long)info->data);
 
-Assigns the next unused key and keeps track of where it was to search
-onwards.
+		return 0;
+	}
 
->
-> > +The keys are in a protected area of the file system, so only users with root
-> > +access to the storage medium are capable of reading the keys that encrypt
-> > +data.
->
-> Hmm, what is the protected area? What prevents anyone from reading them
-> by finding them in /dev/ubiX_Y or /dev/mtdZ ?
+Now you can do
 
-Protected as in the kernel stops joe user from reading raw from /dev/mtd,
-no? Of course anyone with physical access can get the keys, so the
-security relys on these keys being securely deleted, but anyhow keeping
-live keys out of the filesystem also helps.
+	call_usermodehelper_fns(init => unh_setup_timeout,
+				data => (void*)timeout);
 
->
-> Hmm, why is it necessary to re-initialize unused keys?
->
+Oleg.
 
-This can be a mount option actually, it was a response to  attack that was
-proposed to me about the design. The idea here is that, suppose the
-attacker reads the drive at time X with sufficient privilages to read the
-keys. Then the attacker will know for certain that those keys will
-eventually be used to encrypt data. So they can compromise not only the
-current data, but also future data. By replacing unused keys, the attacker
-is limited only to compromizing current data.
-
->
-> Is it 2 bits per key?
->
-
-In development it was 32bits :). But its now properly 2bits per with
-bitwise ops for accessing.
->
-> I guess you do not enforce these rules, you just rely on the randomness?
-
-Yep, so the conditions need only hold with cryptographically high
-probability.
-
->
-> You'd also need to teach mkfs.ubifs to write correct KSA.
->
-
-Ah, yes! Any other tool?
-
->
-> Hmm, interesting how you manage checkpoints. I guess the easiest would
-> be to have a special inode (not visible for users) and store checkpoints
-> there?
->
-
-The first block of the KSA stores only checkpoints, so KSA size is 1 +
-minrequired + some slack. So this may need the multiple LEB
-approach for one of the other UBIFS areas when its size is too big, but I
-havn't done that since its generally so highly compressable that it
-wasn't ever a concern.
-
-Cheers,
-Joel Reardon
