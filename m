@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab2CWTLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 15:11:01 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:47974 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab2CWTK7 convert rfc822-to-8bit (ORCPT
+	id S1759542Ab2CWTLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 15:11:25 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27335 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758262Ab2CWTLY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 15:10:59 -0400
+	Fri, 23 Mar 2012 15:11:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120323162051.GA20834@kroah.com>
-References: <CAEwYmTJzzUi1qfRHYfZg77g1K7myNsAh2oDiY7hWxzRO5hQGHA@mail.gmail.com>
-	<20120322212816.GB30888@kroah.com>
-	<CAEwYmT+K7qr94D+ef1hgG1A2u0a9z+sopBjm08N2DcxM1FrM1w@mail.gmail.com>
-	<20120323162051.GA20834@kroah.com>
-Date: Fri, 23 Mar 2012 15:10:56 -0400
-Message-ID: <CAEwYmTKiC4TcKe=KN4FD_aNAWuoK6HOPCuttbnk-8he5+Dj+Qw@mail.gmail.com>
-Subject: Re: sysfs binary attribute API flux
-From: Jonathan McCune <jonmccune@cmu.edu>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <042daf29-3991-4db6-bfe0-36ddc04c22f2@default>
+Date: Fri, 23 Mar 2012 12:10:40 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Konrad Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-mm@kvack.org
+Subject: RE: [GIT PULL] staging: ramster: unbreak my heart
+References: <2d2c494d-64e3-4968-a406-a8ede7eb39bb@default>
+ <20120323164848.GB22875@kroah.com>
+In-Reply-To: <20120323164848.GB22875@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_600_699 0, BODY_SIZE_7000_LESS 0, FROM_EDU_TLD 0, WEBMAIL_SOURCE 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HELO_GMAIL 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __RDNS_GMAIL 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0)
-X-SMTP-Spam-Score: 8%
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4F6CCAD7.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 12:20 PM, Greg KH <greg@kroah.com> wrote:
-> No kernel api is stable, nor will it ever be, see
-> Documentation/stable_api_nonsense.txt for details.  As your code is
-> living outside of the main kernel.org tree, you will have to deal with
-> this for any number of different function calls you make, sysfs is not
-> unique at all here.
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Subject: Re: [GIT PULL] staging: ramster: unbreak my heart
+> 
+> On Fri, Mar 23, 2012 at 09:40:15AM -0700, Dan Magenheimer wrote:
+> > Hey Greg  --
+> >
+> > The just-merged ramster staging driver was dependent on a cleanup patch in
+> > cleancache, so was marked CONFIG_BROKEN until that patch could be
+> > merged.  That cleancache patch is now merged (and the correct SHA of the
+> > cleancache patch is 3167760f83899ccda312b9ad9306ec9e5dda06d4 rather than
+> > the one shown in the comment removed in the patch below).
+> >
+> > So remove the CONFIG_BROKEN now and the comment that is no longer true...
+> >
+> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> 
+> Why do you say "GIT PULL" here, when this is just a single patch?  Odd.
 
-Thank you.  I think this puts the issue to rest for me.
+Doh! Sorry, I was going to do a git tree, then realized a simple
+patch would be better, then never went back to change the subject.
+Sorry for the odd-ness.  Just a brain fart on my part.
+ 
+> I'll queue this up for sending to Linus after 3.4-rc1 is out, thanks.
 
-> Why not just create a new syscall for your work?  That would be easier
-> in the longrun, and really, that is what you are doing here.
+Great, thanks!
 
-I may do just that.
-
-Thanks,
--Jon
+Dan
