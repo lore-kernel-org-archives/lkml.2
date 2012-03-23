@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2CWToa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 15:44:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55525 "EHLO
+	id S1755414Ab2CWTpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 15:45:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55595 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2CWTo2 (ORCPT
+	with ESMTP id S1751045Ab2CWTpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 15:44:28 -0400
-Date: Fri, 23 Mar 2012 12:43:58 -0700
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org>
+	Fri, 23 Mar 2012 15:45:18 -0400
+Date: Fri, 23 Mar 2012 12:44:46 -0700
+From: tip-bot for Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Message-ID: <tip-e335e3eb82dada2765297f6ba501afc7555aba10@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
+        torvalds@linux-foundation.org, cmetcalf@tilera.com, chris@zankel.net,
+        raghavendra.kt@linux.vnet.ibm.com, ralf@linux-mips.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
+        torvalds@linux-foundation.org, cmetcalf@tilera.com, chris@zankel.net,
+        raghavendra.kt@linux.vnet.ibm.com, ralf@linux-mips.org,
+        tglx@linutronix.de
+In-Reply-To: <20120322095502.30866.75756.sendpatchset@codeblue>
+References: <20120322095502.30866.75756.sendpatchset@codeblue>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/kconfig: Update defconfigs
-Git-Commit-ID: 280fb016bfb098f33df96016cfaa840db77ba2d0
+Subject: [tip:x86/urgent] locking/kconfig:
+  Simplify INLINE_SPIN_UNLOCK usage
+Git-Commit-ID: e335e3eb82dada2765297f6ba501afc7555aba10
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,400 +32,138 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Mar 2012 12:44:08 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Mar 2012 12:44:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  280fb016bfb098f33df96016cfaa840db77ba2d0
-Gitweb:     http://git.kernel.org/tip/280fb016bfb098f33df96016cfaa840db77ba2d0
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Fri, 23 Mar 2012 13:12:38 +0100
+Commit-ID:  e335e3eb82dada2765297f6ba501afc7555aba10
+Gitweb:     http://git.kernel.org/tip/e335e3eb82dada2765297f6ba501afc7555aba10
+Author:     Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+AuthorDate: Thu, 22 Mar 2012 15:25:08 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 23 Mar 2012 13:14:53 +0100
+CommitDate: Fri, 23 Mar 2012 13:18:57 +0100
 
-x86/kconfig: Update defconfigs
+locking/kconfig: Simplify INLINE_SPIN_UNLOCK usage
 
-Link: http://lkml.kernel.org/n/tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Get rid of INLINE_SPIN_UNLOCK entirely replacing it with
+UNINLINE_SPIN_UNLOCK instead of the reverse meaning.
+
+Whoever wants to change the default spinlock inlining
+behavior and uninline the spinlocks for some weird reason,
+such as spinlock debugging, paravirt etc. can now all just
+select UNINLINE_SPIN_UNLOCK
+
+Original discussion at: https://lkml.org/lkml/2012/3/21/357
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Chris Zankel <chris@zankel.net>
+Cc: linux-mips@linux-mips.org
+Link: http://lkml.kernel.org/r/20120322095502.30866.75756.sendpatchset@codeblue
+[ tidied up the changelog a bit ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/configs/i386_defconfig   |   65 ++++++++++++-----------------------
- arch/x86/configs/x86_64_defconfig |   68 +++++++++++++------------------------
- 2 files changed, 47 insertions(+), 86 deletions(-)
+ arch/mips/configs/db1300_defconfig |    2 +-
+ arch/xtensa/configs/iss_defconfig  |    2 +-
+ include/linux/spinlock_api_smp.h   |    2 +-
+ kernel/Kconfig.locks               |    4 ++--
+ kernel/Kconfig.preempt             |    1 +
+ kernel/spinlock.c                  |    2 +-
+ lib/Kconfig.debug                  |    1 +
+ 7 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 2bf18059f..2d56282 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -15,23 +15,28 @@ CONFIG_CPUSETS=y
- CONFIG_CGROUP_CPUACCT=y
- CONFIG_RESOURCE_COUNTERS=y
- CONFIG_CGROUP_SCHED=y
--CONFIG_UTS_NS=y
--CONFIG_IPC_NS=y
--CONFIG_USER_NS=y
--CONFIG_PID_NS=y
--CONFIG_NET_NS=y
- CONFIG_BLK_DEV_INITRD=y
--CONFIG_KALLSYMS_EXTRA_PASS=y
- # CONFIG_COMPAT_BRK is not set
- CONFIG_PROFILING=y
- CONFIG_KPROBES=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_PARTITION_ADVANCED=y
-+CONFIG_OSF_PARTITION=y
-+CONFIG_AMIGA_PARTITION=y
-+CONFIG_MAC_PARTITION=y
-+CONFIG_BSD_DISKLABEL=y
-+CONFIG_MINIX_SUBPARTITION=y
-+CONFIG_SOLARIS_X86_PARTITION=y
-+CONFIG_UNIXWARE_DISKLABEL=y
-+CONFIG_SGI_PARTITION=y
-+CONFIG_SUN_PARTITION=y
-+CONFIG_KARMA_PARTITION=y
-+CONFIG_EFI_PARTITION=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
- CONFIG_SMP=y
--CONFIG_SPARSE_IRQ=y
- CONFIG_X86_GENERIC=y
- CONFIG_HPET_TIMER=y
- CONFIG_SCHED_SMT=y
-@@ -51,14 +56,12 @@ CONFIG_HZ_1000=y
- CONFIG_KEXEC=y
- CONFIG_CRASH_DUMP=y
- # CONFIG_COMPAT_VDSO is not set
--CONFIG_PM=y
-+CONFIG_HIBERNATION=y
- CONFIG_PM_DEBUG=y
- CONFIG_PM_TRACE_RTC=y
--CONFIG_HIBERNATION=y
- CONFIG_ACPI_PROCFS=y
- CONFIG_ACPI_DOCK=y
- CONFIG_CPU_FREQ=y
--CONFIG_CPU_FREQ_DEBUG=y
- # CONFIG_CPU_FREQ_STAT is not set
- CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y
- CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
-@@ -69,7 +72,6 @@ CONFIG_PCI_MSI=y
- CONFIG_PCCARD=y
- CONFIG_YENTA=y
- CONFIG_HOTPLUG_PCI=y
--CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
- CONFIG_BINFMT_MISC=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-@@ -120,7 +122,6 @@ CONFIG_NF_CONNTRACK_IPV4=y
- CONFIG_IP_NF_IPTABLES=y
- CONFIG_IP_NF_FILTER=y
- CONFIG_IP_NF_TARGET_REJECT=y
--CONFIG_IP_NF_TARGET_LOG=y
- CONFIG_IP_NF_TARGET_ULOG=y
- CONFIG_NF_NAT=y
- CONFIG_IP_NF_TARGET_MASQUERADE=y
-@@ -128,7 +129,6 @@ CONFIG_IP_NF_MANGLE=y
- CONFIG_NF_CONNTRACK_IPV6=y
- CONFIG_IP6_NF_IPTABLES=y
- CONFIG_IP6_NF_MATCH_IPV6HEADER=y
--CONFIG_IP6_NF_TARGET_LOG=y
- CONFIG_IP6_NF_FILTER=y
- CONFIG_IP6_NF_TARGET_REJECT=y
- CONFIG_IP6_NF_MANGLE=y
-@@ -169,25 +169,21 @@ CONFIG_DM_ZERO=y
- CONFIG_MACINTOSH_DRIVERS=y
- CONFIG_MAC_EMUMOUSEBTN=y
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
--CONFIG_NET_VENDOR_3COM=y
-+CONFIG_NETCONSOLE=y
-+CONFIG_BNX2=y
-+CONFIG_TIGON3=y
- CONFIG_NET_TULIP=y
--CONFIG_NET_PCI=y
--CONFIG_FORCEDETH=y
- CONFIG_E100=y
-+CONFIG_E1000=y
-+CONFIG_E1000E=y
-+CONFIG_SKY2=y
- CONFIG_NE2K_PCI=y
-+CONFIG_FORCEDETH=y
- CONFIG_8139TOO=y
- # CONFIG_8139TOO_PIO is not set
--CONFIG_E1000=y
--CONFIG_E1000E=y
- CONFIG_R8169=y
--CONFIG_SKY2=y
--CONFIG_TIGON3=y
--CONFIG_BNX2=y
--CONFIG_TR=y
--CONFIG_NET_PCMCIA=y
- CONFIG_FDDI=y
--CONFIG_NETCONSOLE=y
-+CONFIG_TR=y
- CONFIG_INPUT_POLLDEV=y
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_EVDEV=y
-@@ -196,6 +192,7 @@ CONFIG_INPUT_TABLET=y
- CONFIG_INPUT_TOUCHSCREEN=y
- CONFIG_INPUT_MISC=y
- CONFIG_VT_HW_CONSOLE_BINDING=y
-+# CONFIG_LEGACY_PTYS is not set
- CONFIG_SERIAL_NONSTANDARD=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
-@@ -205,7 +202,6 @@ CONFIG_SERIAL_8250_MANY_PORTS=y
- CONFIG_SERIAL_8250_SHARE_IRQ=y
- CONFIG_SERIAL_8250_DETECT_IRQ=y
- CONFIG_SERIAL_8250_RSA=y
--# CONFIG_LEGACY_PTYS is not set
- CONFIG_HW_RANDOM=y
- CONFIG_NVRAM=y
- CONFIG_HPET=y
-@@ -220,7 +216,6 @@ CONFIG_DRM_I915=y
- CONFIG_FB_MODE_HELPERS=y
- CONFIG_FB_TILEBLITTING=y
- CONFIG_FB_EFI=y
--CONFIG_BACKLIGHT_LCD_SUPPORT=y
- # CONFIG_LCD_CLASS_DEVICE is not set
- CONFIG_VGACON_SOFT_SCROLLBACK=y
- CONFIG_LOGO=y
-@@ -283,7 +278,6 @@ CONFIG_ZISOFS=y
- CONFIG_MSDOS_FS=y
- CONFIG_VFAT_FS=y
- CONFIG_PROC_KCORE=y
--CONFIG_TMPFS=y
- CONFIG_TMPFS_POSIX_ACL=y
- CONFIG_HUGETLBFS=y
- CONFIG_NFS_FS=y
-@@ -291,18 +285,6 @@ CONFIG_NFS_V3=y
- CONFIG_NFS_V3_ACL=y
- CONFIG_NFS_V4=y
- CONFIG_ROOT_NFS=y
--CONFIG_PARTITION_ADVANCED=y
--CONFIG_OSF_PARTITION=y
--CONFIG_AMIGA_PARTITION=y
--CONFIG_MAC_PARTITION=y
--CONFIG_BSD_DISKLABEL=y
--CONFIG_MINIX_SUBPARTITION=y
--CONFIG_SOLARIS_X86_PARTITION=y
--CONFIG_UNIXWARE_DISKLABEL=y
--CONFIG_SGI_PARTITION=y
--CONFIG_SUN_PARTITION=y
--CONFIG_KARMA_PARTITION=y
--CONFIG_EFI_PARTITION=y
- CONFIG_NLS_DEFAULT="utf8"
- CONFIG_NLS_CODEPAGE_437=y
- CONFIG_NLS_ASCII=y
-@@ -317,13 +299,12 @@ CONFIG_DEBUG_KERNEL=y
- # CONFIG_SCHED_DEBUG is not set
- CONFIG_SCHEDSTATS=y
- CONFIG_TIMER_STATS=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
-+CONFIG_DEBUG_STACK_USAGE=y
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_BLK_DEV_IO_TRACE=y
- CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
- CONFIG_EARLY_PRINTK_DBGP=y
- CONFIG_DEBUG_STACKOVERFLOW=y
--CONFIG_DEBUG_STACK_USAGE=y
- # CONFIG_DEBUG_RODATA_TEST is not set
- CONFIG_DEBUG_NX_TEST=m
- CONFIG_DEBUG_BOOT_PARAMS=y
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index 058a35b..3cf137a 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -1,4 +1,3 @@
--CONFIG_64BIT=y
- CONFIG_EXPERIMENTAL=y
- # CONFIG_LOCALVERSION_AUTO is not set
- CONFIG_SYSVIPC=y
-@@ -16,26 +15,29 @@ CONFIG_CPUSETS=y
- CONFIG_CGROUP_CPUACCT=y
- CONFIG_RESOURCE_COUNTERS=y
- CONFIG_CGROUP_SCHED=y
--CONFIG_UTS_NS=y
--CONFIG_IPC_NS=y
--CONFIG_USER_NS=y
--CONFIG_PID_NS=y
--CONFIG_NET_NS=y
- CONFIG_BLK_DEV_INITRD=y
--CONFIG_KALLSYMS_EXTRA_PASS=y
- # CONFIG_COMPAT_BRK is not set
- CONFIG_PROFILING=y
- CONFIG_KPROBES=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_PARTITION_ADVANCED=y
-+CONFIG_OSF_PARTITION=y
-+CONFIG_AMIGA_PARTITION=y
-+CONFIG_MAC_PARTITION=y
-+CONFIG_BSD_DISKLABEL=y
-+CONFIG_MINIX_SUBPARTITION=y
-+CONFIG_SOLARIS_X86_PARTITION=y
-+CONFIG_UNIXWARE_DISKLABEL=y
-+CONFIG_SGI_PARTITION=y
-+CONFIG_SUN_PARTITION=y
-+CONFIG_KARMA_PARTITION=y
-+CONFIG_EFI_PARTITION=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
- CONFIG_SMP=y
--CONFIG_SPARSE_IRQ=y
- CONFIG_CALGARY_IOMMU=y
--CONFIG_AMD_IOMMU=y
--CONFIG_AMD_IOMMU_STATS=y
- CONFIG_NR_CPUS=64
- CONFIG_SCHED_SMT=y
- CONFIG_PREEMPT_VOLUNTARY=y
-@@ -53,27 +55,22 @@ CONFIG_HZ_1000=y
- CONFIG_KEXEC=y
- CONFIG_CRASH_DUMP=y
- # CONFIG_COMPAT_VDSO is not set
--CONFIG_PM=y
-+CONFIG_HIBERNATION=y
- CONFIG_PM_DEBUG=y
- CONFIG_PM_TRACE_RTC=y
--CONFIG_HIBERNATION=y
- CONFIG_ACPI_PROCFS=y
- CONFIG_ACPI_DOCK=y
- CONFIG_CPU_FREQ=y
--CONFIG_CPU_FREQ_DEBUG=y
- # CONFIG_CPU_FREQ_STAT is not set
- CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y
- CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
- CONFIG_CPU_FREQ_GOV_ONDEMAND=y
- CONFIG_X86_ACPI_CPUFREQ=y
- CONFIG_PCI_MMCONFIG=y
--CONFIG_INTEL_IOMMU=y
--# CONFIG_INTEL_IOMMU_DEFAULT_ON is not set
- CONFIG_PCIEPORTBUS=y
- CONFIG_PCCARD=y
- CONFIG_YENTA=y
- CONFIG_HOTPLUG_PCI=y
--CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
- CONFIG_BINFMT_MISC=y
- CONFIG_IA32_EMULATION=y
- CONFIG_NET=y
-@@ -125,7 +122,6 @@ CONFIG_NF_CONNTRACK_IPV4=y
- CONFIG_IP_NF_IPTABLES=y
- CONFIG_IP_NF_FILTER=y
- CONFIG_IP_NF_TARGET_REJECT=y
--CONFIG_IP_NF_TARGET_LOG=y
- CONFIG_IP_NF_TARGET_ULOG=y
- CONFIG_NF_NAT=y
- CONFIG_IP_NF_TARGET_MASQUERADE=y
-@@ -133,7 +129,6 @@ CONFIG_IP_NF_MANGLE=y
- CONFIG_NF_CONNTRACK_IPV6=y
- CONFIG_IP6_NF_IPTABLES=y
- CONFIG_IP6_NF_MATCH_IPV6HEADER=y
--CONFIG_IP6_NF_TARGET_LOG=y
- CONFIG_IP6_NF_FILTER=y
- CONFIG_IP6_NF_TARGET_REJECT=y
- CONFIG_IP6_NF_MANGLE=y
-@@ -172,20 +167,16 @@ CONFIG_DM_ZERO=y
- CONFIG_MACINTOSH_DRIVERS=y
- CONFIG_MAC_EMUMOUSEBTN=y
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
--CONFIG_NET_VENDOR_3COM=y
-+CONFIG_NETCONSOLE=y
-+CONFIG_TIGON3=y
- CONFIG_NET_TULIP=y
--CONFIG_NET_PCI=y
--CONFIG_FORCEDETH=y
- CONFIG_E100=y
--CONFIG_8139TOO=y
- CONFIG_E1000=y
- CONFIG_SKY2=y
--CONFIG_TIGON3=y
--CONFIG_TR=y
--CONFIG_NET_PCMCIA=y
-+CONFIG_FORCEDETH=y
-+CONFIG_8139TOO=y
- CONFIG_FDDI=y
--CONFIG_NETCONSOLE=y
-+CONFIG_TR=y
- CONFIG_INPUT_POLLDEV=y
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_EVDEV=y
-@@ -194,6 +185,7 @@ CONFIG_INPUT_TABLET=y
- CONFIG_INPUT_TOUCHSCREEN=y
- CONFIG_INPUT_MISC=y
- CONFIG_VT_HW_CONSOLE_BINDING=y
-+# CONFIG_LEGACY_PTYS is not set
- CONFIG_SERIAL_NONSTANDARD=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
-@@ -203,7 +195,6 @@ CONFIG_SERIAL_8250_MANY_PORTS=y
- CONFIG_SERIAL_8250_SHARE_IRQ=y
- CONFIG_SERIAL_8250_DETECT_IRQ=y
- CONFIG_SERIAL_8250_RSA=y
--# CONFIG_LEGACY_PTYS is not set
- CONFIG_HW_RANDOM=y
- # CONFIG_HW_RANDOM_INTEL is not set
- # CONFIG_HW_RANDOM_AMD is not set
-@@ -221,7 +212,6 @@ CONFIG_DRM_I915_KMS=y
- CONFIG_FB_MODE_HELPERS=y
- CONFIG_FB_TILEBLITTING=y
- CONFIG_FB_EFI=y
--CONFIG_BACKLIGHT_LCD_SUPPORT=y
- # CONFIG_LCD_CLASS_DEVICE is not set
- CONFIG_VGACON_SOFT_SCROLLBACK=y
- CONFIG_LOGO=y
-@@ -268,6 +258,10 @@ CONFIG_RTC_CLASS=y
- # CONFIG_RTC_HCTOSYS is not set
- CONFIG_DMADEVICES=y
- CONFIG_EEEPC_LAPTOP=y
-+CONFIG_AMD_IOMMU=y
-+CONFIG_AMD_IOMMU_STATS=y
-+CONFIG_INTEL_IOMMU=y
-+# CONFIG_INTEL_IOMMU_DEFAULT_ON is not set
- CONFIG_EFI_VARS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-@@ -284,7 +278,6 @@ CONFIG_ZISOFS=y
- CONFIG_MSDOS_FS=y
- CONFIG_VFAT_FS=y
- CONFIG_PROC_KCORE=y
--CONFIG_TMPFS=y
- CONFIG_TMPFS_POSIX_ACL=y
- CONFIG_HUGETLBFS=y
- CONFIG_NFS_FS=y
-@@ -292,18 +285,6 @@ CONFIG_NFS_V3=y
- CONFIG_NFS_V3_ACL=y
- CONFIG_NFS_V4=y
- CONFIG_ROOT_NFS=y
--CONFIG_PARTITION_ADVANCED=y
--CONFIG_OSF_PARTITION=y
--CONFIG_AMIGA_PARTITION=y
--CONFIG_MAC_PARTITION=y
--CONFIG_BSD_DISKLABEL=y
--CONFIG_MINIX_SUBPARTITION=y
--CONFIG_SOLARIS_X86_PARTITION=y
--CONFIG_UNIXWARE_DISKLABEL=y
--CONFIG_SGI_PARTITION=y
--CONFIG_SUN_PARTITION=y
--CONFIG_KARMA_PARTITION=y
--CONFIG_EFI_PARTITION=y
- CONFIG_NLS_DEFAULT="utf8"
- CONFIG_NLS_CODEPAGE_437=y
- CONFIG_NLS_ASCII=y
-@@ -317,13 +298,12 @@ CONFIG_DEBUG_KERNEL=y
- # CONFIG_SCHED_DEBUG is not set
- CONFIG_SCHEDSTATS=y
- CONFIG_TIMER_STATS=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
-+CONFIG_DEBUG_STACK_USAGE=y
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_BLK_DEV_IO_TRACE=y
- CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
- CONFIG_EARLY_PRINTK_DBGP=y
- CONFIG_DEBUG_STACKOVERFLOW=y
--CONFIG_DEBUG_STACK_USAGE=y
- # CONFIG_DEBUG_RODATA_TEST is not set
- CONFIG_DEBUG_NX_TEST=m
- CONFIG_DEBUG_BOOT_PARAMS=y
+diff --git a/arch/mips/configs/db1300_defconfig b/arch/mips/configs/db1300_defconfig
+index c38b190..3590ab5 100644
+--- a/arch/mips/configs/db1300_defconfig
++++ b/arch/mips/configs/db1300_defconfig
+@@ -133,7 +133,7 @@ CONFIG_BLK_DEV_BSG=y
+ CONFIG_IOSCHED_NOOP=y
+ CONFIG_DEFAULT_NOOP=y
+ CONFIG_DEFAULT_IOSCHED="noop"
+-CONFIG_INLINE_SPIN_UNLOCK=y
++# CONFIG_UNINLINE_SPIN_UNLOCK is not set
+ CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
+ CONFIG_INLINE_READ_UNLOCK=y
+ CONFIG_INLINE_READ_UNLOCK_IRQ=y
+diff --git a/arch/xtensa/configs/iss_defconfig b/arch/xtensa/configs/iss_defconfig
+index f932b30..ddab37b 100644
+--- a/arch/xtensa/configs/iss_defconfig
++++ b/arch/xtensa/configs/iss_defconfig
+@@ -113,7 +113,7 @@ CONFIG_DEFAULT_IOSCHED="noop"
+ # CONFIG_INLINE_SPIN_LOCK_BH is not set
+ # CONFIG_INLINE_SPIN_LOCK_IRQ is not set
+ # CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
+-CONFIG_INLINE_SPIN_UNLOCK=y
++# CONFIG_UNINLINE_SPIN_UNLOCK is not set
+ # CONFIG_INLINE_SPIN_UNLOCK_BH is not set
+ CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
+ # CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
+diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
+index e253ccd..51df117 100644
+--- a/include/linux/spinlock_api_smp.h
++++ b/include/linux/spinlock_api_smp.h
+@@ -67,7 +67,7 @@ _raw_spin_unlock_irqrestore(raw_spinlock_t *lock, unsigned long flags)
+ #define _raw_spin_trylock_bh(lock) __raw_spin_trylock_bh(lock)
+ #endif
+ 
+-#ifdef CONFIG_INLINE_SPIN_UNLOCK
++#ifndef CONFIG_UNINLINE_SPIN_UNLOCK
+ #define _raw_spin_unlock(lock) __raw_spin_unlock(lock)
+ #endif
+ 
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 5068e2a..2251882 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -124,8 +124,8 @@ config INLINE_SPIN_LOCK_IRQSAVE
+ 	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+ 		 ARCH_INLINE_SPIN_LOCK_IRQSAVE
+ 
+-config INLINE_SPIN_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK)
++config UNINLINE_SPIN_UNLOCK
++	bool
+ 
+ config INLINE_SPIN_UNLOCK_BH
+ 	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_BH
+diff --git a/kernel/Kconfig.preempt b/kernel/Kconfig.preempt
+index 24e7cb0..3f9c974 100644
+--- a/kernel/Kconfig.preempt
++++ b/kernel/Kconfig.preempt
+@@ -36,6 +36,7 @@ config PREEMPT_VOLUNTARY
+ config PREEMPT
+ 	bool "Preemptible Kernel (Low-Latency Desktop)"
+ 	select PREEMPT_COUNT
++	select UNINLINE_SPIN_UNLOCK if !ARCH_INLINE_SPIN_UNLOCK
+ 	help
+ 	  This option reduces the latency of the kernel by making
+ 	  all kernel code (that is not executing in a critical section)
+diff --git a/kernel/spinlock.c b/kernel/spinlock.c
+index 84c7d96..5cdd806 100644
+--- a/kernel/spinlock.c
++++ b/kernel/spinlock.c
+@@ -163,7 +163,7 @@ void __lockfunc _raw_spin_lock_bh(raw_spinlock_t *lock)
+ EXPORT_SYMBOL(_raw_spin_lock_bh);
+ #endif
+ 
+-#ifndef CONFIG_INLINE_SPIN_UNLOCK
++#ifdef CONFIG_UNINLINE_SPIN_UNLOCK
+ void __lockfunc _raw_spin_unlock(raw_spinlock_t *lock)
+ {
+ 	__raw_spin_unlock(lock);
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 05037dc..f32a41f 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -499,6 +499,7 @@ config RT_MUTEX_TESTER
+ config DEBUG_SPINLOCK
+ 	bool "Spinlock and rw-lock debugging: basic checks"
+ 	depends on DEBUG_KERNEL
++	select UNINLINE_SPIN_UNLOCK
+ 	help
+ 	  Say Y here and build SMP to catch missing spinlock initialization
+ 	  and certain other kinds of spinlock errors commonly made.  This is
