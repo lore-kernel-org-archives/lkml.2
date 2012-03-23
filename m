@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab2CWK3x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 06:29:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55028 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab2CWK3v (ORCPT
+	id S1756795Ab2CWKpZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 06:45:25 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59488 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab2CWKpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 06:29:51 -0400
-Date: Fri, 23 Mar 2012 03:29:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: linux-next: Tree for Mar 23: doubled patch in vmscan.c
-In-Reply-To: <20120323172333.9af9b678fcde0e6e75b5f6dd@canb.auug.org.au>
-Message-ID: <alpine.LSU.2.00.1203230303260.31362@eggly.anvils>
-References: <20120323172333.9af9b678fcde0e6e75b5f6dd@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 23 Mar 2012 06:45:24 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 23 Mar 2012 12:45:03 +0200
+Message-ID: <CA+1xoqczdjPD0OGEuZAu6f9Q8gxAQuhVL-ZhhUcELaz_B=Jfjg@mail.gmail.com>
+Subject: mm: hung task (handle_pte_fault)
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Mar 2012, Stephen Rothwell wrote:
-> 
-> Changes since 20120322:
-> 
-> The akpm tree lost lots of patches that turned up elsewhere (mostly in
-> Linus' tree).
+Hi guys,
 
-I'm amused to notice that your merging process is as impatient as akpm,
-and just cannot wait for Mel to remove lumpy reclaim from mm/vmscan.c.
+During fuzzing using trinity inside a KVM tools guest with latest
+linux-next, I seem to be getting it hung once in a while, with the
+following spew:
 
-It has chosen to do so itself, by duplicating Konstantin's "mm: forbid
-lumpy-reclaim in shrink_active_list()" (we had expected that to be held
-back, but it's gone in anyway, oh well) into shrink_inactive_list(),
-overriding the set_reclaim_mode() a few lines above with a spurious
-reset_reclaim_mode(sc).
+[ 1441.420617] INFO: task trinity:2706 blocked for more than 120 seconds.
+[ 1441.421894] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 1441.424493] trinity         D 0000000000000000  3472  2706  16846 0x00000004
+[ 1441.426749]  ffff880029dbbb38 0000000000000086 ffff880029dbbae8
+ffff880029dbbfd8
+[ 1441.428582]  00000000001d45c0 ffff880029dba000 00000000001d45c0
+00000000001d45c0
+[ 1441.430156]  00000000001d45c0 00000000001d45c0 ffff880029dbbfd8
+00000000001d45c0
+[ 1441.432371] Call Trace:
+[ 1441.433042]  [<ffffffff81176dd0>] ? file_read_actor+0x1d0/0x1d0
+[ 1441.434251]  [<ffffffff827148d4>] schedule+0x24/0x70
+[ 1441.435314]  [<ffffffff82714e67>] io_schedule+0x87/0xd0
+[ 1441.436357]  [<ffffffff81176dd9>] sleep_on_page+0x9/0x10
+[ 1441.437442]  [<ffffffff82712cb7>] __wait_on_bit+0x57/0x80
+[ 1441.438584]  [<ffffffff81177bff>] ? __lock_page_or_retry+0x8f/0xd0
+[ 1441.439948]  [<ffffffff811775de>] wait_on_page_bit+0x6e/0x80
+[ 1441.440859]  [<ffffffff810d6d20>] ? autoremove_wake_function+0x40/0x40
+[ 1441.441700]  [<ffffffff810dbfbe>] ? up_read+0x1e/0x40
+[ 1441.442428]  [<ffffffff81177c36>] __lock_page_or_retry+0xc6/0xd0
+[ 1441.443270]  [<ffffffff81178490>] filemap_fault+0x440/0x4e0
+[ 1441.444072]  [<ffffffff811991cf>] __do_fault+0x7f/0x5f0
+[ 1441.444829]  [<ffffffff81112c00>] ?
+add_lock_to_list.clone.18.clone.27+0xd0/0xe0
+[ 1441.445886]  [<ffffffff8119cd27>] handle_pte_fault+0xf7/0x1e0
+[ 1441.446740]  [<ffffffff8119e1ce>] handle_mm_fault+0x1ce/0x330
+[ 1441.447537]  [<ffffffff8119e53c>] __get_user_pages+0x14c/0x640
+[ 1441.448399]  [<ffffffff811129ae>] ? put_lock_stats.clone.19+0xe/0x40
+[ 1441.449288]  [<ffffffff81117b1d>] ? __lock_acquired+0x19d/0x270
+[ 1441.450164]  [<ffffffff811a0087>] __mlock_vma_pages_range+0x87/0xa0
+[ 1441.451127]  [<ffffffff811a0129>] do_mlock_pages+0x89/0x160
+[ 1441.451932]  [<ffffffff811a0b71>] sys_mlockall+0x111/0x1a0
+[ 1441.452761]  [<ffffffff827176bd>] system_call_fastpath+0x1a/0x1f
+[ 1441.453659] no locks held by trinity/2706.
+[ 1441.454267] Kernel panic - not syncing: hung_task: blocked tasks
 
-I expect that will sort itself out automatically once you get an update
-from akpm, but something to beware of meanwhile (probably just a matter
-of deleting Konstantin's patch from your trove now it's in Linus's tree).
-
-Corrective patch below for illustration, but would need to be applied
-with care: I wouldn't be surprised if it chose to do exactly the wrong
-thing when applied automatically.
-
-Hugh
-
---- linux-next/mm/vmscan.c.orig	2012-03-23 01:29:33.312011679 -0700
-+++ linux-next/mm/vmscan.c	2012-03-23 03:00:08.688142469 -0700
-@@ -1528,8 +1528,6 @@ shrink_inactive_list(unsigned long nr_to
- 
- 	lru_add_drain();
- 
--	reset_reclaim_mode(sc);
--
- 	if (!sc->may_unmap)
- 		isolate_mode |= ISOLATE_UNMAPPED;
- 	if (!sc->may_writepage)
+According to the logs, it's not the direct result of anything specific
+happening, so I can't give an exact scenario to reproduce it. It does
+happen rather often.
