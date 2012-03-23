@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab2CWVUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 17:20:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6492 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab2CWVUE (ORCPT
+	id S1754746Ab2CWVU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 17:20:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36746 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431Ab2CWVU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 17:20:04 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=WkbF08ShLlYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=a_U1oVfrAAAA:8 a=yRrtQyYWuDy2Cs--j98A:9 a=PUjeQqilurYA:10 a=k4qQewaewV0A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1332537602.23924.74.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/2, trace-cmd] Fix trace_printk for long integers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 23 Mar 2012 17:20:02 -0400
-In-Reply-To: <1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com>
-References: <1332411501-8059-1-git-send-email-wolfgang.mauerer@siemens.com>
-	 <1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 23 Mar 2012 17:20:58 -0400
+Date: Fri, 23 Mar 2012 14:20:27 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] swapon: check validity of swap_flags
+In-Reply-To: <20120323135356.6b2376d6.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1203231416260.2235@eggly.anvils>
+References: <alpine.LSU.2.00.1203231346500.1940@eggly.anvils> <20120323135356.6b2376d6.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 11:18 +0100, Wolfgang Mauerer wrote:
-> On 32 bit systems, a conversion of the trace_printk format string
-> "%lu" -> "%llu" is intended (similar for %lx etc.) when a
-> trace was taken on a machine with 64 bit long integers. However,
-> the current code computes the bogus transformation "%lu" -> "%u".
-> Fix this.
+On Fri, 23 Mar 2012, Andrew Morton wrote:
+> On Fri, 23 Mar 2012 13:48:35 -0700 (PDT)
+> Hugh Dickins <hughd@google.com> wrote:
 > 
-> Besides that, the transformation is only required on systems
-> that don't use 64 bits for long integers natively.
+> > Most system calls taking flags first check that the flags passed in are
+> > valid, and that helps userspace to detect when new flags are supported.
+> > 
+> > But swapon never did so: start checking now, to help if we ever want to
+> > support more swap_flags in future.
+> > 
+> > It's difficult to get stray bits set in an int, and swapon is not widely
+> > used, so this is most unlikely to break any userspace; but we can just
+> > revert if it turns out to do so.
 > 
-> Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+> It would be safer to emit a nasty message then let the swapon proceed
+> as before.
 
-Applied, thanks!
+Safer, I suppose, but I really don't expect that case to arise (we'll
+have been doing those lovely runtime discards without asking for a year
+now if so).  And it does spoil the checking of supported flags.
 
--- Steve
-
-
+Hugh
