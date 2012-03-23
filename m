@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab2CWOHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 10:07:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29343 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965Ab2CWOHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 10:07:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="120901555"
-Message-ID: <1332511796.18717.72.camel@sauron.fi.intel.com>
-Subject: Re: [patch] Move CRC computation to separate function
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Fri, 23 Mar 2012 16:09:56 +0200
-In-Reply-To: <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	  <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
-	 <1330531826.3545.128.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-kw5F36rQQiw9GF+qjPv+"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1755258Ab2CWOIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 10:08:15 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36760 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab2CWOIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 10:08:14 -0400
+X-AuditID: b753bd60-99794ba000007b1b-24-4f6c83cb9d42
+X-AuditID: b753bd60-99794ba000007b1b-24-4f6c83cb9d42
+Message-ID: <4F6C83C1.9050704@hitachi.com>
+Date: Fri, 23 Mar 2012 23:08:01 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        tim.bird@am.sony.com
+Subject: Re: [PATCH 2/2] kgdb,debug_core,kgdbts: End DEBUG_RODATA limitation
+ using kprobe breakpoints
+References: <1332352536-29186-1-git-send-email-jason.wessel@windriver.com> <1332352536-29186-3-git-send-email-jason.wessel@windriver.com> <4F6A9444.4050603@hitachi.com> <4F6B13BC.2070406@windriver.com>
+In-Reply-To: <4F6B13BC.2070406@windriver.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/03/22 20:57), Jason Wessel wrote:
+> On 03/21/2012 09:53 PM, Masami Hiramatsu wrote:
+>> (2012/03/22 2:55), Jason Wessel wrote:
+>>> There has long been a limitation using software breakpoints with a
+>>> kernel compiled with CONFIG_DEBUG_RODATA.  The kprobe breakpoint code
+>>> has its own text_poke() function which accommodates writing a
+>>> breakpoint into a read-only page.  The debug_core can make use of the
+>>> text_poke() capabilities by using the kprobes API, specifically
+>>> arch_arm_kprobe() and arch_disarm_kprobe().  For now it is safe to use
+>>> a single statically allocated kprobe structure to call the kprobes API
+>>> because the debug_core breakpoint API is only used when the kernel is
+>>> in the debug state.
+>>
+>> You might misunderstand it. arch_*_kprobe() are not open APIs.
+>> Those are kprobes internal APIs (which means that those functions
+>> should be used only by kprobes).
+>>
+>
+>
+> I was looking for an interface that solved the problem, without having
+> to use text_poke directly which is arch specific.  Eventually I would
+> like to use the kprobes high level API, but it cannot not be used
+> without taking a mutex presently.  This is a separate problem to deal
+> with at a later time, because the generic use of kprobes would be
+> aimed at having robust single stepping.
 
---=-kw5F36rQQiw9GF+qjPv+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I see.
 
-On Mon, 2012-03-19 at 23:46 +0100, Joel Reardon wrote:
->  /**
-> + * ubifs_set_datanode_crc - writes the crc for a data node to the common
-> + * header.
-> + * @node: the data node
-> + */
-> +void ubifs_set_datanode_crc(void *node)
-> +{
-> +	struct ubifs_ch *ch =3D (struct ubifs_ch *) node;
-> +	int len =3D le32_to_cpu(ch->len);
-> +	ch->crc =3D cpu_to_le32(crc32(UBIFS_CRC32_INIT, node + 8, len - 8));
-> +}
+>>> The debug_core will first attempt to use the traditional
+>>> probe_kernel_write(), and next try using a kprobe breakpoint.  The
+>>> kgdb test suite was updated to run all the software breakpoint tests
+>>> when using a kernel with built with CONFIG_DEBUG_RODATA.
+>>>
+>>> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+>>
+>> Nak.
+>>
+>> No, please don't use kprobes internal function this way, because
+>> you can't ensure that the arch_arm_kprobe() has no side-effect.
+>>
+>> Why don't you use text_poke()? I see that the text_poke()
+>> is only for x86, but you already have arch/x86/kernel/kgdb.c for
+>> making your own wrapper function.
+>
+> I will use the arch specific provision to override the
+> kgdb_arch_set_breakpoint() and use the text_poke() directly.
 
-Will this be used by other code, outside of io.c? Because currently
-there is only one user in the same file, which does not justify
-introducing it and making non-static. If answers are "yes", then it is
-better to make it static inline and put to misc.h instead, because it is
-very small.
+Thanks! that's what I meant. You can use __weak attribute.
 
->  void ubifs_prepare_node(struct ubifs_info *c, void *node, int len, int p=
-ad)
->  {
-> -	uint32_t crc;
->  	struct ubifs_ch *ch =3D node;
->  	unsigned long long sqnum =3D next_sqnum(c);
->=20
-> @@ -390,8 +401,7 @@ void ubifs_prepare_node(struct ubifs_info *c, void *n=
-ode, int len, int pad)
->  	ch->group_type =3D UBIFS_NO_NODE_GROUP;
->  	ch->sqnum =3D cpu_to_le64(sqnum);
->  	ch->padding[0] =3D ch->padding[1] =3D 0;
-> -	crc =3D crc32(UBIFS_CRC32_INIT, node + 8, len - 8);
-> -	ch->crc =3D cpu_to_le32(crc);
-> +	ubifs_set_datanode_crc(node);
+> Eventually I would like to use the same software breakpoint
+> reservation system as kprobes, and that would happen if kgdb ever
+> starts using kprobes for single stepping.
 
-But ubifs_prepare_node() is generic and works for any node type, not
-just data nodes, which means that using 'datanode' in the name is not a
-good idea.
+Yeah, as far as I can see, current kprobes design assumes that
+there is no other part uses sw breakpoint in kernel. But there
+is kgdb now.
+I think kprobes can share the sw breakpoint instrumentation and
+single stepping with kgdb.
 
---=20
-Best Regards,
-Artem Bityutskiy
+Thank you,
 
---=-kw5F36rQQiw9GF+qjPv+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPbIQ0AAoJECmIfjd9wqK0NTMP/jRWltCaEzocqgb78yuh/kSl
-H1kk3Rky6SJUDM36pngTkMdy0x+373nIJqTlQbXi21OeJ+aVNnSw4sdIf029v6U3
-TgNUx8EBkpZRHu3vVQhSJyQQ03E81ZnYcaHCIAnoOk4Kb0bMW1H3yMez+ZZaE5Ax
-hMPi7f+i6ZYG/GQ+D0wJQv2tO9AV+OMeltI3nVkRtWHYOFxQ/bkvf1tgMDtt8DWY
-3n55aNc8u470/HqMHlhdY2LLetml840IqcWrawbRxCem8X63NgsU4uGA67+cNDZR
-GM+7cprcxjeHFyvbLmg4ZfVTjQjaqZ3FEcKzoyHgx7B9sPygEabdUoct09M2XAQO
-VhZFGlVrcJRPQ/33Be5WzlAg6JLKACpI7bsFbCYruL5OXO6AC2o62u2DHqAA6fzD
-MN+Wr00gPBZDZsCQH/gjdisZBkgRXUY+OQeKWLIHmPTHGRo43R3qBAbwbDC0jt/x
-dSKPtCA8LUvjwG6tZ45X/t84Xm4IXmqN/5ATud7IZh0A4gjWBQeiblianlJGRS9F
-y4pyffDvkOdgTJvMopll3bnqXAxeO59S8nbJfPqq1btaAStysBDQwSFNI+jRaMJe
-JCkg4g2f+qj3qbqqNY4ic3Wu4YaAScfDPVmcEQOkTPlTkY/VKfk+XKDt23Gk+NpN
-7M8BobzuMHw4w/FlG3J/
-=PC7Y
------END PGP SIGNATURE-----
-
---=-kw5F36rQQiw9GF+qjPv+--
-
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
