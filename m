@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab2CWJP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 05:15:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47995 "EHLO
+	id S1754359Ab2CWJR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 05:17:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52614 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2CWJP4 (ORCPT
+	with ESMTP id S1751865Ab2CWJRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 05:15:56 -0400
-Date: Fri, 23 Mar 2012 10:15:52 +0100
+	Fri, 23 Mar 2012 05:17:24 -0400
+Date: Fri, 23 Mar 2012 10:17:19 +0100
 From: Wolfram Sang <w.sang@pengutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
         Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
-Subject: [PULL REQUEST] i2c embedded
-Message-ID: <20120323091552.GA14203@pengutronix.de>
+Subject: [PULL REQUEST] i2c embedded for 3.4
+Message-ID: <20120323091719.GA14540@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
 Content-Disposition: inline
 X-Mutt-PGP: S<0x7D7F551B>
 User-Agent: Mutt/1.5.20 (2009-06-14)
@@ -28,6 +29,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 Hi Linus,
 
@@ -97,7 +102,8 @@ Zhiwu Song (1):
  drivers/i2c/busses/i2c-imx.c                       |    5 -
  drivers/i2c/busses/i2c-mpc.c                       |   63 ++-
  drivers/i2c/busses/i2c-s3c2410.c                   |   14 +-
- drivers/i2c/busses/i2c-sirf.c                      |  459 ++++++++++++++++++++
+ drivers/i2c/busses/i2c-sirf.c                      |  459 ++++++++++++++++=
+++++
  drivers/i2c/busses/i2c-tegra.c                     |    1 -
  drivers/i2c/busses/i2c-versatile.c                 |   10 +
  drivers/i2c/busses/i2c-xlr.c                       |  278 ++++++++++++
@@ -106,3 +112,22 @@ Zhiwu Song (1):
  create mode 100644 Documentation/devicetree/bindings/i2c/sirf-i2c.txt
  create mode 100644 drivers/i2c/busses/i2c-sirf.c
  create mode 100644 drivers/i2c/busses/i2c-xlr.c
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--gKMricLos+KVdGMg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk9sP58ACgkQD27XaX1/VRsALACfbK1vdvdxBCCNtxwPjKh/Q56w
+LQkAn14ZV7EZhYPvnq4FBJQIFeVawbD9
+=b/zy
+-----END PGP SIGNATURE-----
+
+--gKMricLos+KVdGMg--
