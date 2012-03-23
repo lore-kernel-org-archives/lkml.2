@@ -1,176 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab2CWIzJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 04:55:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:42408 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757344Ab2CWIxV (ORCPT
+	id S1757676Ab2CWI6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 04:58:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58135 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757440Ab2CWI6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 04:53:21 -0400
-X-AuditID: cbfee61b-b7baeae000004fa7-7e-4f6c39f7a794
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
-Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: [PATCH v7 6/6] Documentation/extcon: porting guide for Android kernel
- switch driver.
-Date: Fri, 23 Mar 2012 17:53:03 +0900
-Message-id: <1332492784-10526-7-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Fri, 23 Mar 2012 04:58:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAH+eYFC7rTTKAtymLe1RWp_L-Sc1WGNueiLdCTwgVEkaNZFGUw@mail.gmail.com>
+References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
+	<20120319130445.GN15988@n2100.arm.linux.org.uk>
+	<CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
+	<20120319132623.GO15988@n2100.arm.linux.org.uk>
+	<4F696011.7080409@linaro.org>
+	<CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
+	<CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
+	<20120322100236.GS15988@n2100.arm.linux.org.uk>
+	<CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
+	<4F6BEDC1.60006@linaro.org>
+	<CAB4K4y6u_59XLCBL2k5TrpAGv9C161wyqE_0_CEGbmgWeEwCyw@mail.gmail.com>
+	<CAH+eYFC7rTTKAtymLe1RWp_L-Sc1WGNueiLdCTwgVEkaNZFGUw@mail.gmail.com>
+Date: Fri, 23 Mar 2012 14:28:15 +0530
+Message-ID: <CAB4K4y6s7ON4xn3LLM4TDmTZfAuCwieTkt4qDJ4qWp2Pw+UzpA@mail.gmail.com>
+Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- Documentation/extcon/porting-android-switch-class |  124 +++++++++++++++++++++
- 1 files changed, 124 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/extcon/porting-android-switch-class
-
-diff --git a/Documentation/extcon/porting-android-switch-class b/Documentation/extcon/porting-android-switch-class
-new file mode 100644
-index 0000000..eb0fa5f
---- /dev/null
-+++ b/Documentation/extcon/porting-android-switch-class
-@@ -0,0 +1,124 @@
-+
-+	Staging/Android Switch Class Porting Guide
-+	(linux/drivers/staging/android/switch)
-+	(c) Copyright 2012 Samsung Electronics
-+
-+AUTHORS
-+MyungJoo Ham <myungjoo.ham@samsung.com>
-+
-+/*****************************************************************
-+ * CHAPTER 1.                                                    *
-+ * PORTING SWITCH CLASS DEVICE DRIVERS                           *
-+ *****************************************************************/
-+
-+****** STEP 1. Basic Functionality
-+	No extcon extended feature, but switch features only.
-+
-+- struct switch_dev (fed to switch_dev_register/unregister)
-+    @name: no change
-+    @dev: no change
-+    @index: drop (not used in switch device driver side anyway)
-+    @state: no change
-+	If you have used @state with magic numbers, keep it
-+	at this step.
-+    @print_name: no change but type change (switch_dev->extcon_dev)
-+    @print_state: no change but type change (switch_dev->extcon_dev)
-+
-+- switch_dev_register(sdev, dev)
-+	=> extcon_dev_register(edev, dev)
-+	: no change but type change (sdev->edev)
-+- switch_dev_unregister(sdev)
-+	=> extcon_dev_unregister(edev)
-+	: no change but type change (sdev->edev)
-+- switch_get_state(sdev)
-+	=> extcon_get_state(edev)
-+	: no change but type change (sdev->edev) and (return: int->u32)
-+- switch_set_state(sdev, state)
-+	=> extcon_set_state(edev, state)
-+	: no change but type change (sdev->edev) and (state: int->u32)
-+
-+With this changes, the ex-switch extcon class device works as it once
-+worked as switch class device. However, it will now have additional
-+interfaces (both ABI and in-kernel API) and different ABI locations.
-+However, if CONFIG_ANDROID is enabled without CONFIG_ANDROID_SWITCH,
-+/sys/class/switch/* will be symbolically linked to /sys/class/extcon/
-+so that they are still compatible with legacy userspace processes.
-+
-+****** STEP 2. Multistate (no more magic numbers in state value)
-+	Extcon's extended features for switch device drivers with
-+	complex features usually required magic numbers in state
-+	value of switch_dev. With extcon, such magic numbers that
-+	support multiple cables (
-+
-+  1. Define cable names at edev->supported_cable.
-+  2. (Recommended) remove print_state callback.
-+  3. Use extcon_get_cable_state_(edev, index) or
-+   extcon_get_cable_state(edev, cable_name) instead of
-+   extcon_get_state(edev) if you intend to get a state of a specific
-+   cable. Same for set_state. This way, you can remove the usage of
-+   magic numbers in state value.
-+  4. Use extcon_update_state() if you are updating specific bits of
-+   the state value.
-+
-+Example: a switch device driver w/ magic numbers for two cables.
-+	"0x00": no cables connected.
-+	"0x01": cable 1 connected
-+	"0x02": cable 2 connected
-+	"0x03": cable 1 and 2 connected
-+  1. edev->supported_cable = {"1", "2", NULL};
-+  2. edev->print_state = NULL;
-+  3. extcon_get_cable_state_(edev, 0) shows cable 1's state.
-+     extcon_get_cable_state(edev, "1") shows cable 1's state.
-+     extcon_set_cable_state_(edev, 1) sets cable 2's state.
-+     extcon_set_cable_state(edev, "2") sets cable 2's state
-+  4. extcon_update_state(edev, 0x01, 0) sets the least bit's 0.
-+
-+****** STEP 3. Notify other device drivers
-+
-+  You can notify others of the cable attach/detach events with
-+notifier chains.
-+
-+  At the side of other device drivers (the extcon device itself
-+does not need to get notified of its own events), there are two
-+methods to register notifier_block for cable events:
-+(a) for a specific cable or (b) for every cable.
-+
-+  (a) extcon_register_interest(obj, extcon_name, cable_name, nb)
-+	Example: want to get news of "MAX8997_MUIC"'s "USB" cable
-+
-+	obj = kzalloc(sizeof(struct extcon_specific_cable_nb),
-+		      GFP_KERNEL);
-+	nb->notifier_call = the_callback_to_handle_usb;
-+
-+	extcon_register_intereset(obj, "MAX8997_MUIC", "USB", nb);
-+
-+  (b) extcon_register_notifier(edev, nb)
-+	Call nb for any changes in edev.
-+
-+  Please note that in order to properly behave with method (a),
-+the extcon device driver should support multistate feature (STEP 2).
-+
-+****** STEP 4. Inter-cable relation (mutually exclusive)
-+
-+  You can provide inter-cable mutually exclusiveness information
-+for an extcon device. When cables A and B are declared to be mutually
-+exclusive, the two cables cannot be in ATTACHED state simulteneously.
-+
-+
-+/*****************************************************************
-+ * CHAPTER 2.                                                    *
-+ * PORTING USERSPACE w/ SWITCH CLASS DEVICE SUPPORT              *
-+ *****************************************************************/
-+
-+****** ABI Location
-+
-+  If "CONFIG_ANDROID" is enabled and "CONFIG_ANDROID_SWITCH" is
-+disabled, /sys/class/switch/* are created as symbolic links to
-+/sys/class/extcon/*. Because CONFIG_ANDROID_SWITCH creates
-+/sys/class/switch directory, we disable symboling linking if
-+CONFIG_ANDROID_SWITCH is enabled.
-+
-+  The two files of switch class, name and state, are provided with
-+extcon, too. When the multistate support (STEP 2 of CHAPTER 1.) is
-+not enabled or print_state callback is supplied, the output of
-+state ABI is same with switch class.
--- 
-1.7.4.1
-
+On Fri, Mar 23, 2012 at 11:47 AM, Rabin Vincent <rabin@rab.in> wrote:
+> On Fri, Mar 23, 2012 at 11:22, Ajeet Yadav <ajeet.yadav.77@gmail.com> wrote:
+>> We did some dissection to narrow down the patch, our latest kernel is
+>> stable 3.0.X , however we backported patch " ARM: 7321/1: cache-v7:
+>> Disable preemption when reading CCSIDR" from 3.0.25 stable tree, this
+>> patch causes kernel hang during boot (IRQSOFF_TRACER=y and
+>> PREEMPT_TRACER=y) with 100% probability , if we remove this patch or
+>> disable the given CONFIG's then boot is success.
+>
+> 8e43a905dd574f54c5715d9783 ("ARM: 7325/1: fix v7 boot with lockdep
+> enabled") fixes 7321/1's boot problems.
+Hi Rabin,
+Thanks for fixing the boot problem, we have tested it, fixed.
