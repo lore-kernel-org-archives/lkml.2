@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab2CWL2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 07:28:52 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:10065 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab2CWL2v (ORCPT
+	id S1756242Ab2CWLcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 07:32:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41872 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755685Ab2CWLcq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 07:28:51 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=UTF-8
-Date: Fri, 23 Mar 2012 12:28:52 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 2/2] s5p-tv: Add initial DT-support for HDMIPHY
-In-reply-to: <20120318182458.9CCC43E07BF@localhost>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: t.stanislaws@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, thomas.abraham@linaro.org,
-        m.szyprowski@samsung.com, kyungmin.park@samsung.com
-Message-id: <4F6C5E74.60104@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1331912532-7798-1-git-send-email-k.lewandowsk@samsung.com>
- <1331912532-7798-3-git-send-email-k.lewandowsk@samsung.com>
- <20120318182458.9CCC43E07BF@localhost>
+	Fri, 23 Mar 2012 07:32:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="80810715"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
+Thread-Index: AQHNCN9MKF1rJY3aXUun4qztc3puMZZ3vcqg
+Date: Fri, 23 Mar 2012 11:32:43 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A05D65B@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+	 <1331546307.18960.26.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
+	 <1331654251.18960.78.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+	 <1331718197.18960.106.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
+	 <1331808391.18960.160.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
+	 <1331891364.18960.221.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
+	 <1332151397.18960.252.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com>
+	 <1332245842.18960.413.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05B485@SHSMSX101.ccr.corp.intel.com>
+	 <1332332739.18960.488.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A05C092@SHSMSX101.ccr.corp.intel.com>
+ <1332498333.16159.9.camel@twins>
+In-Reply-To: <1332498333.16159.9.camel@twins>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.03.2012 19:24, Grant Likely wrote:
+In fact, I started two scripts running:
+1/ One script:
+echo 0 > /sys/devices/system/cpuX/online
+echo 1 > /sys/devices/system/cpuX/online
+Rerunning the above commands in loop
 
-> On Fri, 16 Mar 2012 16:42:12 +0100, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
->> Make it possible to instantiate driver from device tree description.
->>
->> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
->> ---
->>  drivers/media/video/s5p-tv/hdmiphy_drv.c |   10 ++++++++++
->>  1 files changed, 10 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/media/video/s5p-tv/hdmiphy_drv.c b/drivers/media/video/s5p-tv/hdmiphy_drv.c
->> index 6693f4a..ddf3008 100644
->> --- a/drivers/media/video/s5p-tv/hdmiphy_drv.c
->> +++ b/drivers/media/video/s5p-tv/hdmiphy_drv.c
->> @@ -18,6 +18,7 @@
->>  #include <linux/interrupt.h>
->>  #include <linux/irq.h>
->>  #include <linux/err.h>
->> +#include <linux/of.h>
->>  
->>  #include <media/v4l2-subdev.h>
->>  
->> @@ -165,10 +166,19 @@ static const struct i2c_device_id hdmiphy_id[] = {
->>  };
->>  MODULE_DEVICE_TABLE(i2c, hdmiphy_id);
->>  
->> +#ifdef CONFIG_OF
->> +static struct of_device_id hdmiphy_dt_match[] = {
->> +	{ .compatible = "samsung,s5pv210-hdmiphy" },
+2/Another script:
+echo 1 > /debug/smp_call_test
+usleep 50000
+Rerunning the above command in loop
+
+This race issue can be easy to be reproduced in several minutes;
+For simplify your test as mine(just two CPUs), you can set other non-booting CPUs as offline
+at first and just leave one non-booting CPU.
+
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Friday, March 23, 2012 6:26 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de; Srivatsa S.
+> Bhat
+> Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
 > 
-> Ditto here; needs to be listed in documentation.
+> On Thu, 2012-03-22 at 00:59 +0000, Liu, Chuansheng wrote:
+> > Below is the complete test patch. Just run the simpl_loop_onoffline.sh
+> > and simpl_loop_smpcalling.sh concurrently to reproduce the race.
+> >
+> What I did was:
+> 
+> for i in {2..23} ; do echo 0 > /sys/devices/system/cpu/cpu${i}/online ; done while
+> usleep 50000 ; do echo 1 > /debug/smp_call_test ; done & while :; do echo $i >
+> /sys/devices/system/cpu/cpu1/online ; let i^=1 ; done
+> 
+> and this has been running for well over 30 minutes.. is there anything else one
+> needs to do?
+> 
 
-
-As these drivers require only irq and io address may add these to
-something like [bindings/arm/samsung/]trivial-devices.txt (like it's
-done for i2c)?
-
-Thanks for review!
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
