@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab2CWKZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 06:25:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54240 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab2CWKZn convert rfc822-to-8bit (ORCPT
+	id S1758071Ab2CWK0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 06:26:40 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57798 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab2CWK0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 06:25:43 -0400
-Message-ID: <1332498333.16159.9.camel@twins>
-Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 23 Mar 2012 11:25:33 +0100
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A05C092@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
-	 <1331718197.18960.106.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-	 <1331808391.18960.160.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05806B@SHSMSX101.ccr.corp.intel.com>
-	 <1331891364.18960.221.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A058AAE@SHSMSX101.ccr.corp.intel.com>
-	 <1332151397.18960.252.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05A6BF@SHSMSX101.ccr.corp.intel.com>
-	 <1332245842.18960.413.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05B485@SHSMSX101.ccr.corp.intel.com>
-	 <1332332739.18960.488.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A05C092@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 23 Mar 2012 06:26:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332478202.2882.2.camel@pasglop>
+References: <20120323130031.c097ca3755de5ff5879504e1@canb.auug.org.au>
+	<1332478202.2882.2.camel@pasglop>
+Date: Fri, 23 Mar 2012 12:26:38 +0200
+Message-ID: <CACVxJT-MgLO5aLiRuSR=61nea47V27vsXJB9St20J6G6hSe8xw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the scsi tree
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 00:59 +0000, Liu, Chuansheng wrote:
-> Below is the complete test patch. Just run the simpl_loop_onoffline.sh
-> and simpl_loop_smpcalling.sh concurrently
-> to reproduce the race.
-> 
-What I did was:
+On Fri, Mar 23, 2012 at 7:50 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Fri, 2012-03-23 at 13:00 +1100, Stephen Rothwell wrote:
+>> Hi James,
+>>
+>> After merging the scsi tree, today's linux-next build (powerpc
+>> ppc64_defconfig) failed like this:
+>>
+>> drivers/ata/sata_svw.c: In function 'k2_sata_proc_open':
+>> drivers/ata/sata_svw.c:327:2: error: implicit declaration of function 'PDE' [-Werror=implicit-function-declaration]
+>> drivers/ata/sata_svw.c:327:56: error: invalid type argument of '->' (have 'int')
+>> drivers/ata/sata_svw.c:328:1: warning: control reaches end of non-void function [-Wreturn-type]
+>>
+>> Caused by commit 343ac4b031a7 ("[SCSI] sata_svw: convert to scsi proc_ops").
+>>
+>> I have used the scsi tree from next-20120322 for today.
+>
+> Additionally, I am the author and maintainer of that driver and I don't
+> remember ever being CCed on that patch ... or did I miss it ?
 
-for i in {2..23} ; do echo 0 > /sys/devices/system/cpu/cpu${i}/online ; done
-while usleep 50000 ; do echo 1 > /debug/smp_call_test ; done &
-while :; do echo $i > /sys/devices/system/cpu/cpu1/online ; let i^=1 ; done
-
-and this has been running for well over 30 minutes.. is there anything
-else one needs to do?
-
-
+Your email was not mentioned in changelogs for 6 years nor the driver
+has specific MAINTAINERS entry.
