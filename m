@@ -1,122 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2CWXEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 19:04:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49247 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757372Ab2CWXEI (ORCPT
+	id S1757611Ab2CWXJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 19:09:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33299 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab2CWXJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 19:04:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6658"; a="175327010"
-Message-ID: <4F6D0167.3040704@codeaurora.org>
-Date: Fri, 23 Mar 2012 16:04:07 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <1331878280-2758-3-git-send-email-mturquette@linaro.org> <20120320140220.GE32469@S2101-09.ap.freescale.net> <efca11f1b68186dbf1771c09fe3a2f0a.squirrel@www.codeaurora.org> <CAJOA=zNmgSQfYAUZ-vqqTk0w3s3eKz3tjVOpyDgO35Q_Ogkz0g@mail.gmail.com> <4F6946AA.4070201@codeaurora.org> <4F6CEC0C.4060704@codeaurora.org> <CAJOA=zNDKesFtuRgv+6brmBvmbQQecKEOJ89EiG-+YzXVTosWw@mail.gmail.com> <4F6CF555.4080109@codeaurora.org> <CAJOA=zOnR1NwZ1Cmkfb+b7f7=N_vg+txAUqKXF2Nf2nVYFMjjg@mail.gmail.com>
-In-Reply-To: <CAJOA=zOnR1NwZ1Cmkfb+b7f7=N_vg+txAUqKXF2Nf2nVYFMjjg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Mar 2012 19:09:21 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v7] of/lib: Allow scripts/dtc/libfdt to be used from kernel code
+Date: Fri, 23 Mar 2012 16:09:15 -0700
+Message-Id: <1332544155-20380-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2012 03:32 PM, Turquette, Mike wrote:
-> On Fri, Mar 23, 2012 at 3:12 PM, Saravana Kannan<skannan@codeaurora.org>  wrote:
->> On 03/23/2012 02:39 PM, Turquette, Mike wrote:
->>> __clk_recalc_rates is called by __clk_reparent which is called by
->>> clk_set_parent.  __clk_recalc_rates is also called by clk_set_rate.
->>>
->>> Does this not handle the old cached clk->rate for you?
->>
->> For the set_parent case, ops->recalc_rate() is called twice. Once for
->> PRE_CHANGE and once for POST_CHANGE. For this clock, I can only really
->> recalc the rate during the POST_CHANGE call. So, how should I differentiate
->> the two cases?
->
-> .recalc_rate serves two purposes: first it recalculates the rate after
-> the rate has changed and you pass in a new parent_rate argument.  The
-> second purpose is to "speculate" a rate change.  You can pass in any
-> rate for the parent_rate parameter when you call .recalc_rates.  This
-> is what __speculate_rates does before the rate changes.  For
-> clk_set_parent we call,
->
-> __clk_speculate_rates(clk, parent->rate);
->
-> Where parent above is the *new* parent.  So this will let us propagate
-> pre-rate change notifiers with the new rate.
->
-> Your .recalc_rate callback doesn't need to differentiate between the
-> two calls to .recalc_rate.  It should just take in the parent_rate
-> value and do the calculation required of it.
+From: David Daney <david.daney@cavium.com>
 
-Yeah, this is generally true. But, in this specific case, the clock is a 
-mux that can literally measure the real rate. I would like the rate of 
-this mux clock to be the real measured rate and not just the parent rate.
+libfdt is part of the device tree support in scripts/dtc/libfdt.  For
+some platforms that use the Device Tree, we want to be able to edit
+the flattened device tree form.
 
-I could actually measure the current rate and return that for 
-recalc_rate(), but then the reported rate change during the pre-change 
-notification would be wrong. Having the "msg" will let us at least fake 
-the rate correctly for pre change notifiers.
+We don't want to burden kernel builds that do not require it, so we
+gate compilation of libfdt files with CONFIG_LIBFDT.  So if it is
+needed, you need to do this in your Kconfig:
 
->> I think it's quite useful for recalc_rate to be called pre/post change (some
->> steps have to be done pre/post change depending on whether the parent rate
->> is increasing or decreasing). But I don't see the "msg" being passed along.
->
-> What kind of steps?  Does your .recalc_rate perform these steps?  I
-> need more details to understand your requirements.
+	select LIBFDT
 
-Nevermind, my brain isn't working today. I can just do that different 
-ordering in ops->set_parent(). But the measure clocks case is still true 
-though.
+And in the Makefile of the code using libfdt something like:
 
-But this did bring up another point in my head. Hopefully this one isn't 
-my brain playing tricks again today.
+ccflags-y := -I$(src)/../../../scripts/dtc/libfdt
 
-How does a child (or grand child) clock (not a driver using the clock) 
-reject a rate change if it know it can't handle that freq from the 
-parent? I won't claim to know this part of the code thoroughly, but I 
-can't find an easy way to do this.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
 
-Reason for rejection could be things like the counter (for division, 
-etc) has an upper limit on how fast it can run.
+This patch has been seen several times before as part of a larger
+patch set for my OCTEON Device Tree work.  After further refinement to
+my patches that depend on core Device Tree functionality, this is the
+only remaining patch to the common 'core' code.
 
->> Also, I noticed that clk_set_parent() is treating a NULL as an invalid
->> clock. Should that be fixed? set_parent(NULL) could be treated as a
->> grounding the clock. Should we let the ops->set_parent determine if NULL is
->> valid option?
->
-> We must be looking at different code.  clk_set_parent doesn't return
-> any error if parent == NULL.  Bringing this to my attention does show
-> that we do deref the parent pointer without a check though...
->
-> Do you have a real use case for this?  Due to the way that we match
-> the parent pointer with the cached clk->parents member it would be
-> painful to support NULL parents as valid.
+Here is the history:
 
-I don't have a real use case for MSM. We just have a ground_clock.
+v7: No changes other that to split from other, now unneeded, patches.
 
-> It is also worth considering whether clk_set_parent is really the
-> correct operation for grounding a clock.  clk_unprepare might be a
-> better candidate.
+v6: No changes other than to split these out of the MIPS/OCTEON patch
+    set to allow them to be merged separately if desired.
 
-Yeah, not a real use case for MSM.
+v5: Build libfdt in the lib directory instead of devices/of, and
+    include all libfdt files.
 
-Thanks,
-Saravana
+    Changes to of_find_node_by_path() requested by Grant Likely.
 
+v4: No changes to these two patches.
+
+v3: libfdt building moved to devices/of/libfdt.  Cleanup and style
+    improvements as suggested by Grant Likely.
+
+v2: No changes to these two patches.
+
+There are a couple of possibility for merging this.
+
+1) Via the Device Tree maintainers, thus blocking the follow-ons until
+   it is merged.
+
+2) Via Ralf's Linux/MIPS tree with the rest of the patches after
+   Device Tree maintainer sign-off.
+
+ include/linux/libfdt.h     |    8 ++++++++
+ include/linux/libfdt_env.h |   13 +++++++++++++
+ lib/Kconfig                |    6 ++++++
+ lib/Makefile               |    5 +++++
+ lib/fdt.c                  |    2 ++
+ lib/fdt_ro.c               |    2 ++
+ lib/fdt_rw.c               |    2 ++
+ lib/fdt_strerror.c         |    2 ++
+ lib/fdt_sw.c               |    2 ++
+ lib/fdt_wip.c              |    2 ++
+ 10 files changed, 44 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/libfdt.h
+ create mode 100644 include/linux/libfdt_env.h
+ create mode 100644 lib/fdt.c
+ create mode 100644 lib/fdt_ro.c
+ create mode 100644 lib/fdt_rw.c
+ create mode 100644 lib/fdt_strerror.c
+ create mode 100644 lib/fdt_sw.c
+ create mode 100644 lib/fdt_wip.c
+
+diff --git a/include/linux/libfdt.h b/include/linux/libfdt.h
+new file mode 100644
+index 0000000..4c0306c
+--- /dev/null
++++ b/include/linux/libfdt.h
+@@ -0,0 +1,8 @@
++#ifndef _INCLUDE_LIBFDT_H_
++#define _INCLUDE_LIBFDT_H_
++
++#include <linux/libfdt_env.h>
++#include "../../scripts/dtc/libfdt/fdt.h"
++#include "../../scripts/dtc/libfdt/libfdt.h"
++
++#endif /* _INCLUDE_LIBFDT_H_ */
+diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
+new file mode 100644
+index 0000000..01508c7
+--- /dev/null
++++ b/include/linux/libfdt_env.h
+@@ -0,0 +1,13 @@
++#ifndef _LIBFDT_ENV_H
++#define _LIBFDT_ENV_H
++
++#include <linux/string.h>
++
++#include <asm/byteorder.h>
++
++#define fdt32_to_cpu(x) be32_to_cpu(x)
++#define cpu_to_fdt32(x) cpu_to_be32(x)
++#define fdt64_to_cpu(x) be64_to_cpu(x)
++#define cpu_to_fdt64(x) cpu_to_be64(x)
++
++#endif /* _LIBFDT_ENV_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 028aba9..e2da829 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -316,4 +316,10 @@ config SIGNATURE
+ 	  Digital signature verification. Currently only RSA is supported.
+ 	  Implementation is done using GnuPG MPI library
+ 
++#
++# libfdt files, only selected if needed.
++#
++config LIBFDT
++	bool
++
+ endmenu
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..1c6c198 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -123,6 +123,11 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
+ 
+ obj-$(CONFIG_CLZ_TAB) += clz_tab.o
+ 
++libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o
++$(foreach file, $(libfdt_files), \
++	$(eval CFLAGS_$(file) = -I$(src)/../scripts/dtc/libfdt))
++lib-$(CONFIG_LIBFDT) += $(libfdt_files)
++
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+diff --git a/lib/fdt.c b/lib/fdt.c
+new file mode 100644
+index 0000000..97f2006
+--- /dev/null
++++ b/lib/fdt.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt.c"
+diff --git a/lib/fdt_ro.c b/lib/fdt_ro.c
+new file mode 100644
+index 0000000..f73c04e
+--- /dev/null
++++ b/lib/fdt_ro.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt_ro.c"
+diff --git a/lib/fdt_rw.c b/lib/fdt_rw.c
+new file mode 100644
+index 0000000..0c1f0f4
+--- /dev/null
++++ b/lib/fdt_rw.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt_rw.c"
+diff --git a/lib/fdt_strerror.c b/lib/fdt_strerror.c
+new file mode 100644
+index 0000000..8713e3f
+--- /dev/null
++++ b/lib/fdt_strerror.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt_strerror.c"
+diff --git a/lib/fdt_sw.c b/lib/fdt_sw.c
+new file mode 100644
+index 0000000..9ac7e50
+--- /dev/null
++++ b/lib/fdt_sw.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt_sw.c"
+diff --git a/lib/fdt_wip.c b/lib/fdt_wip.c
+new file mode 100644
+index 0000000..45b3fc3
+--- /dev/null
++++ b/lib/fdt_wip.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt_wip.c"
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.2.3
+
