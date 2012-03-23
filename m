@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759801Ab2CWTdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 15:33:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759762Ab2CWTc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759768Ab2CWTc7 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 23 Mar 2012 15:32:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759695Ab2CWTc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 15:32:56 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: airlied@redhat.com, ajax@redhat.com, Matthew Garrett <mjg@redhat.com>,
-        hpa@zytor.com, matt.fleming@intel.com
-Subject: [PATCH 4/4] efifb: Implement vga_default_device()
-Date: Fri, 23 Mar 2012 15:32:38 -0400
-Message-Id: <1332531158-2319-5-git-send-email-mjg@redhat.com>
+        benh@kernel.crashing.org
+Subject: [PATCH 1/4] vgaarb: Add support for setting the default video device
+Date: Fri, 23 Mar 2012 15:32:35 -0400
+Message-Id: <1332531158-2319-2-git-send-email-mjg@redhat.com>
 In-Reply-To: <1332531158-2319-1-git-send-email-mjg@redhat.com>
 References: <1332531158-2319-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,138 +23,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI doesn't typically make use of the legacy VGA ROM, but it may still be
-configured to pass that through to a given video device. This may lead to
-an inaccurate choice of default video device. Add support to efifb to pick
-out the correct active video device.
+The default VGA device is a somewhat fluid concept on platforms with
+multiple GPUs. Add support for setting it so switching code can update
+things appropriately, and make sure that the sysfs code returns the right
+device if it's changed.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: hpa@zytor.com
-Cc: matt.fleming@intel.com
+Cc: benh@kernel.crashing.org
+Cc: airlied@redhat.com
 ---
- arch/x86/include/asm/vga.h |    6 +++
- drivers/video/efifb.c      |   77 ++++++++++++++++++++++++++++++++-----------
- 2 files changed, 63 insertions(+), 20 deletions(-)
+ drivers/gpu/vga/vgaarb.c |    7 +++++++
+ drivers/pci/pci-sysfs.c  |    5 +++++
+ include/linux/vgaarb.h   |    3 +++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/vga.h b/arch/x86/include/asm/vga.h
-index c4b9dc2..2723c07 100644
---- a/arch/x86/include/asm/vga.h
-+++ b/arch/x86/include/asm/vga.h
-@@ -17,4 +17,10 @@
- #define vga_readb(x) (*(x))
- #define vga_writeb(x, y) (*(y) = (x))
- 
-+#if CONFIG_FB_EFI
-+#define __ARCH_HAS_VGA_DEFAULT_DEVICE
-+extern struct pci_dev *vga_default_device(void);
-+extern void vga_set_default_device(struct pci_dev *pdev);
-+#endif
-+
- #endif /* _ASM_X86_VGA_H */
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 784139a..66ed991 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -18,6 +18,8 @@
- 
- static bool request_mem_succeeded = false;
- 
-+static struct pci_dev *default_vga;
-+
- static struct fb_var_screeninfo efifb_defined __devinitdata = {
- 	.activate		= FB_ACTIVATE_NOW,
- 	.height			= -1,
-@@ -298,35 +300,70 @@ static struct fb_ops efifb_ops = {
- 	.fb_imageblit	= cfb_imageblit,
- };
- 
-+struct pci_dev *vga_default_device(void)
-+{
-+	return default_vga;
-+}
+diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+index 111d956..e223b96 100644
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -136,6 +136,11 @@ struct pci_dev *vga_default_device(void)
+ {
+ 	return vga_default;
+ }
 +
 +void vga_set_default_device(struct pci_dev *pdev)
 +{
-+	default_vga = pdev;
++	vga_default = pdev;
 +}
-+
- static int __init efifb_setup(char *options)
- {
- 	char *this_opt;
- 	int i;
-+	struct pci_dev *dev = NULL;
-+
-+	if (options && *options) {
-+		while ((this_opt = strsep(&options, ",")) != NULL) {
-+			if (!*this_opt) continue;
-+
-+			for (i = 0; i < M_UNKNOWN; i++) {
-+				if (!strcmp(this_opt, dmi_list[i].optname) &&
-+				    dmi_list[i].base != 0) {
-+					screen_info.lfb_base = dmi_list[i].base;
-+					screen_info.lfb_linelength = dmi_list[i].stride;
-+					screen_info.lfb_width = dmi_list[i].width;
-+					screen_info.lfb_height = dmi_list[i].height;
-+				}
-+			}
-+			if (!strncmp(this_opt, "base:", 5))
-+				screen_info.lfb_base = simple_strtoul(this_opt+5, NULL, 0);
-+			else if (!strncmp(this_opt, "stride:", 7))
-+				screen_info.lfb_linelength = simple_strtoul(this_opt+7, NULL, 0) * 4;
-+			else if (!strncmp(this_opt, "height:", 7))
-+				screen_info.lfb_height = simple_strtoul(this_opt+7, NULL, 0);
-+			else if (!strncmp(this_opt, "width:", 6))
-+				screen_info.lfb_width = simple_strtoul(this_opt+6, NULL, 0);
-+		}
-+	}
+ #endif
  
--	if (!options || !*options)
--		return 0;
-+	for_each_pci_dev(dev) {
-+		int i;
- 
--	while ((this_opt = strsep(&options, ",")) != NULL) {
--		if (!*this_opt) continue;
-+		if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
-+			continue;
- 
--		for (i = 0; i < M_UNKNOWN; i++) {
--			if (!strcmp(this_opt, dmi_list[i].optname) &&
--					dmi_list[i].base != 0) {
--				screen_info.lfb_base = dmi_list[i].base;
--				screen_info.lfb_linelength = dmi_list[i].stride;
--				screen_info.lfb_width = dmi_list[i].width;
--				screen_info.lfb_height = dmi_list[i].height;
--			}
-+		for (i=0; i < DEVICE_COUNT_RESOURCE; i++) {
-+			resource_size_t start, end;
-+
-+			if (!(pci_resource_flags(dev, i) & IORESOURCE_MEM))
-+				continue;
-+
-+			start = pci_resource_start(dev, i);
-+			end  = pci_resource_end(dev, i);
-+
-+			if (!start || !end)
-+				continue;
-+
-+			if (screen_info.lfb_base >= start &&
-+			    (screen_info.lfb_base + screen_info.lfb_size) < end)
-+				default_vga = dev;
- 		}
--		if (!strncmp(this_opt, "base:", 5))
--			screen_info.lfb_base = simple_strtoul(this_opt+5, NULL, 0);
--		else if (!strncmp(this_opt, "stride:", 7))
--			screen_info.lfb_linelength = simple_strtoul(this_opt+7, NULL, 0) * 4;
--		else if (!strncmp(this_opt, "height:", 7))
--			screen_info.lfb_height = simple_strtoul(this_opt+7, NULL, 0);
--		else if (!strncmp(this_opt, "width:", 6))
--			screen_info.lfb_width = simple_strtoul(this_opt+6, NULL, 0);
+ static inline void vga_irq_set_state(struct vga_device *vgadev, bool state)
+@@ -605,10 +610,12 @@ static bool vga_arbiter_del_pci_device(struct pci_dev *pdev)
+ 		goto bail;
  	}
-+
- 	return 0;
- }
  
++#ifndef __ARCH_HAS_VGA_DEFAULT_DEVICE
+ 	if (vga_default == pdev) {
+ 		pci_dev_put(vga_default);
+ 		vga_default = NULL;
+ 	}
++#endif
+ 
+ 	if (vgadev->decodes & (VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM))
+ 		vga_decode_count--;
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index a3cd8ca..7dd9f2b 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -27,6 +27,7 @@
+ #include <linux/security.h>
+ #include <linux/pci-aspm.h>
+ #include <linux/slab.h>
++#include <linux/vgaarb.h>
+ #include "pci.h"
+ 
+ static int sysfs_initialized;	/* = 0 */
+@@ -414,6 +415,10 @@ static ssize_t
+ boot_vga_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
++	struct pci_dev *vga_dev = vga_default_device();
++
++	if (vga_dev)
++		return sprintf(buf, "%u\n", (pdev == vga_dev));
+ 
+ 	return sprintf(buf, "%u\n",
+ 		!!(pdev->resource[PCI_ROM_RESOURCE].flags &
+diff --git a/include/linux/vgaarb.h b/include/linux/vgaarb.h
+index 9c3120d..7ad7f2a 100644
+--- a/include/linux/vgaarb.h
++++ b/include/linux/vgaarb.h
+@@ -31,6 +31,7 @@
+ #ifndef LINUX_VGA_H
+ #define LINUX_VGA_H
+ 
++#include <video/vga.h>
+ 
+ /* Legacy VGA regions */
+ #define VGA_RSRC_NONE	       0x00
+@@ -177,10 +178,12 @@ extern void vga_put(struct pci_dev *pdev, unsigned int rsrc);
+  *     I suppose it's a matter of having the proper arch hook telling
+  *     us about it, so we basically never allow anybody to succeed a
+  *     vga_get()...
++ *
+  */
+ 
+ #ifndef __ARCH_HAS_VGA_DEFAULT_DEVICE
+ extern struct pci_dev *vga_default_device(void);
++extern void vga_set_default_device(struct pci_dev *pdev)
+ #endif
+ 
+ /**
 -- 
 1.7.7.6
 
