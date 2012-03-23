@@ -1,302 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab2CWAyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 20:54:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37116 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab2CWAyO (ORCPT
+	id S1755736Ab2CWBIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 21:08:24 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:32992 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab2CWBIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 20:54:14 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F6BC94C.80301@jp.fujitsu.com>
-Date: Fri, 23 Mar 2012 09:52:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 22 Mar 2012 21:08:23 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH] memcg: change behavior of moving charges at task move
-References: <4F69A4C4.4080602@jp.fujitsu.com> <20120322143610.e4df49c9.akpm@linux-foundation.org> <4F6BC166.80407@jp.fujitsu.com> <20120322173000.f078a43f.akpm@linux-foundation.org>
-In-Reply-To: <20120322173000.f078a43f.akpm@linux-foundation.org>
+In-Reply-To: <20120320033300.GH2393@linux.vnet.ibm.com>
+References: <20120319152317.GA3932@gmail.com> <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
+ <20120320033300.GH2393@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Mar 2012 18:08:01 -0700
+X-Google-Sender-Auth: -K9RyJgkncDeNwA6Hsv7bVBSQto
+Message-ID: <CA+55aFzXAdNRqNHm3-wx02au4b_Ze_WM-gCtOk+gJdGMsn3Zbg@mail.gmail.com>
+Subject: Re: [GIT PULL] RCU changes for v3.4
+To: paulmck@linux.vnet.ibm.com
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/23 9:30), Andrew Morton wrote:
+On Mon, Mar 19, 2012 at 8:33 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> If it would help, I would be happy to put together an itemized list.
+> I will of course do so for the next merge window.
 
-> On Fri, 23 Mar 2012 09:18:46 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
->>>> +#ifdef CONFIG_SWAP
->>>> +	/*
->>>> +	 * Avoid lookup_swap_cache() not to update statistics.
->>>> +	 */
->>>
->>> I don't understand this comment - what is it trying to tell us?
->>>
->>
->>
->> High Dickins advised me to use find_get_page() rather than lookup_swap_cache()
->> because lookup_swap_cache() has some statistics with swap.
-> 
-> ah.
-> 
-> --- a/mm/memcontrol.c~memcg-change-behavior-of-moving-charges-at-task-move-fix
-> +++ a/mm/memcontrol.c
-> @@ -5137,7 +5137,8 @@ static struct page *mc_handle_swap_pte(s
->  		return NULL;
->  #ifdef CONFIG_SWAP
->  	/*
-> -	 * Avoid lookup_swap_cache() not to update statistics.
-> +	 * Use find_get_page() rather than lookup_swap_cache() because the
-> +	 * latter alters statistics.
->  	 */
->  	page = find_get_page(&swapper_space, ent.val);
->  #endif
-> 
->>>> +	page = find_get_page(&swapper_space, ent.val);
->>>
->>> The code won't even compile if CONFIG_SWAP=n?
->>>
->>
->> mm/built-in.o: In function `mc_handle_swap_pte':
->> /home/kamezawa/Kernel/next/linux/mm/memcontrol.c:5172: undefined reference to `swapper_space'
->> make: *** [.tmp_vmlinux1] Error 1
->>
->> Ah...but I think this function (mc_handle_swap_pte) itself should be under CONFIG_SWAP.
->> I'll post v2.
-> 
-> Confused.  The new reference to swapper_space is already inside #ifdef
-> CONFIG_SWAP.
+Ok. I would like to get an itemized list next time, now I ended up
+re-doing the merges with the one Ingo sent me.
 
-Sorry for confusion. Above log was I saw when I removed CONFIG_SWAP as a trial.
+However, looking at the current state of RCU, the thing I would
+*really* like to *finally* be fixed is that total disaster called
+__rcu_read_lock() (and to a lesser degree __rcu_read_unlock).
 
-How about this ? Maybe cleaner.
-==
+Why do I call it a total disaster?
 
-This patch changes memcg's behavior at task_move().
+Simple: there are two versions of that function (not counting the
+inlined trivial non-preempt version that just disables preemption),
+AND THEY ARE BOTH IDENTICAL.
 
-At task_move(), the kernel scans a task's page table and move
-the changes for mapped pages from source cgroup to target cgroup.
-There has been a bug at handling shared anonymous pages for a long time.
+More importantly, they are both IDENTICALLY BAD.
 
-Before patch:
-  - The spec says 'shared anonymous pages are not moved.'
-  - The implementation was 'shared anonymoys pages may be moved'.
-    If page_mapcount <=2, shared anonymous pages's charge were moved.
+They are crap because:
 
-After patch:
-  - The spec says 'all anonymous pages are moved'.
-  - The implementation is 'all anonymous pages are moved'.
+ - they shouldn't be out-of-line to begin with.
 
-Considering usage of memcg, this will not affect user's experience.
-'shared anonymous' pages only exists between a tree of processes
-which don't do exec(). Moving one of process without exec() seems
-not sane. For example, libcgroup will not be affected by this change.
-(Anyway, no one noticed the implementation for a long time...)
+   Doing a function call for these things is stupid. It's  not like
+it's even "oh, there are two versions of it, so the linker picks one
+over the other". Sure, there are two versions of it, but they are the
+same stupid code just duplicated.
 
-Below is a discussion log:
+ - the rcu counter should be a per-cpu counter, not a per-thread one
 
- - current spec/implementation are complex
- - Now, shared file caches are moved
- - It adds unclear check as page_mapcount(). To do correct check,
-   we should check swap users, etc.
- - No one notice this implementation behavior. So, no one get benefit
-   from the design.
- - In general, once task is moved to a cgroup for running, it will not
-   be moved....
- - Finally, we have control knob as memory.move_charge_at_immigrate.
+Right now that function ends up being two instructions:
 
-Here is a patch to allow moving shared pages, completely. This makes
-memcg simpler and fix current broken code.
+        mov    %gs:0xb700,%rax
+        incl   0x100(%rax)
 
-Changelog:
-  - fixed comment around find_get_page()
-  - changed CONFIG_SWAP handling
-  - updated patch description
+and dammit, using a function call to do that is pretty much
+borderline. But it should be *one* instruction that just increments
+the percpu variable:
 
-Suggested-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/cgroups/memory.txt |    9 ++++-----
- include/linux/swap.h             |    9 ---------
- mm/memcontrol.c                  |   22 ++++++++++++++--------
- mm/swapfile.c                    |   31 -------------------------------
- 4 files changed, 18 insertions(+), 53 deletions(-)
+        incl %gs:rcu_read_lock_nesting
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 4c95c00..84d4f00 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -185,12 +185,14 @@ behind this approach is that a cgroup that aggressively uses a shared
- page will eventually get charged for it (once it is uncharged from
- the cgroup that brought it in -- this will happen on memory pressure).
- 
-+But see section 8.2: when moving a task to another cgroup, its pages may
-+be recharged to the new cgroup, if move_charge_at_immigrate has been chosen.
-+
- Exception: If CONFIG_CGROUP_CGROUP_MEM_RES_CTLR_SWAP is not used.
- When you do swapoff and make swapped-out pages of shmem(tmpfs) to
- be backed into memory in force, charges for pages are accounted against the
- caller of swapoff rather than the users of shmem.
- 
--
- 2.4 Swap Extension (CONFIG_CGROUP_MEM_RES_CTLR_SWAP)
- 
- Swap Extension allows you to record charge for swap. A swapped-in page is
-@@ -623,8 +625,7 @@ memory cgroup.
-   bit | what type of charges would be moved ?
-  -----+------------------------------------------------------------------------
-    0  | A charge of an anonymous page(or swap of it) used by the target task.
--      | Those pages and swaps must be used only by the target task. You must
--      | enable Swap Extension(see 2.4) to enable move of swap charges.
-+      | You must enable Swap Extension(see 2.4) to enable move of swap charges.
-  -----+------------------------------------------------------------------------
-    1  | A charge of file pages(normal file, tmpfs file(e.g. ipc shared memory)
-       | and swaps of tmpfs file) mmapped by the target task. Unlike the case of
-@@ -637,8 +638,6 @@ memory cgroup.
- 
- 8.3 TODO
- 
--- Implement madvise(2) to let users decide the vma to be moved or not to be
--  moved.
- - All of moving charge operations are done under cgroup_mutex. It's not good
-   behavior to hold the mutex too long, so we may need some trick.
- 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 6e66c03..70d2c74 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -387,7 +387,6 @@ static inline void deactivate_swap_token(struct mm_struct *mm, bool swap_token)
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
- extern void
- mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
--extern int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep);
- #else
- static inline void
- mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
-@@ -532,14 +531,6 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent)
- {
- }
- 
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR
--static inline int
--mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep)
--{
--	return 0;
--}
--#endif
--
- #endif /* CONFIG_SWAP */
- #endif /* __KERNEL__*/
- #endif /* _LINUX_SWAP_H */
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b2ee6df..ca8b3a1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5147,7 +5147,7 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
- 		return NULL;
- 	if (PageAnon(page)) {
- 		/* we don't move shared anon */
--		if (!move_anon() || page_mapcount(page) > 2)
-+		if (!move_anon())
- 			return NULL;
- 	} else if (!move_file())
- 		/* we ignore mapcount for file pages */
-@@ -5158,26 +5158,32 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
- 	return page;
- }
- 
-+#ifdef CONFFIG_SWAP
- static struct page *mc_handle_swap_pte(struct vm_area_struct *vma,
- 			unsigned long addr, pte_t ptent, swp_entry_t *entry)
- {
--	int usage_count;
- 	struct page *page = NULL;
- 	swp_entry_t ent = pte_to_swp_entry(ptent);
- 
- 	if (!move_anon() || non_swap_entry(ent))
- 		return NULL;
--	usage_count = mem_cgroup_count_swap_user(ent, &page);
--	if (usage_count > 1) { /* we don't move shared anon */
--		if (page)
--			put_page(page);
--		return NULL;
--	}
-+	/*
-+	 * Because lookup_swap_cache() updates some statistics counter,
-+	 * we call find_get_page() with swapper_space directly.
-+	 */
-+	page = find_get_page(&swapper_space, ent.val);
- 	if (do_swap_account)
- 		entry->val = ent.val;
- 
- 	return page;
- }
-+#else
-+static struct page *mc_handle_swap_pte(struct vm_area_struct *vma,
-+			unsigned long addr, pte_t ptent, swp_entry_t *entry)
-+{
-+	return NULL;
-+}
-+#endif
- 
- static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
- 			unsigned long addr, pte_t ptent, swp_entry_t *entry)
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index dae42f3..fedeb6b 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -717,37 +717,6 @@ int free_swap_and_cache(swp_entry_t entry)
- 	return p != NULL;
- }
- 
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR
--/**
-- * mem_cgroup_count_swap_user - count the user of a swap entry
-- * @ent: the swap entry to be checked
-- * @pagep: the pointer for the swap cache page of the entry to be stored
-- *
-- * Returns the number of the user of the swap entry. The number is valid only
-- * for swaps of anonymous pages.
-- * If the entry is found on swap cache, the page is stored to pagep with
-- * refcount of it being incremented.
-- */
--int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep)
--{
--	struct page *page;
--	struct swap_info_struct *p;
--	int count = 0;
--
--	page = find_get_page(&swapper_space, ent.val);
--	if (page)
--		count += page_mapcount(page);
--	p = swap_info_get(ent);
--	if (p) {
--		count += swap_count(p->swap_map[swp_offset(ent)]);
--		spin_unlock(&swap_lock);
--	}
--
--	*pagep = page;
--	return count;
--}
--#endif
--
- #ifdef CONFIG_HIBERNATION
- /*
-  * Find the swap type that corresponds to given device (if any).
--- 
-1.7.4.1
+and it shouldn't be out-of-line.
 
+Because wouldn't it be nice to just make the scheduler save/restore
+the rcu read lock depth for the rcu preemption case.
 
+Yeah, we should do the same thing with the preempt count. It shouldn't
+be in the thread structure, it should be per-cpu.
 
+Please? Every time I look at some profiles, that silly rcu_read_lock
+is there in the profile. It's annoying. I'd rather see it in the
+function that invokes it.
 
-
-
+                      Linus
