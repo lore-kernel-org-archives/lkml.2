@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab2CWBIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 21:08:24 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:32992 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab2CWBIX (ORCPT
+	id S1756470Ab2CWBOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 21:14:40 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56011 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab2CWBOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 21:08:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120320033300.GH2393@linux.vnet.ibm.com>
-References: <20120319152317.GA3932@gmail.com> <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
- <20120320033300.GH2393@linux.vnet.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 22 Mar 2012 18:08:01 -0700
-X-Google-Sender-Auth: -K9RyJgkncDeNwA6Hsv7bVBSQto
-Message-ID: <CA+55aFzXAdNRqNHm3-wx02au4b_Ze_WM-gCtOk+gJdGMsn3Zbg@mail.gmail.com>
-Subject: Re: [GIT PULL] RCU changes for v3.4
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Mar 2012 21:14:39 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
+To: Eric Paris <eparis@parisplace.org>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov
+Subject: Re: 3.3.0-next-20120321 crash in mls_compute_sid at boot time...
+In-Reply-To: Your message of "Thu, 22 Mar 2012 14:12:42 -0400."
+             <CACLa4pu22sZm4STNSXoOfeyw1BRK06Gu30Ec=6RAqUP+egxRHw@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <8414.1332439350@turing-police.cc.vt.edu>
+            <CACLa4pu22sZm4STNSXoOfeyw1BRK06Gu30Ec=6RAqUP+egxRHw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332465273_1929P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 22 Mar 2012 21:14:33 -0400
+Message-ID: <3669.1332465273@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4F6BCE7B.0063,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 8:33 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> If it would help, I would be happy to put together an itemized list.
-> I will of course do so for the next merge window.
+--==_Exmh_1332465273_1929P
+Content-Type: text/plain; charset=us-ascii
 
-Ok. I would like to get an itemized list next time, now I ended up
-re-doing the merges with the one Ingo sent me.
+On Thu, 22 Mar 2012 14:12:42 -0400, Eric Paris said:
+> It's known and should be fixed in linux-next from today.  If not, let me know!
 
-However, looking at the current state of RCU, the thing I would
-*really* like to *finally* be fixed is that total disaster called
-__rcu_read_lock() (and to a lesser degree __rcu_read_unlock).
+> > [  28.069261] BUG: unable to handle kernel NULL pointer dereference at 000000000000003b
+> > [  28.069558] IP: [<ffffffff81219974>] mls_compute_sid+0x99/0x104
 
-Why do I call it a total disaster?
+Confirming fixed in next-20120322, thanks...
 
-Simple: there are two versions of that function (not counting the
-inlined trivial non-preempt version that just disables preemption),
-AND THEY ARE BOTH IDENTICAL.
+--==_Exmh_1332465273_1929P
+Content-Type: application/pgp-signature
 
-More importantly, they are both IDENTICALLY BAD.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-They are crap because:
+iQIVAwUBT2vOeQdmEQWDXROgAQLcOw//emGf3o540sqvYaSa+WfMnq+SKTUBKQuj
+XYH3w+qOaGgkaUX3qxLt2m3lMe+I+fQerbOxzZin+sSEEjKj5WuapnuPn/Y15eYo
+3E9sJfgELLpKMU44Oh1t9EwoEm374vear9cHHwt4KRkS9REYw/VZAYrWEmF/8dM1
+xo1wZEhM+ZDIqfZALCwi3Z0clmWtkE1gzut2/HZGKG2mYF73tbP8r8+2w4gUFnJM
+TFLF7a7Dkh7efUIp3zMJrKxD58zTGlDCQFG8dm//68W2BH25o2JjNh/MLAp9K42B
+zCLp3Bl+W9QE5ei2eh4X5FiE8HlikZlHKycjWBQfOCzjzb2Vo3mott4mgkGB3Mot
+l7uY0B9P08NfgABwnjkfQ30Bx/qJQhiCxrli25s73C1kJgfnXVRx4ClfVwGQ4b7i
+Zm7sx1Uwn/y/UZhAokBcMmT+J5IPgIEGHXtqpy/r/5tWH5/Axp2kXeArvyLda2pJ
+Xa9/kZQ5wQDGJTUwYF0mBWqJX7o7vpqKfy46OIFy+O2Ky4gq34mXnG8dIs94sJtl
+4a+bdvCsYhWfXNYv+EpVqlX6Cem54tpcKtwqlJGm5FO18v4IUWCW1bNb06cv9c4S
+1+HtWVVDttfOZVwzp5k0Gp9YVrIY6cuJD5+a+lc4JirgWfMxXKo0NcDdwupEJ3er
+mzuHSY+SoIU=
+=2JFp
+-----END PGP SIGNATURE-----
 
- - they shouldn't be out-of-line to begin with.
+--==_Exmh_1332465273_1929P--
 
-   Doing a function call for these things is stupid. It's  not like
-it's even "oh, there are two versions of it, so the linker picks one
-over the other". Sure, there are two versions of it, but they are the
-same stupid code just duplicated.
-
- - the rcu counter should be a per-cpu counter, not a per-thread one
-
-Right now that function ends up being two instructions:
-
-        mov    %gs:0xb700,%rax
-        incl   0x100(%rax)
-
-and dammit, using a function call to do that is pretty much
-borderline. But it should be *one* instruction that just increments
-the percpu variable:
-
-        incl %gs:rcu_read_lock_nesting
-
-and it shouldn't be out-of-line.
-
-Because wouldn't it be nice to just make the scheduler save/restore
-the rcu read lock depth for the rcu preemption case.
-
-Yeah, we should do the same thing with the preempt count. It shouldn't
-be in the thread structure, it should be per-cpu.
-
-Please? Every time I look at some profiles, that silly rcu_read_lock
-is there in the profile. It's annoying. I'd rather see it in the
-function that invokes it.
-
-                      Linus
