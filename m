@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab2CWE1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 00:27:48 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:41527 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab2CWE1l (ORCPT
+	id S1756630Ab2CWEaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 00:30:00 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28326 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab2CWE37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 00:27:41 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: joeyli <jlee@suse.com>
-To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1332473811.3051.5.camel@debian.Gayathri>
-References: <1331608337.2267.67.camel@debian.Gayathri>
-	 <20120312175130.GA18002@srcf.ucam.org>
-	 <1331640592.3485.50.camel@debian.Gayathri>
-	 <20120313124738.GB10822@srcf.ucam.org>
-	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
-	 <20120313133458.GA11574@srcf.ucam.org>
-	 <1331688294.2577.19.camel@debian.Gayathri>
-	 <1331680373.10557.169.camel@linux-s257.site>
-	 <1331692996.3052.8.camel@debian.Gayathri>
-	 <1331704278.10557.190.camel@linux-s257.site>
-	 <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
-	 <1331798740.10557.245.camel@linux-s257.site>
-	 <1332047432.6304.13.camel@debian.Gayathri>
-	 <1332122514.10557.270.camel@linux-s257.site>
-	 <1332241764.10557.329.camel@linux-s257.site>
-	 <1332269710.3921.31.camel@debian.Gayathri>
-	 <1332298845.10557.343.camel@linux-s257.site>
-	 <1332473811.3051.5.camel@debian.Gayathri>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Mar 2012 12:25:39 +0800
-Message-ID: <1332476739.10557.438.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 23 Mar 2012 00:29:59 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86: Fix excessive MSR print out when show_msr is not specified
+Date: Thu, 22 Mar 2012 21:29:51 -0700
+Message-Id: <1332476991-4513-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090204.4F6BFC36.00A9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2012-03-23 於 09:06 +0530，Pradeep Subrahmanion 提到：
-> On Wed, 2012-03-21 at 11:00 +0800, joeyli wrote:
-> > think the hotkey of backlight control only works with acpi_osi=Linux ?
-> 
-> yes , hot key control only works with this option.Any ideas about where
-> the hot key events gets handled ? I tried logging inside
-> 'acpi_video_device_notify' method in video.c . But the control does not
-> seem to reach here . 
-> 
-> Thanks, 
-> 
-> Pradeep Subrahmanion
+Dave found:
+| During bootup, I now have 162 messages like this..
+| [    0.227346]  MSR0000001b: 00000000fee00900
+| [    0.227465]  MSR00000021: 0000000000000001
+| [    0.227584]  MSR0000002a: 00000000c1c81400
+| commit 21c3fcf3e39353d4f21d50e257cc74f3204b1988 looks suspect.
+| It claims that it will only print these out if show_msr= is passed,
+| but that doesn't seem to be the case.
 
-Hotkey change status is through _Q11 and _Q12 event but not wmi:
+Fix it by changing to the version that check index.
 
+Reported_and_tested-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-    Method (_Q11, 0, NotSerialized)             /* Brightness down */
-    {
-        If (LGreaterEqual (OSYS, 0x07D6))       /* Vista or later */
-        {
-            If (LEqual (OBV, 0xFF))
-            {
-                Notify (^^^PEGP.VGA.LCD, 0x87)
-            }
-            Else
-            {
-                Notify (^^^OVGA.DD03, 0x87)
-            }
-        }
-        Else                                    /* 0x07D1 (XP) or 0x03E8 (Linux) */
-        {
-            ^^^OVGA.AINT (One, BRTS)		/* access AINT, it touch BCLP register */
-            If (LEqual (^^^WMID.BAEF, One))
-            {
-                Store (BRTS, Local1)
-                Store (^^^WMID.LBL0, Local2)
-                Add (Local2, Local1, Local2)
-                Store (Local2, ^^^WMID.NTDC)
-                Notify (WMID, 0x80)
-            }
-        }
-    }
-
-Method (AINT, 2, NotSerialized)
-{
-...
-    Else
-    {
-        If (LEqual (Arg0, One))         /* Linux or XP */
-        {
-            Add (Arg1, One, Arg1)
-            Store (Divide (Multiply (Arg1, 0xFF), 0x0A, ), BCLP)
-            Or (BCLP, 0x80000000, BCLP)		/* touch BCLP register */
-            Store (0x02, ASLC)
-        }
-
-
-That's why I said acpi_osi"!Windows 2006" should also works to you. Unfortunately,
-there have something wrong in video driver for support this machine on XP mode.
-
-
-thanks a lot!
-Joey Lee
-
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index ade9c79..b240323 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -998,7 +998,7 @@ void __cpuinit print_cpu_info(struct cpuinfo_x86 *c)
+ 	else
+ 		printk(KERN_CONT "\n");
+ 
+-	__print_cpu_msr();
++	print_cpu_msr(c);
+ }
+ 
+ void __cpuinit print_cpu_msr(struct cpuinfo_x86 *c)
