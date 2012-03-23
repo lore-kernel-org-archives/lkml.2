@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab2CWJB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 05:01:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58578 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757250Ab2CWJBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 05:01:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="120821729"
-Subject: [PATCH 2/2] enable dumpstack() to printk log level
-From: "he, bo" <bo.he@intel.com>
-To: akpm@linux-foudation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        rusty@rustcorp.com.au, william.douglas@intel.com,
-        linux-kernel@vger.kernel.org
-Cc: yanmin_zhang@linux.intel.com
-In-Reply-To: <1332493027.2359.5.camel@hebo>
-References: <1332493027.2359.5.camel@hebo>
+	id S1757872Ab2CWJBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 05:01:41 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33147 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757835Ab2CWJBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 05:01:36 -0400
+Message-ID: <1332493291.2801.14.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: linux-next: build failure after merge of the scsi tree
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>
+Date: Fri, 23 Mar 2012 09:01:31 +0000
+In-Reply-To: <1332492832.2882.4.camel@pasglop>
+References: <20120323130031.c097ca3755de5ff5879504e1@canb.auug.org.au>
+	 <1332478202.2882.2.camel@pasglop>
+	 <1332490486.2801.1.camel@dabdike.int.hansenpartnership.com>
+	 <1332492832.2882.4.camel@pasglop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Mar 2012 17:01:09 +0800
-Message-ID: <1332493269.2359.9.camel@hebo>
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: he bo <bo.he@intel.com>
+On Fri, 2012-03-23 at 19:53 +1100, Benjamin Herrenschmidt wrote:
+> On Fri, 2012-03-23 at 08:14 +0000, James Bottomley wrote:
+> > > Additionally, I am the author and maintainer of that driver and I
+> > don't
+> > > remember ever being CCed on that patch ... or did I miss it ?
+> > 
+> > You missed it ... I added you and Jeff for automatic cc's when the
+> > commit hit the scsi tree.
+> > 
+> > This is the mail log:
+> > 
+> > Mar 22 07:53:17 bedivere postfix/smtp[14322]: C3A1F8EE136:
+> > to=<benh@kernel.crashing.org>,
+> > relay=gate.crashing.org[63.228.1.57]:25, delay=2.7,
+> > delays=0.13/0.12/1.3/1.2, dsn=2.0.0, status=sent (250 2.0.0
+> > q2MErGNT019145 Message accepted for delivery)
+> 
+> Allright, Mar 22, that's yesterday (.au time)... that's a short time
+> between notifying the maintainer and going into -next :-) No biggie,
+> I'll have a look next week, it's just annoying to get build failure
+> reports from Stephen about drivers I own for patches I never heard
+> about ...
 
-Function dump_stack calls printk with default log level.
-At some scenarios, we need dump the logs at special log level.
-For example, Android aplog saves log at a low level to reduce
-log storage. With __might_sleep checking, it just prints out
-the warning source line with KERNE_ERR and Android saves it to aplog,
-but later dump_stack log is not saved. We couldn’t see the
-important information when developers check it.
-the patch adds function dump_stack_log_lvl to support this capability.
+Yes, sorry ... it's one of those large all or nothing type series that
+touches about 33 different drivers (about 75% of which are
+unmaintained).
 
-Signed-off-by: he, bo <bo.he@intel.com>
-Reviewed-by: zhang, yanmin <yanmin.zhang@intel.com>
+I would have checked the ppc compile if I still had a working ppc
+machine.  Having looked through the code, I think this is the fix ...
+could someone check?
+
+James
+
 ---
- arch/x86/kernel/dumpstack.c |   19 ++++++++++++++-----
- include/linux/printk.h      |    1 +
- kernel/sched/core.c         |    2 +-
- lib/dump_stack.c            |    7 ++++++-
- 4 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 4025fe4..7b2160c 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -177,20 +177,29 @@ void show_stack(struct task_struct *task, unsigned long *sp)
- }
- 
- /*
-- * The architecture-independent dump_stack generator
-+ * The architecture-independent dump_stack_log_lvl generator
-  */
--void dump_stack(void)
-+void dump_stack_log_lvl(char *log_lvl)
- {
- 	unsigned long bp;
- 	unsigned long stack;
- 
- 	bp = stack_frame(current, NULL);
--	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
--		current->pid, current->comm, print_tainted(),
-+	printk("%sPid: %d, comm: %.20s %s %s %.*s\n",
-+		log_lvl, current->pid, current->comm, print_tainted(),
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
--	show_trace(NULL, NULL, &stack, bp);
-+	show_trace_log_lvl(NULL, NULL, &stack, bp, log_lvl);
-+}
-+EXPORT_SYMBOL(dump_stack_log_lvl);
-+
-+/*
-+ * The architecture-independent dump_stack generator
-+ */
-+void dump_stack(void)
-+{
-+	dump_stack_log_lvl("");
- }
- EXPORT_SYMBOL(dump_stack);
- 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 0525927..2a13dd8 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -157,6 +157,7 @@ static inline void setup_log_buf(int early)
- #endif
- 
- extern void dump_stack(void) __cold;
-+extern void dump_stack_log_lvl(char *log_lvl) __cold;
- 
- #ifndef pr_fmt
- #define pr_fmt(fmt) fmt
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 503d642..ab0dcdf 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7060,7 +7060,7 @@ void __might_sleep(const char *file, int line, int preempt_offset)
- 	debug_show_held_locks(current);
- 	if (irqs_disabled())
- 		print_irqtrace_events(current);
--	dump_stack();
-+	dump_stack_log_lvl(KERN_ERR);
- }
- EXPORT_SYMBOL(__might_sleep);
- #endif
-diff --git a/lib/dump_stack.c b/lib/dump_stack.c
-index 53bff4c..d44ca5e 100644
---- a/lib/dump_stack.c
-+++ b/lib/dump_stack.c
-@@ -11,5 +11,10 @@ void dump_stack(void)
- 	printk(KERN_NOTICE
- 		"This architecture does not implement dump_stack()\n");
- }
--
- EXPORT_SYMBOL(dump_stack);
-+
-+void dump_stack_log_lvl(char *log_lvl)
-+{
-+	dump_stack();
-+}
-+EXPORT_SYMBOL(dump_stack_log_lvl);
--- 
-1.7.1
-
+diff --git a/drivers/ata/sata_svw.c b/drivers/ata/sata_svw.c
+index 05838bf..0bbd0cb 100644
+--- a/drivers/ata/sata_svw.c
++++ b/drivers/ata/sata_svw.c
+@@ -42,6 +42,7 @@
+ #include <linux/init.h>
+ #include <linux/blkdev.h>
+ #include <linux/delay.h>
++#include <linux/proc_fs.h>
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ #include <scsi/scsi_host.h>
 
 
 
