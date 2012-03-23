@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485Ab2CWSpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 14:45:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44571 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426Ab2CWSpY convert rfc822-to-8bit (ORCPT
+	id S1759498Ab2CWSr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 14:47:26 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:37859 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab2CWSrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 14:45:24 -0400
-From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
-Date: Fri, 23 Mar 2012 19:45:19 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-final-dirty; KDE/4.8.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-References: <201203220903.15360.a.miskiewicz@gmail.com> <20120323171058.GA3279@albatros>
-In-Reply-To: <20120323171058.GA3279@albatros>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203231945.19501.a.miskiewicz@gmail.com>
+	Fri, 23 Mar 2012 14:47:25 -0400
+Date: Fri, 23 Mar 2012 14:47:08 -0400 (EDT)
+Message-Id: <20120323.144708.671101883141593128.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, nyh@il.ibm.com,
+        nyh@math.technion.ac.il
+Subject: Re: [PULL net] vhost-net/virtio: fixes for 3.4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120323152807.GA6037@redhat.com>
+References: <20120323152807.GA6037@redhat.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 23 Mar 2012 11:47:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 of March 2012, Vasiliy Kulikov wrote:
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Fri, 23 Mar 2012 17:28:07 +0200
 
-> Thanks for the report.  Please test the following patch.
-
-Seems to be working fine, now - thanks!
-
-
-
+> The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
 > 
-> --------------------------------------------------------------
-> From: Vasiliy Kulikov <segoon@openwall.com>
-> Date: Fri, 23 Mar 2012 20:56:42 +0400
-> Subject: [PATCH] proc: fix mount -t proc -o AAA
+>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
 > 
-> proc_parse_options() inside of proc_mount() runs only once at the boot
-> time without any given options.  So, following umount(2)+mount(2) ignore
-> mount options: proc_parse_options() is not called as ->s_root is already
-> initialized.  To fix that parse mount options unconditionally.
+> are available in the git repository at:
 > 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> Reported-by: Arkadiusz Miśkiewicz <a.miskiewicz@gmail.com>
-> ---
->  fs/proc/root.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/proc/root.c b/fs/proc/root.c
-> index 46a15d8..eed44bf 100644
-> --- a/fs/proc/root.c
-> +++ b/fs/proc/root.c
-> @@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct
-> file_system_type *fs_type, if (IS_ERR(sb))
->  		return ERR_CAST(sb);
-> 
-> +	if (!proc_parse_options(options, ns)) {
-> +		deactivate_locked_super(sb);
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
->  	if (!sb->s_root) {
->  		sb->s_flags = flags;
-> -		if (!proc_parse_options(options, ns)) {
-> -			deactivate_locked_super(sb);
-> -			return ERR_PTR(-EINVAL);
-> -		}
->  		err = proc_fill_super(sb);
->  		if (err) {
->  			deactivate_locked_super(sb);
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
 
-
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+Pulled, thanks.
