@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab2CWQK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 12:10:28 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:53076 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab2CWQK0 convert rfc822-to-8bit (ORCPT
+	id S964811Ab2CWQOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 12:14:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48323 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755573Ab2CWQOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 12:10:26 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-127.messagelabs.com!1332519025!1310688!2
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-CC: Rafal Prylowski <prylowski@metasoft.pl>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Date: Fri, 23 Mar 2012 11:09:50 -0500
-Subject: RE: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Topic: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Index: Ac0Iw14w+fHMD1dNTVuZD4yln9FKNgAS7+WA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
-References: <4F683B36.8090101@metasoft.pl>
- <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
- <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
-In-Reply-To: <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 23 Mar 2012 12:14:53 -0400
+X-Sasl-enc: WbsDq750W1nkmi2kjjiJBnV/WaHxI7S1QRzcaEAJ4x4F 1332519292
+Date: Fri, 23 Mar 2012 09:14:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org
+Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
+Message-ID: <20120323161451.GA17509@kroah.com>
+References: <20120319130445.GN15988@n2100.arm.linux.org.uk>
+ <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
+ <20120319132623.GO15988@n2100.arm.linux.org.uk>
+ <4F696011.7080409@linaro.org>
+ <CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
+ <CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
+ <20120322100236.GS15988@n2100.arm.linux.org.uk>
+ <CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
+ <4F6BEDC1.60006@linaro.org>
+ <CAB4K4y6u_59XLCBL2k5TrpAGv9C161wyqE_0_CEGbmgWeEwCyw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB4K4y6u_59XLCBL2k5TrpAGv9C161wyqE_0_CEGbmgWeEwCyw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 23, 2012 12:05 AM, Mika Westerberg wrote:
-> On Thu, Mar 22, 2012 at 09:19:10PM -0500, H Hartley Sweeten wrote:
->
->> Did you test this patch or just review it?
->
-> I tested and reviewed it.
+On Fri, Mar 23, 2012 at 11:22:46AM +0530, Ajeet Yadav wrote:
+> CCing to stable@vger.kernel.org
 
-OK. What kernel? My tests so far have been with 3.3.
+Why?  What am I supposed to do here?
 
->> On my system it doesn't work. I think it has something to do with the
->> changes to m2m_hw_interrupt but I haven't tracked it down yet.
->> 
->> It looks like what's missing is a:
->> 
->> 	edmac->edma->hw_submit(edmac);
->> 
->> But, maybe that's not needed with double buffering?
->
-> Did you try without your patch and adding my VIC hack? That's what I did when
-> I first got this patch and I saw no problems. I tested with audio (M2P),
-> mmc_spi (M2M) and dmatest (M2M).
+confused,
 
-No, I have not applied your VIC hack.
-
-Until we get a working solution, without any hacks, I don't want this to go in.
-
-Regards,
-Hartley
-
+greg k-h
