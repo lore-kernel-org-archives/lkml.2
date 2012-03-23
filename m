@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab2CWSr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 14:47:26 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37859 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab2CWSrZ (ORCPT
+	id S1030324Ab2CWTDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 15:03:16 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59214 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030228Ab2CWTDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 14:47:25 -0400
-Date: Fri, 23 Mar 2012 14:47:08 -0400 (EDT)
-Message-Id: <20120323.144708.671101883141593128.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, levinsasha928@gmail.com, nyh@il.ibm.com,
-        nyh@math.technion.ac.il
-Subject: Re: [PULL net] vhost-net/virtio: fixes for 3.4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120323152807.GA6037@redhat.com>
-References: <20120323152807.GA6037@redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 23 Mar 2012 11:47:11 -0700 (PDT)
+	Fri, 23 Mar 2012 15:03:15 -0400
+From: Alex Gershgorin <alexgershgorin@gmail.com>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: s.hauer@pengutronix.de, g.liakhovetski@gmx.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, Alex Gershgorin <alexg@meprolight.com>
+Subject: Re: [PATCH v1] i.MX35-PDK: Add Camera support
+Date: Fri, 23 Mar 2012 21:02:51 +0200
+Message-Id: <1332529371-3994-1-git-send-email-alexg@meprolight.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Fri, 23 Mar 2012 17:28:07 +0200
+Hi Fabio,
 
-> The following changes since commit 5ffca28a4ac7abb8a254fafe6bd03b2f83667df7:
-> 
->   Merge git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs (2012-02-27 07:59:33 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+> Good news...
+> After several number of changes, yesterday the camera started to work :-)
+> I will prepare some patches and send them.
 
-Pulled, thanks.
+> >Ok, great! Besides your mx35 clock patches: any other patch is
+> >required to getting the camera to work?
+
+Yes, yesterday I sended to Sascha and ARM mailing list another patch
+i.MX35-PDK-Add-regulator-support, this also will need be used.
+
+> > Are you getting the camera image with the correct colors?
+
+Now the camera works fine without any problems, except those,
+who have already eliminated :-)
+
+Regards,
+Alex Gershgorin
+
