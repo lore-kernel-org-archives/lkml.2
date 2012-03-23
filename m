@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2CWCQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:16:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39870 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2CWCQY (ORCPT
+	id S1755467Ab2CWCQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:16:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51417 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303Ab2CWCQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:16:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120323020052.GA11519@redhat.com>
-References: <20120323020052.GA11519@redhat.com>
-Date: Thu, 22 Mar 2012 19:16:24 -0700
-X-Google-Sender-Auth: MCpU17ZnLVf4PSTbdziB-aCsLns
-Message-ID: <CAE9FiQVJo_Oik-EThFyLVu15ULOKRVzr7HtM03KxXz0D3_gpBQ@mail.gmail.com>
-Subject: Re: excessive MSR print out during boot.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Dave Jones <davej@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        mingo@elte.hu, Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b339d0f80a5f104bbdf9ccf
+	Thu, 22 Mar 2012 22:16:49 -0400
+From: Takahiro Shimizu <tshimizu818@gmail.com>
+To: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
+        richardcochran@gmail.com, arnd@arndb.de, khc@pm.waw.pl,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Takahiro Shimizu <tshimizu818@gmail.com>
+Subject: [PATCH] net/pch_gbe: Fixed the issue that the multicast address is lost when Rx FIFO overrun happened
+Date: Fri, 23 Mar 2012 11:16:31 +0900
+Message-Id: <1332468991-2614-1-git-send-email-tshimizu818@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b339d0f80a5f104bbdf9ccf
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 22, 2012 at 7:00 PM, Dave Jones <davej@redhat.com> wrote:
-> During bootup, I now have 162 messages like this..
->
-> [ =A0 =A00.227346] =A0MSR0000001b: 00000000fee00900
-> [ =A0 =A00.227465] =A0MSR00000021: 0000000000000001
-> [ =A0 =A00.227584] =A0MSR0000002a: 00000000c1c81400
->
-> commit 21c3fcf3e39353d4f21d50e257cc74f3204b1988 looks suspect.
-> It claims that it will only print these out if show_msr=3D is passed,
-> but that doesn't seem to be the case.
+Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
+---
+ .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |   60 +++++++++++++++++++-
+ 1 files changed, 57 insertions(+), 3 deletions(-)
 
-sorry abut that.
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+index d983e76..56089ca 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -382,31 +382,85 @@ static void pch_gbe_mac_mar_set(struct pch_gbe_hw *hw, u8 * addr, u32 index)
+ }
+ 
+ /**
++ * pch_gbe_mac_save_mac_addr_regs - Save MAC addresse registers
++ * @hw:		Pointer to the HW structure
++ * @addr:	Pointer to the MAC address
++ * @index:  MAC address array register
++ */
++static void
++pch_gbe_mac_save_mac_addr_regs(struct pch_gbe_hw *hw,
++			struct pch_gbe_regs_mac_adr *mac_adr, u32 index)
++{
++	mac_adr->high = ioread32(&hw->reg->mac_adr[index].high);
++	mac_adr->low = ioread32(&hw->reg->mac_adr[index].low);
++}
++
++/**
++ * pch_gbe_mac_store_mac_addr_regs - Store MAC addresse registers
++ * @hw:		Pointer to the HW structure
++ * @addr:	Pointer to the MAC address
++ * @index:  MAC address array register
++ */
++static void
++pch_gbe_mac_store_mac_addr_regs(struct pch_gbe_hw *hw,
++			struct pch_gbe_regs_mac_adr *mac_adr, u32 index)
++{
++	u32 adrmask;
++
++	adrmask = ioread32(&hw->reg->ADDR_MASK);
++	iowrite32((adrmask | (0x0001 << index)), &hw->reg->ADDR_MASK);
++	/* wait busy */
++	pch_gbe_wait_clr_bit(&hw->reg->ADDR_MASK, PCH_GBE_BUSY);
++	/* Set the MAC address to the MAC address xA/xB register */
++	iowrite32(mac_adr->high, &hw->reg->mac_adr[index].high);
++	iowrite32(mac_adr->low, &hw->reg->mac_adr[index].low);
++	iowrite32((adrmask & ~(0x0001 << index)), &hw->reg->ADDR_MASK);
++	/* wait busy */
++	pch_gbe_wait_clr_bit(&hw->reg->ADDR_MASK, PCH_GBE_BUSY);
++}
++
++#define MAC_ADDR_LIST_NUM 16
++/**
+  * pch_gbe_mac_reset_hw - Reset hardware
+  * @hw:	Pointer to the HW structure
+  */
+ static void pch_gbe_mac_reset_hw(struct pch_gbe_hw *hw)
+ {
++	struct pch_gbe_regs_mac_adr mac_addr_list[MAC_ADDR_LIST_NUM];
++	int i;
++
+ 	/* Read the MAC address. and store to the private data */
+ 	pch_gbe_mac_read_mac_addr(hw);
++	/* Read other MAC addresses */
++	for (i = 1; i < MAC_ADDR_LIST_NUM; i++)
++		pch_gbe_mac_save_mac_addr_regs(hw, &mac_addr_list[i], i);
+ 	iowrite32(PCH_GBE_ALL_RST, &hw->reg->RESET);
+ #ifdef PCH_GBE_MAC_IFOP_RGMII
+ 	iowrite32(PCH_GBE_MODE_GMII_ETHER, &hw->reg->MODE);
+ #endif
+ 	pch_gbe_wait_clr_bit(&hw->reg->RESET, PCH_GBE_ALL_RST);
+-	/* Setup the receive address */
++	/* Setup the receive addresses */
+ 	pch_gbe_mac_mar_set(hw, hw->mac.addr, 0);
++	for (i = 1; i < MAC_ADDR_LIST_NUM; i++)
++		pch_gbe_mac_store_mac_addr_regs(hw, &mac_addr_list[i], i);
+ 	return;
+ }
+ 
+ static void pch_gbe_mac_reset_rx(struct pch_gbe_hw *hw)
+ {
+-	/* Read the MAC address. and store to the private data */
++	struct pch_gbe_regs_mac_adr mac_addr_list[MAC_ADDR_LIST_NUM];
++	int i;
++
++	/* Read the MAC addresses. and store to the private data */
+ 	pch_gbe_mac_read_mac_addr(hw);
++	for (i = 1; i < MAC_ADDR_LIST_NUM; i++)
++		pch_gbe_mac_save_mac_addr_regs(hw, &mac_addr_list[i], i);
+ 	iowrite32(PCH_GBE_RX_RST, &hw->reg->RESET);
+ 	pch_gbe_wait_clr_bit_irq(&hw->reg->RESET, PCH_GBE_RX_RST);
+-	/* Setup the MAC address */
++	/* Setup the MAC addresses */
+ 	pch_gbe_mac_mar_set(hw, hw->mac.addr, 0);
++	for (i = 1; i < MAC_ADDR_LIST_NUM; i++)
++		pch_gbe_mac_store_mac_addr_regs(hw, &mac_addr_list[i], i);
+ 	return;
+ }
+ 
+-- 
+1.7.4.4
 
-please check attached patch.
-
-Thanks
-
-Yinghai
-
---047d7b339d0f80a5f104bbdf9ccf
-Content-Type: text/x-patch; charset=US-ASCII; name="print_msr_fix_22.patch"
-Content-Disposition: attachment; filename="print_msr_fix_22.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h04llsf90
-
-ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tlcm5lbC9jcHUvY29tbW9uLmMgYi9hcmNoL3g4Ni9rZXJu
-ZWwvY3B1L2NvbW1vbi5jCmluZGV4IGFkZTljNzkuLmIyNDAzMjMgMTAwNjQ0Ci0tLSBhL2FyY2gv
-eDg2L2tlcm5lbC9jcHUvY29tbW9uLmMKKysrIGIvYXJjaC94ODYva2VybmVsL2NwdS9jb21tb24u
-YwpAQCAtOTk4LDcgKzk5OCw3IEBAIHZvaWQgX19jcHVpbml0IHByaW50X2NwdV9pbmZvKHN0cnVj
-dCBjcHVpbmZvX3g4NiAqYykKIAllbHNlCiAJCXByaW50ayhLRVJOX0NPTlQgIlxuIik7CiAKLQlf
-X3ByaW50X2NwdV9tc3IoKTsKKwlwcmludF9jcHVfbXNyKGMpOwogfQogCiB2b2lkIF9fY3B1aW5p
-dCBwcmludF9jcHVfbXNyKHN0cnVjdCBjcHVpbmZvX3g4NiAqYykK
---047d7b339d0f80a5f104bbdf9ccf--
