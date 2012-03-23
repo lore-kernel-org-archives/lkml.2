@@ -1,209 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab2CWXJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 19:09:23 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33299 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab2CWXJV (ORCPT
+	id S1757698Ab2CWXPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 19:15:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41939 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab2CWXPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 19:09:21 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v7] of/lib: Allow scripts/dtc/libfdt to be used from kernel code
-Date: Fri, 23 Mar 2012 16:09:15 -0700
-Message-Id: <1332544155-20380-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 23 Mar 2012 19:15:05 -0400
+Date: Fri, 23 Mar 2012 16:15:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Arkadiusz =?UTF-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
+Message-Id: <20120323161504.dced28b9.akpm@linux-foundation.org>
+In-Reply-To: <20120323171058.GA3279@albatros>
+References: <201203220903.15360.a.miskiewicz@gmail.com>
+	<20120323171058.GA3279@albatros>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Fri, 23 Mar 2012 21:10:58 +0400
+Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-libfdt is part of the device tree support in scripts/dtc/libfdt.  For
-some platforms that use the Device Tree, we want to be able to edit
-the flattened device tree form.
+> proc_parse_options() inside of proc_mount() runs only once at the boot
+> time without any given options.  So, following umount(2)+mount(2) ignore
+> mount options: proc_parse_options() is not called as ->s_root is already
+> initialized.  To fix that parse mount options unconditionally.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Reported-by: Arkadiusz Mi__kiewicz <a.miskiewicz@gmail.com>
+> ---
+>  fs/proc/root.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/proc/root.c b/fs/proc/root.c
+> index 46a15d8..eed44bf 100644
+> --- a/fs/proc/root.c
+> +++ b/fs/proc/root.c
+> @@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+>  	if (IS_ERR(sb))
+>  		return ERR_CAST(sb);
+>  
+> +	if (!proc_parse_options(options, ns)) {
+> +		deactivate_locked_super(sb);
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+>  	if (!sb->s_root) {
+>  		sb->s_flags = flags;
+> -		if (!proc_parse_options(options, ns)) {
+> -			deactivate_locked_super(sb);
+> -			return ERR_PTR(-EINVAL);
+> -		}
+>  		err = proc_fill_super(sb);
+>  		if (err) {
+>  			deactivate_locked_super(sb);
 
-We don't want to burden kernel builds that do not require it, so we
-gate compilation of libfdt files with CONFIG_LIBFDT.  So if it is
-needed, you need to do this in your Kconfig:
+I'm surprised.  "mount -o remount,<options>" doesn't work on a mounted
+procfs, and nobody noticed until now?
 
-	select LIBFDT
+The patch looks OK - has it been tested with both valid and invalid
+mount options?
 
-And in the Makefile of the code using libfdt something like:
 
-ccflags-y := -I$(src)/../../../scripts/dtc/libfdt
+I redid the changelog:
 
-Signed-off-by: David Daney <david.daney@cavium.com>
+
+From: Vasiliy Kulikov <segoon@openwall.com>
+Subject: proc: fix mount -t proc -o AAA
+
+The proc_parse_options() call from proc_mount() runs only once at boot
+time.  So on any later mount attempt, any mount options are ignored
+because ->s_root is already initialized.
+
+As a consequence, "mount -o remount,<options>" will ignore the options.
+
+To fix this, parse the mount options unconditionally.
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
 
-This patch has been seen several times before as part of a larger
-patch set for my OCTEON Device Tree work.  After further refinement to
-my patches that depend on core Device Tree functionality, this is the
-only remaining patch to the common 'core' code.
+ fs/proc/root.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Here is the history:
-
-v7: No changes other that to split from other, now unneeded, patches.
-
-v6: No changes other than to split these out of the MIPS/OCTEON patch
-    set to allow them to be merged separately if desired.
-
-v5: Build libfdt in the lib directory instead of devices/of, and
-    include all libfdt files.
-
-    Changes to of_find_node_by_path() requested by Grant Likely.
-
-v4: No changes to these two patches.
-
-v3: libfdt building moved to devices/of/libfdt.  Cleanup and style
-    improvements as suggested by Grant Likely.
-
-v2: No changes to these two patches.
-
-There are a couple of possibility for merging this.
-
-1) Via the Device Tree maintainers, thus blocking the follow-ons until
-   it is merged.
-
-2) Via Ralf's Linux/MIPS tree with the rest of the patches after
-   Device Tree maintainer sign-off.
-
- include/linux/libfdt.h     |    8 ++++++++
- include/linux/libfdt_env.h |   13 +++++++++++++
- lib/Kconfig                |    6 ++++++
- lib/Makefile               |    5 +++++
- lib/fdt.c                  |    2 ++
- lib/fdt_ro.c               |    2 ++
- lib/fdt_rw.c               |    2 ++
- lib/fdt_strerror.c         |    2 ++
- lib/fdt_sw.c               |    2 ++
- lib/fdt_wip.c              |    2 ++
- 10 files changed, 44 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/libfdt.h
- create mode 100644 include/linux/libfdt_env.h
- create mode 100644 lib/fdt.c
- create mode 100644 lib/fdt_ro.c
- create mode 100644 lib/fdt_rw.c
- create mode 100644 lib/fdt_strerror.c
- create mode 100644 lib/fdt_sw.c
- create mode 100644 lib/fdt_wip.c
-
-diff --git a/include/linux/libfdt.h b/include/linux/libfdt.h
-new file mode 100644
-index 0000000..4c0306c
---- /dev/null
-+++ b/include/linux/libfdt.h
-@@ -0,0 +1,8 @@
-+#ifndef _INCLUDE_LIBFDT_H_
-+#define _INCLUDE_LIBFDT_H_
-+
-+#include <linux/libfdt_env.h>
-+#include "../../scripts/dtc/libfdt/fdt.h"
-+#include "../../scripts/dtc/libfdt/libfdt.h"
-+
-+#endif /* _INCLUDE_LIBFDT_H_ */
-diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
-new file mode 100644
-index 0000000..01508c7
---- /dev/null
-+++ b/include/linux/libfdt_env.h
-@@ -0,0 +1,13 @@
-+#ifndef _LIBFDT_ENV_H
-+#define _LIBFDT_ENV_H
-+
-+#include <linux/string.h>
-+
-+#include <asm/byteorder.h>
-+
-+#define fdt32_to_cpu(x) be32_to_cpu(x)
-+#define cpu_to_fdt32(x) cpu_to_be32(x)
-+#define fdt64_to_cpu(x) be64_to_cpu(x)
-+#define cpu_to_fdt64(x) cpu_to_be64(x)
-+
-+#endif /* _LIBFDT_ENV_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 028aba9..e2da829 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -316,4 +316,10 @@ config SIGNATURE
- 	  Digital signature verification. Currently only RSA is supported.
- 	  Implementation is done using GnuPG MPI library
+diff -puN fs/proc/root.c~proc-fix-mount-t-proc-o-aaa fs/proc/root.c
+--- a/fs/proc/root.c~proc-fix-mount-t-proc-o-aaa
++++ a/fs/proc/root.c
+@@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct 
+ 	if (IS_ERR(sb))
+ 		return ERR_CAST(sb);
  
-+#
-+# libfdt files, only selected if needed.
-+#
-+config LIBFDT
-+	bool
++	if (!proc_parse_options(options, ns)) {
++		deactivate_locked_super(sb);
++		return ERR_PTR(-EINVAL);
++	}
 +
- endmenu
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..1c6c198 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -123,6 +123,11 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
- 
- obj-$(CONFIG_CLZ_TAB) += clz_tab.o
- 
-+libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o
-+$(foreach file, $(libfdt_files), \
-+	$(eval CFLAGS_$(file) = -I$(src)/../scripts/dtc/libfdt))
-+lib-$(CONFIG_LIBFDT) += $(libfdt_files)
-+
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
- 
-diff --git a/lib/fdt.c b/lib/fdt.c
-new file mode 100644
-index 0000000..97f2006
---- /dev/null
-+++ b/lib/fdt.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt.c"
-diff --git a/lib/fdt_ro.c b/lib/fdt_ro.c
-new file mode 100644
-index 0000000..f73c04e
---- /dev/null
-+++ b/lib/fdt_ro.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt_ro.c"
-diff --git a/lib/fdt_rw.c b/lib/fdt_rw.c
-new file mode 100644
-index 0000000..0c1f0f4
---- /dev/null
-+++ b/lib/fdt_rw.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt_rw.c"
-diff --git a/lib/fdt_strerror.c b/lib/fdt_strerror.c
-new file mode 100644
-index 0000000..8713e3f
---- /dev/null
-+++ b/lib/fdt_strerror.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt_strerror.c"
-diff --git a/lib/fdt_sw.c b/lib/fdt_sw.c
-new file mode 100644
-index 0000000..9ac7e50
---- /dev/null
-+++ b/lib/fdt_sw.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt_sw.c"
-diff --git a/lib/fdt_wip.c b/lib/fdt_wip.c
-new file mode 100644
-index 0000000..45b3fc3
---- /dev/null
-+++ b/lib/fdt_wip.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt_wip.c"
--- 
-1.7.2.3
+ 	if (!sb->s_root) {
+ 		sb->s_flags = flags;
+-		if (!proc_parse_options(options, ns)) {
+-			deactivate_locked_super(sb);
+-			return ERR_PTR(-EINVAL);
+-		}
+ 		err = proc_fill_super(sb);
+ 		if (err) {
+ 			deactivate_locked_super(sb);
+_
 
