@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab2CWC06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:26:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52659 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab2CWC0z (ORCPT
+	id S1756569Ab2CWCa4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:30:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40696 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2CWCav convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:26:55 -0400
-Date: Fri, 23 Mar 2012 13:26:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the isci tree
-Message-Id: <20120323132646.9e258a9cf41be00e8a839065@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__23_Mar_2012_13_26_46_+1100_N144SH7hC9mu6vsb"
+	Thu, 22 Mar 2012 22:30:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADLC3L29fiago4Nkxbb3Ey8iS3GGp_G_NP77esdAqQVYHFLBLw@mail.gmail.com>
+References: <CAMfrEMaV03CEZ-h7k9K78c8+T+AC47=QypnyhQG7LFgrQQ32tA@mail.gmail.com>
+	<4F6AAC57.3090507@gmail.com>
+	<CAMfrEMbUsdnQ3Roe89YaV5F2xhTwbgRhWcM9E1jizqUEbCi=QQ@mail.gmail.com>
+	<CADLC3L29fiago4Nkxbb3Ey8iS3GGp_G_NP77esdAqQVYHFLBLw@mail.gmail.com>
+Date: Thu, 22 Mar 2012 21:30:50 -0500
+Message-ID: <CAMfrEMYUWG39Z-y8sU+7eDdePQWg9U5kow_ipZANwD-s=BOh_A@mail.gmail.com>
+Subject: Re: IDE DVD and CD drive seem to not work with Linux desktop 3.3.0-030300-generic
+From: Chris Holland <bandidoirlandes@gmail.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Mar_2012_13_26_46_+1100_N144SH7hC9mu6vsb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 22, 2012 at 9:15 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+> On Wed, Mar 21, 2012 at 11:44 PM, Chris Holland
+> <bandidoirlandes@gmail.com> wrote:
+>>
+>> On Wed, Mar 21, 2012 at 11:36 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>> > On 03/21/2012 10:29 PM, Chris Holland wrote:
+>> >>
+>> >> Please cc me at: bandidoirlandes@gmail.com
+>> >>
+>> >> My optical drives are not working with 3.3 but they worked fine with
+>> >> 3.3rc7
+>> >> These are the kernels from http://kernel.ubuntu.com/~kernel-ppa/mainline/
+>> >> Ubuntu 11.10
+>> >>
+>> >> Not working
+>> >> Linux desktop 3.3.0-030300-generic #201203182135 SMP Mon Mar 19
+>> >> 01:36:20 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+>> >> cat /var/log/dmesg | egrep '(CD|DVD)'
+>> >> [    0.000000]   CD000-EFFFF uncachable
+>> >>
+>> >> Working
+>> >> Linux desktop 3.3.0-030300rc7-generic #201203101735 SMP Sat Mar 10
+>> >> 22:36:28 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+>> >> cat /var/log/dmesg | egrep '(CD|DVD)'
+>> >> [    0.000000]   CD000-EFFFF uncachable
+>> >> [    0.092676] ACPI Warning: Incorrect checksum in table [TAMG] -
+>> >> 0xCD, should be 0xCC (20120111/tbutils-321)
+>> >> [    6.324511] ata9.01: ATAPI: LITE-ON DVDRW SHW-160P6S, PS0A, max UDMA/66
+>> >> [    6.397218] scsi 8:0:0:0: CD-ROM            LITE-ON  LTR-48246S
+>> >>   SS0B PQ: 0 ANSI: 5
+>> >> [    6.419770] cdrom: Uniform CD-ROM driver Revision: 3.20
+>> >> [    6.419898] sr 8:0:0:0: Attached scsi CD-ROM sr0
+>> >> [    6.427088] scsi 8:0:1:0: CD-ROM            LITE-ON  DVDRW
+>> >> SHW-160P6S PS0A PQ: 0 ANSI: 5
+>> >> [    6.429600] sr 8:0:1:0: Attached scsi CD-ROM sr1
+>> >>
+>> >> I tried to do a git bisect but I dont know what I am doing. Might just
+>> >> be my computer acting up.
+>> >
+>> >
+>> > Can you post the full dmesg output from the non-working kernel?
+>
+>> [    3.231464] pata_jmicron 0000:03:00.1: setting latency timer to 64
+>> [    3.255549] scsi8 : pata_jmicron
+>> [    3.260534] scsi9 : pata_jmicron
+>> [    3.260933] ata9: PATA max UDMA/100 cmd 0xef00 ctl 0xee00 bmdma 0xeb00 irq 16
+>> [    3.260936] ata10: PATA max UDMA/100 cmd 0xed00 ctl 0xec00 bmdma
+>> 0xeb08 irq 16
+>
+> Hmm, seems like nothing detected on that port at all. Do you have some
+> output from a working boot?
 
-Hi Dan,
+Working dmesg http://pastebin.com/jDaMhWXc
 
-After merging the isci tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+This is a issue that others are having it seems.
+https://bugs.archlinux.org/task/29030
+https://bugs.archlinux.org/task/29045
 
-drivers/scsi/ipr.c: In function 'ipr_ata_slave_alloc':
-drivers/scsi/ipr.c:4552:28: error: 'ap' undeclared (first use in this funct=
-ion)
 
-Caused by commit 837f52ee7a86 ("libsas, libata: fix start of life for a
-sas ata_port").
-
-I have used the isci tree from next-20120322 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__23_Mar_2012_13_26_46_+1100_N144SH7hC9mu6vsb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPa99mAAoJEECxmPOUX5FENd4P/A6jcvA5mOeP9uLxTmOKJLaR
-tyo2Dhn0Y+DcIjszNC9hbBwUzD6VAIZZgUjz4VWaugDTfEyZ8DJMxCJ/cq31Twk8
-rlf6LEDlKfO1vnRUXILrShDiQ/yuhvZeUgWd6FTPQIqimL34rW6YHUNMSjdMGD5z
-vVa2cLJjx2p4pUhISSQqZO7roktnAP/PfXwD1r2gQEHczwxUxa4HcoV/XvQ7Zxlg
-+5b71Q9oWklhFPEw16gZMsdABbjVqo7E8Wrr7mYsgmpamR6FtvoCingwUmoOUn8a
-zw1D4URb4xXL415ybZ5eq+AF9+avDvEHUUEnhp9dZFlfTMQJL//C3DO8d06Kozkk
-huYRUp/1T/Wh0iSoNnRtZXge8yKSJUpwMYuaqU3iT4sVRrBMTJ3TvJPtW6ZxFjAN
-sgx05Xs2xxLNnl4erJxsmxSaiVZwojbtQBdRv57HpCEUzs/4T/6uPbWTs68FOtYg
-OOUPz2V2LfPOWhVZc/KXgZs5hXGCxUJiuFNVSp1zQPCmCmcEzTSXZjO87DcIxTkq
-2qKh8LWE1UgNMULozI/U21tIogH3iacIj3k2kyYoFlCKBoZ40Mkpu6Cna+TeTI1V
-RPslAsiTkpVfpTAck1mZEhiyW+Fq9jGsGuLItXltWWqzvSWld/sdtVBs+GYUe5pR
-T/vEmwRVJsA+3qFrMFnz
-=YtrY
------END PGP SIGNATURE-----
-
---Signature=_Fri__23_Mar_2012_13_26_46_+1100_N144SH7hC9mu6vsb--
+I did some work with git bisect but i dont know what i am doing though
+so this might not be the actual issue
+last build is going with 4949be16822e92a18ea0cc1616319926628092ee is
+the first bad commit removed.
+Waiting to see if it works.
