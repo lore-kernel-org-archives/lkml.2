@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2CWOX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 10:23:28 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:42573 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab2CWOX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 10:23:26 -0400
-Date: Fri, 23 Mar 2012 10:23:22 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
-Message-ID: <20120323142322.GC29631@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Artem Bityutskiy <dedekind1@gmail.com>,
-	Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-	Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-	Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
- <20120322133521.GA25897@thunk.org>
- <1332424585.18717.34.camel@sauron.fi.intel.com>
- <20120322150602.GD25897@thunk.org>
- <1332492915.18717.44.camel@sauron.fi.intel.com>
+	id S1756058Ab2CWOX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 10:23:58 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36932 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab2CWOXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 10:23:54 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, =?UTF-8?q?S=C3=B8ren=20holm?= <sgh@sgh.dk>,
+        Johan Hovold <jhovold@gmail.com>, stable <stable@vger.kernel.org>
+Subject: [PATCH] USB: pl2303: fix DTR/RTS being raised on baud rate change
+Date: Fri, 23 Mar 2012 15:23:18 +0100
+Message-Id: <1332512598-5720-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
+In-Reply-To: <20120323142249.GB11407@localhost>
+References: <20120323142249.GB11407@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332492915.18717.44.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 10:55:15AM +0200, Artem Bityutskiy wrote:
-> On Thu, 2012-03-22 at 11:06 -0400, Ted Ts'o wrote:
-> > Does that seem reasonable to you?
-> 
-> Yes, thank you.
+DTR/RTS should only be raised when changing baudrate from B0 and not on
+any baud rate change (> B0).
 
-Ok, i've included the first five patches in your patch series in the
-ext4 tree.
+Reported-by: Søren Holm <sgh@sgh.dk>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/usb/serial/pl2303.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-We can deal with fixing up the rest of the patch series after the
-merge window.
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index 052c401..c3b1911 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -420,7 +420,7 @@ static void pl2303_set_termios(struct tty_struct *tty,
+ 	control = priv->line_control;
+ 	if ((cflag & CBAUD) == B0)
+ 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
+-	else
++	else if ((old_termios->c_cflag & CBAUD) == B0)
+ 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
+ 	if (control != priv->line_control) {
+ 		control = priv->line_control;
+-- 
+1.7.8.5
 
-					- Ted
