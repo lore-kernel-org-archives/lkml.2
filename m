@@ -1,157 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab2CWCvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:51:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57048 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab2CWCvU (ORCPT
+	id S932126Ab2CWCyt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:54:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17891 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab2CWCyr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:51:20 -0400
-Message-ID: <1332471074.13074.4.camel@phoenix>
-Subject: [PATCH 2/2] regulator: Convert lp3972 to set_voltage_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 23 Mar 2012 10:51:14 +0800
-In-Reply-To: <1332470994.13074.2.camel@phoenix>
-References: <1332470994.13074.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 22 Mar 2012 22:54:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="122266564"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Chris Wright <chrisw@sous-sol.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [PATCH v2] intel-iommu: Add device info into list before doing
+ context mapping
+Thread-Topic: [PATCH v2] intel-iommu: Add device info into list before doing
+ context mapping
+Thread-Index: AczAiGvqkE33aB24TxWfj60400kzKxIF6llw
+Date: Fri, 23 Mar 2012 02:54:43 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCF3733@SHSMSX102.ccr.corp.intel.com>
+References: <BC00F5384FCFC9499AF06F92E8B78A9E28907BAB30@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E28907BAB30@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/lp3972.c |   63 ++++++++++++-------------------------------
- 1 files changed, 18 insertions(+), 45 deletions(-)
+Hi, David
 
-diff --git a/drivers/regulator/lp3972.c b/drivers/regulator/lp3972.c
-index 49a15ee..4f28d36 100644
---- a/drivers/regulator/lp3972.c
-+++ b/drivers/regulator/lp3972.c
-@@ -245,6 +245,11 @@ static int lp3972_set_bits(struct lp3972 *lp3972, u8 reg, u16 mask, u16 val)
- static int lp3972_ldo_list_voltage(struct regulator_dev *dev, unsigned index)
- {
- 	int ldo = rdev_get_id(dev) - LP3972_LDO1;
-+
-+	if (index < LP3972_LDO_VOL_MIN_IDX(ldo) ||
-+	    index > LP3972_LDO_VOL_MAX_IDX(ldo))
-+		return -EINVAL;
-+
- 	return 1000 * LP3972_LDO_VOL_VALUE_MAP(ldo)[index];
- }
- 
-@@ -292,34 +297,16 @@ static int lp3972_ldo_get_voltage(struct regulator_dev *dev)
- 	return 1000 * LP3972_LDO_VOL_VALUE_MAP(ldo)[val];
- }
- 
--static int lp3972_ldo_set_voltage(struct regulator_dev *dev,
--				  int min_uV, int max_uV,
--				  unsigned int *selector)
-+static int lp3972_ldo_set_voltage_sel(struct regulator_dev *dev,
-+				      unsigned int selector)
- {
- 	struct lp3972 *lp3972 = rdev_get_drvdata(dev);
- 	int ldo = rdev_get_id(dev) - LP3972_LDO1;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
--	const int *vol_map = LP3972_LDO_VOL_VALUE_MAP(ldo);
--	u16 val;
- 	int shift, ret;
- 
--	if (min_vol < vol_map[LP3972_LDO_VOL_MIN_IDX(ldo)] ||
--	    min_vol > vol_map[LP3972_LDO_VOL_MAX_IDX(ldo)])
--		return -EINVAL;
--
--	for (val = LP3972_LDO_VOL_MIN_IDX(ldo);
--		val <= LP3972_LDO_VOL_MAX_IDX(ldo); val++)
--		if (vol_map[val] >= min_vol)
--			break;
--
--	if (val > LP3972_LDO_VOL_MAX_IDX(ldo) || vol_map[val] > max_vol)
--		return -EINVAL;
--
--	*selector = val;
--
- 	shift = LP3972_LDO_VOL_CONTR_SHIFT(ldo);
- 	ret = lp3972_set_bits(lp3972, LP3972_LDO_VOL_CONTR_REG(ldo),
--		LP3972_LDO_VOL_MASK(ldo) << shift, val << shift);
-+		LP3972_LDO_VOL_MASK(ldo) << shift, selector << shift);
- 
- 	if (ret)
- 		return ret;
-@@ -355,12 +342,17 @@ static struct regulator_ops lp3972_ldo_ops = {
- 	.enable = lp3972_ldo_enable,
- 	.disable = lp3972_ldo_disable,
- 	.get_voltage = lp3972_ldo_get_voltage,
--	.set_voltage = lp3972_ldo_set_voltage,
-+	.set_voltage_sel = lp3972_ldo_set_voltage_sel,
- };
- 
- static int lp3972_dcdc_list_voltage(struct regulator_dev *dev, unsigned index)
- {
- 	int buck = rdev_get_id(dev) - LP3972_DCDC1;
-+
-+	if (index < LP3972_BUCK_VOL_MIN_IDX(buck) ||
-+	    index > LP3972_BUCK_VOL_MAX_IDX(buck))
-+		return -EINVAL;
-+
- 	return 1000 * buck_voltage_map[buck][index];
- }
- 
-@@ -419,34 +411,15 @@ static int lp3972_dcdc_get_voltage(struct regulator_dev *dev)
- 	return val;
- }
- 
--static int lp3972_dcdc_set_voltage(struct regulator_dev *dev,
--				   int min_uV, int max_uV,
--				   unsigned int *selector)
-+static int lp3972_dcdc_set_voltage_sel(struct regulator_dev *dev,
-+				       unsigned int selector)
- {
- 	struct lp3972 *lp3972 = rdev_get_drvdata(dev);
- 	int buck = rdev_get_id(dev) - LP3972_DCDC1;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
--	const int *vol_map = buck_voltage_map[buck];
--	u16 val;
- 	int ret;
- 
--	if (min_vol < vol_map[LP3972_BUCK_VOL_MIN_IDX(buck)] ||
--	    min_vol > vol_map[LP3972_BUCK_VOL_MAX_IDX(buck)])
--		return -EINVAL;
--
--	for (val = LP3972_BUCK_VOL_MIN_IDX(buck);
--		val <= LP3972_BUCK_VOL_MAX_IDX(buck); val++)
--		if (vol_map[val] >= min_vol)
--			break;
--
--	if (val > LP3972_BUCK_VOL_MAX_IDX(buck) ||
--	    vol_map[val] > max_vol)
--		return -EINVAL;
--
--	*selector = val;
--
- 	ret = lp3972_set_bits(lp3972, LP3972_BUCK_VOL1_REG(buck),
--				LP3972_BUCK_VOL_MASK, val);
-+				LP3972_BUCK_VOL_MASK, selector);
- 	if (ret)
- 		return ret;
- 
-@@ -468,7 +441,7 @@ static struct regulator_ops lp3972_dcdc_ops = {
- 	.enable = lp3972_dcdc_enable,
- 	.disable = lp3972_dcdc_disable,
- 	.get_voltage = lp3972_dcdc_get_voltage,
--	.set_voltage = lp3972_dcdc_set_voltage,
-+	.set_voltage_sel = lp3972_dcdc_set_voltage_sel,
- };
- 
- static struct regulator_desc regulators[] = {
--- 
-1.7.5.4
+Any other comments for this patch? Or can you check-in it in your iommu tree?
 
+Thanks,
+-Xudong
 
-
+> -----Original Message-----
+> From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On
+> Behalf Of Hao, Xudong
+> Sent: Thursday, December 22, 2011 5:18 PM
+> To: Chris Wright
+> Cc: dwmw2@infradead.org; iommu@lists.linux-foundation.org;
+> linux-kernel@vger.kernel.org; Zhang, Xiantao; kvm@vger.kernel.org
+> Subject: [PATCH v2] intel-iommu: Add device info into list before doing context
+> mapping
+> 
+> Add device info into list before do context mapping, because device info will be
+> used by iommu_enable_dev_iotlb function, in this function, pci_enable_ats
+> would not be called without this patch.
+> 
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
+> Acked-by: Chris Wright <chrisw@sous-sol.org>
+> ---
+>  drivers/iommu/intel-iommu.c |   17 +++++++++++------
+>  1 files changed, 11 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c index
+> bdc447f..ccf347f 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -2267,12 +2267,6 @@ static int domain_add_dev_info(struct
+> dmar_domain *domain,
+>  	if (!info)
+>  		return -ENOMEM;
+> 
+> -	ret = domain_context_mapping(domain, pdev, translation);
+> -	if (ret) {
+> -		free_devinfo_mem(info);
+> -		return ret;
+> -	}
+> -
+>  	info->segment = pci_domain_nr(pdev->bus);
+>  	info->bus = pdev->bus->number;
+>  	info->devfn = pdev->devfn;
+> @@ -2285,6 +2279,17 @@ static int domain_add_dev_info(struct
+> dmar_domain *domain,
+>  	pdev->dev.archdata.iommu = info;
+>  	spin_unlock_irqrestore(&device_domain_lock, flags);
+> 
+> +	ret = domain_context_mapping(domain, pdev, translation);
+> +	if (ret) {
+> +		spin_lock_irqsave(&device_domain_lock, flags);
+> +		list_del(&info->link);
+> +		list_del(&info->global);
+> +		pdev->dev.archdata.iommu = NULL;
+> +		spin_unlock_irqrestore(&device_domain_lock, flags);
+> +		free_devinfo_mem(info);
+> +		return ret;
+> +	}
+> +
+>  	return 0;
+>  }
+> 
+> --
+> 1.6.0.rc1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in the body of a
+> message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
