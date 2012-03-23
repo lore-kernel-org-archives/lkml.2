@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2CWXpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 19:45:16 -0400
-Received: from out06.mta.xmission.com ([166.70.13.236]:51712 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753830Ab2CWXpO (ORCPT
+	id S1756832Ab2CWXrL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 19:47:11 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:38207 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab2CWXrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 19:45:14 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Fri, 23 Mar 2012 16:48:45 -0700
-Message-ID: <m14ntevpya.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 23 Mar 2012 19:47:09 -0400
+Message-ID: <4F6D0B77.6070600@linaro.org>
+Date: Fri, 23 Mar 2012 16:47:03 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/JbJAkRSJmGzPTcOgFWj60htoic7Tkoes=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4638]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: **
-Subject: [GIT PULL] sysctl updates for 3.4-rc1
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] x86-64: Simplify and speed up vdso clock_gettime
+References: <cover.1332475308.git.luto@amacapital.net>
+In-Reply-To: <cover.1332475308.git.luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032323-1780-0000-0000-00000436951F
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000263; HX=3.00000186; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00124635; UDB=6.00029813; UTC=2012-03-23
+ 23:47:08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2012 09:15 PM, Andy Lutomirski wrote:
+> I think clock_gettime is already almost as fast as possible, but every
+> little bit helps.  Also, I think the diffstat is pretty good for a
+> speedup.  Here are some approximate timings.
+>
+>                               Before       After
+> CLOCK_REALTIME                 16.7        15.2
+> CLOCK_MONOTONIC                17.3        15.5
+> CLOCK_REALTIME_COARSE           3.6         3.0
+> CLOCK_MONOTONIC_COARSE          4.2         3.6
+>
+> These are extracted from an earlier series that's mostly abandoned now [1-2].
+> They apply to tip/timers/core commit 57779dc2b3b75bee05ef5d1ada47f615f7a13932.
+>
+> For the git-inclined, the patches are here:
+> https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/timing/vclock_speedup/patch_v1
+>
+> I'm not sure whether these are 3.4 material.  On the pro side, they've
+> technically been floating around since long before the merge window.
+> They're also quite straightforward, and they're based on other -tip
+> changes (which is why I'm submitting now).  On the con side, they don't
+> fix anything, and they're a little later than ideal.
 
-Linus,
+The look straightforward enough. I've queued them at the end of my 3.4 
+queue. If Thomas or anyone wants to wait on them, I'll push them off to 3.5
 
-please pull sysctl updates for v3.4-rc1 from:
+thanks
+-john
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/sysctl.git master
-
-This tree is against v3.3-rc1 aka dcd6c92267155e70a94b3927bce681ce74b80d1f
-The topmost commit is 4e474a00d7ff746ed177ddae14fa8b2d4bad7a00
-
-Highlights:
-- Rewrite of sysctl for speed and clarity.
-
-  Insert/remove/Lookup in sysctl are all now O(NlogN) operations, and
-  are no longer bottlenecks in the process of adding and removing
-  network devices.
-
-  sysctl is now focused on being a filesystem instead of system call
-  and the code can all be found in fs/proc/proc_sysctl.c.  Hopefully
-  this means the code is now approachable.
-
-  Much thanks is owed to Lucian Grinjincu for keeping at this until
-  something was found that was usable.
-
-- The recent proc_sys_poll oops found by the fuzzer during hibernation
-  is fixed.
-
-Dan Carpenter (2):
-      sysctl: remove an unused variable
-      sysctl: fix memset parameters in setup_sysctl_set()
-
-Eric W. Biederman (32):
-      sysctl: Consolidate !CONFIG_SYSCTL handling
-      sysctl: Register the base sysctl table like any other sysctl table.
-      sysctl: Move the implementation into fs/proc/proc_sysctl.c
-      sysctl: Make the directories have nlink == 1
-      sysctl: Implement retire_sysctl_set
-      sysctl: Remove the unnecessary sysctl_set parent concept.
-      sysctl: Create local copies of directory names used in paths
-      sysctl: Add support for register sysctl tables with a normal cstring path.
-      sysctl: Add ctl_table chains into cstring paths
-      sysctl: register only tables of sysctl files
-      sysctl: Improve the sysctl sanity checks
-      sysctl: Remove the now unused ctl_table parent field.
-      sysctl: A more obvious version of grab_header.
-      sysctl: Initial support for auto-unregistering sysctl tables.
-      sysctl: Factor out init_header from __register_sysctl_paths
-      sysctl: Factor out insert_header and erase_header
-      sysctl: Normalize the root_table data structure.
-      sysctl: Rewrite proc_sys_lookup introducing find_entry and lookup_entry.
-      sysctl: Rewrite proc_sys_readdir in terms of first_entry and next_entry
-      sysctl: Add a root pointer to ctl_table_set
-      sysctl: Stop requiring explicit management of sysctl directories
-      sysctl: Add sysctl_print_dir and use it in get_subdir
-      sysctl: Replace root_list with links between sysctl_table_sets.
-      sysctl: Modify __register_sysctl_paths to take a set instead of a root and an nsproxy
-      sysctl: Move sysctl_check_dups into insert_header
-      sysctl: Make the header lists per directory.
-      sysctl: Index sysctl directories with rbtrees.
-      sysctl: Add register_sysctl for normal sysctl users
-      sysctl: An easier to read version of find_subdir
-      sysctl: Correct error return from get_subdir
-      sysctl: Comments to make the code clearer.
-      sysctl: Don't call sysctl_follow_link unless we are a link.
-
-Lucas De Marchi (2):
-      sysctl: remove impossible condition check
-      sysctl: protect poll() in entries that may go away
-
- fs/proc/internal.h     |    3 +
- fs/proc/proc_sysctl.c  | 1274 +++++++++++++++++++++++++++++++++++++++++++++---
- include/linux/sysctl.h |  106 +++--
- kernel/Makefile        |    1 -
- kernel/sysctl.c        |  501 +-------------------
- kernel/sysctl_check.c  |  160 ------
- lib/Kconfig.debug      |    8 -
- net/sysctl_net.c       |   24 +-
- 8 files changed, 1280 insertions(+), 797 deletions(-)
