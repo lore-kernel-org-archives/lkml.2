@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab2CWRpA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 13:45:00 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:12962 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756919Ab2CWRo7 (ORCPT
+	id S1758045Ab2CWRwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 13:52:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41953 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757866Ab2CWRwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 13:44:59 -0400
-Date: Fri, 23 Mar 2012 11:44:57 -0600
-From: Khalid Aziz <khalid@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org
-Subject: [PATCH] MAINTAINERS: Adding PCDP console maintainer information
-Message-ID: <20120323174457.GA12579@hp.com>
+	Fri, 23 Mar 2012 13:52:41 -0400
+Date: Fri, 23 Mar 2012 10:52:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
+Message-ID: <20120323175236.GA9648@kroah.com>
+References: <20120316233829.GA14022@kroah.com>
+ <20120316233811.484341257@linuxfoundation.org>
+ <20120317023740.GH12704@decadent.org.uk>
+ <CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
+ <1331969567.3022.233.camel@deadeye>
+ <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
+ <20120319155022.GC8176@kroah.com>
+ <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
+ <20120319192416.GE6339@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120319192416.GE6339@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds missing maintainer info for PCDP console code.
+On Mon, Mar 19, 2012 at 12:24:16PM -0700, Greg KH wrote:
+> On Mon, Mar 19, 2012 at 11:11:35PM +0400, Pavel Shilovsky wrote:
+> > 19 марта 2012 г. 19:50 пользователь Greg KH
+> > <gregkh@linuxfoundation.org> написал:
+> > > On Sat, Mar 17, 2012 at 11:52:24AM +0400, Pavel Shilovsky wrote:
+> > >> 17 марта 2012 г. 11:32 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> > >> > On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
+> > >> >> 17 марта 2012 г. 6:37 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
+> > >> >> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
+> > >> >> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > >> > [...]
+> > >> >> > But we test this before flock->fl_flags & FL_POSIX, which means we
+> > >> >> > don't know whether this lock actually needs to be assigned one of
+> > >> >> > those structures.  So it appears that we might report a spurious error
+> > >> >> > if the lock list ends with a mandatory lock.  If so, this is
+> > >> >> > relatively harmless but does need to be fixed.
+> > >> >> >
+> > >> >>
+> > >> >> You are right here, thanks for the catch! I will repost the patch asap.
+> > >> >
+> > >> > This has already been merged into Linus's tree, so you need to submit a
+> > >> > patch to apply on top of it.
+> > >> >
+> > >>
+> > >> I posted two patches:
+> > >> 1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
+> > >> kmalloc under the flocks spinlock
+> > >
+> > > What do you mean by "fixed version"?
+> > >
+> > >> 2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
+> > >> cifs_push_posix_locks
+> > >
+> > > What do you mean by this?
+> > 
+> > Ok, seems I didn't understand this process correctly. I reposted the
+> > new "fixed" version of this patch, because I thought it is more
+> > suitable for stale to merge one correct patch rather than one
+> > incorrect + follow-on fixup. Sorry if I was wrong.
+> 
+> I need to stay identical with Linus's tree as much as possible, it's
+> easier for everyone in the end that way for tracking exactly what
+> happens.
+> 
+> > > If there was a follow-on patch in Linus's tree that fixes a problem, I
+> > > need that git commit id, not a "fixed" patch that does not match up with
+> > > what is in Linus's tree right now.
+> > >
+> > > So, if that's the case, please let me know what the git commit id of
+> > > that patch is please.
+> > 
+> > Steve has just merged the follow-on patch:
+> > http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=ce85852b90a214cf577fc1b4f49d99fd7e98784a
+> > 
+> > but seems hasn't sent a merge request to Linus yet - will let you know
+> > when the patch comes to Linus's tree.
+> 
+> Ok, please let me know when this goes into Linus's tree and I will
+> queue it up for the next releases.
 
-Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
----
- MAINTAINERS |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+It's there now, I've picked it up.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 95eba31..3fc5aaa 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5112,6 +5112,11 @@ F:	drivers/i2c/busses/i2c-pca-*
- F:	include/linux/i2c-algo-pca.h
- F:	include/linux/i2c-pca-platform.h
- 
-+PCDP CONSOLE
-+M:	Khalid Aziz <khalid.aziz@hp.com>
-+S:	Maintained
-+F:	drivers/firmware/pcdp.*
-+
- PCI ERROR RECOVERY
- M:     Linas Vepstas <linasvepstas@gmail.com>
- L:	linux-pci@vger.kernel.org
--- 
-1.7.8.3
-
+greg k-h
