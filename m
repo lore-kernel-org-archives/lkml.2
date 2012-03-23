@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2CWNZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 09:25:59 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:36663 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab2CWNZ6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 09:25:58 -0400
+	id S1754511Ab2CWN1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 09:27:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24635 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751740Ab2CWN1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 09:27:11 -0400
+Date: Fri, 23 Mar 2012 09:26:48 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Josh Boyer <jwboyer@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Avi Kivity <avi@redhat.com>, kvm <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: WARNING: at arch/x86/kernel/smp.c:119
+ native_smp_send_reschedule+0x25/0x43()
+Message-ID: <20120323132648.GA18218@redhat.com>
+References: <CA+1xoqfYPYi2godgsgmnX7z7GQL+spNmMZhpdGU4UqfYGTB06g@mail.gmail.com>
+ <4F34EC35.7010109@linux.vnet.ibm.com>
+ <1328900283.25989.45.camel@laptop>
+ <1328900633.25989.47.camel@laptop>
+ <20120210200250.GG5650@redhat.com>
+ <1328905121.25989.52.camel@laptop>
+ <20120210203117.GI5650@redhat.com>
+ <1328906163.25989.59.camel@laptop>
+ <20120210210423.GJ5650@redhat.com>
+ <CA+1xoqeSMSaXCUbZyB2GAXc+2i=gcX3+zP41ss45YUjyr7F_zA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120322212816.GB30888@kroah.com>
-References: <CAEwYmTJzzUi1qfRHYfZg77g1K7myNsAh2oDiY7hWxzRO5hQGHA@mail.gmail.com>
-	<20120322212816.GB30888@kroah.com>
-Date: Fri, 23 Mar 2012 09:25:54 -0400
-Message-ID: <CAEwYmT+K7qr94D+ef1hgG1A2u0a9z+sopBjm08N2DcxM1FrM1w@mail.gmail.com>
-Subject: Re: sysfs binary attribute API flux
-From: Jonathan McCune <jonmccune@cmu.edu>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_2000_2999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_EDU_TLD 0, WEBMAIL_SOURCE 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HELO_GMAIL 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __RDNS_GMAIL 0, __SANE_MSGID 0, __TO_MALFORMED_2 0)
-X-SMTP-Spam-Score: 8%
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+1xoqeSMSaXCUbZyB2GAXc+2i=gcX3+zP41ss45YUjyr7F_zA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 5:28 PM, Greg KH <greg@kroah.com> wrote:
->> necessary to move some binary data from userspace into the kernel.
-> What exact type of binary data are you talking about here?
+On Fri, Mar 23, 2012 at 12:47:38PM +0200, Sasha Levin wrote:
+> I'm just wondering about the status of the patches to fix this issue,
+> this is still happening on linux-next.
 
-There is a statically linked executable, which will also take a binary
-blob as input, and produce another as output.
+I got distracted with other stuff.  I have been running code that does the
+following in the shutdown path:
 
->> have been using sysfs's 'struct bin_attribute'.  Unfortunately, every
->> few kernel versions, my code breaks because of a change in the
->> definition of some elements in this struct.  For example, kernel
->
-> Is this a problem?  It's only an issue for code that lives outside of
-> the kernel, and there's nothing we can do about that, sorry.
+foreach_online_cpu
+    cpu_down
 
-My main question is one about best practices.  If using sysfs and
-keeping up with such changes is the best option available, I can live
-with that.  However, if I've somehow missed a preferred alternative,
-then I would like to use it.
+but I get occasional hangs on reboot that I haven't gotten around to
+debugging.  I assumed this is the approach Peter was suggesting though I
+don't think he was sure if it was going to be reliable.
 
-> debugfs?
+Cheers,
+Don
 
-This may be an option, but my understanding is that it makes even
-fewer promises about API stability.
-
-> What exactly are you using this data for?  Who creates it?  What does it
-> represent?
-
-The research project involves using Intel TXT (or the AMD SVM
-equivalent) as a form of context switch mechanism to execute the
-statically-linked binary code in isolation from the rest of the
-system.  Thus, there's some amount of systems-level code (executes in
-ring 0) in the binary to preserve the state of the Linux kernel, but
-the majority of it performs some kind of application-specific
-(executes in ring 3) function (e.g., protects some SSL / SSH / VPN
-keys). Another way to think about it is as a provision for arbitrarily
-many virtual smart cards, e.g., from userspace this shouldn't look all
-that different from loading binary code into some kind of peripheral
-device with support for arbitrary execution. In case you're interested
-in the code or the research paper describing the approach in more
-detail:
-
-http://flickertcb.sourceforge.net/
-
-http://www.ece.cmu.edu/~jmmccune/papers/mccune_parno_perrig_reiter_isozaki_eurosys08.pdf
-
-Many thanks for your time,
--Jon
+> 
+> On Fri, Feb 10, 2012 at 11:04 PM, Don Zickus <dzickus@redhat.com> wrote:
+> > On Fri, Feb 10, 2012 at 09:36:03PM +0100, Peter Zijlstra wrote:
+> >> On Fri, 2012-02-10 at 15:31 -0500, Don Zickus wrote:
+> >> > So my second patch which I will eventually post will just skip the WARN_ON
+> >> > if the system is going down.  Not sure if that is the proper way to address
+> >> > this problem or change all of the stop_this_cpu code to use a different
+> >> > bitmask than the cpu_online bitmask (but then you run the risk of a stuck
+> >> > IPI I guess if the cpu is halted without notifying anyone).
+> >>
+> >> Yeah, the async hard kill of all cpus is bound to make problems.. what
+> >> I'm wondering is, why is this in the normal shutdown path and not
+> >> specific to a hard panic?
+> >
+> > I didn't write the original code, I just changed it from REBOOT_IRQ to
+> > NMI and left all the stop_this_cpu stuff alone.
+> >
+> >>
+> >> Trying to make this work is just not going to be pretty, and in the
+> >> panic case we really don't care much.
+> >
+> > Sure.
+> >
+> > Cheers,
+> > Don
