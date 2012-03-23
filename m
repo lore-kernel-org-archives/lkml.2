@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab2CWNFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 09:05:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51604 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2CWNFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 09:05:11 -0400
-Message-ID: <4F6C74C6.2090002@kernel.dk>
-Date: Fri, 23 Mar 2012 14:04:06 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753102Ab2CWNNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 09:13:48 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:56026 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322Ab2CWNNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 09:13:47 -0400
+Date: Fri, 23 Mar 2012 09:13:31 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>, Artem Bityutskiy <dedekind1@gmail.com>,
+        Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext2: No longer export ext2_fs.h to user space
+Message-ID: <20120323131331.GA29631@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Thierry Reding <thierry.reding@avionic-design.de>,
+	linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+	Jan Kara <jack@suse.cz>, Artem Bityutskiy <dedekind1@gmail.com>,
+	Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
+References: <20120322183135.GC4028@thunk.org>
+ <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH block/for-3.4/core] cfq: fix cfqg ref handling when BLK_CGROUP
- && !CFQ_GROUP_IOSCHED
-References: <20120315094945.GA3205@localhost> <20120315163546.GA32137@google.com>
-In-Reply-To: <20120315163546.GA32137@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 05:35 PM, Tejun Heo wrote:
-> When BLK_CGROUP is enabled but CFQ_GROUP_IOSCHED is, cfq ends up
-> calling blkg_get/put() on dummy cfqg leading to the following crash.
+On Fri, Mar 23, 2012 at 10:27:36AM +0100, Thierry Reding wrote:
+> Since the on-disk format has been stable for quite some time, users
+> should either use the headers provided by libext2fs or keep a private
+> copy of this header. For the full discussion, see this thread:
 > 
->   BUG: unable to handle kernel NULL pointer dereference at 00000000000000b0
->   IP: [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
->   PGD 0
->   Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->   CPU 0
->   Modules linked in:
+> 	https://lkml.org/lkml/2012/3/21/516
 > 
->   Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc6-work+ #125 Bochs Bochs
->   RIP: 0010:[<ffffffff813d44d8>]  [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
->   RSP: 0018:ffff88001f9dfd80  EFLAGS: 00010046
->   RAX: ffff88001aefbbf0 RBX: ffff88001aeedbf0 RCX: 0000000000000100
->   RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff820ffd40
->   RBP: ffff88001f9dfdd0 R08: 0000000000000000 R09: 0000000000000001
->   R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
->   R13: 0000000000000009 R14: ffff88001aefbc30 R15: 0000000000000003
->   FS:  0000000000000000(0000) GS:ffff88001fc00000(0000) knlGS:0000000000000000
->   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->   CR2: 00000000000000b0 CR3: 000000000206f000 CR4: 00000000000006f0
->   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->   Process swapper/0 (pid: 1, threadinfo ffff88001f9de000, task ffff88001f9dc040)
->   Stack:
->    ffff88001aeedbf0 ffff88001aefbdb0 ffff88001aef1548 ffff88001aefbbf0
->    ffff88001f9dfdd0 ffff88001aef1548 ffffffff820d6320 ffffffff8165ce30
->    ffffffff82c555e0 ffff88001aeebbf0 ffff88001f9dfe00 ffffffff813b0507
->   Call Trace:
->    [<ffffffff813b0507>] elevator_init+0xd7/0x140
->    [<ffffffff813b83d5>] blk_init_allocated_queue+0x125/0x150
->    [<ffffffff813b94d3>] blk_init_queue_node+0x43/0x80
->    [<ffffffff813b9523>] blk_init_queue+0x13/0x20
->    [<ffffffff821aec00>] floppy_init+0x82/0xec7
->    [<ffffffff810001d2>] do_one_initcall+0x42/0x170
->    [<ffffffff821835fc>] kernel_init+0xcb/0x14f
->    [<ffffffff81b40b24>] kernel_thread_helper+0x4/0x10
->   Code: 00 e8 1d 9e 76 00 48 8b 43 48 48 85 c0 48 89 83 28 03 00 00 74 07 4c 8b a0 10 ff ff ff 8b 15 b0 2e d0 00 85 d2 0f 85 49 01 00 00 <41> 8b 84 24 b0 00 00 00 85 c0 0f 8e 8c 01 00 00 83 e8 01 85 c0
->   RIP  [<ffffffff813d44d8>] cfq_init_queue+0x258/0x430
+> While at it, this commit removes all __KERNEL__ guards, which are now
+> unnecessary.
 > 
-> Because cfq's blkcg support has a on/off switch, CFQ_GROUP_IOSCHED,
-> separate from BLK_CGROUP, blkg access through cfqg needs to be
-> conditioned on it.
-> 
-> * Make blkg_to_cfqg() and cfqg_to_blkg() conditioned on
->   CFQ_GROUP_IOSCHED.  If disabled, they always return %NULL.
-> 
-> * Introduce cfqg_get() and cfqg_put() conditioned on
->   CFQ_GROUP_IOSCHED.  If disabled, they are noops.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
-> Yeap, forgot to test that config combination.  Fengguang, can you
-> please test this patch?  Jens, once Fengguang confirms the fix, can
-> you please apply this on top of for-3.4/core along with the pending
-> stats updates?
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Ted Ts'o <tytso@mit.edu>
+> Cc: Artem Bityutskiy <dedekind1@gmail.com>
+> Cc: Andreas Dilger <aedilger@gmail.com>
+> Cc: linux-ext4@vger.kernel.org
 
-Added to for-3.5/core, thanks.
+Acked-by: "Theodore Ts'o" <tytso@mit.edu>
 
--- 
-Jens Axboe
+Thanks!!
 
+Al, do you want to take this in the VFS tree, or do you want me to
+carry this in the ext4 tree?  Or Jan could carry it in the ext2 tree.
+I don't really have strong feelings about who picks it up.  I will if
+no one else wants to...
+
+					- Ted
