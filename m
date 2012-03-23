@@ -1,93 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab2CWT1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 15:27:45 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46940 "EHLO smtp.outflux.net"
+	id S1759801Ab2CWTdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 15:33:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757821Ab2CWT1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 15:27:44 -0400
-Date: Fri, 23 Mar 2012 12:08:55 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        spender@grsecurity.net
-Subject: [PATCH v2] futex: mark get_robust_list as deprecated
-Message-ID: <20120323190855.GA27213@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1203231926000.2542@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+	id S1759762Ab2CWTc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 15:32:59 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: airlied@redhat.com, ajax@redhat.com, Matthew Garrett <mjg@redhat.com>,
+        hpa@zytor.com, matt.fleming@intel.com
+Subject: [PATCH 4/4] efifb: Implement vga_default_device()
+Date: Fri, 23 Mar 2012 15:32:38 -0400
+Message-Id: <1332531158-2319-5-git-send-email-mjg@redhat.com>
+In-Reply-To: <1332531158-2319-1-git-send-email-mjg@redhat.com>
+References: <1332531158-2319-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Notify get_robust_list users that the syscall is going away.
+EFI doesn't typically make use of the legacy VGA ROM, but it may still be
+configured to pass that through to a given video device. This may lead to
+an inaccurate choice of default video device. Add support to efifb to pick
+out the correct active video device.
 
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: hpa@zytor.com
+Cc: matt.fleming@intel.com
 ---
-v2:
- - add note to feature-removal-schedule.txt.
----
- Documentation/feature-removal-schedule.txt |   10 ++++++++++
- kernel/futex.c                             |    2 ++
- kernel/futex_compat.c                      |    2 ++
- 3 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/vga.h |    6 +++
+ drivers/video/efifb.c      |   77 ++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 63 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 4bfd982..e3bf119 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -543,3 +543,13 @@ When:	3.5
- Why:	The old kmap_atomic() with two arguments is deprecated, we only
- 	keep it for backward compatibility for few cycles and then drop it.
- Who:	Cong Wang <amwang@redhat.com>
-+
-+----------------------------
-+
-+What:	get_robust_list syscall
-+When:	2013
-+Why:	There appear to be no production users of the get_robust_list syscall,
-+	and it runs the risk of leaking address locations, allowing the bypass
-+	of ASLR. It was only ever intended for debugging, so it should be
-+	removed.
-+Who:	Kees Cook <keescook@chromium.org>
-diff --git a/kernel/futex.c b/kernel/futex.c
-index d701be5..e2b0fb9 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2449,6 +2449,8 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
+diff --git a/arch/x86/include/asm/vga.h b/arch/x86/include/asm/vga.h
+index c4b9dc2..2723c07 100644
+--- a/arch/x86/include/asm/vga.h
++++ b/arch/x86/include/asm/vga.h
+@@ -17,4 +17,10 @@
+ #define vga_readb(x) (*(x))
+ #define vga_writeb(x, y) (*(y) = (x))
  
-+	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
++#if CONFIG_FB_EFI
++#define __ARCH_HAS_VGA_DEFAULT_DEVICE
++extern struct pci_dev *vga_default_device(void);
++extern void vga_set_default_device(struct pci_dev *pdev);
++#endif
 +
- 	rcu_read_lock();
+ #endif /* _ASM_X86_VGA_H */
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 784139a..66ed991 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -18,6 +18,8 @@
  
- 	ret = -ESRCH;
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index a9642d5..83e368b 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -142,6 +142,8 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
+ static bool request_mem_succeeded = false;
  
-+	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
++static struct pci_dev *default_vga;
 +
- 	rcu_read_lock();
+ static struct fb_var_screeninfo efifb_defined __devinitdata = {
+ 	.activate		= FB_ACTIVATE_NOW,
+ 	.height			= -1,
+@@ -298,35 +300,70 @@ static struct fb_ops efifb_ops = {
+ 	.fb_imageblit	= cfb_imageblit,
+ };
  
- 	ret = -ESRCH;
++struct pci_dev *vga_default_device(void)
++{
++	return default_vga;
++}
++
++void vga_set_default_device(struct pci_dev *pdev)
++{
++	default_vga = pdev;
++}
++
+ static int __init efifb_setup(char *options)
+ {
+ 	char *this_opt;
+ 	int i;
++	struct pci_dev *dev = NULL;
++
++	if (options && *options) {
++		while ((this_opt = strsep(&options, ",")) != NULL) {
++			if (!*this_opt) continue;
++
++			for (i = 0; i < M_UNKNOWN; i++) {
++				if (!strcmp(this_opt, dmi_list[i].optname) &&
++				    dmi_list[i].base != 0) {
++					screen_info.lfb_base = dmi_list[i].base;
++					screen_info.lfb_linelength = dmi_list[i].stride;
++					screen_info.lfb_width = dmi_list[i].width;
++					screen_info.lfb_height = dmi_list[i].height;
++				}
++			}
++			if (!strncmp(this_opt, "base:", 5))
++				screen_info.lfb_base = simple_strtoul(this_opt+5, NULL, 0);
++			else if (!strncmp(this_opt, "stride:", 7))
++				screen_info.lfb_linelength = simple_strtoul(this_opt+7, NULL, 0) * 4;
++			else if (!strncmp(this_opt, "height:", 7))
++				screen_info.lfb_height = simple_strtoul(this_opt+7, NULL, 0);
++			else if (!strncmp(this_opt, "width:", 6))
++				screen_info.lfb_width = simple_strtoul(this_opt+6, NULL, 0);
++		}
++	}
+ 
+-	if (!options || !*options)
+-		return 0;
++	for_each_pci_dev(dev) {
++		int i;
+ 
+-	while ((this_opt = strsep(&options, ",")) != NULL) {
+-		if (!*this_opt) continue;
++		if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
++			continue;
+ 
+-		for (i = 0; i < M_UNKNOWN; i++) {
+-			if (!strcmp(this_opt, dmi_list[i].optname) &&
+-					dmi_list[i].base != 0) {
+-				screen_info.lfb_base = dmi_list[i].base;
+-				screen_info.lfb_linelength = dmi_list[i].stride;
+-				screen_info.lfb_width = dmi_list[i].width;
+-				screen_info.lfb_height = dmi_list[i].height;
+-			}
++		for (i=0; i < DEVICE_COUNT_RESOURCE; i++) {
++			resource_size_t start, end;
++
++			if (!(pci_resource_flags(dev, i) & IORESOURCE_MEM))
++				continue;
++
++			start = pci_resource_start(dev, i);
++			end  = pci_resource_end(dev, i);
++
++			if (!start || !end)
++				continue;
++
++			if (screen_info.lfb_base >= start &&
++			    (screen_info.lfb_base + screen_info.lfb_size) < end)
++				default_vga = dev;
+ 		}
+-		if (!strncmp(this_opt, "base:", 5))
+-			screen_info.lfb_base = simple_strtoul(this_opt+5, NULL, 0);
+-		else if (!strncmp(this_opt, "stride:", 7))
+-			screen_info.lfb_linelength = simple_strtoul(this_opt+7, NULL, 0) * 4;
+-		else if (!strncmp(this_opt, "height:", 7))
+-			screen_info.lfb_height = simple_strtoul(this_opt+7, NULL, 0);
+-		else if (!strncmp(this_opt, "width:", 6))
+-			screen_info.lfb_width = simple_strtoul(this_opt+6, NULL, 0);
+ 	}
++
+ 	return 0;
+ }
+ 
 -- 
-1.7.0.4
+1.7.7.6
 
