@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031636Ab2CWAYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 20:24:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53147 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995Ab2CWAYe convert rfc822-to-8bit (ORCPT
+	id S1760308Ab2CWA0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 20:26:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33545 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab2CWA0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 20:24:34 -0400
-References: <1332366608-2695-1-git-send-email-thierry.reding@avionic-design.de> <20120321222357.GB24330@quack.suse.cz> <20120321231651.GC32041@thunk.org> <20120322055354.GA3942@avionic-0098.mockup.avionic-design.de> <1332396053.3058.2.camel@koala> <20120322162825.GA4028@thunk.org> <20120322173150.GY6589@ZenIV.linux.org.uk>
-In-Reply-To: <20120322173150.GY6589@ZenIV.linux.org.uk>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <43D088FE-7FB5-4C9F-A4FF-2B01DB392F43@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: "Ted Ts'o" <tytso@mit.edu>, Artem Bityutskiy <dedekind1@gmail.com>,
-        ThierryReding <thierry.reding@avionic-design.de>,
-        Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-X-Mailer: iPhone Mail (9B176)
-From: Andreas Dilger <aedilger@gmail.com>
-Subject: Re: [PATCH] ext2: Don't export ext2_mask_flags() to user space
-Date: Thu, 22 Mar 2012 18:25:09 -0600
-To: Al Viro <viro@ZenIV.linux.org.uk>
+	Thu, 22 Mar 2012 20:26:44 -0400
+Date: Thu, 22 Mar 2012 17:30:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH] memcg: change behavior of moving charges at task move
+Message-Id: <20120322173000.f078a43f.akpm@linux-foundation.org>
+In-Reply-To: <4F6BC166.80407@jp.fujitsu.com>
+References: <4F69A4C4.4080602@jp.fujitsu.com>
+	<20120322143610.e4df49c9.akpm@linux-foundation.org>
+	<4F6BC166.80407@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-22, at 11:31, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Fri, 23 Mar 2012 09:18:46 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> On Thu, Mar 22, 2012 at 12:28:25PM -0400, Ted Ts'o wrote:
->> 
->> Even if they're not iwlling to use libext2fs (for space reasons, I
->> would assume?  It can't be because of license compatibility issues
->> since they are both GPLv2), they could just simply grab the ext2_fs.h
->> from e2fsprogs.  That has all of the file system definitions for ext2,
->> ext3, and ext4.
+> >> +#ifdef CONFIG_SWAP
+> >> +	/*
+> >> +	 * Avoid lookup_swap_cache() not to update statistics.
+> >> +	 */
+> > 
+> > I don't understand this comment - what is it trying to tell us?
+> > 
 > 
-> Ho-hum...  Then we could kill a lot of lines in include/linux/ext2_fs.h.
-> I wonder how much of what remains has any business being outside of
-> fs/ext2, actually - AFAICS, there are very few places that might possibly
-> care:
 > 
-> arch/blackfin/kernel/setup.c:595:       if (*((unsigned short *)(mtd_phys + 0x438)) == EXT2_SUPER_MAGIC)
-> fs/nfsd/nfs3proc.c:599:         case EXT2_SUPER_MAGIC:  
-> fs/nfsd/nfs3proc.c:600:                 resp->p_link_max = EXT2_LINK_MAX;
-> fs/nfsd/nfs3proc.c:601:                 resp->p_name_max = EXT2_NAME_LEN;
+> High Dickins advised me to use find_get_page() rather than lookup_swap_cache()
+> because lookup_swap_cache() has some statistics with swap.
 
-These don't really make sense to be using ext2 constants. 
+ah.
 
-> init/do_mounts_rd.c:57: struct ext2_super_block *ext2sb;
-> init/do_mounts_rd.c:70: ext2sb = (struct ext2_super_block *) buf;
-> init/do_mounts_rd.c:153:        if (ext2sb->s_magic == cpu_to_le16(EXT2_SUPER_MAGIC)) {
-> init/do_mounts_rd.c:155:                       "RAMDISK: ext2 filesystem found at block %d\n",
-> init/do_mounts_rd.c:157:                nblocks = le32_to_cpu(ext2sb->s_blocks_count) <<
-> init/do_mounts_rd.c:158:                        le32_to_cpu(ext2sb->s_log_block_size);
-> security/selinux/hooks.c:2974:  case EXT2_IOC_GETFLAGS:
-> security/selinux/hooks.c:2976:  case EXT2_IOC_GETVERSION:
-> security/selinux/hooks.c:2980:  case EXT2_IOC_SETFLAGS:
-> security/selinux/hooks.c:2982:  case EXT2_IOC_SETVERSION:
+--- a/mm/memcontrol.c~memcg-change-behavior-of-moving-charges-at-task-move-fix
++++ a/mm/memcontrol.c
+@@ -5137,7 +5137,8 @@ static struct page *mc_handle_swap_pte(s
+ 		return NULL;
+ #ifdef CONFIG_SWAP
+ 	/*
+-	 * Avoid lookup_swap_cache() not to update statistics.
++	 * Use find_get_page() rather than lookup_swap_cache() because the
++	 * latter alters statistics.
+ 	 */
+ 	page = find_get_page(&swapper_space, ent.val);
+ #endif
 
-These ones should be using the generic FS_IOC_{GET,SET}_FLAGS.
-
-It isn't clear that there is any legitimate use for EXT2_IOC_SETVERSION, since it isn't possible to allocate specific inode numbers, so there isn't really any use to set the inode version.  Ostensibly it was for user-space NFS, but it can't be used for this, and we are planning to deprecate it from ext2/3/4 already due to incompatibility with the metadata checksum feature. 
-
-> and that's it.  blackfin and do_mounts_rd are doing the same thing (blackfin -
-> buggy, AFAICS).  Looks like both are  asking for something along the lines of
-> sector_t detect_ext2(void *image), returning 0 if it's not one and size in
-> kilobytes if it is...  nfsd one is just plain weird; what the hell is going
-> on there?  And selinux wants to know 4 ioctl numbers.
+> >> +	page = find_get_page(&swapper_space, ent.val);
+> > 
+> > The code won't even compile if CONFIG_SWAP=n?
+> > 
 > 
-> Everything else doesn't go beyond fs/ext2; there's a couple of odd macros
-> in ext[34]_fs.h (EXT._FEATURE_COMPAT_SUPP) using EXT2_FEATURE_COMPAT_EXT_ATTR,
-> but they are not used anywhere *and* EXT2_FEATURE_COMPAT_EXT_ATTR is not
-> available in the places that include those headers...
-> *and* 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> mm/built-in.o: In function `mc_handle_swap_pte':
+> /home/kamezawa/Kernel/next/linux/mm/memcontrol.c:5172: undefined reference to `swapper_space'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> Ah...but I think this function (mc_handle_swap_pte) itself should be under CONFIG_SWAP.
+> I'll post v2.
+
+Confused.  The new reference to swapper_space is already inside #ifdef
+CONFIG_SWAP.
