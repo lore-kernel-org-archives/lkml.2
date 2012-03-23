@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab2CWEQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 00:16:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65004 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab2CWEQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755124Ab2CWEQE (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 23 Mar 2012 00:16:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55561 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2CWEQB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 00:16:01 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        Andy Lutomirski <luto@mit.edu>, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/2] x86-64: Inline vdso clock_gettime helpers
-Date: Thu, 22 Mar 2012 21:15:52 -0700
-Message-Id: <5bc2d286c924b3fd520c82dacb8de7efb49c0c38.1332475308.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/2] x86-64: Simplify and speed up vdso clock_gettime
+Date: Thu, 22 Mar 2012 21:15:50 -0700
+Message-Id: <cover.1332475308.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1332475308.git.luto@amacapital.net>
-References: <cover.1332475308.git.luto@amacapital.net>
-In-Reply-To: <cover.1332475308.git.luto@amacapital.net>
-References: <cover.1332475308.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@mit.edu>
+I think clock_gettime is already almost as fast as possible, but every
+little bit helps.  Also, I think the diffstat is pretty good for a
+speedup.  Here are some approximate timings.
 
-This is about a 3% speedup on Sandy Bridge.
+                             Before       After
+CLOCK_REALTIME                 16.7        15.2
+CLOCK_MONOTONIC                17.3        15.5
+CLOCK_REALTIME_COARSE           3.6         3.0
+CLOCK_MONOTONIC_COARSE          4.2         3.6
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vclock_gettime.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+These are extracted from an earlier series that's mostly abandoned now [1-2].
+They apply to tip/timers/core commit 57779dc2b3b75bee05ef5d1ada47f615f7a13932.
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 6eea70b8..885eff4 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -94,7 +94,8 @@ notrace static inline long vgetns(void)
- 	return (v * gtod->clock.mult) >> gtod->clock.shift;
- }
- 
--notrace static noinline int do_realtime(struct timespec *ts)
-+/* Code size doesn't matter (vdso is 4k anyway) and this is faster. */
-+notrace static int __always_inline do_realtime(struct timespec *ts)
- {
- 	unsigned long seq, ns;
- 	int mode;
-@@ -111,7 +112,7 @@ notrace static noinline int do_realtime(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static noinline int do_monotonic(struct timespec *ts)
-+notrace static int do_monotonic(struct timespec *ts)
- {
- 	unsigned long seq, ns;
- 	int mode;
-@@ -128,7 +129,7 @@ notrace static noinline int do_monotonic(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static noinline int do_realtime_coarse(struct timespec *ts)
-+notrace static int do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -139,7 +140,7 @@ notrace static noinline int do_realtime_coarse(struct timespec *ts)
- 	return 0;
- }
- 
--notrace static noinline int do_monotonic_coarse(struct timespec *ts)
-+notrace static int do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
+For the git-inclined, the patches are here:
+https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/timing/vclock_speedup/patch_v1
+
+I'm not sure whether these are 3.4 material.  On the pro side, they've
+technically been floating around since long before the merge window.
+They're also quite straightforward, and they're based on other -tip
+changes (which is why I'm submitting now).  On the con side, they don't
+fix anything, and they're a little later than ideal.
+
+[1] https://lkml.org/lkml/2011/12/25/26
+[2] https://lkml.org/lkml/2011/12/25/27
+
+Andy Lutomirski (2):
+  x86-64: Simplify and optimize vdso clock_gettime monotonic variants
+  x86-64: Inline vdso clock_gettime helpers
+
+ arch/x86/include/asm/vgtod.h   |   15 +++++++-----
+ arch/x86/kernel/vsyscall_64.c  |   10 +++++++-
+ arch/x86/vdso/vclock_gettime.c |   47 +++++++++++----------------------------
+ 3 files changed, 31 insertions(+), 41 deletions(-)
+
 -- 
 1.7.7.6
 
