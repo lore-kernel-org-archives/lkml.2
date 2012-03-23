@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab2CWRwn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 13:52:43 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41953 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757866Ab2CWRwl (ORCPT
+	id S1030181Ab2CWRzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 13:55:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54389 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755608Ab2CWRzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 13:52:41 -0400
-Date: Fri, 23 Mar 2012 10:52:36 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: Re: [ 10/41] CIFS: Do not kmalloc under the flocks spinlock
-Message-ID: <20120323175236.GA9648@kroah.com>
-References: <20120316233829.GA14022@kroah.com>
- <20120316233811.484341257@linuxfoundation.org>
- <20120317023740.GH12704@decadent.org.uk>
- <CAKywueTUH_Zrh7iD_zsyvtmLt9O2dbd_KNrzNWzFQm4z8ZtbcQ@mail.gmail.com>
- <1331969567.3022.233.camel@deadeye>
- <CAKywueQoKN51mea7TkpT3WS=Vgj5ijNn1pOSb3cC=UZ9vVu6dw@mail.gmail.com>
- <20120319155022.GC8176@kroah.com>
- <CAKywueRKbChA4LGDoafnSKo7Rz-zYGApJS8vcsp0K+qAnrgpbQ@mail.gmail.com>
- <20120319192416.GE6339@kroah.com>
+	Fri, 23 Mar 2012 13:55:39 -0400
+Date: Fri, 23 Mar 2012 17:55:34 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Ted Ts'o" <tytso@mit.edu>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext2: No longer export ext2_fs.h to user space
+Message-ID: <20120323175534.GI6589@ZenIV.linux.org.uk>
+References: <20120322183135.GC4028@thunk.org>
+ <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120323131331.GA29631@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120319192416.GE6339@kroah.com>
+In-Reply-To: <20120323131331.GA29631@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 12:24:16PM -0700, Greg KH wrote:
-> On Mon, Mar 19, 2012 at 11:11:35PM +0400, Pavel Shilovsky wrote:
-> > 19 марта 2012 г. 19:50 пользователь Greg KH
-> > <gregkh@linuxfoundation.org> написал:
-> > > On Sat, Mar 17, 2012 at 11:52:24AM +0400, Pavel Shilovsky wrote:
-> > >> 17 марта 2012 г. 11:32 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
-> > >> > On Sat, 2012-03-17 at 10:14 +0400, Pavel Shilovsky wrote:
-> > >> >> 17 марта 2012 г. 6:37 пользователь Ben Hutchings <ben@decadent.org.uk> написал:
-> > >> >> > On Fri, Mar 16, 2012 at 04:38:20PM -0700, Greg KH wrote:
-> > >> >> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > >> > [...]
-> > >> >> > But we test this before flock->fl_flags & FL_POSIX, which means we
-> > >> >> > don't know whether this lock actually needs to be assigned one of
-> > >> >> > those structures.  So it appears that we might report a spurious error
-> > >> >> > if the lock list ends with a mandatory lock.  If so, this is
-> > >> >> > relatively harmless but does need to be fixed.
-> > >> >> >
-> > >> >>
-> > >> >> You are right here, thanks for the catch! I will repost the patch asap.
-> > >> >
-> > >> > This has already been merged into Linus's tree, so you need to submit a
-> > >> > patch to apply on top of it.
-> > >> >
-> > >>
-> > >> I posted two patches:
-> > >> 1) the whole fixed version for the stable tree [PATCH v2] CIFS: Do not
-> > >> kmalloc under the flocks spinlock
-> > >
-> > > What do you mean by "fixed version"?
-> > >
-> > >> 2) fixup for mainline [PATCH] CIFS: Fix a spurious error in
-> > >> cifs_push_posix_locks
-> > >
-> > > What do you mean by this?
+On Fri, Mar 23, 2012 at 09:13:31AM -0400, Ted Ts'o wrote:
+> On Fri, Mar 23, 2012 at 10:27:36AM +0100, Thierry Reding wrote:
+> > Since the on-disk format has been stable for quite some time, users
+> > should either use the headers provided by libext2fs or keep a private
+> > copy of this header. For the full discussion, see this thread:
 > > 
-> > Ok, seems I didn't understand this process correctly. I reposted the
-> > new "fixed" version of this patch, because I thought it is more
-> > suitable for stale to merge one correct patch rather than one
-> > incorrect + follow-on fixup. Sorry if I was wrong.
-> 
-> I need to stay identical with Linus's tree as much as possible, it's
-> easier for everyone in the end that way for tracking exactly what
-> happens.
-> 
-> > > If there was a follow-on patch in Linus's tree that fixes a problem, I
-> > > need that git commit id, not a "fixed" patch that does not match up with
-> > > what is in Linus's tree right now.
-> > >
-> > > So, if that's the case, please let me know what the git commit id of
-> > > that patch is please.
+> > 	https://lkml.org/lkml/2012/3/21/516
 > > 
-> > Steve has just merged the follow-on patch:
-> > http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=ce85852b90a214cf577fc1b4f49d99fd7e98784a
+> > While at it, this commit removes all __KERNEL__ guards, which are now
+> > unnecessary.
 > > 
-> > but seems hasn't sent a merge request to Linus yet - will let you know
-> > when the patch comes to Linus's tree.
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> > Cc: Al Viro <viro@zeniv.linux.org.uk>
+> > Cc: Jan Kara <jack@suse.cz>
+> > Cc: Ted Ts'o <tytso@mit.edu>
+> > Cc: Artem Bityutskiy <dedekind1@gmail.com>
+> > Cc: Andreas Dilger <aedilger@gmail.com>
+> > Cc: linux-ext4@vger.kernel.org
 > 
-> Ok, please let me know when this goes into Linus's tree and I will
-> queue it up for the next releases.
+> Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+> 
+> Thanks!!
+> 
+> Al, do you want to take this in the VFS tree, or do you want me to
+> carry this in the ext4 tree?  Or Jan could carry it in the ext2 tree.
+> I don't really have strong feelings about who picks it up.  I will if
+> no one else wants to...
 
-It's there now, I've picked it up.
-
-greg k-h
+Applied.  I'll probably add a followup moving most of that stuff to
+fs/ext2/ext2.h on top of that commit...
