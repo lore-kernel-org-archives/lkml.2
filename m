@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760287Ab2CWAKj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 20:10:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43596 "EHLO gate.crashing.org"
+	id S1031629Ab2CWAUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 20:20:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43205 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760166Ab2CWAKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 20:10:38 -0400
-Message-ID: <1332461414.2982.90.camel@pasglop>
-Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
-Date: Fri, 23 Mar 2012 11:10:14 +1100
-In-Reply-To: <4F688F48.6090303@redhat.com>
-References: <4F688F48.6090303@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1031616Ab2CWAUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Mar 2012 20:20:30 -0400
+Message-ID: <4F6BC1C4.6050502@zytor.com>
+Date: Thu, 22 Mar 2012 17:20:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] x86, tlb: switch cr3 in leave_mm() only when needed
+References: <1332459220.16101.144.camel@sbsiddha-desk.sc.intel.com>  <CA+55aFyf9RqAROx7t=CYUSGCDBXvv9z2c+LP1vRJjLU45_pD+Q@mail.gmail.com> <1332460885.16101.147.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1332460885.16101.147.camel@sbsiddha-desk.sc.intel.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-20 at 16:08 +0200, Avi Kivity wrote:
-> Linus, please pull from
+On 03/22/2012 05:01 PM, Suresh Siddha wrote:
 > 
->   ra.kernel.org:/pub/scm/virt/kvm/kvm.git kvm-updates/3.4
+> Agreed. Updated patch appended. Thanks.
+> ---
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: x86, tlb: switch cr3 in leave_mm() only when needed
 > 
-> (ssh URL as git.kernel.org is down at the moment) to receive the KVM
-> updates for the 3.4 merge window.  Changes include  timekeeping
-> improvements, support for assigning host PCI devices that share
-> interrupt lines, s390 user-controlled guests, a large ppc update, and
-> random fixes.
+> Currently leave_mm() unconditionally switches the cr3 to swapper_pg_dir.
+> But there is no need to change the cr3, if we already left that mm.
+> 
+> intel_idle() for example calls leave_mm() on every deep c-state entry where
+> the CPU flushes the TLB for us. Similarly flush_tlb_all() was also calling
+> leave_mm() whenever the TLB is in LAZY state. Both these paths will be
+> improved with this change.
+> 
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> 
 
-I wonder if Linus missed this one ... :-)
+Looks great to me.  Linus, do you want this one later in the window if
+it tests out OK between now and then, or is it too late?
 
-But that's not the point of the email ... Avi, I have a bit of a problem
-with the way you manage your tree(s).
+	-hpa
 
-It appears to me that you have on one side, a tree that has all of KVM
-dev. history for years, which is used as a parent by your
-sub-maintainers such as Alex, and as your main dev. tree. However, that
--tree- is not related to Linus, and whenever you do a pull request, you
-basically rebase patches on top of a different tree which is derived
-from Linus.
-
-That means that everything gets constantly rebased, and it makes life
-very much harder for us working with this.
-
-For our own dev, we have to essentially work on trees that derive from
-Linus, my own -next branch, Alex's -next branch, whatever you have going
-on etc... and updating/rebasing our own local WIP patches is extremely
-painful because there is never a recent common ancestor between your
-trees (and other deriving from it such as Alex) and anything else.
-
-Is there any reason why you keep working that way other than a bad
-habit ? :-)
-
-It would be much easier for everybody involved if your WIP development
-was always based on a recent ancestor and that you did not rebase it,
-meaning that Linus would just "pull" it and everybody would resync
-cleanly after every merge window.
-
-Cheers,
-Ben.
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
