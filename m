@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab2CWEaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 00:30:00 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28326 "EHLO
+	id S1756737Ab2CWEcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 00:32:51 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40164 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab2CWE37 (ORCPT
+	with ESMTP id S1752372Ab2CWEct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 00:29:59 -0400
+	Fri, 23 Mar 2012 00:32:49 -0400
+MIME-Version: 1.0
+Message-ID: <1332477103-4595-1-git-send-email-yinghai@kernel.org>
+Date: Thu, 22 Mar 2012 21:31:43 -0700 (PDT)
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] x86: Fix excessive MSR print out when show_msr is not specified
-Date: Thu, 22 Mar 2012 21:29:51 -0700
-Message-Id: <1332476991-4513-1-git-send-email-yinghai@kernel.org>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86: Fix excessive MSR print out when show_msr is not
+ specified
 X-Mailer: git-send-email 1.7.7
+Content-Type: text/plain; charset=ascii
+Content-Transfer-Encoding: 7bit
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090204.4F6BFC36.00A9,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090207.4F6BFCC9.003C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,7 +37,7 @@ Dave found:
 
 Fix it by changing to the version that check index.
 
-Reported_and_tested-by: Dave Jones <davej@redhat.com>
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
