@@ -1,115 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab2CWJLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 05:11:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37327 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757832Ab2CWJK6 convert rfc822-to-8bit (ORCPT
+	id S1753345Ab2CWJP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 05:15:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47995 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab2CWJP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 05:10:58 -0400
+	Fri, 23 Mar 2012 05:15:56 -0400
+Date: Fri, 23 Mar 2012 10:15:52 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+Subject: [PULL REQUEST] i2c embedded
+Message-ID: <20120323091552.GA14203@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <4F6BECA7.7030007@linaro.org>
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
-	<20120319130445.GN15988@n2100.arm.linux.org.uk>
-	<CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
-	<20120319132623.GO15988@n2100.arm.linux.org.uk>
-	<4F696011.7080409@linaro.org>
-	<CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
-	<CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
-	<20120322100236.GS15988@n2100.arm.linux.org.uk>
-	<CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
-	<4F6BECA7.7030007@linaro.org>
-Date: Fri, 23 Mar 2012 14:40:57 +0530
-Message-ID: <CAB4K4y4DvUb+908P4NJoyJbDa35R2jP5cHqnoNWr9HRZJYyj4w@mail.gmail.com>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-PGP: S<0x7D7F551B>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 8:53 AM, John Stultz <john.stultz@linaro.org> wrote:
-> On 03/22/2012 03:25 AM, Ajeet Yadav wrote:
->>
->> I understand your point,
->> Our target (2.6) always had ARCH_USES_GETTIMEOFFSET=y , but still we
->> were able to use the TRACER in past until the patch "kill
->> GENERIC_TIMER" published, anyone will ask me remove this patch and use
->> TRACER, becaue it was working before. :)
->
->
-> Ajeet,
->    Sorry, by TRACER, do you mean PREEMPT_TRACER or something else? And what
-> specific 2.6.X kernel were you using?
->
-> Steven, I'm seeing:
->
-> config PREEMPT_TRACER
->        bool "Preemption-off Latency Tracer"
->        default n
->        depends on !ARCH_USES_GETTIMEOFFSET
->
-> Do you have any context as to why is !ARCH_USES_GETTIMEOFFSET flagged here?
-Since boot problem is now fixed, I removed  "depends on
-!ARCH_USES_GETTIMEOFFSET" from config NO_HZ, config HIGH_RES_TIMERS,
-config IRQSOFF_TRACER, config
-PREEMPT_TRACER, to continue my work.
 
-Ref: time: Kill off CONFIG_GENERIC_TIME
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=592913ecb87a9e06f98ddb55b298f1a66bf94c6b
 
-diff -Naurp -X linux-3.0.20/Documentation/dontdiff
-linux-3.0.20/kernel/time/Kconfig
-linux-3.0.20-dirty/kernel/time/Kconfig
---- linux-3.0.20/kernel/time/Kconfig    2012-02-06 23:01:45.000000000 +0530
-+++ linux-3.0.20-dirty/kernel/time/Kconfig      2012-03-19
-18:22:32.000000000 +0530
-@@ -6,7 +6,7 @@ config TICK_ONESHOT
+Hi Linus,
 
- config NO_HZ
-       bool "Tickless System (Dynamic Ticks)"
--       depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
-+       depends on GENERIC_CLOCKEVENTS
-       select TICK_ONESHOT
-       help
-         This option enables a tickless system: timer interrupts will
-@@ -15,7 +15,7 @@ config NO_HZ
+nothing special from i2c-embedded for this merge window. Two new drivers,
+minor feature additions, bugfixes, cleanups.
 
- config HIGH_RES_TIMERS
-       bool "High Resolution Timer Support"
--       depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
-+       depends on GENERIC_CLOCKEVENTS
-       select TICK_ONESHOT
-       help
-         This option enables high resolution timer support. If your
-diff -Naurp -X linux-3.0.20/Documentation/dontdiff
-linux-3.0.20/kernel/trace/Kconfig
-linux-3.0.20-dirty/kernel/trace/Kconfig
---- linux-3.0.20/kernel/trace/Kconfig   2012-02-06 23:01:45.000000000 +0530
-+++ linux-3.0.20-dirty/kernel/trace/Kconfig     2012-03-19
-18:21:41.000000000 +0530
-@@ -173,7 +173,6 @@ config IRQSOFF_TRACER
-       bool "Interrupts-off Latency Tracer"
-       default n
-       depends on TRACE_IRQFLAGS_SUPPORT
--       depends on !ARCH_USES_GETTIMEOFFSET
-       select TRACE_IRQFLAGS
-       select GENERIC_TRACER
-       select TRACER_MAX_TRACE
-@@ -195,7 +194,6 @@ config IRQSOFF_TRACER
- config PREEMPT_TRACER
-       bool "Preemption-off Latency Tracer"
-       default n
--       depends on !ARCH_USES_GETTIMEOFFSET
-       depends on PREEMPT
-       select GENERIC_TRACER
-       select TRACER_MAX_TRACE
+All patches have been in linux-next for some time, too.
 
->
-> thanks
-> -john
->
+Please pull. Thanks,
+
+   Wolfram
+
+
+The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
+
+  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
+
+are available in the git repository at:
+
+  git://git.pengutronix.de/git/wsa/linux.git i2c-embedded/for-3.4
+
+for you to fetch changes up to bbceeee82ef55c11db0161f4078edd79290e3bcf:
+
+  i2c-eg20t: Remove write-only variables (2012-03-07 19:26:22 +0100)
+
+----------------------------------------------------------------
+Alexander Stein (2):
+      i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce wait time
+      i2c-eg20t: Remove write-only variables
+
+Alok Chauhan (1):
+      i2c: tegra: Remove unnecessary write to INT_STATUS
+
+Ganesan Ramalingam (1):
+      i2c: Support for Netlogic XLR/XLS I2C controller.
+
+Jayachandran C (1):
+      i2c: Move I2C_EG20T option to the right place.
+
+Mark Brown (2):
+      i2c-s3c2410: Convert to devm_kzalloc()
+      i2c-s3c2410: Add stub runtime power management
+
+Oskar Schirmer (1):
+      i2c: imx: fix imx driver to work though signal is pending
+
+Pawel Moll (1):
+      i2c: versatile: Add Device Tree support
+
+Pratyush Anand (1):
+      i2c: designware: dw_i2c_init_driver as subsys initcall
+
+Tang Yuantian (1):
+      i2c: mpc: Add support for SMBUS_READ_BLOCK_DATA
+
+Wolfram Sang (1):
+      misc: at24: describe platform_data with kernel_doc
+
+Zhiwu Song (1):
+      i2c: add CSR SiRFprimaII on-chip I2C controllers driver
+
+ Documentation/devicetree/bindings/i2c/sirf-i2c.txt |   19 +
+ drivers/i2c/busses/Kconfig                         |   44 ++-
+ drivers/i2c/busses/Makefile                        |    4 +-
+ drivers/i2c/busses/i2c-designware-platdrv.c        |    2 +-
+ drivers/i2c/busses/i2c-eg20t.c                     |   44 +-
+ drivers/i2c/busses/i2c-imx.c                       |    5 -
+ drivers/i2c/busses/i2c-mpc.c                       |   63 ++-
+ drivers/i2c/busses/i2c-s3c2410.c                   |   14 +-
+ drivers/i2c/busses/i2c-sirf.c                      |  459 ++++++++++++++++++++
+ drivers/i2c/busses/i2c-tegra.c                     |    1 -
+ drivers/i2c/busses/i2c-versatile.c                 |   10 +
+ drivers/i2c/busses/i2c-xlr.c                       |  278 ++++++++++++
+ include/linux/i2c/at24.h                           |   35 ++-
+ 13 files changed, 912 insertions(+), 66 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/sirf-i2c.txt
+ create mode 100644 drivers/i2c/busses/i2c-sirf.c
+ create mode 100644 drivers/i2c/busses/i2c-xlr.c
