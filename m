@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842Ab2CWQlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 12:41:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51847 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab2CWQlW convert rfc822-to-8bit (ORCPT
+	id S1758920Ab2CWQme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 12:42:34 -0400
+Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:45045 "HELO
+	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752294Ab2CWQmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 12:41:22 -0400
-MIME-Version: 1.0
-Message-ID: <2d2c494d-64e3-4968-a406-a8ede7eb39bb@default>
-Date: Fri, 23 Mar 2012 09:40:15 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-mm@kvack.org
-Subject: [GIT PULL] staging: ramster: unbreak my heart
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F6CA7AD.0083,ss=1,re=0.000,fgs=0
+	Fri, 23 Mar 2012 12:42:33 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] setlocalversion: Use "grep -q" instead of piping output to "read dummy"
+Date: Fri, 23 Mar 2012 09:42:27 -0700
+Message-Id: <1332520947-22172-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Greg  --
+From: Roland Dreier <roland@purestorage.com>
 
-The just-merged ramster staging driver was dependent on a cleanup patch in
-cleancache, so was marked CONFIG_BROKEN until that patch could be
-merged.  That cleancache patch is now merged (and the correct SHA of the
-cleancache patch is 3167760f83899ccda312b9ad9306ec9e5dda06d4 rather than
-the one shown in the comment removed in the patch below).
+In some circumstances (eg when running a build in an emacs shell
+buffer), I get a spew of messages like
 
-So remove the CONFIG_BROKEN now and the comment that is no longer true...
+    grep: writing output: Broken pipe
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+from setlocalversion, because the "read" subshell apparently exits as
+soon as it reads one line and gives EPIPE to grep.  It's not clear to
+me why this way of writing the check was used instead of just using
+grep -q to suppress output, but unless there is some deep reason I
+don't know, this way looks cleaner to me anyway, and gets rid of the
+ugly message spew.
 
-diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
-index 8b57b87..4af1f8d 100644
---- a/drivers/staging/ramster/Kconfig
-+++ b/drivers/staging/ramster/Kconfig
-@@ -1,10 +1,6 @@
--# Dependency on CONFIG_BROKEN is because there is a commit dependency
--# on a cleancache naming change to be submitted by Konrad Wilk
--# a39c00ded70339603ffe1b0ffdf3ade85bcf009a "Merge branch 'stable/cleancache.v13'
--# into linux-next.  Once this commit is present, BROKEN can be removed
- config RAMSTER
- 	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
--	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM && BROKEN
-+	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
- 	select LZO_COMPRESS
- 	select LZO_DECOMPRESS
- 	default n
+(I double checked at http://pubs.opengroup.org/onlinepubs/009604499/utilities/grep.html
+and "grep -q" is specified in POSIX / SuS, so hopefully even people
+cross-compiling the kernel on some bizarre host OS can't complain
+about this change)
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+---
+ scripts/setlocalversion |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 4d40384..bd6dca8 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -75,8 +75,7 @@ scm_version()
+ 		[ -w . ] && git update-index --refresh --unmerged > /dev/null
+ 
+ 		# Check for uncommitted changes
+-		if git diff-index --name-only HEAD | grep -v "^scripts/package" \
+-		    | read dummy; then
++		if git diff-index --name-only HEAD | grep -qv "^scripts/package"; then
+ 			printf '%s' -dirty
+ 		fi
+ 
+-- 
+1.7.9.1
+
