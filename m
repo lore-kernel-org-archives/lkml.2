@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab2CWXrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 19:47:11 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38207 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab2CWXrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 19:47:09 -0400
-Message-ID: <4F6D0B77.6070600@linaro.org>
-Date: Fri, 23 Mar 2012 16:47:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	id S964835Ab2CWXsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 19:48:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:50020 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756547Ab2CWXsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 19:48:23 -0400
+Date: Fri, 23 Mar 2012 16:32:13 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] audit: always report seccomp violations
+Message-ID: <20120323233212.GA18484@www.outflux.net>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] x86-64: Simplify and speed up vdso clock_gettime
-References: <cover.1332475308.git.luto@amacapital.net>
-In-Reply-To: <cover.1332475308.git.luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032323-1780-0000-0000-00000436951F
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000263; HX=3.00000186; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00124635; UDB=6.00029813; UTC=2012-03-23
- 23:47:08
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2012 09:15 PM, Andy Lutomirski wrote:
-> I think clock_gettime is already almost as fast as possible, but every
-> little bit helps.  Also, I think the diffstat is pretty good for a
-> speedup.  Here are some approximate timings.
->
->                               Before       After
-> CLOCK_REALTIME                 16.7        15.2
-> CLOCK_MONOTONIC                17.3        15.5
-> CLOCK_REALTIME_COARSE           3.6         3.0
-> CLOCK_MONOTONIC_COARSE          4.2         3.6
->
-> These are extracted from an earlier series that's mostly abandoned now [1-2].
-> They apply to tip/timers/core commit 57779dc2b3b75bee05ef5d1ada47f615f7a13932.
->
-> For the git-inclined, the patches are here:
-> https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/timing/vclock_speedup/patch_v1
->
-> I'm not sure whether these are 3.4 material.  On the pro side, they've
-> technically been floating around since long before the merge window.
-> They're also quite straightforward, and they're based on other -tip
-> changes (which is why I'm submitting now).  On the con side, they don't
-> fix anything, and they're a little later than ideal.
+When a program violates its own seccomp rules, that is a pretty dire
+situation, and the audit message should always be reported (not just
+when there is already a rule active for the process).
 
-The look straightforward enough. I've queued them at the end of my 3.4 
-queue. If Thomas or anyone wants to wait on them, I'll push them off to 3.5
+This change makes the audit_seccomp() logic similar to audit_core_dumps()
+(it does not require an active context). Since core dumps are more
+common, they sit behind an "audit_enabled" test. Audit reports of seccomp
+failures should always be visible, and fall back to printk when auditd
+is not running.
 
-thanks
--john
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ include/linux/audit.h |    8 +-------
+ kernel/auditsc.c      |   11 +++++++++--
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index ed3ef19..596077f 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -463,7 +463,7 @@ extern void audit_putname(const char *name);
+ extern void __audit_inode(const char *name, const struct dentry *dentry);
+ extern void __audit_inode_child(const struct dentry *dentry,
+ 				const struct inode *parent);
+-extern void __audit_seccomp(unsigned long syscall);
++extern void audit_seccomp(unsigned long syscall);
+ extern void __audit_ptrace(struct task_struct *t);
+ 
+ static inline int audit_dummy_context(void)
+@@ -508,12 +508,6 @@ static inline void audit_inode_child(const struct dentry *dentry,
+ }
+ void audit_core_dumps(long signr);
+ 
+-static inline void audit_seccomp(unsigned long syscall)
+-{
+-	if (unlikely(!audit_dummy_context()))
+-		__audit_seccomp(syscall);
+-}
+-
+ static inline void audit_ptrace(struct task_struct *t)
+ {
+ 	if (unlikely(!audit_dummy_context()))
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index af1de0f..a5caecd 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -2693,7 +2693,7 @@ static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
+  * @signr: signal value
+  *
+  * If a process ends with a core dump, something fishy is going on and we
+- * should record the event for investigation.
++ * should record the event for investigation, if auditing is enabled.
+  */
+ void audit_core_dumps(long signr)
+ {
+@@ -2710,7 +2710,14 @@ void audit_core_dumps(long signr)
+ 	audit_log_end(ab);
+ }
+ 
+-void __audit_seccomp(unsigned long syscall)
++/**
++ * audit_seccomp - record information about processes that violate seccomp
++ * @syscall: syscall number that triggered the seccomp violation
++ *
++ * If a process violates its own seccomp rules, something has gone very
++ * wrong, and this event should always be reported for investigation.
++ */
++void audit_seccomp(unsigned long syscall)
+ {
+ 	struct audit_buffer *ab;
+ 
+-- 
+1.7.0.4
+
+-- 
+Kees Cook
+Chrome OS Security
