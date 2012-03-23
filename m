@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab2CWEAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 00:00:23 -0400
-Received: from hermod.sentelic.com ([203.69.18.19]:5644 "EHLO
+	id S1755448Ab2CWEBI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 00:01:08 -0400
+Received: from hermod.sentelic.com ([203.69.18.19]:26607 "EHLO
 	hermod.sentelic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2CWEAP (ORCPT
+	with ESMTP id S1750842Ab2CWEAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 00:00:15 -0400
+	Fri, 23 Mar 2012 00:00:09 -0400
 From: Tai-hwa Liang <avatar@sentelic.com>
 To: Oskari Saarenmaa <os@ohmu.fi>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/5] Input: sentelic - enabling hardware supported gesture ID output
-Date: Fri, 23 Mar 2012 11:52:19 +0800
-Message-Id: <1332474741-19426-4-git-send-email-avatar@sentelic.com>
+Subject: [PATCH v2 1/5] Input: sentelic - code refactorying for upcoming new hardware support
+Date: Fri, 23 Mar 2012 11:52:17 +0800
+Message-Id: <1332474741-19426-2-git-send-email-avatar@sentelic.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
 References: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
@@ -20,173 +20,203 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling on-chip gesture processing mode and send the result to the user
-land through MSC_GESTURE event.  This event could be useful for 3rd party
-applications.
+- Moving event bits setup code to a separated function,
+  fsp_set_input_params(), such that we can perform hardware specific settings
+  in the future;
+- Taking hardware version information into account when activating
+  protocol;
+- Removing button information from boot message as it's somewhat confusing
+  and is only for internal processing.  Whilst here, also moving button
+  retrieving code to be a part of protocol activation process.
 
 Signed-off-by: Tai-hwa Liang <avatar@sentelic.com>
 ---
- drivers/input/mouse/sentelic.c |   38 +++++++++++++++++++-
- drivers/input/mouse/sentelic.h |   73 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 109 insertions(+), 2 deletions(-)
+ drivers/input/mouse/sentelic.c |  106 +++++++++++++++++++++++----------------
+ drivers/input/mouse/sentelic.h |   13 +++++-
+ 2 files changed, 74 insertions(+), 45 deletions(-)
 
 diff --git a/drivers/input/mouse/sentelic.c b/drivers/input/mouse/sentelic.c
-index 43d839a..0b57fe4 100644
+index e36847d..0ce090b 100644
 --- a/drivers/input/mouse/sentelic.c
 +++ b/drivers/input/mouse/sentelic.c
-@@ -661,8 +661,9 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
- 	struct input_dev *dev = psmouse->dev;
- 	struct fsp_data *ad = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
--	unsigned char button_status = 0, lscroll = 0, rscroll = 0;
-+	unsigned char button_status = 0;
- 	unsigned short abs_x, abs_y, fgrs = 0;
-+	unsigned short vscroll = 0, hscroll = 0, lscroll = 0, rscroll = 0;
- 	int rel_x, rel_y;
- 
- 	if (psmouse->pktcnt < 4)
-@@ -673,6 +674,33 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
- 	 */
- 
- 	switch (psmouse->packet[0] >> FSP_PKT_TYPE_SHIFT) {
-+	case FSP_PKT_TYPE_NOTIFY:
-+		if (packet[1] != FSP_NOTIFY_MSG_GID)
-+			break;	/* unsupported message types */
-+
-+		switch (packet[2]) {
-+		case FSP_GID_SP_UP:
-+			vscroll =  1;
-+			break;
-+		case FSP_GID_SP_DOWN:
-+			vscroll = -1;
-+			break;
-+		case FSP_GID_SP_LEFT:
-+			hscroll =  1;
-+			break;
-+		case FSP_GID_SP_RIGHT:
-+			hscroll = -1;
-+			break;
-+		default:
-+			dev_dbg(&psmouse->ps2dev.serio->dev,
-+				"GID 0x%x\n", packet[2]);
-+			break;
-+		}
-+		input_report_rel(dev, REL_WHEEL, vscroll);
-+		input_report_rel(dev, REL_HWHEEL, hscroll);
-+		input_event(dev, EV_MSC, MSC_GESTURE, packet[2]);
-+		break;
-+
- 	case FSP_PKT_TYPE_ABS:
- 		abs_x = (packet[1] << 2) | ((packet[3] >> 2) & 0x03);
- 		abs_y = (packet[2] << 2) | (packet[3] & 0x03);
-@@ -861,9 +889,12 @@ static int fsp_activate_protocol(struct psmouse *psmouse)
- 		/* Enable absolute coordinates output for Cx/Dx hardware */
- 		if (fsp_reg_write(psmouse, FSP_REG_SWC1,
- 				  FSP_BIT_SWC1_EN_ABS_1F |
-+				  FSP_BIT_SWC1_EN_GID |
- 				  FSP_BIT_SWC1_EN_ABS_2F |
- 				  FSP_BIT_SWC1_EN_FUP_OUT |
--				  FSP_BIT_SWC1_EN_ABS_CON)) {
-+				  FSP_BIT_SWC1_EN_ABS_CON |
-+				  FSP_BIT_SWC1_GST_GRP0 |
-+				  FSP_BIT_SWC1_GST_GRP1)) {
- 			dev_err(&psmouse->ps2dev.serio->dev,
- 				"Unable to enable absolute coordinates output.\n");
- 			return -EIO;
-@@ -910,6 +941,9 @@ static int fsp_set_input_params(struct psmouse *psmouse)
- 		input_mt_init_slots(dev, 2);
- 		input_set_abs_params(dev, ABS_MT_POSITION_X, 0, abs_x, 0, 0);
- 		input_set_abs_params(dev, ABS_MT_POSITION_Y, 0, abs_y, 0, 0);
-+
-+		/* device generated gesture ID events */
-+		input_set_capability(dev, EV_MSC, MSC_GESTURE);
+@@ -745,37 +745,64 @@ static int fsp_activate_protocol(struct psmouse *psmouse)
+ 		return -EIO;
  	}
  
+-	if (fsp_reg_read(psmouse, FSP_REG_SYSCTL5, &val)) {
+-		dev_err(&psmouse->ps2dev.serio->dev,
+-			"Unable to read SYSCTL5 register.\n");
+-		return -EIO;
+-	}
++	if (pad->ver < FSP_VER_STL3888_C0) {
++		/* Preparing relative coordinates output for older hardware */
++		if (fsp_reg_read(psmouse, FSP_REG_SYSCTL5, &val)) {
++			dev_err(&psmouse->ps2dev.serio->dev,
++				"Unable to read SYSCTL5 register.\n");
++			return -EIO;
++		}
+ 
+-	val &= ~(FSP_BIT_EN_MSID7 | FSP_BIT_EN_MSID8 | FSP_BIT_EN_AUTO_MSID8);
+-	/* Ensure we are not in absolute mode */
+-	val &= ~FSP_BIT_EN_PKT_G0;
+-	if (pad->buttons == 0x06) {
+-		/* Left/Middle/Right & Scroll Up/Down/Right/Left */
+-		val |= FSP_BIT_EN_MSID6;
+-	}
++		if (fsp_get_buttons(psmouse, &pad->buttons)) {
++			dev_err(&psmouse->ps2dev.serio->dev,
++				"Unable to retrieve number of buttons.\n");
++			return -EIO;
++		}
+ 
+-	if (fsp_reg_write(psmouse, FSP_REG_SYSCTL5, val)) {
+-		dev_err(&psmouse->ps2dev.serio->dev,
+-			"Unable to set up required mode bits.\n");
+-		return -EIO;
++		val &= ~(FSP_BIT_EN_MSID7 | FSP_BIT_EN_MSID8 | FSP_BIT_EN_AUTO_MSID8);
++		/* Ensure we are not in absolute mode */
++		val &= ~FSP_BIT_EN_PKT_G0;
++		if (pad->buttons == 0x06) {
++			/* Left/Middle/Right & Scroll Up/Down/Right/Left */
++			val |= FSP_BIT_EN_MSID6;
++		}
++
++		if (fsp_reg_write(psmouse, FSP_REG_SYSCTL5, val)) {
++			dev_err(&psmouse->ps2dev.serio->dev,
++				"Unable to set up required mode bits.\n");
++			return -EIO;
++		}
++
++		/*
++		 * Enable OPC tags such that driver can tell the difference
++		 * between on-pad and real button click
++		 */
++		if (fsp_opc_tag_enable(psmouse, true))
++			dev_warn(&psmouse->ps2dev.serio->dev,
++				 "Failed to enable OPC tag mode.\n");
++		/* enable on-pad click by default */
++		pad->flags |= FSPDRV_FLAG_EN_OPC;
++
++		/* Enable on-pad vertical and horizontal scrolling */
++		fsp_onpad_vscr(psmouse, true);
++		fsp_onpad_hscr(psmouse, true);
+ 	}
+ 
+-	/*
+-	 * Enable OPC tags such that driver can tell the difference between
+-	 * on-pad and real button click
+-	 */
+-	if (fsp_opc_tag_enable(psmouse, true))
+-		dev_warn(&psmouse->ps2dev.serio->dev,
+-			 "Failed to enable OPC tag mode.\n");
++	return 0;
++}
++
++static int fsp_set_input_params(struct psmouse *psmouse)
++{
++	struct input_dev *dev = psmouse->dev;
++	struct fsp_data *pad = psmouse->private;
+ 
+-	/* Enable on-pad vertical and horizontal scrolling */
+-	fsp_onpad_vscr(psmouse, true);
+-	fsp_onpad_hscr(psmouse, true);
++	if (pad->ver < FSP_VER_STL3888_C0) {
++		__set_bit(BTN_MIDDLE, dev->keybit);
++		__set_bit(BTN_BACK, dev->keybit);
++		__set_bit(BTN_FORWARD, dev->keybit);
++		__set_bit(REL_WHEEL, dev->relbit);
++		__set_bit(REL_HWHEEL, dev->relbit);
++	}
+ 
  	return 0;
+ }
+@@ -833,18 +860,16 @@ static int fsp_reconnect(struct psmouse *psmouse)
+ int fsp_init(struct psmouse *psmouse)
+ {
+ 	struct fsp_data *priv;
+-	int ver, rev, buttons;
++	int ver, rev;
+ 	int error;
+ 
+ 	if (fsp_get_version(psmouse, &ver) ||
+-	    fsp_get_revision(psmouse, &rev) ||
+-	    fsp_get_buttons(psmouse, &buttons)) {
++	    fsp_get_revision(psmouse, &rev)) {
+ 		return -ENODEV;
+ 	}
+ 
+-	psmouse_info(psmouse,
+-		     "Finger Sensing Pad, hw: %d.%d.%d, sw: %s, buttons: %d\n",
+-		     ver >> 4, ver & 0x0F, rev, fsp_drv_ver, buttons & 7);
++	psmouse_info(psmouse, "Finger Sensing Pad, hw: %d.%d.%d, sw: %s\n",
++		     ver >> 4, ver & 0x0F, rev, fsp_drv_ver);
+ 
+ 	psmouse->private = priv = kzalloc(sizeof(struct fsp_data), GFP_KERNEL);
+ 	if (!priv)
+@@ -852,17 +877,6 @@ int fsp_init(struct psmouse *psmouse)
+ 
+ 	priv->ver = ver;
+ 	priv->rev = rev;
+-	priv->buttons = buttons;
+-
+-	/* enable on-pad click by default */
+-	priv->flags |= FSPDRV_FLAG_EN_OPC;
+-
+-	/* Set up various supported input event bits */
+-	__set_bit(BTN_MIDDLE, psmouse->dev->keybit);
+-	__set_bit(BTN_BACK, psmouse->dev->keybit);
+-	__set_bit(BTN_FORWARD, psmouse->dev->keybit);
+-	__set_bit(REL_WHEEL, psmouse->dev->relbit);
+-	__set_bit(REL_HWHEEL, psmouse->dev->relbit);
+ 
+ 	psmouse->protocol_handler = fsp_process_byte;
+ 	psmouse->disconnect = fsp_disconnect;
+@@ -870,11 +884,15 @@ int fsp_init(struct psmouse *psmouse)
+ 	psmouse->cleanup = fsp_reset;
+ 	psmouse->pktsize = 4;
+ 
+-	/* set default packet output based on number of buttons we found */
+ 	error = fsp_activate_protocol(psmouse);
+ 	if (error)
+ 		goto err_out;
+ 
++	/* Set up various supported input event bits */
++	error = fsp_set_input_params(psmouse);
++	if (error)
++		goto err_out;
++
+ 	error = sysfs_create_group(&psmouse->ps2dev.serio->dev.kobj,
+ 				   &fsp_attribute_group);
+ 	if (error) {
 diff --git a/drivers/input/mouse/sentelic.h b/drivers/input/mouse/sentelic.h
-index 334de19..0cd0efb 100644
+index 2e4af24..23bd25e 100644
 --- a/drivers/input/mouse/sentelic.h
 +++ b/drivers/input/mouse/sentelic.h
-@@ -83,6 +83,79 @@
- #define	FSP_PB0_PHY_BTN		BIT(4)
- #define	FSP_PB0_MFMC		BIT(5)
+@@ -64,12 +64,23 @@
+ #define	FSP_PKT_TYPE_NORMAL_OPC	(0x03)
+ #define	FSP_PKT_TYPE_SHIFT	(6)
  
-+/* notification message types */
-+#define	FSP_NOTIFY_MSG_GID	(0xba)
-+#define	FSP_NOTIFY_MSG_HX_GST	(0xc0)
++/* hardware revisions */
++#define	FSP_VER_STL3888_A4	(0xC1)
++#define	FSP_VER_STL3888_B0	(0xD0)
++#define	FSP_VER_STL3888_B1	(0xD1)
++#define	FSP_VER_STL3888_B2	(0xD2)
++#define	FSP_VER_STL3888_C0	(0xE0)
++#define	FSP_VER_STL3888_C1	(0xE1)
++#define	FSP_VER_STL3888_D0	(0xE2)
++#define	FSP_VER_STL3888_D1	(0xE3)
++#define	FSP_VER_STL3888_E0	(0xE4)
 +
-+/* gesture IDs */
-+/** GID for 2F Straight Up             */
-+#define	FSP_GID_SP1		(0x86)
-+#define	FSP_GID_SP_UP		FSP_GID_SP1
-+
-+/** GID for 2F Straight Down           */
-+#define	FSP_GID_SP5		(0x82)
-+#define	FSP_GID_SP_DOWN		FSP_GID_SP5
-+
-+/** GID for 2F Straight Right          */
-+#define	FSP_GID_SP2		(0x80)
-+#define	FSP_GID_SP_RIGHT	FSP_GID_SP2
-+
-+/** GID for 2F Straight Left           */
-+#define	FSP_GID_SP6		(0x84)
-+#define	FSP_GID_SP_LEFT		FSP_GID_SP6
-+
-+/** GID for 2F Zoom In                 */
-+#define	FSP_GID_SC6		(0x8F)
-+#define	FSP_GID_SC_ZOOM_IN	FSP_GID_SC6
-+
-+/** GID for 2F Zoom Out                */
-+#define	FSP_GID_SC3		(0x8B)
-+#define	FSP_GID_SC_ZOOM_OUT	FSP_GID_SC3
-+
-+/** GID for 2F Curve CW                */
-+#define	FSP_GID_DC1		(0xC4)
-+#define	FSP_GID_DC_ROT_CW	FSP_GID_DC1
-+
-+/** GID for 2F Curve CCW               */
-+#define	FSP_GID_DC2		(0xC0)
-+#define	FSP_GID_DC_ROT_CCW	FSP_GID_DC2
-+
-+/** GID for 3F Straight Up             */
-+#define	FSP_GID_TS4		(0x2E)
-+#define	FSP_GID_TS_UP		FSP_GID_TS4
-+
-+/** GID for 3F Straight Down           */
-+#define	FSP_GID_TS2		(0x2A)
-+#define	FSP_GID_TS_DOWN		FSP_GID_TS2
-+
-+/** GID for 3F Straight Right          */
-+#define	FSP_GID_TS1		(0x28)
-+#define	FSP_GID_TS_RIGHT	FSP_GID_TS1
-+
-+/** GID for 3F Straight Left           */
-+#define	FSP_GID_TS3		(0x2C)
-+#define	FSP_GID_TS_LEFT		FSP_GID_TS3
-+
-+/** GID for 2F Click                   */
-+#define	FSP_GID_DF1		(0x11)
-+#define	FSP_GID_DF_CLICK	FSP_GID_DF1
-+
-+/** GID for 2F Double Click            */
-+#define	FSP_GID_DF2		(0x12)
-+#define	FSP_GID_DF_DBLCLICK	FSP_GID_DF2
-+
-+/** GID for 3F Click                   */
-+#define	FSP_GID_TF1		(0x19)
-+#define	FSP_GID_TF_CLICK	FSP_GID_TF1
-+
-+/** GID for 3F Double Click            */
-+#define	FSP_GID_TF2		(0x1A)
-+#define	FSP_GID_TF_DBLCLICK	FSP_GID_TF2
-+
-+/** GID for Palm                       */
-+#define	FSP_GID_PM1		(0x38)
-+#define	FSP_GID_PALM		FSP_GID_PM1
-+
- /* hardware revisions */
- #define	FSP_VER_STL3888_A4	(0xC1)
- #define	FSP_VER_STL3888_B0	(0xD0)
+ #ifdef __KERNEL__
+ 
+ struct fsp_data {
+ 	unsigned char	ver;		/* hardware version */
+ 	unsigned char	rev;		/* hardware revison */
+-	unsigned char	buttons;	/* Number of buttons */
++	unsigned int	buttons;	/* Number of buttons */
+ 	unsigned int	flags;
+ #define	FSPDRV_FLAG_EN_OPC	(0x001)	/* enable on-pad clicking */
+ 
 -- 
 1.7.9.1
 
