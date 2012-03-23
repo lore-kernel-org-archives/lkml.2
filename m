@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab2CWHVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 03:21:43 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:35129 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab2CWHVl convert rfc822-to-8bit (ORCPT
+	id S1756165Ab2CWHXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 03:23:37 -0400
+Received: from fallback4.mail.ru ([94.100.176.42]:42266 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab2CWHXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 03:21:41 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: Regression due to: net/usbnet: avoid recursive locking in usbnet_stop()
-Date: Fri, 23 Mar 2012 08:21:51 +0100
-User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Willy Tarreau <willy@meta-x.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <4F6BAE34.7010805@wwwdotorg.org>
-In-Reply-To: <4F6BAE34.7010805@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203230821.51870.oliver@neukum.org>
+	Fri, 23 Mar 2012 03:23:36 -0400
+From: Alexander Shiyan <shc_work@mail.ru>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH] Fix build error with !SMP && !GENERIC_HARDIRQS
+Date: Fri, 23 Mar 2012 11:23:04 +0400
+Message-Id: <1332487384-13803-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.7.3.4
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 22. März 2012, 23:56:52 schrieb Stephen Warren:
-> It looks like commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d
-> "net/usbnet: avoid recursive locking in usbnet_stop()" causes a problem
-> for me.
-> 
-> When I reboot or shutdown, I see the error spew below at least 50% of
-> the time. Reverting the above patch fixes this, at least for 10 reboot
-> attempts.
+When compile kernel with !SMP && !GENERIC_HARDIRQS we are have
+following error:
+  CC      kernel/irq/manage.o
+kernel/irq/manage.c:41: error: expected identifier or '(' before 'asm'
 
-The patch "usbnet: increase URB reference count before usb_unlink_urb" has just been
-applied. Could you test whether it fixes your proble?
+This error appears because header contain other definition for
+synchronize_irq in include/linux/hardirq.h.
+extern void synchronize_irq(unsigned int irq);
 
-	Regards
-		Oliver
+This patch fix this problem.
+
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ kernel/irq/manage.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index b0ccd1a..854a463 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -28,6 +28,7 @@ static int __init setup_forced_irqthreads(char *arg)
+ early_param("threadirqs", setup_forced_irqthreads);
+ #endif
+ 
++#if !defined(synchronize_irq)
+ /**
+  *	synchronize_irq - wait for pending IRQ handlers (on other CPUs)
+  *	@irq: interrupt number to wait for
+@@ -71,6 +72,7 @@ void synchronize_irq(unsigned int irq)
+ 	wait_event(desc->wait_for_threads, !atomic_read(&desc->threads_active));
+ }
+ EXPORT_SYMBOL(synchronize_irq);
++#endif
+ 
+ #ifdef CONFIG_SMP
+ cpumask_var_t irq_default_affinity;
+-- 
+1.7.3.4
+
