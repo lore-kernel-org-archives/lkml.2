@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab2CWJ7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 05:59:09 -0400
-Received: from mta103.odn.ne.jp ([143.90.14.143]:47140 "EHLO cmta103.odn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753713Ab2CWJ7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 05:59:06 -0400
-Message-ID: <4F6C4967.80309@yahoo.co.jp>
-Date: Fri, 23 Mar 2012 18:59:03 +0900
-From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
-MIME-Version: 1.0
-To: Gwendal Grignou <gwendal@google.com>
-CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
- Sil3726
-References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com>
-In-Reply-To: <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1756399Ab2CWJ7o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 05:59:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35159 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab2CWJ7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 05:59:42 -0400
+Date: Fri, 23 Mar 2012 10:01:49 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Tai-hwa Liang <avatar@sentelic.com>
+Cc: Oskari Saarenmaa <os@ohmu.fi>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] Input: sentelic - enabling absolute coordinates
+ output for newer hardware
+Message-ID: <20120323100149.338deb94@pyramind.ukuu.org.uk>
+In-Reply-To: <1332474741-19426-3-git-send-email-avatar@sentelic.com>
+References: <1332474741-19426-1-git-send-email-avatar@sentelic.com>
+	<1332474741-19426-3-git-send-email-avatar@sentelic.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Gwendal,
+> On the other hand, the FSP found on UX21/31 doesn't have hardware capability
+> register other than PnP ID, which means that we'll have to figure out an
+> alternative approach to identify such pad correctly; otherwise, blindly
+> adding INPUT_PROP_BUTTONPAD property may compatability issues amongst
+> existing FSPs.
 
-(2012/03/23 17:31), Gwendal Grignou wrote:
->>>>> I notice however some messages I did not see before:
->>>>>>> [    4.856382] ata7.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->>>>>>> [    4.858742] ata7.00: hard resetting link
->>>>>>> [   14.843039] ata7.00: softreset failed (timeout)
->>>>>>> [   17.836402] ata7.15: qc timeout (cmd 0xe4)
->>>>> The later indicates that the PMP is stuck and the host can not read
->>>>> its internal register.
->>>>> Is it possible that the PMP in these 4 enclosures you are using have a
->>>>> different firmware than the other ones?
->>>>> Firmware 1.0114 is available at:
->>>>> http://www.siliconimage.com/support/searchresults.aspx?pid=26&cat=23
->>>>>
->>>>> From the release notes:
->>>>> """- Fix SRST and initial two RegFIS Problem."""
->>
->> I'm still fixing broken RAID. Sorry for my slow response.
+If its tied to specific boards then the DMI data from the BIOS may be
+what you need for that. It'll let you identify boards/vendors.
 
-I checked those firmware version. All of them use version 1.0114.
-
-Best Regards,
-Akira
+Alan
