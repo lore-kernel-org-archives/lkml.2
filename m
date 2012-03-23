@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab2CWOIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 10:08:15 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36760 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab2CWOIO (ORCPT
+	id S1755039Ab2CWORF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 10:17:05 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:45064 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab2CWORC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 10:08:14 -0400
-X-AuditID: b753bd60-99794ba000007b1b-24-4f6c83cb9d42
-X-AuditID: b753bd60-99794ba000007b1b-24-4f6c83cb9d42
-Message-ID: <4F6C83C1.9050704@hitachi.com>
-Date: Fri, 23 Mar 2012 23:08:01 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 23 Mar 2012 10:17:02 -0400
+Message-ID: <4F6C857A.3070307@linux.vnet.ibm.com>
+Date: Fri, 23 Mar 2012 09:15:22 -0500
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH 2/2] kgdb,debug_core,kgdbts: End DEBUG_RODATA limitation
- using kprobe breakpoints
-References: <1332352536-29186-1-git-send-email-jason.wessel@windriver.com> <1332352536-29186-3-git-send-email-jason.wessel@windriver.com> <4F6A9444.4050603@hitachi.com> <4F6B13BC.2070406@windriver.com>
-In-Reply-To: <4F6B13BC.2070406@windriver.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Dan Smith <danms@us.ibm.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] AutoNUMA alpha6
+References: <20120316182511.GJ24602@redhat.com> <87k42edenh.fsf@danplanet.com> <20120321021239.GQ24602@redhat.com> <87fwd2d2kp.fsf@danplanet.com> <20120321124937.GX24602@redhat.com> <87limtboet.fsf@danplanet.com> <20120321225242.GL24602@redhat.com>	<20120322001722.GQ24602@redhat.com> <873990buuy.fsf@danplanet.com>	<20120322142735.GE24602@redhat.com> <20120322184925.GT24602@redhat.com> <87limsa2hm.fsf@danplanet.com>
+In-Reply-To: <87limsa2hm.fsf@danplanet.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032314-1780-0000-0000-000004332CBF
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000263; HX=3.00000186; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00124524; UDB=6.00029794; UTC=2012-03-23
+ 14:16:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/22 20:57), Jason Wessel wrote:
-> On 03/21/2012 09:53 PM, Masami Hiramatsu wrote:
->> (2012/03/22 2:55), Jason Wessel wrote:
->>> There has long been a limitation using software breakpoints with a
->>> kernel compiled with CONFIG_DEBUG_RODATA.  The kprobe breakpoint code
->>> has its own text_poke() function which accommodates writing a
->>> breakpoint into a read-only page.  The debug_core can make use of the
->>> text_poke() capabilities by using the kprobes API, specifically
->>> arch_arm_kprobe() and arch_disarm_kprobe().  For now it is safe to use
->>> a single statically allocated kprobe structure to call the kprobes API
->>> because the debug_core breakpoint API is only used when the kernel is
->>> in the debug state.
->>
->> You might misunderstand it. arch_*_kprobe() are not open APIs.
->> Those are kprobes internal APIs (which means that those functions
->> should be used only by kprobes).
->>
+On 03/22/2012 01:56 PM, Dan Smith wrote:
+> AA>  but now it's time to go back coding and add THP native
+> AA>  migration. That will benefit everyone, from cpuset in userland to
+> AA>  numa/sched.
 >
+> I dunno about everyone else, but I think the thing I'd like to see most
+> (other than more interesting benchmarks)
+
+We are working on the "more interesting benchmarks", starting with KVM 
+workloads.  However, I must warn you all, more interesting = a lot more 
+time to run.  These are a lot more complex in that they have real I/O, 
+and they can be a lot more challenging because there are response time 
+requirements (so fairness is an absolute requirement).  We are getting a 
+baseline right now and re-running with our user-space VM-to-numa-node 
+placement program, which in the past achieved manual binding performance 
+or just slightly lower.  We can then compare to these two solutions.  If 
+there's something specific to collect (perhaps you have a lot of stats 
+or data in debugfs, etc) please let me know.
+
+-Andrew Theurer
+>   is a broken out and documented
+> set of patches instead of the monolithic commit you have now. I know you
+> weren't probably planning to do that until numasched came along, but it
+> sure would help me digest the differences in the two approaches.
 >
-> I was looking for an interface that solved the problem, without having
-> to use text_poke directly which is arch specific.  Eventually I would
-> like to use the kprobes high level API, but it cannot not be used
-> without taking a mutex presently.  This is a separate problem to deal
-> with at a later time, because the generic use of kprobes would be
-> aimed at having robust single stepping.
 
-I see.
-
->>> The debug_core will first attempt to use the traditional
->>> probe_kernel_write(), and next try using a kprobe breakpoint.  The
->>> kgdb test suite was updated to run all the software breakpoint tests
->>> when using a kernel with built with CONFIG_DEBUG_RODATA.
->>>
->>> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
->>
->> Nak.
->>
->> No, please don't use kprobes internal function this way, because
->> you can't ensure that the arch_arm_kprobe() has no side-effect.
->>
->> Why don't you use text_poke()? I see that the text_poke()
->> is only for x86, but you already have arch/x86/kernel/kgdb.c for
->> making your own wrapper function.
->
-> I will use the arch specific provision to override the
-> kgdb_arch_set_breakpoint() and use the text_poke() directly.
-
-Thanks! that's what I meant. You can use __weak attribute.
-
-> Eventually I would like to use the same software breakpoint
-> reservation system as kprobes, and that would happen if kgdb ever
-> starts using kprobes for single stepping.
-
-Yeah, as far as I can see, current kprobes design assumes that
-there is no other part uses sw breakpoint in kernel. But there
-is kgdb now.
-I think kprobes can share the sw breakpoint instrumentation and
-single stepping with kgdb.
-
-Thank you,
-
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
