@@ -1,183 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab2CWTqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 15:46:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55777 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755065Ab2CWTqf (ORCPT
+	id S1756504Ab2CWTsd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 15:48:33 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:49442 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754325Ab2CWTsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 15:46:35 -0400
-Date: Fri, 23 Mar 2012 12:46:25 -0700
-From: tip-bot for Alexander Gordeev <agordeev@redhat.com>
-Message-ID: <tip-4da7072ad6831a35a11341097ce477e18651bedd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <20120320141935.GA24806@dhcp-26-207.brq.redhat.com>
-References: <20120320141935.GA24806@dhcp-26-207.brq.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/io_apic:
-  Move and reenable irq only when CONFIG_GENERIC_PENDING_IRQ=y
-Git-Commit-ID: 4da7072ad6831a35a11341097ce477e18651bedd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 23 Mar 2012 15:48:32 -0400
+Message-ID: <4F6CD38B.1010602@xenotime.net>
+Date: Fri, 23 Mar 2012 12:48:27 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig: Update defconfigs
+References: <tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org>
+In-Reply-To: <tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Mar 2012 12:46:30 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4da7072ad6831a35a11341097ce477e18651bedd
-Gitweb:     http://git.kernel.org/tip/4da7072ad6831a35a11341097ce477e18651bedd
-Author:     Alexander Gordeev <agordeev@redhat.com>
-AuthorDate: Tue, 20 Mar 2012 15:19:36 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 23 Mar 2012 13:47:25 +0100
+On 03/23/2012 12:43 PM, tip-bot for Ingo Molnar wrote:
 
-x86/io_apic: Move and reenable irq only when CONFIG_GENERIC_PENDING_IRQ=y
+> Commit-ID:  280fb016bfb098f33df96016cfaa840db77ba2d0
+> Gitweb:     http://git.kernel.org/tip/280fb016bfb098f33df96016cfaa840db77ba2d0
+> Author:     Ingo Molnar <mingo@kernel.org>
+> AuthorDate: Fri, 23 Mar 2012 13:12:38 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Fri, 23 Mar 2012 13:14:53 +0100
+> 
+> x86/kconfig: Update defconfigs
+> 
+> Link: http://lkml.kernel.org/n/tip-ahz3d8i1vxwj0379gv4tqcru@git.kernel.org
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/configs/i386_defconfig   |   65 ++++++++++++-----------------------
+>  arch/x86/configs/x86_64_defconfig |   68 +++++++++++++------------------------
+>  2 files changed, 47 insertions(+), 86 deletions(-)
+> 
+> diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+> index 2bf18059f..2d56282 100644
+> --- a/arch/x86/configs/i386_defconfig
+> +++ b/arch/x86/configs/i386_defconfig
+> -CONFIG_TR=y
+> +CONFIG_TR=y
 
-This patch removes dead code from certain .config variations.
 
-When CONFIG_GENERIC_PENDING_IRQ=n irq move and reenable code is
-never get executed, nor do_unmask_irq variable updates its init
-value. Move the code under CONFIG_GENERIC_PENDING_IRQ macro.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/20120320141935.GA24806@dhcp-26-207.brq.redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/io_apic.c |  101 ++++++++++++++++++++++++----------------
- 1 files changed, 61 insertions(+), 40 deletions(-)
+> diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+> index 058a35b..3cf137a 100644
+> --- a/arch/x86/configs/x86_64_defconfig
+> +++ b/arch/x86/configs/x86_64_defconfig
+> -CONFIG_TR=y
+> +CONFIG_TR=y
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6d10a66..2c428c5 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2512,21 +2512,73 @@ static void ack_apic_edge(struct irq_data *data)
- 
- atomic_t irq_mis_count;
- 
--static void ack_apic_level(struct irq_data *data)
--{
--	struct irq_cfg *cfg = data->chip_data;
--	int i, do_unmask_irq = 0, irq = data->irq;
--	unsigned long v;
--
--	irq_complete_move(cfg);
- #ifdef CONFIG_GENERIC_PENDING_IRQ
-+static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
-+{
- 	/* If we are moving the irq we need to mask it */
- 	if (unlikely(irqd_is_setaffinity_pending(data))) {
--		do_unmask_irq = 1;
- 		mask_ioapic(cfg);
-+		return true;
- 	}
-+	return false;
-+}
-+
-+static inline void ioapic_irqd_unmask(struct irq_data *data,
-+				      struct irq_cfg *cfg, bool masked)
-+{
-+	if (unlikely(masked)) {
-+		/* Only migrate the irq if the ack has been received.
-+		 *
-+		 * On rare occasions the broadcast level triggered ack gets
-+		 * delayed going to ioapics, and if we reprogram the
-+		 * vector while Remote IRR is still set the irq will never
-+		 * fire again.
-+		 *
-+		 * To prevent this scenario we read the Remote IRR bit
-+		 * of the ioapic.  This has two effects.
-+		 * - On any sane system the read of the ioapic will
-+		 *   flush writes (and acks) going to the ioapic from
-+		 *   this cpu.
-+		 * - We get to see if the ACK has actually been delivered.
-+		 *
-+		 * Based on failed experiments of reprogramming the
-+		 * ioapic entry from outside of irq context starting
-+		 * with masking the ioapic entry and then polling until
-+		 * Remote IRR was clear before reprogramming the
-+		 * ioapic I don't trust the Remote IRR bit to be
-+		 * completey accurate.
-+		 *
-+		 * However there appears to be no other way to plug
-+		 * this race, so if the Remote IRR bit is not
-+		 * accurate and is causing problems then it is a hardware bug
-+		 * and you can go talk to the chipset vendor about it.
-+		 */
-+		if (!io_apic_level_ack_pending(cfg))
-+			irq_move_masked_irq(data);
-+		unmask_ioapic(cfg);
-+	}
-+}
-+#else
-+static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
-+{
-+	return false;
-+}
-+static inline void ioapic_irqd_unmask(struct irq_data *data,
-+				      struct irq_cfg *cfg, bool masked)
-+{
-+}
- #endif
- 
-+static void ack_apic_level(struct irq_data *data)
-+{
-+	struct irq_cfg *cfg = data->chip_data;
-+	int i, irq = data->irq;
-+	unsigned long v;
-+	bool masked;
-+
-+	irq_complete_move(cfg);
-+	masked = ioapic_irqd_mask(data, cfg);
-+
- 	/*
- 	 * It appears there is an erratum which affects at least version 0x11
- 	 * of I/O APIC (that's the 82093AA and cores integrated into various
-@@ -2581,38 +2633,7 @@ static void ack_apic_level(struct irq_data *data)
- 		eoi_ioapic_irq(irq, cfg);
- 	}
- 
--	/* Now we can move and renable the irq */
--	if (unlikely(do_unmask_irq)) {
--		/* Only migrate the irq if the ack has been received.
--		 *
--		 * On rare occasions the broadcast level triggered ack gets
--		 * delayed going to ioapics, and if we reprogram the
--		 * vector while Remote IRR is still set the irq will never
--		 * fire again.
--		 *
--		 * To prevent this scenario we read the Remote IRR bit
--		 * of the ioapic.  This has two effects.
--		 * - On any sane system the read of the ioapic will
--		 *   flush writes (and acks) going to the ioapic from
--		 *   this cpu.
--		 * - We get to see if the ACK has actually been delivered.
--		 *
--		 * Based on failed experiments of reprogramming the
--		 * ioapic entry from outside of irq context starting
--		 * with masking the ioapic entry and then polling until
--		 * Remote IRR was clear before reprogramming the
--		 * ioapic I don't trust the Remote IRR bit to be
--		 * completey accurate.
--		 *
--		 * However there appears to be no other way to plug
--		 * this race, so if the Remote IRR bit is not
--		 * accurate and is causing problems then it is a hardware bug
--		 * and you can go talk to the chipset vendor about it.
--		 */
--		if (!io_apic_level_ack_pending(cfg))
--			irq_move_masked_irq(data);
--		unmask_ioapic(cfg);
--	}
-+	ioapic_irqd_unmask(data, cfg, masked);
- }
- 
- #ifdef CONFIG_IRQ_REMAP
+
+Hmph.  On 2009-oct-20, I sent a patch to disable CONFIG_TR
+from these defconfigs.  I still think that should be done.
+
+-- 
+~Randy
