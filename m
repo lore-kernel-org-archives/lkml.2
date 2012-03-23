@@ -1,98 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2CWNiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 09:38:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36596 "EHLO mga11.intel.com"
+	id S1753504Ab2CWNmW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 09:42:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45418 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab2CWNh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 09:37:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="132404755"
-Message-ID: <1332510021.18717.65.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBIFS changes for v3.4-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
-Date: Fri, 23 Mar 2012 15:40:21 +0200
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-fZxxZobLAgTud4SoK1xf"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1751378Ab2CWNmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 09:42:19 -0400
+Date: Fri, 23 Mar 2012 14:34:04 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC 4/4] {RFC} kmod.c: Add new call_usermodehelper_timeout()
+	API
+Message-ID: <20120323133404.GA9095@redhat.com>
+References: <4F691059.30405@panasas.com> <4F691383.5040506@panasas.com> <4F6A92FC.6060702@panasas.com> <20120322142758.GA12370@redhat.com> <4F6B789C.8020201@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6B789C.8020201@panasas.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22, Boaz Harrosh wrote:
+>
+> On 03/22/2012 07:27 AM, Oleg Nesterov wrote:
+> >>
+> >>     usermodehelper: implement UMH_KILLABLE
+> >>
+> >>     Implement UMH_KILLABLE, should be used along with UMH_WAIT_EXEC/PROC.  The
+> >>     caller must ensure that subprocess_info->path/etc can not go away until
+> >>     call_usermodehelper_freeinfo().
+> >> ...
+> >>
+> >> I think that my patch above does a much better/cleaner lifetime management of the
+> >> subprocess_info struct, with the use of a kref.
+> >
+> > This is subjective, you know ;) I specially tried to avoid the
+> > refcounting.
+> >
+>
+> Why?
+>
+> The all kref_ abstraction comes to a simple atomic_inc/dec.
 
---=-fZxxZobLAgTud4SoK1xf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Again, this is subjective, but kref_ looks like the unnecessary
+complication to me. But I won't insist, see below.
 
-Hi Linus,
+> > In any case. I do not know why do we need timeout, but this is
+> > orthogonal to KILLABLE. Please redo your patches on top of -mm
+> > tree? Please note that in this case the change becomes trivial.
+> >
+>
+> Yes you are right.
 
-The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95=
-:
+OK, good.
 
-  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+> > Hmm. For example, exit_mm() does xchg().
+> >
+>
+> Again, Personally I like xchg, but not here, not for an object
+> life-time management. Two threads share a structure, that needs
+> to go when the last one ends.
 
-are available in the git repository at:
+And xchg(info->complete) implements the simplest counter,
+xchg() == NULL is equivalent to atomic_dec_and_test() == T.
 
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.4-rc1
+But again, again, I won't argue if you send the patch which uses
+kref_ instead. I do not maintain this code and I do not really mind.
+And I never pretended my taste is good ;)
 
-for you to fetch changes up to 5a1f36c90c9b21a7aa31c29a1926b376dd6a11cf:
+My point is, this is completely orthogonal to "add the timeout",
+and if you want to change the refcounting I'd suggest a separate
+patch.
 
-  UBIFS: improve error messages (2012-03-07 17:13:23 +0200)
+What we need is wait_for_completion_state_timeout() to avoid
+the horror like
 
-----------------------------------------------------------------
-- Improve error messages
-- Clean-up i_nlink management
-- Minor clean-ups
+	if (UMH_KILLABLE && !timeout)
+		wait_for_completion_killable(...);
+	else if (UMH_KILLABLE && timeout)
+		wait_for_completion_killable_timeout(...);
+	else if (!UMH_KILLABLE && !timeout)
+		...
 
-----------------------------------------------------------------
-Artem Bityutskiy (6):
-      UBIFS: amend recovery debugging message
-      UBIFS: increase dumps loglevel
-      UBIFS: make the dbg_lock spinlock static
-      UBIFS: do not use inc_link when i_nlink is zero
-      UBIFS: kill CUR_MAX_KEY_LEN macro
-      UBIFS: improve error messages
+IOW, I think we need to export wait_for_common() first.
 
- fs/ubifs/debug.c    |  410 +++++++++++++++++++++++++----------------------=
----
- fs/ubifs/debug.h    |    3 -
- fs/ubifs/dir.c      |   18 +-
- fs/ubifs/recovery.c |    3 +-
- fs/ubifs/sb.c       |   19 ++-
- fs/ubifs/ubifs.h    |   11 +-
- 6 files changed, 234 insertions(+), 230 deletions(-)
+This is the only complication afaics. After that "add the timeout"
+becomes almost one-liner, with or without "switch to kref_".
 
---=20
-Best Regards,
-Artem Bityutskiy
 
---=-fZxxZobLAgTud4SoK1xf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> Is there an mm git tree?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+No, afaik
 
-iQIcBAABAgAGBQJPbH1FAAoJECmIfjd9wqK0rEcQAIPT4IYi2/+1nd0qW0rcoIZA
-5nN8xAUUUtPJ2khzM/V6TyNrOerfwJL2Lz5MeUVmbnKGlG/BtblP7NYNgHEKlio5
-lcsSk/01j4HOBPBNY4uo+L23uwgTSp6TkdHV1TSvECOV7o3AojWZGAWuihlgnsXO
-1ow0EU05ssRc8ldgl0iCN7H6CdWa3B0Jopjf5IIzlHk8AFhUOYq0jGfAUWknNyq+
-Nne/b9CoRscjIN/k1YXPlxwemUnOZ85LRHTXD5JMGrSLWkdx/L6P7fq5QlPu48qE
-V+K7IdfP0aVCjA5YcUIE7vS5vAzoa2MWc/WjL1hSH/vpa4zJ14YLvL0ZPtRwCnyz
-41n8YyDcV2M9cC9ytWXG6+IOtOs3xdH36dNxfzcax0xj0KevYqds/9PYCAV3WPJb
-eFm60dy2y94VvtrJtw+Sr9zH27uFyC32kHzReR7FwbukV917+8I3TTqoUjHnCuZR
-PoL15sMbsesHZ0Bb1zlDFsZNxlljmBwniuHzjRfEN7M34BNeuSju1/eWRIgqEW5D
-jYGf4dU1Ll7oT60Z8NzbG3MxqpBHAqneeNhJ59mlm6C2gi54f2q5jhsXx4Nb8Oer
-VfR66uKW2Tzc0RcUWwDA4UNFSn3IM5jXTRoBKc0n3ySac9ljNa/dlwvfKfSm8pxi
-gJV2u4r09ZuskG3wovyA
-=nTo9
------END PGP SIGNATURE-----
+> random linux-next/master point. Which should do the job.
 
---=-fZxxZobLAgTud4SoK1xf--
+Yes, I think this should work.
+
+Oleg.
 
