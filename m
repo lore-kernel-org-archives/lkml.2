@@ -1,130 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab2CWCop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Mar 2012 22:44:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33489 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab2CWCon convert rfc822-to-8bit (ORCPT
+	id S1756871Ab2CWCuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Mar 2012 22:50:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60416 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab2CWCuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Mar 2012 22:44:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMfrEMYUWG39Z-y8sU+7eDdePQWg9U5kow_ipZANwD-s=BOh_A@mail.gmail.com>
-References: <CAMfrEMaV03CEZ-h7k9K78c8+T+AC47=QypnyhQG7LFgrQQ32tA@mail.gmail.com>
-	<4F6AAC57.3090507@gmail.com>
-	<CAMfrEMbUsdnQ3Roe89YaV5F2xhTwbgRhWcM9E1jizqUEbCi=QQ@mail.gmail.com>
-	<CADLC3L29fiago4Nkxbb3Ey8iS3GGp_G_NP77esdAqQVYHFLBLw@mail.gmail.com>
-	<CAMfrEMYUWG39Z-y8sU+7eDdePQWg9U5kow_ipZANwD-s=BOh_A@mail.gmail.com>
-Date: Thu, 22 Mar 2012 21:44:42 -0500
-Message-ID: <CAMfrEMZ27UWKTASUFaEG1KLysRgAukVruOx2Q-s-FXzOQJe_zA@mail.gmail.com>
-Subject: Re: IDE DVD and CD drive seem to not work with Linux desktop 3.3.0-030300-generic
-From: Chris Holland <bandidoirlandes@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: linux-kernel@vger.kernel.org, bandidoirlandes@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Mar 2012 22:50:03 -0400
+Message-ID: <1332470994.13074.2.camel@phoenix>
+Subject: [PATCH 1/2] regulator: Convert lp3971 to set_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 23 Mar 2012 10:49:54 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 9:30 PM, Chris Holland
-<bandidoirlandes@gmail.com> wrote:
-> On Thu, Mar 22, 2012 at 9:15 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> On Wed, Mar 21, 2012 at 11:44 PM, Chris Holland
->> <bandidoirlandes@gmail.com> wrote:
->>>
->>> On Wed, Mar 21, 2012 at 11:36 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
->>> > On 03/21/2012 10:29 PM, Chris Holland wrote:
->>> >>
->>> >> Please cc me at: bandidoirlandes@gmail.com
->>> >>
->>> >> My optical drives are not working with 3.3 but they worked fine with
->>> >> 3.3rc7
->>> >> These are the kernels from http://kernel.ubuntu.com/~kernel-ppa/mainline/
->>> >> Ubuntu 11.10
->>> >>
->>> >> Not working
->>> >> Linux desktop 3.3.0-030300-generic #201203182135 SMP Mon Mar 19
->>> >> 01:36:20 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
->>> >> cat /var/log/dmesg | egrep '(CD|DVD)'
->>> >> [    0.000000]   CD000-EFFFF uncachable
->>> >>
->>> >> Working
->>> >> Linux desktop 3.3.0-030300rc7-generic #201203101735 SMP Sat Mar 10
->>> >> 22:36:28 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
->>> >> cat /var/log/dmesg | egrep '(CD|DVD)'
->>> >> [    0.000000]   CD000-EFFFF uncachable
->>> >> [    0.092676] ACPI Warning: Incorrect checksum in table [TAMG] -
->>> >> 0xCD, should be 0xCC (20120111/tbutils-321)
->>> >> [    6.324511] ata9.01: ATAPI: LITE-ON DVDRW SHW-160P6S, PS0A, max UDMA/66
->>> >> [    6.397218] scsi 8:0:0:0: CD-ROM            LITE-ON  LTR-48246S
->>> >>   SS0B PQ: 0 ANSI: 5
->>> >> [    6.419770] cdrom: Uniform CD-ROM driver Revision: 3.20
->>> >> [    6.419898] sr 8:0:0:0: Attached scsi CD-ROM sr0
->>> >> [    6.427088] scsi 8:0:1:0: CD-ROM            LITE-ON  DVDRW
->>> >> SHW-160P6S PS0A PQ: 0 ANSI: 5
->>> >> [    6.429600] sr 8:0:1:0: Attached scsi CD-ROM sr1
->>> >>
->>> >> I tried to do a git bisect but I dont know what I am doing. Might just
->>> >> be my computer acting up.
->>> >
->>> >
->>> > Can you post the full dmesg output from the non-working kernel?
->>
->>> [    3.231464] pata_jmicron 0000:03:00.1: setting latency timer to 64
->>> [    3.255549] scsi8 : pata_jmicron
->>> [    3.260534] scsi9 : pata_jmicron
->>> [    3.260933] ata9: PATA max UDMA/100 cmd 0xef00 ctl 0xee00 bmdma 0xeb00 irq 16
->>> [    3.260936] ata10: PATA max UDMA/100 cmd 0xed00 ctl 0xec00 bmdma
->>> 0xeb08 irq 16
->>
->> Hmm, seems like nothing detected on that port at all. Do you have some
->> output from a working boot?
->
-> Working dmesg http://pastebin.com/jDaMhWXc
->
-> This is a issue that others are having it seems.
-> https://bugs.archlinux.org/task/29030
-> https://bugs.archlinux.org/task/29045
->
->
-> I did some work with git bisect but i dont know what i am doing though
-> so this might not be the actual issue
-> last build is going with 4949be16822e92a18ea0cc1616319926628092ee is
-> the first bad commit removed.
-> Waiting to see if it works.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/lp3971.c |   58 +++++++++++--------------------------------
+ 1 files changed, 15 insertions(+), 43 deletions(-)
 
-The only thing I saw different between the dmesg output was from the 3.3rc7
-[    5.937329] pata_jmicron 0000:03:00.1: setting latency timer to 64
-[    5.946289] scsi8 : pata_jmicron.
-[    5.970116] scsi9 : pata_jmicron
-[    5.970501] ata9: PATA max UDMA/100 cmd 0xef00 ctl 0xee00 bmdma 0xeb00 irq 16
-[    5.970503] ata10: PATA max UDMA/100 cmd 0xed00 ctl 0xec00 bmdma
-0xeb08 irq 16
+diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+index 0cfabd3..49bcdb0 100644
+--- a/drivers/regulator/lp3971.c
++++ b/drivers/regulator/lp3971.c
+@@ -124,6 +124,10 @@ static const int *ldo_voltage_map[] = {
+ static int lp3971_ldo_list_voltage(struct regulator_dev *dev, unsigned index)
+ {
+ 	int ldo = rdev_get_id(dev) - LP3971_LDO1;
++
++	if (index > LDO_VOL_MAX_IDX)
++		return -EINVAL;
++
+ 	return 1000 * LDO_VOL_VALUE_MAP(ldo)[index];
+ }
+ 
+@@ -168,32 +172,15 @@ static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
+ 	return 1000 * LDO_VOL_VALUE_MAP(ldo)[val];
+ }
+ 
+-static int lp3971_ldo_set_voltage(struct regulator_dev *dev,
+-				  int min_uV, int max_uV,
+-				  unsigned int *selector)
++static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
++				      unsigned int selector)
+ {
+ 	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+ 	int ldo = rdev_get_id(dev) - LP3971_LDO1;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+-	const int *vol_map = LDO_VOL_VALUE_MAP(ldo);
+-	u16 val;
+-
+-	if (min_vol < vol_map[LDO_VOL_MIN_IDX] ||
+-	    min_vol > vol_map[LDO_VOL_MAX_IDX])
+-		return -EINVAL;
+-
+-	for (val = LDO_VOL_MIN_IDX; val <= LDO_VOL_MAX_IDX; val++)
+-		if (vol_map[val] >= min_vol)
+-			break;
+-
+-	if (val > LDO_VOL_MAX_IDX || vol_map[val] > max_vol)
+-		return -EINVAL;
+-
+-	*selector = val;
+ 
+ 	return lp3971_set_bits(lp3971, LP3971_LDO_VOL_CONTR_REG(ldo),
+ 			LDO_VOL_CONTR_MASK << LDO_VOL_CONTR_SHIFT(ldo),
+-			val << LDO_VOL_CONTR_SHIFT(ldo));
++			selector << LDO_VOL_CONTR_SHIFT(ldo));
+ }
+ 
+ static struct regulator_ops lp3971_ldo_ops = {
+@@ -202,11 +189,14 @@ static struct regulator_ops lp3971_ldo_ops = {
+ 	.enable = lp3971_ldo_enable,
+ 	.disable = lp3971_ldo_disable,
+ 	.get_voltage = lp3971_ldo_get_voltage,
+-	.set_voltage = lp3971_ldo_set_voltage,
++	.set_voltage_sel = lp3971_ldo_set_voltage_sel,
+ };
+ 
+ static int lp3971_dcdc_list_voltage(struct regulator_dev *dev, unsigned index)
+ {
++	if (index < BUCK_TARGET_VOL_MIN_IDX || index > BUCK_TARGET_VOL_MAX_IDX)
++		return -EINVAL;
++
+ 	return 1000 * buck_voltage_map[index];
+ }
+ 
+@@ -259,33 +249,15 @@ static int lp3971_dcdc_get_voltage(struct regulator_dev *dev)
+ 	return val;
+ }
+ 
+-static int lp3971_dcdc_set_voltage(struct regulator_dev *dev,
+-				   int min_uV, int max_uV,
+-				   unsigned int *selector)
++static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
++				       unsigned int selector)
+ {
+ 	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+ 	int buck = rdev_get_id(dev) - LP3971_DCDC1;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+-	const int *vol_map = buck_voltage_map;
+-	u16 val;
+ 	int ret;
+ 
+-	if (min_vol < vol_map[BUCK_TARGET_VOL_MIN_IDX] ||
+-	    min_vol > vol_map[BUCK_TARGET_VOL_MAX_IDX])
+-		return -EINVAL;
+-
+-	for (val = BUCK_TARGET_VOL_MIN_IDX; val <= BUCK_TARGET_VOL_MAX_IDX;
+-	     val++)
+-		if (vol_map[val] >= min_vol)
+-			break;
+-
+-	if (val > BUCK_TARGET_VOL_MAX_IDX || vol_map[val] > max_vol)
+-		return -EINVAL;
+-
+-	*selector = val;
+-
+ 	ret = lp3971_set_bits(lp3971, LP3971_BUCK_TARGET_VOL1_REG(buck),
+-	       BUCK_TARGET_VOL_MASK, val);
++	       BUCK_TARGET_VOL_MASK, selector);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -306,7 +278,7 @@ static struct regulator_ops lp3971_dcdc_ops = {
+ 	.enable = lp3971_dcdc_enable,
+ 	.disable = lp3971_dcdc_disable,
+ 	.get_voltage = lp3971_dcdc_get_voltage,
+-	.set_voltage = lp3971_dcdc_set_voltage,
++	.set_voltage_sel = lp3971_dcdc_set_voltage_sel,
+ };
+ 
+ static struct regulator_desc regulators[] = {
+-- 
+1.7.5.4
 
-then you get
-[    6.324507] ata9.00: ATAPI: LITE-ON LTR-48246S, SS0B, max UDMA/33
-[    6.324511] ata9.01: ATAPI: LITE-ON DVDRW SHW-160P6S, PS0A, max UDMA/66
-[    6.340507] ata9.00: configured for UDMA/33
-[    6.372507] ata9.01: configured for UDMA/66
-[    6.397218] scsi 8:0:0:0: CD-ROM            LITE-ON  LTR-48246S
-  SS0B PQ: 0 ANSI: 5
-[    6.419767] sr0: scsi3-mmc drive: 42x/48x writer cd/rw xa/form2 cdda tray
-[    6.419770] cdrom: Uniform CD-ROM driver Revision: 3.20
-[    6.419898] sr 8:0:0:0: Attached scsi CD-ROM sr0
-[    6.419957] sr 8:0:0:0: Attached scsi generic sg4 type 5
-[    6.427088] scsi 8:0:1:0: CD-ROM            LITE-ON  DVDRW
-SHW-160P6S PS0A PQ: 0 ANSI: 5
-[    6.429493] sr1: scsi3-mmc drive: 48x/48x writer cd/rw xa/form2 cdda tray
-[    6.429600] sr 8:0:1:0: Attached scsi CD-ROM sr1
-[    6.429658] sr 8:0:1:0: Attached scsi generic sg5 type 5
 
 
-On 3.3 I only get
-[    3.231464] pata_jmicron 0000:03:00.1: setting latency timer to 64
-[    3.255549] scsi8 : pata_jmicron
-[    3.260534] scsi9 : pata_jmicron
-[    3.260933] ata9: PATA max UDMA/100 cmd 0xef00 ctl 0xee00 bmdma 0xeb00 irq 16
-[    3.260936] ata10: PATA max UDMA/100 cmd 0xed00 ctl 0xec00 bmdma
-0xeb08 irq 16
-
-Or thats how it looks to me
