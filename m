@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab2CXH5I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 03:57:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60539 "EHLO
+	id S1755168Ab2CXH5w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 03:57:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60546 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab2CXH5F (ORCPT
+	with ESMTP id S1753044Ab2CXH5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 03:57:05 -0400
-Date: Sat, 24 Mar 2012 00:56:53 -0700
-From: tip-bot for Hugh Dickins <hughd@google.com>
-Message-ID: <tip-65c0ff4079c011232e795e62c74a0a95512b7ac3@git.kernel.org>
+	Sat, 24 Mar 2012 03:57:51 -0400
+Date: Sat, 24 Mar 2012 00:57:41 -0700
+From: tip-bot for Randy Dunlap <rdunlap@xenotime.net>
+Message-ID: <tip-f5243d6de7ae232e1d81e44ae9756bbd8c988fcd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        hughd@google.com, namhyung@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
+        rdunlap@xenotime.net, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        hughd@google.com, namhyung@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <20120323225648.15DD5A033B@akpm.mtv.corp.google.com>
-References: <20120323225648.15DD5A033B@akpm.mtv.corp.google.com>
+        tglx@linutronix.de, rdunlap@xenotime.net
+In-Reply-To: <4F6D05CA.2050801@xenotime.net>
+References: <4F6D05CA.2050801@xenotime.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Stop recursive fault in print_context_stack after stack overflow
-Git-Commit-ID: 65c0ff4079c011232e795e62c74a0a95512b7ac3
+Subject: [tip:x86/urgent] x86/kconfig: Remove CONFIG_TR=
+ y from the defconfigs
+Git-Commit-ID: f5243d6de7ae232e1d81e44ae9756bbd8c988fcd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,63 +28,56 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 24 Mar 2012 00:56:58 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 24 Mar 2012 00:57:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  65c0ff4079c011232e795e62c74a0a95512b7ac3
-Gitweb:     http://git.kernel.org/tip/65c0ff4079c011232e795e62c74a0a95512b7ac3
-Author:     Hugh Dickins <hughd@google.com>
-AuthorDate: Fri, 23 Mar 2012 14:02:55 -0700
+Commit-ID:  f5243d6de7ae232e1d81e44ae9756bbd8c988fcd
+Gitweb:     http://git.kernel.org/tip/f5243d6de7ae232e1d81e44ae9756bbd8c988fcd
+Author:     Randy Dunlap <rdunlap@xenotime.net>
+AuthorDate: Fri, 23 Mar 2012 16:22:50 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 24 Mar 2012 08:15:04 +0100
+CommitDate: Sat, 24 Mar 2012 08:18:03 +0100
 
-x86: Stop recursive fault in print_context_stack after stack overflow
+x86/kconfig: Remove CONFIG_TR=y from the defconfigs
 
-After printing out the first line of a stack backtrace,
-print_context_stack() calls print_ftrace_graph_addr() to check
-if it's making a graph of function calls, usually not the case.
+Remove CONFIG_TR=y from the x86 defconfigs since
+token ring support is antiquated and obsolete.
 
-But unfortunate ordering of assignments causes this to oops if
-an earlier stack overflow corrupted threadinfo->task.  Reorder
-to avoid that irritation.
+( I reviewed both x86 defconfigs - I didn't come up with
+  anything else that obviously should be removed. )
 
-( The fact that there was a stack overflow may often be more
-  interesting than the stack that can now be shown; but
-  integrating that information with this stacktrace is awkward,
-  so leave it to overflow reporting. )
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20120323225648.15DD5A033B@akpm.mtv.corp.google.com
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Link: http://lkml.kernel.org/r/4F6D05CA.2050801@xenotime.net
+[ Twiddled the changelog a bit ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/dumpstack.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/configs/i386_defconfig   |    1 -
+ arch/x86/configs/x86_64_defconfig |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 4025fe4..90bf130 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -37,13 +37,16 @@ print_ftrace_graph_addr(unsigned long addr, void *data,
- 			const struct stacktrace_ops *ops,
- 			struct thread_info *tinfo, int *graph)
- {
--	struct task_struct *task = tinfo->task;
-+	struct task_struct *task;
- 	unsigned long ret_addr;
--	int index = task->curr_ret_stack;
-+	int index;
- 
- 	if (addr != (unsigned long)return_to_handler)
- 		return;
- 
-+	task = tinfo->task;
-+	index = task->curr_ret_stack;
-+
- 	if (!task->ret_stack || index < *graph)
- 		return;
- 
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index 2d56282..119db67 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -183,7 +183,6 @@ CONFIG_8139TOO=y
+ # CONFIG_8139TOO_PIO is not set
+ CONFIG_R8169=y
+ CONFIG_FDDI=y
+-CONFIG_TR=y
+ CONFIG_INPUT_POLLDEV=y
+ # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+ CONFIG_INPUT_EVDEV=y
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index 3cf137a..76eb290 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
+@@ -176,7 +176,6 @@ CONFIG_SKY2=y
+ CONFIG_FORCEDETH=y
+ CONFIG_8139TOO=y
+ CONFIG_FDDI=y
+-CONFIG_TR=y
+ CONFIG_INPUT_POLLDEV=y
+ # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+ CONFIG_INPUT_EVDEV=y
