@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2CXUVf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 16:21:35 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:51355 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2CXUVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 16:21:34 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 24 Mar 2012 21:21:25 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: On patch "device.h: audit and cleanup users in main include dir"
-Message-ID: <20120324212125.460c89d3@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754397Ab2CXVbf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 17:31:35 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55601 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab2CXVbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 17:31:18 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, mmarek@suse.cz
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH] scripts/coccinelle: semantic patch for ptr_err
+Date: Sat, 24 Mar 2012 22:31:10 +0100
+Message-Id: <1332624670-23679-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-commit 313162d0b83836e2f57e51b9b8650fb4b9c396ea is not 100.00% correct.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -2,7 +2,6 @@
- #define _LINUX_FIREWIRE_H
- 
- #include <linux/completion.h>
--#include <linux/device.h>
- #include <linux/dma-mapping.h>
- #include <linux/kernel.h>
- #include <linux/kref.h>
-@@ -68,6 +67,8 @@
- #define CSR_MODEL              0x17
- #define CSR_DIRECTORY_ID       0x20
- 
-+struct device;
+---
+ scripts/coccinelle/api/ptr_ret.cocci |   70 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+
+diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
+new file mode 100644
+index 0000000..085120f
+--- /dev/null
++++ b/scripts/coccinelle/api/ptr_ret.cocci
+@@ -0,0 +1,70 @@
++///
++/// Use PTR_RET rather than if(IS_ERR(...)) + PTR_ERR
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Options: -no_includes -include_headers
++//
++// Keywords: ERR_PTR, PTR_ERR, PTR_RET
++// Version min: 2.6.39
++//
 +
- struct fw_csr_iterator {
-        const u32 *p;
-        const u32 *end;
++virtual context
++virtual patch
++virtual org
++virtual report
++
++@depends on patch@
++expression ptr;
++@@
++
++- if (IS_ERR(ptr)) return PTR_ERR(ptr); else return 0;
+++ return PTR_RET(ptr);
++
++@depends on patch@
++expression ptr;
++@@
++
++- if (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
+++ return PTR_RET(ptr);
++
++@r1 depends on !patch@
++expression ptr;
++position p1;
++@@
++
++* if@p1 (IS_ERR(ptr)) return PTR_ERR(ptr); else return 0;
++
++@r2 depends on !patch@
++expression ptr;
++position p2;
++@@
++
++* if@p2 (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
++
++@script:python depends on org@
++p << r1.p1;
++@@
++
++coccilib.org.print_todo(p[0], "WARNING: PTR_ERR can be used")
++
++
++@script:python depends on org@
++p << r2.p2;
++@@
++
++coccilib.org.print_todo(p[0], "WARNING: PTR_ERR can be used")
++
++@script:python depends on report@
++p << r1.p1;
++@@
++
++coccilib.report.print_report(p[0], "WARNING: PTR_ERR can be used")
++
++@script:python depends on report@
++p << r2.p2;
++@@
++
++coccilib.report.print_report(p[0], "WARNING: PTR_ERR can be used")
 
-But struct fw_device and struct fw_unit, defined in include/firewire.h,
-incorporate struct device.
-
-Furthermore, the inline function definitions
-    fw_device,
-    fw_unit,
-    fw_unit_get,
-    fw_unit_put,
-    fw_parent_device
-all require definitions from linux/device.h.
--- 
-Stefan Richter
--=====-===-- --== ==---
-http://arcgraph.de/sr/
