@@ -1,255 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab2CXGRL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 02:17:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35909 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab2CXGRJ (ORCPT
+	id S1753084Ab2CXGVR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 02:21:17 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49457 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab2CXGVP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 02:17:09 -0400
-Date: Sat, 24 Mar 2012 10:17:04 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: akpm@linux-foundation.org, xemul@parallels.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] prctl.2: Add PR_SET_MM option description
-Message-ID: <20120324061704.GA4324@moon>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
- <1331326042-32558-2-git-send-email-gorcunov@openvz.org>
- <CAKgNAkgJm01K9+GhnouxUwOUW3gk+YiuHLfofrs7adWzEqqO8Q@mail.gmail.com>
- <20120320222424.GL14269@moon>
- <CAKgNAkghWdju=o1prxw8dXEVjf95a+jLpe+3oKeHRWN1UK_cKg@mail.gmail.com>
+	Sat, 24 Mar 2012 02:21:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkghWdju=o1prxw8dXEVjf95a+jLpe+3oKeHRWN1UK_cKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m1iphuu9pd.fsf_-_@fess.ebiederm.org>
+References: <20120313005855.GA24639@redhat.com> <CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
+ <20120318192755.GB6589@ZenIV.linux.org.uk> <CAMOw1v4qa_AxJgc+qAsY6M=K--2JDvO-+CNj8OwKuE7piRViGw@mail.gmail.com>
+ <m1vclw1fx8.fsf@fess.ebiederm.org> <CAMOw1v4gszzV7F3z1m+RWEe9UDgR2Jrp9wX_w9z_1UkXT=FL5Q@mail.gmail.com>
+ <m1iphuu9pd.fsf_-_@fess.ebiederm.org>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Sat, 24 Mar 2012 03:20:53 -0300
+Message-ID: <CAMOw1v65TePmMOxzGsnW4xv1ge1RDD=Stxgo9-eqtyi8hdjZOQ@mail.gmail.com>
+Subject: Re: [REVIEW][PATCH] Making poll generally useful for sysctls
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 03:59:49PM +1300, Michael Kerrisk (man-pages) wrote:
-> 
-> Hi Cyrill,
-> 
-> I only just had a chance to look at this now and realize that this is
-> a patch on a patch. Could you just send me a complete  patch with all
-> the changes?
-> 
+On Fri, Mar 23, 2012 at 9:25 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> Lucas can you take a look at the patch below. I don't have a test
+> harness to test this but this should make poll generally useful
+> for all sysctls as well as fix the module removal case.
+>
+> In particular if you could test to see if the code still works as
+> expected for the hostname and domainname cases that would be great.
+>
+> I don't anticipate any problems but real world testing is always good.
+>
+>  fs/proc/proc_sysctl.c   |   34 +++++++++++++++++-----------------
+>  include/linux/sysctl.h  |   22 +++-------------------
+>  kernel/utsname_sysctl.c |   14 ++++----------
+>  3 files changed, 24 insertions(+), 46 deletions(-)
+> ---
+> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+> index 47b474b..98fd5c9 100644
+> --- a/fs/proc/proc_sysctl.c
+> +++ b/fs/proc/proc_sysctl.c
+> @@ -16,13 +16,15 @@ static const struct inode_operations proc_sys_inode_operations;
+>  static const struct file_operations proc_sys_dir_file_operations;
+>  static const struct inode_operations proc_sys_dir_operations;
+>
+> -void proc_sys_poll_notify(struct ctl_table_poll *poll)
+> +static inline void *proc_sys_poll_event(struct ctl_table *table)
+>  {
+> -       if (!poll)
+> -               return;
+> +       return (void *)(unsigned long)atomic_read(&table->event);
+> +}
+>
+> -       atomic_inc(&poll->event);
+> -       wake_up_interruptible(&poll->wait);
+> +void proc_sys_poll_notify(struct ctl_table_header *head, struct ctl_table *table)
+> +{
+> +       atomic_inc(&table->event);
+> +       wake_up_interruptible(&head->wait);
+>  }
+>
+>  static struct ctl_table root_table[] = {
+> @@ -169,6 +171,7 @@ static void init_header(struct ctl_table_header *head,
+>                for (entry = table; entry->procname; entry++, node++) {
+>                        rb_init_node(&node->node);
+>                        node->header = head;
+> +                       atomic_set(&entry->event, 1);
+>                }
+>        }
+>  }
+> @@ -240,6 +243,8 @@ static void start_unregistering(struct ctl_table_header *p)
+>                /* anything non-NULL; we'll never dereference it */
+>                p->unregistering = ERR_PTR(-EINVAL);
+>        }
+> +       /* Don't let poll sleep forever on deleted entries */
+> +       wake_up_interruptible(&p->wait);
+>        /*
+>         * do not remove from the list until nobody holds it; walking the
+>         * list in do_sysctl() relies on that.
+> @@ -505,6 +510,9 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
+>        error = table->proc_handler(table, write, buf, &res, ppos);
+>        if (!error)
+>                error = res;
+> +
+> +       if (write)
+> +               proc_sys_poll_notify(head, table);
+>  out:
+>        sysctl_head_finish(head);
+>
+> @@ -532,8 +540,7 @@ static int proc_sys_open(struct inode *inode, struct file *filp)
+>        if (IS_ERR(head))
+>                return PTR_ERR(head);
+>
+> -       if (table->poll)
+> -               filp->private_data = proc_sys_poll_event(table->poll);
+> +       filp->private_data = proc_sys_poll_event(table);
+>
+>        sysctl_head_finish(head);
+>
+> @@ -552,21 +559,14 @@ static unsigned int proc_sys_poll(struct file *filp, poll_table *wait)
+>        if (IS_ERR(head))
+>                return POLLERR | POLLHUP;
+>
+> -       if (!table->proc_handler)
+> -               goto out;
+> -
+> -       if (!table->poll)
+> -               goto out;
+> -
+>        event = (unsigned long)filp->private_data;
+> -       poll_wait(filp, &table->poll->wait, wait);
+> +       poll_wait(filp, &head->wait, wait);
+>
+> -       if (event != atomic_read(&table->poll->event)) {
+> -               filp->private_data = proc_sys_poll_event(table->poll);
+> +       if (event != atomic_read(&table->event)) {
+> +               filp->private_data = proc_sys_poll_event(table);
+>                ret = POLLIN | POLLRDNORM | POLLERR | POLLPRI;
+>        }
+>
+> -out:
+>        sysctl_head_finish(head);
+>
+>        return ret;
+> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+> index c34b4c8..8647ee0 100644
+> --- a/include/linux/sysctl.h
+> +++ b/include/linux/sysctl.h
+> @@ -992,34 +992,17 @@ extern int proc_do_large_bitmap(struct ctl_table *, int,
+>  * cover common cases.
+>  */
+>
+> -/* Support for userspace poll() to watch for changes */
+> -struct ctl_table_poll {
+> -       atomic_t event;
+> -       wait_queue_head_t wait;
+> -};
+> -
+> -static inline void *proc_sys_poll_event(struct ctl_table_poll *poll)
+> -{
+> -       return (void *)(unsigned long)atomic_read(&poll->event);
+> -}
+> -
+> -#define __CTL_TABLE_POLL_INITIALIZER(name) {                           \
+> -       .event = ATOMIC_INIT(0),                                        \
+> -       .wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.wait) }
+> -
+> -#define DEFINE_CTL_TABLE_POLL(name)                                    \
+> -       struct ctl_table_poll name = __CTL_TABLE_POLL_INITIALIZER(name)
+>
+>  /* A sysctl table is an array of struct ctl_table: */
+>  struct ctl_table
+>  {
+>        const char *procname;           /* Text ID for /proc/sys, or zero */
+>        void *data;
+> +       atomic_t event;
+>        int maxlen;
+>        umode_t mode;
+>        struct ctl_table *child;        /* Deprecated */
+>        proc_handler *proc_handler;     /* Callback for text formatting */
+> -       struct ctl_table_poll *poll;
+>        void *extra1;
+>        void *extra2;
+>  };
+> @@ -1042,6 +1025,7 @@ struct ctl_table_header
+>                };
+>                struct rcu_head rcu;
+>        };
+> +       wait_queue_head_t wait;
 
-Sure, here is it
+If you have a waitqueue per table instead of per entry you will get
+spurious notifications when other entries change. The easiest way to
+test this is to poll /proc/sys/kernel/hostname and change your
+domainname.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Sat, 24 Mar 2012 10:15:28 +0400
-Subject: [PATCH 2/2] prctl.2: Add PR_SET_MM option description
+I couldn't apply this patch to any tree (linus/master + my previous
+patch, your master, 3.3 + my previous patch), so I couldn't test. On
+top of your tree:
 
-CC: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- man2/prctl.2 |  174 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 173 insertions(+), 1 deletions(-)
+[lucas@vader kernel]$ git am /tmp/a.patch
+Applying: Making poll generally useful for sysctls
+error: patch failed: fs/proc/proc_sysctl.c:16
+error: fs/proc/proc_sysctl.c: patch does not apply
+error: patch failed: include/linux/sysctl.h:992
+error: include/linux/sysctl.h: patch does not apply
+Patch failed at 0001 Making poll generally useful for sysctls
 
-diff --git a/man2/prctl.2 b/man2/prctl.2
-index effad2a..de15426 100644
---- a/man2/prctl.2
-+++ b/man2/prctl.2
-@@ -378,6 +378,134 @@ Return the current per-process machine check kill policy.
- All unused
- .BR prctl ()
- arguments must be zero.
-+.TP
-+.BR PR_SET_MM " (since Linux 3.3)"
-+Allows a user to modify certain kernel memory map descriptor fields
-+of the calling process.
-+Usually these fields are set by the kernel and dynamic loader (see
-+.BR ld.so (8)
-+for more information) and a regular application should not use this feature.
-+Still there are cases such as self-modifying programs, where a program might
-+find it useful to change its own memory map.
-+The kernel must be built with
-+.BR CONFIG_CHECKPOINT_RESTORE
-+option turned on, otherwise this feature will not be accessible
-+from a user space level.
-+The calling process must have
-+.BR CAP_SYS_RESOURCE
-+(see
-+.BR capabilities (7)
-+for details) capability granted.
-+The value in
-+.I arg2
-+is one of the options below, while
-+.I arg3
-+provides a new value for this option.
-+
-+.BR PR_SET_MM_START_CODE
-+to set the address above which program text can run.
-+The corresponding memory area must be readable and executable,
-+but not writable or shareable (see
-+.BR mprotect (2)
-+and
-+.BR mmap (2)
-+for more information).
-+
-+.BR PR_SET_MM_END_CODE
-+to set the address below which program text can run.
-+The corresponding memory area must be readable and executable,
-+but not writable or shareable.
-+
-+.BR PR_SET_MM_START_DATA
-+to set the address above which program data+bss is placed.
-+The corresponding memory area must be readable and writable,
-+but not executable or shareable.
-+
-+.B PR_SET_MM_END_DATA
-+to set the address below which program data+bss is placed.
-+The corresponding memory area must be readable and writable,
-+but not executable or shareable.
-+
-+.BR PR_SET_MM_START_STACK
-+to set the start address of the stack.
-+The corresponding memory area must be readable and writable.
-+
-+.BR PR_SET_MM_START_BRK
-+to set the address above which program heap can be expanded with
-+.BR brk (2)
-+call.
-+The address must not be greater than ending address of
-+the current program data segment, neither it may exceed
-+resource limit for data (see
-+.BR setrlimit (2)
-+for more information).
-+
-+.BR PR_SET_MM_BRK
-+to set the current
-+.BR brk (2)
-+value.
-+The requirements for address are the same as for
-+.BR PR_SET_MM_START_BRK
-+option.
-+
-+.BR PR_SET_MM_ARG_START
-+to set the address above which program command line is placed.
-+
-+.BR PR_SET_MM_ARG_END
-+to set the address below which program command line is placed.
-+
-+.BR PR_SET_MM_ENV_START
-+to set the address above which program environment is placed.
-+
-+.BR PR_SET_MM_ENV_END
-+to set the address below which program environment is placed.
-+
-+The address passed with
-+.BR PR_SET_MM_ARG_START ,
-+.BR PR_SET_MM_ARG_END ,
-+.BR PR_SET_MM_ENV_START ,
-+.BR PR_SET_MM_ENV_END ,
-+should belong to a process stack area, thus corresponding memory area
-+must be readable, writable and (depending on the kernel
-+configuration) has
-+.BR MAP_GROWSDOWN
-+attribute set (see
-+.BR mmap (2)
-+for details).
-+
-+.BR PR_SET_MM_AUXV
-+to set a new auxiliary vector.
-+The
-+.I arg3
-+argument should provide the address of the vector.
-+The
-+.I arg4
-+is the size of the vector.
-+
-+.BR PR_SET_MM_EXE_FILE
-+to supersede
-+.IR /proc/pid/exe
-+symbolic link with a new one pointing to a new executable file
-+which descriptor is provided provided in the
-+.I arg3
-+argument.
-+The file descriptor should be obtaned with a regular
-+.BR open (2)
-+call.
-+
-+To change the symlink, one needs to unmap all existing
-+executable memory areas being created by the kernel itself
-+(for example the kernel usually creates at least one executable
-+memory area for Elf file
-+.IR \.text
-+section).
-+
-+The second limitation is that such transition can be done once
-+in a process life time.
-+Any furter attempts will be rejected.
-+This should help system administrators to monitor the unusual
-+symlinks transitions over all process running in a system.
-+.\"
- .SH "RETURN VALUE"
- On success,
- .BR PR_GET_DUMPABLE ,
-@@ -411,7 +539,9 @@ is not recognized.
- is
- .BR PR_MCE_KILL
- or
--.BR PR_MCE_KILL_GET ,
-+.BR PR_MCE_KILL_GET
-+or
-+.BR PR_SET_MM ,
- and unused
- .BR prctl ()
- arguments were not specified as zero.
-@@ -459,6 +589,48 @@ is
- and the caller does not have the
- .B CAP_SETPCAP
- capability.
-+.TP
-+.B EPERM
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the caller does not have the
-+.B CAP_SYS_RESOURCE
-+capability.
-+.TP
-+.B EACCES
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the file is not executable one.
-+.TP
-+.B EBUSY
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the second attempt to change
-+.I /proc/pid/exe
-+symlink is prohibited.
-+.TP
-+.B EBADF
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the file descriptor passed in
-+.I arg4
-+is not found.
- .\" The following can't actually happen, because prctl() in
- .\" seccomp mode will cause SIGKILL.
- .\" .TP
--- 
-1.7.7.6
 
+Lucas De Marchi
