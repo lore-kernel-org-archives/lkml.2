@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab2CXWdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 18:33:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55147 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab2CXWdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 18:33:09 -0400
-Date: Sat, 24 Mar 2012 23:33:07 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Bernhard Walle <bernhard@bwalle.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>, lacombar@gmail.com,
-        linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>, zippel@linux-m68k.org
-Subject: Re: [PATCH] scripts/Kbuild.include: Fix portability problem of "echo
- -e"
-Message-ID: <20120324223307.GC8947@sepie.suse.cz>
-References: <1330277718-2667-1-git-send-email-bernhard@bwalle.de>
- <20120226174805.GA562@merkur.ravnborg.org>
- <4F4A7126.6020009@bwalle.de>
- <20120226210551.GA659@merkur.ravnborg.org>
- <4F677074.90906@bwalle.de>
+	id S1755193Ab2CXWjW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 18:39:22 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22267 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab2CXWjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 18:39:20 -0400
+Date: Sat, 24 Mar 2012 23:39:18 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        devel@driverdev.osuosl.org, linux-media@vger.kernel.org,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Sylwester Nawrocki <snjw23@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, trivial@kernel.org
+Subject: [PATCH] staging/media/as102: Don't call release_firmware() on
+ uninitialized variable
+Message-ID: <alpine.LNX.2.00.1203242336340.8210@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F677074.90906@bwalle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 06:44:20PM +0100, Bernhard Walle wrote:
-> Am 26.02.12 22:05, schrieb Sam Ravnborg:
-> > On Sun, Feb 26, 2012 at 06:51:34PM +0100, Bernhard Walle wrote:
-> >> Am 26.02.12 18:48, schrieb Sam Ravnborg:
-> >>>>> --- a/scripts/Kbuild.include
-> >>>>> +++ b/scripts/Kbuild.include
-> >>>>> @@ -104,7 +104,7 @@ as-option = $(call try-run,\
-> >>>>>  # Usage: cflags-y += $(call as-instr,instr,option1,option2)
-> >>>>>  
-> >>>>>  as-instr = $(call try-run,\
-> >>>>> -	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-> >>>>> +	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-> >>>>>  
-> >>>>>  # cc-option
-> >>>>>  # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
-> >>> Roman Zippel removed use of printf in this patch: beda9f3a13bbb22cde92a45f230a02ef2afef6a9
-> >>>
-> >>> I cannot remember why - but it would be good if you could dig up
-> >>> why - just so we do not hit an old issue again.
-> >>
-> >> Well, he used printf "$(1)", that's different from printf "%b\n" "$(1)"
-> >> since format strings inside $(1) would be interpreted.
-> > Makes good sense.
-> 
-> Can we merge that for 3.4? Who is responsible, i.e. whose tree?
+If, in drivers/staging/media/as102/as102_fw.c::as102_fw_upload(), the call
+	cmd_buf = kzalloc(MAX_FW_PKT_SIZE, GFP_KERNEL);
+should fail and return NULL so that we jump to the 'error:' label,
+then we'll end up calling 'release_firmware(firmware);' with
+'firmware' still uninitialized - not good.
 
-I merged it to kbuild.git#kbuild now.
+The easy fix is to just initialize 'firmware' to NULL when we declare
+it, since release_firmware() deals gracefully with being passed NULL
+pointers.
 
-Michal
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/media/as102/as102_fw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+ Only compile tested.
+
+diff --git a/drivers/staging/media/as102/as102_fw.c b/drivers/staging/media/as102/as102_fw.c
+index 43ebc43..1075fb1 100644
+--- a/drivers/staging/media/as102/as102_fw.c
++++ b/drivers/staging/media/as102/as102_fw.c
+@@ -165,7 +165,7 @@ error:
+ int as102_fw_upload(struct as10x_bus_adapter_t *bus_adap)
+ {
+ 	int errno = -EFAULT;
+-	const struct firmware *firmware;
++	const struct firmware *firmware = NULL;
+ 	unsigned char *cmd_buf = NULL;
+ 	char *fw1, *fw2;
+ 	struct usb_device *dev = bus_adap->usb_dev;
+-- 
+1.7.9.4
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
