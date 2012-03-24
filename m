@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2CXHC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 03:02:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56828 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2CXHC4 convert rfc822-to-8bit (ORCPT
+	id S1754243Ab2CXHFP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 03:05:15 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60691 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2CXHFN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 03:02:56 -0400
+	Sat, 24 Mar 2012 03:05:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <1332505002.20500.14.camel@lade.trondhjem.org>
-References: <CAKX=r8A90b25VKXC1qtAota9DqDrj37xFT511DuvrZ=1Eux6Xw@mail.gmail.com>
-	<20120323114913.GB24489@umich.edu>
-	<1332505002.20500.14.camel@lade.trondhjem.org>
-Date: Sat, 24 Mar 2012 16:02:55 +0900
-Message-ID: <CAKYAXd9us6rA03NMk8af_-2FNEhm5BBA2=Qb4cJ+YsivBgQM2Q@mail.gmail.com>
-Subject: Re: NFS: low read/stat performance on small files
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Jim Rees <rees@umich.edu>, Vivek Trivedi <vtrivedi018@gmail.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "amit.sahrawat83@gmail.com" <amit.sahrawat83@gmail.com>
+In-Reply-To: <20120323161451.GA17509@kroah.com>
+References: <20120319130445.GN15988@n2100.arm.linux.org.uk>
+	<CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
+	<20120319132623.GO15988@n2100.arm.linux.org.uk>
+	<4F696011.7080409@linaro.org>
+	<CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
+	<CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
+	<20120322100236.GS15988@n2100.arm.linux.org.uk>
+	<CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
+	<4F6BEDC1.60006@linaro.org>
+	<CAB4K4y6u_59XLCBL2k5TrpAGv9C161wyqE_0_CEGbmgWeEwCyw@mail.gmail.com>
+	<20120323161451.GA17509@kroah.com>
+Date: Sat, 24 Mar 2012 12:35:12 +0530
+Message-ID: <CAB4K4y5sobJbsV63yOE8iAU_xE1_mpeQdtH7b1a6hD4UZL1mjA@mail.gmail.com>
+Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/23 Myklebust, Trond <Trond.Myklebust@netapp.com>:
-> On Fri, 2012-03-23 at 07:49 -0400, Jim Rees wrote:
->> Vivek Trivedi wrote:
->>
->>   204800 bytes (200.0KB) copied, 0.027074 seconds, 7.2MB/s
->>   Read speed for 200KB file is 7.2 MB
->>
->>   104857600 bytes (100.0MB) copied, 9.351221 seconds, 10.7MB/s
->>   Read speed for 100MB file is 10.7 MB
->>
->>   As you see read speed for 200KB file is only 7.2MB/sec while it is
->>   10.7 MB/sec when we read 100MB file.
->>   Why there is so much difference in read performance ?
->>   Is there any way to achieve high read speed for small files ?
->>
->> That seems excellent to me.  204800 bytes at 11213252 per sec would be 18.2
->> msec, so your per-file overhead is around 9 msec.  The disk latency alone
->> would normally be more than that.
->
-> ...and the reason why the performance is worse for the 200K file
-> compared to the 100M one is easily explained.
->
-> When opening the file for reading, the client has a number of
-> synchronous RPC calls to make: it needs to look up the file, check
-> access permissions and possibly revalidate its cache. All these tasks
-> have to be done in series (you cannot do them in parallel), and so the
-> latency of each task is limited by the round-trip time to the server.
->
-> On the other hand, once you get to doing READs, the client can send a
-> bunch of readahead requests in parallel, thus ensuring that the server
-> can use all the bandwidth available to the TCP connection.
->
-> So your result is basically showing that for small files, the proportion
-> of (readahead) tasks that can be done in parallel is smaller. This is as
-> expected.
->
-> --
-> Trond Myklebust
-> Linux NFS client maintainer
->
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->
+I send earlier reply using my andriod gmail application, and it was
+rejected by stable/ linux-kernel (not in plain text), so sending again
+using PC.
 
-Dear Trond.
-I agree your answer.
-Thanks a lot for your specific explaination.
+On Fri, Mar 23, 2012 at 9:44 PM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Mar 23, 2012 at 11:22:46AM +0530, Ajeet Yadav wrote:
+>> CCing to stable@vger.kernel.org
+>
+> Why?  What am I supposed to do here?
+>
+> confused,
+>
+> greg k-h
+I initially thought that problem is in 3.0.x stable, but I was wrong.
+Solution patch suggested by Rabin is already there in stable.
+Summary:
+" ARM: 7321/1: cache-v7: > Disable preemption when reading CCSIDR"
+introduce hang on boot, that is resolved by commit
+
+"ARM: 7325/1: fix v7 boot with lockdep enabled"
+ fortunately both are in 3.0.x so no problem,
+
+but i do not know about other stable versions.
