@@ -1,134 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab2CXKiz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 06:38:55 -0400
-Received: from m50-133.163.com ([123.125.50.133]:55181 "EHLO m50-133.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754867Ab2CXKiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 06:38:54 -0400
-Date: Sat, 24 Mar 2012 18:38:30 +0800
-From: Zhaoxiu Zeng <zengzhaoxiu@163.com>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mtd/nand/nand_ecc.c: replace bitsperbyte table by a simple
- operation
-Message-ID: <20120324103830.GA17632@Fedora16>
+	id S1755927Ab2CXKjw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 06:39:52 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56609 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab2CXKjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 06:39:51 -0400
+Date: Sat, 24 Mar 2012 14:38:43 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Bob Liu <lliubbo@gmail.com>, Sonic Zhang <sonic.zhang@analog.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] blackfin: dnp5370: Fix some SPI-related build errors
+Message-ID: <20120324103843.GA30295@lizard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-CM-TRANSID: DdGowEAZ5VYppG1PYFIZFw--.883S2
-X-Coremail-Antispam: 1Uf129KBjvJXoWxAFWkJrW3Ary7Kr17ZF15CFg_yoW5tryrpF
-	W3Ca9Fvr1rCF1xur4ku3yUJryDtrWkXa4Utr45X34fCw13Zr1jyrWjkryFqa4jgryrta4r
-	Xrs5Wr1ruFn5XFUanT9S1TB71UUUUU7qnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jfa93UUUUU=
-X-CM-SenderInfo: p2hqw6xkdr5xrx6rljoofrz/1tbiowx7gE9opoBrPgAAsA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some SPI #ifdef magic was wrong, and so the build stopped like this
+(using DNP5370_defconfig):
 
-Signed-off-by: Zhaoxiu Zeng <zengzhaoxiu@163.com>
+arch/blackfin/mach-bf537/boards/dnp5370.c: In function 'dnp5370_init':
+arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: 'bfin_spi_board_info' undeclared (first use in this function)
+arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: (Each undeclared identifier is reported only once
+arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: for each function it appears in.)
+arch/blackfin/mach-bf537/boards/dnp5370.c:392: warning: type defaults to 'int' in declaration of 'type name'
+arch/blackfin/mach-bf537/boards/dnp5370.c:392: warning: type defaults to 'int' in declaration of 'type name'
+arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: negative width in bit-field '<anonymous>'
+arch/blackfin/mach-bf537/boards/dnp5370.c:393: warning: type defaults to 'int' in declaration of 'type name'
+arch/blackfin/mach-bf537/boards/dnp5370.c:393: warning: type defaults to 'int' in declaration of 'type name'
+arch/blackfin/mach-bf537/boards/dnp5370.c:393: error: negative width in bit-field '<anonymous>'
 
+This patch fixes the issues by properly placing bfin_spi_board_info.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/mtd/nand/nand_ecc.c |   50 +++++++++---------------------------------
- 1 files changed, 11 insertions(+), 39 deletions(-)
+ arch/blackfin/mach-bf537/boards/dnp5370.c |   56 +++++++++++++++--------------
+ 1 file changed, 29 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_ecc.c b/drivers/mtd/nand/nand_ecc.c
-index b7cfe0d..e05a0fd 100644
---- a/drivers/mtd/nand/nand_ecc.c
-+++ b/drivers/mtd/nand/nand_ecc.c
-@@ -85,30 +85,6 @@ static const char invparity[256] = {
+diff --git a/arch/blackfin/mach-bf537/boards/dnp5370.c b/arch/blackfin/mach-bf537/boards/dnp5370.c
+index 11dadeb..e7fb430 100644
+--- a/arch/blackfin/mach-bf537/boards/dnp5370.c
++++ b/arch/blackfin/mach-bf537/boards/dnp5370.c
+@@ -164,33 +164,6 @@ static struct bfin5xx_spi_chip spi_dataflash_chip_info = {
  };
+ #endif
  
- /*
-- * bitsperbyte contains the number of bits per byte
-- * this is only used for testing and repairing parity
-- * (a precalculated value slightly improves performance)
-- */
--static const char bitsperbyte[256] = {
--	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
--	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
--	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
--	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
--	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
--	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
--	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
--	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
--	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
--	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
--	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
--	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
--	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
--	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
--	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
--	4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
+-static struct spi_board_info bfin_spi_board_info[] __initdata = {
+-/* SD/MMC card reader at SPI bus */
+-#if defined(CONFIG_MMC_SPI) || defined(CONFIG_MMC_SPI_MODULE)
+-	{
+-		.modalias	 = "mmc_spi",
+-		.max_speed_hz    = 20000000,
+-		.bus_num	 = 0,
+-		.chip_select     = 1,
+-		.controller_data = &mmc_spi_chip_info,
+-		.mode	         = SPI_MODE_3,
+-	},
+-#endif
+-
+-/* 8 Megabyte Atmel NOR flash chip at SPI bus */
+-#if defined(CONFIG_MTD_DATAFLASH) || defined(CONFIG_MTD_DATAFLASH_MODULE)
+-	{
+-	.modalias        = "mtd_dataflash",
+-	.max_speed_hz    = 16700000,
+-	.bus_num         = 0,
+-	.chip_select     = 2,
+-	.platform_data   = &bfin_spi_dataflash_data,
+-	.controller_data = &spi_dataflash_chip_info,
+-	.mode            = SPI_MODE_3, /* SPI_CPHA and SPI_CPOL */
+-	},
+-#endif
 -};
 -
--/*
-  * addressbits is a lookup table to filter out the bits from the xor-ed
-  * ECC data that identify the faulty location.
-  * this is only used for repairing parity
-@@ -448,12 +424,14 @@ int __nand_correct_data(unsigned char *buf,
- 	unsigned int byte_addr;
- 	/* 256 or 512 bytes/ecc  */
- 	const uint32_t eccsize_mult = eccsize >> 8;
-+	const uint32_t check_mask = eccsize_mult == 2 ? 0x555555 : 0x545555;
-+	uint32_t tmp;
+ /* SPI controller data */
+ /* SPI (0) */
+ static struct resource bfin_spi0_resource[] = {
+@@ -228,6 +201,35 @@ static struct platform_device spi_bfin_master_device = {
+ };
+ #endif
  
- 	/*
- 	 * b0 to b2 indicate which bit is faulty (if any)
- 	 * we might need the xor result  more than once,
- 	 * so keep them in a local var
--	*/
-+	 */
- #ifdef CONFIG_MTD_NAND_ECC_SMC
- 	b0 = read_ecc[0] ^ calc_ecc[0];
- 	b1 = read_ecc[1] ^ calc_ecc[1];
-@@ -467,14 +445,11 @@ int __nand_correct_data(unsigned char *buf,
- 
- 	/* repeated if statements are slightly more efficient than switch ... */
- 	/* ordered in order of likelihood */
--
--	if ((b0 | b1 | b2) == 0)
-+	tmp = ((uint32_t)b2 << 16) | ((uint32_t)b1 << 8) | b0;
-+	if (tmp == 0)
- 		return 0;	/* no error */
- 
--	if ((((b0 ^ (b0 >> 1)) & 0x55) == 0x55) &&
--	    (((b1 ^ (b1 >> 1)) & 0x55) == 0x55) &&
--	    ((eccsize_mult == 1 && ((b2 ^ (b2 >> 1)) & 0x54) == 0x54) ||
--	     (eccsize_mult == 2 && ((b2 ^ (b2 >> 1)) & 0x55) == 0x55))) {
-+	if (((tmp ^ (tmp >> 1)) & check_mask) == check_mask) {
- 	/* single bit error */
- 		/*
- 		 * rp17/rp15/13/11/9/7/5/3/1 indicate which byte is the faulty
-@@ -492,19 +467,16 @@ int __nand_correct_data(unsigned char *buf,
- 		 * We could also do addressbits[b2] >> 1 but for the
- 		 * performance it does not make any difference
- 		 */
--		if (eccsize_mult == 1)
--			byte_addr = (addressbits[b1] << 4) + addressbits[b0];
--		else
--			byte_addr = (addressbits[b2 & 0x3] << 8) +
--				    (addressbits[b1] << 4) + addressbits[b0];
-+		byte_addr = (addressbits[b1] << 4) + addressbits[b0];
-+		if (eccsize_mult == 2)
-+			byte_addr += (addressbits[b2 & 0x3] << 8);
- 		bit_addr = addressbits[b2 >> 2];
- 		/* flip the bit */
- 		buf[byte_addr] ^= (1 << bit_addr);
- 		return 1;
--
- 	}
--	/* count nr of bits; use table lookup, faster than calculating it */
--	if ((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)
++static struct spi_board_info bfin_spi_board_info[] __initdata = {
++#if defined(CONFIG_SPI_BFIN5XX) || defined(CONFIG_SPI_BFIN5XX_MODULE)
++/* SD/MMC card reader at SPI bus */
++#if defined(CONFIG_MMC_SPI) || defined(CONFIG_MMC_SPI_MODULE)
++	{
++		.modalias	 = "mmc_spi",
++		.max_speed_hz    = 20000000,
++		.bus_num	 = 0,
++		.chip_select     = 1,
++		.controller_data = &mmc_spi_chip_info,
++		.mode	         = SPI_MODE_3,
++	},
++#endif
 +
-+	if (!(tmp & (tmp - 1)))
- 		return 1;	/* error in ECC data; no action needed */
- 
- 	printk(KERN_ERR "uncorrectable error : ");
++/* 8 Megabyte Atmel NOR flash chip at SPI bus */
++#if defined(CONFIG_MTD_DATAFLASH) || defined(CONFIG_MTD_DATAFLASH_MODULE)
++	{
++	.modalias        = "mtd_dataflash",
++	.max_speed_hz    = 16700000,
++	.bus_num         = 0,
++	.chip_select     = 2,
++	.platform_data   = &bfin_spi_dataflash_data,
++	.controller_data = &spi_dataflash_chip_info,
++	.mode            = SPI_MODE_3, /* SPI_CPHA and SPI_CPOL */
++	},
++#endif
++#endif /* defined(CONFIG_SPI_BFIN5XX) || defined(CONFIG_SPI_BFIN5XX_MODULE) */
++};
++
+ #if defined(CONFIG_SERIAL_BFIN) || defined(CONFIG_SERIAL_BFIN_MODULE)
+ #ifdef CONFIG_SERIAL_BFIN_UART0
+ static struct resource bfin_uart0_resources[] = {
 -- 
-1.7.7.6
-
-
+1.7.9.2
