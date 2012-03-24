@@ -1,106 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab2CXVbf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 17:31:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55601 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab2CXVbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 17:31:18 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, mmarek@suse.cz
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH] scripts/coccinelle: semantic patch for ptr_err
-Date: Sat, 24 Mar 2012 22:31:10 +0100
-Message-Id: <1332624670-23679-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754771Ab2CXVwL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 17:52:11 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:60920 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754220Ab2CXVwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 17:52:09 -0400
+Date: Sat, 24 Mar 2012 17:51:52 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: hpa@zytor.com
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext2: No longer export ext2_fs.h to user space
+Message-ID: <20120324215152.GA32554@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, hpa@zytor.com,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Thierry Reding <thierry.reding@avionic-design.de>,
+	linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+	Artem Bityutskiy <dedekind1@gmail.com>,
+	Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
+References: <20120322183135.GC4028@thunk.org>
+ <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120323131331.GA29631@thunk.org>
+ <20120323175534.GI6589@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120323175534.GI6589@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Peter,
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Note that we are planning on unexporting ext2_fs.h, and then utterly
+removing it from the tree (with what fs/ext2 needs being moved to
+fs/ext2/ext2.h).
 
----
- scripts/coccinelle/api/ptr_ret.cocci |   70 +++++++++++++++++++++++++++++++++++
- 1 file changed, 70 insertions(+)
+Someone who was compiling "the latest version" of syslinux has
+submitted a kernel bugzilla entry that this was breaking due to
+ext2_fs.h using umode_t which was no longer being exported by the
+kernel header files.  Given that ext2_fs.h is about to go ***poof***
+(Al already has the changes in his vfs git tree), I thought I should
+give you a heads up....
 
-diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
-new file mode 100644
-index 0000000..085120f
---- /dev/null
-+++ b/scripts/coccinelle/api/ptr_ret.cocci
-@@ -0,0 +1,70 @@
-+///
-+/// Use PTR_RET rather than if(IS_ERR(...)) + PTR_ERR
-+///
-+// Confidence: High
-+// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
-+// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Options: -no_includes -include_headers
-+//
-+// Keywords: ERR_PTR, PTR_ERR, PTR_RET
-+// Version min: 2.6.39
-+//
-+
-+virtual context
-+virtual patch
-+virtual org
-+virtual report
-+
-+@depends on patch@
-+expression ptr;
-+@@
-+
-+- if (IS_ERR(ptr)) return PTR_ERR(ptr); else return 0;
-++ return PTR_RET(ptr);
-+
-+@depends on patch@
-+expression ptr;
-+@@
-+
-+- if (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
-++ return PTR_RET(ptr);
-+
-+@r1 depends on !patch@
-+expression ptr;
-+position p1;
-+@@
-+
-+* if@p1 (IS_ERR(ptr)) return PTR_ERR(ptr); else return 0;
-+
-+@r2 depends on !patch@
-+expression ptr;
-+position p2;
-+@@
-+
-+* if@p2 (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
-+
-+@script:python depends on org@
-+p << r1.p1;
-+@@
-+
-+coccilib.org.print_todo(p[0], "WARNING: PTR_ERR can be used")
-+
-+
-+@script:python depends on org@
-+p << r2.p2;
-+@@
-+
-+coccilib.org.print_todo(p[0], "WARNING: PTR_ERR can be used")
-+
-+@script:python depends on report@
-+p << r1.p1;
-+@@
-+
-+coccilib.report.print_report(p[0], "WARNING: PTR_ERR can be used")
-+
-+@script:python depends on report@
-+p << r2.p2;
-+@@
-+
-+coccilib.report.print_report(p[0], "WARNING: PTR_ERR can be used")
+					- Ted
 
+On Fri, Mar 23, 2012 at 05:55:34PM +0000, Al Viro wrote:
+> On Fri, Mar 23, 2012 at 09:13:31AM -0400, Ted Ts'o wrote:
+> > On Fri, Mar 23, 2012 at 10:27:36AM +0100, Thierry Reding wrote:
+> > > Since the on-disk format has been stable for quite some time, users
+> > > should either use the headers provided by libext2fs or keep a private
+> > > copy of this header. For the full discussion, see this thread:
+> > > 
+> > > 	https://lkml.org/lkml/2012/3/21/516
+> > > 
+> > > While at it, this commit removes all __KERNEL__ guards, which are now
+> > > unnecessary.
+> > > 
+> > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> > > Cc: Al Viro <viro@zeniv.linux.org.uk>
+> > > Cc: Jan Kara <jack@suse.cz>
+> > > Cc: Ted Ts'o <tytso@mit.edu>
+> > > Cc: Artem Bityutskiy <dedekind1@gmail.com>
+> > > Cc: Andreas Dilger <aedilger@gmail.com>
+> > > Cc: linux-ext4@vger.kernel.org
+> > 
+> > Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+> > 
+> > Thanks!!
+> > 
+> > Al, do you want to take this in the VFS tree, or do you want me to
+> > carry this in the ext4 tree?  Or Jan could carry it in the ext2 tree.
+> > I don't really have strong feelings about who picks it up.  I will if
+> > no one else wants to...
+> 
+> Applied.  I'll probably add a followup moving most of that stuff to
+> fs/ext2/ext2.h on top of that commit...
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
