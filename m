@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab2CXQgs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 12:36:48 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:43103 "EHLO
+	id S1755260Ab2CXQhL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 12:37:11 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:43106 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab2CXQgr (ORCPT
+	with ESMTP id S1754882Ab2CXQhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 12:36:47 -0400
-Date: Sat, 24 Mar 2012 12:36:43 -0400
+	Sat, 24 Mar 2012 12:37:10 -0400
+Date: Sat, 24 Mar 2012 12:37:06 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <torvalds@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL #2] Cleanup fs/ and lib/ users of module.h
-Message-ID: <20120324163643.GB5573@windriver.com>
+Subject: [GIT PULL #3] audit device.h users in include/*
+Message-ID: <20120324163706.GC5573@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
@@ -23,167 +23,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-This is the 2nd of three cleanups I have for 3.4 content.
+This is the 3rd of three cleanups I have for 3.4 content.
 
-I know you will get four trivial conflicts as follows:
-
-    dwc3-omap.c: commit 2cd0e8512169b125fb0ff1f9ec3f8505eecb3012
-        "usb: dwc3: linux/module.h included twice"
-    
-    inode.c: commit e59cc473cc603d562f2c80c12c943ef2a8cde6b2
-        "trim includes in inode.c"
-    
-    lib/ list_debug.c + string.c: commit 50af5ead3b44ccf8bd2b4d2a50
-        "bug.h: add include of it to various implicit C users"
-
-The last one assumes that you've already merged my cleanup #1.
+I don't expect you will get any merge conflicts here.
 
 Thanks,
 Paul.
---
+---
 
-The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
+The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
 
-  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git tags/module-for-3.4
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git tags/device-for-3.4
 
-for you to fetch changes up to 8bc3bcc93a2b4e47d5d410146f6546bca6171663:
+for you to fetch changes up to 313162d0b83836e2f57e51b9b8650fb4b9c396ea:
 
-  lib: reduce the use of module.h wherever possible (2012-03-07 15:04:04 -0500)
+  device.h: audit and cleanup users in main include dir (2012-03-16 10:38:24 -0400)
 
 ----------------------------------------------------------------
 The following text was taken from the original review request:
 
-	"[PATCH 0/3] RFC - module.h usage cleanups in fs/ and lib/"
-		https://lkml.org/lkml/2012/2/29/589
+	"[RFC PATCH 0/2] audit of linux/device.h users in include/*"
+		https://lkml.org/lkml/2012/3/4/159
 --
 
-Fix up files in fs/ and lib/ dirs to only use module.h if they really
-need it.
+Nearly every subsystem has some kind of header with a proto like:
 
-These are trivial in scope vs. the work done previously.  We now have
-things where any few remaining cleanups can be farmed out to arch or
-subsystem maintainers, and I have done so when possible.  What is
-remaining here represents the bits that don't clearly lie within a
-single arch/subsystem boundary, like the fs dir and the lib dir.
+	void foo(struct device *dev);
 
-Some duplicate includes arising from overlapping fixes from
-independent subsystem maintainer submissions are also quashed.
+and yet there is no reason for most of these guys to care about the
+sub fields within the device struct.  This allows us to significantly
+reduce the scope of headers including headers.  For this instance, a
+reduction of about 40% is achieved by replacing the include with the
+simple fact that the device is some kind of a struct.
+
+Unlike the much larger module.h cleanup, this one is simply two
+commits.  One to fix the implicit <linux/device.h> users, and then
+one to delete the device.h includes from the linux/include/ dir
+wherever possible.
 
 ----------------------------------------------------------------
-Paul Gortmaker (3):
-      includecheck: delete any duplicate instances of module.h
-      fs: reduce the use of module.h wherever possible
-      lib: reduce the use of module.h wherever possible
+Paul Gortmaker (2):
+      device.h: cleanup users outside of linux/include (C files)
+      device.h: audit and cleanup users in main include dir
 
- arch/blackfin/mach-bf537/boards/pnav10.c  |    1 -
- drivers/dma/imx-dma.c                     |    1 -
- drivers/dma/imx-sdma.c                    |    1 -
- drivers/media/video/adp1653.c             |    1 -
- drivers/mmc/host/sdhci-tegra.c            |    1 -
- drivers/power/max8998_charger.c           |    1 -
- drivers/staging/iio/dac/ad5686.c          |    1 -
- drivers/staging/iio/gyro/adis16060_core.c |    1 -
- drivers/staging/sm7xx/smtcfb.c            |    1 -
- drivers/usb/dwc3/core.c                   |    1 -
- drivers/usb/dwc3/dwc3-omap.c              |    1 -
- fs/aio.c                                  |    2 +-
- fs/attr.c                                 |    2 +-
- fs/bad_inode.c                            |    2 +-
- fs/binfmt_flat.c                          |    2 +-
- fs/bio.c                                  |    2 +-
- fs/buffer.c                               |    2 +-
- fs/compat.c                               |    1 -
- fs/compat_ioctl.c                         |    1 -
- fs/dcache.c                               |    2 +-
- fs/dcookies.c                             |    2 +-
- fs/eventfd.c                              |    2 +-
- fs/file.c                                 |    2 +-
- fs/fs-writeback.c                         |    2 +-
- fs/fs_struct.c                            |    2 +-
- fs/inode.c                                |    2 +-
- fs/ioctl.c                                |    2 +-
- fs/libfs.c                                |    2 +-
- fs/mpage.c                                |    2 +-
- fs/namei.c                                |    2 +-
- fs/posix_acl.c                            |    2 +-
- fs/read_write.c                           |    2 +-
- fs/readdir.c                              |    2 +-
- fs/select.c                               |    2 +-
- fs/seq_file.c                             |    2 +-
- fs/splice.c                               |    2 +-
- fs/stack.c                                |    2 +-
- fs/stat.c                                 |    2 +-
- fs/statfs.c                               |    2 +-
- fs/super.c                                |    2 +-
- fs/sync.c                                 |    2 +-
- fs/xattr.c                                |    2 +-
- fs/xattr_acl.c                            |    2 +-
- kernel/params.c                           |    1 -
- lib/argv_split.c                          |    2 +-
- lib/atomic64.c                            |    2 +-
- lib/average.c                             |    3 ++-
- lib/bcd.c                                 |    2 +-
- lib/bitmap.c                              |    3 ++-
- lib/bsearch.c                             |    2 +-
- lib/check_signature.c                     |    2 +-
- lib/checksum.c                            |    2 +-
- lib/cmdline.c                             |    2 +-
- lib/cpu_rmap.c                            |    2 +-
- lib/cpumask.c                             |    2 +-
- lib/ctype.c                               |    3 ++-
- lib/debug_locks.c                         |    2 +-
- lib/dec_and_lock.c                        |    2 +-
- lib/devres.c                              |    2 +-
- lib/div64.c                               |    3 ++-
- lib/dump_stack.c                          |    2 +-
- lib/fault-inject.c                        |    2 +-
- lib/find_last_bit.c                       |    2 +-
- lib/find_next_bit.c                       |    2 +-
- lib/flex_array.c                          |    2 +-
- lib/gcd.c                                 |    2 +-
- lib/genalloc.c                            |    2 +-
- lib/halfmd4.c                             |    2 +-
- lib/hexdump.c                             |    2 +-
- lib/hweight.c                             |    2 +-
- lib/idr.c                                 |    2 +-
- lib/int_sqrt.c                            |    2 +-
- lib/iomap.c                               |    2 +-
- lib/iomap_copy.c                          |    2 +-
- lib/iommu-helper.c                        |    2 +-
- lib/ioremap.c                             |    2 +-
- lib/irq_regs.c                            |    3 ++-
- lib/kasprintf.c                           |    2 +-
- lib/klist.c                               |    2 +-
- lib/kobject.c                             |    2 +-
- lib/kobject_uevent.c                      |    3 ++-
- lib/kstrtox.c                             |    2 +-
- lib/lcm.c                                 |    2 +-
- lib/list_debug.c                          |    3 ++-
- lib/llist.c                               |    2 +-
- lib/locking-selftest.c                    |    1 -
- lib/md5.c                                 |    2 +-
- lib/nlattr.c                              |    2 +-
- lib/parser.c                              |    3 ++-
- lib/radix-tree.c                          |    2 +-
- lib/random32.c                            |    2 +-
- lib/ratelimit.c                           |    2 +-
- lib/rational.c                            |    3 ++-
- lib/rbtree.c                              |    2 +-
- lib/rwsem-spinlock.c                      |    2 +-
- lib/rwsem.c                               |    2 +-
- lib/scatterlist.c                         |    2 +-
- lib/sha1.c                                |    2 +-
- lib/smp_processor_id.c                    |    2 +-
- lib/spinlock_debug.c                      |    2 +-
- lib/string.c                              |    5 ++++-
- lib/string_helpers.c                      |    2 +-
- lib/swiotlb.c                             |    2 +-
- lib/syscall.c                             |    2 +-
- lib/timerqueue.c                          |    2 +-
- lib/uuid.c                                |    2 +-
- lib/vsprintf.c                            |    2 +-
- 107 files changed, 104 insertions(+), 107 deletions(-)
+ drivers/base/power/clock_ops.c        |    1 +
+ drivers/base/power/common.c           |    1 +
+ drivers/base/power/opp.c              |    1 +
+ drivers/base/regmap/regcache-lzo.c    |    1 +
+ drivers/base/regmap/regcache-rbtree.c |    1 +
+ drivers/base/regmap/regcache.c        |    1 +
+ drivers/base/regmap/regmap-debugfs.c  |    1 +
+ drivers/base/regmap/regmap-irq.c      |    1 +
+ drivers/base/regmap/regmap.c          |    1 +
+ drivers/edac/edac_stub.c              |    1 +
+ drivers/edac/mce_amd_inj.c            |    1 +
+ drivers/mfd/wm8994-regmap.c           |    1 +
+ drivers/power/apm_power.c             |    1 +
+ drivers/power/power_supply.h          |    4 ++++
+ drivers/power/power_supply_leds.c     |    1 +
+ drivers/power/power_supply_sysfs.c    |    1 +
+ include/linux/amba/pl022.h            |    2 --
+ include/linux/atmdev.h                |    2 +-
+ include/linux/attribute_container.h   |    3 ++-
+ include/linux/c2port.h                |    3 ++-
+ include/linux/cdrom.h                 |    1 -
+ include/linux/cpu.h                   |    3 ++-
+ include/linux/cpufreq.h               |    1 -
+ include/linux/crash_dump.h            |    1 -
+ include/linux/dma-buf.h               |    2 +-
+ include/linux/edac.h                  |    6 +++++-
+ include/linux/fb.h                    |    1 -
+ include/linux/firewire.h              |    3 ++-
+ include/linux/hwmon-sysfs.h           |    2 ++
+ include/linux/hwmon.h                 |    2 +-
+ include/linux/hwspinlock.h            |    2 +-
+ include/linux/ide.h                   |    3 ++-
+ include/linux/ipmi.h                  |    2 +-
+ include/linux/ipmi_smi.h              |    3 ++-
+ include/linux/jz4740-adc.h            |    2 +-
+ include/linux/maple.h                 |    2 +-
+ include/linux/mfd/abx500.h            |    3 ++-
+ include/linux/mfd/abx500/ab5500.h     |    2 +-
+ include/linux/mfd/abx500/ab8500.h     |    4 +++-
+ include/linux/mfd/pm8xxx/pm8921.h     |    1 -
+ include/linux/mfd/stmpe.h             |    4 +++-
+ include/linux/mfd/tc3589x.h           |    2 +-
+ include/linux/mlx4/driver.h           |    1 -
+ include/linux/mmc/card.h              |    1 +
+ include/linux/mmc/core.h              |    2 +-
+ include/linux/mmc/host.h              |    1 +
+ include/linux/netdevice.h             |    2 +-
+ include/linux/of_device.h             |    3 ++-
+ include/linux/opp.h                   |    1 +
+ include/linux/phy.h                   |    5 +++--
+ include/linux/pm_domain.h             |    2 ++
+ include/linux/power_supply.h          |    3 ++-
+ include/linux/regmap.h                |    2 +-
+ include/linux/regulator/consumer.h    |    3 ++-
+ include/linux/rfkill.h                |    2 +-
+ include/linux/rio_drv.h               |    1 -
+ include/linux/serial_pnx8xxx.h        |    1 -
+ include/linux/spi/mmc_spi.h           |    2 +-
+ include/linux/wimax/debug.h           |    2 +-
+ include/media/media-device.h          |    3 ++-
+ include/media/v4l2-ctrls.h            |    1 -
+ include/media/v4l2-ioctl.h            |    1 -
+ include/net/mac80211.h                |    3 ++-
+ include/scsi/scsi_device.h            |    2 +-
+ include/sound/core.h                  |    5 ++---
+ include/sound/soc-dapm.h              |    3 ++-
+ include/trace/events/regmap.h         |    2 +-
+ include/trace/events/rpm.h            |    3 ++-
+ include/trace/events/writeback.h      |    1 -
+ net/rfkill/core.c                     |    1 +
+ sound/core/init.c                     |    1 +
+ sound/core/pcm.c                      |    1 +
+ sound/core/seq/seq.c                  |    1 +
+ sound/core/timer.c                    |    1 +
+ 74 files changed, 92 insertions(+), 52 deletions(-)
