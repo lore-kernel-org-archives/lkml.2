@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab2CXQAO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 12:00:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51484 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab2CXQAM (ORCPT
+	id S1754270Ab2CXQEP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 12:04:15 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:52038 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab2CXQEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 12:00:12 -0400
-Message-ID: <4F6DEF86.7050303@gmail.com>
-Date: Sat, 24 Mar 2012 10:00:06 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120313 Thunderbird/11.0
+	Sat, 24 Mar 2012 12:04:14 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Chen Gong (gong.chen@linux.intel.com)" <gong.chen@linux.intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Sat, 24 Mar 2012 12:03:56 -0400
+Subject: RE: [Patch]Introduce get_reason_str() to pstore
+Thread-Topic: [Patch]Introduce get_reason_str() to pstore
+Thread-Index: Ac0JjM4agLEQr2UAS2aN7HuAQKI04gASstAA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E4B8EF8D0@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2E32064CDF@USINDEVS01.corp.hds.com>
+ <20120324001054.4eb82767.akpm@linux-foundation.org>
+In-Reply-To: <20120324001054.4eb82767.akpm@linux-foundation.org>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf, tool: Fix the array pointer to follow event data
- properly
-References: <1332598796-3586-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1332598796-3586-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=1 spamscore=1
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1203240174
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane submitted a similar patch a week ago:
-https://lkml.org/lkml/2012/3/17/91
 
-David
+> Better:
+> 
+> static char *reason_str[] = {
+> 	[KMSG_DUMP_OOPS] = "Oops",
+> 	[KMSG_DUMP_PANIC] = "Panic",
+> 	...
+> 	[KMSG_DUMP_POWEROFF] = "Poweroff",
+> };
 
+Thanks, Andrew.
 
-On 3/24/12 8:19 AM, Jiri Olsa wrote:
-> Currently we dont update the 'array' pointer properly after
-> processing the RAW data. This way perf might report wrong data
-> for branch stack if it is used along with tracepoint sample.
->
-> I'm not sure tracepoint could be connected with branch stack,
-> but I think the array pointer should have correct value after
-> each sample processing.
->
-> Signed-off-by: Jiri Olsa<jolsa@redhat.com>
-> ---
->   tools/perf/util/evsel.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index d9da62a..56a96896 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -580,6 +580,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
->   			return -EFAULT;
->
->   		data->raw_data = (void *) pdata;
-> +		array = (u64 *)(((char *)array) + data->raw_size + sizeof(u32));
->   	}
->
->   	if (type&  PERF_SAMPLE_BRANCH_STACK) {
+I will update my patch.
 
+Seiji
