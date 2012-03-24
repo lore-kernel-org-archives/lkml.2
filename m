@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2CXXuc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 19:50:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42827 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab2CXXub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 19:50:31 -0400
-Message-ID: <1332633000.2882.15.camel@pasglop>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Date: Sun, 25 Mar 2012 10:50:00 +1100
-In-Reply-To: <4F6DDE56.3090401@openvz.org>
-References: <20120321065140.13852.52315.stgit@zurg>
-	 <20120321100602.GA5522@barrios> <4F69D496.2040509@openvz.org>
-	 <20120322053958.GA5278@barrios> <1332397358.2982.82.camel@pasglop>
-	 <4F6DDE56.3090401@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754236Ab2CYAau (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 20:30:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65297 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab2CYAas (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 20:30:48 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the mfd tree with Linus' tree
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>
+In-Reply-To: <20120323094139.GA7231@sortiz-mobl>
+References: <20120323143237.9b5917955cb42951f0368ec4@canb.auug.org.au> <20120323094139.GA7231@sortiz-mobl>
+Date: Sat, 24 Mar 2012 17:31:52 +0000
+Message-Id: <20120324173152.494DA3E0A26@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-24 at 18:46 +0400, Konstantin Khlebnikov wrote:
-> Obviously we can combine VM_PFN_AT_MMAP, VM_SAO, VM_GROWSUP and
-> VM_MAPPED_COPY into one.
+On Fri, 23 Mar 2012 10:41:39 +0100, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Stephen,
+> 
+> On Fri, Mar 23, 2012 at 02:32:37PM +1100, Stephen Rothwell wrote:
+> > Hi Samuel,
+> > 
+> > Today's linux-next merge of the mfd tree got a conflict in
+> > drivers/mfd/twl-core.c between commits 5769089ac725 ("mfd: twl-core.c:
+> > Fix the number of interrupts managed by twl4030"), 75294957be1d
+> > ("irq_domain: Remove 'new' irq_domain in favour of the ppc one") and
+> > 964dba283439 ("devicetree: Add empty of_platform_populate() for !
+> > CONFIG_OF_ADDRESS (sparc)") from Linus' tree and commits 9e1786202704
+> > ("mfd: Make twl-core not depend on pdata->irq_base/end") and 78518ffa08fc
+> > ("mfd: Move twl-core IRQ allocation into twl[4030|6030]-irq files") from
+> > the mfd tree.
+> > 
+> > I *think* that the right thing to do is to use the version from the mfd
+> > tree ...
+> That's correct.
+> I have a for-next-merge branch where I usually have the merge conflicts with
+> Linus tree fixed, in case you're interested.
+> 
+> 
+> > I do wonder why I only got this now (in the merge window) ...
+> I got a pull request from Benoit a couple days before the merge window opened.
+> Then I realized part of the pull request contained a merge of one of Grant's
+> branch. So I wanted to wait for Grant's code to get in before picking the mfd
+> work on top of it. I didn't want to send a pull request to Linus with a merge
+> point for something that would have been already merged. Maybe I was wrong,
+> you tell me.
 
-VM_PFN_AT_MMAP isn't arch specific afaik...
+It should have gone into linux-next before then.  Waiting for my tree
+to hit linus' tree defeats the purpose of linux-next.  Now you're
+branch hasn't had any testing and therefore is a risky merge.
 
-Cheers,
-Ben.
+If you've got a branch you intend to send to Linus, then it really
+needs to be in linux-next.  If that branch depends on another branch,
+that's fine; you can still hold off actually sending the pull req to
+Linus until the dependency makes it in.  Better yet, *ask*.
 
+g.
 
