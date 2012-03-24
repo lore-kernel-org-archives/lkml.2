@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2CXCFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 22:05:35 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:37175 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752454Ab2CXCFd (ORCPT
+	id S1754907Ab2CXC0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 22:26:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51143 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab2CXC0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 22:05:33 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275bh8275dhz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F6D2BC5.9070200@am.sony.com>
-Date: Fri, 23 Mar 2012 19:04:53 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Fri, 23 Mar 2012 22:26:07 -0400
 MIME-Version: 1.0
-To: Alessio Igor Bogani <abogani@kernel.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Jan Beulich <jbeulich@novell.com>,
-        Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Bird, Tim" <Tim.Bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
-References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com> <1310626276-4541-1-git-send-email-abogani@kernel.org>
-In-Reply-To: <1310626276-4541-1-git-send-email-abogani@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <1332546904.23830.8.camel@ultramagnus.opencreations.com>
+References: <20120302055715.GA692@burratino> <CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
+ <20120302162159.GB31683@wavehammer.waldi.eu.org> <CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+ <20120302175719.GA1468@wavehammer.waldi.eu.org> <CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
+ <4F54DB1F.3080000@debian.org> <CABE8wwtOwgiYwb-_g-3Fg_QH6ph7LEPdkcOff94inDFvs9kwxA@mail.gmail.com>
+ <4F55D6F6.2040906@debian.org> <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
+ <20120311220648.GA8120@burratino> <1332546904.23830.8.camel@ultramagnus.opencreations.com>
+From: William Dauchy <wdauchy@gmail.com>
+Date: Sat, 24 Mar 2012 03:25:46 +0100
+Message-ID: <CAJ75kXZ_coHKo3ZXEFxv4HPo=BHA6=LCTWcTkxb_UTdJL-WScw@mail.gmail.com>
+Subject: Re: ioatdma: Boot process hangs then reboots when using Xen + Linux 3.2
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, Thomas Goirand <zigo@debian.org>,
+        xen-devel@lists.xensource.com, Dave Jiang <dave.jiang@intel.com>,
+        pkg-xen-devel@lists.alioth.debian.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/11 23:51, Alessio Igor Bogani wrote:
-> The commit f02e8a6 sorts symbols placing each of them in its own elf section.
-> The sorting and merging into the canonical sections are done by the linker.
-> Unfortunately modpost to generate Module.symvers file parses vmlinux
+Hi Dan,
 
-Yet another unfortunately: modpost parses vmlinux.o instead of vmlinux (vmlinux
-does not yet exist at this point of the build).  vmlinux.o also does not have
-the many sections sorted and merged into the canonical sections.  As a result,
-the Module.symvers created my modpost incorrectly reports the license of all
-exports as "(unknown)".
+On Sat, Mar 24, 2012 at 12:55 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+> Thanks for the debug help, does this patch fix the issue for you?
 
-Can you fix this also please?
+I successfully tested your patch and it works fine. Thanks again for your work.
 
+Reported-by: William Dauchy <wdauchy@gmail.com>
+Tested-by: William Dauchy <wdauchy@gmail.com>
 
-> (already linked) and all modules object files (which aren't linked yet).
-> These aren't sanitized by the linker yet. That breaks modpost that can't
-> detect license properly for modules. This patch makes modpost aware of
-> the new exported symbols structure.
-> 
-> Thanks to Arnaud Lacombe <lacombar@gmail.com> and Anders Kaseorg
-> <andersk@ksplice.com> for providing useful suggestions about code.
-> 
-> This work was supported by a hardware donation from the CE Linux Forum.
-> 
-> Reported-by: Jan Beulich <jbeulich@novell.com>
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-> ---
->  scripts/mod/modpost.c |   29 ++++++++++++++++++++++++++++-
->  1 files changed, 28 insertions(+), 1 deletions(-)
-
-< snip >
-
--Frank Rowand
-
+Best regards,
+-- 
+William
