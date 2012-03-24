@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab2CXHhg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 03:37:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33885 "EHLO
+	id S1754052Ab2CXHoR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 03:44:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62293 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab2CXHhf (ORCPT
+	with ESMTP id S1752124Ab2CXHoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 03:37:35 -0400
-Date: Sat, 24 Mar 2012 08:37:31 +0100
+	Sat, 24 Mar 2012 03:44:16 -0400
+Date: Sat, 24 Mar 2012 08:44:12 +0100
 From: Ingo Molnar <mingo@kernel.org>
 To: Borislav Petkov <bp@amd64.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86, mce: Add persistent MCE event
-Message-ID: <20120324073731.GD20145@gmail.com>
-References: <1332340496-21658-1-git-send-email-bp@amd64.org>
- <1332340496-21658-3-git-send-email-bp@amd64.org>
- <20120323123156.GF13920@gmail.com>
- <20120323133044.GA8115@aftab>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 0/2] tools: Add a toplevel Makefile
+Message-ID: <20120324074412.GE20145@gmail.com>
+References: <1332513788-9726-1-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120323133044.GA8115@aftab>
+In-Reply-To: <1332513788-9726-1-git-send-email-bp@amd64.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,70 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Borislav Petkov <bp@amd64.org> wrote:
 
-> On Fri, Mar 23, 2012 at 01:31:56PM +0100, Ingo Molnar wrote:
-> > Have you considered making the addition of persistent events
-> > straightforward and robust, in terms of adding a TRACE_EVENT() variant
-> > for them? It could replace the above code.
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Err,
+> Hi all,
 > 
-> are you thinking of something in TRACE_EVENT() that sets
-> perf_event_attr.persistent to 1?
+> here's a refreshed version from yesterday incorporating all comments and
+> suggestions along with a third patch that adds a 'help' target as the
+> default one causing the following below. Btw, Arnaldo, could you please
+> pick those up if there are no complaints since the first patch touches
+> perf and I don't have a clear idea who else to send it to anyway :).
+> 
+> Thanks.
+> 
+> $ make
 
-I was mainly thinking of reducing this:
+Could this also be accessible via 'make tools' in the toplevel 
+Makefile?
 
- arch/x86/kernel/cpu/mcheck/mce.c |   53 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+I'd love to be able to type:
 
-to almost nothing. There doesn't seem to be much MCE specific in 
-that code, right?
+  make -j tools perf install
 
-> Btw, the more important question is are we going to need 
-> persistent events that much so that a generic approach is 
-> warranted? I guess maybe the black box events recording deal 
-> would be another user..
+But ... your current patches are an improvement as well, this 
+list alone:
 
-So, here's the big picture as I see it:
+> $ make
+> Possible targets:
+> 
+>   cpupower   - a tool for all things x86 CPU power
+>   firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer
+>   lguest     - a minimal 32-bit x86 hypervisor
+>   perf       - Linux performance measurements tool
+>   slub       - slabs reporting tool
+>   turbostat  - Intel CPU idle stats and freq reporting tool
+>   usb        - USB testing tools
+>   virtio     - vhost test module
+>   x86_energy_perf_policy - Intel energy policy tool
 
-I think tracing could use persistent events: mark all the events 
-we want to trace as persistent from bootup, and recover the 
-bootup trace after the system has been booted up.
+is already pretty useful.
 
-But other, runtime models of tracing could use it as well: 
-basically the main difference that ftrace has to perf based 
-tracing today is a system-wide persistent buffer with no 
-particular owning process. (The rest is mostly UI and analysis 
-features and scope of tracing differences, and of course a lot 
-more love and detail went into ftrace so far.)
+Btw., please fix the perf line to say:
 
-So MCE will in the end be just a minor user of such a facility - 
-I think you should aim for enabling *any* set of events to have 
-persistent recording properties, and add the APIs to recover 
-that information sanely. It should also be possible for them to 
-record into a shared mmap page in essence - instead of having 
-per event persistent buffers.
-
-That way testing would be a lot easier as well: you could enable 
-persistent tracing via something like:
-
-    perf trace on -e <events>
-
-and turn it off via:
-
-    perf trace off
-
-and just recover the recorded events via something like:
-
-    perf trace
-
-... or so. That you can then also enable this during bootup for 
-MCE events is just a very nice side effect of a much more 
-generally useful feature.
-
-Would you be interested in creating a clean incarnation of this 
-without making peterz sad? The 'perf trace' perf subcommand is 
-still unused and up for grabs for sufficiently good patches, 
-coincidentally ;-)
+s/performance measurements tool/performance measurement and analysis tool
 
 Thanks,
 
