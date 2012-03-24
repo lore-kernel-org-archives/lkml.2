@@ -1,147 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab2CXQhL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 12:37:11 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:43106 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab2CXQhK (ORCPT
+	id S1755179Ab2CXQl2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 12:41:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43958 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab2CXQl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 12:37:10 -0400
-Date: Sat, 24 Mar 2012 12:37:06 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL #3] audit device.h users in include/*
-Message-ID: <20120324163706.GC5573@windriver.com>
+	Sat, 24 Mar 2012 12:41:26 -0400
+Date: Sat, 24 Mar 2012 09:41:22 -0700
+From: mark gross <markgross@thegnar.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] PM / QoS: add pm_qos_update_request_timeout API
+Message-ID: <20120324164122.GB23888@envy17>
+Reply-To: markgross@thegnar.org
+References: <1330491360-1283-1-git-send-email-myungjoo.ham@samsung.com>
+ <1331096778-26186-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1331096778-26186-1-git-send-email-myungjoo.ham@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Mar 07, 2012 at 02:06:18PM +0900, MyungJoo Ham wrote:
+> The new API, pm_qos_update_request_timeout() is to provide a timeout
+> with pm_qos_update_request.
+> 
+> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+> QoS request on req with value 100 will be active for 1000 jiffies.
+> After 1000 jiffies, the QoS request thru req is rolled back to the
+> request status when pm_qos_update_request_timeout() was called. If there
+> were another pm_qos_update_request(req, x) during the 1000 jiffies, this
+> new request with value x will override as this is another request on the
+> same req handle. A new request on the same req handle will always
+> override the previous request whether it is the conventional request or
+> it is the new timeout request.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> Changes from v2
+> - Rebased to avoid merge conflict
+> Chages from v1(RFC)
+> - The semmantics of timeout changed. A timeout now means that the
+>  corresponding qos-req object is being cancelled, not rolling back to
+> the qos request state at the time of API call. With this changes,
+> combined with the conventional update_request API, there exists up to
+> only one qos request per qos-req object.
+> - The timeout values is expressed in ms (1/1000 sec), not jiffies.
+> - Style changes, removing unnecessary changes.
+> - Bugfixes regarding pending timeout work.
+> 
+> ---
+>  include/linux/pm_qos.h |    4 +++
+>  kernel/power/qos.c     |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index 0ee7caa..6f347fe 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -8,6 +8,7 @@
+>  #include <linux/notifier.h>
+>  #include <linux/miscdevice.h>
+>  #include <linux/device.h>
+> +#include <linux/workqueue.h>
+>  
+>  enum {
+>  	PM_QOS_RESERVED = 0,
+> @@ -33,6 +34,7 @@ enum {
+>  struct pm_qos_request {
+>  	struct plist_node node;
+>  	int pm_qos_class;
+> +	struct delayed_work work; /* for pm_qos_update_request_timeout */
+>  };
+>  
+>  struct dev_pm_qos_request {
+> @@ -77,6 +79,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+>  			s32 value);
+>  void pm_qos_update_request(struct pm_qos_request *req,
+>  			   s32 new_value);
+> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
+> +				   s32 new_value, unsigned long timeout_ms);
+>  void pm_qos_remove_request(struct pm_qos_request *req);
+>  
+>  int pm_qos_request(int pm_qos_class);
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index 3e122db..8ac8eca 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -259,6 +259,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
+>  EXPORT_SYMBOL_GPL(pm_qos_request_active);
+>  
+>  /**
+> + * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
+> + * @work: work struct for the delayed work (timeout)
+> + *
+> + * This cancels the timeout request by falling back to the default at timeout.
+> + */
+> +static void pm_qos_work_fn(struct work_struct *work)
+> +{
+> +	struct pm_qos_request *req = container_of(to_delayed_work(work),
+> +						  struct pm_qos_request,
+> +						  work);
+> +
+> +	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
+this should be pm_qos_remove_request (req);
 
-This is the 3rd of three cleanups I have for 3.4 content.
+--mark
 
-I don't expect you will get any merge conflicts here.
-
-Thanks,
-Paul.
----
-
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
-
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git tags/device-for-3.4
-
-for you to fetch changes up to 313162d0b83836e2f57e51b9b8650fb4b9c396ea:
-
-  device.h: audit and cleanup users in main include dir (2012-03-16 10:38:24 -0400)
-
-----------------------------------------------------------------
-The following text was taken from the original review request:
-
-	"[RFC PATCH 0/2] audit of linux/device.h users in include/*"
-		https://lkml.org/lkml/2012/3/4/159
---
-
-Nearly every subsystem has some kind of header with a proto like:
-
-	void foo(struct device *dev);
-
-and yet there is no reason for most of these guys to care about the
-sub fields within the device struct.  This allows us to significantly
-reduce the scope of headers including headers.  For this instance, a
-reduction of about 40% is achieved by replacing the include with the
-simple fact that the device is some kind of a struct.
-
-Unlike the much larger module.h cleanup, this one is simply two
-commits.  One to fix the implicit <linux/device.h> users, and then
-one to delete the device.h includes from the linux/include/ dir
-wherever possible.
-
-----------------------------------------------------------------
-Paul Gortmaker (2):
-      device.h: cleanup users outside of linux/include (C files)
-      device.h: audit and cleanup users in main include dir
-
- drivers/base/power/clock_ops.c        |    1 +
- drivers/base/power/common.c           |    1 +
- drivers/base/power/opp.c              |    1 +
- drivers/base/regmap/regcache-lzo.c    |    1 +
- drivers/base/regmap/regcache-rbtree.c |    1 +
- drivers/base/regmap/regcache.c        |    1 +
- drivers/base/regmap/regmap-debugfs.c  |    1 +
- drivers/base/regmap/regmap-irq.c      |    1 +
- drivers/base/regmap/regmap.c          |    1 +
- drivers/edac/edac_stub.c              |    1 +
- drivers/edac/mce_amd_inj.c            |    1 +
- drivers/mfd/wm8994-regmap.c           |    1 +
- drivers/power/apm_power.c             |    1 +
- drivers/power/power_supply.h          |    4 ++++
- drivers/power/power_supply_leds.c     |    1 +
- drivers/power/power_supply_sysfs.c    |    1 +
- include/linux/amba/pl022.h            |    2 --
- include/linux/atmdev.h                |    2 +-
- include/linux/attribute_container.h   |    3 ++-
- include/linux/c2port.h                |    3 ++-
- include/linux/cdrom.h                 |    1 -
- include/linux/cpu.h                   |    3 ++-
- include/linux/cpufreq.h               |    1 -
- include/linux/crash_dump.h            |    1 -
- include/linux/dma-buf.h               |    2 +-
- include/linux/edac.h                  |    6 +++++-
- include/linux/fb.h                    |    1 -
- include/linux/firewire.h              |    3 ++-
- include/linux/hwmon-sysfs.h           |    2 ++
- include/linux/hwmon.h                 |    2 +-
- include/linux/hwspinlock.h            |    2 +-
- include/linux/ide.h                   |    3 ++-
- include/linux/ipmi.h                  |    2 +-
- include/linux/ipmi_smi.h              |    3 ++-
- include/linux/jz4740-adc.h            |    2 +-
- include/linux/maple.h                 |    2 +-
- include/linux/mfd/abx500.h            |    3 ++-
- include/linux/mfd/abx500/ab5500.h     |    2 +-
- include/linux/mfd/abx500/ab8500.h     |    4 +++-
- include/linux/mfd/pm8xxx/pm8921.h     |    1 -
- include/linux/mfd/stmpe.h             |    4 +++-
- include/linux/mfd/tc3589x.h           |    2 +-
- include/linux/mlx4/driver.h           |    1 -
- include/linux/mmc/card.h              |    1 +
- include/linux/mmc/core.h              |    2 +-
- include/linux/mmc/host.h              |    1 +
- include/linux/netdevice.h             |    2 +-
- include/linux/of_device.h             |    3 ++-
- include/linux/opp.h                   |    1 +
- include/linux/phy.h                   |    5 +++--
- include/linux/pm_domain.h             |    2 ++
- include/linux/power_supply.h          |    3 ++-
- include/linux/regmap.h                |    2 +-
- include/linux/regulator/consumer.h    |    3 ++-
- include/linux/rfkill.h                |    2 +-
- include/linux/rio_drv.h               |    1 -
- include/linux/serial_pnx8xxx.h        |    1 -
- include/linux/spi/mmc_spi.h           |    2 +-
- include/linux/wimax/debug.h           |    2 +-
- include/media/media-device.h          |    3 ++-
- include/media/v4l2-ctrls.h            |    1 -
- include/media/v4l2-ioctl.h            |    1 -
- include/net/mac80211.h                |    3 ++-
- include/scsi/scsi_device.h            |    2 +-
- include/sound/core.h                  |    5 ++---
- include/sound/soc-dapm.h              |    3 ++-
- include/trace/events/regmap.h         |    2 +-
- include/trace/events/rpm.h            |    3 ++-
- include/trace/events/writeback.h      |    1 -
- net/rfkill/core.c                     |    1 +
- sound/core/init.c                     |    1 +
- sound/core/pcm.c                      |    1 +
- sound/core/seq/seq.c                  |    1 +
- sound/core/timer.c                    |    1 +
- 74 files changed, 92 insertions(+), 52 deletions(-)
+> +}
+> +
+> +/**
+>   * pm_qos_add_request - inserts new qos request into the list
+>   * @req: pointer to a preallocated handle
+>   * @pm_qos_class: identifies which list of qos request to use
+> @@ -282,6 +297,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
+>  		return;
+>  	}
+>  	req->pm_qos_class = pm_qos_class;
+> +	INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
+>  	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
+>  			     &req->node, PM_QOS_ADD_REQ, value);
+>  }
+> @@ -308,6 +324,9 @@ void pm_qos_update_request(struct pm_qos_request *req,
+>  		return;
+>  	}
+>  
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+>  	if (new_value != req->node.prio)
+>  		pm_qos_update_target(
+>  			pm_qos_array[req->pm_qos_class]->constraints,
+> @@ -316,6 +335,34 @@ void pm_qos_update_request(struct pm_qos_request *req,
+>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
+>  
+>  /**
+> + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
+> + * @req : handle to list element holding a pm_qos request to use
+> + * @new_value: defines the temporal qos request
+> + * @timeout_ms: the effective duration of this qos request in msecs.
+> + *
+> + * After timeout_ms, this qos request is cancelled automatically.
+> + */
+> +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
+> +				   unsigned long timeout_ms)
+> +{
+> +	if (!req)
+> +		return;
+> +	if (WARN(!pm_qos_request_active(req),
+> +		 "%s called for unknown object.", __func__))
+> +		return;
+> +
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+> +	if (new_value != req->node.prio)
+> +		pm_qos_update_target(
+> +			pm_qos_array[req->pm_qos_class]->constraints,
+> +			&req->node, PM_QOS_UPDATE_REQ, new_value);
+> +
+> +	schedule_delayed_work(&req->work, msecs_to_jiffies(timeout_ms));
+> +}
+> +
+> +/**
+>   * pm_qos_remove_request - modifies an existing qos request
+>   * @req: handle to request list element
+>   *
+> @@ -334,6 +381,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
+>  		return;
+>  	}
+>  
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+>  	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
+>  			     &req->node, PM_QOS_REMOVE_REQ,
+>  			     PM_QOS_DEFAULT_VALUE);
+> -- 
+> 1.7.4.1
+> 
