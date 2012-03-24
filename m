@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2CXJjn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 05:39:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37240 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab2CXJjm convert rfc822-to-8bit (ORCPT
+	id S1753565Ab2CXJpK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 05:45:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64815 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab2CXJpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 05:39:42 -0400
-MIME-Version: 1.0
-Date: Sat, 24 Mar 2012 20:39:40 +1100
-X-Google-Sender-Auth: WqTbzBWYpQDQuJhKWd13lxYI41g
-Message-ID: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
-Subject: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for linux
- kernel 3.3.0
-From: Con Kolivas <kernel@kolivas.org>
+	Sat, 24 Mar 2012 05:45:07 -0400
+X-AuditID: cbfee61a-b7c49ae0000061d4-79-4f6d97a2d5ec
+From: Thomas Abraham <thomas.abraham@linaro.org>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Cc: k.lewandowsk@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org
+Subject: [PATCH v4 0/2] regulator: add irq domain and device tree support for
+ MAX8997
+Date: Sat, 24 Mar 2012 15:19:48 +0530
+Message-id: <1332582590-16382-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to announce the first stable release of the BFS CPU scheduler
-for linux 3.3.0 designed for optimal interactivity, responsiveness and
-throughput on commodity hardware.
+Changes since v3:
+- Fixed all comments from Grant Likely.
+  - In patch 1/2, since linear mapping is used, the handle_nested_irq() is
+    called only for allocated irq's.
+  - In patch 2/2, the incorrect assignment of platform data pointer to
+    dev->platform_data is reworked and fixed.
 
-The changes since BFS version 0.416 include a fairly large
-architectural change just to bring the codebase in sync with 3.3, but
-none of the changes should be noticeable in any way. One change that
-may be user-visible is that the high resolution IRQ accounting now
-appears to be on by default for x86 architectures. There is an issue
-that system time accounting is wrong without this feature enabled in
-BFS so this should correct that problem.
+Changes since v2:
+- Atleast one voltage level has to be specfied for Buck 1/2/5 even if GPIO
+  DVS option is not used (suggested by MyungJoo Ham).
+- Reworked the irq_domain support based the v5 of irq_domain generalization
+  patches.
 
-Other changes:
-416-417: A number of ints were changed to bool which though unlikely
-to have any performance impact, do make the code cleaner and the
-compiled code does often come out different. rq_running_iso was
-converted from a function to macro to avoid it being a separate
-function call when compiled in with the attendant overhead.
-requeue_task within the scheduler tick was moved to being done under
-lock which may prevent rare races.  test_ret_isorefractory() was
-optimised. set_rq_task() was not being called on tasks that were being
-requeued within schedule() which could possibly have led to issues if
-the task ran out of timeslice during that requeue and should have had
-its deadline offset. The need_resched() check that occurs at the end
-of schedule() was changed to unlikely() since it really is that. Moved
-the scheduler version print function to bfs.c to avoid recompiling the
-entire kernel if the version number is changed.
+MAX8997 is a multi-function device which includes support for regulators, rtc,
+battery charger and other sub-blocks. This patchset adds device tree support
+for the pmic (regulators) sub-block.
 
-417-418: Fixed a problem with the accounting resync for linux 3.3.
+The first patch adds irq domain support for the interrupts supported by max8997
+mainly for removing the need to pass a irq_base from the platform code. The
+irq_base could not anyway be passed in case of device tree based instantiation.
+The reverse mapping method used is linear since the sub-drivers of max8997 has
+access to the max8997 irq_domain from which the linux irq number can be
+obtained.
 
-418-419: There was a small possibility that an unnecessary resched
-would occur in try_preempt if a task had changed affinity and called
-try_preempt with its ->cpu still set to the old cpu it could no longer
-run on, so try_preempt was reworked slightly. Reintroduced the
-deadline offset based on CPU cache locality on sticky tasks in a way
-that was cheaper than we currently offset the deadline.
+The second patch adds device tree support for max8997. This patch modifies both
+mfd and regulator portions of the max8997 code.
 
-419-420: Finally rewrote the earliest_deadline_task code. This has
-long been one of the hottest code paths in the scheduler and small
-changes here that made it look nice would often slow it down. I spent
-quite a few hours reworking it to include less GOTOs while
-disassembling the code to make sure it was actually getting smaller
-with every change.  Then I wrote a scheduler specific version of
-find_next_bit which could be inlined into this code and avoid another
-function call in the hot path. The overall behaviour is unchanged from
-previous BFS versions, but initial benchmarking confirms slight
-improvements in throughput.
+This patchset is based on the following tree.
+http://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git [for-next]
 
-While interactivity is the prime concern for BFS, as part of the
-regression testing, throughput benchmarks are performed with
-kernbench. This is a plot of BFS 418/420 and mainline archlinux 3.3.0
-kernel on a dual quad hyperthread core2 (lower is better):
+with all patches merged from
+http://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git [for-next]
+http://git.secretlab.ca/git/linux-2.6.git [irqdomain/next]
 
-http://postimage.org/image/wavusknl1/
+and depends on the following patchset.
+[PATCH v4 0/4] ARM: Exynos4: Add irq domain and device tree support for wakeup interrupts.
 
-Enjoy!
-お楽しみ下さい
+This patchset has been tested on Origen board.
 
---
--ck
+Thomas Abraham (2):
+  mfd: add irq domain support for max8997 interrupts
+  regulator: add device tree support for max8997
+
+ .../devicetree/bindings/regulator/max8997-pmic.txt |  133 ++++++++++++++++++
+ arch/arm/mach-exynos/mach-nuri.c                   |    4 -
+ arch/arm/mach-exynos/mach-origen.c                 |    1 -
+ drivers/mfd/max8997-irq.c                          |   61 +++++----
+ drivers/mfd/max8997.c                              |   74 ++++++++++-
+ drivers/regulator/max8997.c                        |  143 +++++++++++++++++++-
+ include/linux/mfd/max8997-private.h                |    5 +-
+ include/linux/mfd/max8997.h                        |    2 +-
+ 8 files changed, 386 insertions(+), 37 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8997-pmic.txt
+
