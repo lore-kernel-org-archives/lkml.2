@@ -1,125 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab2CXIuw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 04:50:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46689 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab2CXIuu (ORCPT
+	id S1752312Ab2CXJAg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 05:00:36 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:55105 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab2CXJAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 04:50:50 -0400
-MIME-Version: 1.0
-Date: Sat, 24 Mar 2012 09:50:49 +0100
-Message-ID: <CAFLxGvy+9eHbjsAm-FaV8ihXexGGLURbyDTd6X_pqE_mtOutcw@mail.gmail.com>
-Subject: BUG at fs/ocfs2/extent_map.c:476
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: ocfs2-users@oss.oracle.com, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Sat, 24 Mar 2012 05:00:34 -0400
+Date: Sat, 24 Mar 2012 10:00:30 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@amd64.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         LKML <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 2/2] x86, mce: Add persistent MCE event
+Message-ID: <20120324090030.GB15993@aftab>
+References: <1332340496-21658-1-git-send-email-bp@amd64.org>
+ <1332340496-21658-3-git-send-email-bp@amd64.org>
+ <20120323123156.GF13920@gmail.com>
+ <20120323133044.GA8115@aftab>
+ <20120324073731.GD20145@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120324073731.GD20145@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, Mar 24, 2012 at 08:37:31AM +0100, Ingo Molnar wrote:
+> I was mainly thinking of reducing this:
+> 
+>  arch/x86/kernel/cpu/mcheck/mce.c |   53 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 53 insertions(+)
+> 
+> to almost nothing. There doesn't seem to be much MCE specific in 
+> that code, right?
 
-Today one of my kvm hosts ran into this BUG.
-The host is member of y small ocfs2-cluster (3 hosts).
-CentOS 6.2, Kernel 3.1.1 (vanilla).
+Yeah, this could be generalized even more, AFAICT.
 
-[8138858.899066] ------------[ cut here ]------------
-[8138858.899156] kernel BUG at fs/ocfs2/extent_map.c:476!
-[8138858.899232] invalid opcode: 0000 [#1] SMP
-[8138858.899314] CPU 4
-[8138858.899324] Modules linked in: ip6table_filter ip6_tables
-iptable_filter ip_tables ebtable_nat ebtables netconsole ocfs2
-ocfs2_dlmfs ocfs2_stack_o2cb ocfs2_dlm ocfs2_nodemanager
-ocfs2_stackglue configfs sunrpc scsi_dh_rdac bridge 8021q garp stp llc
-be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb3i libcxgbi cxgb3 mdio
-ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr ipv6
-iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi dm_round_robin
-dm_multipath vhost_net macvtap macvlan tun kvm_intel kvm serio_raw
-pcspkr i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support ioatdma
-i7core_edac edac_core sg ext4 mbcache jbd2 sd_mod crc_t10dif pata_acpi
-ata_generic ata_piix 3w_sas igb dca dm_mod [last unloaded:
-scsi_wait_scan]
-[8138858.900430]
-[8138858.900500] Pid: 3044, comm: qemu-kvm Not tainted 3.1.1 #1
-Supermicro X8DT3/X8DT3
-[8138858.900656] RIP: 0010:[<ffffffffa04f5531>]  [<ffffffffa04f5531>]
-ocfs2_get_clusters_nocache+0x4d1/0x520 [ocfs2]
-[8138858.900836] RSP: 0018:ffff8803efa01688  EFLAGS: 00010287
-[8138858.900911] RAX: 000000000000002f RBX: ffff8802ebe79030 RCX:
-0000000000062114
-[8138858.901048] RDX: 0000000000000300 RSI: 00000000000620ec RDI:
-ffff8802ebe79320
-[8138858.901183] RBP: ffff8803efa01708 R08: 0000000000062114 R09:
-0000000000000000
-[8138858.901322] R10: 0000000000000000 R11: 0000000000000000 R12:
-ffff8803efa01738
-[8138858.901458] R13: ffff8804d6095000 R14: 0000000000000000 R15:
-0000000000000001
-[8138858.901595] FS:  00007fa10d5f9700(0000) GS:ffff88063fc00000(0000)
-knlGS:0000000000000000
-[8138858.901734] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[8138858.901809] CR2: 00000000006bdc5c CR3: 00000004cf670000 CR4:
-00000000000026e0
-[8138858.901942] DR0: 0000000000000001 DR1: 0000000000000002 DR2:
-0000000000000001
-[8138858.902075] DR3: 000000000000000a DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[8138858.902208] Process qemu-kvm (pid: 3044, threadinfo
-ffff8803efa00000, task ffff880349986080)
-[8138858.902343] Stack:
-[8138858.902408]  0000000000000000 ffff880300000000 ffff8802ebe79000
-ffff8803efa01754
-[8138858.902556]  ffff880505f9acb0 000620ec00000000 ffff8803efa01874
-ffff8803efa017c4
-[8138858.902706]  ffff880002557130 ffffffffa04fdade ffff88062a8f2000
-00000000000620ec
-[8138858.902854] Call Trace:
-[8138858.902945]  [<ffffffffa04fdade>] ?
-ocfs2_read_inode_block_full+0x3e/0x60 [ocfs2]
-[8138858.903100]  [<ffffffffa04f5f83>] ocfs2_get_clusters+0x1f3/0x380 [ocfs2]
-[8138858.903197]  [<ffffffffa04f616d>]
-ocfs2_extent_map_get_blocks+0x5d/0x1a0 [ocfs2]
-[8138858.903337]  [<ffffffff810b1ebf>] ? __css_put+0x3f/0x90
-[8138858.903429]  [<ffffffffa04da6dd>] ocfs2_get_block+0xad/0x9a0 [ocfs2]
-[8138858.903512]  [<ffffffff8111fc79>] ? zone_statistics+0x99/0xc0
-[8138858.903595]  [<ffffffff81159f5c>] ? __mem_cgroup_commit_charge+0x6c/0xc0
-[8138858.903679]  [<ffffffff811986b2>] do_mpage_readpage+0x492/0x630
-[8138858.903758]  [<ffffffff8111fcd5>] ? __inc_zone_page_state+0x35/0x40
-[8138858.903841]  [<ffffffff811029f1>] ? add_to_page_cache_locked+0xd1/0x140
-[8138858.903921]  [<ffffffff811989c2>] mpage_readpages+0x102/0x160
-[8138858.904015]  [<ffffffffa04da630>] ?
-ocfs2_map_page_blocks+0x3b0/0x3b0 [ocfs2]
-[8138858.904170]  [<ffffffffa04da630>] ?
-ocfs2_map_page_blocks+0x3b0/0x3b0 [ocfs2]
-[8138858.904331]  [<ffffffffa04f37aa>] ?
-ocfs2_inode_lock_full_nested+0x28a/0xad0 [ocfs2]
-[8138858.904484]  [<ffffffffa04d98e1>] ? ocfs2_readpages+0x41/0xe0 [ocfs2]
-[8138858.904583]  [<ffffffffa04d9967>] ocfs2_readpages+0xc7/0xe0 [ocfs2]
-[8138858.904662]  [<ffffffff8110dda2>] __do_page_cache_readahead+0x1b2/0x260
-[8138858.904740]  [<ffffffff8110de71>] ra_submit+0x21/0x30
-[8138858.904815]  [<ffffffff8110e225>] ondemand_readahead+0x115/0x240
-[8138858.904894]  [<ffffffff8110e3d8>] page_cache_async_readahead+0x88/0xb0
-[8138858.904974]  [<ffffffff811043eb>] generic_file_aio_read+0x48b/0x740
-[8138858.905074]  [<ffffffffa04f8f93>] ocfs2_file_aio_read+0xe3/0x380 [ocfs2]
-[8138858.905155]  [<ffffffff8116026a>] do_sync_read+0xda/0x120
-[8138858.905233]  [<ffffffff811ee9fb>] ? security_file_permission+0x8b/0x90
-[8138858.905315]  [<ffffffff811609b5>] vfs_read+0xc5/0x190
-[8138858.905391]  [<ffffffff81160b22>] sys_pread64+0xa2/0xb0
-[8138858.905469]  [<ffffffff814e1042>] system_call_fastpath+0x16/0x1b
-[8138858.905545] Code: c0 90 56 a0 bb e2 ff ff ff 48 8b 42 28 48 8b 4a
-40 48 c7 c2 78 2e 57 a0 48 89 c7 31 c0 e8 18 b1 04 00 48 8b 7d b8 e9
-37 fe ff ff <0f> 0b eb fe 65 48 8b 34 25 40 c4 00 00 8b 96 8c 04 00 00
-48 63
-[8138858.906011] RIP  [<ffffffffa04f5531>]
-ocfs2_get_clusters_nocache+0x4d1/0x520 [ocfs2]
-[8138858.906174]  RSP <ffff8803efa01688>
-[8138858.906541] ---[ end trace 5b1e50f0d8b3c799 ]---
+> 
+> > Btw, the more important question is are we going to need 
+> > persistent events that much so that a generic approach is 
+> > warranted? I guess maybe the black box events recording deal 
+> > would be another user..
+> 
+> So, here's the big picture as I see it:
+> 
+> I think tracing could use persistent events: mark all the events 
+> we want to trace as persistent from bootup, and recover the 
+> bootup trace after the system has been booted up.
 
-Is this a known/fixed bug?
+Right, but (more nasty questions):
+
+Why would I do this, am I tracing the boot process? If so, then I need
+another syntax which enables those events from the kernel command line
+which gets parsed the moment ftrace and ring buffer get initialized.
+
+IOW, I'd need userspace for perf otherwise but I don't have that before
+booting...
+
+Then, after having booted, do I stop the trace? If no, then I can see
+the persistency in there so are you saying we want a low overhead, low
+ressource utilization machinery which runs all the time and traces
+the system? What are possible real life use cases for that? Scheduler
+analysis probably, long-term tracing of some stuff people are interested
+in how it behaves over long periods of time... MCE is one use case,
+definitely...
+
+> But other, runtime models of tracing could use it as well: 
+> basically the main difference that ftrace has to perf based 
+> tracing today is a system-wide persistent buffer with no 
+> particular owning process. (The rest is mostly UI and analysis 
+> features and scope of tracing differences, and of course a lot 
+> more love and detail went into ftrace so far.)
+> 
+> So MCE will in the end be just a minor user of such a facility - 
+> I think you should aim for enabling *any* set of events to have 
+> persistent recording properties, and add the APIs to recover 
+> that information sanely. It should also be possible for them to 
+> record into a shared mmap page in essence - instead of having 
+> per event persistent buffers.
+
+Sounds like ftrace. But we have that already, we only need to get to
+using it perf-side, no...? Especially if we could get the love and
+detail that went in there for free :-) ...without stepping on Steve's
+toes, of course :-).
+
+..
+
+Fun.
 
 -- 
-Thanks,
-//richard
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
