@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab2CXSra (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 14:47:30 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46846 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab2CXSr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 14:47:28 -0400
-Date: Sat, 24 Mar 2012 14:42:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
-        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+	id S1755800Ab2CXSu1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 14:50:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35986 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753234Ab2CXSu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 14:50:26 -0400
+Message-ID: <4F6E1742.6060709@zytor.com>
+Date: Sat, 24 Mar 2012 11:49:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Thomas Renninger <trenn@suse.de>,
+        eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
         robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
 Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
  initrd
-Message-ID: <20120324184238.GB13978@phenom.dumpdata.com>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de>
- <4F6CD79A.8020805@zytor.com>
- <201203240242.07724.trenn@suse.de>
- <4F6D2AF8.3070707@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6D2AF8.3070707@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090209.4F6E16A8.008D,ss=1,re=0.000,fgs=0
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com> <201203240402.38749.trenn@suse.de> <4F6D50DD.4050306@zytor.com> <20120324092451.GA3352@liondog.tnic>
+In-Reply-To: <20120324092451.GA3352@liondog.tnic>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2. We create a new simple header (just a magic number, an identifier
->    for the type of data, and a length) for each of the early-initrd
->    objects:
+[Adding Harald Hoyer, maintainer of dracut.  Harald, we're discussing
+adding components to the initrd blob which is used during early boot.
+We have at least two such users identified: microcode updates and ACPI
+override.  The two proposals on the table is either to stick with cpio
+format and using a special namespace (e.g. kernel/) or using a new
+header for these early objects that would be skipped by the initramfs
+decoder.]
+
+On 03/24/2012 02:24 AM, Borislav Petkov wrote:
+> On Fri, Mar 23, 2012 at 09:43:09PM -0700, H. Peter Anvin wrote:
+>> By the way, if "relying on the bootloader" was an option in any way then
+>> we would already have a solution in the form of the kernel data linked
+>> list.  Unfortunately to the best of my knowledge not a single bootloader
+>> provides support for it.
 > 
-> 	struct early_initrd_header {
-> 		u64 magic;	/* 0xa5a46ce422d8f5a1 */
-
-Probably should also have:
-		u32 version;
-
-in case we decide to expand this structure in the future, and:
-> 		u32 type;	/* 1 = file data, 2 = ACPI, 3 = microcode... */
-> 		u32 length;	/* Length of data object */
-> 	};
-
-and encapsulate the whole thing in a 4K union?
-
+> ... and that's unfortunate because if we had that support, we wouldn't
+> need to redo the initrd each time microcode or BIOS tables change but
+> simply point the boot loader to the updated images.
 > 
->    XXX: Should we make this a defined endianness (presumably
->    bigendian), or use host-endianness?  I would guess the former might
->    be better...
-
-Perhaps the header should be in big-endian (that is the same as the network
-byte order, right?) and each sub-type can define its own endian?
-
-The sub-types could be:
-	struct microcode_type {
-		u64	magic;
-		u32	version;
-#define BIG_ENDIAN	1<<1
-#define LITTLE_ENDIAN	1<<2
-		u32	flags;
-	}
-
-and that could be attached to the end of the 'early_initrd_header' ?
-
+> :-(
 > 
-> Either of these allow one piece of code to quickly bypass bits that
-> doesn't belong to it.
+> Btw, hpa, didn't you have someone working on early microcode loading,
+> any results there?
 > 
-> Thoughts?
-> 
-> 	-hpa
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Yes... unfortunately between the kernel.org disaster and having a baby I
+haven't had enough to time to get that work out of the freezer, which is
+unfortunate in the extreme.
+
+On the other hand, perhaps it is a good thing we didn't end up settling
+on a protocol which was too narrow purpose for that one, too.
+
+This is my current thinking, and please comment on this so we don't
+spend a bunch of time bikeshedding this one... I'd like to come up with
+something that we can implement and move on.
+
+I have to say I'm personally leaning in the direction of just using a
+special namespace and still encode things as cpio.  However, in order
+for that to work we need to make sure that the invariant "early kernel
+objects come before any compressed blob" is maintained at all times,
+which might be sensitive.  However, it has serious advantages both from
+a bootloader UI point of view (names are ASCII strings) and from a tools
+point of view (it's just cpio, still.)
+
+The main downside is that the cpio header is mostly in ASCII encoded
+hexadecimal, which adds to the amount of code that needs to be ported
+into "special" environments... not a problem for the ACPI converter but
+for the early microcode it matters.
+
+I might try to throw a minimal walker together and see how much code it
+is, unless someone beats me to it ;)
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
