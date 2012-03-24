@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab2CXMs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 08:48:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37430 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab2CXMs5 convert rfc822-to-8bit (ORCPT
+	id S1755927Ab2CXMxI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 08:53:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55022 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755539Ab2CXMxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 08:48:57 -0400
-Message-ID: <1332593303.16159.28.camel@twins>
-Subject: Re: [PATCH 07/10] um: Should hold tasklist_lock while traversing
- processes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linux-mm@kvack.org
-Date: Sat, 24 Mar 2012 13:48:23 +0100
-In-Reply-To: <20120324103030.GG29067@lizard>
-References: <20120324102609.GA28356@lizard> <20120324103030.GG29067@lizard>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 24 Mar 2012 08:53:06 -0400
+MIME-Version: 1.0
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Sat, 24 Mar 2012 08:52:46 -0400
+Message-ID: <CAOPLpQcu3DTLHYnfbX0_k1M4=Yw2LSFEB6K4nEGavve1mWDsSg@mail.gmail.com>
+Subject: seq_put_decimal_* optimization
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-24 at 14:30 +0400, Anton Vorontsov wrote:
-> Traversing the tasks requires holding tasklist_lock, otherwise it
-> is unsafe. 
+If we want to squeeze out the last drop of slack from the /proc text
+generation, shouldn't we then avoid code like
 
-No it doesn't, it either requires tasklist_lock or rcu_read_lock().
++       seq_put_decimal_ull(m, ' ', 0);
+
+which is worse than what was there before? I realize that the code
+actually becomes more readable like this.  So how about automatically
+optimizing the code by adding something like the following to
+seq_file.h:
+
+#define seq_put_decimal_ull(m, delimiter, num) \
+  (__builtin_constant_p(num) && \
+   __builtin_constant_p(delimiter) && (delimiter) == ' ' \
+   ? seq_write(m, " " #num, sizeof(" " #num) - 1) \
+   : seq_put_decimal_ull(m, delimiter, num))
+
+Completely untested and it is a minimal change.  It could be written
+using an inline function and probably made more general that way
+(e.g., handle more delimiters).  But this code should handle the case
+that exist today and lead to a (very small) improvement without any
+real costs to maintenance.
