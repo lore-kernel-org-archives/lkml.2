@@ -1,130 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2CXExo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 00:53:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44172 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab2CXExn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 00:53:43 -0400
+	id S1756338Ab2CXE7B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 00:59:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59728 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755168Ab2CXE7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 00:59:00 -0400
+Message-ID: <4F6D5481.8050706@zytor.com>
+Date: Fri, 23 Mar 2012 21:58:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+jqyFAzpTs+JeemD7wpSgW0hmECMSPMsaZtQ7zLgn+ebXSJFQ@mail.gmail.com>
-References: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
-	<1332531400.23924.71.camel@gandalf.stny.rr.com>
-	<CA+jqyFAzpTs+JeemD7wpSgW0hmECMSPMsaZtQ7zLgn+ebXSJFQ@mail.gmail.com>
-Date: Sat, 24 Mar 2012 10:23:42 +0530
-Message-ID: <CA+jqyFC6ZNOaGBTPc7s7EoTsJBUn6Z+43H0At_YmQ7gsUiP4eA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
-From: Rajesh Bhagat <rajesh.lnx@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
+        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
+ initrd
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com> <201203240402.38749.trenn@suse.de> <4F6D50DD.4050306@zytor.com> <CAE9FiQXvi-HPO+Ct=k0Ga_uaTrntJW=nh-VKnGbXaovFN=zDaQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQXvi-HPO+Ct=k0Ga_uaTrntJW=nh-VKnGbXaovFN=zDaQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On 03/23/2012 09:50 PM, Yinghai Lu wrote:
+> On Fri, Mar 23, 2012 at 9:43 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> Can this be implemented without using dynamic memory allocations?
+>>> If not, it's not suitable for early APCI overriding.
+>>
+>> Yes it can, as long as it is uncompressed.  It just becomes a matter of
+>> walking the cpio headers which is effectively a linked list.
+> 
+> During checking in reserve_inirtd() (BTW, the name of the function is outdated).
+> memblock is ready.
+> So dynamical memory allocation is there already.
+> 
+> also could put that headers in the tail, so old intird utilities could
+> work as before.
+> 
 
-Just to add to it, This problem occurs only in case when same tracer
-is enabled again i.e. function on function.
-In other case code does not hit below code, and anyways
-tracing_reset_online_cpus and trace->init is called to reset the
-trace.
+We could; I'm not sure if that would be an improvement or not.
 
->>> -   if (t == current_trace)
->>> +   if (t == current_trace) {
->>> +       tracing_reset_online_cpus(tr);
->>>         goto out;
->>> +   }
+However, for the microcode update stuff this needs to happen long before
+memblock exists, so it's not really an option.  However, it's not a
+problem, as the whole initrd blob needs to be reserved for that duration.
 
-My point is, this issue is specific to a situation i.e. same tracer
-set again, hence making resetting the trace not a very obvious choice.
+	-hpa
 
-Please comment.
 
--Rajesh
-
-On Sat, Mar 24, 2012 at 9:47 AM, Rajesh Bhagat <rajesh.lnx@gmail.com> wrote:
-> Hi Steven,
->
-> Thanks for the reply.
->
-> I was wondering, why would a user reset the trace __explicitly__
-> without even using it.
-> That is why i created a patch for it.
->
->>> /debug/tracing # echo function > current_tracer
->>> /debug/tracing # cat trace <------ Not performed
->>> /debug/tracing # echo schedule > set_ftrace_filter
->>> /debug/tracing # echo function > current_trace
->>> /debug/tracing # cat trace <------- Only this is performed
->
-> - Rajesh
->
-> On Sat, Mar 24, 2012 at 1:06 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> On Wed, 2012-03-21 at 11:22 +0530, Rajesh Bhagat wrote:
->>> >From 60ec8a88ba671fa0b424f7b4467dba3ea8a2a2c8 Mon Sep 17 00:00:00 2001
->>> From: Rajesh Bhagat <rajesh.lnx@gmail.com>
->>> Date: Tue, 20 Mar 2012 10:35:59 +0530
->>> Subject: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
->>>
->>> This patch resets the trace_array using tracing_reset_online_cpus, if same
->>> tracer is set again instead of just returning from funtion tracing_set_tracer.
->>>
->>> problem description
->>> -------------------
->>> once function tracer is set, set_ftrace_filter not working.
->>> /debug/tracing # echo function > current_tracer
->>> /debug/tracing # echo schedule > set_ftrace_filter
->>> /debug/tracing # echo function > current_tracer
->>
->> Sorry no. The correct way you want to do this is:
->>
->> /debug/tracing # echo > trace
->>
->> That will reset the buffer for you and give you the desired result.
->>
->> -- Steve
->>
->>
->>
->>> /debug/tracing #  cat trace
->>> # tracer: function
->>> #
->>> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
->>> #              | |       |          |         |
->>>           <idle>-0     [000]    21.997778: irq_enter <-handle_IRQ
->>>           <idle>-0     [000]    21.997785: idle_cpu <-irq_enter
->>>           <idle>-0     [000]    21.997794: local_bh_disable <-irq_enter
->>>           <idle>-0     [000]    21.997800: tick_check_idle <-irq_enter
->>>           <idle>-0     [000]    21.997807:
->>> tick_check_oneshot_broadcast <-tick_check_idle
->>>           <idle>-0     [000]    21.997814: _local_bh_enable <-irq_enter
->>>
->>> After applying this patch, only filtered functions are traced.
->>>
->>> Signed-off-by: Rajesh Bhagat <rajesh.lnx@gmail.com>
->>> ---
->>>  kernel/trace/trace.c |    4 +++-
->>>  1 files changed, 3 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->>> index a3f1bc5..f4fb190 100644
->>> --- a/kernel/trace/trace.c
->>> +++ b/kernel/trace/trace.c
->>> @@ -3058,8 +3058,10 @@ static int tracing_set_tracer(const char *buf)
->>>         ret = -EINVAL;
->>>         goto out;
->>>     }
->>> -   if (t == current_trace)
->>> +   if (t == current_trace) {
->>> +       tracing_reset_online_cpus(tr);
->>>         goto out;
->>> +   }
->>>
->>>     trace_branch_disable();
->>>     if (current_trace && current_trace->reset)
->>
->>
