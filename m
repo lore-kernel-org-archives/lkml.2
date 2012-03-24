@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2CXMyT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 08:54:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39852 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333Ab2CXMyR convert rfc822-to-8bit (ORCPT
+	id S1756140Ab2CXNSW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 09:18:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47936 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755873Ab2CXNSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 08:54:17 -0400
-Message-ID: <1332593574.16159.31.camel@twins>
-Subject: Re: [PATCH 10/10] oom: Make find_lock_task_mm() sparse-aware
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linux-mm@kvack.org
-Date: Sat, 24 Mar 2012 13:52:54 +0100
-In-Reply-To: <20120324103127.GJ29067@lizard>
-References: <20120324102609.GA28356@lizard> <20120324103127.GJ29067@lizard>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 24 Mar 2012 09:18:21 -0400
+Message-ID: <4F6DC98D.9040800@gmail.com>
+Date: Sat, 24 Mar 2012 08:18:05 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+MIME-Version: 1.0
+To: Thomas Abraham <thomas.abraham@linaro.org>
+CC: devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches@linaro.org
+Subject: Re: [PATCH] of/irq: add empty irq_of_parse_and_map() for non-dt builds
+References: <1332581257-15989-1-git-send-email-thomas.abraham@linaro.org> <4F6DC847.8000902@gmail.com>
+In-Reply-To: <4F6DC847.8000902@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-24 at 14:31 +0400, Anton Vorontsov wrote:
-> This is needed so that callers would not get 'context imbalance'
-> warnings from the sparse tool.
+On 03/24/2012 08:12 AM, Rob Herring wrote:
+> On 03/24/2012 04:27 AM, Thomas Abraham wrote:
+>> Add a empty irq_of_parse_and_map() that returns 0 for non-dt builds and
+>> avoid having #ifdef CONFIG_OF around all calls to irq_of_parse_and_map().
+>>
+>> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+>> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+>> ---
 > 
-> As a side effect, this patch fixes the following sparse warnings:
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
 > 
->   CHECK   mm/oom_kill.c
->   mm/oom_kill.c:201:28: warning: context imbalance in 'oom_badness' -
->   unexpected unlock
->   include/linux/rcupdate.h:249:30: warning: context imbalance in
->   'dump_tasks' - unexpected unlock
->   mm/oom_kill.c:453:9: warning: context imbalance in 'oom_kill_task' -
->   unexpected unlock
->   CHECK   mm/memcontrol.c
->   ...
->   mm/memcontrol.c:1130:17: warning: context imbalance in
->   'task_in_mem_cgroup' - unexpected unlock
+> Go ahead and merge with the rest of your series.
 > 
-> p.s. I know Peter Zijlstra detest the __cond_lock() stuff, but untill
->      we have anything better in sparse, let's use it. This particular
->      patch helped me to detect one bug that I myself made during
->      task->mm fixup series. So, it is useful.
 
-Yeah, so Nacked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Screwed up the lkml address, so just adding it back...
 
-Also, why didn't lockdep catch it?
+Rob
 
-Fix sparse already instead of smearing ugly all over.
+> Rob
+> 
+>>  include/linux/of_irq.h |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+>> index d229ad3..5614355 100644
+>> --- a/include/linux/of_irq.h
+>> +++ b/include/linux/of_irq.h
+>> @@ -76,5 +76,11 @@ extern struct device_node *of_irq_find_parent(struct device_node *child);
+>>  extern void of_irq_init(const struct of_device_id *matches);
+>>  
+>>  #endif /* CONFIG_OF_IRQ */
+>> +#else /* CONFIG_OF */
+>> +static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
+>> +						int index)
+>> +{
+>> +	return 0;
+>> +}
+>>  #endif /* CONFIG_OF */
+>>  #endif /* __OF_IRQ_H */
+> 
+
