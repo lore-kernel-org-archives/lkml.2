@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab2CXCEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 22:04:10 -0400
-Received: from ozlabs.org ([203.10.76.45]:47651 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab2CXCEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 22:04:07 -0400
-Date: Sat, 24 Mar 2012 13:03:53 +1100
-From: Anton Blanchard <anton@samba.org>
-To: riel@redhat.com, aarcange@redhat.com, mel@csn.ul.ie,
-        akpm@linux-foundation.org, hughd@google.com
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: kswapd stuck using 100% CPU
-Message-ID: <20120324130353.48f2e4c8@kryten>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755424Ab2CXCFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 22:05:35 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:37175 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752454Ab2CXCFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 22:05:33 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275bh8275dhz2fh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F6D2BC5.9070200@am.sony.com>
+Date: Fri, 23 Mar 2012 19:04:53 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alessio Igor Bogani <abogani@kernel.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Jan Beulich <jbeulich@novell.com>,
+        Kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Bird, Tim" <Tim.Bird@am.sony.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
+References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com> <1310626276-4541-1-git-send-email-abogani@kernel.org>
+In-Reply-To: <1310626276-4541-1-git-send-email-abogani@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/13/11 23:51, Alessio Igor Bogani wrote:
+> The commit f02e8a6 sorts symbols placing each of them in its own elf section.
+> The sorting and merging into the canonical sections are done by the linker.
+> Unfortunately modpost to generate Module.symvers file parses vmlinux
 
-Hi,
+Yet another unfortunately: modpost parses vmlinux.o instead of vmlinux (vmlinux
+does not yet exist at this point of the build).  vmlinux.o also does not have
+the many sections sorted and merged into the canonical sections.  As a result,
+the Module.symvers created my modpost incorrectly reports the license of all
+exports as "(unknown)".
 
-I booted the latest git today on a ppc64 box. When I pushed it into
-swap I noticed both kswapd's were using 100% CPU and the soft lockup
-detector suggested it was stuck in balance_pgdat:
-
-BUG: soft lockup - CPU#7 stuck for 23s! [kswapd1:359]
-Call Trace:
-[c00000000015e190] .balance_pgdat+0x150/0x940 
-[c00000000015eb2c] .kswapd+0x1ac/0x490
-[c00000000009edbc] .kthread+0xbc/0xd0
-[c00000000002142c] .kernel_thread+0x54/0x70
-
-I haven't had time to bisect but I did notice we were looping here:
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 7658fd6..c92bad2 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2945,9 +2959,11 @@ out:
- 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
- 				continue;
- 
-+#if 0
- 			/* Would compaction fail due to lack of free memory? */
- 			if (compaction_suitable(zone, order) == COMPACT_SKIPPED)
- 				goto loop_again;
-+#endif
- 
- 			/* Confirm the zone is balanced for order-0 */
- 			if (!zone_watermark_ok(zone, 0,
+Can you fix this also please?
 
 
-After commenting it out the box is happy again.
+> (already linked) and all modules object files (which aren't linked yet).
+> These aren't sanitized by the linker yet. That breaks modpost that can't
+> detect license properly for modules. This patch makes modpost aware of
+> the new exported symbols structure.
+> 
+> Thanks to Arnaud Lacombe <lacombar@gmail.com> and Anders Kaseorg
+> <andersk@ksplice.com> for providing useful suggestions about code.
+> 
+> This work was supported by a hardware donation from the CE Linux Forum.
+> 
+> Reported-by: Jan Beulich <jbeulich@novell.com>
+> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+> ---
+>  scripts/mod/modpost.c |   29 ++++++++++++++++++++++++++++-
+>  1 files changed, 28 insertions(+), 1 deletions(-)
 
-Anton
+< snip >
+
+-Frank Rowand
+
