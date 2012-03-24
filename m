@@ -1,198 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2CXShS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 14:37:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56066 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab2CXShP (ORCPT
+	id S1754511Ab2CXSnF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 14:43:05 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41249 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab2CXSnE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 14:37:15 -0400
-Date: Sat, 24 Mar 2012 11:37:12 -0700
-From: mark gross <markgross@thegnar.org>
-To: mark gross <markgross@thegnar.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Kevin Hilman <khilman@ti.com>,
-        Jean Pihet <j-pihet@ti.com>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PM / QoS: add pm_qos_update_request_timeout API
-Message-ID: <20120324183712.GA24894@envy17>
-Reply-To: markgross@thegnar.org
-References: <1330491360-1283-1-git-send-email-myungjoo.ham@samsung.com>
- <1331096778-26186-1-git-send-email-myungjoo.ham@samsung.com>
- <20120324164122.GB23888@envy17>
+	Sat, 24 Mar 2012 14:43:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120324164122.GB23888@envy17>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120324103830.GA17632@Fedora16>
+References: <20120324103830.GA17632@Fedora16>
+Date: Sat, 24 Mar 2012 19:43:02 +0100
+Message-ID: <CACW_hTYnXs8iuYPNYsk1RgbhvLsAW+Tx_Hb_pSTjh84dQ63bGg@mail.gmail.com>
+Subject: Re: [PATCH] mtd/nand/nand_ecc.c: replace bitsperbyte table by a
+ simple operation
+From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
+To: Zhaoxiu Zeng <zengzhaoxiu@163.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 09:41:22AM -0700, mark gross wrote:
-> On Wed, Mar 07, 2012 at 02:06:18PM +0900, MyungJoo Ham wrote:
-> > The new API, pm_qos_update_request_timeout() is to provide a timeout
-> > with pm_qos_update_request.
-> > 
-> > For example, pm_qos_update_request_timeout(req, 100, 1000), means that
-> > QoS request on req with value 100 will be active for 1000 jiffies.
-> > After 1000 jiffies, the QoS request thru req is rolled back to the
-> > request status when pm_qos_update_request_timeout() was called. If there
-> > were another pm_qos_update_request(req, x) during the 1000 jiffies, this
-> > new request with value x will override as this is another request on the
-> > same req handle. A new request on the same req handle will always
-> > override the previous request whether it is the conventional request or
-> > it is the new timeout request.
-> > 
-> > Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> > Changes from v2
-> > - Rebased to avoid merge conflict
-> > Chages from v1(RFC)
-> > - The semmantics of timeout changed. A timeout now means that the
-> >  corresponding qos-req object is being cancelled, not rolling back to
-> > the qos request state at the time of API call. With this changes,
-> > combined with the conventional update_request API, there exists up to
-> > only one qos request per qos-req object.
-> > - The timeout values is expressed in ms (1/1000 sec), not jiffies.
-> > - Style changes, removing unnecessary changes.
-> > - Bugfixes regarding pending timeout work.
-> > 
-> > ---
-> >  include/linux/pm_qos.h |    4 +++
-> >  kernel/power/qos.c     |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 54 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> > index 0ee7caa..6f347fe 100644
-> > --- a/include/linux/pm_qos.h
-> > +++ b/include/linux/pm_qos.h
-> > @@ -8,6 +8,7 @@
-> >  #include <linux/notifier.h>
-> >  #include <linux/miscdevice.h>
-> >  #include <linux/device.h>
-> > +#include <linux/workqueue.h>
-> >  
-> >  enum {
-> >  	PM_QOS_RESERVED = 0,
-> > @@ -33,6 +34,7 @@ enum {
-> >  struct pm_qos_request {
-> >  	struct plist_node node;
-> >  	int pm_qos_class;
-> > +	struct delayed_work work; /* for pm_qos_update_request_timeout */
-> >  };
-> >  
-> >  struct dev_pm_qos_request {
-> > @@ -77,6 +79,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
-> >  			s32 value);
-> >  void pm_qos_update_request(struct pm_qos_request *req,
-> >  			   s32 new_value);
-> > +void pm_qos_update_request_timeout(struct pm_qos_request *req,
-> > +				   s32 new_value, unsigned long timeout_ms);
-> >  void pm_qos_remove_request(struct pm_qos_request *req);
-> >  
-> >  int pm_qos_request(int pm_qos_class);
-> > diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> > index 3e122db..8ac8eca 100644
-> > --- a/kernel/power/qos.c
-> > +++ b/kernel/power/qos.c
-> > @@ -259,6 +259,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
-> >  EXPORT_SYMBOL_GPL(pm_qos_request_active);
-> >  
-> >  /**
-> > + * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
-> > + * @work: work struct for the delayed work (timeout)
-> > + *
-> > + * This cancels the timeout request by falling back to the default at timeout.
-> > + */
-> > +static void pm_qos_work_fn(struct work_struct *work)
-> > +{
-> > +	struct pm_qos_request *req = container_of(to_delayed_work(work),
-> > +						  struct pm_qos_request,
-> > +						  work);
-> > +
-> > +	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
-> this should be pm_qos_remove_request (req);
-> 
+Dear Zhaoxiu
 
-on second thought your implementation is right.   pm_qos_remove_request
-is wrong.
+Thanks for contributing this patch.
+However, I think it has some issues and should not be applied. See my
+remarks below
 
---mark
+2012/3/24 Zhaoxiu Zeng <zengzhaoxiu@163.com>:
+>
+> Signed-off-by: Zhaoxiu Zeng <zengzhaoxiu@163.com>
+>
+> ---
+>  drivers/mtd/nand/nand_ecc.c |   50 +++++++++---------------------------------
+>  1 files changed, 11 insertions(+), 39 deletions(-)
+>
+> diff --git a/drivers/mtd/nand/nand_ecc.c b/drivers/mtd/nand/nand_ecc.c
+> index b7cfe0d..e05a0fd 100644
+> --- a/drivers/mtd/nand/nand_ecc.c
+> +++ b/drivers/mtd/nand/nand_ecc.c
+> @@ -85,30 +85,6 @@ static const char invparity[256] = {
+>  };
+>
+>  /*
+> - * bitsperbyte contains the number of bits per byte
+> - * this is only used for testing and repairing parity
+> - * (a precalculated value slightly improves performance)
+> - */
+> -static const char bitsperbyte[256] = {
+> -       0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+> -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> -       4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
+> -};
+> -
+> -/*
+>  * addressbits is a lookup table to filter out the bits from the xor-ed
+>  * ECC data that identify the faulty location.
+>  * this is only used for repairing parity
+> @@ -448,12 +424,14 @@ int __nand_correct_data(unsigned char *buf,
+>        unsigned int byte_addr;
+>        /* 256 or 512 bytes/ecc  */
+>        const uint32_t eccsize_mult = eccsize >> 8;
+> +       const uint32_t check_mask = eccsize_mult == 2 ? 0x555555 : 0x545555;
+> +       uint32_t tmp;
+>
+>        /*
+>         * b0 to b2 indicate which bit is faulty (if any)
+>         * we might need the xor result  more than once,
+>         * so keep them in a local var
+> -       */
+> +        */
+>  #ifdef CONFIG_MTD_NAND_ECC_SMC
+>        b0 = read_ecc[0] ^ calc_ecc[0];
+>        b1 = read_ecc[1] ^ calc_ecc[1];
+> @@ -467,14 +445,11 @@ int __nand_correct_data(unsigned char *buf,
+>
+>        /* repeated if statements are slightly more efficient than switch ... */
+>        /* ordered in order of likelihood */
+> -
+> -       if ((b0 | b1 | b2) == 0)
+> +       tmp = ((uint32_t)b2 << 16) | ((uint32_t)b1 << 8) | b0;
+
+Not sure how efficient this is; on some systems shifting by N takes N
+clock cycles so this could be relatively expensive.
+(and the systems where it takes more clock cycles have a higher chance
+on not having hw crc correction).
+
+> +       if (tmp == 0)
+>                return 0;       /* no error */
+>
+> -       if ((((b0 ^ (b0 >> 1)) & 0x55) == 0x55) &&
+> -           (((b1 ^ (b1 >> 1)) & 0x55) == 0x55) &&
+> -           ((eccsize_mult == 1 && ((b2 ^ (b2 >> 1)) & 0x54) == 0x54) ||
+> -            (eccsize_mult == 2 && ((b2 ^ (b2 >> 1)) & 0x55) == 0x55))) {
+> +       if (((tmp ^ (tmp >> 1)) & check_mask) == check_mask) {
+
+Have you benchmarked this?
+
+And while it might be an optimisation, it is not mentioned in the
+commit message.
+
+>        /* single bit error */
+>                /*
+>                 * rp17/rp15/13/11/9/7/5/3/1 indicate which byte is the faulty
+> @@ -492,19 +467,16 @@ int __nand_correct_data(unsigned char *buf,
+>                 * We could also do addressbits[b2] >> 1 but for the
+>                 * performance it does not make any difference
+>                 */
+> -               if (eccsize_mult == 1)
+> -                       byte_addr = (addressbits[b1] << 4) + addressbits[b0];
+> -               else
+> -                       byte_addr = (addressbits[b2 & 0x3] << 8) +
+> -                                   (addressbits[b1] << 4) + addressbits[b0];
+> +               byte_addr = (addressbits[b1] << 4) + addressbits[b0];
+> +               if (eccsize_mult == 2)
+> +                       byte_addr += (addressbits[b2 & 0x3] << 8);
+
+I'm not sure if this is a win. It *looks* like an optimisation since
+you factor out some common code. Then again within the if you need to
+add to byte_addr.
+For a naive compiler this is probably more expensive. For a good
+compiler this probably makes no difference at all.
+
+>                bit_addr = addressbits[b2 >> 2];
+>                /* flip the bit */
+>                buf[byte_addr] ^= (1 << bit_addr);
+>                return 1;
+> -
+>        }
+> -       /* count nr of bits; use table lookup, faster than calculating it */
+> -       if ((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)
+> +
+> +       if (!(tmp & (tmp - 1)))
+
+This is not the same as the code you replace!!!
+
+take as example b0 = 1; b1 =0, b2 = 0;
+The original if statement will return true:
+bitsperbyte[b0] in that case is 1
+bitsperbyte[b1] = 0
+bitsperbyte[b2] = 0
+so (bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) equals 1 and
+((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)  yields 1 so true
+
+However if I take your code
+tmp =  ((uint32_t)b2 << 16) | ((uint32_t)b1 << 8) | b0;
+taking the example values from above this results in tmp being 1;
+tmp & (tmp - 1)  becomes 1 & 0 which effectively results in 0.
+
+So in my original code  b0 = 1; b1 =0, b2 = 0; results in 1 being
+returned whereas your code will result in a log entry "incorrectable
+error" and a return of -1.
+
+Given this, I'd say this patch is to be rejected.
+
+BTW: optimisations in this part of code are not too important. This is
+only called when ecc errors are to be corrected and that is not very
+likely.
+So perhaps it is not worth the time to improve it.
+(and yes, it might be possible to save some bytes by eliminating the
+array; then again the code and logic is not really trivial so good
+testing is needed)
+
+See also Documentation/mtd/nand_ecc.txt
+near the end there is a small section on correcting.
 
 
-> 
-> > +}
-> > +
-> > +/**
-> >   * pm_qos_add_request - inserts new qos request into the list
-> >   * @req: pointer to a preallocated handle
-> >   * @pm_qos_class: identifies which list of qos request to use
-> > @@ -282,6 +297,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
-> >  		return;
-> >  	}
-> >  	req->pm_qos_class = pm_qos_class;
-> > +	INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
-> >  	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
-> >  			     &req->node, PM_QOS_ADD_REQ, value);
-> >  }
-> > @@ -308,6 +324,9 @@ void pm_qos_update_request(struct pm_qos_request *req,
-> >  		return;
-> >  	}
-> >  
-> > +	if (delayed_work_pending(&req->work))
-> > +		cancel_delayed_work_sync(&req->work);
-> > +
-> >  	if (new_value != req->node.prio)
-> >  		pm_qos_update_target(
-> >  			pm_qos_array[req->pm_qos_class]->constraints,
-> > @@ -316,6 +335,34 @@ void pm_qos_update_request(struct pm_qos_request *req,
-> >  EXPORT_SYMBOL_GPL(pm_qos_update_request);
-> >  
-> >  /**
-> > + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
-> > + * @req : handle to list element holding a pm_qos request to use
-> > + * @new_value: defines the temporal qos request
-> > + * @timeout_ms: the effective duration of this qos request in msecs.
-> > + *
-> > + * After timeout_ms, this qos request is cancelled automatically.
-> > + */
-> > +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
-> > +				   unsigned long timeout_ms)
-> > +{
-> > +	if (!req)
-> > +		return;
-> > +	if (WARN(!pm_qos_request_active(req),
-> > +		 "%s called for unknown object.", __func__))
-> > +		return;
-> > +
-> > +	if (delayed_work_pending(&req->work))
-> > +		cancel_delayed_work_sync(&req->work);
-> > +
-> > +	if (new_value != req->node.prio)
-> > +		pm_qos_update_target(
-> > +			pm_qos_array[req->pm_qos_class]->constraints,
-> > +			&req->node, PM_QOS_UPDATE_REQ, new_value);
-> > +
-> > +	schedule_delayed_work(&req->work, msecs_to_jiffies(timeout_ms));
-> > +}
-> > +
-> > +/**
-> >   * pm_qos_remove_request - modifies an existing qos request
-> >   * @req: handle to request list element
-> >   *
-> > @@ -334,6 +381,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
-> >  		return;
-> >  	}
-> >  
-> > +	if (delayed_work_pending(&req->work))
-> > +		cancel_delayed_work_sync(&req->work);
-> > +
-> >  	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
-> >  			     &req->node, PM_QOS_REMOVE_REQ,
-> >  			     PM_QOS_DEFAULT_VALUE);
-> > -- 
-> > 1.7.4.1
-> > 
+>                return 1;       /* error in ECC data; no action needed */
+>
+>        printk(KERN_ERR "uncorrectable error : ");
+> --
+> 1.7.7.6
+>
+>
+
+Best regards, Frans.
