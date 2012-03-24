@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab2CXTWG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 15:22:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51810 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab2CXTWE (ORCPT
+	id S1756037Ab2CXTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 15:32:26 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37322 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab2CXTcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 15:22:04 -0400
-Date: Sat, 24 Mar 2012 15:17:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
-        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Harald Hoyer <harald@redhat.com>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
- initrd
-Message-ID: <20120324191718.GA3927@phenom.dumpdata.com>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de>
- <4F6CD79A.8020805@zytor.com>
- <201203240242.07724.trenn@suse.de>
- <4F6D2AF8.3070707@zytor.com>
- <20120324184238.GB13978@phenom.dumpdata.com>
- <4F6E1D6F.4000308@zytor.com>
+	Sat, 24 Mar 2012 15:32:24 -0400
+Date: Sat, 24 Mar 2012 20:33:08 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>, Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH 00/10 v2] fix gmbus writes and related issues
+Message-ID: <20120324193308.GB18786@phenom.ffwll.local>
+Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Benson Leung <bleung@chromium.org>,
+	Yufeng Shen <miletus@chromium.org>,
+	Sameer Nanda <snanda@chromium.org>
+References: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
+ <20120318182204.GH4286@phenom.ffwll.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F6E1D6F.4000308@zytor.com>
+In-Reply-To: <20120318182204.GH4286@phenom.ffwll.local>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090206.4F6E1ECC.003C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 12:15:59PM -0700, H. Peter Anvin wrote:
-> On 03/24/2012 11:42 AM, Konrad Rzeszutek Wilk wrote:
+On Sun, Mar 18, 2012 at 07:22:05PM +0100, Daniel Vetter wrote:
+> On Sat, Mar 10, 2012 at 02:48:14AM +0800, Daniel Kurtz wrote:
+> > This patchset addresses a couple of issues with the i915 gmbus implementation:
+> >  * fixes misassigned pin port pair for HDMI-D
+> >  * fixes write transactions when they are the only transaction requested
+> >    (including large >4-byte writes) by terminating every transaction with a
+> >    WAIT cycle.
+> >  * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
+> >    i2c transaction failures
+> >  * optimizes the typical read transaction case by using the INDEX cycle
+> >  * turns on the GMBUS interrupt whenever possible to dramatically improve
+> >    throughput by eliminating the very slow polling loop.
 > > 
-> > Probably should also have:
-> > 		u32 version;
+> > The patchset should apply cleanly onto linus/master.
+> > It is inspired by, but completely supercedes, a similar patch submitted
+> > recently by Benson Leung (bleung@chromium.org).
+> > I'd be happy to rebase on a different tree if necessary.
 > > 
-> > in case we decide to expand this structure in the future, and:
-> >> 		u32 type;	/* 1 = file data, 2 = ACPI, 3 = microcode... */
-> >> 		u32 length;	/* Length of data object */
-> >> 	};
-> > 
-> > and encapsulate the whole thing in a 4K union?
-> > 
+> > v2 of the patchset address review comments from Chris Wilson (thanks for the
+> > review, Chris!), and adds the interrupt patch.  There weren't any review
+> > comments for patches 5, 7, or 8 of the first set.  Hopefully they will get
+> > more love the second time around :).
 > 
-> For "version" you'd have to define what happens if you see a version
-> number you don't recognize, and why that is in any way better than
-> changing the magic number or the type.  It is something that people like
-> to throw in without thinking about it, and that is a mistake.
+> Oops, still catching up - I've commented on the first thread. Please
+> resubmit on top of drm-intel-next-queued and I'll have a look. Also,
+> please cc me so I don't miss them.
 
-I was thinking of interface version. So the first would be 1, and if
-there are extensions (so version 2 for example), it should support 1 and 2.
-The idea is to expand past the structure with newer additions without
-breaking the binary interface.
+I've pushed aout a few more changes to intel_i2c.c in my
+drm-intel-next-queued branch. Generally I like these patches, so please
+rebase and resubmit.
 
-> 
-> Forcing everything to be page-aligned may be a good idea, although that
-> assumes all bootloaders actually align them that way...
-
-Oh, and be 4K.
-> 
-> > 
-> > Perhaps the header should be in big-endian (that is the same as the network
-> > byte order, right?) and each sub-type can define its own endian?
-> > 
-> 
-> The content of the encapsulation is its own thing; it will be different
-> for different types as most of them already
-> 
-> 	-hpa
-> 
-> -- 
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
+Thanks, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
