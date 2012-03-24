@@ -1,170 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab2CXDAL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 23:00:11 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56739 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab2CXDAJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 23:00:09 -0400
+	id S1756108Ab2CXDCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 23:02:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34899 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753314Ab2CXDCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 23:02:42 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
+Date: Sat, 24 Mar 2012 04:02:37 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.10-0.4-desktop; KDE/4.4.4; x86_64; ; )
+Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com>
+In-Reply-To: <4F6D2AF8.3070707@zytor.com>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20120320222424.GL14269@moon>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
- <1331326042-32558-2-git-send-email-gorcunov@openvz.org> <CAKgNAkgJm01K9+GhnouxUwOUW3gk+YiuHLfofrs7adWzEqqO8Q@mail.gmail.com>
- <20120320222424.GL14269@moon>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sat, 24 Mar 2012 15:59:49 +1300
-Message-ID: <CAKgNAkghWdju=o1prxw8dXEVjf95a+jLpe+3oKeHRWN1UK_cKg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] prctl.2: Add PR_SET_MM option description
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: akpm@linux-foundation.org, xemul@parallels.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203240402.38749.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 11:24 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On Wed, Mar 21, 2012 at 06:21:19AM +1300, Michael Kerrisk (man-pages) wrote:
->> Hello Cyrill,
->>
->> The PR_SET_MM operation adds a number of new error cases to prctl(2).
->> Could you extend you patch to add these under ERRORS?
->>
->
-> Hi Michael,
->
-> here is an update on previous patch. Please take a look and
-> tell me what you think when you get time. Complains are welcome!
+On Saturday 24 March 2012 03:01:28 H. Peter Anvin wrote:
+> On 03/23/2012 06:42 PM, Thomas Renninger wrote:
+> > 
+> > If there is any initrd change this could easily be adopted.
+> > Would be great to see this one pushed into 3.4 before a possibly long
+> > taking discussion about bigger initrd layout changes.
+> > 
+> 
+> This should have been in linux-next before the merge window started, and
+> certainly "pushing it upstream before a possibly long talking discussion
+> about bigger initrd layout changes" is *definitely* putting the cart
+> before the horse ... almost nothing matters as much as avoiding
+> introducing a new protocol that we need to keep stable.
+> 
+> Sorry, it doesn't work that way.
+I guess this would not be the first time a good feature has been added,
+knowing that a more general API will be build around it later.
+10 lines are really easy to adopt.
 
-Hi Cyrill,
+> I'm not too happy about the idea of using "naked" ACPI headers as the
+> sole discriminator, because they lack a strong magic.  Furthermore, I
+> really don't want to see all the potential early-initrd users invent
+> different schemes for encapsulation, which has the potential of
+> cross-infection (early microcode update, for example, would have to be
+> invoked before ACPI, and needing that code to understand ACPI table
+> format is a nonstarter.)
+> 
+> I see two realistic options:
+> 
+> 1. We use cpio encapsulation for everything, with a special namespace
+>    for items used directly by the kernel, e.g. "kernel/".
+> 
+>    + Simple, existing tools can pick apart
+>    - May lead people to believe that the early-initrd portion can be
+>      compressed like the "normal" initrd portion, leading to strange
+>      problems.
+Can this be implemented without using dynamic memory allocations?
+If not, it's not suitable for early APCI overriding.
 
-I only just had a chance to look at this now and realize that this is
-a patch on a patch. Could you just send me a complete  patch with all
-the changes?
+> 
+> 2. We create a new simple header (just a magic number, an identifier
+>    for the type of data, and a length) for each of the early-initrd
+>    objects:
+> 
+> 	struct early_initrd_header {
+> 		u64 magic;	/* 0xa5a46ce422d8f5a1 */
+> 		u32 type;	/* 1 = file data, 2 = ACPI, 3 = microcode... */
+> 		u32 length;	/* Length of data object */
+> 	};
+> 
+>    XXX: Should we make this a defined endianness (presumably
+>    bigendian), or use host-endianness?  I would guess the former might
+>    be better...
+> 
+> Either of these allow one piece of code to quickly bypass bits that
+> doesn't belong to it.
+> 
+> Thoughts?
+Whatabout Multiboot(2):
+http://en.wikipedia.org/wiki/Multiboot_Specification
+http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
 
-Thanks,
+They do it similar to 2, but without specifying the data of the
+files like you do with type.
 
-Michael
+It's a bigger thing, but I could imagine there are some guys who would
+be willing to give it a try. I remember I googled a multiboot patch
+which got submitted to lkml long time ago.
 
-> ---
-> From 10dbf8dc2e40426c56a6d2a2414bcb9d3a0f5ff3 Mon Sep 17 00:00:00 2001
-> From: Cyrill Gorcunov <gorcunov@openvz.org>
-> Date: Wed, 21 Mar 2012 02:20:11 +0400
-> Subject: [PATCH] prctl.2: Update description for PR_SET_MM option
->
-> New feature PR_SET_MM_EXE_FILE added, also
-> error codes updated.
->
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  man2/prctl.2 |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 69 insertions(+), 1 deletions(-)
->
-> diff --git a/man2/prctl.2 b/man2/prctl.2
-> index 7a50ac1..de15426 100644
-> --- a/man2/prctl.2
-> +++ b/man2/prctl.2
-> @@ -481,6 +481,30 @@ argument should provide the address of the vector.
->  The
->  .I arg4
->  is the size of the vector.
-> +
-> +.BR PR_SET_MM_EXE_FILE
-> +to supersede
-> +.IR /proc/pid/exe
-> +symbolic link with a new one pointing to a new executable file
-> +which descriptor is provided provided in the
-> +.I arg3
-> +argument.
-> +The file descriptor should be obtaned with a regular
-> +.BR open (2)
-> +call.
-> +
-> +To change the symlink, one needs to unmap all existing
-> +executable memory areas being created by the kernel itself
-> +(for example the kernel usually creates at least one executable
-> +memory area for Elf file
-> +.IR \.text
-> +section).
-> +
-> +The second limitation is that such transition can be done once
-> +in a process life time.
-> +Any furter attempts will be rejected.
-> +This should help system administrators to monitor the unusual
-> +symlinks transitions over all process running in a system.
->  .\"
->  .SH "RETURN VALUE"
->  On success,
-> @@ -515,7 +539,9 @@ is not recognized.
->  is
->  .BR PR_MCE_KILL
->  or
-> -.BR PR_MCE_KILL_GET ,
-> +.BR PR_MCE_KILL_GET
-> +or
-> +.BR PR_SET_MM ,
->  and unused
->  .BR prctl ()
->  arguments were not specified as zero.
-> @@ -563,6 +589,48 @@ is
->  and the caller does not have the
->  .B CAP_SETPCAP
->  capability.
-> +.TP
-> +.B EPERM
-> +.I option
-> +is
-> +.BR PR_SET_MM ,
-> +and the caller does not have the
-> +.B CAP_SYS_RESOURCE
-> +capability.
-> +.TP
-> +.B EACCES
-> +.I option
-> +is
-> +.BR PR_SET_MM ,
-> +and the
-> +.I arg3
-> +is
-> +.BR PR_SET_MM_EXE_FILE ,
-> +the file is not executable one.
-> +.TP
-> +.B EBUSY
-> +.I option
-> +is
-> +.BR PR_SET_MM ,
-> +and the
-> +.I arg3
-> +is
-> +.BR PR_SET_MM_EXE_FILE ,
-> +the second attempt to change
-> +.I /proc/pid/exe
-> +symlink is prohibited.
-> +.TP
-> +.B EBADF
-> +.I option
-> +is
-> +.BR PR_SET_MM ,
-> +and the
-> +.I arg3
-> +is
-> +.BR PR_SET_MM_EXE_FILE ,
-> +the file descriptor passed in
-> +.I arg4
-> +is not found.
->  .\" The following can't actually happen, because prctl() in
->  .\" seccomp mode will cause SIGKILL.
->  .\" .TP
-> --
-> 1.7.7.6
->
+It has it pros and cons, but should show up in such a discussion.
 
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+  Thomas
