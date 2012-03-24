@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab2CXKjw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 06:39:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56609 "EHLO
+	id S1755508Ab2CXLBi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 07:01:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46287 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755201Ab2CXKjv (ORCPT
+	with ESMTP id S1754277Ab2CXLBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 06:39:51 -0400
-Date: Sat, 24 Mar 2012 14:38:43 +0400
+	Sat, 24 Mar 2012 07:01:37 -0400
+Date: Sat, 24 Mar 2012 15:00:24 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Bob Liu <lliubbo@gmail.com>, Sonic Zhang <sonic.zhang@analog.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] blackfin: dnp5370: Fix some SPI-related build errors
-Message-ID: <20120324103843.GA30295@lizard>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sysrq: Use SEND_SIG_FORCED instead of force_sig()
+Message-ID: <20120324110024.GA14067@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -23,100 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some SPI #ifdef magic was wrong, and so the build stopped like this
-(using DNP5370_defconfig):
+Change send_sig_all() to use do_send_sig_info(SEND_SIG_FORCED)
+instead of force_sig(SIGKILL). With the recent changes we do not
+need force_ to kill the CLONE_NEWPID tasks.
 
-arch/blackfin/mach-bf537/boards/dnp5370.c: In function 'dnp5370_init':
-arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: 'bfin_spi_board_info' undeclared (first use in this function)
-arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: (Each undeclared identifier is reported only once
-arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: for each function it appears in.)
-arch/blackfin/mach-bf537/boards/dnp5370.c:392: warning: type defaults to 'int' in declaration of 'type name'
-arch/blackfin/mach-bf537/boards/dnp5370.c:392: warning: type defaults to 'int' in declaration of 'type name'
-arch/blackfin/mach-bf537/boards/dnp5370.c:392: error: negative width in bit-field '<anonymous>'
-arch/blackfin/mach-bf537/boards/dnp5370.c:393: warning: type defaults to 'int' in declaration of 'type name'
-arch/blackfin/mach-bf537/boards/dnp5370.c:393: warning: type defaults to 'int' in declaration of 'type name'
-arch/blackfin/mach-bf537/boards/dnp5370.c:393: error: negative width in bit-field '<anonymous>'
+And this is more correct. force_sig() can race with the exiting
+thread, while do_send_sig_info(group => true) kill the whole
+process.
 
-This patch fixes the issues by properly placing bfin_spi_board_info.
+Some more notes from Oleg Nesterov:
 
+> Just one note. This change makes no difference for sysrq_handle_kill().
+> But it obviously changes the behaviour sysrq_handle_term(). I think
+> this is fine, if you want to really kill the task which blocks/ignores
+> SIGTERM you can use sysrq_handle_kill().
+>
+> Even ignoring the reasons why force_sig() is simply wrong here,
+> force_sig(SIGTERM) looks strange. The task won't be killed if it has
+> a handler, but SIG_IGN can't help. However if it has the handler
+> but blocks SIGTERM temporary (this is very common) it will be killed.
+
+Also,
+
+> force_sig() can't kill the process if the main thread has already
+> exited. IOW, it is trivial to create the process which can't be
+> killed by sysrq.
+
+So, this patch fixes the issue.
+
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- arch/blackfin/mach-bf537/boards/dnp5370.c |   56 +++++++++++++++--------------
- 1 file changed, 29 insertions(+), 27 deletions(-)
 
-diff --git a/arch/blackfin/mach-bf537/boards/dnp5370.c b/arch/blackfin/mach-bf537/boards/dnp5370.c
-index 11dadeb..e7fb430 100644
---- a/arch/blackfin/mach-bf537/boards/dnp5370.c
-+++ b/arch/blackfin/mach-bf537/boards/dnp5370.c
-@@ -164,33 +164,6 @@ static struct bfin5xx_spi_chip spi_dataflash_chip_info = {
- };
- #endif
+The patch depends on a few Oleg's patches in -mm, so I believe
+this should be -mm material as well.
+
+ drivers/tty/sysrq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 8db9125..5ab8039 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -329,7 +329,7 @@ static void send_sig_all(int sig)
+ 		if (is_global_init(p))
+ 			continue;
  
--static struct spi_board_info bfin_spi_board_info[] __initdata = {
--/* SD/MMC card reader at SPI bus */
--#if defined(CONFIG_MMC_SPI) || defined(CONFIG_MMC_SPI_MODULE)
--	{
--		.modalias	 = "mmc_spi",
--		.max_speed_hz    = 20000000,
--		.bus_num	 = 0,
--		.chip_select     = 1,
--		.controller_data = &mmc_spi_chip_info,
--		.mode	         = SPI_MODE_3,
--	},
--#endif
--
--/* 8 Megabyte Atmel NOR flash chip at SPI bus */
--#if defined(CONFIG_MTD_DATAFLASH) || defined(CONFIG_MTD_DATAFLASH_MODULE)
--	{
--	.modalias        = "mtd_dataflash",
--	.max_speed_hz    = 16700000,
--	.bus_num         = 0,
--	.chip_select     = 2,
--	.platform_data   = &bfin_spi_dataflash_data,
--	.controller_data = &spi_dataflash_chip_info,
--	.mode            = SPI_MODE_3, /* SPI_CPHA and SPI_CPOL */
--	},
--#endif
--};
--
- /* SPI controller data */
- /* SPI (0) */
- static struct resource bfin_spi0_resource[] = {
-@@ -228,6 +201,35 @@ static struct platform_device spi_bfin_master_device = {
- };
- #endif
- 
-+static struct spi_board_info bfin_spi_board_info[] __initdata = {
-+#if defined(CONFIG_SPI_BFIN5XX) || defined(CONFIG_SPI_BFIN5XX_MODULE)
-+/* SD/MMC card reader at SPI bus */
-+#if defined(CONFIG_MMC_SPI) || defined(CONFIG_MMC_SPI_MODULE)
-+	{
-+		.modalias	 = "mmc_spi",
-+		.max_speed_hz    = 20000000,
-+		.bus_num	 = 0,
-+		.chip_select     = 1,
-+		.controller_data = &mmc_spi_chip_info,
-+		.mode	         = SPI_MODE_3,
-+	},
-+#endif
-+
-+/* 8 Megabyte Atmel NOR flash chip at SPI bus */
-+#if defined(CONFIG_MTD_DATAFLASH) || defined(CONFIG_MTD_DATAFLASH_MODULE)
-+	{
-+	.modalias        = "mtd_dataflash",
-+	.max_speed_hz    = 16700000,
-+	.bus_num         = 0,
-+	.chip_select     = 2,
-+	.platform_data   = &bfin_spi_dataflash_data,
-+	.controller_data = &spi_dataflash_chip_info,
-+	.mode            = SPI_MODE_3, /* SPI_CPHA and SPI_CPOL */
-+	},
-+#endif
-+#endif /* defined(CONFIG_SPI_BFIN5XX) || defined(CONFIG_SPI_BFIN5XX_MODULE) */
-+};
-+
- #if defined(CONFIG_SERIAL_BFIN) || defined(CONFIG_SERIAL_BFIN_MODULE)
- #ifdef CONFIG_SERIAL_BFIN_UART0
- static struct resource bfin_uart0_resources[] = {
+-		force_sig(sig, p);
++		do_send_sig_info(sig, SEND_SIG_FORCED, p, true);
+ 	}
+ 	read_unlock(&tasklist_lock);
+ }
 -- 
 1.7.9.2
