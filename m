@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2CXM0l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 08:26:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52714 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab2CXM0k (ORCPT
+	id S1755678Ab2CXMpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 08:45:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36196 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab2CXMpH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 08:26:40 -0400
-MIME-Version: 1.0
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Sat, 24 Mar 2012 08:26:19 -0400
-Message-ID: <CAOPLpQe+SP7Nvr_EU44hcCu3UXVtF84EmL-_eskA1UfGr6JrPQ@mail.gmail.com>
-Subject: last fs/proc/array.c change
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 24 Mar 2012 08:45:07 -0400
+Message-ID: <1332593021.16159.27.camel@twins>
+Subject: Re: [PATCH 01/10] cpu: Introduce clear_tasks_mm_cpumask() helper
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-mm@kvack.org
+Date: Sat, 24 Mar 2012 13:43:41 +0100
+In-Reply-To: <20120324102751.GA29067@lizard>
+References: <20120324102609.GA28356@lizard> <20120324102751.GA29067@lizard>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure whether this has already been reported, at least I haven't
-seen it.  A recent patch to fs/proc/array.c contained this:
+On Sat, 2012-03-24 at 14:27 +0400, Anton Vorontsov wrote:
+> +void clear_tasks_mm_cpumask(int cpu)
+> +{
+> +       struct task_struct *p;
+> +
+> +       read_lock(&tasklist_lock);
+> +       for_each_process(p) {
+> +               struct task_struct *t;
+> +
+> +               t = find_lock_task_mm(p);
+> +               if (!t)
+> +                       continue;
+> +               cpumask_clear_cpu(cpu, mm_cpumask(t->mm));
+> +               task_unlock(t);
+> +       }
+> +       read_unlock(&tasklist_lock);
+> +} 
+
+Why bother with the tasklist_lock at all anymore, afaict you could use
+rcu_read_lock() here. This all is called after the cpu is taken down and
+marked offline, so its not like new tasks will ever get this cpu set in
+their mm mask.
 
 
--       seq_printf(m, "%lu %lu %lu %lu 0 %lu 0\n",
--                       size, resident, shared, text, data);
-+       /*
-+        * For quick read, open code by putting numbers directly
-+        * expected format is
-+        * seq_printf(m, "%lu %lu %lu %lu 0 %lu 0\n",
-+        *               size, resident, shared, text, data);
-+        */
-+       seq_put_decimal_ull(m, 0, size);
-+       seq_put_decimal_ull(m, ' ', resident);
-+       seq_put_decimal_ull(m, ' ', shared);
-+       seq_put_decimal_ull(m, ' ', text);
-+       seq_put_decimal_ull(m, ' ', 0);
-+       seq_put_decimal_ull(m, ' ', text);
-+       seq_put_decimal_ull(m, ' ', 0);
-+       seq_putc(m, '\n');
-
-
-See the second to last seq_put_decimal_ull.  This is a copy&paste
-mistake since given the original format it should read
-
-+       seq_put_decimal_ull(m, ' ', data);
-
-(i.e., data instead of text).
