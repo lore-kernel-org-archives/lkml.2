@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab2CXKVB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 06:21:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42128 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab2CXKVA (ORCPT
+	id S1755265Ab2CXK1W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 06:27:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49999 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab2CXK1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 06:21:00 -0400
+	Sat, 24 Mar 2012 06:27:20 -0400
+Date: Sat, 24 Mar 2012 14:26:12 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-mm@kvack.org
+Subject: [PATCH v2 0/10] Fixes for common mistakes w/ for_each_process and
+ task->mm
+Message-ID: <20120324102609.GA28356@lizard>
 MIME-Version: 1.0
-In-Reply-To: <CAB4K4y5S-X8rCWZaB5ZJeAZupoKajMsKyVw7eMFnAP1v7V5dVw@mail.gmail.com>
-References: <CAB4K4y5S-X8rCWZaB5ZJeAZupoKajMsKyVw7eMFnAP1v7V5dVw@mail.gmail.com>
-Date: Sat, 24 Mar 2012 11:20:59 +0100
-Message-ID: <CAFLxGvwLKD2ZhOZWVo1_hR1r12DpKXZZ273whHqdggrrmdbHFA@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix uninitialised iattr in do_truncate
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 11:10 AM, Ajeet Yadav <ajeet.yadav.77@gmail.com> wrote:
-> [PATCH] vfs: fix uninitialised iattr in do_truncate
->
-> struct newattrs is uninitialised.
->
-> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Hi all,
 
-Does this fix a real bug?
-AFAIK notify_change() makes only use of newattrs's initialized members.
+This is a reincarnation of the task->mm fixes. Several architectures
+were traverse the tasklist in an unsafe manner, plus there are a
+few cases of unsafe access to task->mm.
+
+In v2 I decided to introduce a small helper in cpu.c: most arches
+duplicate the same [buggy] code snippet, so it's better to fix it
+and move the logic into a common function.
+
+Thanks!
 
 -- 
-Thanks,
-//richard
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
