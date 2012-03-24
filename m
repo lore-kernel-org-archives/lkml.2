@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab2CXLI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 07:08:57 -0400
-Received: from caiajhbdcbef.dreamhost.com ([208.97.132.145]:50034 "EHLO
-	homiemail-a60.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754943Ab2CXLI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 07:08:56 -0400
-Subject: Re: [PATCH v2] KVM: x86: add paging gcc optimization
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Avi Kivity <avi@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4F5DE84B.8050606@redhat.com>
-References: <1331207154.28711.2.camel@offworld>
-	 <4F58D48F.8050807@de.ibm.com>  <4F5DE84B.8050606@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: GNU
-Date: Fri, 23 Mar 2012 22:51:53 +0100
-Message-ID: <1332539514.2580.0.camel@offbook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756248Ab2CXLMd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 07:12:33 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755553Ab2CXLMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 07:12:30 -0400
+Message-ID: <4F6DAC15.7040702@nod.at>
+Date: Sat, 24 Mar 2012 12:12:21 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 09/10] um: Properly check all process' threads for a live
+ mm
+References: <20120324102609.GA28356@lizard> <20120324103110.GI29067@lizard>
+In-Reply-To: <20120324103110.GI29067@lizard>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig88EC09FADEB6B6709009C1CF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 14:12 +0200, Avi Kivity wrote:
-> On 03/08/2012 05:47 PM, Christian Borntraeger wrote:
-> > On 08/03/12 12:45, Davidlohr Bueso wrote:
-> > > From: Davidlohr Bueso <dave@gnu.org>
-> > > 
-> > > Since most guests will have paging enabled for memory management, add likely() optimization
-> > > around CR0.PG checks.
-> >
-> > >  {
-> > > -	return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
-> > > +	return likely(kvm_read_cr0_bits(vcpu, X86_CR0_PG));
-> >
-> >
-> > IMHO likely/unlikely should be considered more as fast-path/slow-path and not as often/less often.
-> 
-> Agree.
-> 
-> > Is that the case here? This patch  might cause a mis-prediction for non-paging guests all 
-> > the time. 
-> >
-> > Non-paging might be really irrelevant, so I am just making a point, since
-> > likely/unlikely is mis-used too often especially for "most users do it that way".
-> 
-> In fact this is a classic example.  Almost no guests use real mode (the
-> last guests to use real mode extensively was DOS; I think Win9x switches
-> to real mode pretty often).  As it's a user-controlled setting, we're
-> penalizing users who do things differently.
-> 
-> However the majority if is_paging() == true guests is so huge, and since
-> non-paging guests don't really expect 2012 performance levels anyway
-> (being so old) that I think in practice this is a good optimization here.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig88EC09FADEB6B6709009C1CF
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Avi, will you be taking this patch? I don't see it applied or for pull
-in 3.4.
+Am 24.03.2012 11:31, schrieb Anton Vorontsov:
+> kill_off_processes() might miss a valid process, this is because
+> checking for process->mm is not enough. Process' main thread may
+> exit or detach its mm via use_mm(), but other threads may still
+> have a valid mm.
+>=20
+> To catch this we use find_lock_task_mm(), which walks up all
+> threads and returns an appropriate task (with task lock held).
+>=20
+> Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-Thanks.
+Acked-by: Richard Weinberger <richard@nod.at>
+
+Thanks,
+//richard
 
 
+--------------enig88EC09FADEB6B6709009C1CF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPbawWAAoJEN9758yqZn9e/icH/iVN9aQ0/yXa9SJlm4SLtuzl
+ihg243HbKaJpRbPXf+fqsEVutMgRKM+yqkVmeuTdeADDdVSoyoBb750N1fPvq7pU
+yjTzeNfWySr727F6cMgblhtKzilRd6JOq+lI3JD74T/pga6mrlIE8Os8fp6HOyfR
+sIyklQPPtXml4b1CboiWWwc8qlHSX+2I5w2pCcOSUozsFa8rPBdvtxiXVES0OdJJ
+ZFcw2OICs2DbRRJXrq1PCx/qU6e9b3kb5Mj/peSQosjIltksQNafKECm6tonM8TN
+e4ZxUnOXUxaULn9E5C7YnuQdP/0SnmF5jnKYNkNqwNIh+oqDPoVgmKnv7aG49GQ=
+=Ic2C
+-----END PGP SIGNATURE-----
+
+--------------enig88EC09FADEB6B6709009C1CF--
