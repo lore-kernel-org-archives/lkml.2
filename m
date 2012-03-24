@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2CXPAJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 11:00:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50640 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab2CXPAH (ORCPT
+	id S1754106Ab2CXPXI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 11:23:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37535 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2CXPXG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 11:00:07 -0400
-Message-ID: <4F6DE172.7010604@openvz.org>
-Date: Sat, 24 Mar 2012 19:00:02 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Sat, 24 Mar 2012 11:23:06 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-References: <20120321065140.13852.52315.stgit@zurg>  <20120321100602.GA5522@barrios> <4F69D496.2040509@openvz.org>  <20120322053958.GA5278@barrios> <1332397358.2982.82.camel@pasglop> <4F6DDE56.3090401@openvz.org>
-In-Reply-To: <4F6DDE56.3090401@openvz.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
+References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
+Date: Sat, 24 Mar 2012 12:23:03 -0300
+Message-ID: <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
+Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
+From: Fabio Estevam <festevam@gmail.com>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: paul.gortmaker@windriver.com, vinod.koul@intel.com,
+        dan.j.williams@intel.com, samuel@sortiz.org, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        netdev@vger.kernel.org, fabio.estevam@freescale.com,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Khlebnikov wrote:
-> Benjamin Herrenschmidt wrote:
->> On Thu, 2012-03-22 at 14:39 +0900, Minchan Kim wrote:
->>> I think we can also unify VM_MAPPED_COPY(nommu) and VM_SAO(powerpc)
->>> with one VM_ARCH_1
->>> Okay. After this series is merged, let's try to remove flags we can
->>> do. Then, other guys
->>> might suggest another ideas.
->>
->> Agreed. I would like more VM_ARCH while at it :-)
+On Fri, Mar 23, 2012 at 11:00 AM, Alexandre Bounine
+<alexandre.bounine@idt.com> wrote:
+> This patch fixes drivers that use device_prep_slave_sg() and
+> device_prep_dma_cyclic() interfaces and have been missed during the initial
+> release of interface changing patches.
 >
-> Currently I see here four architecture-specific flags =)
+> This patch is based on linux-next-20120322 code tree.
+> See https://lkml.org/lkml/2012/3/22/339 for build failure report.
 >
-> VM_ARCH_1 VM_ARCH_2 VM_ARCH_3 VM_ARCH_4
-> x86 VM_NOHUGEPAGE VM_HUGEPAGE - VM_PFN_AT_MMAP
-> powerpc - - VM_SAO -
-> parisc VM_GROWSUP - - -
-> ia64 VM_GROWSUP - - -
-> nommu - VM_MAPPED_COPY - -
->
-> Obviously we can combine VM_PFN_AT_MMAP, VM_SAO, VM_GROWSUP and VM_MAPPED_COPY into one.
+> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  drivers/dma/sa11x0-dma.c      |    2 +-
+>  drivers/net/irda/sa1100_ir.c  |    2 +-
+>  sound/soc/sh/fsi.c            |    7 +++----
+>  sound/soc/soc-dmaengine-pcm.c |    2 +-
 
-Also logic and usage of VM_IO, VM_RESERVED, VM_PFNMAP, VM_MIXEDMAP,
-VM_INSERTPAGE, VM_DONTEXPAND and VM_DONTCOPY are very messy.
-I think some of them can be replaced with two flags:
-VM_SPECIAL_PFN and VM_SPECIAL_PAGE, or something like this.
+I have already taken care of sound/soc/soc-dmaengine-pcm.c:
+http://permalink.gmane.org/gmane.linux.alsa.devel/96215
