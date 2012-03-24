@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab2CYAbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 20:31:38 -0400
+	id S1754780Ab2CYAbf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 20:31:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:65297 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab2CYAbK (ORCPT
+	with ESMTP id S1754403Ab2CYAbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 20:31:10 -0400
+	Sat, 24 Mar 2012 20:31:06 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] s5p-tv: Add initial DT-support for HDMIPHY
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: t.stanislaws@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, thomas.abraham@linaro.org,
-        m.szyprowski@samsung.com, kyungmin.park@samsung.com
-In-Reply-To: <4F6C5E74.60104@samsung.com>
-References: <1331912532-7798-1-git-send-email-k.lewandowsk@samsung.com> <1331912532-7798-3-git-send-email-k.lewandowsk@samsung.com> <20120318182458.9CCC43E07BF@localhost> <4F6C5E74.60104@samsung.com>
-Date: Sat, 24 Mar 2012 19:03:53 +0000
-Message-Id: <20120324190353.8CBE03E0AD3@localhost>
+Subject: Re: PCA GPIO interrupt triggers
+To: Peter Rusko <rusko.peter@prolan.hu>, David Jander <david@protonic.nl>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4F6B4C11.4000608@prolan.hu>
+References: <4F6B4C11.4000608@prolan.hu>
+Date: Sat, 24 Mar 2012 17:02:12 +0000
+Message-Id: <20120324170212.C68A43E09EE@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Mar 2012 12:28:52 +0100, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
-> On 18.03.2012 19:24, Grant Likely wrote:
+On Thu, 22 Mar 2012 16:58:09 +0100, Peter Rusko <rusko.peter@prolan.hu> wrote:
+> Hi,
 > 
-> > On Fri, 16 Mar 2012 16:42:12 +0100, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
-> >> Make it possible to instantiate driver from device tree description.
-> >>
-> >> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
-> >> ---
-> >>  drivers/media/video/s5p-tv/hdmiphy_drv.c |   10 ++++++++++
-> >>  1 files changed, 10 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/media/video/s5p-tv/hdmiphy_drv.c b/drivers/media/video/s5p-tv/hdmiphy_drv.c
-> >> index 6693f4a..ddf3008 100644
-> >> --- a/drivers/media/video/s5p-tv/hdmiphy_drv.c
-> >> +++ b/drivers/media/video/s5p-tv/hdmiphy_drv.c
-> >> @@ -18,6 +18,7 @@
-> >>  #include <linux/interrupt.h>
-> >>  #include <linux/irq.h>
-> >>  #include <linux/err.h>
-> >> +#include <linux/of.h>
-> >>  
-> >>  #include <media/v4l2-subdev.h>
-> >>  
-> >> @@ -165,10 +166,19 @@ static const struct i2c_device_id hdmiphy_id[] = {
-> >>  };
-> >>  MODULE_DEVICE_TABLE(i2c, hdmiphy_id);
-> >>  
-> >> +#ifdef CONFIG_OF
-> >> +static struct of_device_id hdmiphy_dt_match[] = {
-> >> +	{ .compatible = "samsung,s5pv210-hdmiphy" },
-> > 
-> > Ditto here; needs to be listed in documentation.
+> I'm using a GPIO chip (PCA9554) for a matrix-keypad. The keypad driver 
+> itself needs interrupts for both rising and falling edges. The PCA 
+> driver (gpio-pca953x.c) doesn't support it, but I don't understand why.
 > 
-> 
-> As these drivers require only irq and io address may add these to
-> something like [bindings/arm/samsung/]trivial-devices.txt (like it's
-> done for i2c)?
+> I think, this patch should work:
 
-yes.  I just want the values in the documentation where they can be
-searched for.
+Can someone with hardware review this patch please?  David perhaps?
 
 g.
+
+> 
+> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+> index 147df8a..be9aff4 100644
+> --- a/drivers/gpio/gpio-pca953x.c
+> +++ b/drivers/gpio/gpio-pca953x.c
+> @@ -356,12 +356,6 @@ static int pca953x_irq_set_type(struct irq_data *d, 
+> unsigned int type)
+>          uint16_t level = d->irq - chip->irq_base;
+>          uint16_t mask = 1 << level;
+> 
+> -       if (!(type & IRQ_TYPE_EDGE_BOTH)) {
+> -               dev_err(&chip->client->dev, "irq %d: unsupported type %d\n",
+> -                       d->irq, type);
+> -               return -EINVAL;
+> -       }
+> -
+>          if (type & IRQ_TYPE_EDGE_FALLING)
+>                  chip->irq_trig_fall |= mask;
+>          else
+> 
+> I think that the other parts of the code checks for rising and falling 
+> edges correctly. Am I missing something?
+> 
+> -- 
+> Ruskó Péter
+> Fejlesztőmérnök
+> 
+> Prolan Zrt. / Prolan Co.
+> Hungary 2011 Budakalász, Szentendrei út 1-3.
+> Tel./Phone: +36 20 954 3118
+> Fax: +36 26 540 420
+> E-mail: rusko.peter@prolan.hu
+> Web: www.prolan.hu
+> Timezone:CET
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
