@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab2CXHdF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 03:33:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54882 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2CXHdD (ORCPT
+	id S1754431Ab2CXHhg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 03:37:36 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33885 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab2CXHhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 03:33:03 -0400
-Date: Sat, 24 Mar 2012 09:32:07 +0200
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Rafal Prylowski <prylowski@metasoft.pl>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Message-ID: <20120324073207.GD5812@mwesterb-mobl.ger.corp.intel.com>
-References: <4F683B36.8090101@metasoft.pl>
- <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
- <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
+	Sat, 24 Mar 2012 03:37:35 -0400
+Date: Sat, 24 Mar 2012 08:37:31 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, mce: Add persistent MCE event
+Message-ID: <20120324073731.GD20145@gmail.com>
+References: <1332340496-21658-1-git-send-email-bp@amd64.org>
+ <1332340496-21658-3-git-send-email-bp@amd64.org>
+ <20120323123156.GF13920@gmail.com>
+ <20120323133044.GA8115@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <20120323133044.GA8115@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 11:09:50AM -0500, H Hartley Sweeten wrote:
-> On Friday, March 23, 2012 12:05 AM, Mika Westerberg wrote:
-> > On Thu, Mar 22, 2012 at 09:19:10PM -0500, H Hartley Sweeten wrote:
-> >
-> >> Did you test this patch or just review it?
-> >
-> > I tested and reviewed it.
+
+* Borislav Petkov <bp@amd64.org> wrote:
+
+> On Fri, Mar 23, 2012 at 01:31:56PM +0100, Ingo Molnar wrote:
+> > Have you considered making the addition of persistent events
+> > straightforward and robust, in terms of adding a TRACE_EVENT() variant
+> > for them? It could replace the above code.
 > 
-> OK. What kernel? My tests so far have been with 3.3.
-
-3.3 and -next.
-
-> >> On my system it doesn't work. I think it has something to do with the
-> >> changes to m2m_hw_interrupt but I haven't tracked it down yet.
-> >> 
-> >> It looks like what's missing is a:
-> >> 
-> >> 	edmac->edma->hw_submit(edmac);
-> >> 
-> >> But, maybe that's not needed with double buffering?
-> >
-> > Did you try without your patch and adding my VIC hack? That's what I did when
-> > I first got this patch and I saw no problems. I tested with audio (M2P),
-> > mmc_spi (M2M) and dmatest (M2M).
+> Err,
 > 
-> No, I have not applied your VIC hack.
+> are you thinking of something in TRACE_EVENT() that sets
+> perf_event_attr.persistent to 1?
 
-Please try it. The point there was that we have a problem in ep93xx VIC/DMA
-code but it is totally different thing and not related to Rafal's patch. We
-can sort the VIC thing out separately IMHO. ep93xx dma in 3.3 is broken
-regardless this patch.
+I was mainly thinking of reducing this:
+
+ arch/x86/kernel/cpu/mcheck/mce.c |   53 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+to almost nothing. There doesn't seem to be much MCE specific in 
+that code, right?
+
+> Btw, the more important question is are we going to need 
+> persistent events that much so that a generic approach is 
+> warranted? I guess maybe the black box events recording deal 
+> would be another user..
+
+So, here's the big picture as I see it:
+
+I think tracing could use persistent events: mark all the events 
+we want to trace as persistent from bootup, and recover the 
+bootup trace after the system has been booted up.
+
+But other, runtime models of tracing could use it as well: 
+basically the main difference that ftrace has to perf based 
+tracing today is a system-wide persistent buffer with no 
+particular owning process. (The rest is mostly UI and analysis 
+features and scope of tracing differences, and of course a lot 
+more love and detail went into ftrace so far.)
+
+So MCE will in the end be just a minor user of such a facility - 
+I think you should aim for enabling *any* set of events to have 
+persistent recording properties, and add the APIs to recover 
+that information sanely. It should also be possible for them to 
+record into a shared mmap page in essence - instead of having 
+per event persistent buffers.
+
+That way testing would be a lot easier as well: you could enable 
+persistent tracing via something like:
+
+    perf trace on -e <events>
+
+and turn it off via:
+
+    perf trace off
+
+and just recover the recorded events via something like:
+
+    perf trace
+
+... or so. That you can then also enable this during bootup for 
+MCE events is just a very nice side effect of a much more 
+generally useful feature.
+
+Would you be interested in creating a clean incarnation of this 
+without making peterz sad? The 'perf trace' perf subcommand is 
+still unused and up for grabs for sufficiently good patches, 
+coincidentally ;-)
+
+Thanks,
+
+	Ingo
