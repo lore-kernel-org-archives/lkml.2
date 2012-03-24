@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab2CXJXj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 05:23:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49051 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab2CXJXi (ORCPT
+	id S1753842Ab2CXJY6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 05:24:58 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38047 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab2CXJY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 05:23:38 -0400
-Date: Sat, 24 Mar 2012 09:23:16 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: mathieu.poirier@linaro.org
-Cc: tony@atomide.com, linux-omap@vger.kernel.org, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/9] ARM: omap2/n8x0: work around modular omap mmc
-Message-ID: <20120324092316.GA22608@n2100.arm.linux.org.uk>
-References: <1332522836-29517-1-git-send-email-mathieu.poirier@linaro.org> <1332522836-29517-4-git-send-email-mathieu.poirier@linaro.org>
+	Sat, 24 Mar 2012 05:24:56 -0400
+Date: Sat, 24 Mar 2012 10:24:52 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, hpa@zytor.com, john.stultz@linaro.org,
+        tglx@linutronix.de, jhbird.choi@gmail.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/core] alarmtimer: Make sure we initialize the
+ rtctimer
+Message-ID: <20120324092452.GA29081@gmail.com>
+References: <tip-ad30dfa94c5cc23931c822922a50bd163ab293a5@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332522836-29517-4-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <tip-ad30dfa94c5cc23931c822922a50bd163ab293a5@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 11:13:50AM -0600, mathieu.poirier@linaro.org wrote:
-> From: Russell King <linux@arm.linux.org.uk>
 
-This is wrong.  I am not the author of this patch.
+* tip-bot for John Stultz <john.stultz@linaro.org> wrote:
 
-> When the omap driver is built as a module for n8x0,
-> n8x0_mmc_set_power_menelaus cannot call into the driver:
+> Commit-ID:  ad30dfa94c5cc23931c822922a50bd163ab293a5
+> Gitweb:     http://git.kernel.org/tip/ad30dfa94c5cc23931c822922a50bd163ab293a5
+> Author:     John Stultz <john.stultz@linaro.org>
+> AuthorDate: Fri, 23 Mar 2012 15:52:25 -0700
+> Committer:  John Stultz <john.stultz@linaro.org>
+> CommitDate: Fri, 23 Mar 2012 16:23:12 -0700
 > 
-> arch/arm/mach-omap2/board-n8x0.c:374: undefined reference
-> to `omap_mmc_notify_cover_event'
+> alarmtimer: Make sure we initialize the rtctimer
 > 
-> As a workaround, do not provide that device in this case. This needs
-> to be fixed properly, e.g. by converting n8x0 to be probed through the
-> device tree and moving that code into the driver.
+> jonghwan Choi reported seeing warnings with the alarmtimer
+> code at suspend/resume time, and pointed out that the
+> rtctimer isn't being properly initialized.
 > 
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> Suggested-by: Russell King <linux@arm.linux.org.uk>
-> Acked-by: Tony Lindgren <tony@atomide.com>
+> This patch corrects this issue.
+> 
+> Reported-by: jonghwan Choi <jhbird.choi@gmail.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 > ---
->  arch/arm/mach-omap2/board-n8x0.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
+>  kernel/time/alarmtimer.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/arm/mach-omap2/board-n8x0.c b/arch/arm/mach-omap2/board-n8x0.c
-> index 6722627..8529ca0 100644
-> --- a/arch/arm/mach-omap2/board-n8x0.c
-> +++ b/arch/arm/mach-omap2/board-n8x0.c
-> @@ -193,8 +193,10 @@ static struct omap_onenand_platform_data board_onenand_data[] = {
->  };
->  #endif
+> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+> index 8a46f5d..c165488 100644
+> --- a/kernel/time/alarmtimer.c
+> +++ b/kernel/time/alarmtimer.c
+> @@ -46,9 +46,10 @@ static struct alarm_base {
+>  static ktime_t freezer_delta;
+>  static DEFINE_SPINLOCK(freezer_delta_lock);
 >  
-> -#if defined(CONFIG_MENELAUS) &&						\
-> -	(defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE))
-> +#ifdef CONFIG_MMC_OMAP_MODULE
-> +#warning FIXME: cannot call omap_mmc_notify_cover_event for CONFIG_MMC_OMAP_MODULE
-> +#endif
-> +#if defined(CONFIG_MENELAUS) && (defined(CONFIG_MMC_OMAP)
+> +static struct rtc_timer		rtctimer;
+> +
+>  #ifdef CONFIG_RTC_CLASS
+>  /* rtc timer and device for setting alarm wakeups at suspend */
+> -static struct rtc_timer		rtctimer;
+>  static struct rtc_device	*rtcdev;
+>  static DEFINE_SPINLOCK(rtcdev_lock);
 >  
->  /*
->   * On both N800 and N810, only the first of the two MMC controllers is in use.
-> -- 
-> 1.7.5.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> @@ -783,6 +784,8 @@ static int __init alarmtimer_init(void)
+>  		.nsleep		= alarm_timer_nsleep,
+>  	};
+>  
+> +	rtc_timer_init(&rtctimer, NULL, NULL);
+> +
+>  	posix_timers_register_clock(CLOCK_REALTIME_ALARM, &alarm_clock);
+>  	posix_timers_register_clock(CLOCK_BOOTTIME_ALARM, &alarm_clock);
+
+This commit breaks every build that has CONFIG_RTC_LIB disabled:
+
+ alarmtimer.c:(.init.text+0x1cc7): undefined reference to `rtc_timer_init'
+
+Thanks,
+
+	Ingo
