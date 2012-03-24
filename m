@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab2CXPig (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 11:38:36 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:42744 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab2CXPie convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 11:38:34 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.164.220.0]
-In-Reply-To: <20120324142752.GE25980@infradead.org>
-References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
-	<1331155362-11132-22-git-send-email-miklos@szeredi.hu>
-	<20120324142752.GE25980@infradead.org>
-Date: Sat, 24 Mar 2012 16:38:33 +0100
-Message-ID: <CAJfpegu3GZSp+sXCird+oo58+yWO4daAOQ_9sSL1Q_mctxEybA@mail.gmail.com>
-Subject: Re: [PATCH 21/25] gfs2: use i_op->atomic_create()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Trond.Myklebust@netapp.com,
-        sfrench@samba.org, sage@newdream.net, ericvh@gmail.com,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754387Ab2CXPxV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 11:53:21 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57846 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753159Ab2CXPxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 11:53:20 -0400
+Message-ID: <1332604398.6160.47.camel@joe2Laptop>
+Subject: Re: [PATCH v3] Ethernet driver for the WIZnet W5300 chip
+From: Joe Perches <joe@perches.com>
+To: Mike Sinkovsky <msink@permonline.ru>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 24 Mar 2012 08:53:18 -0700
+In-Reply-To: <1332586938-2804-1-git-send-email-msink@permonline.ru>
+References: <1332149037-12025-1-git-send-email-msink@permonline.ru>
+	 <1332586938-2804-1-git-send-email-msink@permonline.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 3:27 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Mar 07, 2012 at 10:22:38PM +0100, Miklos Szeredi wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> GFS2 doesn't open the file in ->create, but it does check the LOOKUP_EXCL flag
->> in it's create function.  Convert to using ->atomic_create and checking O_EXCL
->> so that the nameidata argument is no longer necessary.
->
-> It seems odd that we require implementing ->atomic_create even if we
-> don't actually do an atomic create but just want to look at the flags.
->
-> In fact I wonder if we really need to bother with having ->atomic_create
-> and ->create, or if we should have one method (kinda contra my previous
-> stance that ->atomic_open and ->atomic_create should be one).
->
-> This method then could or could not return a file pointer, but it would
-> always be the entry point for creates.
+On Sat, 2012-03-24 at 16:02 +0500, Mike Sinkovsky wrote:
+> Based on original driver from chip manufacturer, but nearly full rewite.
+> Tested and used in production with Blackfin BF531 embedded processor.
 
-Yes, except I thought of the pain of converting all those returns to
-ERR_PTR and left the old ->create instead.
+Hi Mike.
 
-Maybe I should just byte the bullet or do that, having a single return
-point for those functions shouldn't be that difficult to do.
+Just a trivial comment.  Instead of:
+	if (netif_<test>(priv))
+		netdev_<level>(ndev, ...)
+you can use
+	netif_<level>(priv, <test>, ndev, ,...)
 
-Thanks,
-Miklos
+> diff --git a/drivers/net/ethernet/wiznet/w5300.c b/drivers/net/ethernet/wiznet/w5300.c
+[]
+> +static irqreturn_t w5300_detect_link(int irq, void *ndev_instance)
+> +{
+> +	struct net_device *ndev = ndev_instance;
+> +	struct w5300_private *priv = netdev_priv(ndev);
+> +
+> +	if (netif_running(ndev)) {
+> +		if (gpio_get_value(priv->link_gpio) != 0) {
+[]
+> +			if (netif_msg_link(priv))
+> +				netdev_info(ndev, "link is Up\n");
+
+like:
+			netif_info(priv, link, ndev, "link is up\n");
+
+> +			netif_carrier_on(ndev);
+> +		} else {
+> +			if (netif_msg_link(priv))
+> +				netdev_info(ndev, "link is Down\n");
+
+			netif_info(priv, link, ndev, "link is down\n");
+
+> +static int w5300_stop(struct net_device *ndev)
+> +{
+> +	struct w5300_private *priv = netdev_priv(ndev);
+> +
+> +	if (netif_msg_ifdown(priv))
+> +		netdev_dbg(ndev, "shutting down\n");
+
+		netif_dbg(priv, ifdown, ndev, "shutting down\n");
+
+
