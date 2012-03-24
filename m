@@ -1,237 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2CXWEG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 18:04:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60779 "EHLO
+	id S1755880Ab2CXWEE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 18:04:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54170 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab2CXWDE (ORCPT
+	with ESMTP id S1755401Ab2CXWDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 24 Mar 2012 18:03:04 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL 04/09] ARM: timer cleanup work
-Date: Sat, 24 Mar 2012 22:02:43 +0000
-Message-Id: <1332626568-17812-7-git-send-email-arnd@arndb.de>
+Subject: =?UTF-8?q?=5BGIT=20PULL=2005/09=5D=20ARM=3A=20SoC=20specific=20updates?=
+Date: Sat, 24 Mar 2012 22:02:44 +0000
+Message-Id: <1332626568-17812-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332626568-17812-1-git-send-email-arnd@arndb.de>
 References: <1332626568-17812-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:tOFIKjwAqhweW4itEPJyhjG0Bzzz29x1BPZ/Wa6sqz8
- KWg2AEeaxl4u9WBA1rpnQTufYIPyScK5LcFQIo4p2APgUGDimo
- X//Gk3Bw50lQU/6icIddemB0wqMmFTz/J0c+A+u+fk4ROTOqTU
- PLDuQrLj7Zf/gUg/pWOtF3p12C9o2hJXZEZiB1xRWr/N11Us/1
- 2z32rtvWOz3drJrtpvtzdpcx2JuP6NkbUEwZHqmkXG3lrYlBGo
- DRmS0wPzW1aZxPUH/1aVQtsVp7pY/OYEaWF+s6/RtAXagHIz6x
- EtQTemY4vgdAdi8kWa0HZ61OVhola8HgQGtLWVmf7MynUkCz2Z
- Qch7zuNU0a7xXckh2b4jymjYfmikd99Ivg9ngdPt8OPWglCz86
- 676MyiYRXiCdQ==
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:OwzF1McKrd7LaHtio5GV6ELyID3E5zhco/8zS2DeU99
+ 0dbPSaVwVEVqkluSuybrPpVNTvS7n/+k0FnQ9QlwxOt8qG3mmL
+ hljVuuStIw8oXs6YNm6GOd5gpk0318VAvNmuOtg8nI9/kvRiXE
+ PpwPn+5jbJ8zSJw9Fn9mQ/MZsdIZ96cDDkqEw8d386/P/feBhe
+ g1tZvoWRTYe0RxJEf1adjkdeGqBxSTq4gOzBhSmmItzCfBT/D2
+ /B5TFXOod7RCId+V7DsTYGgVWzcq0CI1MDEBpJfHD8G2v4wdR6
+ YYTyWNXrXFWuWK2VQXRL3aeM/0AcbnGeerMf37fZKhG5s9Oi9G
+ Ya+1E9CTMuqcVLgHaEoZJzzOxNNDjGZbOAcdsW7gQePBYesNBm
+ ZGaqic3ijNKxA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are split out from the generic soc and driver updates because
-there was a lot of conflicting work by multiple people. Marc Zyngier
-worked on simplifying the "localtimer" interfaces, and some of the
-platforms are touching the same code as they move to device tree
-based booting.
+These changes are all specific to an soc family or the code for
+one soc. Lots of work for Tegra3 this time, but also a lot of other
+platforms. There will be another (smaller) set of soc patches later in
+the merge window for stuff that has dependencies on external trees or
+that was sent just before the merge window opened.
+
+The asoc tree added a few devices to the i.mx platform, which conflict
+with other devices added in the same place here.
+
+The tegra Makefile conflicts between a number of branches, mostly because
+of changes regarding localtimer.c, which was removed in the end.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-The following changes since commit "0f98c77 Merge branch 'next/timer' into
-for-next", leading up to commit " 2cbe23e Merge branch 'tegra/cleanups'
-into next/timer", are available in
+The following changes since commit "c4acbfb Merge branch 'next/soc'
+into for-next", leading up to commit " bde7556 Merge branch
+'samsung/cleanup-exynos-clock' into nex", are available in
 
-git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/timer
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/soc
 
-Arnd Bergmann (12):
-      Merge tag 'tegra-cleanups' of git://git.kernel.org/.../olof/tegra into tegra/cleanups
-      Merge branch 'ux500/timers' into next/timer
-      Merge branch 'vexpress/timer' into next/timer
-      Merge branch 'local_timers-for-arm-soc' of git://git.kernel.org/.../maz/arm-platforms into next/timer
-      ARM: shmobile: remove additional __io() macro use
-      Merge branch 'local_timers-for-arm-soc' of git://git.kernel.org/.../maz/arm-platforms into next/timer
-      Merge branch 'renesas/fixes' into renesas/soc
-      ARM: tegra: select USB_ULPI if USB is selected
-      Merge branch 'for-3.4/cleanup-and-fixes' of git://git.kernel.org/.../olof/tegra into tegra/cleanups
-      Merge branch 'renesas/timer' into next/timer
-      Merge branch 'tegra/cleanups' into next/timer
-      Merge branch 'next/timer' into for-next
+Amit Daniel Kachhap (5):
+      ARM: EXYNOS: Add support AFTR mode on EXYNOS4210
+      ARM: S5P: add L2 early resume code
+      ARM: EXYNOS: save L2 settings during bootup
+      ARM: EXYNOS: remove useless code to save/restore L2
+      ARM: EXYNOS: Enable l2 configuration through device tree
 
-Dmitry Artamonow (3):
-      arm/tegra: fix harmony pinmux for PCIe
-      arm/tegra: add timeout to PCIe PLL lock detection loop
-      arm/tegra: pcie: fix return value of function
+Andrzej Pietrasiewicz (1):
+      ARM: EXYNOS: add support JPEG
 
-Linus Walleij (3):
-      ARM: plat-nomadik: get rid of global mtu base pointer
-      ARM: plat-nomadik: handle clocking properly
-      ARM: plat-nomadik: modernize MTU timer
+Arnd Bergmann (7):
+      Merge branch 'imx/defconfig' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/soc
+      Merge branch 'soc' of git://git.kernel.org/.../tmlind/linux-omap into next/soc
+      Merge branch 'features/imx3' of git://git.pengutronix.de/git/imx/linux-2.6 into next/soc
+      Merge tag 'tegra-soc' of git://git.kernel.org/.../olof/tegra into tegra/soc
+      Merge branch 'renesas/soc' into next/soc
+      Merge branch 'samsung/cleanup-exynos-clock' into next/soc
+      Merge branch 'next/soc' into for-next
 
-Magnus Damm (35):
-      sh: introduce sh_clk_ops in parallel with clk_ops
-      sh: convert cpg code to sh_clk_ops
-      ARM: mach-shmobile: sh7367 sh_clk_ops rename
-      ARM: mach-shmobile: sh7377 sh_clk_ops rename
-      ARM: mach-shmobile: sh7372 sh_clk_ops rename
-      ARM: mach-shmobile: sh73a0 sh_clk_ops rename
-      ARM: mach-shmobile: r8a7740 sh_clk_ops rename
-      ARM: mach-shmobile: r8a7779 sh_clk_ops rename
-      sh: sh header sh_clk_ops rename
-      sh: sh2 sh_clk_ops rename
-      sh: sh2a sh_clk_ops rename
-      sh: sh3 sh_clk_ops rename
-      sh: sh4 sh_clk_ops rename
-      sh: sh4a sh_clk_ops rename
-      sh: sh5 sh_clk_ops rename
-      sh: board sh_clk_ops rename
-      sh: remove clk_ops
-      ARM: mach-shmobile: sh7367 map_io and init_early update
-      ARM: mach-shmobile: sh7377 map_io and init_early update
-      ARM: mach-shmobile: sh7372 map_io and init_early update
-      ARM: mach-shmobile: sh73a0 map_io and init_early update
-      ARM: mach-shmobile: r8a7740 map_io and init_early update
-      ARM: mach-shmobile: r8a7779 map_io and init_early update
-      ARM: mach-shmobile: r8a7779 L2 cache support
-      ARM: mach-shmobile: rename clk_init() to shmobile_clk_init()
-      ARM: mach-shmobile: Move sh7372 Mackerel external clk setup
-      ARM: mach-shmobile: Move sh7372 AP4EVB external clk setup
-      ARM: mach-shmobile: add shmobile_earlytimer_init()
-      ARM: mach-shmobile: sh7367 and G3EVM timer rework
-      ARM: mach-shmobile: sh7377 and G4EVM timer rework
-      ARM: mach-shmobile: sh7372, AP4EVB and Mackerel timer rework
-      ARM: mach-shmobile: sh73a0, AG5EVM and Kota2 timer rework
-      ARM: mach-shmobile: r8a7740 and Bonito timer rework
-      ARM: mach-shmobile: r8a7779 and Marzen timer rework
-      ARM: mach-shmobile: default to no earlytimer
+Changhwan Youn (1):
+      ARM: EXYNOS: fix cycle count for periodic mode of clock event timers
 
-Marc Zyngier (16):
-      ARM: smp_twd: make local_timer_stop a symbol instead of a #define
-      ARM: local timers: introduce a new registration interface
-      ARM: smp_twd: add runtime registration support
-      ARM: smp_twd: add device tree support
-      ARM: OMAP4: convert to twd_local_timer_register() interface
-      ARM: plat-versatile: convert to twd_local_timer_register() interface
-      ARM: tegra: convert to twd_local_timer_register() interface
-      ARM: shmobile: convert to twd_local_timer_register() interface
-      ARM: ux500: convert to twd_local_timer_register() interface
-      ARM: highbank: convert to twd_local_timer_register() interface
-      ARM: imx6q: convert to twd_local_timer_register() interface
-      ARM: smp_twd: remove old local timer interface
-      ARM: local timers: convert exynos to runtime registration interface
-      ARM: local timers: convert MSM to runtime registration interface
-      ARM: local timers: make the runtime registration interface mandatory
-      ARM: ux500: fix compilation after local timer rework
+Dan Liang (2):
+      ARM: at91/at91sam9x5: overall definition
+      ARM: at91/at91sam9x5: SoC basic support
 
-Olof Johansson (1):
-      Merge branch 'ux500-timers' of git://git.kernel.org/.../linusw/linux-stericsson into ux500/timers
+Fabio Estevam (6):
+      ARM: mx28: Let audio support be built by default
+      ARM: mxs: Use a proper timeout mechanism
+      ARM: mx3: Let mx31 and mx35 enter in LPM mode in WFI
+      ARM: mx3: Setup AIPS registers
+      ARM: mx5: Use common function for configuring AIPS
+      ARM: mx35: Setup the AIPS registers
 
-Pawel Moll (2):
-      ARM: vexpress: Get rid of MMIO_P2V
-      ARM: versatile: Map local timers using Device Tree when possible
+Jingoo Han (1):
+      ARM: SAMSUNG: Add a callback 'notify_after' for PWM backlight control
+
+Joonyoung Shim (2):
+      ARM: S3C64XX: Add usb otg phy control
+      ARM: S5PV210: Add usb otg phy control
+
+Kamil Debski (1):
+      ARM: SAMSUNG: add G2D to plat-s5p and mach-exynos
+
+Lothar Waßmann (1):
+      arm/mxs: Add support for SSP/MMC ports 2 & 3
+
+Mark Brown (4):
+      ARM: S3C64XX: Add basic cpuidle driver
+      ARM: S3C64XX: Gate some more clocks by default
+      ARM: S3C64XX: Reduce residency requirement for cpuidle WFI mode
+      ARM: S3C64XX: Define some additional always off clocks
+
+Minho Ban (1):
+      ARM: SAMSUNG: use spin_lock_irqsave() in clk_{enable,disable}
+
+MyungJoo Ham (1):
+      ARM: EXYNOS: Add DMC1, allow PPMU access for DMC
+
+Nicolas Ferre (4):
+      ARM: at91/at91sam9x5: PMC header file
+      ARM: at91/at91sam9x5: clock management for at91sam9x5 chip family
+      ARM: at91/at91sam9x5: Configuration and Makefile
+      ARM: at91/at91sam9x5: Device tree definition files
+
+Olof Johansson (8):
+      Merge branch 'ux500-timers' of git://git.kernel.org/.../linusw/linux-stericsson into next/soc
+      Merge branch 'mxs/clk' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/soc
+      Merge branch 'mxs/defconfig' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/soc
+      Merge branch 'at91-3.4-base+9x5' of git://github.com/at91linux/linux-at91 into next/soc
+      Merge branch 'for-arm-soc' of git://sources.calxeda.com/kernel/linux into next/soc
+      Merge tag 'imx35-imx5-aips-setup' of git://git.pengutronix.de/git/imx/linux-2.6 into next/soc
+      Merge branch 'next/devel-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/soc
+      Merge branch 'soc' of git://git.kernel.org/.../rafael/renesas into next/soc
+
+Peter De Schrijver (9):
+      ARM: tegra: add support for tegra30 interrupts
+      ARM: tegra: add support for new clock framework features
+      ARM: tegra: implement basic tegra30 clock framework
+      ARM: tegra: enable tegra30 clock framework
+      ARM: tegra: initialize basic system clocks
+      ARM: tegra: definitions for flow controller
+      ARM: tegra: assembler code for LP3
+      ARM: tegra: cpuidle driver for tegra
+      ARM: tegra: Avoid compiling cpuidle code when not configured
+
+Rob Herring (3):
+      ARM: timer-sp: add sched_clock support
+      ARM: highbank: enable sp804 based sched_clock
+      ARM: highbank: remove unused memory.h
+
+Shawn Guo (2):
+      ARM: imx: update imx_v6_v7_defconfig
+      ARM: defconfig: imx_v6_v7: build in REGULATOR_FIXED_VOLTAGE
+
+Stephen Warren (1):
+      ARM: tegra: Demote EMC clock inconsistency BUG to WARN
+
+Sylwester Nawrocki (1):
+      ARM: SAMSUNG: Correct MIPI-CSIS io memory resource definition
+
+Tony Lindgren (1):
+      Merge branch 'soc-part2' into soc
+
+Tushar Behera (2):
+      ARM: SAMSUNG: Add __init attribute to samsung_bl_set()
+      ARM: SAMSUNG: fix __init attribute on regarding s3c_set_platdata()
+
+Vaibhav Hiremath (2):
+      ARM: OMAP2+: Make cpu_rev static global variable
+      ARM: OMAP2+: split omap2/3/4_check_revision function
+
+Wolfram Sang (1):
+      ARM: mx28: check for gated clocks when setting saif divider
 
 
- Documentation/devicetree/bindings/arm/twd.txt     |   48 ++++++++
- arch/arm/boot/dts/highbank.dts                    |    8 +-
- arch/arm/boot/dts/imx6q.dtsi                      |    6 +-
- arch/arm/include/asm/hardware/arm_timer.h         |    5 +
- arch/arm/include/asm/localtimer.h                 |   37 +-----
- arch/arm/include/asm/smp_twd.h                    |   25 ++++-
- arch/arm/kernel/smp.c                             |   22 +++-
- arch/arm/kernel/smp_twd.c                         |  123 +++++++++++++++++----
- arch/arm/mach-exynos/mct.c                        |   18 ++--
- arch/arm/mach-highbank/Makefile                   |    1 -
- arch/arm/mach-highbank/highbank.c                 |    3 +
- arch/arm/mach-highbank/localtimer.c               |   40 -------
- arch/arm/mach-imx/Makefile                        |    1 -
- arch/arm/mach-imx/localtimer.c                    |   35 ------
- arch/arm/mach-imx/mach-imx6q.c                    |    2 +
- arch/arm/mach-msm/timer.c                         |   79 ++++++++------
- arch/arm/mach-nomadik/board-nhk8815.c             |    7 +-
- arch/arm/mach-nomadik/include/mach/setup.h        |   19 ---
- arch/arm/mach-omap2/Makefile                      |    1 -
- arch/arm/mach-omap2/timer-mpu.c                   |   39 -------
- arch/arm/mach-omap2/timer.c                       |   22 +++-
- arch/arm/mach-realview/realview_eb.c              |   27 ++++-
- arch/arm/mach-realview/realview_pb11mp.c          |   21 +++-
- arch/arm/mach-realview/realview_pbx.c             |   20 +++-
- arch/arm/mach-shmobile/Makefile                   |    1 -
- arch/arm/mach-shmobile/board-ag5evm.c             |   39 +------
- arch/arm/mach-shmobile/board-ap4evb.c             |   44 +-------
- arch/arm/mach-shmobile/board-bonito.c             |   44 ++------
- arch/arm/mach-shmobile/board-g3evm.c              |   38 +------
- arch/arm/mach-shmobile/board-g4evm.c              |   38 +------
- arch/arm/mach-shmobile/board-kota2.c              |   38 +------
- arch/arm/mach-shmobile/board-mackerel.c           |   39 +------
- arch/arm/mach-shmobile/board-marzen.c             |   62 +----------
- arch/arm/mach-shmobile/clock-r8a7740.c            |    8 +-
- arch/arm/mach-shmobile/clock-r8a7779.c            |    4 +-
- arch/arm/mach-shmobile/clock-sh7367.c             |    8 +-
- arch/arm/mach-shmobile/clock-sh7372.c             |   10 +-
- arch/arm/mach-shmobile/clock-sh7377.c             |    8 +-
- arch/arm/mach-shmobile/clock-sh73a0.c             |   14 +-
- arch/arm/mach-shmobile/clock.c                    |    2 +-
- arch/arm/mach-shmobile/include/mach/common.h      |   11 ++-
- arch/arm/mach-shmobile/localtimer.c               |   26 -----
- arch/arm/mach-shmobile/platsmp.c                  |    1 -
- arch/arm/mach-shmobile/setup-r8a7740.c            |   45 ++++++++
- arch/arm/mach-shmobile/setup-r8a7779.c            |   54 +++++++++
- arch/arm/mach-shmobile/setup-sh7367.c             |   32 ++++++
- arch/arm/mach-shmobile/setup-sh7372.c             |   32 ++++++
- arch/arm/mach-shmobile/setup-sh7377.c             |   32 ++++++
- arch/arm/mach-shmobile/setup-sh73a0.c             |   32 ++++++
- arch/arm/mach-shmobile/smp-r8a7779.c              |    8 +-
- arch/arm/mach-shmobile/smp-sh73a0.c               |    8 +-
- arch/arm/mach-shmobile/timer.c                    |   16 +++-
- arch/arm/mach-tegra/Kconfig                       |    4 +-
- arch/arm/mach-tegra/Makefile                      |    1 -
- arch/arm/mach-tegra/board-harmony-pinmux.c        |    6 +-
- arch/arm/mach-tegra/localtimer.c                  |   26 -----
- arch/arm/mach-tegra/pcie.c                        |   16 ++-
- arch/arm/mach-tegra/timer.c                       |   22 +++-
- arch/arm/mach-ux500/Makefile                      |    1 -
- arch/arm/mach-ux500/cpu.c                         |    1 -
- arch/arm/mach-ux500/include/mach/setup.h          |    3 -
- arch/arm/mach-ux500/localtimer.c                  |   29 -----
- arch/arm/mach-ux500/timer.c                       |   39 +++++--
- arch/arm/mach-vexpress/core.h                     |    7 +-
- arch/arm/mach-vexpress/ct-ca9x4.c                 |   67 +++++-------
- arch/arm/mach-vexpress/include/mach/ct-ca9x4.h    |    3 -
- arch/arm/mach-vexpress/include/mach/motherboard.h |   52 ++++-----
- arch/arm/mach-vexpress/platsmp.c                  |    5 +-
- arch/arm/mach-vexpress/v2m.c                      |   68 ++++++++----
- arch/arm/plat-nomadik/include/plat/mtu.h          |    4 +-
- arch/arm/plat-nomadik/timer.c                     |   33 ++----
- arch/arm/plat-versatile/Makefile                  |    1 -
- arch/arm/plat-versatile/localtimer.c              |   27 -----
- arch/sh/boards/mach-highlander/setup.c            |    2 +-
- arch/sh/boards/mach-sdk7786/setup.c               |    2 +-
- arch/sh/include/asm/clock.h                       |    2 +-
- arch/sh/kernel/cpu/sh2/clock-sh7619.c             |   12 +-
- arch/sh/kernel/cpu/sh2a/clock-sh7201.c            |   12 +-
- arch/sh/kernel/cpu/sh2a/clock-sh7203.c            |   12 +-
- arch/sh/kernel/cpu/sh2a/clock-sh7206.c            |   12 +-
- arch/sh/kernel/cpu/sh3/clock-sh3.c                |   12 +-
- arch/sh/kernel/cpu/sh3/clock-sh7705.c             |   12 +-
- arch/sh/kernel/cpu/sh3/clock-sh7706.c             |   12 +-
- arch/sh/kernel/cpu/sh3/clock-sh7709.c             |   12 +-
- arch/sh/kernel/cpu/sh3/clock-sh7710.c             |   12 +-
- arch/sh/kernel/cpu/sh3/clock-sh7712.c             |   10 +-
- arch/sh/kernel/cpu/sh4/clock-sh4-202.c            |    6 +-
- arch/sh/kernel/cpu/sh4/clock-sh4.c                |   12 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7343.c            |    4 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7366.c            |    4 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7722.c            |    4 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7723.c            |    4 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7724.c            |    6 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7757.c            |    2 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7763.c            |   14 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7770.c            |   12 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7780.c            |   14 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7785.c            |    2 +-
- arch/sh/kernel/cpu/sh4a/clock-sh7786.c            |    2 +-
- arch/sh/kernel/cpu/sh4a/clock-shx3.c              |    2 +-
- arch/sh/kernel/cpu/sh5/clock-sh5.c                |   12 +-
- drivers/sh/clk/cpg.c                              |   16 ++--
- include/linux/sh_clk.h                            |    5 +-
- 103 files changed, 964 insertions(+), 999 deletions(-)
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/at91sam9g25ek.dts                |   37 +
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |  172 ++
+ arch/arm/boot/dts/at91sam9x5cm.dtsi                |   14 +
+ arch/arm/common/timer-sp.c                         |   17 +-
+ arch/arm/configs/imx_v6_v7_defconfig               |    5 +-
+ arch/arm/configs/mxs_defconfig                     |   20 +-
+ arch/arm/include/asm/hardware/timer-sp.h           |   15 +-
+ arch/arm/mach-at91/Kconfig                         |    9 +
+ arch/arm/mach-at91/Makefile                        |    1 +
+ arch/arm/mach-at91/at91sam9x5.c                    |  373 +++
+ arch/arm/mach-at91/board-dt.c                      |    1 +
+ arch/arm/mach-at91/clock.c                         |   83 +-
+ arch/arm/mach-at91/include/mach/at91_pmc.h         |   60 +-
+ arch/arm/mach-at91/include/mach/at91sam9x5.h       |   80 +
+ .../arm/mach-at91/include/mach/at91sam9x5_matrix.h |   53 +
+ arch/arm/mach-at91/include/mach/hardware.h         |    2 +
+ arch/arm/mach-exynos/clock-exynos4.c               |    5 +
+ arch/arm/mach-exynos/common.c                      |   60 +-
+ arch/arm/mach-exynos/cpuidle.c                     |  151 +-
+ arch/arm/mach-exynos/include/mach/map.h            |    7 +
+ arch/arm/mach-exynos/include/mach/pmu.h            |    2 +
+ arch/arm/mach-exynos/mct.c                         |   21 +-
+ arch/arm/mach-exynos/pm.c                          |   15 -
+ arch/arm/mach-highbank/highbank.c                  |    2 +-
+ arch/arm/mach-highbank/include/mach/memory.h       |    1 -
+ arch/arm/mach-imx/Makefile                         |    4 +-
+ arch/arm/mach-imx/cpu-imx5.c                       |   36 -
+ arch/arm/mach-imx/crmregs-imx3.h                   |    1 +
+ arch/arm/mach-imx/mm-imx3.c                        |   10 +
+ arch/arm/mach-imx/mm-imx5.c                        |   10 +
+ arch/arm/mach-imx/pm-imx3.c                        |   37 +
+ arch/arm/mach-mxs/clock-mx23.c                     |   34 +-
+ arch/arm/mach-mxs/clock-mx28.c                     |   57 +-
+ arch/arm/mach-mxs/devices/platform-mxs-mmc.c       |    2 +
+ arch/arm/mach-mxs/include/mach/common.h            |    2 +
+ arch/arm/mach-mxs/system.c                         |   16 +
+ arch/arm/mach-omap2/id.c                           |  186 +-
+ arch/arm/mach-omap2/io.c                           |    9 +-
+ arch/arm/mach-s3c64xx/Kconfig                      |    8 +
+ arch/arm/mach-s3c64xx/Makefile                     |    2 +
+ arch/arm/mach-s3c64xx/clock.c                      |  121 +-
+ arch/arm/mach-s3c64xx/cpuidle.c                    |   91 +
+ arch/arm/mach-s3c64xx/mach-crag6410.c              |    4 +
+ arch/arm/mach-s3c64xx/mach-smartq.c                |    3 +
+ arch/arm/mach-s3c64xx/mach-smdk6410.c              |    4 +
+ arch/arm/mach-s3c64xx/setup-usb-phy.c              |   90 +
+ arch/arm/mach-s5pv210/Kconfig                      |    6 +
+ arch/arm/mach-s5pv210/Makefile                     |    1 +
+ arch/arm/mach-s5pv210/include/mach/regs-sys.h      |    4 -
+ arch/arm/mach-s5pv210/setup-usb-phy.c              |   90 +
+ arch/arm/mach-tegra/Makefile                       |    5 +-
+ arch/arm/mach-tegra/board-dt-tegra30.c             |   24 +-
+ arch/arm/mach-tegra/clock.c                        |   22 +
+ arch/arm/mach-tegra/clock.h                        |   15 +
+ arch/arm/mach-tegra/common.c                       |    1 +
+ arch/arm/mach-tegra/cpuidle.c                      |  107 +
+ arch/arm/mach-tegra/flowctrl.h                     |   37 +
+ arch/arm/mach-tegra/include/mach/clk.h             |   10 +
+ arch/arm/mach-tegra/include/mach/iomap.h           |    3 +
+ arch/arm/mach-tegra/include/mach/irqs.h            |    7 +-
+ arch/arm/mach-tegra/irq.c                          |   20 +-
+ arch/arm/mach-tegra/sleep.S                        |   91 +
+ arch/arm/mach-tegra/tegra2_clocks.c                |   30 +-
+ arch/arm/mach-tegra/tegra30_clocks.c               | 3099 ++++++++++++++++++++
+ arch/arm/plat-mxc/cpu.c                            |   24 +
+ arch/arm/plat-mxc/include/mach/common.h            |    9 +
+ arch/arm/plat-omap/include/plat/cpu.h              |    7 +-
+ arch/arm/plat-s5p/Kconfig                          |   10 +
+ arch/arm/plat-s5p/sleep.S                          |   44 +-
+ arch/arm/plat-samsung/clock.c                      |   12 +-
+ arch/arm/plat-samsung/dev-backlight.c              |    4 +-
+ arch/arm/plat-samsung/devs.c                       |   68 +-
+ arch/arm/plat-samsung/include/plat/devs.h          |    2 +
+ .../plat-samsung/include/plat/regs-usb-hsotg-phy.h |    7 +-
+ arch/arm/plat-samsung/include/plat/udc-hs.h        |    5 +
+ 76 files changed, 5351 insertions(+), 347 deletions(-)
