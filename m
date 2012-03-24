@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab2CXVwL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 17:52:11 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:60920 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754220Ab2CXVwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 17:52:09 -0400
-Date: Sat, 24 Mar 2012 17:51:52 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: hpa@zytor.com
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext2: No longer export ext2_fs.h to user space
-Message-ID: <20120324215152.GA32554@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, hpa@zytor.com,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Thierry Reding <thierry.reding@avionic-design.de>,
-	linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-	Artem Bityutskiy <dedekind1@gmail.com>,
-	Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
-References: <20120322183135.GC4028@thunk.org>
- <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
- <20120323131331.GA29631@thunk.org>
- <20120323175534.GI6589@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120323175534.GI6589@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755290Ab2CXWDA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 18:03:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65482 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab2CXWC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 18:02:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [GIT PULL 03/09] ARM: subarch maintainer updates
+Date: Sat, 24 Mar 2012 22:02:42 +0000
+Message-Id: <1332626568-17812-6-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1332626568-17812-1-git-send-email-arnd@arndb.de>
+References: <1332626568-17812-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:gKj6k+I3SAbrs4peAAZoJvma/GALIwCVEsoCh0myEXd
+ bPkfAWiOZYwjV+JU2NZV83ei8UzpakgrvTy9PjTxM/Wk/cvpRv
+ 7VbgClkIa2grOf3nm3FsALMSxlvxtgUubFJICjLkWydA8M3h2i
+ F7BfJdeiCqYIvcoBoJddqto+h0FiZCjsWgggQECYqzEjrjU6nj
+ sQ/9UrbMZ6MgWfDjd1GFVVU1doBy3ZKa0yvTH32vS4WAMdb5/Y
+ NL42RI0Lakv+IHayWRIH9tjsCEi5gbFJKGONUYRzAD7KAxmDGG
+ ef43YeYag4sBNZss7BHJxmKJF5hY2FGrFdZbZhJX8lNHSYZtIk
+ P3nQO+htYpFhVdrR1NgmYTJPbw2Us/EEtchUoP236vsHhNv8eg
+ n/qTl03pKZ3dg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+This is a collection of updates to the MAINTAINERS file, separated out
+mostly to give an overview of what has changed regarding who does what.
 
-Note that we are planning on unexporting ext2_fs.h, and then utterly
-removing it from the tree (with what fs/ext2 needs being moved to
-fs/ext2/ext2.h).
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Someone who was compiling "the latest version" of syslinux has
-submitted a kernel bugzilla entry that this was breaking due to
-ext2_fs.h using umode_t which was no longer being exported by the
-kernel header files.  Given that ext2_fs.h is about to go ***poof***
-(Al already has the changes in his vfs git tree), I thought I should
-give you a heads up....
+The following changes since commit "8460371 Merge branch
+'next/maintainers' into for-next", leading up to commit " fd117cd ARM:
+tegra: update main repo and add patchwork", are available in
 
-					- Ted
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/maintainers
 
-On Fri, Mar 23, 2012 at 05:55:34PM +0000, Al Viro wrote:
-> On Fri, Mar 23, 2012 at 09:13:31AM -0400, Ted Ts'o wrote:
-> > On Fri, Mar 23, 2012 at 10:27:36AM +0100, Thierry Reding wrote:
-> > > Since the on-disk format has been stable for quite some time, users
-> > > should either use the headers provided by libext2fs or keep a private
-> > > copy of this header. For the full discussion, see this thread:
-> > > 
-> > > 	https://lkml.org/lkml/2012/3/21/516
-> > > 
-> > > While at it, this commit removes all __KERNEL__ guards, which are now
-> > > unnecessary.
-> > > 
-> > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > Cc: Al Viro <viro@zeniv.linux.org.uk>
-> > > Cc: Jan Kara <jack@suse.cz>
-> > > Cc: Ted Ts'o <tytso@mit.edu>
-> > > Cc: Artem Bityutskiy <dedekind1@gmail.com>
-> > > Cc: Andreas Dilger <aedilger@gmail.com>
-> > > Cc: linux-ext4@vger.kernel.org
-> > 
-> > Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-> > 
-> > Thanks!!
-> > 
-> > Al, do you want to take this in the VFS tree, or do you want me to
-> > carry this in the ext4 tree?  Or Jan could carry it in the ext2 tree.
-> > I don't really have strong feelings about who picks it up.  I will if
-> > no one else wants to...
-> 
-> Applied.  I'll probably add a followup moving most of that stuff to
-> fs/ext2/ext2.h on top of that commit...
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Arnd Bergmann (2):
+      Merge branch 'fixes-non-critical' of git://github.com/hzhuang1/linux into next/maintainers
+      Merge branch 'next/maintainers' into for-next
+
+Haojian Zhuang (1):
+      MAINTAINERS: update MAINTAINERS email entry
+
+Olof Johansson (2):
+      Merge branch 'maintainers' of git://gitorious.org/linux-davinci/linux-davinci into next/maintainers
+      ARM: tegra: update main repo and add patchwork
+
+Philipp Zabel (1):
+      MAINTAINERS: update maintainer entry for pxa/hx4700
+
+Sekhar Nori (2):
+      MAINTAINERS: mark TI DaVinci list as "moderated"
+      MAINTAINERS: add TI DaVinci git tree information
+
+Shawn Guo (1):
+      MAINTAINERS: remove arch/arm/mach-mx*/ from IMX entry
+
+Stephen Warren (1):
+      MAINTAINERS: ARM: tegra: update Stephen's email address
+
+
+ MAINTAINERS |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
