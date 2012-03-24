@@ -1,277 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab2CXWEH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 18:04:07 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52357 "EHLO
+	id S1756122Ab2CXWEG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 18:04:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60779 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab2CXWDG (ORCPT
+	with ESMTP id S1755408Ab2CXWDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 18:03:06 -0400
+	Sat, 24 Mar 2012 18:03:04 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: =?UTF-8?q?=5BGIT=20PULL=2001/09=5D=20ARM=3A=20Non-critical=20bug=20fixes?=
-Date: Sat, 24 Mar 2012 22:02:38 +0000
-Message-Id: <1332626568-17812-2-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 04/09] ARM: timer cleanup work
+Date: Sat, 24 Mar 2012 22:02:43 +0000
+Message-Id: <1332626568-17812-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1332626568-17812-1-git-send-email-arnd@arndb.de>
 References: <1332626568-17812-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:iyF7Z9oBxTvIEJKwosdzix1wX1bJnF9o93+vxKgIysL
- 1gILbwFwaVXomnxowZBxnCde8ogqdDpsPI8hDJL8w1+3Qe3X04
- qtfWLyE0fmLkaiZJHRSlm/R1bpx0tr8w1PfziKPDpHzY3mKBCW
- qDNDrlVi7l0v+tyRiSOm0ymeE8ZvazPXj69E03Qd3TL3EMpWvz
- Kg/efDR7GVp71YNAHwcO/0qLjksPcGnWWjotHFxmqiSzkgZ5iT
- vo9B9W3ZBsxtky+TJl82oN+Ma209h8KMdCZsQBujcXJEQPVmPW
- vcIru3P9gT7oODblJRnlu87jZLq4nSYl6cKXQBwPf6+PmmWDI/
- uM45pMqK8vRcRXFg8W/Iy2HGfnMKL/RotlpKHZFG8ZDeuHRHr0
- 2sXl8vLoU5yxw==
+X-Provags-ID: V02:K0:tOFIKjwAqhweW4itEPJyhjG0Bzzz29x1BPZ/Wa6sqz8
+ KWg2AEeaxl4u9WBA1rpnQTufYIPyScK5LcFQIo4p2APgUGDimo
+ X//Gk3Bw50lQU/6icIddemB0wqMmFTz/J0c+A+u+fk4ROTOqTU
+ PLDuQrLj7Zf/gUg/pWOtF3p12C9o2hJXZEZiB1xRWr/N11Us/1
+ 2z32rtvWOz3drJrtpvtzdpcx2JuP6NkbUEwZHqmkXG3lrYlBGo
+ DRmS0wPzW1aZxPUH/1aVQtsVp7pY/OYEaWF+s6/RtAXagHIz6x
+ EtQTemY4vgdAdi8kWa0HZ61OVhola8HgQGtLWVmf7MynUkCz2Z
+ Qch7zuNU0a7xXckh2b4jymjYfmikd99Ivg9ngdPt8OPWglCz86
+ 676MyiYRXiCdQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple bug fixes that were not considered important enough for inclusion
-into 3.3. One bug fix was originally intended for 3.3 but accidentally
-got missed, but is not marked stable because it should only get
-backported once later fixes also make it into v3.4.
+These are split out from the generic soc and driver updates because
+there was a lot of conflicting work by multiple people. Marc Zyngier
+worked on simplifying the "localtimer" interfaces, and some of the
+platforms are touching the same code as they move to device tree
+based booting.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-The following changes since commit "6a3c812 Merge branch
-'next/fixes-non-critical' into for-next", leading up to commit " 489e7be
-Merge branch 'fixes' into next/fixes-non-critical", are available in
+The following changes since commit "0f98c77 Merge branch 'next/timer' into
+for-next", leading up to commit " 2cbe23e Merge branch 'tegra/cleanups'
+into next/timer", are available in
 
-git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-non-critical
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/timer
 
-Afzal Mohammed (1):
-      ARM: OMAP2+: id: Add am33xx SoC type detection
+Arnd Bergmann (12):
+      Merge tag 'tegra-cleanups' of git://git.kernel.org/.../olof/tegra into tegra/cleanups
+      Merge branch 'ux500/timers' into next/timer
+      Merge branch 'vexpress/timer' into next/timer
+      Merge branch 'local_timers-for-arm-soc' of git://git.kernel.org/.../maz/arm-platforms into next/timer
+      ARM: shmobile: remove additional __io() macro use
+      Merge branch 'local_timers-for-arm-soc' of git://git.kernel.org/.../maz/arm-platforms into next/timer
+      Merge branch 'renesas/fixes' into renesas/soc
+      ARM: tegra: select USB_ULPI if USB is selected
+      Merge branch 'for-3.4/cleanup-and-fixes' of git://git.kernel.org/.../olof/tegra into tegra/cleanups
+      Merge branch 'renesas/timer' into next/timer
+      Merge branch 'tegra/cleanups' into next/timer
+      Merge branch 'next/timer' into for-next
 
-Arnd Bergmann (13):
-      Merge branch 'imx-fixes' of git://git.pengutronix.de/git/imx/linux-2.6 into next/fixes-non-critical
-      Merge branch 'v3.4/fixes' of git://gitorious.org/linux-davinci/linux-davinci into next/fixes-non-critical
-      Merge branch 'lpc32xx/fixes-non-critical' of git://git.antcom.de/linux-2.6 into next/fixes-non-critical
-      ARM: ux500: U8500 depends on MMU
-      ARM: ux500: add board autoselection
-      ARM: ux500: select L2X0 cache on ux500
-      ARM: ux500: select CPU_FREQ_TABLE where needed
-      Merge branch 'fixes-non-critical' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge branch 'ux500-fixes-20120301' of git://git.kernel.org/.../linusw/linux-stericsson into next/fixes-non-critical
-      Merge tag 'imx25-iomux-ds' of git://git.pengutronix.de/git/imx/linux-2.6 into next/fixes-non-critical
-      Merge branch 'fixes' of git://gitorious.org/linux-davinci/linux-davinci into next/fixes-non-critical
-      Merge branch 'fixes' into next/fixes-non-critical
-      Merge branch 'next/fixes-non-critical' into for-next
+Dmitry Artamonow (3):
+      arm/tegra: fix harmony pinmux for PCIe
+      arm/tegra: add timeout to PCIe PLL lock detection loop
+      arm/tegra: pcie: fix return value of function
 
-Bernhard Walle (1):
-      ARM: OMAP2+: GPMC: Export gpmc_enable_hwecc and gpmc_calculate_ecc
+Linus Walleij (3):
+      ARM: plat-nomadik: get rid of global mtu base pointer
+      ARM: plat-nomadik: handle clocking properly
+      ARM: plat-nomadik: modernize MTU timer
 
-Danny Kukawka (3):
-      ARM: ux500: included linux/gpio.h twice
-      ARM: OMAP: clock.c: included linux/debugfs.h twice
-      ARM: OMAP2+: included some headers twice
+Magnus Damm (35):
+      sh: introduce sh_clk_ops in parallel with clk_ops
+      sh: convert cpg code to sh_clk_ops
+      ARM: mach-shmobile: sh7367 sh_clk_ops rename
+      ARM: mach-shmobile: sh7377 sh_clk_ops rename
+      ARM: mach-shmobile: sh7372 sh_clk_ops rename
+      ARM: mach-shmobile: sh73a0 sh_clk_ops rename
+      ARM: mach-shmobile: r8a7740 sh_clk_ops rename
+      ARM: mach-shmobile: r8a7779 sh_clk_ops rename
+      sh: sh header sh_clk_ops rename
+      sh: sh2 sh_clk_ops rename
+      sh: sh2a sh_clk_ops rename
+      sh: sh3 sh_clk_ops rename
+      sh: sh4 sh_clk_ops rename
+      sh: sh4a sh_clk_ops rename
+      sh: sh5 sh_clk_ops rename
+      sh: board sh_clk_ops rename
+      sh: remove clk_ops
+      ARM: mach-shmobile: sh7367 map_io and init_early update
+      ARM: mach-shmobile: sh7377 map_io and init_early update
+      ARM: mach-shmobile: sh7372 map_io and init_early update
+      ARM: mach-shmobile: sh73a0 map_io and init_early update
+      ARM: mach-shmobile: r8a7740 map_io and init_early update
+      ARM: mach-shmobile: r8a7779 map_io and init_early update
+      ARM: mach-shmobile: r8a7779 L2 cache support
+      ARM: mach-shmobile: rename clk_init() to shmobile_clk_init()
+      ARM: mach-shmobile: Move sh7372 Mackerel external clk setup
+      ARM: mach-shmobile: Move sh7372 AP4EVB external clk setup
+      ARM: mach-shmobile: add shmobile_earlytimer_init()
+      ARM: mach-shmobile: sh7367 and G3EVM timer rework
+      ARM: mach-shmobile: sh7377 and G4EVM timer rework
+      ARM: mach-shmobile: sh7372, AP4EVB and Mackerel timer rework
+      ARM: mach-shmobile: sh73a0, AG5EVM and Kota2 timer rework
+      ARM: mach-shmobile: r8a7740 and Bonito timer rework
+      ARM: mach-shmobile: r8a7779 and Marzen timer rework
+      ARM: mach-shmobile: default to no earlytimer
 
-Fabio Estevam (3):
-      ARM: mach-pcm038: Fix field name of regulator_consumer_supply struct
-      ARM: imx_v4_v5_defconfig: Fix the selection of 32 bit flash support for iMX21ADS board
-      ARM: mach-imx: mx3: Fix section mismatch in imx3_init_l2x0()
+Marc Zyngier (16):
+      ARM: smp_twd: make local_timer_stop a symbol instead of a #define
+      ARM: local timers: introduce a new registration interface
+      ARM: smp_twd: add runtime registration support
+      ARM: smp_twd: add device tree support
+      ARM: OMAP4: convert to twd_local_timer_register() interface
+      ARM: plat-versatile: convert to twd_local_timer_register() interface
+      ARM: tegra: convert to twd_local_timer_register() interface
+      ARM: shmobile: convert to twd_local_timer_register() interface
+      ARM: ux500: convert to twd_local_timer_register() interface
+      ARM: highbank: convert to twd_local_timer_register() interface
+      ARM: imx6q: convert to twd_local_timer_register() interface
+      ARM: smp_twd: remove old local timer interface
+      ARM: local timers: convert exynos to runtime registration interface
+      ARM: local timers: convert MSM to runtime registration interface
+      ARM: local timers: make the runtime registration interface mandatory
+      ARM: ux500: fix compilation after local timer rework
 
-Felipe Contreras (1):
-      ARM: OMAP: mailbox: trivial whitespace fix
+Olof Johansson (1):
+      Merge branch 'ux500-timers' of git://git.kernel.org/.../linusw/linux-stericsson into ux500/timers
 
-Grazvydas Ignotas (1):
-      ARM: omap: pandora: fix usbhs platform data
-
-Heiko Schocher (1):
-      ARM: davinci: map default_queue to edma channels
-
-Ilya Yanok (1):
-      ARM: OMAP2+: ads7846_init: put gpio_pendown into pdata if it's provided
-
-Jon Hunter (1):
-      ARM: OMAP: Remove definition cpu_is_omap4430()
-
-Kevin Hilman (4):
-      ARM: OMAP: convert omap_device_build() and callers to __init
-      ARM: OMAP2+: PM: fix section mismatch with omap2_init_processor_devices()
-      ARM: OMAP2+: PM: fix wakeupgen warning when hotplug disabled
-      ARM: OMAP2+: gpmc-smsc911x: only register regulator for first instance
-
-Linus Walleij (2):
-      ARM: ux500: delete TPS6105X selection
-      ARM: ux500: solve some Kconfig mess
-
-Masanari Iida (1):
-      ARM: OMAP1: Fix typo in lcd_dma.c
-
-Mehnert (1):
-      iomux-mx25.h slew rate adjusted for LCD __LD pins
-
-Ohad Ben-Cohen (2):
-      ARM: OMAP: omap_device: Expose omap_device_{alloc, delete, register}
-      ARM: OMAP: don't build hwspinlock in vain
-
-Ola Lilja (3):
-      ARM: ux500: Add placeholder for clk_set_parent
-      ARM: ux500: Add DMA-channels for MSP
-      ARM: ux500: Add audio-regulators
-
-Olof Johansson (4):
-      Merge branch 'fixes-non-critical' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge branch 'fixes-non-critical-part2' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge branch 'fixes-non-critical-part3' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge branch 'fix-smsc911x-regulator' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Paul Walmsley (1):
-      ARM: OMAP2+: I2C: always compile I2C reset code, even if I2C driver is not built
-
-Peter Ujfalusi (1):
-      OMAP4: dma: Correct CPU version check for dma_common_ch_end
-
-Philippe Langlais (2):
-      ARM: ux500: set ARCH_NR_GPIO to 355 on U8500 platforms
-      ARM: ux500: fix around AB8500 GPIO macro name
-
-Roland Stigge (8):
-      ARM: LPC32xx: Added lpc32xx_defconfig
-      ARM: LPC32xx: clock.c: warning fix
-      ARM: LPC32xx: clock.c: Fix mutex lock issues
-      ARM: LPC32XX: Remove broken non-static declaration
-      ARM: LPC32xx: clock.c: Missing header file
-      ARM: LPC32xx: clock.c: jiffies wrapping
-      ARM: LPC32xx: clock.c: Clock registration fixes
-      ARM: LPC32xx: Fix missing and bad LPC32XX macros
-
-Santosh Shilimkar (2):
-      ARM: OMAP: fix section mismatch warning for omap4_hotplug_cpu()
-      ARM: OMAP: Fix section mismatch warning for platform_cpu_die()
-
-Tarun Kanti DebBarma (1):
-      ARM: OMAP: dmtimer: fix missing content/correction in low-power mode support
-
-Tony Lindgren (18):
-      ARM: OMAP2+: Split omap2_hsmmc_init() to properly support I2C GPIO pins
-      ARM: OMAP2+: Fix Kconfig dependencies for USB_ARCH_HAS_EHCI
-      ARM: OMAP2+: Fix OMAP_HDQ_BASE build error
-      ARM: OMAP2+: Fix board_mux section type conflict when OMAP_MUX is not set
-      ARM: OMAP2+: Fix zoom LCD backlight if TWL_CORE is not selected
-      ARM: OMAP2+: Fix devexit for smartreflex when CONFIG_HOTPLUG is not set
-      ARM: OMAP: Fix devexit for dma when CONFIG_HOTPLUG is not set
-      ARM: OMAP2+: Fix multiple randconfig errors with SOC_OMAP and SOC_OMAP_NOOP
-      ARM: OMAP2+: Mark omap_hsmmc_init and omap_mux related functions as __init
-      Merge branch 'randconfig' into fixes-non-critical
-      Merge branch 'hsmmc' into fixes-non-critical
-      Revert "ARM: OMAP2+: Fix multiple randconfig errors with SOC_OMAP and SOC_OMAP_NOOP"
-      ARM: OMAP1: Fix section mismatch for omap1_init_early()
-      ARM: OMAP2+: Fix omap24xx_io_desc warning if SoC subtypes are not selected
-      ARM: OMAP2: Fix section warning for n8x0 when CONFIG_MMC_OMAP is not set
-      ARM: OMAP2+: Fix build issues with missing include of linux/bug.h
-      ARM: OMAP2+: Fix section warnings for hsmmc_init_one
-      ARM: OMAP2+: Fix build for omap4 only builds with missing include of linux/bug.h
-
-Uwe Kleine-König (2):
-      ARM: davinci: cpufreq: fix compiler warning
-      ARM: davinci: DA850: move da850_register_pm to .init.text
-
-Vaibhav Bedia (1):
-      ARM: OMAP: sram: Add am33xx SRAM support (minimal)
-
-Wolfram Sang (1):
-      arm: lpc32xx: phy3250: add rtc & touch device
-
-Yuan Jiangli (1):
-      ARM: OMAP3+: PM: VP: fix integer truncation error
+Pawel Moll (2):
+      ARM: vexpress: Get rid of MMIO_P2V
+      ARM: versatile: Map local timers using Device Tree when possible
 
 
- arch/arm/Kconfig                              |    3 +-
- arch/arm/configs/imx_v4_v5_defconfig          |    1 +
- arch/arm/configs/lpc32xx_defconfig            |  145 +++++++++++++++++++++++++
- arch/arm/mach-davinci/cpufreq.c               |    2 +-
- arch/arm/mach-davinci/da850.c                 |    2 +-
- arch/arm/mach-davinci/dma.c                   |    6 +-
- arch/arm/mach-davinci/include/mach/edma.h     |    5 +
- arch/arm/mach-imx/mach-pcm038.c               |    2 +-
- arch/arm/mach-imx/mm-imx3.c                   |    2 +-
- arch/arm/mach-lpc32xx/clock.c                 |   62 ++++-------
- arch/arm/mach-lpc32xx/common.h                |    1 -
- arch/arm/mach-lpc32xx/include/mach/platform.h |   51 +++++----
- arch/arm/mach-lpc32xx/phy3250.c               |    2 +
- arch/arm/mach-lpc32xx/pm.c                    |    2 +-
- arch/arm/mach-lpc32xx/timer.c                 |   48 ++++----
- arch/arm/mach-omap1/io.c                      |    2 +-
- arch/arm/mach-omap2/Kconfig                   |    4 +-
- arch/arm/mach-omap2/Makefile                  |    9 +-
- arch/arm/mach-omap2/board-2430sdp.c           |    2 +-
- arch/arm/mach-omap2/board-3430sdp.c           |    5 +-
- arch/arm/mach-omap2/board-4430sdp.c           |    4 +-
- arch/arm/mach-omap2/board-am3517evm.c         |    2 +-
- arch/arm/mach-omap2/board-cm-t35.c            |    5 +-
- arch/arm/mach-omap2/board-devkit8000.c        |    4 +-
- arch/arm/mach-omap2/board-flash.c             |    2 +-
- arch/arm/mach-omap2/board-igep0020.c          |    6 +-
- arch/arm/mach-omap2/board-ldp.c               |    3 +-
- arch/arm/mach-omap2/board-n8x0.c              |    8 +-
- arch/arm/mach-omap2/board-omap3beagle.c       |   10 ++-
- arch/arm/mach-omap2/board-omap3evm.c          |    7 +-
- arch/arm/mach-omap2/board-omap3logic.c        |    2 +-
- arch/arm/mach-omap2/board-omap3pandora.c      |   15 ++-
- arch/arm/mach-omap2/board-omap3stalker.c      |   15 ++-
- arch/arm/mach-omap2/board-omap3touchbook.c    |   17 ++--
- arch/arm/mach-omap2/board-omap4panda.c        |    6 +-
- arch/arm/mach-omap2/board-overo.c             |    3 +-
- arch/arm/mach-omap2/board-rm680.c             |    2 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c  |    2 +-
- arch/arm/mach-omap2/board-zoom-display.c      |    4 +
- arch/arm/mach-omap2/board-zoom-peripherals.c  |    4 +-
- arch/arm/mach-omap2/clkt_clksel.c             |    1 +
- arch/arm/mach-omap2/common-board-devices.c    |    8 +-
- arch/arm/mach-omap2/control.h                 |    5 +
- arch/arm/mach-omap2/devices.c                 |   15 ++--
- arch/arm/mach-omap2/display.c                 |    8 +-
- arch/arm/mach-omap2/dma.c                     |    2 +-
- arch/arm/mach-omap2/gpio.c                    |    2 +-
- arch/arm/mach-omap2/gpmc-smsc911x.c           |   11 ++-
- arch/arm/mach-omap2/gpmc.c                    |    2 +
- arch/arm/mach-omap2/hsmmc.c                   |  123 ++++++++++++++++-----
- arch/arm/mach-omap2/hsmmc.h                   |   12 ++-
- arch/arm/mach-omap2/id.c                      |    2 +
- arch/arm/mach-omap2/io.c                      |    3 +-
- arch/arm/mach-omap2/mcbsp.c                   |    2 +-
- arch/arm/mach-omap2/mux.c                     |   16 ++--
- arch/arm/mach-omap2/mux.h                     |    2 +-
- arch/arm/mach-omap2/omap-hotplug.c            |    2 +-
- arch/arm/mach-omap2/omap-mpuss-lowpower.c     |    2 +-
- arch/arm/mach-omap2/omap-wakeupgen.c          |   53 +++++-----
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c    |    1 -
- arch/arm/mach-omap2/pm.c                      |    4 +-
- arch/arm/mach-omap2/powerdomain-common.c      |    1 +
- arch/arm/mach-omap2/powerdomain2xxx_3xxx.c    |    1 +
- arch/arm/mach-omap2/powerdomain44xx.c         |    1 +
- arch/arm/mach-omap2/powerdomains3xxx_data.c   |    1 +
- arch/arm/mach-omap2/smartreflex.c             |    2 +-
- arch/arm/mach-omap2/sr_device.c               |    2 +-
- arch/arm/mach-omap2/vc.c                      |    1 +
- arch/arm/mach-omap2/vp.c                      |    4 +-
- arch/arm/mach-ux500/Kconfig                   |   44 +++++---
- arch/arm/mach-ux500/Makefile                  |    2 +-
- arch/arm/mach-ux500/board-mop500-regulators.c |   28 +++++
- arch/arm/mach-ux500/board-mop500-u8500uib.c   |    1 -
- arch/arm/mach-ux500/board-mop500.c            |    2 +-
- arch/arm/mach-ux500/board-mop500.h            |    2 +-
- arch/arm/mach-ux500/clock.c                   |    7 ++
- arch/arm/mach-ux500/clock.h                   |    1 +
- arch/arm/mach-ux500/devices-db8500.c          |    6 +
- arch/arm/mach-ux500/include/mach/hardware.h   |    2 +
- arch/arm/mach-ux500/include/mach/irqs.h       |    2 +-
- arch/arm/plat-mxc/include/mach/iomux-mx25.h   |   42 ++++----
- arch/arm/plat-omap/clock.c                    |    1 -
- arch/arm/plat-omap/dma.c                      |    2 +-
- arch/arm/plat-omap/dmtimer.c                  |   19 +++-
- arch/arm/plat-omap/include/plat/cpu.h         |    2 -
- arch/arm/plat-omap/include/plat/omap_device.h |    7 ++
- arch/arm/plat-omap/include/plat/sram.h        |    1 +
- arch/arm/plat-omap/mailbox.c                  |    2 +-
- arch/arm/plat-omap/omap_device.c              |   20 ++---
- arch/arm/plat-omap/sram.c                     |   14 ++-
- 90 files changed, 650 insertions(+), 323 deletions(-)
+ Documentation/devicetree/bindings/arm/twd.txt     |   48 ++++++++
+ arch/arm/boot/dts/highbank.dts                    |    8 +-
+ arch/arm/boot/dts/imx6q.dtsi                      |    6 +-
+ arch/arm/include/asm/hardware/arm_timer.h         |    5 +
+ arch/arm/include/asm/localtimer.h                 |   37 +-----
+ arch/arm/include/asm/smp_twd.h                    |   25 ++++-
+ arch/arm/kernel/smp.c                             |   22 +++-
+ arch/arm/kernel/smp_twd.c                         |  123 +++++++++++++++++----
+ arch/arm/mach-exynos/mct.c                        |   18 ++--
+ arch/arm/mach-highbank/Makefile                   |    1 -
+ arch/arm/mach-highbank/highbank.c                 |    3 +
+ arch/arm/mach-highbank/localtimer.c               |   40 -------
+ arch/arm/mach-imx/Makefile                        |    1 -
+ arch/arm/mach-imx/localtimer.c                    |   35 ------
+ arch/arm/mach-imx/mach-imx6q.c                    |    2 +
+ arch/arm/mach-msm/timer.c                         |   79 ++++++++------
+ arch/arm/mach-nomadik/board-nhk8815.c             |    7 +-
+ arch/arm/mach-nomadik/include/mach/setup.h        |   19 ---
+ arch/arm/mach-omap2/Makefile                      |    1 -
+ arch/arm/mach-omap2/timer-mpu.c                   |   39 -------
+ arch/arm/mach-omap2/timer.c                       |   22 +++-
+ arch/arm/mach-realview/realview_eb.c              |   27 ++++-
+ arch/arm/mach-realview/realview_pb11mp.c          |   21 +++-
+ arch/arm/mach-realview/realview_pbx.c             |   20 +++-
+ arch/arm/mach-shmobile/Makefile                   |    1 -
+ arch/arm/mach-shmobile/board-ag5evm.c             |   39 +------
+ arch/arm/mach-shmobile/board-ap4evb.c             |   44 +-------
+ arch/arm/mach-shmobile/board-bonito.c             |   44 ++------
+ arch/arm/mach-shmobile/board-g3evm.c              |   38 +------
+ arch/arm/mach-shmobile/board-g4evm.c              |   38 +------
+ arch/arm/mach-shmobile/board-kota2.c              |   38 +------
+ arch/arm/mach-shmobile/board-mackerel.c           |   39 +------
+ arch/arm/mach-shmobile/board-marzen.c             |   62 +----------
+ arch/arm/mach-shmobile/clock-r8a7740.c            |    8 +-
+ arch/arm/mach-shmobile/clock-r8a7779.c            |    4 +-
+ arch/arm/mach-shmobile/clock-sh7367.c             |    8 +-
+ arch/arm/mach-shmobile/clock-sh7372.c             |   10 +-
+ arch/arm/mach-shmobile/clock-sh7377.c             |    8 +-
+ arch/arm/mach-shmobile/clock-sh73a0.c             |   14 +-
+ arch/arm/mach-shmobile/clock.c                    |    2 +-
+ arch/arm/mach-shmobile/include/mach/common.h      |   11 ++-
+ arch/arm/mach-shmobile/localtimer.c               |   26 -----
+ arch/arm/mach-shmobile/platsmp.c                  |    1 -
+ arch/arm/mach-shmobile/setup-r8a7740.c            |   45 ++++++++
+ arch/arm/mach-shmobile/setup-r8a7779.c            |   54 +++++++++
+ arch/arm/mach-shmobile/setup-sh7367.c             |   32 ++++++
+ arch/arm/mach-shmobile/setup-sh7372.c             |   32 ++++++
+ arch/arm/mach-shmobile/setup-sh7377.c             |   32 ++++++
+ arch/arm/mach-shmobile/setup-sh73a0.c             |   32 ++++++
+ arch/arm/mach-shmobile/smp-r8a7779.c              |    8 +-
+ arch/arm/mach-shmobile/smp-sh73a0.c               |    8 +-
+ arch/arm/mach-shmobile/timer.c                    |   16 +++-
+ arch/arm/mach-tegra/Kconfig                       |    4 +-
+ arch/arm/mach-tegra/Makefile                      |    1 -
+ arch/arm/mach-tegra/board-harmony-pinmux.c        |    6 +-
+ arch/arm/mach-tegra/localtimer.c                  |   26 -----
+ arch/arm/mach-tegra/pcie.c                        |   16 ++-
+ arch/arm/mach-tegra/timer.c                       |   22 +++-
+ arch/arm/mach-ux500/Makefile                      |    1 -
+ arch/arm/mach-ux500/cpu.c                         |    1 -
+ arch/arm/mach-ux500/include/mach/setup.h          |    3 -
+ arch/arm/mach-ux500/localtimer.c                  |   29 -----
+ arch/arm/mach-ux500/timer.c                       |   39 +++++--
+ arch/arm/mach-vexpress/core.h                     |    7 +-
+ arch/arm/mach-vexpress/ct-ca9x4.c                 |   67 +++++-------
+ arch/arm/mach-vexpress/include/mach/ct-ca9x4.h    |    3 -
+ arch/arm/mach-vexpress/include/mach/motherboard.h |   52 ++++-----
+ arch/arm/mach-vexpress/platsmp.c                  |    5 +-
+ arch/arm/mach-vexpress/v2m.c                      |   68 ++++++++----
+ arch/arm/plat-nomadik/include/plat/mtu.h          |    4 +-
+ arch/arm/plat-nomadik/timer.c                     |   33 ++----
+ arch/arm/plat-versatile/Makefile                  |    1 -
+ arch/arm/plat-versatile/localtimer.c              |   27 -----
+ arch/sh/boards/mach-highlander/setup.c            |    2 +-
+ arch/sh/boards/mach-sdk7786/setup.c               |    2 +-
+ arch/sh/include/asm/clock.h                       |    2 +-
+ arch/sh/kernel/cpu/sh2/clock-sh7619.c             |   12 +-
+ arch/sh/kernel/cpu/sh2a/clock-sh7201.c            |   12 +-
+ arch/sh/kernel/cpu/sh2a/clock-sh7203.c            |   12 +-
+ arch/sh/kernel/cpu/sh2a/clock-sh7206.c            |   12 +-
+ arch/sh/kernel/cpu/sh3/clock-sh3.c                |   12 +-
+ arch/sh/kernel/cpu/sh3/clock-sh7705.c             |   12 +-
+ arch/sh/kernel/cpu/sh3/clock-sh7706.c             |   12 +-
+ arch/sh/kernel/cpu/sh3/clock-sh7709.c             |   12 +-
+ arch/sh/kernel/cpu/sh3/clock-sh7710.c             |   12 +-
+ arch/sh/kernel/cpu/sh3/clock-sh7712.c             |   10 +-
+ arch/sh/kernel/cpu/sh4/clock-sh4-202.c            |    6 +-
+ arch/sh/kernel/cpu/sh4/clock-sh4.c                |   12 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7343.c            |    4 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7366.c            |    4 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7722.c            |    4 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7723.c            |    4 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7724.c            |    6 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7757.c            |    2 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7763.c            |   14 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7770.c            |   12 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7780.c            |   14 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7785.c            |    2 +-
+ arch/sh/kernel/cpu/sh4a/clock-sh7786.c            |    2 +-
+ arch/sh/kernel/cpu/sh4a/clock-shx3.c              |    2 +-
+ arch/sh/kernel/cpu/sh5/clock-sh5.c                |   12 +-
+ drivers/sh/clk/cpg.c                              |   16 ++--
+ include/linux/sh_clk.h                            |    5 +-
+ 103 files changed, 964 insertions(+), 999 deletions(-)
