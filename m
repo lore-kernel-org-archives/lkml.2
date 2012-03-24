@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab2CXEZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 00:25:26 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34547 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2CXEZZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 00:25:25 -0400
+	id S1753401Ab2CXElK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 00:41:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59636 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751651Ab2CXElH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 00:41:07 -0400
+Message-ID: <4F6D504B.4000101@zytor.com>
+Date: Fri, 23 Mar 2012 21:40:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120324041752.GE2450@linux.vnet.ibm.com>
-References: <20120319152317.GA3932@gmail.com> <CA+55aFyezw6yW2g6hOAOeZ5vRm0xUNPQyD4eo0wRHMHiN3Z+kQ@mail.gmail.com>
- <20120320033300.GH2393@linux.vnet.ibm.com> <CA+55aFzXAdNRqNHm3-wx02au4b_Ze_WM-gCtOk+gJdGMsn3Zbg@mail.gmail.com>
- <20120323192143.GY2450@linux.vnet.ibm.com> <CA+55aFzgno-7AcHxKMWGYrr2QAwEzXOieSghnsEfPQJ5aed-yQ@mail.gmail.com>
- <20120323211638.GA2450@linux.vnet.ibm.com> <20120323212550.GA11791@linux.vnet.ibm.com>
- <20120324014755.GA4685@linux.vnet.ibm.com> <CA+55aFwgnhhoV=9PT3N0YToEwKDUB6pqOQhX3+6o3CeccC10=g@mail.gmail.com>
- <20120324041752.GE2450@linux.vnet.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 23 Mar 2012 21:25:04 -0700
-X-Google-Sender-Auth: dD-A14QsPI_pN-gnPQyZtpI1nzY
-Message-ID: <CA+55aFxRJ+=j91vhZdDu0har8qvhLeP4fea_cSXzkaRE84wvvg@mail.gmail.com>
-Subject: Re: [GIT PULL] RCU changes for v3.4
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Thomas Renninger <trenn@suse.de>
+CC: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
+ initrd
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com> <201203240402.38749.trenn@suse.de>
+In-Reply-To: <201203240402.38749.trenn@suse.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 9:17 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> I must admit that __this_cpu_inc() would be nicer than __this_cpu_add(),
-> though, will fix.  I need the leading "__" to avoid disabling preemption
-> needlessly on non-x86 platforms.
+On 03/23/2012 08:02 PM, Thomas Renninger wrote:
+> Whatabout Multiboot(2):
+> http://en.wikipedia.org/wiki/Multiboot_Specification
+> http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
+> 
+> They do it similar to 2, but without specifying the data of the
+> files like you do with type.
+> 
+> It's a bigger thing, but I could imagine there are some guys who would
+> be willing to give it a try. I remember I googled a multiboot patch
+> which got submitted to lkml long time ago.
+> 
+> It has it pros and cons, but should show up in such a discussion.
+> 
 
-Yeah, that's just bogus. Ok on that.
+Unfortunately Multiboot is defective in way too many ways, beginning
+with its insistence of entering past the firmware point of no return,
+which means the bootloader has to do a lot of work (this has been proven
+to be a nonworkable solution) and no support for relocation.
 
-> The reason that the "__raw" forms are
-> safe in this case is because the per-CPU variable is saved and restored
-> at context-switch time.
->
-> Or am I still missing something here?
+So that is not an option.
 
-It's not that the "__raw" forms are "safe". It's that they are SH*T.
+	-hpa
 
-Don't use them. They are crap. Why would you do
 
-+       __raw_get_cpu_var(rcu_read_lock_nesting) =
-+               current->rcu_read_lock_nesting_save;
-
-which is just crazy and cannot use the actual sane "%fs:" segment
-overrides, but instead has to do idiotic "ready the per-cpu offset
-pointer and add it in".
-
- We've got "__this_cpu_write()" which generates the correct code.
-
-Rule of thumb: there is _never_ any good reason to use
-__raw_get_cpu_var. It's a broken interface.
-
-                       Linus
