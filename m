@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab2CXHGq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 03:06:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58068 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2CXHGp convert rfc822-to-8bit (ORCPT
+	id S1754701Ab2CXHHc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 03:07:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43852 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab2CXHHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 03:06:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332512896.23924.66.camel@gandalf.stny.rr.com>
-References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
-	<20120319130445.GN15988@n2100.arm.linux.org.uk>
-	<CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
-	<20120319132623.GO15988@n2100.arm.linux.org.uk>
-	<4F696011.7080409@linaro.org>
-	<CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
-	<CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
-	<20120322100236.GS15988@n2100.arm.linux.org.uk>
-	<CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
-	<4F6BECA7.7030007@linaro.org>
-	<CAB4K4y4DvUb+908P4NJoyJbDa35R2jP5cHqnoNWr9HRZJYyj4w@mail.gmail.com>
-	<1332512896.23924.66.camel@gandalf.stny.rr.com>
-Date: Sat, 24 Mar 2012 12:36:44 +0530
-Message-ID: <CAB4K4y46ATRL84XXYf6jYK3R9S_7JKV7hLOWa+PZgZh4eW5j9Q@mail.gmail.com>
-Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 24 Mar 2012 03:07:31 -0400
+Date: Sat, 24 Mar 2012 00:10:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Chen Gong (gong.chen@linux.intel.com)" <gong.chen@linux.intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [Patch]Introduce get_reason_str() to pstore
+Message-Id: <20120324001054.4eb82767.akpm@linux-foundation.org>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2E32064CDF@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2E32064CDF@USINDEVS01.corp.hds.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 7:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2012-03-23 at 14:40 +0530, Ajeet Yadav wrote:
->
->> linux-3.0.20/kernel/trace/Kconfig
->> linux-3.0.20-dirty/kernel/trace/Kconfig
->> --- linux-3.0.20/kernel/trace/Kconfig   2012-02-06 23:01:45.000000000 +0530
->> +++ linux-3.0.20-dirty/kernel/trace/Kconfig     2012-03-19
->> 18:21:41.000000000 +0530
->> @@ -173,7 +173,6 @@ config IRQSOFF_TRACER
->>        bool "Interrupts-off Latency Tracer"
->>        default n
->>        depends on TRACE_IRQFLAGS_SUPPORT
->> -       depends on !ARCH_USES_GETTIMEOFFSET
->>        select TRACE_IRQFLAGS
->>        select GENERIC_TRACER
->>        select TRACER_MAX_TRACE
->> @@ -195,7 +194,6 @@ config IRQSOFF_TRACER
->>  config PREEMPT_TRACER
->>        bool "Preemption-off Latency Tracer"
->>        default n
->> -       depends on !ARCH_USES_GETTIMEOFFSET
->>        depends on PREEMPT
->>        select GENERIC_TRACER
->>        select TRACER_MAX_TRACE
->
-> A little history here.
->
-> When I converted the irqsoff/preemptoff latency tracers from the
-> original -rt patch (written by Ingo), these options originally had
-> "depends on GENERIC_TIME". I just checked, and this goes at least back
-> to 2.6.22.1-rt9 (long before ftrace).
->
-> When I ported these to ftrace, I kept the dependencies. They probably
-> are not needed and are only there for historical reasons.
->
-> If this patch works fine for you, and that you are my only test case for
-> this patch. I'd just say:
->
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
->
-> -- Steve
-Hi Steve thanks for review, is their anything more I can do or shall I
-consider this change as already submitted, thanks everyone for helping
-me.
->
->
+On Fri, 16 Mar 2012 13:01:49 -0400 Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+
+> Hi,
+> 
+> Recently, there has been some changes in kmsg_dump() below and they have been applied to linus-tree. 
+>  (1) kmsg_dump(KMSG_DUMP_KEXEC) was removed.
+>      http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=a3dd3323058d281abd584b15ad4c5b65064d7a61
+> 
+>  (2) A order of "enum kmsg_dump_reason" was modified.
+>      http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=c22ab332902333f83766017478c1ef6607ace681
+> 
+>  This patch removes reason_str array and add get_reason_str() in accordance with Adrian's comment below.
+>  https://lkml.org/lkml/2012/3/16/63
+> 
+>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+>  Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> 
+> ---
+>  fs/pstore/platform.c |   30 ++++++++++++++++++++++--------
+>  1 files changed, 22 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c index 9ec22d3..82c585f 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -68,9 +68,25 @@ void pstore_set_kmsg_bytes(int bytes)
+>  /* Tag each group of saved records with a sequence number */
+>  static int	oopscount;
+>  
+> -static char *reason_str[] = {
+> -	"Oops", "Panic", "Kexec", "Restart", "Halt", "Poweroff", "Emergency"
+> -};
+> +static const char *get_reason_str(enum kmsg_dump_reason reason) {
+> +	switch (reason) {
+> +	case KMSG_DUMP_PANIC:
+> +		return "Panic";
+> +	case KMSG_DUMP_OOPS:
+> +		return "Oops";
+> +	case KMSG_DUMP_EMERG:
+> +		return "Emergency";
+> +	case KMSG_DUMP_RESTART:
+> +		return "Restart";
+> +	case KMSG_DUMP_HALT:
+> +		return "Halt";
+> +	case KMSG_DUMP_POWEROFF:
+> +		return "Poweroff";
+> +	default:
+> +		return "Unknown";
+> +	}
+> +}
+
+Better:
+
+static char *reason_str[] = {
+	[KMSG_DUMP_OOPS] = "Oops",
+	[KMSG_DUMP_PANIC] = "Panic",
+	...
+	[KMSG_DUMP_POWEROFF] = "Poweroff",
+};
+
