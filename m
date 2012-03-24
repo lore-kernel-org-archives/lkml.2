@@ -1,108 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2CXKcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 06:32:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54728 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab2CXKch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 06:32:37 -0400
-Date: Sat, 24 Mar 2012 14:31:27 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linux-mm@kvack.org
-Subject: [PATCH 10/10] oom: Make find_lock_task_mm() sparse-aware
-Message-ID: <20120324103127.GJ29067@lizard>
-References: <20120324102609.GA28356@lizard>
+	id S1755746Ab2CXKiz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 06:38:55 -0400
+Received: from m50-133.163.com ([123.125.50.133]:55181 "EHLO m50-133.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754867Ab2CXKiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 06:38:54 -0400
+Date: Sat, 24 Mar 2012 18:38:30 +0800
+From: Zhaoxiu Zeng <zengzhaoxiu@163.com>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] mtd/nand/nand_ecc.c: replace bitsperbyte table by a simple
+ operation
+Message-ID: <20120324103830.GA17632@Fedora16>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120324102609.GA28356@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-CM-TRANSID: DdGowEAZ5VYppG1PYFIZFw--.883S2
+X-Coremail-Antispam: 1Uf129KBjvJXoWxAFWkJrW3Ary7Kr17ZF15CFg_yoW5tryrpF
+	W3Ca9Fvr1rCF1xur4ku3yUJryDtrWkXa4Utr45X34fCw13Zr1jyrWjkryFqa4jgryrta4r
+	Xrs5Wr1ruFn5XFUanT9S1TB71UUUUU7qnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jfa93UUUUU=
+X-CM-SenderInfo: p2hqw6xkdr5xrx6rljoofrz/1tbiowx7gE9opoBrPgAAsA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed so that callers would not get 'context imbalance'
-warnings from the sparse tool.
 
-As a side effect, this patch fixes the following sparse warnings:
+Signed-off-by: Zhaoxiu Zeng <zengzhaoxiu@163.com>
 
-  CHECK   mm/oom_kill.c
-  mm/oom_kill.c:201:28: warning: context imbalance in 'oom_badness' -
-  unexpected unlock
-  include/linux/rcupdate.h:249:30: warning: context imbalance in
-  'dump_tasks' - unexpected unlock
-  mm/oom_kill.c:453:9: warning: context imbalance in 'oom_kill_task' -
-  unexpected unlock
-  CHECK   mm/memcontrol.c
-  ...
-  mm/memcontrol.c:1130:17: warning: context imbalance in
-  'task_in_mem_cgroup' - unexpected unlock
-
-p.s. I know Peter Zijlstra detest the __cond_lock() stuff, but untill
-     we have anything better in sparse, let's use it. This particular
-     patch helped me to detect one bug that I myself made during
-     task->mm fixup series. So, it is useful.
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- include/linux/oom.h |   12 +++++++++++-
- mm/oom_kill.c       |    2 +-
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/nand_ecc.c |   50 +++++++++---------------------------------
+ 1 files changed, 11 insertions(+), 39 deletions(-)
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 552fba9..26cf628 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -21,6 +21,7 @@
+diff --git a/drivers/mtd/nand/nand_ecc.c b/drivers/mtd/nand/nand_ecc.c
+index b7cfe0d..e05a0fd 100644
+--- a/drivers/mtd/nand/nand_ecc.c
++++ b/drivers/mtd/nand/nand_ecc.c
+@@ -85,30 +85,6 @@ static const char invparity[256] = {
+ };
  
- #ifdef __KERNEL__
+ /*
+- * bitsperbyte contains the number of bits per byte
+- * this is only used for testing and repairing parity
+- * (a precalculated value slightly improves performance)
+- */
+-static const char bitsperbyte[256] = {
+-	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+-	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+-	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+-	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+-	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+-	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+-	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+-	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+-	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+-	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+-	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+-	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+-	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+-	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+-	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+-	4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
+-};
+-
+-/*
+  * addressbits is a lookup table to filter out the bits from the xor-ed
+  * ECC data that identify the faulty location.
+  * this is only used for repairing parity
+@@ -448,12 +424,14 @@ int __nand_correct_data(unsigned char *buf,
+ 	unsigned int byte_addr;
+ 	/* 256 or 512 bytes/ecc  */
+ 	const uint32_t eccsize_mult = eccsize >> 8;
++	const uint32_t check_mask = eccsize_mult == 2 ? 0x555555 : 0x545555;
++	uint32_t tmp;
  
-+#include <linux/compiler.h>
- #include <linux/sched.h>
- #include <linux/types.h>
- #include <linux/nodemask.h>
-@@ -65,7 +66,16 @@ static inline void oom_killer_enable(void)
- 	oom_killer_disabled = false;
- }
+ 	/*
+ 	 * b0 to b2 indicate which bit is faulty (if any)
+ 	 * we might need the xor result  more than once,
+ 	 * so keep them in a local var
+-	*/
++	 */
+ #ifdef CONFIG_MTD_NAND_ECC_SMC
+ 	b0 = read_ecc[0] ^ calc_ecc[0];
+ 	b1 = read_ecc[1] ^ calc_ecc[1];
+@@ -467,14 +445,11 @@ int __nand_correct_data(unsigned char *buf,
  
--extern struct task_struct *find_lock_task_mm(struct task_struct *p);
-+extern struct task_struct *__find_lock_task_mm(struct task_struct *p);
+ 	/* repeated if statements are slightly more efficient than switch ... */
+ 	/* ordered in order of likelihood */
+-
+-	if ((b0 | b1 | b2) == 0)
++	tmp = ((uint32_t)b2 << 16) | ((uint32_t)b1 << 8) | b0;
++	if (tmp == 0)
+ 		return 0;	/* no error */
+ 
+-	if ((((b0 ^ (b0 >> 1)) & 0x55) == 0x55) &&
+-	    (((b1 ^ (b1 >> 1)) & 0x55) == 0x55) &&
+-	    ((eccsize_mult == 1 && ((b2 ^ (b2 >> 1)) & 0x54) == 0x54) ||
+-	     (eccsize_mult == 2 && ((b2 ^ (b2 >> 1)) & 0x55) == 0x55))) {
++	if (((tmp ^ (tmp >> 1)) & check_mask) == check_mask) {
+ 	/* single bit error */
+ 		/*
+ 		 * rp17/rp15/13/11/9/7/5/3/1 indicate which byte is the faulty
+@@ -492,19 +467,16 @@ int __nand_correct_data(unsigned char *buf,
+ 		 * We could also do addressbits[b2] >> 1 but for the
+ 		 * performance it does not make any difference
+ 		 */
+-		if (eccsize_mult == 1)
+-			byte_addr = (addressbits[b1] << 4) + addressbits[b0];
+-		else
+-			byte_addr = (addressbits[b2 & 0x3] << 8) +
+-				    (addressbits[b1] << 4) + addressbits[b0];
++		byte_addr = (addressbits[b1] << 4) + addressbits[b0];
++		if (eccsize_mult == 2)
++			byte_addr += (addressbits[b2 & 0x3] << 8);
+ 		bit_addr = addressbits[b2 >> 2];
+ 		/* flip the bit */
+ 		buf[byte_addr] ^= (1 << bit_addr);
+ 		return 1;
+-
+ 	}
+-	/* count nr of bits; use table lookup, faster than calculating it */
+-	if ((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)
 +
-+static inline struct task_struct *find_lock_task_mm(struct task_struct *p)
-+{
-+	struct task_struct *ret;
-+
-+	ret = __find_lock_task_mm(p);
-+	(void)__cond_lock(&ret->alloc_lock, ret);
-+	return ret;
-+}
++	if (!(tmp & (tmp - 1)))
+ 		return 1;	/* error in ECC data; no action needed */
  
- /* sysctls */
- extern int sysctl_oom_dump_tasks;
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 2958fd8..0ebb383 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -136,7 +136,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
-  * pointer.  Return p, or any of its subthreads with a valid ->mm, with
-  * task_lock() held.
-  */
--struct task_struct *find_lock_task_mm(struct task_struct *p)
-+struct task_struct *__find_lock_task_mm(struct task_struct *p)
- {
- 	struct task_struct *t = p;
- 
+ 	printk(KERN_ERR "uncorrectable error : ");
 -- 
-1.7.9.2
+1.7.7.6
+
+
