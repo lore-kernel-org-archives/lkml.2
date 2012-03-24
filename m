@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2CXTpc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 15:45:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36400 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753258Ab2CXTpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 15:45:30 -0400
-References: <1332512984-79664-1-git-send-email-trenn@suse.de> <4F6CD79A.8020805@zytor.com> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com> <20120324184238.GB13978@phenom.dumpdata.com> <4F6E1D6F.4000308@zytor.com> <20120324191718.GA3927@phenom.dumpdata.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120324191718.GA3927@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 24 Mar 2012 12:44:59 -0700
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
-        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Harald Hoyer <harald@redhat.com>
-Message-ID: <e2a36b54-ebd3-4191-95e1-a417d555b958@email.android.com>
+	id S1753974Ab2CXUVf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 16:21:35 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:51355 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab2CXUVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 16:21:34 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 24 Mar 2012 21:21:25 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: On patch "device.h: audit and cleanup users in main include dir"
+Message-ID: <20120324212125.460c89d3@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You're missing the point.  Unless you have specific rules how to deal.with extensions, and what thise extensions may do, you're not adding anything.
+Hi Paul,
 
-I think the simpler just use cpio idea still wins out in my mind.
+commit 313162d0b83836e2f57e51b9b8650fb4b9c396ea is not 100.00% correct.
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -2,7 +2,6 @@
+ #define _LINUX_FIREWIRE_H
+ 
+ #include <linux/completion.h>
+-#include <linux/device.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/kernel.h>
+ #include <linux/kref.h>
+@@ -68,6 +67,8 @@
+ #define CSR_MODEL              0x17
+ #define CSR_DIRECTORY_ID       0x20
+ 
++struct device;
++
+ struct fw_csr_iterator {
+        const u32 *p;
+        const u32 *end;
 
->On Sat, Mar 24, 2012 at 12:15:59PM -0700, H. Peter Anvin wrote:
->> On 03/24/2012 11:42 AM, Konrad Rzeszutek Wilk wrote:
->> > 
->> > Probably should also have:
->> > 		u32 version;
->> > 
->> > in case we decide to expand this structure in the future, and:
->> >> 		u32 type;	/* 1 = file data, 2 = ACPI, 3 = microcode... */
->> >> 		u32 length;	/* Length of data object */
->> >> 	};
->> > 
->> > and encapsulate the whole thing in a 4K union?
->> > 
->> 
->> For "version" you'd have to define what happens if you see a version
->> number you don't recognize, and why that is in any way better than
->> changing the magic number or the type.  It is something that people
->like
->> to throw in without thinking about it, and that is a mistake.
->
->I was thinking of interface version. So the first would be 1, and if
->there are extensions (so version 2 for example), it should support 1
->and 2.
->The idea is to expand past the structure with newer additions without
->breaking the binary interface.
->
->> 
->> Forcing everything to be page-aligned may be a good idea, although
->that
->> assumes all bootloaders actually align them that way...
->
->Oh, and be 4K.
->> 
->> > 
->> > Perhaps the header should be in big-endian (that is the same as the
->network
->> > byte order, right?) and each sub-type can define its own endian?
->> > 
->> 
->> The content of the encapsulation is its own thing; it will be
->different
->> for different types as most of them already
->> 
->> 	-hpa
->> 
->> -- 
->> H. Peter Anvin, Intel Open Source Technology Center
->> I work for Intel.  I don't speak on their behalf.
+But struct fw_device and struct fw_unit, defined in include/firewire.h,
+incorporate struct device.
 
+Furthermore, the inline function definitions
+    fw_device,
+    fw_unit,
+    fw_unit_get,
+    fw_unit_put,
+    fw_parent_device
+all require definitions from linux/device.h.
 -- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+Stefan Richter
+-=====-===-- --== ==---
+http://arcgraph.de/sr/
