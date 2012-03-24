@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab2CXJdv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 05:33:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63621 "EHLO
+	id S1753976Ab2CXJjn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 05:39:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37240 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab2CXJdu convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751846Ab2CXJjm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 05:33:50 -0400
+	Sat, 24 Mar 2012 05:39:42 -0400
 MIME-Version: 1.0
-Date: Sat, 24 Mar 2012 20:33:48 +1100
-X-Google-Sender-Auth: fsxNm4Dzu0MIf9hLTKBUzDx_LWA
-Message-ID: <CABqErrG2CzmH_RH2vfhGi2nd6eeuXZyemW6j_=9KRZ82kNKJGg@mail.gmail.com>
-Subject: [ANNOUNCE] 3.3.0-ck1
+Date: Sat, 24 Mar 2012 20:39:40 +1100
+X-Google-Sender-Auth: WqTbzBWYpQDQuJhKWd13lxYI41g
+Message-ID: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
+Subject: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for linux
+ kernel 3.3.0
 From: Con Kolivas <kernel@kolivas.org>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
@@ -20,76 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and
-interactivity with specific emphasis on the desktop, but suitable to
-any commodity hardware workload.
+This is to announce the first stable release of the BFS CPU scheduler
+for linux 3.3.0 designed for optimal interactivity, responsiveness and
+throughput on commodity hardware.
 
-Apply to 3.3.x:
-http://ck.kolivas.org/patches/3.0/3.3/3.3-ck1/patch-3.3-ck1.bz2
-or
-http://ck.kolivas.org/patches/3.0/3.3/3.3-ck1/patch-3.3-ck1.lrz
+The changes since BFS version 0.416 include a fairly large
+architectural change just to bring the codebase in sync with 3.3, but
+none of the changes should be noticeable in any way. One change that
+may be user-visible is that the high resolution IRQ accounting now
+appears to be on by default for x86 architectures. There is an issue
+that system time accounting is wrong without this feature enabled in
+BFS so this should correct that problem.
 
+Other changes:
+416-417: A number of ints were changed to bool which though unlikely
+to have any performance impact, do make the code cleaner and the
+compiled code does often come out different. rq_running_iso was
+converted from a function to macro to avoid it being a separate
+function call when compiled in with the attendant overhead.
+requeue_task within the scheduler tick was moved to being done under
+lock which may prevent rare races.  test_ret_isorefractory() was
+optimised. set_rq_task() was not being called on tasks that were being
+requeued within schedule() which could possibly have led to issues if
+the task ran out of timeslice during that requeue and should have had
+its deadline offset. The need_resched() check that occurs at the end
+of schedule() was changed to unlikely() since it really is that. Moved
+the scheduler version print function to bfs.c to avoid recompiling the
+entire kernel if the version number is changed.
 
-Broken out tarball:
-http://ck.kolivas.org/patches/3.0/3.3/3.3-ck1/3.3-ck1-broken-out.tar.bz2
-or
-http://ck.kolivas.org/patches/3.0/3.3/3.3-ck1/3.3-ck1-broken-out.tar.lrz
+417-418: Fixed a problem with the accounting resync for linux 3.3.
 
-Discrete patches:
-http://ck.kolivas.org/patches/3.0/3.3/3.3-ck1/patches/
+418-419: There was a small possibility that an unnecessary resched
+would occur in try_preempt if a task had changed affinity and called
+try_preempt with its ->cpu still set to the old cpu it could no longer
+run on, so try_preempt was reworked slightly. Reintroduced the
+deadline offset based on CPU cache locality on sticky tasks in a way
+that was cheaper than we currently offset the deadline.
 
+419-420: Finally rewrote the earliest_deadline_task code. This has
+long been one of the hottest code paths in the scheduler and small
+changes here that made it look nice would often slow it down. I spent
+quite a few hours reworking it to include less GOTOs while
+disassembling the code to make sure it was actually getting smaller
+with every change.  Then I wrote a scheduler specific version of
+find_next_bit which could be inlined into this code and avoid another
+function call in the hot path. The overall behaviour is unchanged from
+previous BFS versions, but initial benchmarking confirms slight
+improvements in throughput.
 
-BFS by itself:
-http://ck.kolivas.org/patches/bfs/
+While interactivity is the prime concern for BFS, as part of the
+regression testing, throughput benchmarks are performed with
+kernbench. This is a plot of BFS 418/420 and mainline archlinux 3.3.0
+kernel on a dual quad hyperthread core2 (lower is better):
 
-
-Web:
-http://kernel.kolivas.org
-
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-
-This is an upgrade to BFS 420 (see separate post to this list for
-description), trivial bugfixes and a resync from 3.2.0-ck1 . The
-following patches have also been dropped:
-
--mm-background_scan.patch
--mm-lru_cache_add_lru_tail-2.patch
-
-The Virtual Memory subsystem has changed so much it's hard to know if
-these patches do what they originally intended to do, nor if they are
-helpful any more. In the absence of being able to test their validity,
-it seems safer to just drop them.
-
-
-Each discrete patch usually contains a brief description of what it does at
-the top of the patch itself.
-
-Full patchlist:
-
-3.3-sched-bfs-420.patch
-mm-minimal_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-idleprio_prio-1.patch
-mm-decrease_default_dirty_ratio-1.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-ck1-version.patch
-
-This is also a good time to plug an updated lrzip which created the
-.lrz files above and is particularly good at compressing code such as
-the linux kernel and the latest version (0.612) features faster and
-tighter compression than ever and a liblrzip library allowing lrzip
-support to be added to any other application. See:
-
-https://freecode.com/projects/long-range-zip
+http://postimage.org/image/wavusknl1/
 
 Enjoy!
 お楽しみ下さい
