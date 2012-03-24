@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab2CXDCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Mar 2012 23:02:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34899 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314Ab2CXDCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Mar 2012 23:02:42 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
-Date: Sat, 24 Mar 2012 04:02:37 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34.10-0.4-desktop; KDE/4.4.4; x86_64; ; )
-Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com>
-In-Reply-To: <4F6D2AF8.3070707@zytor.com>
+	id S1756224Ab2CXDeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Mar 2012 23:34:15 -0400
+Received: from mga06.intel.com ([134.134.136.21]:29593 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755793Ab2CXDeO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Mar 2012 23:34:14 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203240402.38749.trenn@suse.de>
+In-Reply-To: <CAJ75kXZ_coHKo3ZXEFxv4HPo=BHA6=LCTWcTkxb_UTdJL-WScw@mail.gmail.com>
+References: <20120302055715.GA692@burratino>
+	<CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
+	<20120302162159.GB31683@wavehammer.waldi.eu.org>
+	<CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+	<20120302175719.GA1468@wavehammer.waldi.eu.org>
+	<CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
+	<4F54DB1F.3080000@debian.org>
+	<CABE8wwtOwgiYwb-_g-3Fg_QH6ph7LEPdkcOff94inDFvs9kwxA@mail.gmail.com>
+	<4F55D6F6.2040906@debian.org>
+	<CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
+	<20120311220648.GA8120@burratino>
+	<1332546904.23830.8.camel@ultramagnus.opencreations.com>
+	<CAJ75kXZ_coHKo3ZXEFxv4HPo=BHA6=LCTWcTkxb_UTdJL-WScw@mail.gmail.com>
+Date: Fri, 23 Mar 2012 20:34:13 -0700
+Message-ID: <CABE8wwv3JZeg2UfkkEa-+g1BDuGchJCbvk_oGvYAjj6fO6+vWQ@mail.gmail.com>
+Subject: Re: ioatdma: Boot process hangs then reboots when using Xen + Linux 3.2
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: William Dauchy <wdauchy@gmail.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, Thomas Goirand <zigo@debian.org>,
+        xen-devel@lists.xensource.com, Dave Jiang <dave.jiang@intel.com>,
+        pkg-xen-devel@lists.alioth.debian.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 24 March 2012 03:01:28 H. Peter Anvin wrote:
-> On 03/23/2012 06:42 PM, Thomas Renninger wrote:
-> > 
-> > If there is any initrd change this could easily be adopted.
-> > Would be great to see this one pushed into 3.4 before a possibly long
-> > taking discussion about bigger initrd layout changes.
-> > 
-> 
-> This should have been in linux-next before the merge window started, and
-> certainly "pushing it upstream before a possibly long talking discussion
-> about bigger initrd layout changes" is *definitely* putting the cart
-> before the horse ... almost nothing matters as much as avoiding
-> introducing a new protocol that we need to keep stable.
-> 
-> Sorry, it doesn't work that way.
-I guess this would not be the first time a good feature has been added,
-knowing that a more general API will be build around it later.
-10 lines are really easy to adopt.
+On Fri, Mar 23, 2012 at 7:25 PM, William Dauchy <wdauchy@gmail.com> wrote:
+> Hi Dan,
+>
+> On Sat, Mar 24, 2012 at 12:55 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+>> Thanks for the debug help, does this patch fix the issue for you?
+>
+> I successfully tested your patch and it works fine. Thanks again for your work.
+>
+> Reported-by: William Dauchy <wdauchy@gmail.com>
+> Tested-by: William Dauchy <wdauchy@gmail.com>
 
-> I'm not too happy about the idea of using "naked" ACPI headers as the
-> sole discriminator, because they lack a strong magic.  Furthermore, I
-> really don't want to see all the potential early-initrd users invent
-> different schemes for encapsulation, which has the potential of
-> cross-infection (early microcode update, for example, would have to be
-> invoked before ACPI, and needing that code to understand ACPI table
-> format is a nonstarter.)
-> 
-> I see two realistic options:
-> 
-> 1. We use cpio encapsulation for everything, with a special namespace
->    for items used directly by the kernel, e.g. "kernel/".
-> 
->    + Simple, existing tools can pick apart
->    - May lead people to believe that the early-initrd portion can be
->      compressed like the "normal" initrd portion, leading to strange
->      problems.
-Can this be implemented without using dynamic memory allocations?
-If not, it's not suitable for early APCI overriding.
+Great, thanks for the test.
 
-> 
-> 2. We create a new simple header (just a magic number, an identifier
->    for the type of data, and a length) for each of the early-initrd
->    objects:
-> 
-> 	struct early_initrd_header {
-> 		u64 magic;	/* 0xa5a46ce422d8f5a1 */
-> 		u32 type;	/* 1 = file data, 2 = ACPI, 3 = microcode... */
-> 		u32 length;	/* Length of data object */
-> 	};
-> 
->    XXX: Should we make this a defined endianness (presumably
->    bigendian), or use host-endianness?  I would guess the former might
->    be better...
-> 
-> Either of these allow one piece of code to quickly bypass bits that
-> doesn't belong to it.
-> 
-> Thoughts?
-Whatabout Multiboot(2):
-http://en.wikipedia.org/wiki/Multiboot_Specification
-http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
-
-They do it similar to 2, but without specifying the data of the
-files like you do with type.
-
-It's a bigger thing, but I could imagine there are some guys who would
-be willing to give it a try. I remember I googled a multiboot patch
-which got submitted to lkml long time ago.
-
-It has it pros and cons, but should show up in such a discussion.
-
-  Thomas
+--
+Dan
