@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab2CXQMD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 12:12:03 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61305 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2CXQMB (ORCPT
+	id S1754760Ab2CXQW7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 12:22:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33638 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371Ab2CXQW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 12:12:01 -0400
+	Sat, 24 Mar 2012 12:22:58 -0400
+Date: Sat, 24 Mar 2012 20:21:52 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 10/10] oom: Make find_lock_task_mm() sparse-aware
+Message-ID: <20120324162151.GA3640@lizard>
+References: <20120324102609.GA28356@lizard>
+ <20120324103127.GJ29067@lizard>
+ <1332593574.16159.31.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <CAJuYYwR92M7faLaZxT8ycKZB=ORf5J8fELwFENaL_GK7dtG7ew@mail.gmail.com>
-References: <1332581257-15989-1-git-send-email-thomas.abraham@linaro.org>
-	<4F6DC847.8000902@gmail.com>
-	<CAJuYYwR92M7faLaZxT8ycKZB=ORf5J8fELwFENaL_GK7dtG7ew@mail.gmail.com>
-Date: Sat, 24 Mar 2012 21:42:00 +0530
-Message-ID: <CAJuYYwQfNNO94_9nQnXH3xEoP6aWSJi4Hcpuh82N2xfGKJ4OnA@mail.gmail.com>
-Subject: Re: [PATCH] of/irq: add empty irq_of_parse_and_map() for non-dt builds
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1332593574.16159.31.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 March 2012 21:37, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> On 24 March 2012 18:42, Rob Herring <robherring2@gmail.com> wrote:
->> On 03/24/2012 04:27 AM, Thomas Abraham wrote:
->>> Add a empty irq_of_parse_and_map() that returns 0 for non-dt builds and
->>> avoid having #ifdef CONFIG_OF around all calls to irq_of_parse_and_map().
->>>
->>> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
->>> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
->>> ---
->>
->> Acked-by: Rob Herring <rob.herring@calxeda.com>
->>
->> Go ahead and merge with the rest of your series.
->>
->> Rob
->
-> Thanks Rob. It would be good if this patch goes via Grant's
-> devicetree/next. The other patch series that I have posted would go
-> via Samsung maintainer's dt-branch into which this patch can be merged
-> from Grant's devicetree/next.
->
-> Regards,
-> Thomas.
+On Sat, Mar 24, 2012 at 01:52:54PM +0100, Peter Zijlstra wrote:
+[...]
+> > p.s. I know Peter Zijlstra detest the __cond_lock() stuff, but untill
+> >      we have anything better in sparse, let's use it. This particular
+> >      patch helped me to detect one bug that I myself made during
+> >      task->mm fixup series. So, it is useful.
+> 
+> Yeah, so Nacked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Also, why didn't lockdep catch it?
 
-Fixing lkml address and add Grant in Cc.
+Because patch authors test their patches on architectures they own
+(well, sometimes I do check patches on exotic architectures w/ qemu,
+but it is less convenient than just build/sparse-test the patch w/
+a cross compiler).
+
+And since lockdep is a runtime checker, it is not very useful.
+
+Sparse is a build-time checker, so it is even better in the sense
+that it is able to catch bugs even in code that is executed rarely.
+
+> Fix sparse already instead of smearing ugly all over.
+
+Just wonder how do you see the feature implemented?
+
+Something like this?
+
+#define __ret_cond_locked(l, c)	__attribute__((ret_cond_locked(l, c)))
+#define __ret_value		__attribute__((ret_value))
+#define __ret_locked_nonnull(l)	__ret_cond_locked(l, __ret_value);
+
+extern struct task_struct *find_lock_task_mm(struct task_struct *p)
+	__ret_locked_nonnull(&__ret_value->alloc_lock);
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
