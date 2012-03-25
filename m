@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab2CYUVR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 16:21:17 -0400
-Received: from nick.hrz.tu-chemnitz.de ([134.109.228.11]:52473 "EHLO
-	nick.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756939Ab2CYUVQ (ORCPT
+	id S1757035Ab2CYU0g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 16:26:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59772 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757003Ab2CYU0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 16:21:16 -0400
-Message-ID: <4F6F7E37.5000209@hrz.tu-chemnitz.de>
-Date: Sun, 25 Mar 2012 22:21:11 +0200
-From: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Sun, 25 Mar 2012 16:26:34 -0400
+Date: Sun, 25 Mar 2012 13:26:10 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alex Elder <elder@kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, Ben Myers <bpm@sgi.com>,
+        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm for fs: add truncate_pagecache_range
+In-Reply-To: <20120323155950.f9bfb097.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1203251254570.1505@eggly.anvils>
+References: <alpine.LSU.2.00.1203231343380.1940@eggly.anvils> <20120323140120.11f95cd5.akpm@linux-foundation.org> <alpine.LSU.2.00.1203231406090.2207@eggly.anvils> <20120323155950.f9bfb097.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: gregkh@linuxfoundation.org
-Subject: Re: [PATCH 1/2] w1: Add 1-wire slave device driver for DS28E04-100
-References: <4F63AF9E.2090000@hrz.tu-chemnitz.de> <20120318214041.GA20521@ioremap.net>
-In-Reply-To: <20120318214041.GA20521@ioremap.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Scan-AV: nick.hrz.tu-chemnitz.de;2012-03-25 22:21:12;75b020b1a128ab8ea2ef78281de33dc0
-X-Scan-SA: nick.hrz.tu-chemnitz.de;2012-03-25 22:21:14;a0e3db4ea1c5f10ca0396a5a1ba93543
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- --- Ende Textanalyse
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg,
+On Fri, 23 Mar 2012, Andrew Morton wrote:
+> On Fri, 23 Mar 2012 14:14:54 -0700 (PDT)
+> Hugh Dickins <hughd@google.com> wrote:
+> > On Fri, 23 Mar 2012, Andrew Morton wrote:
+> > > 
+> > > --- a/mm/truncate.c~mm-for-fs-add-truncate_pagecache_range-fix
+> > > +++ a/mm/truncate.c
+> > > @@ -639,6 +639,9 @@ int vmtruncate_range(struct inode *inode
+> > >   * with on-disk format, and the filesystem would not have to deal with
+> > >   * situations such as writepage being called for a page that has already
+> > >   * had its underlying blocks deallocated.
+> > > + *
+> > > + * Must be called with inode->i_mapping->i_mutex held.
+> > 
+> > You catch me offguard: I forget whether that's an absolute requirement or
+> > just commonly the case.  What do the other interfaces in truncate.c say ?-)
+> 
+> i_mutex is generally required, to stabilise i_size.
 
-have you received this patch? Just wondering because I have not heard 
-something about this anymore from your side.
-Please do also have a look at
+Sorry for being quarrelsome, but I do want to Nak your followup "fix".
 
-[PATCH 2/2] w1: Disable irqs during 1-wire bus operations, extend 1-wire 
-reset pulse
+Building a test kernel quickly told me that inode->i_mapping->i_mutex
+doesn't exist, of course it's inode->i_mutex.
 
-Both patches have already been signed by Evgeniy Polyakov.
+Then running the test kernel quickly told me that neither ext4 nor xfs
+(I didn't try ocfs2) holds inode->i_mutex where holepunching calls
+truncate_inode_pages_range().
 
-Thanks and with best regards,
+Now, there might or might not be reasons why ext4 or xfs ought to hold
+i_mutex there for its own consistency, but it's beyond me to determine
+that: let's assume they're correct without evidence to the contrary.
 
-Markus Franke
+Stabilizing i_size is not a reason: holepunching does not affect i_size
+and is not affected by i_size (okay, ext4 still has the bug I reported
+a couple of months ago, whereby its holepunching stops at i_size,
+forgetting blocks fallocated beyond; but no doubt that will get fixed).
 
-Am 18.03.2012 22:40, schrieb Evgeniy Polyakov:
-> Hi
->
-> On Fri, Mar 16, 2012 at 10:24:46PM +0100, Markus Franke (markus.franke@s2002.tu-chemnitz.de) wrote:
->> This patch adds a 1-wire slave device driver for the DS28E04-100.
->>
->> It applies to the current linux kernel git tree.
->
-> As discussed with Markus already - looks very good
-> Greg, please pull it into your tree
->
->> Signed-off-by: Markus Franke<franm@hrz.tu-chemnitz.de>
->
-> Acked-by: Evgeniy Polyakov<zbr@ioremap.net>
->
+And nothing that truncate_pagecache_range() does needs i_mutex:
+neither the unmap_mapping_range() nor the truncate_inode_pages_range()
+needs i_mutex.  A year ago, yes, Miklos showed how unmap_mapping_range()
+was relying on mutex serialization, and added an additional mutex for
+that, which Peter was able to remove once he mutified i_mmap_lock.
 
+truncate_pagecache_range() is just a drop-in replacement for
+truncate_inode_pages_range(), and has no different locking needs.
+
+Hugh
