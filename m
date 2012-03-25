@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab2CYAn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 20:43:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47275 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab2CYAnZ (ORCPT
+	id S1753653Ab2CYBFa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 21:05:30 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:45606 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab2CYBF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 20:43:25 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of/irq: add empty irq_of_parse_and_map() for non-dt builds
-To: Thomas Abraham <thomas.abraham@linaro.org>,
-        Rob Herring <robherring2@gmail.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-In-Reply-To: <CAJuYYwQfNNO94_9nQnXH3xEoP6aWSJi4Hcpuh82N2xfGKJ4OnA@mail.gmail.com>
-References: <1332581257-15989-1-git-send-email-thomas.abraham@linaro.org> <4F6DC847.8000902@gmail.com> <CAJuYYwR92M7faLaZxT8ycKZB=ORf5J8fELwFENaL_GK7dtG7ew@mail.gmail.com> <CAJuYYwQfNNO94_9nQnXH3xEoP6aWSJi4Hcpuh82N2xfGKJ4OnA@mail.gmail.com>
-Date: Sat, 24 Mar 2012 17:43:22 -0700
-Message-Id: <20120325004322.909163E0409@localhost>
+	Sat, 24 Mar 2012 21:05:29 -0400
+Date: Sat, 24 Mar 2012 21:05:13 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: On patch "device.h: audit and cleanup users in main include dir"
+Message-ID: <20120325010513.GC12203@windriver.com>
+References: <20120324212125.460c89d3@stein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120324212125.460c89d3@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Mar 2012 21:42:00 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> On 24 March 2012 21:37, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> > On 24 March 2012 18:42, Rob Herring <robherring2@gmail.com> wrote:
-> >> On 03/24/2012 04:27 AM, Thomas Abraham wrote:
-> >>> Add a empty irq_of_parse_and_map() that returns 0 for non-dt builds and
-> >>> avoid having #ifdef CONFIG_OF around all calls to irq_of_parse_and_map().
-> >>>
-> >>> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
-> >>> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> >>> ---
-> >>
-> >> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> >>
-> >> Go ahead and merge with the rest of your series.
-> >>
-> >> Rob
-> >
-> > Thanks Rob. It would be good if this patch goes via Grant's
-> > devicetree/next. The other patch series that I have posted would go
-> > via Samsung maintainer's dt-branch into which this patch can be merged
-> > from Grant's devicetree/next.
+[On patch "device.h: audit and cleanup users in main include dir"] On 24/03/2012 (Sat 21:21) Stefan Richter wrote:
 
-As replied to on original patch, this isn't necessary.  Just merge it
-via the Samsung tree since you've already got my acked-by on it.
+> Hi Paul,
+> 
+> commit 313162d0b83836e2f57e51b9b8650fb4b9c396ea is not 100.00% correct.
+> 
+> --- a/include/linux/firewire.h
+> +++ b/include/linux/firewire.h
+> @@ -2,7 +2,6 @@
+>  #define _LINUX_FIREWIRE_H
+>  
+>  #include <linux/completion.h>
+> -#include <linux/device.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/kernel.h>
+>  #include <linux/kref.h>
+> @@ -68,6 +67,8 @@
+>  #define CSR_MODEL              0x17
+>  #define CSR_DIRECTORY_ID       0x20
+>  
+> +struct device;
+> +
+>  struct fw_csr_iterator {
+>         const u32 *p;
+>         const u32 *end;
+> 
+> But struct fw_device and struct fw_unit, defined in include/firewire.h,
+> incorporate struct device.
 
-g.
+Hi Stefan,
 
+You are correct.  I did read them all and check instances of device, so
+I'm not sure how I misread this file.  Did you have a specific build
+that triggered a failure, or you just happened to spot it?  I'm guessing
+that it gets device.h by another path and hence won't show up in build
+coverage.
+
+If so I'll definitely get it fixed, but I might wait a day or two to see
+if anything else pops up, if it isn't explicitly causing any breakage.
+
+Thanks for the report,
+Paul.
+--
+
+> 
+> Furthermore, the inline function definitions
+>     fw_device,
+>     fw_unit,
+>     fw_unit_get,
+>     fw_unit_put,
+>     fw_parent_device
+> all require definitions from linux/device.h.
+> -- 
+> Stefan Richter
+> -=====-===-- --== ==---
+> http://arcgraph.de/sr/
