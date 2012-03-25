@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab2CYBQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 21:16:27 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:43822 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab2CYBQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 21:16:26 -0400
-Date: Sat, 24 Mar 2012 21:16:13 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext2: No longer export ext2_fs.h to user space
-Message-ID: <20120325011613.GB32554@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-	Thierry Reding <thierry.reding@avionic-design.de>,
-	linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-	Artem Bityutskiy <dedekind1@gmail.com>,
-	Andreas Dilger <aedilger@gmail.com>, linux-ext4@vger.kernel.org
-References: <20120322183135.GC4028@thunk.org>
- <1332494856-31943-1-git-send-email-thierry.reding@avionic-design.de>
- <20120323131331.GA29631@thunk.org>
- <20120323175534.GI6589@ZenIV.linux.org.uk>
- <20120324215152.GA32554@thunk.org>
- <4F6E47C5.6040306@zytor.com>
+	id S1754890Ab2CYBTK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 21:19:10 -0400
+Received: from mta103.odn.ne.jp ([143.90.14.143]:48071 "EHLO cmta103.odn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753369Ab2CYBTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 21:19:09 -0400
+Message-ID: <4F6E728A.3090203@yahoo.co.jp>
+Date: Sun, 25 Mar 2012 10:19:06 +0900
+From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6E47C5.6040306@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Gwendal Grignou <gwendal@google.com>
+CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
+ Sil3726
+References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com> <4F6C4967.80309@yahoo.co.jp>
+In-Reply-To: <4F6C4967.80309@yahoo.co.jp>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 03:16:37PM -0700, H. Peter Anvin wrote:
-> > Someone who was compiling "the latest version" of syslinux has
-> > submitted a kernel bugzilla entry that this was breaking due to
-> > ext2_fs.h using umode_t which was no longer being exported by the
-> > kernel header files.  Given that ext2_fs.h is about to go ***poof***
-> > (Al already has the changes in his vfs git tree), I thought I should
-> > give you a heads up....
-> > 
+Hello Gwendal,
+
+I want to confirm one thing.
+The kernel 3.1.x driver still works?
+
+It seems to take long time to solve the problem. Of course I understand
+staggered spin-up is better solution. But I can't wait it so long. And
+it affects only SiI3726 only.
+
+Best Regards,
+Akira
+
+(2012/03/23 18:59), ANEZAKI, Akira wrote:
+> Hello Gwendal,
 > 
-> Thanks.  Syslinux already includes a private copy of ext2_fs.h, but I
-> need to scrub the umode_t inclusion.
-
-Ah, good.  I'll close the kernel bugzilla report in that case.
-
-Thanks,
-
-    	   	   	      	  	 - Ted
+> (2012/03/23 17:31), Gwendal Grignou wrote:
+>>>>>> I notice however some messages I did not see before:
+>>>>>>>> [    4.856382] ata7.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
+>>>>>>>> [    4.858742] ata7.00: hard resetting link
+>>>>>>>> [   14.843039] ata7.00: softreset failed (timeout)
+>>>>>>>> [   17.836402] ata7.15: qc timeout (cmd 0xe4)
+>>>>>> The later indicates that the PMP is stuck and the host can not read
+>>>>>> its internal register.
+>>>>>> Is it possible that the PMP in these 4 enclosures you are using have a
+>>>>>> different firmware than the other ones?
+>>>>>> Firmware 1.0114 is available at:
+>>>>>> http://www.siliconimage.com/support/searchresults.aspx?pid=26&cat=23
+>>>>>>
+>>>>>> From the release notes:
+>>>>>> """- Fix SRST and initial two RegFIS Problem."""
+>>>
+>>> I'm still fixing broken RAID. Sorry for my slow response.
+> 
+> I checked those firmware version. All of them use version 1.0114.
+> 
+> Best Regards,
+> Akira
 
