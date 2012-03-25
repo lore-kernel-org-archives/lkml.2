@@ -1,132 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab2CYKiY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 06:38:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55633 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab2CYKiM (ORCPT
+	id S1755830Ab2CYKvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 06:51:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49802 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681Ab2CYKvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 06:38:12 -0400
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 08/20 v3] m68k/mm/fault.c: Port OOM changes to do_page_fault
-Date: Sun, 25 Mar 2012 06:37:48 -0400
-Message-Id: <1332671868-2739-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 25 Mar 2012 06:51:06 -0400
+Date: Sun, 25 Mar 2012 11:50:54 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
+Subject: Re: [GIT PULL 0/9] arm-soc updates, first batch
+Message-ID: <20120325105054.GD5611@n2100.arm.linux.org.uk>
+References: <1332626568-17812-1-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332626568-17812-1-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Sat, Mar 24, 2012 at 10:02:37PM +0000, Arnd Bergmann wrote:
+> Rob Herring (29):
+>       ARM: timer-sp: add sched_clock support
+>       ARM: highbank: enable sp804 based sched_clock
+>       ARM: highbank: remove unused memory.h
+>       Merge remote-tracking branch 'arm-soc/at91/base2+cleanup' into cleanup-base
+>       usb: ohci-pxa27x: add explicit include of hardware.h
+>       ARM: provide runtime hook for ioremap/iounmap
+>       ARM: imx: convert to common runtime ioremap hook
+>       ARM: msm: use runtime ioremap hook
+>       ARM: iop13xx: use runtime ioremap hook
+>       ARM: ixp4xx: use runtime ioremap hook
+>       ARM: ebsa110: use runtime ioremap hook
+>       ARM: remove compile time __arch_ioremap/__arch_iounmap
+>       ARM: iop13xx: move io.h externs to pci.h
+>       ARM: msm: clean-up mach/io.h
+>       [media] davinci: remove includes of mach/io.h
+>       ARM: davinci: remove unneeded mach/io.h include
+>       ARM: orion5x: clean-up mach/io.h
+>       ARM: tegra: clean-up mach/io.h
+>       ARM: ep93xx: clean-up mach/io.h
+>       ARM: at91: add explicit include of hardware.h to uncompressor
+>       ARM: dove: add explicit include of dove.h to addr-map.c
+>       ARM: clps711x: remove unneeded include of mach/io.h
+>       ARM: make mach/io.h include optional
+>       ARM: remove bunch of now unused mach/io.h files
+>       ARM: kill off __mem_pci
+>       ARM: fix ioremap/iounmap for !CONFIG_MMU
+>       ARM: iop13xx: fix missing declaration of iop13xx_init_early
+>       ARM: create a common IOMEM definition
+>       ARM: __io abuse cleanup
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+Arnd, I assume this shortlog is for the entire arm-soc queue rather than
+this set of 9 pull requests?  If so fine.
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
-
-Port these changes to m68k.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/m68k/mm/fault.c |   42 ++++++++++++++++++++++++++++++++++--------
- 1 files changed, 34 insertions(+), 8 deletions(-)
-
-diff --git a/arch/m68k/mm/fault.c b/arch/m68k/mm/fault.c
-index 2db6099..fc5b8c9 100644
---- a/arch/m68k/mm/fault.c
-+++ b/arch/m68k/mm/fault.c
-@@ -73,7 +73,8 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
- {
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct * vma;
--	int write, fault;
-+	int fault;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
- 
- #ifdef DEBUG
- 	printk ("do page fault:\nregs->sr=%#x, regs->pc=%#lx, address=%#lx, %ld, %p\n",
-@@ -88,6 +89,7 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
- 	if (in_atomic() || !mm)
- 		goto no_context;
- 
-+retry:
- 	down_read(&mm->mmap_sem);
- 
- 	vma = find_vma(mm, address);
-@@ -118,14 +120,13 @@ good_area:
- #ifdef DEBUG
- 	printk("do_page_fault: good_area\n");
- #endif
--	write = 0;
- 	switch (error_code & 3) {
- 		default:	/* 3: write, present */
- 			/* fall through */
- 		case 2:		/* write, not present */
- 			if (!(vma->vm_flags & VM_WRITE))
- 				goto acc_err;
--			write++;
-+			flags |= FAULT_FLAG_WRITE;
- 			break;
- 		case 1:		/* read, present */
- 			goto acc_err;
-@@ -140,10 +141,14 @@ good_area:
- 	 * the fault.
- 	 */
- 
--	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, address, flags);
- #ifdef DEBUG
- 	printk("handle_mm_fault returns %d\n",fault);
- #endif
-+
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
-+
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		if (fault & VM_FAULT_OOM)
- 			goto out_of_memory;
-@@ -151,10 +156,31 @@ good_area:
- 			goto bus_err;
- 		BUG();
- 	}
--	if (fault & VM_FAULT_MAJOR)
--		current->maj_flt++;
--	else
--		current->min_flt++;
-+
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR)
-+			current->maj_flt++;
-+		else
-+			current->min_flt++;
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			 * of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+			/*
-+			 * No need to up_read(&mm->mmap_sem) as we would
-+			 * have already released it in __lock_page_or_retry
-+			 * in mm/filemap.c.
-+			 */
-+
-+			goto retry;
-+		}
-+	}
- 
- 	up_read(&mm->mmap_sem);
- 	return 0;
--- 
-1.7.5.4
-
+If not, I couldn't find Rob's IO stuff in this set of 9 pulls - at the
+moment because PXA currently fails to build because of that, and there's
+a couple of patches on the list from Rob sent on the 20th to solve that.
+However, Rob hasn't sent them to you yet.  I've already prodded over them
+to try and find out what's happening.
