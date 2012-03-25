@@ -1,196 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab2CYIhq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 04:37:46 -0400
-Received: from torres.zugschlus.de ([85.214.131.164]:59268 "EHLO
-	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145Ab2CYIhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 04:37:43 -0400
-Date: Sun, 25 Mar 2012 10:37:42 +0200
-From: Marc Haber <mh+linux-kernel@zugschlus.de>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Linux 3.2 and 3.3 - "network is down" when pinging IPv6.
-Message-ID: <20120325083742.GB12998@torres.zugschlus.de>
+	id S1754970Ab2CYIya (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 04:54:30 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42858 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754806Ab2CYIy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 04:54:26 -0400
+Date: Sun, 25 Mar 2012 10:54:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
+        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
+ initrd
+Message-ID: <20120325085420.GA12565@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Thomas Renninger <trenn@suse.de>,
+	eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+	linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+	robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+References: <1332512984-79664-1-git-send-email-trenn@suse.de>
+ <201203240242.07724.trenn@suse.de>
+ <4F6D2AF8.3070707@zytor.com>
+ <201203240402.38749.trenn@suse.de>
+ <4F6D50DD.4050306@zytor.com>
+ <20120324092451.GA3352@liondog.tnic>
+ <4F6E1742.6060709@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F6E1742.6060709@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Mar 24, 2012 at 11:49:38AM -0700, H. Peter Anvin wrote:
+> Yes... unfortunately between the kernel.org disaster and having a baby I
 
-it's me again with a different issue regarding IPv6. This may be
-related to the issue I reported in http://lkml.org/lkml/2012/3/22/59
-and http://lkml.org/lkml/2012/3/25/8, but not necessarily. This was
-really bizarrely fixed.
+Congrats on the second one!
 
-Again, this is seen on a single box with native IPv6 on eth0, routing
-IPv4 and IPv6 to two bridges where KVM VMs are attached to. Setup:
+> haven't had enough to time to get that work out of the freezer, which is
+> unfortunate in the extreme.
+> 
+> On the other hand, perhaps it is a good thing we didn't end up settling
+> on a protocol which was too narrow purpose for that one, too.
+> 
+> This is my current thinking, and please comment on this so we don't
+> spend a bunch of time bikeshedding this one... I'd like to come up with
+> something that we can implement and move on.
+> 
+> I have to say I'm personally leaning in the direction of just using a
+> special namespace and still encode things as cpio.  However, in order
+> for that to work we need to make sure that the invariant "early kernel
+> objects come before any compressed blob" is maintained at all times,
 
-myhost$ ip a
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-    inet6 ::1/128 scope host
-       valid_lft forever preferred_lft forever
-2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
-    link/ether 00:24:21:af:8f:cb brd ff:ff:ff:ff:ff:ff
-    inet 172.24.53.218/32 scope global eth0
-    inet6 2001:db8:40b7:9100::100:100/128 scope global
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9100:6686:29f:cdfc:9713/128 scope global deprecated
-       valid_lft forever preferred_lft forever
-3: eth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN qlen 1000
-    link/ether 00:24:21:af:8f:cc brd ff:ff:ff:ff:ff:ff
-4: br0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP
-    link/ether fe:54:00:23:47:46 brd ff:ff:ff:ff:ff:ff
-    inet 192.168.145.254/24 brd 192.168.145.255 scope global br0
-    inet6 2001:db8:40b7:9101::100:153/64 scope global deprecated
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9101::100:100/64 scope global
-       valid_lft forever preferred_lft forever
-    inet6 fe80::1/64 scope link
-       valid_lft forever preferred_lft forever
-    inet6 fe80::c091:aaff:fe67:fd99/64 scope link
-       valid_lft forever preferred_lft forever
-5: br1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP
-    link/ether fe:54:00:fa:de:7d brd ff:ff:ff:ff:ff:ff
-    inet 192.168.146.254/24 brd 192.168.146.255 scope global br1
-    inet6 2001:db8:40b7:9102::100:153/64 scope global deprecated
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9102::100:100/64 scope global
-       valid_lft forever preferred_lft forever
-    inet6 fe80::1/64 scope link
-       valid_lft forever preferred_lft forever
-    inet6 fe80::2c46:f8ff:feb9:16bf/64 scope link
-       valid_lft forever preferred_lft forever
-7: vnet0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master br0 state UNKNOWN qlen 500
-    link/ether fe:54:00:23:47:46 brd ff:ff:ff:ff:ff:ff
-    inet6 fe80::fc54:ff:fe23:4746/64 scope link
-       valid_lft forever preferred_lft forever
-8: vnet1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master br0 state UNKNOWN qlen 500
-    link/ether fe:54:00:67:86:fb brd ff:ff:ff:ff:ff:ff
-    inet6 fe80::fc54:ff:fe67:86fb/64 scope link
-       valid_lft forever preferred_lft forever
-9: vnet2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master br1 state UNKNOWN qlen 500
-    link/ether fe:54:00:fa:de:7d brd ff:ff:ff:ff:ff:ff
-    inet6 fe80::fc54:ff:fefa:de7d/64 scope link
-       valid_lft forever preferred_lft forever
-myhost$ ip r
-default via 172.29.179.1 dev eth0
-172.29.179.1 dev eth0  scope link
-172.29.179.176 dev br0  scope link
-192.168.145.0/24 dev br0  proto kernel  scope link  src 192.168.145.254
-192.168.146.0/24 dev br1  proto kernel  scope link  src 192.168.146.254
-myhost$ ip -6 r
-2001:db8:40b7:9100::100:100 dev eth0  proto kernel  metric 256
-2001:db8:40b7:9100:6686:29f:cdfc:9713 dev eth0  proto kernel  metric 256
-2001:db8:40b7:9101::/64 dev br0  proto kernel  metric 256
-2001:db8:40b7:9102::/64 dev br1  proto kernel  metric 256
-fe80::/64 dev br0  proto kernel  metric 256
-fe80::/64 dev br1  proto kernel  metric 256
-fe80::/64 dev eth0  proto kernel  metric 256
-fe80::/64 dev vnet0  proto kernel  metric 256
-fe80::/64 dev vnet1  proto kernel  metric 256
-fe80::/64 dev vnet2  proto kernel  metric 256
-default via fe80::1 dev eth0  metric 1024
-myhost$ sudo brctl show
-bridge name     bridge id               STP enabled     interfaces
-br0             8000.fe5400234746       no              vnet0
-                                                        vnet1
-br1             8000.fe5400fade7d       no              vnet2
-myhost$
+That actually makes sense for ucode because we want it as early as
+possible.
 
-On br0/vnet0, there is a Linux VM with the following IP configuration:
-myvm$ ip a
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-    inet6 ::1/128 scope host
-       valid_lft forever preferred_lft forever
-2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
-    link/ether 52:54:00:23:47:46 brd ff:ff:ff:ff:ff:ff
-    inet 172.29.179.176 peer 192.168.145.254/32 scope global eth0
-    inet6 2001:db8:40b7:9101::2:53/64 scope global deprecated
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9101::1:53/64 scope global deprecated
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9101::6667/64 scope global deprecated
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9101::1/64 scope global
-       valid_lft forever preferred_lft forever
-    inet6 2001:db8:40b7:9101:5054:ff:fe23:4746/64 scope global
-       valid_lft forever preferred_lft forever
-    inet6 fe80::5054:ff:fe23:4746/64 scope link
-       valid_lft forever preferred_lft forever
-3: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN qlen 100
-    link/none
-    inet 10.11.12.1 peer 10.11.12.2/32 scope global tun0
-4: tun1: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1498 qdisc pfifo_fast state UNKNOWN qlen 100
-    link/none
-    inet 10.11.25.1 peer 10.11.25.2/32 scope global tun1
-myvm$ ip r
-default via 192.168.145.254 dev eth0
-10.11.12.0/24 via 10.11.12.2 dev tun0
-10.11.12.2 dev tun0  proto kernel  scope link  src 10.11.12.1
-10.11.25.0/24 via 10.11.25.2 dev tun1
-10.11.25.2 dev tun1  proto kernel  scope link  src 10.11.25.1
-192.168.145.254 dev eth0  proto kernel  scope link  src 172.29.179.176
-myvm$ ip -6 r
-2001:db8:40b7:9101::/64 dev eth0  proto kernel  metric 256
-fe80::/64 dev eth0  proto kernel  metric 256
-default via fe80::c091:aaff:fe67:fd99 dev eth0  proto kernel  metric 1024  expires 1435sec
-myvm$
+> which might be sensitive.  However, it has serious advantages both from
+> a bootloader UI point of view (names are ASCII strings) and from a tools
+> point of view (it's just cpio, still.)
+> 
+> The main downside is that the cpio header is mostly in ASCII encoded
+> hexadecimal, which adds to the amount of code that needs to be ported
+> into "special" environments... not a problem for the ACPI converter but
+> for the early microcode it matters.
 
-Please note that myvm has both 2001:db8:40b7:9101::1/64 and
-2001:db8:40b7:9101::1:53/64 configured.
+One other downside for this approach would be the need to have
+initrd/initramfs support always compiled into the kernel in order to do
+all those things but, hey, distro kernels already have that so we're
+probably stuck with it anyway.
 
-Most of the time (but not always!), myhost does not even try to send
-out a packet when I ping6 2001:db8:40b7:9101::1. Instead, ping6 says
-that sendmsg cannot send the packet ("network is down").
-2001:db8:40b7:9101::1 is not in the neighbor table, and myhost does not
-send out a neighbor solicitation. It simple immediately claims that
-the network is down.
-
-At the same time, ping6'ing 2001:db8:40b7:9101::1:53 works just fine.
-IPv4 is not affected as well.
-
-I can see similiar behavior with other VMs as well, on both br0 and br1.
-
-Now for the real bizarre solution: Setting a more specific route for
-2a01:238:40b7:9101::/65 immediately fixes the issue. Same holds for
-br1 and the route 2a01:238:40b7:9102::/65.
-
-The IPv6 routing table on myhost now looks like
-myhost$ ip -6 r
-2001:db8:40b7:9100::100:100 dev eth0  proto kernel  metric 256 
-2001:db8:40b7:9100:6686:29f:cdfc:9713 dev eth0  proto kernel  metric 256 
-2001:db8:40b7:9101::/65 dev br0  metric 1024 
-2001:db8:40b7:9101::/64 dev br0  proto kernel  metric 256 
-2001:db8:40b7:9102::/65 dev br1  metric 1024 
-2001:db8:40b7:9102::/64 dev br1  proto kernel  metric 256 
-fe80::/64 dev br0  proto kernel  metric 256 
-fe80::/64 dev br1  proto kernel  metric 256 
-fe80::/64 dev eth0  proto kernel  metric 256 
-fe80::/64 dev vnet0  proto kernel  metric 256 
-fe80::/64 dev vnet1  proto kernel  metric 256 
-fe80::/64 dev vnet2  proto kernel  metric 256 
-default via fe80::1 dev eth0  metric 1024 
-and everything works as designed.
-
-Why do I need the /65 route? Why can I ping one address from the /64
-network and not another?
-
-If you need more information, please say so.
-
-Greetings
-Marc
+And, if someone wants to add the support to the bootloader later, he
+can still do that by handing in cpio archives to the kernel for further
+processing...
 
 -- 
------------------------------------------------------------------------------
-Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
-Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 31958061
-Nordisch by Nature |  How to make an American Quilt | Fax: *49 621 31958062
+Regards/Gruss,
+    Boris.
