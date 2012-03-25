@@ -1,140 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab2CYRKi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 13:10:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65386 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab2CYRKg (ORCPT
+	id S1754754Ab2CYRU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 13:20:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52790 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab2CYRU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 13:10:36 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        afleming@freescale.com, Joe Perches <joe@perches.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v2] gianfar: Fix possible overrun and simplify interrupt name field creation
-Date: Sun, 25 Mar 2012 13:10:07 -0400
-Message-Id: <1332695407-21167-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <CAP=VYLrPbYv2C7hYaQ-aUJLFCfYh5zkJzFXJt8GFV2OTZ7h=og@mail.gmail.com>
-References: <CAP=VYLrPbYv2C7hYaQ-aUJLFCfYh5zkJzFXJt8GFV2OTZ7h=og@mail.gmail.com>
+	Sun, 25 Mar 2012 13:20:26 -0400
+Date: Sun, 25 Mar 2012 18:20:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Richard Weinberger <richard@nod.at>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: TTY: tty_port questions
+Message-ID: <20120325172018.GL6589@ZenIV.linux.org.uk>
+References: <4F5BDB09.3020407@suse.cz>
+ <4F5BE1E6.9000201@nod.at>
+ <4F5C861F.2000507@nod.at>
+ <4F5DCF39.8080308@nod.at>
+ <20120312105312.665d2362@pyramind.ukuu.org.uk>
+ <4F5DDAD4.4060504@nod.at>
+ <20120312114832.784bb6fe@pyramind.ukuu.org.uk>
+ <20120324232001.GK6589@ZenIV.linux.org.uk>
+ <20120325155143.7ca7cb13@ultron>
+ <4F6F365D.5060703@nod.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6F365D.5060703@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+On Sun, Mar 25, 2012 at 05:14:37PM +0200, Richard Weinberger wrote:
+> >> FWIW, uml console in default config is basically "start xterm for each VC".
+> >> What do you suggest to do on vhangup() on one of those?
+> > 
+> > What posix says must happen. Which is that the running processes get a
+> > hangup. So a vhangup() would ensure there were no old apps on the UML
+> > guess talking to the xterm (eg stealing login credentials, or abusing
+> > TIOCSTI etc).
 
-Space allocated for int_name_<foo> is insufficient for
-maximal device name, expand it.
+IIRC, vhangup(2) is Linux-specific, so I would be surprised if POSIX had
+anything on it...
 
-Code to create int_name_<foo> is obscure, simplify it
-by using sprintf.
+> Looks like Debian's /bin/login is violating POSIX. AFACT it does not
+> call vhangup() at all.
 
-Found by looking for unnecessary \ line continuations.
+... and Alan said nothing about /bin/login being required to call it,
+be it by POSIX or by anything else.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Tested-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+login(1) from util-linux does vhangup(); login(1) from shadow doesn't.
 
-[v2: delete "uncompiled/untested" and fix typo in commit log]
+> > The fact it's an xterm isn't really relevant. That's just the physical
+> > interface and vhangup is about breaking the logical link. The xterm would
+> > continue, no reason for it to do otherwise I can see ?
+> > 
+> 
+> As I wrote in my very first mail, if I implement tty_operations->hangup()
+> a vhangup() closes the current TTY and the shiny new login shell dies because
+> read/write() returns EIO.
 
-The IRQ names appear unchanged after applying this patch:
+Hm?  If login(1) does vhangup(), it has to reopen tty - and util-linux
+one does just that.  open() *after* vhangup() is supposed to work - it's
+pre-existing openers that get screwed.  Which is why the sequence is
+	fchown/fchmod to prevent new unpriveleged openers
+	ignore SIGHUP
+	vhangup to bugger all old openers (including ourselves - at that
+point our stdin becomes unusable)
+	open tty (BTW, I'd probably open /proc/self/0 instead of using
+ttyname(3) result as util-linux is doing)
+	replace stdin/stdout/stderr with it
+And yes, it's far too convoluted...
 
-root@SBC8641D:/root> for i in `seq 3` ; do ifconfig eth$i 192.168.0.$i ; done
-root@SBC8641D:/root> cat /proc/interrupts
-           CPU0       CPU1
- 16:          0          0   MPIC      Level     phy_interrupt, phy_interrupt, phy_interrupt, phy_interrupt
- 29:       6884          0   MPIC      Level     eth0_g0_tx
- 30:          0      11578   MPIC      Level     eth0_g0_rx
- 31:          0          0   MPIC      Level     eth2_g0_tx
- 32:          0          0   MPIC      Level     eth2_g0_rx
- 33:          0          0   MPIC      Level     eth2_g0_er
- 34:          0          0   MPIC      Level     eth0_g0_er
- 35:          0          0   MPIC      Level     eth1_g0_tx
- 36:          0          0   MPIC      Level     eth1_g0_rx
- 37:          0          0   MPIC      Level     eth3_g0_tx
- 38:          0          0   MPIC      Level     eth3_g0_rx
- 39:          0          0   MPIC      Level     eth3_g0_er
- 40:          0          0   MPIC      Level     eth1_g0_er
+	What makes me more concerned about the tty_port model is the
+mechanism uml got for reconfiguring its ttys.  There's a control channel,
+independent from the regular tty driver.  You can run mconsole(1) on host
+to connect to it and issue commands; e.g. "config con2=pts" will remove
+whatever you have as /dev/tty2 and associate it with pty pair on host.
 
-Having them all in group "g0" may seem odd, but it is definitely
-the same as it was before the commit.  Tested on mar23 linux-next.
-
-
-diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-index d9428f0..e7bed53 100644
---- a/drivers/net/ethernet/freescale/gianfar.c
-+++ b/drivers/net/ethernet/freescale/gianfar.c
-@@ -968,7 +968,6 @@ static int gfar_probe(struct platform_device *ofdev)
- 	struct gfar_private *priv = NULL;
- 	struct gfar __iomem *regs = NULL;
- 	int err = 0, i, grp_idx = 0;
--	int len_devname;
- 	u32 rstat = 0, tstat = 0, rqueue = 0, tqueue = 0;
- 	u32 isrg = 0;
- 	u32 __iomem *baddr;
-@@ -1169,40 +1168,16 @@ static int gfar_probe(struct platform_device *ofdev)
- 		priv->device_flags & FSL_GIANFAR_DEV_HAS_MAGIC_PACKET);
- 
- 	/* fill out IRQ number and name fields */
--	len_devname = strlen(dev->name);
- 	for (i = 0; i < priv->num_grps; i++) {
--		strncpy(&priv->gfargrp[i].int_name_tx[0], dev->name,
--				len_devname);
- 		if (priv->device_flags & FSL_GIANFAR_DEV_HAS_MULTI_INTR) {
--			strncpy(&priv->gfargrp[i].int_name_tx[len_devname],
--				"_g", sizeof("_g"));
--			priv->gfargrp[i].int_name_tx[
--				strlen(priv->gfargrp[i].int_name_tx)] = i+48;
--			strncpy(&priv->gfargrp[i].int_name_tx[strlen(
--				priv->gfargrp[i].int_name_tx)],
--				"_tx", sizeof("_tx") + 1);
--
--			strncpy(&priv->gfargrp[i].int_name_rx[0], dev->name,
--					len_devname);
--			strncpy(&priv->gfargrp[i].int_name_rx[len_devname],
--					"_g", sizeof("_g"));
--			priv->gfargrp[i].int_name_rx[
--				strlen(priv->gfargrp[i].int_name_rx)] = i+48;
--			strncpy(&priv->gfargrp[i].int_name_rx[strlen(
--				priv->gfargrp[i].int_name_rx)],
--				"_rx", sizeof("_rx") + 1);
--
--			strncpy(&priv->gfargrp[i].int_name_er[0], dev->name,
--					len_devname);
--			strncpy(&priv->gfargrp[i].int_name_er[len_devname],
--				"_g", sizeof("_g"));
--			priv->gfargrp[i].int_name_er[strlen(
--					priv->gfargrp[i].int_name_er)] = i+48;
--			strncpy(&priv->gfargrp[i].int_name_er[strlen(\
--				priv->gfargrp[i].int_name_er)],
--				"_er", sizeof("_er") + 1);
-+			sprintf(priv->gfargrp[i].int_name_tx, "%s%s%c%s",
-+				dev->name, "_g", '0' + i, "_tx");
-+			sprintf(priv->gfargrp[i].int_name_rx, "%s%s%c%s",
-+				dev->name, "_g", '0' + i, "_rx");
-+			sprintf(priv->gfargrp[i].int_name_er, "%s%s%c%s",
-+				dev->name, "_g", '0' + i, "_er");
- 		} else
--			priv->gfargrp[i].int_name_tx[len_devname] = '\0';
-+			strcpy(priv->gfargrp[i].int_name_tx, dev->name);
- 	}
- 
- 	/* Initialize the filer table */
-diff --git a/drivers/net/ethernet/freescale/gianfar.h b/drivers/net/ethernet/freescale/gianfar.h
-index fc2488a..4c9f8d4 100644
---- a/drivers/net/ethernet/freescale/gianfar.h
-+++ b/drivers/net/ethernet/freescale/gianfar.h
-@@ -517,7 +517,7 @@ extern const char gfar_driver_version[];
- #define RXFCB_PERR_MASK		0x000c
- #define RXFCB_PERR_BADL3	0x0008
- 
--#define GFAR_INT_NAME_MAX	IFNAMSIZ + 4
-+#define GFAR_INT_NAME_MAX	(IFNAMSIZ + 6)	/* '_g#_xx' */
- 
- struct txbd8
- {
--- 
-1.7.9.1
-
+The thing is, we don't want to do that when port is in use.  And we definitely
+don't want somebody to open the damn thing when it's halfway through getting
+set up.  I don't see any natural way to do that exclusion with tty_port -
+port->{count,block_open} is protected only by a spinlock and port setup
+we need to do is blocking...
