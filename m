@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab2CYXAn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 19:00:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59543 "EHLO
+	id S932399Ab2CYX0q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 19:26:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64965 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab2CYXAa (ORCPT
+	with ESMTP id S932362Ab2CYX0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 19:00:30 -0400
-Message-ID: <4F6FA388.9080408@gmail.com>
-Date: Sun, 25 Mar 2012 16:00:24 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
-MIME-Version: 1.0
-To: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org> <4F681B78.9000207@gmail.com> <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com> <4F68235C.5090701@gmail.com> <CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com> <4F682555.3020502@gmail.com> <20328.16366.166909.255035@gargle.gargle.HOWL>
-In-Reply-To: <20328.16366.166909.255035@gargle.gargle.HOWL>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Mar 2012 19:26:15 -0400
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 02/16] dynamic_debug: fix leading spaces
+Date: Sun, 25 Mar 2012 17:25:40 -0600
+Message-Id: <1332717954-5775-3-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1332717954-5775-1-git-send-email-jim.cromie@gmail.com>
+References: <1332717954-5775-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2012 01:29 AM, Sujith Manoharan wrote:
-> Justin P. Mattock wrote:
->> yeah this works:
->>
->> eading symbols from
->> /home/kernel/linux-next/drivers/net/wireless/ath/ath9k/ath9k.o...done.
->> (gdb) l *(ath_tx_start+0x284)
->> 0xcad4 is in ath_tx_start (drivers/net/wireless/ath/ath9k/xmit.c:1878).
->> 1873			ieee80211_is_data_qos(hdr->frame_control)) {
->> 1874			tidno = ieee80211_get_qos_ctl(hdr)[0]&
->> 1875				IEEE80211_QOS_CTL_TID_MASK;
->> 1876			tid = ATH_AN_2_TID(txctl->an, tidno);
->> 1877	
->> 1878			WARN_ON(tid->ac->txq != txctl->txq);
->> 1879		}
->> 1880	
->> 1881		if ((tx_info->flags&  IEEE80211_TX_CTL_AMPDU)&&  tid) {
->> 1882			/*
->> (gdb)
->
-> Can you try this patch ?
->
-> From: Sujith Manoharan<c_manoha@qca.qualcomm.com>
-> Date: Tue, 20 Mar 2012 13:51:26 +0530
-> Subject: [PATCH] ath9k: Use HW HT capabilites properly
->
-> The commit "ath9k: Remove aggregation flags" changed how
-> nodes were being initialized. Use the HW HT cap bits
-> to initialize/de-initialize nodes, else we would be
-> accessing an uninitialized entry during a suspend/resume cycle,
-> resulting in a panic.
->
-> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
-> Signed-off-by: Sujith Manoharan<c_manoha@qca.qualcomm.com>
-> ---
->   drivers/net/wireless/ath/ath9k/main.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-> index 3879485..215eb25 100644
-> --- a/drivers/net/wireless/ath/ath9k/main.c
-> +++ b/drivers/net/wireless/ath/ath9k/main.c
-> @@ -640,7 +640,7 @@ static void ath_node_attach(struct ath_softc *sc, struct ieee80211_sta *sta,
->   	an->sta = sta;
->   	an->vif = vif;
->
-> -	if (sta->ht_cap.ht_supported) {
-> +	if (sc->sc_ah->caps.hw_caps&  ATH9K_HW_CAP_HT) {
->   		ath_tx_node_init(sc, an);
->   		an->maxampdu = 1<<  (IEEE80211_HT_MAX_AMPDU_FACTOR +
->   				     sta->ht_cap.ampdu_factor);
-> @@ -659,7 +659,7 @@ static void ath_node_detach(struct ath_softc *sc, struct ieee80211_sta *sta)
->   	an->sta = NULL;
->   #endif
->
-> -	if (sta->ht_cap.ht_supported)
-> +	if (sc->sc_ah->caps.hw_caps&  ATH9K_HW_CAP_HT)
->   		ath_tx_node_cleanup(sc, an);
->   }
->
+From: Jim Cromie <jim.cromie@gmail.com>
 
-I would have to say this patch above does get rid of this crash I was 
-seeing. as a quick test I simply connect to a WPA network, then connect 
-to an open network going back and forth triggers this freeze for me 
-after applying this I am able to toggle back and forth without a freeze.
+clean up some space-before-tabs problems.
 
-Thanks!
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ include/linux/dynamic_debug.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Justin P. Mattock
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 7e3c53a..bf1b0fc 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -17,8 +17,8 @@ struct _ddebug {
+ 	const char *format;
+ 	unsigned int lineno:18;
+ 	/*
+- 	 * The flags field controls the behaviour at the callsite.
+- 	 * The bits here are changed dynamically when the user
++	 * The flags field controls the behaviour at the callsite.
++	 * The bits here are changed dynamically when the user
+ 	 * writes commands to <debugfs>/dynamic_debug/control
+ 	 */
+ #define _DPRINTK_FLAGS_NONE	0
+-- 
+1.7.7.6
+
