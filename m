@@ -1,156 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab2CYVLL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 17:11:11 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:59944
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754459Ab2CYVLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 17:11:09 -0400
-Date: Sun, 25 Mar 2012 23:11:07 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [patch] Add a encryption key parameter to the compress / decompress
- function.
-In-Reply-To: <1332521515.22278.2.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>    <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>   <1330531826.3545.128.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net> 
- <1332511796.18717.72.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net> <1332521515.22278.2.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757142Ab2CYVMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 17:12:34 -0400
+Received: from uucp.gnuu.de ([83.246.114.63]:2801 "EHLO uucp.gnuu.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200Ab2CYVMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 17:12:32 -0400
+From: =?UTF-8?q?J=C3=B6rg=20Sommer?= <joerg@alea.gnuu.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?J=C3=B6rg=20Sommer?= <joerg@alea.gnuu.de>
+Subject: [PATCH 2/2] perf tools: Fix parsing of unary operator in ?: expression
+Date: Sun, 25 Mar 2012 23:11:32 +0200
+Message-Id: <bc768c12ba3df410cb3a049ea6d88d39a993768d.1332709498.git.joerg@alea.gnuu.de>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <05a6b9ad17375452aedc994c4553137750db0a13.1332709498.git.joerg@alea.gnuu.de>
+References: <05a6b9ad17375452aedc994c4553137750db0a13.1332709498.git.joerg@alea.gnuu.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compress and decompress now have an extra u8 *key field, and NULL is
-passed wherever it is used. Later this will be used for an encryption key
-for the data being compressed/decompressed (and NULL if no cryptographic operations should be done.)
+Parsing an expression like
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+print fmt: "reason %s (%d)", …, REC->errno < 0 ? -REC->errno : REC->reason
 
->From 650a52b5301778cf2f0c17ed993a104a4473a8fb Mon Sep 17 00:00:00 2001
-From: Joel Reardon <jreardon@fatbottomsworth.(none)>
-Date: Sun, 25 Mar 2012 23:06:03 +0200
-Subject: [PATCH] Added a key parameter to de/compress.
+in kvm_space_exit fails with
 
+Fatal unknown op ':'
+
+The colon after a simple operator signals the end of this expression. The
+token should not be advanced, because the colon is handled in
+process_cond(). Hence, it's enough to signal there's an operation
+heading.
+
+Signed-off-by: Jörg Sommer <joerg@alea.gnuu.de>
 ---
- fs/ubifs/compress.c |    8 ++++++--
- fs/ubifs/file.c     |    5 +++--
- fs/ubifs/journal.c  |    7 ++++---
- fs/ubifs/ubifs.h    |    4 ++--
- 4 files changed, 15 insertions(+), 9 deletions(-)
+An alternative could be:
 
-diff --git a/fs/ubifs/compress.c b/fs/ubifs/compress.c
-index 11e4132..d1812fa 100644
---- a/fs/ubifs/compress.c
-+++ b/fs/ubifs/compress.c
-@@ -82,6 +82,8 @@ struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
-  * @out_len: output buffer length is returned here
-  * @compr_type: type of compression to use on enter, actually used compression
-  *              type on exit
-+ * @key: a pointer to a key-sized buffer to use as the encryption key. if NULL
-+ *      then no encryption is performed.
-  *
-  * This function compresses input buffer @in_buf of length @in_len and stores
-  * the result in the output buffer @out_buf and the resulting length in
-@@ -93,7 +95,7 @@ struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
-  * buffer and %UBIFS_COMPR_NONE is returned in @compr_type.
-  */
- void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
--		    int *compr_type)
-+		    int *compr_type, u8 *key)
- {
- 	int err;
- 	struct ubifs_compressor *compr = ubifs_compressors[*compr_type];
-@@ -140,13 +142,15 @@ no_compr:
-  * @out_buf: output buffer where decompressed data should
-  * @out_len: output length is returned here
-  * @compr_type: type of compression
-+ * @key: a pointer to a key-sized buffer to use as the decryption key. if
-+ *	 NULL then no decryption is performed.
-  *
-  * This function decompresses data from buffer @in_buf into buffer @out_buf.
-  * The length of the uncompressed data is returned in @out_len. This functions
-  * returns %0 on success or a negative error code on failure.
-  */
- int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
--		     int *out_len, int compr_type)
-+		     int *out_len, int compr_type, u8 *key)
- {
- 	int err;
- 	struct ubifs_compressor *compr;
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index f9c234b..2660c9f 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -80,7 +80,7 @@ static int read_block(struct inode *inode, void *addr, unsigned int block,
- 	dlen = le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
- 	out_len = UBIFS_BLOCK_SIZE;
- 	err = ubifs_decompress(&dn->data, dlen, addr, &out_len,
--			       le16_to_cpu(dn->compr_type));
-+			       le16_to_cpu(dn->compr_type), NULL);
- 	if (err || len != out_len)
- 		goto dump;
+ --- a/tools/perf/util/trace-event-parse.c
+ +++ b/tools/perf/util/trace-event-parse.c
+ @@ -1287,7 +1287,7 @@ process_op(struct event *event, struct print_arg *arg, char **tok)
+                return EVENT_NONE;
+        }
+ 
+-       if (type == EVENT_OP) {
++       if (type == EVENT_OP && strcmp(*tok, ":") != 0) {
+                int prio;
+ 
+                /* higher prios need to be closer to the root */
 
-@@ -649,7 +649,8 @@ static int populate_page(struct ubifs_info *c, struct page *page,
- 			dlen = le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
- 			out_len = UBIFS_BLOCK_SIZE;
- 			err = ubifs_decompress(&dn->data, dlen, addr, &out_len,
--					       le16_to_cpu(dn->compr_type));
-+					       le16_to_cpu(dn->compr_type),
-+					       NULL);
- 			if (err || len != out_len)
- 				goto out_err;
 
-diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
-index 2f438ab..9156395 100644
---- a/fs/ubifs/journal.c
-+++ b/fs/ubifs/journal.c
-@@ -727,7 +727,7 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
- 		compr_type = ui->compr_type;
+ tools/perf/util/trace-event-parse.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
- 	out_len = dlen - UBIFS_DATA_NODE_SZ;
--	ubifs_compress(buf, len, &data->data, &out_len, &compr_type);
-+	ubifs_compress(buf, len, &data->data, &out_len, &compr_type, NULL);
- 	ubifs_assert(out_len <= UBIFS_BLOCK_SIZE);
-
- 	dlen = UBIFS_DATA_NODE_SZ + out_len;
-@@ -1110,11 +1110,12 @@ static int recomp_data_node(struct ubifs_data_node *dn, int *new_len)
-
- 	len = le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
- 	compr_type = le16_to_cpu(dn->compr_type);
--	err = ubifs_decompress(&dn->data, len, buf, &out_len, compr_type);
-+	err = ubifs_decompress(
-+		&dn->data, len, buf, &out_len, compr_type, NULL);
- 	if (err)
- 		goto out;
-
--	ubifs_compress(buf, *new_len, &dn->data, &out_len, &compr_type);
-+	ubifs_compress(buf, *new_len, &dn->data, &out_len, &compr_type, NULL);
- 	ubifs_assert(out_len <= UBIFS_BLOCK_SIZE);
- 	dn->compr_type = cpu_to_le16(compr_type);
- 	dn->size = cpu_to_le32(*new_len);
-diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
-index 93d59ac..0cc1180 100644
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -1772,9 +1772,9 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
- int __init ubifs_compressors_init(void);
- void ubifs_compressors_exit(void);
- void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
--		    int *compr_type);
-+		    int *compr_type, u8 *key);
- int ubifs_decompress(const void *buf, int len, void *out, int *out_len,
--		     int compr_type);
-+		     int compr_type, u8 *key);
-
- #include "debug.h"
- #include "misc.h"
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 185e284..d7b5880 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -1125,6 +1125,7 @@ static int get_op_prio(char *op)
+ 		case '|':
+ 			return 13;
+ 		case '?':
++		case ':':
+ 			return 16;
+ 		default:
+ 			die("unknown op '%c'", op[0]);
+@@ -1202,6 +1203,8 @@ process_op(struct event *event, struct print_arg *arg, char **tok)
+ 
+ 		type = process_arg(event, right, tok);
+ 
++	} else if (strcmp(token, ":") == 0) {
++		return EVENT_OP;
+ 	} else if (strcmp(token, "?") == 0) {
+ 
+ 		left = malloc_or_die(sizeof(*left));
 -- 
-1.7.1
-
+1.7.9.1
 
