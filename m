@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab2CYWCB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 18:02:01 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34718 "EHLO ogre.sisk.pl"
+	id S932247Ab2CYWB7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 18:01:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34695 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932237Ab2CYWBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 18:01:16 -0400
+	id S932184Ab2CYWBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 18:01:08 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] PM / Sleep: Mitigate race between the freezer and request_firmware()
-Date: Mon, 26 Mar 2012 00:04:55 +0200
+Subject: [PATCH 3/6] firmware_class: Do not warn that system is not ready from async loads
+Date: Mon, 26 Mar 2012 00:02:22 +0200
 User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
 Cc: Stephen Boyd <sboyd@codeaurora.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -26,204 +26,244 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203260004.55956.rjw@sisk.pl>
+Message-Id: <201203260002.22324.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-There is a race condition between the freezer and request_firmware()
-such that if request_firmware() is run on one CPU and
-freeze_processes() is run on another CPU and usermodehelper_disable()
-called by it succeeds to grab umhelper_sem for writing before
-usermodehelper_read_trylock() called from request_firmware()
-acquires it for reading, the request_firmware() will fail and
-trigger a WARN_ON() complaining that it was called at a wrong time.
-However, in fact, it wasn't called at a wrong time and
-freeze_processes() simply happened to be executed simultaneously.
+If firmware is requested asynchronously, by calling
+request_firmware_nowait(), there is no reason to fail the request
+(and warn the user) when the system is (presumably temporarily)
+unready to handle it (because user space is not available yet or
+frozen).  For this reason, introduce an alternative routine for
+read-locking umhelper_sem, usermodehelper_read_lock_wait(), that
+will wait for usermodehelper_disabled to be unset (possibly with
+a timeout) and make request_firmware_work_func() use it instead of
+usermodehelper_read_trylock().
 
-To avoid this race, at least in some cases, modify
-usermodehelper_read_trylock() so that it doesn't fail if the
-freezing of tasks has just started and hasn't been completed yet.
-Instead, during the freezing of tasks, it will try to freeze the
-task that has called it so that it can wait until user space is
-thawed without triggering the scary warning.
+Accordingly, modify request_firmware() so that it uses
+usermodehelper_read_trylock() to acquire umhelper_sem and remove
+the code related to that lock from _request_firmware().
 
-For this purpose, change usermodehelper_disabled so that it can
-take three different values, UMH_ENABLED (0), UMH_FREEZING and
-UMH_DISABLED.  The first one means that usermode helpers are
-enabled, the last one means "hard disable" (i.e. the system is not
-ready for usermode helpers to be used) and the second one
-is reserved for the freezer.  Namely, when freeze_processes() is
-started, it sets usermodehelper_disabled to UMH_FREEZING which
-tells usermodehelper_read_trylock() that it shouldn't fail just
-yet and should call try_to_freeze() if woken up and cannot
-return immediately.  This way all freezable tasks that happen
-to call request_firmware() right before freeze_processes() is
-started and lose the race for umhelper_sem with it will be
-frozen and will sleep until thaw_processes() unsets
-usermodehelper_disabled.  [For the non-freezable callers of
-request_firmware() the race for umhelper_sem against
-freeze_processes() is unfortunately unavoidable.]
-
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- include/linux/kmod.h   |   21 +++++++++++++++++++--
- kernel/kmod.c          |   47 +++++++++++++++++++++++++++++++++++++----------
- kernel/power/process.c |    3 ++-
- 3 files changed, 58 insertions(+), 13 deletions(-)
+ drivers/base/firmware_class.c |   51 +++++++++++++++++++++---------------
+ include/linux/kmod.h          |    1 
+ kernel/kmod.c                 |   58 ++++++++++++++++++++++++++++++++----------
+ 3 files changed, 76 insertions(+), 34 deletions(-)
 
 Index: linux/include/linux/kmod.h
 ===================================================================
 --- linux.orig/include/linux/kmod.h
 +++ linux/include/linux/kmod.h
-@@ -112,10 +112,27 @@ call_usermodehelper(char *path, char **a
- 
- extern struct ctl_table usermodehelper_table[];
- 
-+enum umh_disable_depth {
-+	UMH_ENABLED = 0,
-+	UMH_FREEZING,
-+	UMH_DISABLED,
-+};
-+
- extern void usermodehelper_init(void);
- 
--extern int usermodehelper_disable(void);
--extern void usermodehelper_enable(void);
-+extern int __usermodehelper_disable(enum umh_disable_depth depth);
-+extern void __usermodehelper_reset(enum umh_disable_depth depth);
-+
-+static inline int usermodehelper_disable(void)
-+{
-+	return __usermodehelper_disable(UMH_DISABLED);
-+}
-+
-+static inline void usermodehelper_enable(void)
-+{
-+	__usermodehelper_reset(UMH_ENABLED);
-+}
-+
+@@ -117,6 +117,7 @@ extern void usermodehelper_init(void);
+ extern int usermodehelper_disable(void);
+ extern void usermodehelper_enable(void);
  extern int usermodehelper_read_trylock(void);
- extern long usermodehelper_read_lock_wait(long timeout);
++extern long usermodehelper_read_lock_wait(long timeout);
  extern void usermodehelper_read_unlock(void);
+ 
+ #endif /* __LINUX_KMOD_H__ */
 Index: linux/kernel/kmod.c
 ===================================================================
 --- linux.orig/kernel/kmod.c
 +++ linux/kernel/kmod.c
-@@ -279,7 +279,7 @@ static void __call_usermodehelper(struct
-  * land has been frozen during a system-wide hibernation or suspend operation).
-  * Should always be manipulated under umhelper_sem acquired for write.
+@@ -291,6 +291,12 @@ static atomic_t running_helpers = ATOMIC
+ static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
+ 
+ /*
++ * Used by usermodehelper_read_lock_wait() to wait for usermodehelper_disabled
++ * to become 'false'.
++ */
++static DECLARE_WAIT_QUEUE_HEAD(usermodehelper_disabled_waitq);
++
++/*
+  * Time to wait for running_helpers to become zero before the setting of
+  * usermodehelper_disabled in usermodehelper_disable() fails
   */
--static int usermodehelper_disabled = 1;
-+static enum umh_disable_depth usermodehelper_disabled = UMH_DISABLED;
+@@ -309,6 +315,33 @@ int usermodehelper_read_trylock(void)
+ }
+ EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
  
- /* Number of helpers running */
- static atomic_t running_helpers = ATOMIC_INIT(0);
-@@ -304,13 +304,30 @@ static DECLARE_WAIT_QUEUE_HEAD(usermodeh
- 
- int usermodehelper_read_trylock(void)
- {
++long usermodehelper_read_lock_wait(long timeout)
++{
 +	DEFINE_WAIT(wait);
- 	int ret = 0;
- 
- 	down_read(&umhelper_sem);
--	if (usermodehelper_disabled) {
++
++	if (timeout < 0)
++		return -EINVAL;
++
++	down_read(&umhelper_sem);
 +	for (;;) {
 +		prepare_to_wait(&usermodehelper_disabled_waitq, &wait,
-+				TASK_INTERRUPTIBLE);
++				TASK_UNINTERRUPTIBLE);
 +		if (!usermodehelper_disabled)
 +			break;
 +
-+		if (usermodehelper_disabled == UMH_DISABLED)
-+			ret = -EAGAIN;
++		up_read(&umhelper_sem);
 +
- 		up_read(&umhelper_sem);
--		ret = -EAGAIN;
-+
-+		if (ret)
++		timeout = schedule_timeout(timeout);
++		if (!timeout)
 +			break;
 +
-+		schedule();
-+		try_to_freeze();
-+
 +		down_read(&umhelper_sem);
- 	}
++	}
 +	finish_wait(&usermodehelper_disabled_waitq, &wait);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
-@@ -349,25 +366,35 @@ void usermodehelper_read_unlock(void)
++	return timeout;
++}
++EXPORT_SYMBOL_GPL(usermodehelper_read_lock_wait);
++
+ void usermodehelper_read_unlock(void)
+ {
+ 	up_read(&umhelper_sem);
+@@ -316,6 +349,17 @@ void usermodehelper_read_unlock(void)
  EXPORT_SYMBOL_GPL(usermodehelper_read_unlock);
  
  /**
-- * usermodehelper_enable - allow new helpers to be started again
-+ * __usermodehelper_reset - Change the value of usermodehelper_disabled.
-+ * depth: New value to assign to usermodehelper_disabled.
-+ *
-+ * Change the value of usermodehelper_disabled (under umhelper_sem locked for
-+ * writing) and wakeup tasks waiting for it to change.
-  */
--void usermodehelper_enable(void)
-+void __usermodehelper_reset(enum umh_disable_depth depth)
- {
- 	down_write(&umhelper_sem);
--	usermodehelper_disabled = 0;
-+	usermodehelper_disabled = depth;
- 	wake_up(&usermodehelper_disabled_waitq);
- 	up_write(&umhelper_sem);
- }
- 
- /**
-- * usermodehelper_disable - prevent new helpers from being started
-+ * __usermodehelper_disable - Prevent new helpers from being started.
-+ * @depth: New value to assign to usermodehelper_disabled.
-+ *
-+ * Set usermodehelper_disabled to @depth and wait for running helpers to exit.
-  */
--int usermodehelper_disable(void)
-+int __usermodehelper_disable(enum umh_disable_depth depth)
- {
- 	long retval;
- 
-+	if (!depth)
-+		return -EINVAL;
++ * usermodehelper_enable - allow new helpers to be started again
++ */
++void usermodehelper_enable(void)
++{
++	down_write(&umhelper_sem);
++	usermodehelper_disabled = 0;
++	wake_up(&usermodehelper_disabled_waitq);
++	up_write(&umhelper_sem);
++}
 +
- 	down_write(&umhelper_sem);
--	usermodehelper_disabled = 1;
-+	usermodehelper_disabled = depth;
- 	up_write(&umhelper_sem);
- 
- 	/*
-@@ -382,7 +409,7 @@ int usermodehelper_disable(void)
++/**
+  * usermodehelper_disable - prevent new helpers from being started
+  */
+ int usermodehelper_disable(void)
+@@ -338,22 +382,10 @@ int usermodehelper_disable(void)
  	if (retval)
  		return 0;
  
--	usermodehelper_enable();
-+	__usermodehelper_reset(UMH_ENABLED);
+-	down_write(&umhelper_sem);
+-	usermodehelper_disabled = 0;
+-	up_write(&umhelper_sem);
++	usermodehelper_enable();
  	return -EAGAIN;
  }
  
-Index: linux/kernel/power/process.c
-===================================================================
---- linux.orig/kernel/power/process.c
-+++ linux/kernel/power/process.c
-@@ -123,7 +123,7 @@ int freeze_processes(void)
+-/**
+- * usermodehelper_enable - allow new helpers to be started again
+- */
+-void usermodehelper_enable(void)
+-{
+-	down_write(&umhelper_sem);
+-	usermodehelper_disabled = 0;
+-	up_write(&umhelper_sem);
+-}
+-
+ static void helper_lock(void)
  {
- 	int error;
+ 	atomic_inc(&running_helpers);
+Index: linux/drivers/base/firmware_class.c
+===================================================================
+--- linux.orig/drivers/base/firmware_class.c
++++ linux/drivers/base/firmware_class.c
+@@ -81,6 +81,11 @@ enum {
  
--	error = usermodehelper_disable();
-+	error = __usermodehelper_disable(UMH_FREEZING);
- 	if (error)
- 		return error;
+ static int loading_timeout = 60;	/* In seconds */
  
-@@ -135,6 +135,7 @@ int freeze_processes(void)
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
- 		printk("done.");
-+		__usermodehelper_reset(UMH_DISABLED);
- 		oom_killer_disable();
++static inline long firmware_loading_timeout(void)
++{
++	return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
++}
++
+ /* fw_lock could be moved to 'struct firmware_priv' but since it is just
+  * guarding for corner cases a global lock should be OK */
+ static DEFINE_MUTEX(fw_lock);
+@@ -541,31 +546,22 @@ static void _request_firmware_cleanup(co
+ 
+ static int _request_firmware(const struct firmware *firmware,
+ 			     const char *name, struct device *device,
+-			     bool uevent, bool nowait)
++			     bool uevent, bool nowait, long timeout)
+ {
+ 	struct firmware_priv *fw_priv;
+-	int retval;
+-
+-	retval = usermodehelper_read_trylock();
+-	if (WARN_ON(retval)) {
+-		dev_err(device, "firmware: %s will not be loaded\n", name);
+-		return retval;
+-	}
++	int retval = 0;
+ 
+ 	if (uevent)
+ 		dev_dbg(device, "firmware: requesting %s\n", name);
+ 
+ 	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
+-	if (IS_ERR(fw_priv)) {
+-		retval = PTR_ERR(fw_priv);
+-		goto out;
+-	}
++	if (IS_ERR(fw_priv))
++		return PTR_ERR(fw_priv);
+ 
+ 	if (uevent) {
+-		if (loading_timeout > 0)
++		if (timeout != MAX_SCHEDULE_TIMEOUT)
+ 			mod_timer(&fw_priv->timeout,
+-				  round_jiffies_up(jiffies +
+-						   loading_timeout * HZ));
++				  round_jiffies_up(jiffies + timeout));
+ 
+ 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
  	}
- 	printk("\n");
+@@ -582,9 +578,6 @@ static int _request_firmware(const struc
+ 	mutex_unlock(&fw_lock);
+ 
+ 	fw_destroy_instance(fw_priv);
+-
+-out:
+-	usermodehelper_read_unlock();
+ 	return retval;
+ }
+ 
+@@ -613,7 +606,14 @@ request_firmware(const struct firmware *
+ 	if (ret <= 0)
+ 		return ret;
+ 
+-	ret = _request_firmware(*firmware_p, name, device, true, false);
++	ret = usermodehelper_read_trylock();
++	if (WARN_ON(ret)) {
++		dev_err(device, "firmware: %s will not be loaded\n", name);
++	} else {
++		ret = _request_firmware(*firmware_p, name, device, true, false,
++					firmware_loading_timeout());
++		usermodehelper_read_unlock();
++	}
+ 	if (ret)
+ 		_request_firmware_cleanup(firmware_p);
+ 
+@@ -648,6 +648,7 @@ static int request_firmware_work_func(vo
+ {
+ 	struct firmware_work *fw_work = arg;
+ 	const struct firmware *fw;
++	long timeout;
+ 	int ret;
+ 
+ 	if (!arg) {
+@@ -659,8 +660,16 @@ static int request_firmware_work_func(vo
+ 	if (ret <= 0)
+ 		return ret;
+ 
+-	ret = _request_firmware(fw, fw_work->name, fw_work->device,
+-				fw_work->uevent, true);
++	timeout = usermodehelper_read_lock_wait(firmware_loading_timeout());
++	if (timeout) {
++		ret = _request_firmware(fw, fw_work->name, fw_work->device,
++					fw_work->uevent, true, timeout);
++		usermodehelper_read_unlock();
++	} else {
++		dev_dbg(fw_work->device, "firmware: %s loading timed out\n",
++			fw_work->name);
++		ret = -EAGAIN;
++	}
+ 	if (ret)
+ 		_request_firmware_cleanup(&fw);
+ 
+
