@@ -1,183 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2CYMdS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 08:33:18 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755637Ab2CYMdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 08:33:16 -0400
-Message-ID: <4F6F1081.5000307@nod.at>
-Date: Sun, 25 Mar 2012 14:33:05 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>
-Subject: [GIT PULL] UML changes for 3.4-rc1
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigEDC20BD2B700A8299C286B57"
+	id S1756079Ab2CYMd5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 08:33:57 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:27696 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755961Ab2CYMd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 08:33:56 -0400
+X-AuditID: cbfee61b-b7baeae000004fa7-6b-4f6f10b2cbc0
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org
+Subject: [PATCH] of/irq: of_irq_init: Call initialization function for all
+ controllers
+Date: Sun, 25 Mar 2012 18:08:49 +0530
+Message-id: <1332679129-23864-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+In-reply-to: <CAJuYYwS5Srw2-D6hdk=-=YN3iB37+KTWVqQPPPVbb-e7it+uVQ@mail.gmail.com>
+References: <CAJuYYwS5Srw2-D6hdk=-=YN3iB37+KTWVqQPPPVbb-e7it+uVQ@mail.gmail.com>
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigEDC20BD2B700A8299C286B57
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+The of_irq_init function stops processing the interrupt controller hierarchy
+when there are no more interrupt controller parents identified. Though this
+condition suffices most cases, there are cases where a interrupt controller's
+parent controller does not participate in the initialization of the interrupt
+hierarchy. An example of such a case is the use of a interrupt nexus node
+by a interrupt controller node which delivers interrupts to separate interrupt
+parent controllers.
 
-Linus,
+Instead of stopping the processing of interrupt controller hierarchy in such
+a case, the orphan interrupt controller node's descriptor can be identified
+and its 'logical' parent in the descriptor is set as NULL. The processing of
+interrupt hierarchy is then restarted by looking for descriptors which have
+a NULL interrupt parent.
 
-This are the UML changes for for 3.4-rc1.
-Mostly bug fixes and cleanups.
-
-Thanks,
-//richard
-
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 ---
-The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7=
-e7:
+ drivers/of/irq.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 44 insertions(+), 1 deletions(-)
 
-  Linux 3.3 (2012-03-18 16:15:34 -0700)
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 9cf0060..70c6ece 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -400,6 +400,38 @@ struct intc_desc {
+ };
+ 
+ /**
++ * of_irq_mark_orphan_desc - Set parent as NULL for a orphan intc_desc
++ * @intc_desc_list: the list of intc_desc to search for orphan intc_desc
++ *
++ * This is a helper function for the of_irq_init function and is invoked
++ * when there are child nodes available in intc_desc_list but there are
++ * no parent nodes in intc_parent_list. When invoked, this function
++ * searches for a intc_desc instance that does not have a parent intc_desc
++ * instance in intc_desc_list. The very reason of the invocation of this
++ * function ensures that a orphan intc_desc will be found. When found, the
++ * interrupt_parent of the orphan intc_desc is set to NULL.
++ */
++static void of_irq_mark_orphan_desc(struct list_head *intc_desc_list)
++{
++	struct intc_desc *desc, *temp_desc;
++
++	list_for_each_entry_safe(desc, temp_desc, intc_desc_list, list) {
++		struct intc_desc *td1, *td2;
++		list_for_each_entry_safe(td1, td2, intc_desc_list, list) {
++			if (desc->interrupt_parent == td1->dev)
++				break;
++		}
++		if (desc->interrupt_parent == td1->dev)
++			continue;
++
++		pr_debug("%s: set interrupt_parent of 'intc_desc' with dev name"
++			" %s as NULL\n", __func__, desc->dev->full_name);
++		desc->interrupt_parent = NULL;
++		return;
++	}
++}
++
++/**
+  * of_irq_init - Scan and init matching interrupt controllers in DT
+  * @matches: 0 terminated array of nodes to match and init function to call
+  *
+@@ -481,8 +513,19 @@ void __init of_irq_init(const struct of_device_id *matches)
+ 		/* Get the next pending parent that might have children */
+ 		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
+ 		if (list_empty(&intc_parent_list) || !desc) {
++			/*
++			 * This has reached a point where there are children in
++			 * the intc_desc_list but no parent in intc_parent_list.
++			 * This means there is a child desc in intc_desc_list
++			 * whose parent is not one of the remaining elements of
++			 * the intc_desc_list. Such a child node is marked as
++			 * orphan (interrupt_parent is set to NULL) and the
++			 * process continues with parent set to NULL.
++			 */
+ 			pr_err("of_irq_init: children remain, but no parents\n");
+-			break;
++			of_irq_mark_orphan_desc(&intc_desc_list);
++			parent = NULL;
++			continue;
+ 		}
+ 		list_del(&desc->list);
+ 		parent = desc->dev;
+-- 
+1.6.6.rc2
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus-3.4-=
-rc1
-
-Al Viro (27):
-      um: clean up the includes in ubd
-      um: auxvec.h is never used
-      um: switch line_remove() to setup_one_line()
-      um: switch line_config() to setup_one_line()
-      um: get rid of the init_prio mess
-      um: convert count_lock to mutex, fix a race in line_open()
-      um: fix races between line_open() and line_config()
-      um: switch line.c tty drivers to dynamic device creation
-      um: get rid of lines_init()
-      um: finally kill ->init_str leaks
-      um: sorting out the chan mess, part 1
-      um: switch users of ->chan_list to ->chan_{in,out} (easy cases)
-      um: chan_init_pri is dead now
-      um: line->have_irq is never checked...
-      um: race fix: initialize delayed_work *before* registering IRQ
-      um: switch close_chan() to struct line
-      um: merge processor_{32,64}.h a bit...
-      um: asm-offsets.h might as well come from underlying arch...
-      um: remove pointless include of asm/fixmap.h from asm/pgtable.h
-      um: kill HOST_TASK_PID
-      um: ptrace-generic.h doesn't need user.h
-      um: a bunch of headers can be killed by using generic-y
-      um: use the right ifdef around exports in user_syms.c
-      um: don't bother trying to rebuild CHECKFLAGS for USER_OBJS
-      um: deadlock in line_write_interrupt()
-      um: most of the SUBARCH uses can be killed
-      um: allow SUBARCH=3Dx86
-
-Geert Uytterhoeven (1):
-      uml/hostfs: Propagate dirent.d_type to filldir()
-
-Richard Weinberger (6):
-      Introduce CONFIG_GENERIC_IO
-      um: Serve io_remap_pfn_range()
-      um: Wire CONFIG_GENERIC_IO up
-      MTD: Relax dependencies
-      um: Switch to large mcmodel on x86_64
-      um: Update defconfig
-
-Yong Zhang (1):
-      um: irq: Remove IRQF_DISABLED
-
- arch/um/Kconfig.common                  |    1 +
- arch/um/Makefile                        |    5 +-
- arch/um/defconfig                       |  655 ++++++++++++++++++++++---=
-------
- arch/um/drivers/chan.h                  |   18 +-
- arch/um/drivers/chan_kern.c             |  198 ++++------
- arch/um/drivers/chan_user.h             |    2 -
- arch/um/drivers/line.c                  |  258 ++++++-------
- arch/um/drivers/line.h                  |   29 +-
- arch/um/drivers/mconsole_kern.c         |    2 +-
- arch/um/drivers/net_kern.c              |    2 +-
- arch/um/drivers/port_kern.c             |    4 +-
- arch/um/drivers/random.c                |    2 +-
- arch/um/drivers/ssl.c                   |   41 +-
- arch/um/drivers/stdio_console.c         |   46 ++--
- arch/um/drivers/{ubd_user.h =3D> ubd.h}   |    0
- arch/um/drivers/ubd_kern.c              |   46 +--
- arch/um/drivers/ubd_user.c              |    8 +-
- arch/um/drivers/xterm_kern.c            |    2 +-
- arch/um/include/asm/Kbuild              |    2 +-
- arch/um/include/asm/asm-offsets.h       |    1 -
- arch/um/include/asm/auxvec.h            |    4 -
- arch/um/include/asm/current.h           |   13 -
- arch/um/include/asm/delay.h             |   18 -
- arch/um/include/asm/io.h                |   57 ---
- arch/um/include/asm/mutex.h             |    9 -
- arch/um/include/asm/param.h             |   20 -
- arch/um/include/asm/pci.h               |    6 -
- arch/um/include/asm/pgalloc.h           |    3 +-
- arch/um/include/asm/pgtable.h           |    2 +
- arch/um/include/asm/ptrace-generic.h    |    1 -
- arch/um/include/shared/common-offsets.h |    2 -
- arch/um/include/shared/kern_util.h      |    2 +-
- arch/um/kernel/Makefile                 |    2 +-
- arch/um/kernel/process.c                |    4 +-
- arch/um/kernel/sigio.c                  |    2 +-
- arch/um/kernel/time.c                   |    2 +-
- arch/um/os-Linux/Makefile               |    2 -
- arch/um/os-Linux/user_syms.c            |    2 +-
- arch/um/scripts/Makefile.rules          |    7 +-
- arch/x86/Makefile.um                    |    4 -
- arch/x86/um/Kconfig                     |    4 +-
- arch/x86/um/asm/processor.h             |   10 +
- arch/x86/um/asm/processor_32.h          |   10 -
- arch/x86/um/asm/processor_64.h          |   10 -
- arch/x86/um/bugs_32.c                   |    4 +-
- drivers/mtd/Kconfig                     |    2 +-
- drivers/mtd/devices/Kconfig             |    1 +
- drivers/mtd/maps/Kconfig                |    1 +
- drivers/mtd/nand/Kconfig                |    2 +
- drivers/mtd/onenand/Kconfig             |    1 +
- fs/hostfs/hostfs.h                      |    3 +-
- fs/hostfs/hostfs_kern.c                 |    5 +-
- fs/hostfs/hostfs_user.c                 |    4 +-
- lib/Kconfig                             |    5 +
- 54 files changed, 813 insertions(+), 733 deletions(-)
- rename arch/um/drivers/{ubd_user.h =3D> ubd.h} (100%)
- delete mode 100644 arch/um/include/asm/asm-offsets.h
- delete mode 100644 arch/um/include/asm/auxvec.h
- delete mode 100644 arch/um/include/asm/current.h
- delete mode 100644 arch/um/include/asm/delay.h
- delete mode 100644 arch/um/include/asm/io.h
- delete mode 100644 arch/um/include/asm/mutex.h
- delete mode 100644 arch/um/include/asm/param.h
- delete mode 100644 arch/um/include/asm/pci.h
-
-
---------------enigEDC20BD2B700A8299C286B57
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPbxCHAAoJEPmeIjfg4UaamQYQAKntRGM45reT/4A1NgpJ8nPf
-Xr3n9VfFH2TbgHFp9eFm6peLlenpI6RHIdFB1m1Tx8T4ab5Rlni76CuBstpG1ZJx
-sOtsXgrtG5rm+s3nprzfNigHlMHnO77i/AMEHl7pLeK5FGdtylZoMiSvNZL5xmi7
-boTMBzwcCyPXAWJoJNjaL0M0EgRcOHKR97G059pKGk/viiSEPeuNCiNdMUyNYGJ8
-tbSPVyjSnSIPqEaLcWPI7Y1mbkzhKQxtRv7d2yDlSdlyDuBj2c4RITIlUCrmtLz5
-cP0tu75EkNG8iJeSomfraeImlGAbhw2Za+n9TTiJhLe4v0/DlZTAGXBIJ46Fa0ad
-akUF5cbhWe7tAr6+TAydTLlt/9+YJCHGPptSuOkVGhnGQbagdkqpbeiHaPo1Kdz0
-VIfFzrnIXKbGD1QqjN03YrfETAnx8dVziknKfLJaUxpA6fVDQGUDFrYRpK3nd9El
-SkNekJ7eUPUvW89BXun4KUkecMct4l+CvJ4Vpn7+QkQycFxe7Z32/k4AwE0fbapG
-O+OiK/XKpdG6eTfMy1IbmzG8LnseCNMmoJkyoIAbRdcuRVcxHnerK62R6mCDBGyH
-03EdvgwCS0nACdLcoRpJ448Ifj1bpLGtGWjLsOui6aMuZi0girGq43icSFVArxaZ
-O23y7YS4Wwy3nqTkjeUT
-=3LpE
------END PGP SIGNATURE-----
-
---------------enigEDC20BD2B700A8299C286B57--
