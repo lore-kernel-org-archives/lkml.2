@@ -1,146 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab2CYWFT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 18:05:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199Ab2CYWFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 18:05:17 -0400
-Date: Mon, 26 Mar 2012 00:05:20 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC dontapply] kvm_para: add mmio word store hypercall
-Message-ID: <20120325220518.GA27879@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932254Ab2CYWXf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 18:23:35 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:59640 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab2CYWXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 18:23:34 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
+In-Reply-To: Your message of "Sun, 25 Mar 2012 19:36:12 +0400."
+             <20120325153612.GC4391@albatros>
+From: Valdis.Kletnieks@vt.edu
+References: <201203220903.15360.a.miskiewicz@gmail.com> <20120323171058.GA3279@albatros> <20120323161504.dced28b9.akpm@linux-foundation.org> <201203250924.06908.a.miskiewicz@gmail.com>
+            <20120325153612.GC4391@albatros>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332714196_1934P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sun, 25 Mar 2012 18:23:16 -0400
+Message-ID: <97428.1332714196@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4F6F9AD7.008D,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We face a dilemma: IO mapped addresses are legacy,
-so, for example, PCI express bridges waste 4K
-of this space for each link, in effect limiting us
-to 16 devices using this space.
+--==_Exmh_1332714196_1934P
+Content-Type: text/plain; charset=us-ascii
 
-Memory is supposed to replace them, but memory
-exits are much slower than PIO because of the need for
-emulation and page walks.
+On Sun, 25 Mar 2012 19:36:12 +0400, Vasiliy Kulikov said:
+> On Sun, Mar 25, 2012 at 09:24 +0200, Arkadiusz Miśkiewicz wrote:
+> > but there is another problem - unmounting it and mounting without options
+> > causes old option to persist:
+> >
+> > # mount none /proc -t proc -o hidepid=2
+> > # umount /proc
+> > # mount none /proc -t proc
+> > # grep "/proc" /proc/mounts
+> > none /proc proc rw,relatime,hidepid=2 0 0
+> >
+> > There should be no hidepid=2 now.
+>
+> No, that's an expected behaviour.
 
-As a solution, this patch adds an MMIO hypercall with
-the guest physical address + data.
+"You keep using that word. I do not think it means what you think it means". ;)
 
-I did test that this works but didn't benchmark yet.
+> Procfs is a special filesystem.
 
-TODOs:
-This only implements a 2 bytes write since this is
-the minimum required for virtio, but we'll probably need
-at least 1 byte reads (for ISR read).
-We can support up to 8 byte reads/writes for 64 bit
-guests and up to 4 bytes for 32 ones - better limit
-to 4 bytes for everyone for consistency, or support
-the maximum that we can?
+And the fact it's "special" makes this *unexpected* behavior.  Are there
+any other filesystems where -o values will persist across an unmount
+and then take effect *even if no -o is given* on a subsequent mount?
 
-Further, a feature bit will need to be exposed to
-guests so they know they can use the feature.
+Yes, it may be what the code actually *does*, but it certainly violates
+the Principle of Least Surprise...
 
-Need to test performance impact.
+--==_Exmh_1332714196_1934P
+Content-Type: application/pgp-signature
 
-Finally the patch was on an ancient kvm version
-and will need to be rebased.
-Posting here for early flames/feedback.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/kvm/svm.c       |    3 +--
- arch/x86/kvm/vmx.c       |    3 +--
- arch/x86/kvm/x86.c       |   14 ++++++++++++++
- include/linux/kvm_para.h |    1 +
- 4 files changed, 17 insertions(+), 4 deletions(-)
+iQIVAwUBT2+a1AdmEQWDXROgAQLnpg//XZfP9m/rCaml8IHgHOAYDjOwzSubea/m
+QYT9jYP2ueZIupqAC1j6vdhV948VZj6+aJrxXcloUnFP2gF25pdPV4Ar0EAi11O2
+Wtsk70BbypX/k7GPDDeDbdNHe9XBOmrCKTIOhXg4UYbj2tgceJL/DJlmDhjVEzEc
+TPJTu1MxDCuta9Ooas2379YKBwTa/xHiOUZpHiyhgIRZgqmMb6zZfgSgKhErzHGK
+L87G5ayXdKzBZ4/h+yyQkZ+D8JiTJMflUSpZJLeRufQtqHUQbCcSfIzB4sMBBFFA
+Q4rZe9nQssqv/1Wgp/XEq+jmQQe2A46N2veHZiJk9WTxL+L5r390ZtZZuW90JqRa
+XYi6SIJRGfApER8ebzuOnU+7V1lSmhFwzDrWdv2+fOYmu/RjLZ0WJS6qMIDV4oky
+Rcsq8Wvzv41ocLjG94JXqMben8GYsEMUR2vX0FcknUzzwfT2A9ouV4MO9nbluHaK
+SBSxoR4PN2zfME7PpqvfDw4kVViSpr7Ok3v2dP6i8JYqlzbuRvkbQEIwOYsyFbHL
+VP4ttQXcGF+wrVHO8PNmw1I02XrLPgZocgoXangk75iVJpEDX/D+07HURzjncSAC
+MPXxiGkl6scJJhxPU8p37XB+OmvRRU2tE10Pjqm+JlRQXOAm58iR8eo8kzWbClvn
+OhJPei3XwY4=
+=GWe5
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 5fa553b..00460e1 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1833,8 +1833,7 @@ static int vmmcall_interception(struct vcpu_svm *svm)
- {
- 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
- 	skip_emulated_instruction(&svm->vcpu);
--	kvm_emulate_hypercall(&svm->vcpu);
--	return 1;
-+	return kvm_emulate_hypercall(&svm->vcpu);
- }
- 
- static unsigned long nested_svm_get_tdp_cr3(struct kvm_vcpu *vcpu)
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 3b4c8d8..0fff33e 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4597,8 +4597,7 @@ static int handle_halt(struct kvm_vcpu *vcpu)
- static int handle_vmcall(struct kvm_vcpu *vcpu)
- {
- 	skip_emulated_instruction(vcpu);
--	kvm_emulate_hypercall(vcpu);
--	return 1;
-+	return kvm_emulate_hypercall(vcpu);
- }
- 
- static int handle_invd(struct kvm_vcpu *vcpu)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 9cbfc06..7bc00ae 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4915,7 +4915,9 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
- 
- int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
- {
-+	struct kvm_run *run = vcpu->run;
- 	unsigned long nr, a0, a1, a2, a3, ret;
-+	gpa_t gpa;
- 	int r = 1;
- 
- 	if (kvm_hv_hypercall_enabled(vcpu->kvm))
-@@ -4946,12 +4948,24 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
- 	case KVM_HC_VAPIC_POLL_IRQ:
- 		ret = 0;
- 		break;
-+	case KVM_HC_MMIO_STORE_WORD:
-+		gpa = hc_gpa(vcpu, a1, a2);
-+		if (!write_mmio(vcpu, gpa, 2, &a0) && run) {
-+			run->exit_reason = KVM_EXIT_MMIO;
-+			run->mmio.phys_addr = gpa;
-+			memcpy(run->mmio.data, &a0, 2);
-+			run->mmio.len = 2;
-+			run->mmio.is_write = 1;
-+                        r = 0;
-+		}
-+		goto noret;
- 	default:
- 		ret = -KVM_ENOSYS;
- 		break;
- 	}
- out:
- 	kvm_register_write(vcpu, VCPU_REGS_RAX, ret);
-+noret:
- 	++vcpu->stat.hypercalls;
- 	return r;
- }
-diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
-index ff476dd..fa74700 100644
---- a/include/linux/kvm_para.h
-+++ b/include/linux/kvm_para.h
-@@ -19,6 +19,7 @@
- #define KVM_HC_MMU_OP			2
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
-+#define KVM_HC_MMIO_STORE_WORD		5
- 
- /*
-  * hypercalls use architecture specific
--- 
-1.7.9.111.gf3fb0
+--==_Exmh_1332714196_1934P--
+
