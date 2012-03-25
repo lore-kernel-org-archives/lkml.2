@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2CYV4I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 17:56:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65295 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199Ab2CYV4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 17:56:06 -0400
-Date: Sun, 25 Mar 2012 14:55:36 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Alex Elder <elder@kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        Mark Fasheh <mfasheh@suse.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm for fs: add truncate_pagecache_range
-In-Reply-To: <20120325135002.185b4caf.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1203251426540.1609@eggly.anvils>
-References: <alpine.LSU.2.00.1203231343380.1940@eggly.anvils> <20120323140120.11f95cd5.akpm@linux-foundation.org> <alpine.LSU.2.00.1203231406090.2207@eggly.anvils> <20120323155950.f9bfb097.akpm@linux-foundation.org> <alpine.LSU.2.00.1203251254570.1505@eggly.anvils>
- <20120325135002.185b4caf.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S932230Ab2CYWBH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 18:01:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34673 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932184Ab2CYWBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 18:01:04 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] firmware_class: Fix problems with usermodehelper test
+Date: Mon, 26 Mar 2012 00:00:34 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203191225.00199.rjw@sisk.pl> <201203200000.43316.rjw@sisk.pl>
+In-Reply-To: <201203200000.43316.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-Id: <201203260000.34377.rjw@sisk.pl>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Mar 2012, Andrew Morton wrote:
-> On Sun, 25 Mar 2012 13:26:10 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
-> > truncate_pagecache_range() is just a drop-in replacement for
-> > truncate_inode_pages_range(), and has no different locking needs.
-> 
-> Does anything prevent new pages from getting added to pagecache and
-> perhaps faulted into VMAs after or during the execution of these
-> functions?
+Hi all,
 
-If a page is faulted into a vma after the unmap_mapping_range() but
-before truncate_inode_pages_range() reaches it, then it gets unmapped
-by the fallback unmap_mapping_range(), called from truncate_inode_page()
-while holding page lock.
+The following series of patches fixes two problems with
+request_firmware() and request_firmware_nowait() resulting from commit
+a144c6a6c924aa1da04dd77fb84b89927354fdff
 
-A new page could be faulted in a moment after; but last year I did
-change truncate_inode_pages_range() slightly, pinching down on the range
-instead of just the ascending linear scan, so it doesn't return until
-the range is empty of pages (excepting rcu races, which I think mean
-there's no exact instant of return which all cpus would agree upon).
+    PM: Print a warning if firmware is requested when tasks are frozen
 
-A new page could be faulted in a moment after that, and then it survives:
-unlike in the truncation case, there's no equivalent of i_size to
-determine whether to SIGBUS.  (But even in the truncation case, a
-truncate or write to increase i_size may follow an instant later.)
+The first problem is that request_firmware_nowait() may fail if it happens
+to run in parallel with system suspend.  It should't fail in such situations
+and that is addressed by the first three patches (that code has been discussed
+with Linus at al already).
 
-Individual filesystems may impose additional constraints to guarantee
-their own internal consistency; and tmpfs certainly finds inode->i_mutex
-useful for that, to serialize between holepunch and truncate and write.
-I wouldn't be surprised if other filesystems found it useful too,
-but that's up to them - truncate_pagecache_range() doesn't need it.
+The second issue is that request_firmware() may be called in a thread which
+isn't related to system suspend and if suspend happens exactly at that time,
+request_firmware() will fail (and print a scary warning), although it shouldn't.
+This problem is addressed by the remaining three patches, which are new.
 
-> 
-> Also, I wonder what prevents pages in the range from being dirtied
-> between ext4_ext_punch_hole()'s filemap_write_and_wait_range() and
-> truncate_inode_pages_range().
+[1/6] - Rework the usermodehelper check in _request_firmware().
+[2/6] - Split _request_firmware() into three functions.
+[3/6] - If firmware is to be loaded asynchronously, wait for usermodehelper_disabled
+        to be unset instead of failing the operation.
+[4/6] - Unify the hibernation/suspend code's usage of usermodehelper_disable().
+[5/6] - Move usermodehelper_disable() into freeze_processes().
+[6/6] - Make freezable threads calling request_firware() avoid the race with the
+        freezer.
 
-I'm not going to guess on that, or whether it matters: Ted?
+Thanks,
+Rafael
 
-Hugh
