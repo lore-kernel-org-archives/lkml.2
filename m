@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750892Ab2CYEH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 00:07:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57871 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab2CYEHy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 00:07:54 -0400
+	id S1751105Ab2CYESN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 00:18:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39319 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812Ab2CYESL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 00:18:11 -0400
+Message-ID: <4F6E9C51.9000406@zytor.com>
+Date: Sat, 24 Mar 2012 21:17:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1332261057-2399-1-git-send-email-consul.kautuk@gmail.com>
-References: <1332261057-2399-1-git-send-email-consul.kautuk@gmail.com>
-Date: Sun, 25 Mar 2012 00:07:53 -0400
-Message-ID: <CAFPAmTRiYm-kauXjJAek=VWB=6TEhNo0M6-F7VA4YV8snqiP4w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] arm: fault.c: correct how the tsk->[maj|min]_flt gets incremented
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
+        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Harald Hoyer <harald@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
+ initrd
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <4F6CD79A.8020805@zytor.com> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com> <20120324184238.GB13978@phenom.dumpdata.com> <4F6E1D6F.4000308@zytor.com> <20120324191718.GA3927@phenom.dumpdata.com> <4F6E48CD.9050002@zytor.com>
+In-Reply-To: <4F6E48CD.9050002@zytor.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/24/2012 03:21 PM, H. Peter Anvin wrote:
+> The attached cpio-parsing code compiles to 458 bytes on x86-64 and 476
+> bytes on i386, and that is without any library dependencies at all.
+> Again, it will completely stop at the first compressed data item, so any
+> such kernel objects absolutely will have to be first.  In good Linux
+> tradition, it is also completely untested.
+> 
+> However, given that very reasonable size I would think that this is a
+> reasonable approach.  Anyone who has a better suggestion for the
+> namespace than "kernel/"?
+> 
 
-did anyone get an opportunity to review this change ?
+The more I think about it the more I really think this is the right
+approach.  For microcode, this means we don't have to worry about
+creating a super-container for the various microcode formats; we can
+simply have:
 
+	kernel/x86/microcode/GenuineIntel
+	kernel/x86/microcode/AuthenticAMD
 
-On Tue, Mar 20, 2012 at 12:30 PM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
-> commit 8878a539ff19a43cf3729e7562cd528f490246ae was done by me
-> to make the page fault handler retryable as well as interruptible.
->
-> Due to this commit, there is a mistake in the way in which
-> tsk->[maj|min]_flt counter gets incremented for VM_FAULT_ERROR:
-> If VM_FAULT_ERROR is returned in the fault flags by handle_mm_fault,
-> then either maj_flt or min_flt will get incremented. This is wrong
-> as in the case of a VM_FAULT_ERROR we need to be skip ahead to the
-> error handling code in do_page_fault.
->
-> Added a check after the call to __do_page_fault() to check for
-> (fault & VM_FAULT_ERROR).
->
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-> ---
->  arch/arm/mm/fault.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-> index bb7eac3..ec8c88b 100644
-> --- a/arch/arm/mm/fault.c
-> +++ b/arch/arm/mm/fault.c
-> @@ -318,7 +318,7 @@ retry:
->         */
->
->        perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
-> -       if (flags & FAULT_FLAG_ALLOW_RETRY) {
-> +       if (!(fault & VM_FAULT_ERROR) && (flags & FAULT_FLAG_ALLOW_RETRY)) {
->                if (fault & VM_FAULT_MAJOR) {
->                        tsk->maj_flt++;
->                        perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-> --
-> 1.7.5.4
->
+... which solves the problem neatly.
+
+It does beg the question if you want to be able to have multiple:
+
+	kernel/acpi/...
+
+... files, to make managing different tables easier, or is that overkill?
+
+	-hpa
+
