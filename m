@@ -1,178 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab2CYVpa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 17:45:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41965 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932156Ab2CYVp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 17:45:29 -0400
-Date: Mon, 26 Mar 2012 08:45:15 +1100
-From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, lkml <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-Subject: Re: Recent "Run the driver callback directly" patch breaks libertas
- suspend
-Message-ID: <20120326084515.0fd3ee7f@notabene.brown>
-In-Reply-To: <201203252325.37478.rjw@sisk.pl>
-References: <20120325203849.7a908e32@notabene.brown>
-	<201203252309.48705.rjw@sisk.pl>
-	<201203252325.37478.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S932212Ab2CYVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 17:51:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51876 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab2CYVvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 17:51:55 -0400
+Date: Sun, 25 Mar 2012 17:51:51 -0400 (EDT)
+Message-Id: <20120325.175151.853542033329072696.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/YzUZXXf=lu0rKQdlV6obywa"; protocol="application/pgp-signature"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 25 Mar 2012 14:51:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/YzUZXXf=lu0rKQdlV6obywa
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Sun, 25 Mar 2012 23:25:37 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+1) Name string overrun fix in gianfar driver from Joe Perches.
 
-> On Sunday, March 25, 2012, Rafael J. Wysocki wrote:
-> > Hi,
-> >=20
-> > On Sunday, March 25, 2012, NeilBrown wrote:
-> > >=20
-> > > Hi Rafael,
-> > >=20
-> > >  Your recent patch:
-> > >    commit 35cd133c
-> > >    PM: Run the driver callback directly if the subsystem one is not t=
-here
-> > >=20
-> > >  breaks suspend for my libertas wifi and probably other SDIO devices.
-> >=20
-> > Well, the patch is not recent.  The _commit_ is more than three months =
-old
-> > and the patch has been around since the last November (at least).
-> >=20
-> > >  SDIO (and possible MMC in general) has a protocol where the suspend
-> > >  method can return -ENOSYS and this means "There is no point in suspe=
-nding,
-> > >  just turn me off".
-> > >
-> > >  The device itself "mmc1:0001" (I think) doesn't have any bus etc 'su=
-spend'
-> > >  function so the new code call the device's suspend function which re=
-turns
-> > >  ENOSYS and the suspend fails.
-> > >=20
-> > >  The previous code ignores the device as there is no bus suspend, and=
- when it
-> > >  gets to suspend the ancestor - which for me is omap_hsmmc.1, it call=
-s the
-> > >  device suspend function catches the ENOSYS, and turns it off.
-> >=20
-> > Well, I can only call that a blatant abuse of the PM infrastructure.
-> >=20
-> > >  I suspect just reverting it isn't the right long term solution, howe=
-ver I
-> > >  can confirm that it works for me for now.
-> >=20
-> > It's not a solution at all, because there's code that depends on it alr=
-eady in
-> > the tree and the fact that it works for you doesn't mean it won't break=
- other
-> > systems.  So no, it's not an option.
-> >=20
-> > >  I'm happy to try any alternate fixes you would like to suggest (but =
-I cannot
-> > >  promise how quickly I will get the testing done).
-> > >=20
-> > >  (I'm testing with 3.3)
-> >=20
-> > The only fix I can think of is to rework SDIO to stop abusing the PM ca=
-llbacks.
-> > I'll have a look at that next week, although I can't promise anything a=
-ny time
-> > soon, because I'm heading to San Francisco on Saturday.
->=20
-> Well, this is kind of a long shot, but I wonder if the patch below makes
-> any difference?
+2) VHOST bug fixes from Michael S. Tsirkin and Nadav Har'El
 
-Hi Rafael,
- thanks for looking into this so quickly.
+3) Fix dependencies on xt_LOG netfilter module, from Pablo Neira
+   Ayuso.
 
-I removed the revert and applied this patch instead and can confirm that
-suspend completes now (and resume works and the wifi works after resume).
+4) Fix RCU locking in xt_CT, also from Pablo Neira Ayuso.
 
-Further, this patch fits with my (fairly shallow) understanding of the
-problem.
+4) Add a parameter to skb_add_rx_frag() so we can fix the truesize
+   adjustments in the drivers that use it.  The individual drivers
+   aren't fixed by this commit, but will be dealt with using follow-on
+   commits.  From Eric Dumazet.
 
-Thanks!
+5) Add some device IDs to qmi_wwan driver, from Andrew Bird.
 
-NeilBrown
+Please pull, thanks a lot!
 
->=20
-> Rafael
->=20
-> ---
->  drivers/mmc/core/sdio_bus.c |   12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
->=20
-> Index: linux/drivers/mmc/core/sdio_bus.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux.orig/drivers/mmc/core/sdio_bus.c
-> +++ linux/drivers/mmc/core/sdio_bus.c
-> @@ -192,9 +192,15 @@ static int sdio_bus_remove(struct device
->  	return ret;
->  }
-> =20
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
-> +
-> +static int pm_no_operation(struct device *dev)
-> +{
-> +	return 0;
-> +}
-> =20
->  static const struct dev_pm_ops sdio_bus_pm_ops =3D {
-> +	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
->  	SET_RUNTIME_PM_OPS(
->  		pm_generic_runtime_suspend,
->  		pm_generic_runtime_resume,
-> @@ -204,11 +210,11 @@ static const struct dev_pm_ops sdio_bus_
-> =20
->  #define SDIO_PM_OPS_PTR	(&sdio_bus_pm_ops)
-> =20
-> -#else /* !CONFIG_PM_RUNTIME */
-> +#else /* !CONFIG_PM */
-> =20
->  #define SDIO_PM_OPS_PTR	NULL
-> =20
-> -#endif /* !CONFIG_PM_RUNTIME */
-> +#endif /* !CONFIG_PM */
-> =20
->  static struct bus_type sdio_bus_type =3D {
->  	.name		=3D "sdio",
+The following changes since commit e22057c8599373e5caef0bc42bdb95d2a361ab0d:
 
+  Merge tag 'stable/for-linus-3.4-tag-two' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen (2012-03-24 12:20:25 -0700)
 
---Sig_/YzUZXXf=lu0rKQdlV6obywa
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+are available in the git repository at:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
 
-iQIVAwUBT2+R6znsnt1WYoG5AQLnxhAAq6vhBsqCPEvdZRS1NMqBGCM72z3xZunE
-bbWvQioxMG4JMaRt/7jOmVQY2FO0DFr4EA6l8eGm0+EuIIKzKyoXdi2FiKfF/0Iv
-UDa4MEAKg8Y7sWn6/OK3rNccLcJ1MzKt4p8HLpUVjaU/8E1S52GKugKhK+mzDkO7
-o0B8hdqNJvs0gdeR49Q5SYaXtVE6BsNgiiDd59P6ALboJc1049GpZY00ZNQ6fDqy
-JCoYRLFlf9FoNrugUISN1qS6dXz3kKaGcZtsBO7SHhFj3eFEhb2Vm2PosnlaF5GH
-/vX6pQPFQByUK3k0oAAfXFg9PoYmX7oWMMxZTubQOoHRpGI5MiHz/CT/KkvAYt8o
-1zF2QQTwVvIZZUxi4mnL/VHwFoJznZ4sVY7NSYVVjGYEi7P++EjGrgj6NakvVPfp
-s9tI9w7o2qK4JGi5cUWsiTb8izsBUlgZ8JpjItkr1ZlmF9aoo5WfT/fFQ9k+ulB6
-YzZwLbPzo5wVBFJ2gldx3+4xDqxku5amoOH757Uj+G73V5jeLYUV70ALlx1OzLs0
-iL52jfvocz1oY+bxoPX/Wyz0KgcVZN101+xBYA/q0eYSeUjVoQTRUS3f2DEWHZPC
-UR6bsDueMihe9aqfMxHNUNE3ZEIyaqQIH8yrVAQhjgEa3GSKYDiO5guLgbSLanCr
-ndF6hREQHR0=
-=M0aA
------END PGP SIGNATURE-----
+Andrew Bird (Sphere Systems) (3):
+      USB: qmi_wwan: Add ZTE (Vodafone) K3565-Z and K4505-Z net interfaces
+      USB: option: Ignore ZTE (Vodafone) K3570/71 net interfaces
+      USB: qmi_wwan: Add ZTE (Vodafone) K3570-Z and K3571-Z net interfaces
 
---Sig_/YzUZXXf=lu0rKQdlV6obywa--
+Anirban Chakraborty (1):
+      qlcnic: Bug fix for LRO
+
+David S. Miller (2):
+      Merge branch 'master' of git://1984.lsi.us.es/net
+      Merge branch 'vhost-net' of git://git.kernel.org/.../mst/vhost
+
+Eric Dumazet (1):
+      net: add a truesize parameter to skb_add_rx_frag()
+
+Joe Perches (1):
+      gianfar: Fix possible overrun and simplify interrupt name field creation
+
+Michael S. Tsirkin (4):
+      tools/virtio: add linux/module.h stub
+      tools/virtio: add linux/hrtimer.h stub
+      tools/virtio: stub out strong barriers
+      vhost: fix release path lockdep checks
+
+Nadav Har'El (1):
+      vhost: don't forget to schedule()
+
+Pablo Neira Ayuso (5):
+      netfilter: xt_LOG: use CONFIG_IP6_NF_IPTABLES instead of CONFIG_IPV6
+      netfilter: cttimeout: fix dependency with l4protocol conntrack module
+      netfilter: xt_CT: missing rcu_read_lock section in timeout assignment
+      netfilter: xt_CT: fix assignation of the generic protocol tracker
+      netfilter: nf_conntrack: permanently attach timeout policy to conntrack
+
+ drivers/net/ethernet/freescale/gianfar.c         |   39 +++---------------
+ drivers/net/ethernet/freescale/gianfar.h         |    2 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic.h      |    4 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    4 +-
+ drivers/net/usb/cdc-phonet.c                     |    6 ++-
+ drivers/net/usb/qmi_wwan.c                       |   36 +++++++++++++++++
+ drivers/net/wireless/iwlegacy/3945.c             |    3 +-
+ drivers/net/wireless/iwlegacy/4965-mac.c         |    3 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-rx.c        |    2 +-
+ drivers/usb/gadget/f_phonet.c                    |    2 +-
+ drivers/usb/serial/option.c                      |    6 ++-
+ drivers/vhost/net.c                              |    2 +-
+ drivers/vhost/vhost.c                            |   11 +++--
+ drivers/vhost/vhost.h                            |    2 +-
+ include/linux/skbuff.h                           |    2 +-
+ include/net/netfilter/nf_conntrack_l4proto.h     |    4 ++
+ include/net/netfilter/nf_conntrack_timeout.h     |    2 +-
+ net/core/skbuff.c                                |    4 +-
+ net/netfilter/nf_conntrack_core.c                |   39 +++++++++++--------
+ net/netfilter/nf_conntrack_proto.c               |   21 ++++++++++
+ net/netfilter/nfnetlink_cttimeout.c              |   45 +++++++++++-----------
+ net/netfilter/xt_CT.c                            |   31 +++++++++++----
+ net/netfilter/xt_LOG.c                           |   12 +++---
+ tools/virtio/linux/virtio.h                      |    3 +
+ 24 files changed, 178 insertions(+), 107 deletions(-)
+ create mode 100644 tools/virtio/linux/hrtimer.h
+ create mode 100644 tools/virtio/linux/module.h
