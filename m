@@ -1,230 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab2CYQQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 12:16:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64290 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab2CYQQx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 12:16:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F6F37B6.3050506@gmail.com>
-References: <CAJuYYwS5Srw2-D6hdk=-=YN3iB37+KTWVqQPPPVbb-e7it+uVQ@mail.gmail.com>
-	<1332679129-23864-1-git-send-email-thomas.abraham@linaro.org>
-	<4F6F37B6.3050506@gmail.com>
-Date: Sun, 25 Mar 2012 21:46:53 +0530
-Message-ID: <CAJuYYwTzx8+J9oMRd7kJ=Qp5V4v0LVUYxdkAe8dMqVji0Dk4yg@mail.gmail.com>
-Subject: Re: [PATCH] of/irq: of_irq_init: Call initialization function for all controllers
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, rob.herring@calxeda.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756627Ab2CYQ4W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 12:56:22 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39989 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756560Ab2CYQ4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 12:56:20 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: kernel-janitors@vger.kernel.org, Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/gpu/drm/exynos: use devm_ functions
+Date: Sun, 25 Mar 2012 18:56:11 +0200
+Message-Id: <1332694571-18004-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 March 2012 20:50, Rob Herring <robherring2@gmail.com> wrote:
-> On 03/25/2012 07:38 AM, Thomas Abraham wrote:
->> The of_irq_init function stops processing the interrupt controller hierarchy
->> when there are no more interrupt controller parents identified. Though this
->> condition suffices most cases, there are cases where a interrupt controller's
->> parent controller does not participate in the initialization of the interrupt
->> hierarchy. An example of such a case is the use of a interrupt nexus node
->> by a interrupt controller node which delivers interrupts to separate interrupt
->> parent controllers.
->>
->> Instead of stopping the processing of interrupt controller hierarchy in such
->> a case, the orphan interrupt controller node's descriptor can be identified
->> and its 'logical' parent in the descriptor is set as NULL. The processing of
->> interrupt hierarchy is then restarted by looking for descriptors which have
->> a NULL interrupt parent.
->>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
->> ---
->
-> Wouldn't this accomplish the same thing? You just need to add the
-> wakeup-map node name to your matches list.
->
->
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 9cf0060..deeaf00 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -416,8 +416,6 @@ void __init of_irq_init(const struct of_device_id
-> *matches)
->        INIT_LIST_HEAD(&intc_parent_list);
->
->        for_each_matching_node(np, matches) {
-> -               if (!of_find_property(np, "interrupt-controller", NULL))
-> -                       continue;
->                /*
->                 * Here, we allocate and populate an intc_desc with the node
->                 * pointer, interrupt-parent device_node etc.
->
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Hi Rob,
+The various devm_ functions allocate memory that is released when a driver
+detaches.  This patch uses devm_kzalloc, devm_request_irq, etc. for data
+that is allocated in the probe function of a platform device and is only
+freed in the remove function.
 
-I tested with this, but the init function of wakeup controller is not
-called. The following is the example nodes that I used for testing.
+This patch changes the semantics in the case of exynos_hdmi.c, in that in
+the original code, there was no free of drm_hdmi_ctx in the remove function.
 
- gic:interrupt-controller@10490000 {
-               compatible = "arm,cortex-a9-gic";
-               #interrupt-cells = <3>;
-               #address-cells = <0>;
-               #size-cells = <0>;
-               interrupt-controller;
-               cpu-offset = <0x8000>;
-               reg = <0x10490000 0x1000>, <0x10480000 0x100>;
-       };
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-       combiner:interrupt-controller@10440000 {
-               compatible = "samsung,exynos4210-combiner";
-               #interrupt-cells = <2>;
-               interrupt-controller;
-               samsung,combiner-nr = <16>;
-               reg = <0x10440000 0x1000>;
-               interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
-                            <0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>,
-                            <0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
-                            <0 12 0>, <0 13 0>, <0 14 0>, <0 15 0>;
-       };
+---
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c |   48 +++++----------------------
+ drivers/gpu/drm/exynos/exynos_drm_hdmi.c |    3 -
+ drivers/gpu/drm/exynos/exynos_drm_vidi.c |    4 --
+ drivers/gpu/drm/exynos/exynos_hdmi.c     |   54 ++++++-------------------------
+ 4 files changed, 23 insertions(+), 86 deletions(-)
 
-       wakeup_eint: interrupt-controller@11400000 {
-               compatible = "samsung,exynos5210-wakeup-eint";
-               reg = <0x11400000 0x1000>;
-               interrupt-controller;
-               #interrupt-cells = <2>;
-               interrupt-parent = <&wakeup_map>;
-               interrupts = <0x0 0>, <0x1 0>, <0x2 0>, <0x3 0>,
-                            <0x4 0>, <0x5 0>, <0x6 0>, <0x7 0>,
-                            <0x8 0>, <0x9 0>, <0xa 0>, <0xb 0>,
-                            <0xc 0>, <0xd 0>, <0xe 0>, <0xf 0>,
-                            <0x10 0>;
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+index ecb6db2..223cabe 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+@@ -806,15 +806,14 @@ static int __devinit fimd_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+ 	ctx->bus_clk = clk_get(dev, "fimd");
+ 	if (IS_ERR(ctx->bus_clk)) {
+ 		dev_err(dev, "failed to get bus clock\n");
+-		ret = PTR_ERR(ctx->bus_clk);
+-		goto err_clk_get;
++		return PTR_ERR(ctx->bus_clk);
+ 	}
+ 
+ 	ctx->lcd_clk = clk_get(dev, "sclk_fimd");
+@@ -825,39 +824,27 @@ static int __devinit fimd_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "failed to find registers\n");
+-		ret = -ENOENT;
+-		goto err_clk;
+-	}
+ 
+-	ctx->regs_res = request_mem_region(res->start, resource_size(res),
+-					   dev_name(dev));
+-	if (!ctx->regs_res) {
+-		dev_err(dev, "failed to claim register region\n");
+-		ret = -ENOENT;
+-		goto err_clk;
+-	}
+-
+-	ctx->regs = ioremap(res->start, resource_size(res));
++	ctx->regs = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!ctx->regs) {
+-		dev_err(dev, "failed to map registers\n");
++		dev_err(dev, "failed to claim region or map registers\n");
+ 		ret = -ENXIO;
+-		goto err_req_region_io;
++		goto err_clk;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (!res) {
+ 		dev_err(dev, "irq request failed.\n");
+-		goto err_req_region_irq;
++		goto err_clk;
+ 	}
+ 
+ 	ctx->irq = res->start;
+ 
+-	ret = request_irq(ctx->irq, fimd_irq_handler, 0, "drm_fimd", ctx);
++	ret = devm_request_irq(&pdev->dev, ctx->irq, fimd_irq_handler, 0,
++			       "drm_fimd", ctx);
+ 	if (ret < 0) {
+ 		dev_err(dev, "irq request failed.\n");
+-		goto err_req_irq;
++		goto err_clk;
+ 	}
+ 
+ 	ctx->vidcon0 = pdata->vidcon0;
+@@ -895,14 +882,6 @@ static int __devinit fimd_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-err_req_irq:
+-err_req_region_irq:
+-	iounmap(ctx->regs);
+-
+-err_req_region_io:
+-	release_resource(ctx->regs_res);
+-	kfree(ctx->regs_res);
+-
+ err_clk:
+ 	clk_disable(ctx->lcd_clk);
+ 	clk_put(ctx->lcd_clk);
+@@ -911,8 +890,6 @@ err_bus_clk:
+ 	clk_disable(ctx->bus_clk);
+ 	clk_put(ctx->bus_clk);
+ 
+-err_clk_get:
+-	kfree(ctx);
+ 	return ret;
+ }
+ 
+@@ -940,13 +917,6 @@ out:
+ 	clk_put(ctx->lcd_clk);
+ 	clk_put(ctx->bus_clk);
+ 
+-	iounmap(ctx->regs);
+-	release_resource(ctx->regs_res);
+-	kfree(ctx->regs_res);
+-	free_irq(ctx->irq, ctx);
+-
+-	kfree(ctx);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_hdmi.c b/drivers/gpu/drm/exynos/exynos_drm_hdmi.c
+index 14eb26b..263cad4 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_hdmi.c
+@@ -324,7 +324,7 @@ static int __devinit exynos_drm_hdmi_probe(struct platform_device *pdev)
+ 
+ 	DRM_DEBUG_KMS("%s\n", __FILE__);
+ 
+-	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+ 	if (!ctx) {
+ 		DRM_LOG_KMS("failed to alloc common hdmi context.\n");
+ 		return -ENOMEM;
+@@ -372,7 +372,6 @@ static int __devexit exynos_drm_hdmi_remove(struct platform_device *pdev)
+ 	DRM_DEBUG_KMS("%s\n", __FILE__);
+ 
+ 	exynos_drm_subdrv_unregister(&ctx->subdrv);
+-	kfree(ctx);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_vidi.c b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+index 8e1339f..bab567b 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_vidi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+@@ -599,7 +599,7 @@ static int __devinit vidi_probe(struct platform_device *pdev)
+ 
+ 	DRM_DEBUG_KMS("%s\n", __FILE__);
+ 
+-	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+@@ -640,8 +640,6 @@ static int __devexit vidi_remove(struct platform_device *pdev)
+ 
+ 	exynos_drm_subdrv_unregister(&ctx->subdrv);
+ 
+-	kfree(ctx);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 575a8cb..dfe1692 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -2225,16 +2225,17 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	drm_hdmi_ctx = kzalloc(sizeof(*drm_hdmi_ctx), GFP_KERNEL);
++	drm_hdmi_ctx = devm_kzalloc(&pdev->dev, sizeof(*drm_hdmi_ctx),
++				    GFP_KERNEL);
+ 	if (!drm_hdmi_ctx) {
+ 		DRM_ERROR("failed to allocate common hdmi context.\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	hdata = kzalloc(sizeof(struct hdmi_context), GFP_KERNEL);
++	hdata = devm_kzalloc(&pdev->dev, sizeof(struct hdmi_context),
++			     GFP_KERNEL);
+ 	if (!hdata) {
+ 		DRM_ERROR("out of memory\n");
+-		kfree(drm_hdmi_ctx);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -2250,38 +2251,23 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+ 	hdata->dev = dev;
+ 
+ 	ret = hdmi_resources_init(hdata);
+-	if (ret) {
+-		ret = -EINVAL;
+-		goto err_data;
+-	}
++	if (ret)
++		return -EINVAL;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		DRM_ERROR("failed to find registers\n");
+-		ret = -ENOENT;
+-		goto err_resource;
+-	}
+ 
+-	hdata->regs_res = request_mem_region(res->start, resource_size(res),
+-					   dev_name(dev));
+-	if (!hdata->regs_res) {
+-		DRM_ERROR("failed to claim register region\n");
+-		ret = -ENOENT;
+-		goto err_resource;
+-	}
+-
+-	hdata->regs = ioremap(res->start, resource_size(res));
++	hdata->regs = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!hdata->regs) {
+-		DRM_ERROR("failed to map registers\n");
++		DRM_ERROR("failed to claim region or map registers\n");
+ 		ret = -ENXIO;
+-		goto err_req_region;
++		goto err_resource;
+ 	}
+ 
+ 	/* DDC i2c driver */
+ 	if (i2c_add_driver(&ddc_driver)) {
+ 		DRM_ERROR("failed to register ddc i2c driver\n");
+ 		ret = -ENOENT;
+-		goto err_iomap;
++		goto err_resource;
+ 	}
+ 
+ 	hdata->ddc_port = hdmi_ddc;
+@@ -2313,8 +2299,8 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+ 	INIT_WORK(&hdata->hotplug_work, hdmi_hotplug_func);
+ 
+ 	/* register hpd interrupt */
+-	ret = request_irq(res->start, hdmi_irq_handler, 0, "drm_hdmi",
+-				drm_hdmi_ctx);
++	ret = devm_request_irq(&pdev->dev, res->start, hdmi_irq_handler, 0,
++			       "drm_hdmi", drm_hdmi_ctx);
+ 	if (ret) {
+ 		DRM_ERROR("request interrupt failed.\n");
+ 		goto err_workqueue;
+@@ -2335,16 +2321,8 @@ err_hdmiphy:
+ 	i2c_del_driver(&hdmiphy_driver);
+ err_ddc:
+ 	i2c_del_driver(&ddc_driver);
+-err_iomap:
+-	iounmap(hdata->regs);
+-err_req_region:
+-	release_mem_region(hdata->regs_res->start,
+-			resource_size(hdata->regs_res));
+ err_resource:
+ 	hdmi_resources_cleanup(hdata);
+-err_data:
+-	kfree(hdata);
+-	kfree(drm_hdmi_ctx);
+ 	return ret;
+ }
+ 
+@@ -2358,25 +2336,17 @@ static int __devexit hdmi_remove(struct platform_device *pdev)
+ 	hdmi_resource_poweroff(hdata);
+ 
+ 	disable_irq(hdata->irq);
+-	free_irq(hdata->irq, hdata);
+ 
+ 	cancel_work_sync(&hdata->hotplug_work);
+ 	destroy_workqueue(hdata->wq);
+ 
+ 	hdmi_resources_cleanup(hdata);
+ 
+-	iounmap(hdata->regs);
+-
+-	release_mem_region(hdata->regs_res->start,
+-			resource_size(hdata->regs_res));
+-
+ 	/* hdmiphy i2c driver */
+ 	i2c_del_driver(&hdmiphy_driver);
+ 	/* DDC i2c driver */
+ 	i2c_del_driver(&ddc_driver);
+ 
+-	kfree(hdata);
+-
+ 	return 0;
+ }
+ 
 
-               wakeup_map: interrupt-map {
-                       compatible = "samsung,exynos5210-wakeup-eint-map";
-                       #interrupt-cells = <2>;
-                       #address-cells = <0>;
-                       #size-cells = <0>;
-                       interrupt-map = <0x0 0 &gic 0 16 0>,
-                                       <0x1 0 &gic 0 17 0>,
-                                       <0x2 0 &gic 0 18 0>,
-                                       <0x3 0 &gic 0 19 1>,
-                                       <0x4 0 &gic 0 20 0>,
-                                       <0x5 0 &gic 0 21 1>,
-                                       <0x6 0 &gic 0 22 0>,
-                                       <0x7 0 &gic 0 23 1>,
-                                       <0x8 0 &gic 0 24 0>,
-                                       <0x9 0 &gic 0 25 1>,
-                                       <0xa 0 &gic 0 26 0>,
-                                       <0xb 0 &gic 0 27 1>,
-                                       <0xc 0 &gic 0 28 0>,
-                                       <0xd 0 &gic 0 29 1>,
-                                       <0xe 0 &gic 0 30 0>,
-                                       <0xf 0 &gic 0 31 1>,
-                                       <0x10 0 &combiner 2 4>;
-               };
-       };
-
-And following is the match table used for testing.
-
-static const struct of_device_id exynos4_dt_irq_match[] = {
-       { .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
-       { .compatible = "samsung,exynos4210-combiner",
-                       .data = combiner_of_init, },
-       { .compatible = "samsung,exynos4210-wakeup-eint-map",
-                       .data = exynos_init_irq_eint, },
-       {},
-};
-
-The ' interrupt-map' map sub-node of 'interrupt-controller@11400000'
-node does not have a interrupt-parent property. So it inherits it from
-its parent node, which is 'interrupt-map' itself. So the parent of
-wakeup-map is not gic or combiner and hence the initialization
-function of wakeup controller is not called.
-
-If a interrupt-parent property is added to 'interrupt-map' node (which
-is probably not the right thing to do), and set the interrupt parent
-as gic or combiner, there is a possibility that the interrupt-map is
-initialized before the combiner (which is not correct since
-interrupt-map uses combiner as one of its parents). But by placing
-'wakeup_eint' node ahead of combiner node, this can be overcome but
-relying on placement of nodes in dts file is not a reliable solution.
-
-Thanks,
-Thomas.
-
->
->>  drivers/of/irq.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
->>  1 files changed, 44 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
->> index 9cf0060..70c6ece 100644
->> --- a/drivers/of/irq.c
->> +++ b/drivers/of/irq.c
->> @@ -400,6 +400,38 @@ struct intc_desc {
->>  };
->>
->>  /**
->> + * of_irq_mark_orphan_desc - Set parent as NULL for a orphan intc_desc
->> + * @intc_desc_list: the list of intc_desc to search for orphan intc_desc
->> + *
->> + * This is a helper function for the of_irq_init function and is invoked
->> + * when there are child nodes available in intc_desc_list but there are
->> + * no parent nodes in intc_parent_list. When invoked, this function
->> + * searches for a intc_desc instance that does not have a parent intc_desc
->> + * instance in intc_desc_list. The very reason of the invocation of this
->> + * function ensures that a orphan intc_desc will be found. When found, the
->> + * interrupt_parent of the orphan intc_desc is set to NULL.
->> + */
->> +static void of_irq_mark_orphan_desc(struct list_head *intc_desc_list)
->> +{
->> +     struct intc_desc *desc, *temp_desc;
->> +
->> +     list_for_each_entry_safe(desc, temp_desc, intc_desc_list, list) {
->> +             struct intc_desc *td1, *td2;
->> +             list_for_each_entry_safe(td1, td2, intc_desc_list, list) {
->> +                     if (desc->interrupt_parent == td1->dev)
->> +                             break;
->> +             }
->> +             if (desc->interrupt_parent == td1->dev)
->> +                     continue;
->> +
->> +             pr_debug("%s: set interrupt_parent of 'intc_desc' with dev name"
->> +                     " %s as NULL\n", __func__, desc->dev->full_name);
->> +             desc->interrupt_parent = NULL;
->> +             return;
->> +     }
->> +}
->> +
->> +/**
->>   * of_irq_init - Scan and init matching interrupt controllers in DT
->>   * @matches: 0 terminated array of nodes to match and init function to call
->>   *
->> @@ -481,8 +513,19 @@ void __init of_irq_init(const struct of_device_id *matches)
->>               /* Get the next pending parent that might have children */
->>               desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
->>               if (list_empty(&intc_parent_list) || !desc) {
->> +                     /*
->> +                      * This has reached a point where there are children in
->> +                      * the intc_desc_list but no parent in intc_parent_list.
->> +                      * This means there is a child desc in intc_desc_list
->> +                      * whose parent is not one of the remaining elements of
->> +                      * the intc_desc_list. Such a child node is marked as
->> +                      * orphan (interrupt_parent is set to NULL) and the
->> +                      * process continues with parent set to NULL.
->> +                      */
->>                       pr_err("of_irq_init: children remain, but no parents\n");
->> -                     break;
->> +                     of_irq_mark_orphan_desc(&intc_desc_list);
->> +                     parent = NULL;
->> +                     continue;
->>               }
->>               list_del(&desc->list);
->>               parent = desc->dev;
->
