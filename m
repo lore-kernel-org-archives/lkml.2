@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab2CYX1L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 19:27:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61995 "EHLO
+	id S932607Ab2CYX10 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 19:27:26 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64965 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab2CYX0Y (ORCPT
+	with ESMTP id S932385Ab2CYX0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 19:26:24 -0400
+	Sun, 25 Mar 2012 19:26:33 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 09/16] dynamic_debug: combine parse_args callbacks together
-Date: Sun, 25 Mar 2012 17:25:47 -0600
-Message-Id: <1332717954-5775-10-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 16/16] dynamic_debug: drop deprecated ddebug_query param, code
+Date: Sun, 25 Mar 2012 17:25:54 -0600
+Message-Id: <1332717954-5775-17-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1332717954-5775-1-git-send-email-jim.cromie@gmail.com>
 References: <1332717954-5775-1-git-send-email-jim.cromie@gmail.com>
@@ -22,81 +22,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Refactor ddebug_dyndbg_boot_param_cb and ddebug_dyndbg_module_param_cb
-into a common helper function, and call it from both.  The handling of
-foo.dyndbg is unneeded by the latter, but harmless.  The 2 callers
-differ only by pr_info and the return code they pass to the helper for
-when an unknown param is handled.
+DONT APPLY NOW.  for v3.6 or v3.7 timeframe.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   36 ++++++++++++++++++++----------------
- 1 files changed, 20 insertions(+), 16 deletions(-)
+ Documentation/dynamic-debug-howto.txt |    7 +++----
+ lib/dynamic_debug.c                   |   26 --------------------------
+ 2 files changed, 3 insertions(+), 30 deletions(-)
 
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index 6129505..86fb2a4 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -214,10 +214,9 @@ Debug messages during Boot Process
+ 
+ To activate debug messages for core code and built-in modules during
+ the boot process, even before userspace and debugfs exists, use
+-dyndbg="QUERY", module.dyndbg="QUERY", or ddebug_query="QUERY"
+-(ddebug_query is obsoleted by dyndbg, and deprecated).  QUERY follows
+-the syntax described above, but must not exceed 1023 characters.  Your
+-bootloader may impose lower limits.
++dyndbg="QUERY", module.dyndbg="QUERY".  QUERY follows the syntax
++described above, but must not exceed 1023 characters.  Your bootloader
++may impose lower limits.
+ 
+ These dyndbg params are processed just after the ddebug tables are
+ processed, as part of the arch_initcall.  Thus you can enable debug
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index a3ab3bd..baff763 100644
+index f7ba216..7b0944e 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -862,39 +862,43 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
- }
- EXPORT_SYMBOL_GPL(ddebug_add_module);
+@@ -614,21 +614,6 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
  
--/* handle both dyndbg=".." and $module.dyndbg=".." params at boot */
--static int ddebug_dyndbg_boot_param_cb(char *param, char *val,
--				const char *unused)
-+/* helper for ddebug_dyndbg_(boot|module)_param_cb */
-+static int ddebug_dyndbg_param_cb(char *param, char *val,
-+				const char *modname, int on_err)
- {
--	const char *modname = NULL;
- 	char *sep;
+ #endif
  
- 	sep = strchr(param, '.');
- 	if (sep) {
-+		/* needed only for ddebug_dyndbg_boot_param_cb */
- 		*sep = '\0';
- 		modname = param;
- 		param = sep + 1;
- 	}
- 	if (strcmp(param, "dyndbg"))
--		return 0; /* skip all other params w/o error */
+-#define DDEBUG_STRING_SIZE 1024
+-static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
 -
--	vpr_info("module: %s %s=\"%s\"\n", modname, param, val);
-+		return on_err; /* determined by caller */
- 
- 	ddebug_exec_queries(val ? val : "+p");
- 	return 0; /* query failure shouldnt stop module load */
- }
- 
--/* handle dyndbg args to modprobe */
--int ddebug_dyndbg_module_param_cb(char *param, char *val, const char *doing)
-+/* handle both dyndbg and $module.dyndbg params at boot */
-+static int ddebug_dyndbg_boot_param_cb(char *param, char *val,
-+				const char *unused)
- {
--	if (strcmp(param, "dyndbg"))
--		return -ENOENT;
+-static __init int ddebug_setup_query(char *str)
+-{
+-	if (strlen(str) >= DDEBUG_STRING_SIZE) {
+-		pr_warn("ddebug boot param string too large\n");
+-		return 0;
+-	}
+-	strlcpy(ddebug_setup_string, str, DDEBUG_STRING_SIZE);
+-	return 1;
+-}
 -
--	vpr_info("module: %s %s=\"%s\"\n", doing, param, val);
+-__setup("dyndbg=", ddebug_setup_query);
 -
--	ddebug_exec_queries((val ? val : "+p"), doing);
-+	vpr_info("%s=\"%s\"\n", param, val);
-+	return ddebug_dyndbg_param_cb(param, val, NULL, 0);
-+}
+ /*
+  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
+  * command text from userspace, parses and executes it.
+@@ -1007,17 +992,6 @@ static int __init dynamic_debug_init(void)
+ 		modct, entries, modct * sizeof(struct ddebug_table)
+ 		+ __stop___verbose - __start___verbose);
  
--	return 0; /* query failure shouldnt stop module load */
-+/*
-+ * modprobe foo finds foo.params in boot-args, strips "foo.", and
-+ * passes them to load_module().  This callback gets unknown params,
-+ * processes dyndbg params, rejects others.
-+ */
-+int ddebug_dyndbg_module_param_cb(char *param, char *val, const char *module)
-+{
-+	vpr_info("module: %s %s=\"%s\"\n", module, param, val);
-+	return ddebug_dyndbg_param_cb(param, val, module, -ENOENT);
- }
- 
- static void ddebug_table_free(struct ddebug_table *dt)
+-	/* apply ddebug_query boot param, dont unload tables on err */
+-	if (ddebug_setup_string[0] != '\0') {
+-		pr_warn("ddebug_query param name is deprecated,"
+-			" change it to dyndbg\n");
+-		ret = ddebug_exec_queries(ddebug_setup_string);
+-		if (ret < 0)
+-			pr_warn("Invalid ddebug boot param %s",
+-				ddebug_setup_string);
+-		else
+-			pr_info("%d changes by ddebug_query\n", ret);
+-	}
+ 	/* now that ddebug tables are loaded, process all boot args
+ 	 * again to find and activate queries given in dyndbg params.
+ 	 * While this has already been done for known boot params, it
 -- 
 1.7.7.6
 
