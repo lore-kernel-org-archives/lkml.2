@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2CYDqk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 23:46:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47540 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab2CYDqi (ORCPT
+	id S1750892Ab2CYEH4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 00:07:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57871 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2CYEHy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 23:46:38 -0400
-Message-ID: <4F6E950E.30809@gmail.com>
-Date: Sun, 25 Mar 2012 16:46:22 +1300
-From: Michael Schmitz <schmitzmic@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.8.1.4) Gecko/20070509 Iceape/1.1.2 (Debian-1.1.2-1)
+	Sun, 25 Mar 2012 00:07:54 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/11] m68k/atari: Add missing platform check before registering
- platform devices
-References: <1332323515-7314-1-git-send-email-geert@linux-m68k.org> <1332323515-7314-5-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1332323515-7314-5-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1332261057-2399-1-git-send-email-consul.kautuk@gmail.com>
+References: <1332261057-2399-1-git-send-email-consul.kautuk@gmail.com>
+Date: Sun, 25 Mar 2012 00:07:53 -0400
+Message-ID: <CAFPAmTRiYm-kauXjJAek=VWB=6TEhNo0M6-F7VA4YV8snqiP4w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] arm: fault.c: correct how the tsk->[maj|min]_flt gets incremented
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert,
-> On multi-platform kernels, the Atari platform devices should be registered
-> when running on Atari only. Else it may crash later.
+Hi,
+
+did anyone get an opportunity to review this change ?
+
+
+On Tue, Mar 20, 2012 at 12:30 PM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
+> commit 8878a539ff19a43cf3729e7562cd528f490246ae was done by me
+> to make the page fault handler retryable as well as interruptible.
 >
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Due to this commit, there is a mistake in the way in which
+> tsk->[maj|min]_flt counter gets incremented for VM_FAULT_ERROR:
+> If VM_FAULT_ERROR is returned in the fault flags by handle_mm_fault,
+> then either maj_flt or min_flt will get incremented. This is wrong
+> as in the case of a VM_FAULT_ERROR we need to be skip ahead to the
+> error handling code in do_page_fault.
+>
+> Added a check after the call to __do_page_fault() to check for
+> (fault & VM_FAULT_ERROR).
+>
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 > ---
->  arch/m68k/atari/config.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  arch/arm/mm/fault.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> diff --git a/arch/m68k/atari/config.c b/arch/m68k/atari/config.c
-> index af78731..35fb81d 100644
-> --- a/arch/m68k/atari/config.c
-> +++ b/arch/m68k/atari/config.c
-> @@ -693,6 +693,9 @@ static struct platform_device *atari_platform_devices[] __initdata = {
->  
->  int __init atari_platform_init(void)
->  {
-> +	if (!MACH_IS_ATARI)
-> +		return -ENODEV;
-> +
->  	return platform_add_devices(atari_platform_devices, ARRAY_SIZE(atari_platform_devices));
->  }
->  
->   
-
-How about this instead - probe for the EtherNAT config register, and 
-register devices only if found?
-
-(may apply with a bit of fuzz)
-
-Otherwise, Acked-by: Michael Schmitz <schmitz@debian.org>.
-
---- arch/m68k/atari/config.c.org    2012-03-25 16:02:12.000000000 +1300
-+++ arch/m68k/atari/config.c    2012-03-25 13:37:21.000000000 +1300
-@@ -753,7 +753,19 @@
- 
- int __init atari_platform_init(void)
- {
--    return platform_add_devices(atari_platform_devices, 
-ARRAY_SIZE(atari_platform_devices));
-+    if (MACH_IS_ATARI) {
-+        u8 ethernat_cr;
-+        unsigned long enatc_phys = 0x80000023;
-+        unsigned char *enatc_virt;
-+       
-+        enatc_virt = (unsigned char *)ioremap(enatc_phys, 0xf);
-+        if (hwreg_present(enatc_virt)) {
-+            iounmap(enatc_virt);
-+            return platform_add_devices(atari_platform_devices, 
-ARRAY_SIZE(atari_platform_devices));
-+        }
-+        iounmap(enatc_virt);
-+    }
-+    return -ENODEV;   
- }
- 
- arch_initcall(atari_platform_init);
-
+> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> index bb7eac3..ec8c88b 100644
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -318,7 +318,7 @@ retry:
+>         */
+>
+>        perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+> -       if (flags & FAULT_FLAG_ALLOW_RETRY) {
+> +       if (!(fault & VM_FAULT_ERROR) && (flags & FAULT_FLAG_ALLOW_RETRY)) {
+>                if (fault & VM_FAULT_MAJOR) {
+>                        tsk->maj_flt++;
+>                        perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
+> --
+> 1.7.5.4
+>
