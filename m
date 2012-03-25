@@ -1,116 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2CYVV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 17:21:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34634 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755325Ab2CYVVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 17:21:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: NeilBrown <neilb@suse.de>
-Subject: Re: Recent "Run the driver callback directly" patch breaks libertas suspend
-Date: Sun, 25 Mar 2012 23:25:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, lkml <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-References: <20120325203849.7a908e32@notabene.brown> <201203252309.48705.rjw@sisk.pl>
-In-Reply-To: <201203252309.48705.rjw@sisk.pl>
+	id S932167Ab2CYViU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 17:38:20 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:56570
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S932134Ab2CYViK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 17:38:10 -0400
+Date: Sun, 25 Mar 2012 23:38:08 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [patch] Add cryptographic functionality when a key is passed to the
+ compress / decompress functions
+In-Reply-To: <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>
+Message-ID: <alpine.DEB.2.00.1203252325100.5527@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>    <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>   <1330531826.3545.128.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net> 
+ <1332511796.18717.72.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net> <1332521515.22278.2.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203252325.37478.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 25, 2012, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> On Sunday, March 25, 2012, NeilBrown wrote:
-> > 
-> > Hi Rafael,
-> > 
-> >  Your recent patch:
-> >    commit 35cd133c
-> >    PM: Run the driver callback directly if the subsystem one is not there
-> > 
-> >  breaks suspend for my libertas wifi and probably other SDIO devices.
-> 
-> Well, the patch is not recent.  The _commit_ is more than three months old
-> and the patch has been around since the last November (at least).
-> 
-> >  SDIO (and possible MMC in general) has a protocol where the suspend
-> >  method can return -ENOSYS and this means "There is no point in suspending,
-> >  just turn me off".
-> >
-> >  The device itself "mmc1:0001" (I think) doesn't have any bus etc 'suspend'
-> >  function so the new code call the device's suspend function which returns
-> >  ENOSYS and the suspend fails.
-> > 
-> >  The previous code ignores the device as there is no bus suspend, and when it
-> >  gets to suspend the ancestor - which for me is omap_hsmmc.1, it calls the
-> >  device suspend function catches the ENOSYS, and turns it off.
-> 
-> Well, I can only call that a blatant abuse of the PM infrastructure.
-> 
-> >  I suspect just reverting it isn't the right long term solution, however I
-> >  can confirm that it works for me for now.
-> 
-> It's not a solution at all, because there's code that depends on it already in
-> the tree and the fact that it works for you doesn't mean it won't break other
-> systems.  So no, it's not an option.
-> 
-> >  I'm happy to try any alternate fixes you would like to suggest (but I cannot
-> >  promise how quickly I will get the testing done).
-> > 
-> >  (I'm testing with 3.3)
-> 
-> The only fix I can think of is to rework SDIO to stop abusing the PM callbacks.
-> I'll have a look at that next week, although I can't promise anything any time
-> soon, because I'm heading to San Francisco on Saturday.
+This patch adds a function to perform AES encryption. The compress and
+decompress routines use this function if they are called with a non-NULL
+key parameter. It uses AES counter mode (where encryption and decryption
+are the same function) and performs the operation in place on the data. It
+uses a default IV of 0, since each key is only evey used to encrypt one
+data item the IV does not matter.
 
-Well, this is kind of a long shot, but I wonder if the patch below makes
-any difference?
+The const qualifier was removed from the decompress routine for the
+following reason. Encrypted data is not compressable, so compression is
+first applied then the result is encrypted. In the reverse, decryption is
+first applied and the result decompressed. This means that either the
+input buffer for decompression is used to perform an in-place decryption
+before decompression, or a third buffer is added and data is copied around.
 
-Rafael
+Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+diff --git a/fs/ubifs/compress.c b/fs/ubifs/compress.c
+index d1812fa..b738ab0 100644
+--- a/fs/ubifs/compress.c
++++ b/fs/ubifs/compress.c
+@@ -27,9 +27,12 @@
+  * decompression.
+  */
 
----
- drivers/mmc/core/sdio_bus.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+-#include <linux/crypto.h>
+ #include "ubifs.h"
 
-Index: linux/drivers/mmc/core/sdio_bus.c
-===================================================================
---- linux.orig/drivers/mmc/core/sdio_bus.c
-+++ linux/drivers/mmc/core/sdio_bus.c
-@@ -192,9 +192,15 @@ static int sdio_bus_remove(struct device
- 	return ret;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
++#include <linux/crypto.h>
++#include <linux/scatterlist.h>
 +
-+static int pm_no_operation(struct device *dev)
++
+ /* Fake description object for the "none" compressor */
+ static struct ubifs_compressor none_compr = {
+ 	.compr_type = UBIFS_COMPR_NONE,
+@@ -75,6 +78,53 @@ static struct ubifs_compressor zlib_compr = {
+ struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
+
+ /**
++ * ubifs_aes_crypt - encrypt / decrypt data.
++ * @str: data to crypt
++ * @len: length of the data
++ * @key: the key to use to crypt the data
++ * @key_len: the length of the key
++ * @iv: the initialization vector to use
++ * @ivlen: the length of the initialization vector
++ *
++ * This function applies aes encryption to the data. It is done in counter
++ * mode, which means that encryption and decryption are the same operation,
++ * i.e., it XORs the same generated bitstream, so it can be used both for
++ * encryption / decryption. The operation is done in-place, so str mutates.
++ */
++int ubifs_aes_crypt(void *str, int len, u8 *key, int keylen, u8 *iv, int ivlen)
 +{
++	struct crypto_blkcipher *tfm;
++	struct blkcipher_desc desc;
++	struct scatterlist sg;
++	int err = 0;
++	tfm = crypto_alloc_blkcipher(UBIFS_CRYPTO_ALGORITHM, 0, 0);
++
++	if (IS_ERR(tfm)) {
++		ubifs_err("failed to load transform for aes: %ld",
++			  PTR_ERR(tfm));
++		return err;
++	}
++
++	err = crypto_blkcipher_setkey(tfm, key, keylen);
++	desc.tfm = tfm;
++	desc.flags = 0;
++	if (err) {
++		ubifs_err("setkey() failed  flags=%x",
++			  crypto_blkcipher_get_flags(tfm));
++	return err;
++	}
++	memset(&sg, 0, sizeof(struct scatterlist));
++
++	sg_set_buf(&sg, str, len);
++	desc.info = iv;
++	err = crypto_blkcipher_encrypt(&desc, &sg, &sg, len);
++	crypto_free_blkcipher(tfm);
++	if (err)
++		return err;
 +	return 0;
 +}
- 
- static const struct dev_pm_ops sdio_bus_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
- 	SET_RUNTIME_PM_OPS(
- 		pm_generic_runtime_suspend,
- 		pm_generic_runtime_resume,
-@@ -204,11 +210,11 @@ static const struct dev_pm_ops sdio_bus_
- 
- #define SDIO_PM_OPS_PTR	(&sdio_bus_pm_ops)
- 
--#else /* !CONFIG_PM_RUNTIME */
-+#else /* !CONFIG_PM */
- 
- #define SDIO_PM_OPS_PTR	NULL
- 
--#endif /* !CONFIG_PM_RUNTIME */
-+#endif /* !CONFIG_PM */
- 
- static struct bus_type sdio_bus_type = {
- 	.name		= "sdio",
++
++/**
+  * ubifs_compress - compress data.
+  * @in_buf: data to compress
+  * @in_len: length of the data to compress
+@@ -127,12 +177,21 @@ void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
+ 	if (in_len - *out_len < UBIFS_MIN_COMPRESS_DIFF)
+ 		goto no_compr;
+
+-	return;
++	goto encrypt;
+
+ no_compr:
+ 	memcpy(out_buf, in_buf, in_len);
+ 	*out_len = in_len;
+ 	*compr_type = UBIFS_COMPR_NONE;
++	goto encrypt;
++
++encrypt:
++	if (key) {
++		u8 iv[UBIFS_CRYPTO_KEYSIZE];
++		memset(iv, 0, UBIFS_CRYPTO_KEYSIZE);
++		ubifs_aes_crypt(out_buf, *out_len, key, UBIFS_CRYPTO_KEYSIZE,
++				iv, UBIFS_CRYPTO_KEYSIZE);
++	}
+ }
+
+ /**
+@@ -149,7 +208,7 @@ no_compr:
+  * The length of the uncompressed data is returned in @out_len. This functions
+  * returns %0 on success or a negative error code on failure.
+  */
+-int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
++int ubifs_decompress(void *in_buf, int in_len, void *out_buf,
+ 		     int *out_len, int compr_type, u8 *key)
+ {
+ 	int err;
+@@ -167,6 +226,13 @@ int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
+ 		return -EINVAL;
+ 	}
+
++	if (key) {
++		u8 iv[UBIFS_CRYPTO_KEYSIZE];
++		memset(iv, 0, UBIFS_CRYPTO_KEYSIZE);
++		ubifs_aes_crypt(in_buf, in_len, key, UBIFS_CRYPTO_KEYSIZE,
++				iv, UBIFS_CRYPTO_KEYSIZE);
++	}
++
+ 	if (compr_type == UBIFS_COMPR_NONE) {
+ 		memcpy(out_buf, in_buf, in_len);
+ 		*out_len = in_len;
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index 0cc1180..923babe 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -160,6 +160,14 @@
+ /* Maximum number of data nodes to bulk-read */
+ #define UBIFS_MAX_BULK_READ 32
+
++/* Size of 128 bits in bytes */
++#define AES_KEYSIZE_128 16
++
++/* Key size in bytes for UBIFS */
++#define UBIFS_CRYPTO_KEYSIZE AES_KEYSIZE_128
++/* AES in counter mode is the encryption algorithm. */
++#define UBIFS_CRYPTO_ALGORITHM "ctr(aes)"
++
+ /*
+  * Lockdep classes for UBIFS inode @ui_mutex.
+  */
+@@ -1771,9 +1779,11 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+ /* compressor.c */
+ int __init ubifs_compressors_init(void);
+ void ubifs_compressors_exit(void);
++int ubifs_aes_crypt(void *str, int len, u8 *key, int keylen,
++		    u8 *iv, int ivlen);
+ void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
+ 		    int *compr_type, u8 *key);
+-int ubifs_decompress(const void *buf, int len, void *out, int *out_len,
++int ubifs_decompress(void *buf, int len, void *out, int *out_len,
+ 		     int compr_type, u8 *key);
+
+ #include "debug.h"
+
