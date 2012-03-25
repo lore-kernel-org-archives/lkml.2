@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2CYBTK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Mar 2012 21:19:10 -0400
-Received: from mta103.odn.ne.jp ([143.90.14.143]:48071 "EHLO cmta103.odn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab2CYBTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Mar 2012 21:19:09 -0400
-Message-ID: <4F6E728A.3090203@yahoo.co.jp>
-Date: Sun, 25 Mar 2012 10:19:06 +0900
-From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
-MIME-Version: 1.0
-To: Gwendal Grignou <gwendal@google.com>
-CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
- Sil3726
-References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com> <4F6C4967.80309@yahoo.co.jp>
-In-Reply-To: <4F6C4967.80309@yahoo.co.jp>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1754204Ab2CYCFj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Mar 2012 22:05:39 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:42193 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2CYCFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Mar 2012 22:05:38 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
+To: Gene Heskett <gene.heskett@gmail.com>
+Cc: Con Kolivas <kernel@kolivas.org>, linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for linux kernel 3.3.0
+In-Reply-To: Your message of "Sat, 24 Mar 2012 05:53:32 -0400."
+             <201203240553.32526.gene.heskett@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
+            <201203240553.32526.gene.heskett@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332641134_1934P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Sat, 24 Mar 2012 22:05:34 -0400
+Message-ID: <57375.1332641134@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4F6E7D6F.008F,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Gwendal,
+--==_Exmh_1332641134_1934P
+Content-Type: text/plain; charset=us-ascii
 
-I want to confirm one thing.
-The kernel 3.1.x driver still works?
+On Sat, 24 Mar 2012 05:53:32 -0400, Gene Heskett said:
 
-It seems to take long time to solve the problem. Of course I understand
-staggered spin-up is better solution. But I can't wait it so long. And
-it affects only SiI3726 only.
+> I for one am happy to see this, Con.  I have been running an earlier patch
+> as pclos applies it to 2.6.38.8, and I must say the desktop interactivity
+> is very much improved over the non-bfs version.
 
-Best Regards,
-Akira
+I'va always wondered what people are using to measure interactivity. Do we have
+some hard numbers from scheduler traces, or is it a "feels faster"?  And if
+it's a subjective thing, how are people avoiding confirmation bias (where you
+decide it feels faster because it's the new kernel and *should* feel faster)?
+Anybody doing blinded boots, where a random kernel old/new is booted and the
+user grades the performance without knowing which one was actually running?
 
-(2012/03/23 18:59), ANEZAKI, Akira wrote:
-> Hello Gwendal,
-> 
-> (2012/03/23 17:31), Gwendal Grignou wrote:
->>>>>> I notice however some messages I did not see before:
->>>>>>>> [    4.856382] ata7.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->>>>>>>> [    4.858742] ata7.00: hard resetting link
->>>>>>>> [   14.843039] ata7.00: softreset failed (timeout)
->>>>>>>> [   17.836402] ata7.15: qc timeout (cmd 0xe4)
->>>>>> The later indicates that the PMP is stuck and the host can not read
->>>>>> its internal register.
->>>>>> Is it possible that the PMP in these 4 enclosures you are using have a
->>>>>> different firmware than the other ones?
->>>>>> Firmware 1.0114 is available at:
->>>>>> http://www.siliconimage.com/support/searchresults.aspx?pid=26&cat=23
->>>>>>
->>>>>> From the release notes:
->>>>>> """- Fix SRST and initial two RegFIS Problem."""
->>>
->>> I'm still fixing broken RAID. Sorry for my slow response.
-> 
-> I checked those firmware version. All of them use version 1.0114.
-> 
-> Best Regards,
-> Akira
+And yes, this can be a real issue - anybody who's been a aysadmin for
+a while will have at least one story of scheduling an upgrade, scratching it
+at the last minute, and then having users complain about how the upgrade
+ruined performance and introduced bugs...
+
+
+--==_Exmh_1332641134_1934P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT259bQdmEQWDXROgAQKRlQ/+Ok9BAbuzNwNIBElQZjhq8vIjzekapj+V
+jO8E7BVFr1SUhEzGHuAEJ/a2xA59Ow/wVvq+czSf09493d8bIQ0ofFStSol64ZaN
+/ybmz9zU8YE5PgkTxLMm5E8jp8mgx4GYRhPrv8OQMvwPA8uFvSngIkXXrXggsrYe
+ZqL5inzLrC93GvVUQO5hbzdPenGgZE78Ftl46nPfHVj1ZWgno5yL3kMfPnMb9zSO
+E/tLTK/6rOlVbC65gzuzq8nlLzPJYd2n5p0WblrLZ6iFa18xP/iklqZOnP//evfV
+yExYmAKOKAmHO/0rjp7lBCE5H3W3X/hAne1CWKBUYlR9ZFUMXXlsArwMal+q2OM9
+LI3kV9YAU9n/a96iLKsyRJdJh8G2kGE0VL2tJ7cooanirJrozgs0lQpsKp3pWtw/
+hSdYx1OHLzVcHxZBY9UC9OZlJLmthFBlfFL2quUelmS9Wtc3N4RkxyCUjsyk2Goh
+HJqenhoC1QdN9zpxgte/+GDHdxgCP96v87tR2HoXA6PFHGBSJVrLlrAYVMdXjCIM
+kVH5JAEPxHIBhBSoFeK83zMPeOEMLTCkK7pNnC2uV8ssIIlC3n63zf7b50GtI9Hm
+ahNVBALBAXr3x4dIfQB7o78Nf59U9cPZcNhYpUWJEesuSTZ/muB4vyyawQYMUt+y
+1erqzy4gJLo=
+=u/ue
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1332641134_1934P--
 
