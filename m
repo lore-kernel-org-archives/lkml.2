@@ -1,92 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab2CYRJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 13:09:32 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:60705 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756621Ab2CYRJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 13:09:31 -0400
-Date: Sun, 25 Mar 2012 19:05:13 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [git pull] PCMCIA updates for 3.4
-Message-ID: <20120325170512.GA31282@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756701Ab2CYRKi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 13:10:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:65386 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756621Ab2CYRKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 13:10:36 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        afleming@freescale.com, Joe Perches <joe@perches.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH v2] gianfar: Fix possible overrun and simplify interrupt name field creation
+Date: Sun, 25 Mar 2012 13:10:07 -0400
+Message-Id: <1332695407-21167-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <CAP=VYLrPbYv2C7hYaQ-aUJLFCfYh5zkJzFXJt8GFV2OTZ7h=og@mail.gmail.com>
+References: <CAP=VYLrPbYv2C7hYaQ-aUJLFCfYh5zkJzFXJt8GFV2OTZ7h=og@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Joe Perches <joe@perches.com>
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Space allocated for int_name_<foo> is insufficient for
+maximal device name, expand it.
 
-Linus,
+Code to create int_name_<foo> is obscure, simplify it
+by using sprintf.
 
-a few PCMCIA updates for 3.4 are available in the git repository at:
+Found by looking for unnecessary \ line continuations.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia.git master
+Signed-off-by: Joe Perches <joe@perches.com>
+Tested-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
 
-Please pull from that location. The diffstat and list of changes is below,
-the individual diffs are sent (at least) to the linux-pcmcia list.
+[v2: delete "uncompiled/untested" and fix typo in commit log]
 
-Thanks,
-        Dominik
+The IRQ names appear unchanged after applying this patch:
 
-Axel Lin (3):
-      pcmcia: convert drivers/pcmcia/* to use module_platform_driver()
-      pcmcia: Convert to DEFINE_PCI_DEVICE_TABLE
-      ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
+root@SBC8641D:/root> for i in `seq 3` ; do ifconfig eth$i 192.168.0.$i ; done
+root@SBC8641D:/root> cat /proc/interrupts
+           CPU0       CPU1
+ 16:          0          0   MPIC      Level     phy_interrupt, phy_interrupt, phy_interrupt, phy_interrupt
+ 29:       6884          0   MPIC      Level     eth0_g0_tx
+ 30:          0      11578   MPIC      Level     eth0_g0_rx
+ 31:          0          0   MPIC      Level     eth2_g0_tx
+ 32:          0          0   MPIC      Level     eth2_g0_rx
+ 33:          0          0   MPIC      Level     eth2_g0_er
+ 34:          0          0   MPIC      Level     eth0_g0_er
+ 35:          0          0   MPIC      Level     eth1_g0_tx
+ 36:          0          0   MPIC      Level     eth1_g0_rx
+ 37:          0          0   MPIC      Level     eth3_g0_tx
+ 38:          0          0   MPIC      Level     eth3_g0_rx
+ 39:          0          0   MPIC      Level     eth3_g0_er
+ 40:          0          0   MPIC      Level     eth1_g0_er
 
-Joachim Eastwood (1):
-      pcmcia at91_cf: fix raw gpio number usage
+Having them all in group "g0" may seem odd, but it is definitely
+the same as it was before the commit.  Tested on mar23 linux-next.
 
-Yong Zhang (1):
-      pcmcia: irq: Remove IRQF_DISABLED
 
- drivers/pcmcia/at91_cf.c        |   52 +++++++++++++++++++-------------------
- drivers/pcmcia/bcm63xx_pcmcia.c |    2 +-
- drivers/pcmcia/bfin_cf_pcmcia.c |   13 +---------
- drivers/pcmcia/db1xxx_ss.c      |   17 ++----------
- drivers/pcmcia/electra_cf.c     |   12 +--------
- drivers/pcmcia/i82092.c         |   11 ++------
- drivers/pcmcia/m8xx_pcmcia.c    |   13 +---------
- drivers/pcmcia/pd6729.c         |    9 +-----
- drivers/pcmcia/pxa2xx_base.c    |   12 ++------
- drivers/pcmcia/pxa2xx_viper.c   |   13 +---------
- drivers/pcmcia/soc_common.c     |    2 +-
- drivers/pcmcia/vrc4173_cardu.c  |    7 +---
- drivers/pcmcia/xxs1500_ss.c     |   13 +---------
- drivers/pcmcia/yenta_socket.c   |    2 +-
- 14 files changed, 47 insertions(+), 131 deletions(-)
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index d9428f0..e7bed53 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -968,7 +968,6 @@ static int gfar_probe(struct platform_device *ofdev)
+ 	struct gfar_private *priv = NULL;
+ 	struct gfar __iomem *regs = NULL;
+ 	int err = 0, i, grp_idx = 0;
+-	int len_devname;
+ 	u32 rstat = 0, tstat = 0, rqueue = 0, tqueue = 0;
+ 	u32 isrg = 0;
+ 	u32 __iomem *baddr;
+@@ -1169,40 +1168,16 @@ static int gfar_probe(struct platform_device *ofdev)
+ 		priv->device_flags & FSL_GIANFAR_DEV_HAS_MAGIC_PACKET);
+ 
+ 	/* fill out IRQ number and name fields */
+-	len_devname = strlen(dev->name);
+ 	for (i = 0; i < priv->num_grps; i++) {
+-		strncpy(&priv->gfargrp[i].int_name_tx[0], dev->name,
+-				len_devname);
+ 		if (priv->device_flags & FSL_GIANFAR_DEV_HAS_MULTI_INTR) {
+-			strncpy(&priv->gfargrp[i].int_name_tx[len_devname],
+-				"_g", sizeof("_g"));
+-			priv->gfargrp[i].int_name_tx[
+-				strlen(priv->gfargrp[i].int_name_tx)] = i+48;
+-			strncpy(&priv->gfargrp[i].int_name_tx[strlen(
+-				priv->gfargrp[i].int_name_tx)],
+-				"_tx", sizeof("_tx") + 1);
+-
+-			strncpy(&priv->gfargrp[i].int_name_rx[0], dev->name,
+-					len_devname);
+-			strncpy(&priv->gfargrp[i].int_name_rx[len_devname],
+-					"_g", sizeof("_g"));
+-			priv->gfargrp[i].int_name_rx[
+-				strlen(priv->gfargrp[i].int_name_rx)] = i+48;
+-			strncpy(&priv->gfargrp[i].int_name_rx[strlen(
+-				priv->gfargrp[i].int_name_rx)],
+-				"_rx", sizeof("_rx") + 1);
+-
+-			strncpy(&priv->gfargrp[i].int_name_er[0], dev->name,
+-					len_devname);
+-			strncpy(&priv->gfargrp[i].int_name_er[len_devname],
+-				"_g", sizeof("_g"));
+-			priv->gfargrp[i].int_name_er[strlen(
+-					priv->gfargrp[i].int_name_er)] = i+48;
+-			strncpy(&priv->gfargrp[i].int_name_er[strlen(\
+-				priv->gfargrp[i].int_name_er)],
+-				"_er", sizeof("_er") + 1);
++			sprintf(priv->gfargrp[i].int_name_tx, "%s%s%c%s",
++				dev->name, "_g", '0' + i, "_tx");
++			sprintf(priv->gfargrp[i].int_name_rx, "%s%s%c%s",
++				dev->name, "_g", '0' + i, "_rx");
++			sprintf(priv->gfargrp[i].int_name_er, "%s%s%c%s",
++				dev->name, "_g", '0' + i, "_er");
+ 		} else
+-			priv->gfargrp[i].int_name_tx[len_devname] = '\0';
++			strcpy(priv->gfargrp[i].int_name_tx, dev->name);
+ 	}
+ 
+ 	/* Initialize the filer table */
+diff --git a/drivers/net/ethernet/freescale/gianfar.h b/drivers/net/ethernet/freescale/gianfar.h
+index fc2488a..4c9f8d4 100644
+--- a/drivers/net/ethernet/freescale/gianfar.h
++++ b/drivers/net/ethernet/freescale/gianfar.h
+@@ -517,7 +517,7 @@ extern const char gfar_driver_version[];
+ #define RXFCB_PERR_MASK		0x000c
+ #define RXFCB_PERR_BADL3	0x0008
+ 
+-#define GFAR_INT_NAME_MAX	IFNAMSIZ + 4
++#define GFAR_INT_NAME_MAX	(IFNAMSIZ + 6)	/* '_g#_xx' */
+ 
+ struct txbd8
+ {
+-- 
+1.7.9.1
 
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPb1BIAAoJEJqXYIlMjaMNgIcP/0l25Nkx0jbMhJ05aUar6r0H
-OgJyyolL3VgmGSqQ/FnKRxW5vWCrN32ukP2Mn0ivP921Upd0Vg7d7+GMJAd3FVya
-6ijEpRMHdccPLLbUHAjp54p5wpANrdOSL0f1mdOGJVdlaKRpWDgISXeF9mknJZ6f
-5X9aUK10GmrB/BuhEMCaM3wqt1+afqxcuMJMf5L/w7do+v/ZFfJBnvfZNRgfFvu0
-+MyZcpMeGw2vp+1c9ubwu+XBYTc1jQ9ynOH+g2NkoUgKB99aP+WBIz+7kRX+UJ/B
-/brnsPsinoe9H8/nwvld5iuJyaDgzqZ8K7f+2rbPtkJ5hTi1HmCIFRgQ1bmprhto
-ku2wlKtFA1c9qDcPRNLU4hXQkkI5961Zh9YFmWoD5D/pwR73o91a5YhdDAa4Gsjl
-HlGoVOOeGU7rvOPYqDEOoMu1ECa9RhQh1f3yEnerXgmt3GRSxaJIJnbZQrq0GXiO
-qNh0fSFzXkKhgaApKc2+iflOZIBEfpzbSvcykje1MNunXh8strHVJrWlTMxuKpW8
-/jpHCQczz6GIW+qABIUtRxg1AnELv3Ochj4znYCbugkCLhWSlzKSZVlK88R4SoD8
-iUnAiZVLY8v2F9jqTF1oVa2xYAoiSAiFpRE57GM47Un7GAgRfYnjYnz2OPUiSfIo
-nXOPljJlpwtslHuX6+pR
-=9P/I
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
