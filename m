@@ -1,69 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab2CYVJa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 17:09:30 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52193 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2CYVJ3 (ORCPT
+	id S1756721Ab2CYVLL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 17:11:11 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:59944
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1754459Ab2CYVLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 17:09:29 -0400
-Date: Sun, 25 Mar 2012 22:09:07 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Richard Weinberger <richard@nod.at>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: TTY: tty_port questions
-Message-ID: <20120325220907.0591f517@ultron>
-In-Reply-To: <20120325172018.GL6589@ZenIV.linux.org.uk>
-References: <4F5BDB09.3020407@suse.cz>
-	<4F5BE1E6.9000201@nod.at>
-	<4F5C861F.2000507@nod.at>
-	<4F5DCF39.8080308@nod.at>
-	<20120312105312.665d2362@pyramind.ukuu.org.uk>
-	<4F5DDAD4.4060504@nod.at>
-	<20120312114832.784bb6fe@pyramind.ukuu.org.uk>
-	<20120324232001.GK6589@ZenIV.linux.org.uk>
-	<20120325155143.7ca7cb13@ultron>
-	<4F6F365D.5060703@nod.at>
-	<20120325172018.GL6589@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Mar 2012 17:11:09 -0400
+Date: Sun, 25 Mar 2012 23:11:07 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [patch] Add a encryption key parameter to the compress / decompress
+ function.
+In-Reply-To: <1332521515.22278.2.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>    <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>   <1330531826.3545.128.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net> 
+ <1332511796.18717.72.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net> <1332521515.22278.2.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Mar 2012 18:20:18 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+Compress and decompress now have an extra u8 *key field, and NULL is
+passed wherever it is used. Later this will be used for an encryption key
+for the data being compressed/decompressed (and NULL if no cryptographic operations should be done.)
 
-> On Sun, Mar 25, 2012 at 05:14:37PM +0200, Richard Weinberger wrote:
-> > >> FWIW, uml console in default config is basically "start xterm for each VC".
-> > >> What do you suggest to do on vhangup() on one of those?
-> > > 
-> > > What posix says must happen. Which is that the running processes get a
-> > > hangup. So a vhangup() would ensure there were no old apps on the UML
-> > > guess talking to the xterm (eg stealing login credentials, or abusing
-> > > TIOCSTI etc).
-> 
-> IIRC, vhangup(2) is Linux-specific, so I would be surprised if POSIX had
-> anything on it...
+Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
 
-vhangup causes a carrier drop event equivalent. The rest of the behavior
-is POSIX/SUSv3.
+>From 650a52b5301778cf2f0c17ed993a104a4473a8fb Mon Sep 17 00:00:00 2001
+From: Joel Reardon <jreardon@fatbottomsworth.(none)>
+Date: Sun, 25 Mar 2012 23:06:03 +0200
+Subject: [PATCH] Added a key parameter to de/compress.
 
-> login(1) from util-linux does vhangup(); login(1) from shadow doesn't.
+---
+ fs/ubifs/compress.c |    8 ++++++--
+ fs/ubifs/file.c     |    5 +++--
+ fs/ubifs/journal.c  |    7 ++++---
+ fs/ubifs/ubifs.h    |    4 ++--
+ 4 files changed, 15 insertions(+), 9 deletions(-)
 
-Shadow assumes the getty cleans the channel I believe.
+diff --git a/fs/ubifs/compress.c b/fs/ubifs/compress.c
+index 11e4132..d1812fa 100644
+--- a/fs/ubifs/compress.c
++++ b/fs/ubifs/compress.c
+@@ -82,6 +82,8 @@ struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
+  * @out_len: output buffer length is returned here
+  * @compr_type: type of compression to use on enter, actually used compression
+  *              type on exit
++ * @key: a pointer to a key-sized buffer to use as the encryption key. if NULL
++ *      then no encryption is performed.
+  *
+  * This function compresses input buffer @in_buf of length @in_len and stores
+  * the result in the output buffer @out_buf and the resulting length in
+@@ -93,7 +95,7 @@ struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
+  * buffer and %UBIFS_COMPR_NONE is returned in @compr_type.
+  */
+ void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
+-		    int *compr_type)
++		    int *compr_type, u8 *key)
+ {
+ 	int err;
+ 	struct ubifs_compressor *compr = ubifs_compressors[*compr_type];
+@@ -140,13 +142,15 @@ no_compr:
+  * @out_buf: output buffer where decompressed data should
+  * @out_len: output length is returned here
+  * @compr_type: type of compression
++ * @key: a pointer to a key-sized buffer to use as the decryption key. if
++ *	 NULL then no decryption is performed.
+  *
+  * This function decompresses data from buffer @in_buf into buffer @out_buf.
+  * The length of the uncompressed data is returned in @out_len. This functions
+  * returns %0 on success or a negative error code on failure.
+  */
+ int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
+-		     int *out_len, int compr_type)
++		     int *out_len, int compr_type, u8 *key)
+ {
+ 	int err;
+ 	struct ubifs_compressor *compr;
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index f9c234b..2660c9f 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -80,7 +80,7 @@ static int read_block(struct inode *inode, void *addr, unsigned int block,
+ 	dlen = le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
+ 	out_len = UBIFS_BLOCK_SIZE;
+ 	err = ubifs_decompress(&dn->data, dlen, addr, &out_len,
+-			       le16_to_cpu(dn->compr_type));
++			       le16_to_cpu(dn->compr_type), NULL);
+ 	if (err || len != out_len)
+ 		goto dump;
 
-> The thing is, we don't want to do that when port is in use.  And we definitely
-> don't want somebody to open the damn thing when it's halfway through getting
-> set up.  I don't see any natural way to do that exclusion with tty_port -
-> port->{count,block_open} is protected only by a spinlock and port setup
-> we need to do is blocking...
+@@ -649,7 +649,8 @@ static int populate_page(struct ubifs_info *c, struct page *page,
+ 			dlen = le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
+ 			out_len = UBIFS_BLOCK_SIZE;
+ 			err = ubifs_decompress(&dn->data, dlen, addr, &out_len,
+-					       le16_to_cpu(dn->compr_type));
++					       le16_to_cpu(dn->compr_type),
++					       NULL);
+ 			if (err || len != out_len)
+ 				goto out_err;
 
-How does this differ from a hardware hotplug ?
+diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
+index 2f438ab..9156395 100644
+--- a/fs/ubifs/journal.c
++++ b/fs/ubifs/journal.c
+@@ -727,7 +727,7 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
+ 		compr_type = ui->compr_type;
 
-Alan
+ 	out_len = dlen - UBIFS_DATA_NODE_SZ;
+-	ubifs_compress(buf, len, &data->data, &out_len, &compr_type);
++	ubifs_compress(buf, len, &data->data, &out_len, &compr_type, NULL);
+ 	ubifs_assert(out_len <= UBIFS_BLOCK_SIZE);
+
+ 	dlen = UBIFS_DATA_NODE_SZ + out_len;
+@@ -1110,11 +1110,12 @@ static int recomp_data_node(struct ubifs_data_node *dn, int *new_len)
+
+ 	len = le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
+ 	compr_type = le16_to_cpu(dn->compr_type);
+-	err = ubifs_decompress(&dn->data, len, buf, &out_len, compr_type);
++	err = ubifs_decompress(
++		&dn->data, len, buf, &out_len, compr_type, NULL);
+ 	if (err)
+ 		goto out;
+
+-	ubifs_compress(buf, *new_len, &dn->data, &out_len, &compr_type);
++	ubifs_compress(buf, *new_len, &dn->data, &out_len, &compr_type, NULL);
+ 	ubifs_assert(out_len <= UBIFS_BLOCK_SIZE);
+ 	dn->compr_type = cpu_to_le16(compr_type);
+ 	dn->size = cpu_to_le32(*new_len);
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index 93d59ac..0cc1180 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1772,9 +1772,9 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+ int __init ubifs_compressors_init(void);
+ void ubifs_compressors_exit(void);
+ void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
+-		    int *compr_type);
++		    int *compr_type, u8 *key);
+ int ubifs_decompress(const void *buf, int len, void *out, int *out_len,
+-		     int compr_type);
++		     int compr_type, u8 *key);
+
+ #include "debug.h"
+ #include "misc.h"
+-- 
+1.7.1
+
+
