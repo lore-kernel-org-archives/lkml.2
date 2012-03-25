@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab2CYX1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 19:27:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64965 "EHLO
+	id S932542Ab2CYX1P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 19:27:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61995 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab2CYX02 (ORCPT
+	with ESMTP id S932376Ab2CYX01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 19:26:28 -0400
+	Sun, 25 Mar 2012 19:26:27 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 12/16] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.dyndbg instead of pnp.debug
-Date: Sun, 25 Mar 2012 17:25:50 -0600
-Message-Id: <1332717954-5775-13-git-send-email-jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 11/16] dynamic_debug: print ram usage by ddebug tables if verbose
+Date: Sun, 25 Mar 2012 17:25:49 -0600
+Message-Id: <1332717954-5775-12-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1332717954-5775-1-git-send-email-jim.cromie@gmail.com>
 References: <1332717954-5775-1-git-send-email-jim.cromie@gmail.com>
@@ -23,107 +22,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-based upon https://lkml.org/lkml/2010/9/15/398
-
-This patch splits control of pnp debug messages for 2 configs:
-
-CONFIG_DYNAMIC_DEBUG:
-  use pnp.dyndbg, using pnp.debug will warn
-!CONFIG_DYNAMIC_DEBUG:
-  use pnp.debug, using pnp.dyndbg will warn
-
-2 separate boot options is perhaps suboptimal, but dyndbg is a 'fake'
-parameter, and is special enough that adapting one to another is both
-more suboptimal and harder to explain succinctly.
-
-Thomas' original comments, still pertinent:
-
-I wonder whether CONFIG_PNP_DEBUG_MESSAGES can vanish totally with
-this or at some time. Only advantage having it is: If you are
-restricted and your kernel must not exceed X bytes, you cannot compile
-in PNP debug messages only, but you have to compile in all debug
-messages.
+Print ram usage of dynamic-debug so user knows cost of enabling
+CONFIG_DYNAMIC_DEBUG.  Only counts cost of pr_debug in builtins, not
+those in loadable modules.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-CC: Thomas Renninger <trenn@suse.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>
 ---
- Documentation/kernel-parameters.txt |   14 ++++++++------
- drivers/pnp/base.h                  |    8 ++++++--
- drivers/pnp/core.c                  |   12 ++++++++++++
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ lib/dynamic_debug.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index f44d4bd..00338a2 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2215,12 +2215,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Override pmtimer IOPort with a hex value.
- 			e.g. pmtmr=0x508
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 5f0d31f..38bd4d66 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -970,7 +970,7 @@ static int __init dynamic_debug_init(void)
+ 	const char *modname = NULL;
+ 	char *cmdline;
+ 	int ret = 0;
+-	int n = 0;
++	int n = 0, entries = 0, modct = 0;
  
--	pnp.debug=1	[PNP]
--			Enable PNP debug messages (depends on the
--			CONFIG_PNP_DEBUG_MESSAGES option).  Change at run-time
--			via /sys/module/pnp/parameters/debug.  We always show
--			current resource usage; turning this on also shows
--			possible settings and some assignment information.
-+	pnp.debug=1	[PNP] Enable PNP debug messages
-+		        (depends on CONFIG_PNP_DEBUG_MESSAGES and
-+			!CONFIG_DYNAMIC_DEBUG options.  If latter, use
-+			pnp.dyndbg instead).  Change at run-time via
-+			/sys/module/pnp/parameters/debug.  We always
-+			show current resource usage; turning this on
-+			also shows possible settings and some
-+			assignment information.
+ 	if (__start___verbose == __stop___verbose) {
+ 		pr_warn("_ddebug table is empty in a "
+@@ -981,7 +981,9 @@ static int __init dynamic_debug_init(void)
+ 	modname = iter->modname;
+ 	iter_start = iter;
+ 	for (; iter < __stop___verbose; iter++) {
++		entries++;
+ 		if (strcmp(modname, iter->modname)) {
++			modct++;
+ 			ret = ddebug_add_module(iter_start, n, modname);
+ 			if (ret)
+ 				goto out_err;
+@@ -996,6 +998,9 @@ static int __init dynamic_debug_init(void)
+ 		goto out_err;
  
- 	pnpacpi=	[ACPI]
- 			{ off }
-diff --git a/drivers/pnp/base.h b/drivers/pnp/base.h
-index fa4e0a5..28e98aa 100644
---- a/drivers/pnp/base.h
-+++ b/drivers/pnp/base.h
-@@ -173,12 +173,16 @@ struct pnp_resource *pnp_add_bus_resource(struct pnp_dev *dev,
- 					  resource_size_t start,
- 					  resource_size_t end);
+ 	ddebug_init_success = 1;
++	vpr_info("%d modules, %d entries in ddebug tables, %d bytes used\n",
++		modct, entries, modct * sizeof(struct ddebug_table)
++		+ __stop___verbose - __start___verbose);
  
--extern int pnp_debug;
--
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define pnp_dbg(dev, format, arg...)					\
-+	({ dev_dbg(dev, format, ## arg); 0; })
-+#else
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
-+extern int pnp_debug;
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (pnp_debug) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #else
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (0) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #endif
-+#endif
-diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
-index cb6ce42..838d82c 100644
---- a/drivers/pnp/core.c
-+++ b/drivers/pnp/core.c
-@@ -219,6 +219,18 @@ subsys_initcall(pnp_init);
- 
- int pnp_debug;
- 
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+static int __init pnp_debug_setup(char *__unused)
-+{
-+	pr_info("DYNAMIC_DEBUG enabled, use pnp.dyndbg instead\n");
-+	return 1;
-+}
-+__setup("pnp.debug", pnp_debug_setup);
-+
-+#else
-+
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
- module_param_named(debug, pnp_debug, int, 0644);
- #endif
-+
-+#endif
+ 	/* apply ddebug_query boot param, dont unload tables on err */
+ 	if (ddebug_setup_string[0] != '\0') {
 -- 
 1.7.7.6
 
