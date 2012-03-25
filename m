@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2CYSLv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 14:11:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56581 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380Ab2CYSLu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 14:11:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332597305.12799.2.camel@acer.local.home>
-References: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
-	<1332531400.23924.71.camel@gandalf.stny.rr.com>
-	<CA+jqyFAzpTs+JeemD7wpSgW0hmECMSPMsaZtQ7zLgn+ebXSJFQ@mail.gmail.com>
-	<1332597305.12799.2.camel@acer.local.home>
-Date: Sun, 25 Mar 2012 23:41:49 +0530
-Message-ID: <CA+jqyFCGAtpTKpOsMwFnbDVuUC0O5jcEG+kRG3NFC8+8OznVmw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
-From: Rajesh Bhagat <rajesh.lnx@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756769Ab2CYSNJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 14:13:09 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:36029 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756417Ab2CYSNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 14:13:08 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, mmarek@suse.cz, imirkin@alum.mit.edu
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH v2] scripts/coccinelle/api/ptr_ret.cocci: semantic patch for ptr_err
+Date: Sun, 25 Mar 2012 20:12:59 +0200
+Message-Id: <1332699179-18934-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Thanks a lot for you feedback.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-- Rajesh
+---
+Fixed warning messages to refer to the right function.
 
-On Sat, Mar 24, 2012 at 7:25 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sat, 2012-03-24 at 09:47 +0530, Rajesh Bhagat wrote:
->> Hi Steven,
->>
->> Thanks for the reply.
->>
->> I was wondering, why would a user reset the trace __explicitly__
->> without even using it.
->> That is why i created a patch for it.
->>
->> >> /debug/tracing # echo function > current_tracer
->      ^
->      |
->   user starts using tracer
->
->> >> /debug/tracing # cat trace <------ Not performed
->> >> /debug/tracing # echo schedule > set_ftrace_filter
->> >> /debug/tracing # echo function > current_trace
->> >> /debug/tracing # cat trace <------- Only this is performed
->
-> Why the first "echo function"? That means you just started using the
-> tracer. You can (and should) do:
->
->        # echo schedule > set_ftrace_filter
->        # echo function > current_tracer
->
-> This IIRC is the documented way of using it.
->
-> That said, I may consider taking the patch, as another way of resetting
-> the tracer. I have to see what workflows it will affect first.
->
-> -- Steve
->
->
+ scripts/coccinelle/api/ptr_ret.cocci |   70 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+
+diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
+new file mode 100644
+index 0000000..085120f
+--- /dev/null
++++ b/scripts/coccinelle/api/ptr_ret.cocci
+@@ -0,0 +1,70 @@
++///
++/// Use PTR_RET rather than if(IS_ERR(...)) + PTR_ERR
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Options: -no_includes -include_headers
++//
++// Keywords: ERR_PTR, PTR_ERR, PTR_RET
++// Version min: 2.6.39
++//
++
++virtual context
++virtual patch
++virtual org
++virtual report
++
++@depends on patch@
++expression ptr;
++@@
++
++- if (IS_ERR(ptr)) return PTR_ERR(ptr); else return 0;
+++ return PTR_RET(ptr);
++
++@depends on patch@
++expression ptr;
++@@
++
++- if (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
+++ return PTR_RET(ptr);
++
++@r1 depends on !patch@
++expression ptr;
++position p1;
++@@
++
++* if@p1 (IS_ERR(ptr)) return PTR_ERR(ptr); else return 0;
++
++@r2 depends on !patch@
++expression ptr;
++position p2;
++@@
++
++* if@p2 (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
++
++@script:python depends on org@
++p << r1.p1;
++@@
++
++coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
++
++
++@script:python depends on org@
++p << r2.p2;
++@@
++
++coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
++
++@script:python depends on report@
++p << r1.p1;
++@@
++
++coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
++
++@script:python depends on report@
++p << r2.p2;
++@@
++
++coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
+
