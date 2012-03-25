@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab2CYSIv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 14:08:51 -0400
-Received: from mail.pxnet.com ([89.1.7.7]:38165 "EHLO mail.pxnet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab2CYSIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 14:08:50 -0400
-X-Greylist: delayed 2996 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Mar 2012 14:08:49 EDT
-Date: Sun, 25 Mar 2012 19:12:37 +0200
-From: Tilman Schmidt <tilman@imap.cc>
-To: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        netdev@vger.kernel.org, hjlipp@web.de
-Subject: Re: [GIT PATCH] TTY/serial patches for 3.4-rc1
-References: <20120319195649.GD9883@kroah.com>
-In-Reply-To: <20120319195649.GD9883@kroah.com>
+	id S1756743Ab2CYSLv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 14:11:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56581 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380Ab2CYSLu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 14:11:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Message-Id: <20120325171837.67310140074@xenon.ts.pxnet.com>
+In-Reply-To: <1332597305.12799.2.camel@acer.local.home>
+References: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
+	<1332531400.23924.71.camel@gandalf.stny.rr.com>
+	<CA+jqyFAzpTs+JeemD7wpSgW0hmECMSPMsaZtQ7zLgn+ebXSJFQ@mail.gmail.com>
+	<1332597305.12799.2.camel@acer.local.home>
+Date: Sun, 25 Mar 2012 23:41:49 +0530
+Message-ID: <CA+jqyFCGAtpTKpOsMwFnbDVuUC0O5jcEG+kRG3NFC8+8OznVmw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
+From: Rajesh Bhagat <rajesh.lnx@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri, Greg,
+Hi Steven,
 
-On 19.03.2012 20:56, Greg KH wrote:
-> tty and serial merge for 3.4-rc1
-[...]
-> Jiri Slaby (77):
-[...]
->       TTY: isdn/gigaset, do not set tty->driver_data to NULL
+Thanks a lot for you feedback.
 
-It seems that the amendment we discussed on 05.03.2012 did not
-make it into this patch. It would be nice if the following patch
-could still be added on top of it.
+- Rajesh
 
-Thanks,
-Tilman
-
-From: Tilman Schmidt <tilman@imap.cc>
-Date: Sun, 25 Mar 2012 12:21:57 +0200
-Subject: [PATCH] isdn/gigaset: use gig_dbg() for debugging output
-
-The "TTY buffer in tty_port" patchset introduced an opencoded
-debug message in the Gigaset tty device if_close() function.
-Change it to use the gig_dbg() macro like everywhere else in
-the driver.
-
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
----
- drivers/isdn/gigaset/interface.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
-index b3d6ac1..a6d9fd2 100644
---- a/drivers/isdn/gigaset/interface.c
-+++ b/drivers/isdn/gigaset/interface.c
-@@ -176,7 +176,7 @@ static void if_close(struct tty_struct *tty, struct file *filp)
- 	struct cardstate *cs = tty->driver_data;
- 
- 	if (!cs) { /* happens if we didn't find cs in open */
--		printk(KERN_DEBUG "%s: no cardstate\n", __func__);
-+		gig_dbg(DEBUG_IF, "%s: no cardstate", __func__);
- 		return;
- 	}
- 
--- 
-1.7.3.4
-
+On Sat, Mar 24, 2012 at 7:25 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sat, 2012-03-24 at 09:47 +0530, Rajesh Bhagat wrote:
+>> Hi Steven,
+>>
+>> Thanks for the reply.
+>>
+>> I was wondering, why would a user reset the trace __explicitly__
+>> without even using it.
+>> That is why i created a patch for it.
+>>
+>> >> /debug/tracing # echo function > current_tracer
+>      ^
+>      |
+>   user starts using tracer
+>
+>> >> /debug/tracing # cat trace <------ Not performed
+>> >> /debug/tracing # echo schedule > set_ftrace_filter
+>> >> /debug/tracing # echo function > current_trace
+>> >> /debug/tracing # cat trace <------- Only this is performed
+>
+> Why the first "echo function"? That means you just started using the
+> tracer. You can (and should) do:
+>
+>        # echo schedule > set_ftrace_filter
+>        # echo function > current_tracer
+>
+> This IIRC is the documented way of using it.
+>
+> That said, I may consider taking the patch, as another way of resetting
+> the tracer. I have to see what workflows it will affect first.
+>
+> -- Steve
+>
+>
