@@ -1,85 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab2CYGnv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 02:43:51 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35588 "EHLO
+	id S1752870Ab2CYHYN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 03:24:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40678 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2CYGnu (ORCPT
+	with ESMTP id S1752336Ab2CYHYM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 02:43:50 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Marc Haber <mh+linux-kernel@zugschlus.de>
-Subject: Re: IPv6 flapping with kernel 3.3 (regression from 3.2.9)
-Date: Sun, 25 Mar 2012 08:43:44 +0200
-User-Agent: KMail/1.13.7 (Linux/3.3.0; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <20120322073428.GA11510@torres.zugschlus.de>
-In-Reply-To: <20120322073428.GA11510@torres.zugschlus.de>
+	Sun, 25 Mar 2012 03:24:12 -0400
+From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
+Date: Sun, 25 Mar 2012 09:24:06 +0200
+User-Agent: KMail/1.13.7 (Linux/3.3.0-06946-gf1d38e4; KDE/4.8.1; x86_64; ; )
+Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>
+References: <201203220903.15360.a.miskiewicz@gmail.com> <20120323171058.GA3279@albatros> <20120323161504.dced28b9.akpm@linux-foundation.org>
+In-Reply-To: <20120323161504.dced28b9.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203250843.45055.maciej.rutecki@gmail.com>
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201203250924.06908.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 22 marca 2012 o 08:34:28 Marc Haber wrote:
-> Hi,
+On Saturday 24 of March 2012, Andrew Morton wrote:
+> On Fri, 23 Mar 2012 21:10:58 +0400
 > 
-> I have a host which has IPv6 misbehaving when running with Linux 3.3.
-> It is flawlessly working with Linux 3.2.9.
+> Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > proc_parse_options() inside of proc_mount() runs only once at the boot
+> > time without any given options.  So, following umount(2)+mount(2) ignore
+> > mount options: proc_parse_options() is not called as ->s_root is already
+> > initialized.  To fix that parse mount options unconditionally.
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> > Reported-by: Arkadiusz Mi__kiewicz <a.miskiewicz@gmail.com>
+> > ---
+> > 
+> >  fs/proc/root.c |    9 +++++----
+> >  1 files changed, 5 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/fs/proc/root.c b/fs/proc/root.c
+> > index 46a15d8..eed44bf 100644
+> > --- a/fs/proc/root.c
+> > +++ b/fs/proc/root.c
+> > @@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct
+> > file_system_type *fs_type,
+> > 
+> >  	if (IS_ERR(sb))
+> >  	
+> >  		return ERR_CAST(sb);
+> > 
+> > +	if (!proc_parse_options(options, ns)) {
+> > +		deactivate_locked_super(sb);
+> > +		return ERR_PTR(-EINVAL);
+> > +	}
+> > +
+> > 
+> >  	if (!sb->s_root) {
+> >  	
+> >  		sb->s_flags = flags;
+> > 
+> > -		if (!proc_parse_options(options, ns)) {
+> > -			deactivate_locked_super(sb);
+> > -			return ERR_PTR(-EINVAL);
+> > -		}
+> > 
+> >  		err = proc_fill_super(sb);
+> >  		if (err) {
+> >  		
+> >  			deactivate_locked_super(sb);
 > 
-> The host
-> - is running Debian stable (x64_64) with a few locally built and/or
->   backported packages, including the kernel.
-> - has native IPv6 connectivity on eth0
-> - is not doing SLAAC on eth0, both IP address (from 2a01/16) and
->   default gateway (fe80::1) are statically configured
-> - is running a handful of VMs using KVM/libvirt
-> - has IPv6 forwarding enabled
-> - does IPv4 NAT
-> - has a handful of iptables rules, both for v4 and v6. ICMP and ICMPv6
->   are fully open
-> 
-> - the gateway is not under my control
-> - the VMs are either bridged to br0 or to br1
-> - both br0 and br1 have an IPv6 /64 and radvd running to provide IPv6
->   to the VMs
-> 
-> This setup is unique in my machine list, my other machines either are
-> no KVM hosts or do only have IPv6 tunneled.
-> 
-> When I run the box with kernel 3.3, it drops off the IPv6 network
-> every few minutes and is not responding to pings any more. This state
-> stays like 30 seconds to a minute and then IPv6 resumes. It looks to
-> me that the box does not lose its default route though. Once in a
-> while, I see "fe80::1 dev eth0  router FAILED" in the ip neigh output.
-> 
-> Running a continuous ping in either direction doesn't seem to help.
-> 
-> Booting the box back to 3.2.9 immediately fixes the issue.
-> 
-> I have not yet re-tried going back to 3.3 since a few of the VMs are
-> too important to reboot again today. I tried running tcpdump on eth0
-> over night but hit br1 instead, so I don't have any packet dumps to
-> show.
-> 
-> I guess that something goes wrong with neighbor detection regarding
-> the IPv6 gateway.
-> 
-> Was there a relevant change between 3.2.9 and 3.3? Where do I look for
-> the issue?
-> 
-> Greetings
-> Marc
+> I'm surprised.  "mount -o remount,<options>" doesn't work on a mounted
+> procfs, and nobody noticed until now?
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42991
-for your bug/regression report, please add your address to the CC list in 
-there, thanks!
+For me initial mount -o options didn't apply these options. Then mount -o 
+remount,options applied these.
+
+> The patch looks OK - has it been tested with both valid and invalid
+> mount options?
+
+Well, it fixes my initial case where initial mount failed to apply options.
+
+Just tested with invalid options.
+
+[   18.518529] proc: unrecognized mount option "crap" or missing value
+
+but there is another problem - unmounting it and mounting without options 
+causes old option to persist:
+
+# mount none /proc -t proc -o hidepid=2
+# umount /proc
+# mount none /proc -t proc
+# grep "/proc" /proc/mounts
+none /proc proc rw,relatime,hidepid=2 0 0
+
+There should be no hidepid=2 now.
+
+> I redid the changelog:
+> 
+> 
+> From: Vasiliy Kulikov <segoon@openwall.com>
+> Subject: proc: fix mount -t proc -o AAA
+> 
+> The proc_parse_options() call from proc_mount() runs only once at boot
+> time.  So on any later mount attempt, any mount options are ignored
+> because ->s_root is already initialized.
+> 
+> As a consequence, "mount -o remount,<options>" will ignore the options.
+
+So this changelog doesn't match what I saw.
+
+> 
+> To fix this, parse the mount options unconditionally.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+> Cc: Alexey Dobriyan <adobriyan@gmail.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  fs/proc/root.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff -puN fs/proc/root.c~proc-fix-mount-t-proc-o-aaa fs/proc/root.c
+> --- a/fs/proc/root.c~proc-fix-mount-t-proc-o-aaa
+> +++ a/fs/proc/root.c
+> @@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct
+>  	if (IS_ERR(sb))
+>  		return ERR_CAST(sb);
+> 
+> +	if (!proc_parse_options(options, ns)) {
+> +		deactivate_locked_super(sb);
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+>  	if (!sb->s_root) {
+>  		sb->s_flags = flags;
+> -		if (!proc_parse_options(options, ns)) {
+> -			deactivate_locked_super(sb);
+> -			return ERR_PTR(-EINVAL);
+> -		}
+>  		err = proc_fill_super(sb);
+>  		if (err) {
+>  			deactivate_locked_super(sb);
+> _
+
 
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
