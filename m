@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab2CYWBV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 18:01:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34686 "EHLO ogre.sisk.pl"
+	id S932365Ab2CYWCE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 18:02:04 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34729 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab2CYWBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 18:01:07 -0400
+	id S932238Ab2CYWBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 18:01:18 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] firmware_class: Split _request_firmware() into three functions
-Date: Mon, 26 Mar 2012 00:01:45 +0200
+Subject: [PATCH 5/6] PM / Sleep: Move disabling of usermode helpers to the freezer
+Date: Mon, 26 Mar 2012 00:03:49 +0200
 User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
 Cc: Stephen Boyd <sboyd@codeaurora.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -26,142 +26,186 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203260001.46109.rjw@sisk.pl>
+Message-Id: <201203260003.49406.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Split _request_firmware() into three functions,
-_request_firmware_prepare() doing preparatory work that need not be
-done under umhelper_sem, _request_firmware_cleanup() doing the
-post-error cleanup and _request_firmware() carrying out the remaining
-operations.
-
-This change is requisite for moving the acquisition of umhelper_sem
-from _request_firmware() to the callers, which is going to be done
-subsequently.
+The core suspend/hibernation code calls usermodehelper_disable() to
+avoid race conditions between the freezer and the starting of
+usermode helpers and each code path has to do that on its own.
+However, it is always called right before freeze_processes()
+and usermodehelper_enable() is always called right after
+thaw_processes().  For this reason, to avoid code duplication and
+to make the connection between usermodehelper_disable() and the
+freezer more visible, make freeze_processes() call it and remove the
+direct usermodehelper_disable() and usermodehelper_enable() calls
+from all suspend/hibernation code paths.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/firmware_class.c |   57 +++++++++++++++++++++++++++++-------------
- 1 file changed, 40 insertions(+), 17 deletions(-)
+ kernel/power/hibernate.c |   11 -----------
+ kernel/power/process.c   |    7 +++++++
+ kernel/power/suspend.c   |    7 -------
+ kernel/power/user.c      |   10 +---------
+ 4 files changed, 8 insertions(+), 27 deletions(-)
 
-Index: linux/drivers/base/firmware_class.c
+Index: linux/kernel/power/process.c
 ===================================================================
---- linux.orig/drivers/base/firmware_class.c
-+++ linux/drivers/base/firmware_class.c
-@@ -435,7 +435,7 @@ static void firmware_class_timeout(u_lon
- }
+--- linux.orig/kernel/power/process.c
++++ linux/kernel/power/process.c
+@@ -16,6 +16,7 @@
+ #include <linux/freezer.h>
+ #include <linux/delay.h>
+ #include <linux/workqueue.h>
++#include <linux/kmod.h>
  
- static struct firmware_priv *
--fw_create_instance(struct firmware *firmware, const char *fw_name,
-+fw_create_instance(const struct firmware *firmware, const char *fw_name,
- 		   struct device *device, bool uevent, bool nowait)
+ /* 
+  * Timeout for stopping processes
+@@ -122,6 +123,10 @@ int freeze_processes(void)
  {
- 	struct firmware_priv *fw_priv;
-@@ -449,7 +449,7 @@ fw_create_instance(struct firmware *firm
- 		goto err_out;
- 	}
+ 	int error;
  
--	fw_priv->fw = firmware;
-+	fw_priv->fw = (struct firmware *)firmware;
- 	fw_priv->nowait = nowait;
- 	strcpy(fw_priv->fw_id, fw_name);
- 	init_completion(&fw_priv->completion);
-@@ -510,13 +510,10 @@ static void fw_destroy_instance(struct f
- 	device_unregister(f_dev);
++	error = usermodehelper_disable();
++	if (error)
++		return error;
++
+ 	if (!pm_freezing)
+ 		atomic_inc(&system_freezing_cnt);
+ 
+@@ -187,6 +192,8 @@ void thaw_processes(void)
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
+ 
++	usermodehelper_enable();
++
+ 	schedule();
+ 	printk("done.\n");
  }
+Index: linux/kernel/power/suspend.c
+===================================================================
+--- linux.orig/kernel/power/suspend.c
++++ linux/kernel/power/suspend.c
+@@ -12,7 +12,6 @@
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/init.h>
+-#include <linux/kmod.h>
+ #include <linux/console.h>
+ #include <linux/cpu.h>
+ #include <linux/syscalls.h>
+@@ -102,17 +101,12 @@ static int suspend_prepare(void)
+ 	if (error)
+ 		goto Finish;
  
--static int _request_firmware(const struct firmware **firmware_p,
--			     const char *name, struct device *device,
--			     bool uevent, bool nowait)
-+static int _request_firmware_prepare(const struct firmware **firmware_p,
-+				     const char *name, struct device *device)
- {
--	struct firmware_priv *fw_priv;
- 	struct firmware *firmware;
--	int retval = 0;
- 
- 	if (!firmware_p)
- 		return -EINVAL;
-@@ -533,10 +530,26 @@ static int _request_firmware(const struc
- 		return 0;
- 	}
- 
-+	return 1;
-+}
-+
-+static void _request_firmware_cleanup(const struct firmware **firmware_p)
-+{
-+	release_firmware(*firmware_p);
-+	*firmware_p = NULL;
-+}
-+
-+static int _request_firmware(const struct firmware *firmware,
-+			     const char *name, struct device *device,
-+			     bool uevent, bool nowait)
-+{
-+	struct firmware_priv *fw_priv;
-+	int retval;
-+
- 	retval = usermodehelper_read_trylock();
- 	if (WARN_ON(retval)) {
- 		dev_err(device, "firmware: %s will not be loaded\n", name);
--		goto out_nolock;
-+		return retval;
- 	}
- 
- 	if (uevent)
-@@ -572,13 +585,6 @@ static int _request_firmware(const struc
- 
- out:
- 	usermodehelper_read_unlock();
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto Finish;
 -
--out_nolock:
--	if (retval) {
--		release_firmware(firmware);
--		*firmware_p = NULL;
--	}
--
- 	return retval;
- }
- 
-@@ -601,7 +607,17 @@ int
- request_firmware(const struct firmware **firmware_p, const char *name,
-                  struct device *device)
- {
--        return _request_firmware(firmware_p, name, device, true, false);
-+	int ret;
-+
-+	ret = _request_firmware_prepare(firmware_p, name, device);
-+	if (ret <= 0)
-+		return ret;
-+
-+	ret = _request_firmware(*firmware_p, name, device, true, false);
-+	if (ret)
-+		_request_firmware_cleanup(firmware_p);
-+
-+	return ret;
- }
- 
- /**
-@@ -639,8 +655,15 @@ static int request_firmware_work_func(vo
+ 	error = suspend_freeze_processes();
+ 	if (!error)
  		return 0;
- 	}
  
--	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-+	ret = _request_firmware_prepare(&fw, fw_work->name, fw_work->device);
-+	if (ret <= 0)
-+		return ret;
-+
-+	ret = _request_firmware(fw, fw_work->name, fw_work->device,
- 				fw_work->uevent, true);
-+	if (ret)
-+		_request_firmware_cleanup(&fw);
-+
- 	fw_work->cont(fw, fw_work->context);
+ 	suspend_stats.failed_freeze++;
+ 	dpm_save_failed_step(SUSPEND_FREEZE);
+-	usermodehelper_enable();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_SUSPEND);
+ 	pm_restore_console();
+@@ -259,7 +253,6 @@ int suspend_devices_and_enter(suspend_st
+ static void suspend_finish(void)
+ {
+ 	suspend_thaw_processes();
+-	usermodehelper_enable();
+ 	pm_notifier_call_chain(PM_POST_SUSPEND);
+ 	pm_restore_console();
+ }
+Index: linux/kernel/power/hibernate.c
+===================================================================
+--- linux.orig/kernel/power/hibernate.c
++++ linux/kernel/power/hibernate.c
+@@ -16,7 +16,6 @@
+ #include <linux/string.h>
+ #include <linux/device.h>
+ #include <linux/async.h>
+-#include <linux/kmod.h>
+ #include <linux/delay.h>
+ #include <linux/fs.h>
+ #include <linux/mount.h>
+@@ -620,10 +619,6 @@ int hibernate(void)
+ 	sys_sync();
+ 	printk("done.\n");
  
- 	module_put(fw_work->module);
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto Exit;
+-
+ 	error = freeze_processes();
+ 	if (error)
+ 		goto Free_bitmaps;
+@@ -660,7 +655,6 @@ int hibernate(void)
+ 	freezer_test_done = false;
+ 
+  Free_bitmaps:
+-	usermodehelper_enable();
+ 	free_basic_memory_bitmaps();
+  Exit:
+ 	pm_notifier_call_chain(PM_POST_HIBERNATION);
+@@ -780,10 +774,6 @@ static int software_resume(void)
+ 	if (error)
+ 		goto close_finish;
+ 
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto close_finish;
+-
+ 	pr_debug("PM: Preparing processes for restore.\n");
+ 	error = freeze_processes();
+ 	if (error) {
+@@ -802,7 +792,6 @@ static int software_resume(void)
+ 	swsusp_free();
+ 	thaw_processes();
+  Done:
+-	usermodehelper_enable();
+ 	free_basic_memory_bitmaps();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_RESTORE);
+Index: linux/kernel/power/user.c
+===================================================================
+--- linux.orig/kernel/power/user.c
++++ linux/kernel/power/user.c
+@@ -12,7 +12,6 @@
+ #include <linux/suspend.h>
+ #include <linux/syscalls.h>
+ #include <linux/reboot.h>
+-#include <linux/kmod.h>
+ #include <linux/string.h>
+ #include <linux/device.h>
+ #include <linux/miscdevice.h>
+@@ -222,14 +221,8 @@ static long snapshot_ioctl(struct file *
+ 		sys_sync();
+ 		printk("done.\n");
+ 
+-		error = usermodehelper_disable();
+-		if (error)
+-			break;
+-
+ 		error = freeze_processes();
+-		if (error)
+-			usermodehelper_enable();
+-		else
++		if (!error)
+ 			data->frozen = 1;
+ 		break;
+ 
+@@ -238,7 +231,6 @@ static long snapshot_ioctl(struct file *
+ 			break;
+ 		pm_restore_gfp_mask();
+ 		thaw_processes();
+-		usermodehelper_enable();
+ 		data->frozen = 0;
+ 		break;
+ 
 
