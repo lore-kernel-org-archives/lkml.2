@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab2CYSxx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 14:53:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48077 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779Ab2CYSxv convert rfc822-to-8bit (ORCPT
+	id S1756857Ab2CYTEk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 15:04:40 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51106 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756813Ab2CYTEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 14:53:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXcJCdt+X53zrSUbpvFxL2WzuQH6MWByFvQ5E0UT2LHYg@mail.gmail.com>
-References: <1332323515-7314-1-git-send-email-geert@linux-m68k.org>
-	<1332323515-7314-5-git-send-email-geert@linux-m68k.org>
-	<4F6E950E.30809@gmail.com>
-	<CAMuHMdXcJCdt+X53zrSUbpvFxL2WzuQH6MWByFvQ5E0UT2LHYg@mail.gmail.com>
-Date: Mon, 26 Mar 2012 07:53:50 +1300
-Message-ID: <CAOmrzk+m2+GKOu+1nOJ2E1Aogx3Lj7vbUDHG5azK+A492MkDOw@mail.gmail.com>
-Subject: Re: [PATCH 05/11] m68k/atari: Add missing platform check before
- registering platform devices
-From: Michael Schmitz <schmitzmic@googlemail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 Mar 2012 15:04:39 -0400
+Date: Sun, 25 Mar 2012 15:04:22 -0400 (EDT)
+Message-Id: <20120325.150422.2000357641354896689.davem@davemloft.net>
+To: consul.kautuk@gmail.com
+Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
+        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20 v2] sparc/mm/fault_32.c: Port OOM changes to
+ do_sparc_fault
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1332698315-2218-1-git-send-email-consul.kautuk@gmail.com>
+References: <1332698315-2218-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 25 Mar 2012 12:04:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+From: Kautuk Consul <consul.kautuk@gmail.com>
+Date: Sun, 25 Mar 2012 13:58:35 -0400
 
+> +	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+> +					(write ? FAULT_FLAG_WRITE : 0));
 
->> How about this instead - probe for the EtherNAT config register, and
->> register devices only if found?
->
-> That's even better, but logically, it's an extra change on top, so I'd like
-> to keep it separate.
+Still indented wrong, it should be:
 
-OK, I'll resend as soon as I've pulled your latest changes.
+	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+			      (write ? FAULT_FLAG_WRITE : 0));
 
->> +    if (MACH_IS_ATARI) {
->
-> I prefer the "if (!MACH_IS_ATARI) return -ENODEV;" at the top, as it
->  - means less code to change if more platform devices are added,
->  - means less source code to keep on your mental stack when reading the code,
->  - decreases indentation for the rest of the function.
+The second line must have the openning parenthesis line up with
+the column after the openning parenthesis on the first line.  Do
+not use only tabs to indent this stuff, line it up properly.
 
-OK; do you want the tests and platform calls conditional on config
-options (we only need to have the platform data available if there's a
-driver or module built to use it)?
+You need to use tabs and spaces to line it up.  Use something like
+emacs's C-mode to help you if you can't do it right by hand.
 
-Cheers,
+> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
+> +					1, regs, address);
 
-  Michael
+Still wrong, for the same exact reason.
+
+I went out of my way to reply to your private email (which I usually
+ignore, you should never email developers privately) and you didn't
+even listen to the feedback I gave you.
