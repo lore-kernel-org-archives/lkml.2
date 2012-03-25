@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab2CYRt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 13:49:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63613 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab2CYRt0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 13:49:26 -0400
-Date: Sun, 25 Mar 2012 21:49:10 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
-Message-ID: <20120325174910.GA10883@albatros>
-References: <201203220903.15360.a.miskiewicz@gmail.com>
- <201203250924.06908.a.miskiewicz@gmail.com>
- <20120325153612.GC4391@albatros>
- <201203251940.58668.a.miskiewicz@gmail.com>
+	id S1756733Ab2CYRvg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 13:51:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23256 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756666Ab2CYRve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 13:51:34 -0400
+Date: Sun, 25 Mar 2012 19:42:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2.1 01/10] cpu: Introduce clear_tasks_mm_cpumask()
+	helper
+Message-ID: <20120325174210.GA23605@redhat.com>
+References: <20120324102609.GA28356@lizard> <20120324102751.GA29067@lizard> <1332593021.16159.27.camel@twins> <20120324164316.GB3640@lizard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201203251940.58668.a.miskiewicz@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120324164316.GB3640@lizard>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 25, 2012 at 19:40 +0200, Arkadiusz Miśkiewicz wrote:
-> I wonder if it should support noxx options then (like nogid, nohidepid) ? 
+On 03/24, Anton Vorontsov wrote:
+>
+> Many architctures clear tasks' mm_cpumask like this:
+>
+> 	read_lock(&tasklist_lock);
+> 	for_each_process(p) {
+> 		if (p->mm)
+> 			cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
+> 	}
+> 	read_unlock(&tasklist_lock);
 
-hidepid=0 is "nohidepid".  It is described in Documentation/filesystems/proc.txt.
+Namely arm, powerpc, and sh.
 
-gid makes sense only when hidepid > 0, so there is no sense in nogid.
+> The code above has several problems, such as:
+>
+> 1. Working with task->mm w/o getting mm or grabing the task lock is
+>    dangerous as ->mm might disappear (exit_mm() assigns NULL under
+>    task_lock(), so tasklist lock is not enough).
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+This is not actually true for arm and sh, afaics. They do not even
+need tasklist or rcu lock for for_each_process().
+
+__cpu_disable() is called by __stop_machine(), we know that nobody
+can preempt us and other CPUs can do nothing.
+
+> 2. Checking for process->mm is not enough because process' main
+>    thread may exit or detach its mm via use_mm(), but other threads
+>    may still have a valid mm.
+
+Yes,
+
+> Also, Per Peter Zijlstra's idea, now we don't grab tasklist_lock in
+> the new helper, instead we take the rcu read lock. We can do this
+> because the function is called after the cpu is taken down and marked
+> offline, so no new tasks will get this cpu set in their mm mask.
+
+And only powerpc needs rcu_read_lock() and task_lock().
+
+OTOH, I do not understand why powepc does this on CPU_DEAD...
+And probably CPU_UP_CANCELED doesn't need to clear mm_cpumask().
+
+That said, personally I think these patches are fine, the common
+helper makes sense.
+
+Oleg.
+
