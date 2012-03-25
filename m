@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab2CYJHL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 05:07:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37749 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785Ab2CYJHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 05:07:09 -0400
-Date: Sun, 25 Mar 2012 11:07:05 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
-        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Harald Hoyer <harald@redhat.com>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
- initrd
-Message-ID: <20120325090705.GB12565@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
-	vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org, x86@kernel.org,
-	Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-	robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
-	Harald Hoyer <harald@redhat.com>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de>
- <4F6CD79A.8020805@zytor.com>
- <201203240242.07724.trenn@suse.de>
- <4F6D2AF8.3070707@zytor.com>
- <20120324184238.GB13978@phenom.dumpdata.com>
- <4F6E1D6F.4000308@zytor.com>
- <20120324191718.GA3927@phenom.dumpdata.com>
- <4F6E48CD.9050002@zytor.com>
- <4F6E9C51.9000406@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F6E9C51.9000406@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755275Ab2CYJQp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 05:16:45 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:55990 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab2CYJQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 05:16:44 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 25 Mar 2012 11:16:38 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Matthew Garrett <mjg@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: PCIe ASPM: new Kconfig prompt without help text
+Message-ID: <20120325111638.2afa6281@stein>
+In-Reply-To: <20120325110508.4167f140@stein>
+References: <20120325110508.4167f140@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 09:17:21PM -0700, H. Peter Anvin wrote:
-> The more I think about it the more I really think this is the right
-> approach.  For microcode, this means we don't have to worry about
-> creating a super-container for the various microcode formats; we can
-> simply have:
+On Mar 25 Stefan Richter wrote:
+> > $ make oldconfig
+> >     PCI Express ASPM control (PCIEASPM) [Y/?] y
+> >       Debug PCI Express ASPM (PCIEASPM_DEBUG) [N/y/?] n
+> >       Default ASPM policy
+> >       > 1. BIOS default (PCIEASPM_DEFAULT) (NEW)
+> >         2. Powersave (PCIEASPM_POWERSAVE) (NEW)
+> >         3. Performance (PCIEASPM_PERFORMANCE) (NEW)
+> >       choice[1-3]: ?
+> > 
+> > There is no help available for this option.
 > 
-> 	kernel/x86/microcode/GenuineIntel
-> 	kernel/x86/microcode/AuthenticAMD
-> 
-> ... which solves the problem neatly.
+> Choices, choices.  Can we get a little explanation here what option should
+> be chosen in which environments?
 
-Yes, this is actually pretty neat. Basically, distro vendors will get
-ucode images from the resp. hw vendors, put them in the proper hierarchy
-as above and generate the cpio archive, easy.
-
-> It does beg the question if you want to be able to have multiple:
-> 
-> 	kernel/acpi/...
-> 
-> ... files, to make managing different tables easier, or is that overkill?
-
-Well, like the above, different sub-namespaces...
-
+I am noticing now that there are actually brief help texts at each option,
+and "make xconfig" for example is able to show them (and that
+PCIEASPM_DEFAULT is suggested as default value in xconfig).  But the "make
+oldconfig" case is evidently left out in the cold WRT meaning of the
+choices and which one should be preferred if in doubt.
 -- 
-Regards/Gruss,
-    Boris.
+Stefan Richter
+-=====-===-- --== ==--=
+http://arcgraph.de/sr/
