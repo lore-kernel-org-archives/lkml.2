@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab2CYPaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 11:30:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49132 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406Ab2CYPa3 (ORCPT
+	id S1756451Ab2CYPgT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 11:36:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41660 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960Ab2CYPgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 11:30:29 -0400
-Date: Sun, 25 Mar 2012 12:30:11 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf, tool: Fix the array pointer to follow event data
- properly
-Message-ID: <20120325153011.GF25820@infradead.org>
-References: <1332598796-3586-1-git-send-email-jolsa@redhat.com>
- <4F6DEF86.7050303@gmail.com>
- <CABPqkBR+SOVzKjaP4oiapPbS2x+pheooVF=6qL15VVG=KuFYyw@mail.gmail.com>
+	Sun, 25 Mar 2012 11:36:18 -0400
+Date: Sun, 25 Mar 2012 19:36:12 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
+Message-ID: <20120325153612.GC4391@albatros>
+References: <201203220903.15360.a.miskiewicz@gmail.com>
+ <20120323171058.GA3279@albatros>
+ <20120323161504.dced28b9.akpm@linux-foundation.org>
+ <201203250924.06908.a.miskiewicz@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABPqkBR+SOVzKjaP4oiapPbS2x+pheooVF=6qL15VVG=KuFYyw@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <201203250924.06908.a.miskiewicz@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Mar 24, 2012 at 06:21:05PM +0100, Stephane Eranian escreveu:
-> Yes, and I haven't heard back since then
+On Sun, Mar 25, 2012 at 09:24 +0200, Arkadiusz MiÅ›kiewicz wrote:
+> but there is another problem - unmounting it and mounting without options 
+> causes old option to persist:
 > 
-> On Sat, Mar 24, 2012 at 5:00 PM, David Ahern <dsahern@gmail.com> wrote:
-> > Stephane submitted a similar patch a week ago:
-> > https://lkml.org/lkml/2012/3/17/91
+> # mount none /proc -t proc -o hidepid=2
+> # umount /proc
+> # mount none /proc -t proc
+> # grep "/proc" /proc/mounts
+> none /proc proc rw,relatime,hidepid=2 0 0
+> 
+> There should be no hidepid=2 now.
 
+No, that's an expected behaviour.
 
-Gack, I updated one of my machines and the postfix setup had some issues
-with SELinux.
+Procfs is a special filesystem.  Mount options are not reset on each
+mount(2) as you can mount procfs multiple times at different mount points
+(/proc/, /aaa/proc/, etc.).  Each time you add mount options they are
+applied to _each_ mount point because there is no per-mount point sb, but
+there is a per pid_ns superblock: pid_ns itself.  All options are stored
+at pid_ns.
 
-Yeah, I noticed its the same fix Stephane submitted last week and that I
-should have already sent Ingo's way.
+When you mount it another time without any option nothing should change
+at the old mount points.  When you umount the last mount point all mount
+options are still stored.  When you mount it again old options are used
+(unless you override them).
 
-Ingo, please apply the one from Stephane, next time I process it if you
-haven't yet I'll make sure it gets pushed.
+Thanks,
 
-- Arnaldo
-
-> > David
-> >
-> >
-> > On 3/24/12 8:19 AM, Jiri Olsa wrote:
-> >>
-> >> Currently we dont update the 'array' pointer properly after
-> >> processing the RAW data. This way perf might report wrong data
-> >> for branch stack if it is used along with tracepoint sample.
-> >>
-> >> I'm not sure tracepoint could be connected with branch stack,
-> >> but I think the array pointer should have correct value after
-> >> each sample processing.
-> >>
-> >> Signed-off-by: Jiri Olsa<jolsa@redhat.com>
-> >> ---
-> >>  tools/perf/util/evsel.c |    1 +
-> >>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> >> index d9da62a..56a96896 100644
-> >> --- a/tools/perf/util/evsel.c
-> >> +++ b/tools/perf/util/evsel.c
-> >> @@ -580,6 +580,7 @@ int perf_event__parse_sample(const union perf_event
-> >> *event, u64 type,
-> >>                        return -EFAULT;
-> >>
-> >>                data->raw_data = (void *) pdata;
-> >> +               array = (u64 *)(((char *)array) + data->raw_size +
-> >> sizeof(u32));
-> >>        }
-> >>
-> >>        if (type&  PERF_SAMPLE_BRANCH_STACK) {
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
