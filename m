@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105Ab2CYESN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 00:18:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39319 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812Ab2CYESL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 00:18:11 -0400
-Message-ID: <4F6E9C51.9000406@zytor.com>
-Date: Sat, 24 Mar 2012 21:17:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
-        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Harald Hoyer <harald@redhat.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
- initrd
-References: <1332512984-79664-1-git-send-email-trenn@suse.de> <4F6CD79A.8020805@zytor.com> <201203240242.07724.trenn@suse.de> <4F6D2AF8.3070707@zytor.com> <20120324184238.GB13978@phenom.dumpdata.com> <4F6E1D6F.4000308@zytor.com> <20120324191718.GA3927@phenom.dumpdata.com> <4F6E48CD.9050002@zytor.com>
-In-Reply-To: <4F6E48CD.9050002@zytor.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+	id S1751606Ab2CYF51 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 01:57:27 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:47315 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab2CYF50 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 01:57:26 -0400
+Date: Sun, 25 Mar 2012 01:57:19 -0400 (EDT)
+Message-Id: <20120325.015719.1170644257291462749.davem@davemloft.net>
+To: acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org
+Subject: perf crashes related to map/sym mismatch
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 24 Mar 2012 22:57:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2012 03:21 PM, H. Peter Anvin wrote:
-> The attached cpio-parsing code compiles to 458 bytes on x86-64 and 476
-> bytes on i386, and that is without any library dependencies at all.
-> Again, it will completely stop at the first compressed data item, so any
-> such kernel objects absolutely will have to be first.  In good Linux
-> tradition, it is also completely untested.
-> 
-> However, given that very reasonable size I would think that this is a
-> reasonable approach.  Anyone who has a better suggestion for the
-> namespace than "kernel/"?
-> 
 
-The more I think about it the more I really think this is the right
-approach.  For microcode, this means we don't have to worry about
-creating a super-container for the various microcode formats; we can
-simply have:
+I have perf crashes that eminate in two different ways, but the cause
+seems to be identical.  The two symptoms are:
 
-	kernel/x86/microcode/GenuineIntel
-	kernel/x86/microcode/AuthenticAMD
+1) SYM rbtree corruption, pointers have their low bits set.
 
-... which solves the problem neatly.
+2) segmentation fault in symbol__inc_addr_samples
 
-It does beg the question if you want to be able to have multiple:
+   h->addr[offset]++ crashes because offset is "huge" and
+   offset is "huge" because addr < sym->start
 
-	kernel/acpi/...
+It turns out that #2 is what causes #1, incrementing random addresses
+eventually hits a SYM rbtree linkage address thus corrupting the
+pointer to be odd.
 
-... files, to make managing different tables easier, or is that overkill?
+Why is "addr" smaller than sym->start?  It's because the 'map' used to
+perform ->map_ip() and adjust "ip" in perf_top__record_precise_ip() is
+different from the 'map' used earlier to invoke ->map_ip() to
+calculate the final al->addr value in thread__find_addr_map().
 
-	-hpa
+Basically if al->map != he->ms.map we are in trouble.
 
+As best I can tell this happens because the hist entry sort routines
+do not take the map into account when doing comparisons of whether the
+symbols of two hist entries are equal.
+
+So you can end up with a hist entry from a lookup which uses a 'map'
+on a DSO which is stale and has subsequently been updated from a more
+recent MMAP event.  In my case we have two map objects of libc, the
+older one in the hist_entry covers:
+
+start = 0xf77bc000
+end = 0xf7928000
+
+whereas the newer one in the al->map covers:
+
+start = 0xf765c000
+end = 0xf77c8000
+
+The hist_entry map is probably in the current thread's removed_maps
+tree, and indeed there is an explicit comment about this in
+map_groups__flush()
+
+So it looks like we did a lookup on a symbol in libc pre-exec() and
+created a hist_entry for it, then we flush the map groups on the
+exec() and in the newly exec'd program we then do a lookup on the same
+symbol and this is where we find the hist_entry with the out-of-date
+map information.
+
+Perhaps that the right thing to do is to explicitly detect this
+situation and flush out the hist_entry with the stale map information
+so we can create one with more uptodate mapping info.
