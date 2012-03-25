@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab2CYTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 15:22:26 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:57294 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756844Ab2CYTWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 15:22:25 -0400
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Mar 2012 15:22:25 EDT
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Hagen Paul Pfeifer <hagen@jauu.net>
-Subject: [PATCH] epoll: add EPOLLEXCLUSIVE support
-Date: Sun, 25 Mar 2012 21:12:41 +0200
-Message-Id: <1332702761-4655-1-git-send-email-hagen@jauu.net>
-X-Mailer: git-send-email 1.7.9.1
+	id S1756884Ab2CYT15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 15:27:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44174 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756795Ab2CYT14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 15:27:56 -0400
+Message-ID: <4F6F719B.5020806@zytor.com>
+Date: Sun, 25 Mar 2012 12:27:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
+Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
+References: <20111128204311.GA2814@aftab> <20111202194658.GF15204@aftab> <20111205092612.GB29641@elte.hu> <20111205151016.GC7834@aftab>
+In-Reply-To: <20111205151016.GC7834@aftab>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-High performance server sometimes create one listening socket (e.g. port
-80), create a epoll file descriptor and add the socket. Afterwards
-create SC_NPROCESSORS_ONLN threads and wait for events. This often
-result in a thundering herd problem because all CPUs are scheduled.
+On 12/05/2011 07:10 AM, Borislav Petkov wrote:
+> 
+> diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+> index 084ef95..95203d4 100644
+> --- a/arch/x86/include/asm/msr.h
+> +++ b/arch/x86/include/asm/msr.h
+> @@ -169,7 +169,14 @@ static inline int wrmsr_safe(unsigned msr, unsigned low, unsigned high)
+>  	return native_write_msr_safe(msr, low, high);
+>  }
+>  
+> -/* rdmsr with exception handling */
+> +/*
+> + * rdmsr with exception handling.
+> + *
+> + * Please note that the exception handling works only after we've
+> + * switched to the "smart" #GP handler in trap_init() which knows about
+> + * exception tables - using this macro earlier than that causes machine
+> + * hangs on boxes which do not implement the @msr in the first argument.
+> + */
+>  #define rdmsr_safe(msr, p1, p2)					\
+>  ({								\
+>  	int __err;						\
 
-This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
-If a descriptor is added with this flag only one CPU is scheduled in.
+I keep wondering if we couldn't have the early-static trap handlers be
+aware of exception tables, too; they wouldn't have to worry about
+modules and so it would be reasonably easy.
 
-Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
----
-
-Dave rejected the patch and said not network specific. Because there
-is no epoll maintainer I send it now directly.
-
- fs/eventpoll.c            |    7 +++++--
- include/linux/eventpoll.h |    3 +++
- 2 files changed, 8 insertions(+), 2 deletions(-)
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 629e9ed..16d787f 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -88,7 +88,7 @@
-  */
- 
- /* Epoll private bits inside the event mask */
--#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
-+#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET | EPOLLEXCLUSIVE)
- 
- /* Maximum number of nesting allowed inside epoll sets */
- #define EP_MAX_NESTS 4
-@@ -969,7 +969,10 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
- 		init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
- 		pwq->whead = whead;
- 		pwq->base = epi;
--		add_wait_queue(whead, &pwq->wait);
-+		if (unlikely(epi->event.events & EPOLLEXCLUSIVE))
-+			add_wait_queue_exclusive(whead, &pwq->wait);
-+		else
-+			add_wait_queue(whead, &pwq->wait);
- 		list_add_tail(&pwq->llink, &epi->pwqlist);
- 		epi->nwait++;
- 	} else {
-diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
-index 657ab55..d334389 100644
---- a/include/linux/eventpoll.h
-+++ b/include/linux/eventpoll.h
-@@ -26,6 +26,9 @@
- #define EPOLL_CTL_DEL 2
- #define EPOLL_CTL_MOD 3
- 
-+/* Set Exclusive wake up behaviour for the target file descriptor */
-+#define EPOLLEXCLUSIVE (1 << 29)
-+
- /* Set the One Shot behaviour for the target file descriptor */
- #define EPOLLONESHOT (1 << 30)
- 
--- 
-1.7.9.1
-
+	-hpa
