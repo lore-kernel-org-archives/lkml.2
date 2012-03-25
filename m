@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab2CYUqf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 16:46:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52694 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab2CYUqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 16:46:34 -0400
-Date: Sun, 25 Mar 2012 13:50:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>, Alex Elder <elder@kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        Mark Fasheh <mfasheh@suse.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm for fs: add truncate_pagecache_range
-Message-Id: <20120325135002.185b4caf.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1203251254570.1505@eggly.anvils>
-References: <alpine.LSU.2.00.1203231343380.1940@eggly.anvils>
-	<20120323140120.11f95cd5.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1203231406090.2207@eggly.anvils>
-	<20120323155950.f9bfb097.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1203251254570.1505@eggly.anvils>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932092Ab2CYUv7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 16:51:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49023 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757053Ab2CYUv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 16:51:58 -0400
+Message-ID: <1332708684.2882.24.camel@pasglop>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Date: Mon, 26 Mar 2012 07:51:24 +1100
+In-Reply-To: <4F6EEEC1.4030608@redhat.com>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>
+	 <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+	 <4F6EEEC1.4030608@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Mar 2012 13:26:10 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+On Sun, 2012-03-25 at 12:09 +0200, Avi Kivity wrote:
 
-> Building a test kernel quickly told me that inode->i_mapping->i_mutex
-> doesn't exist, of course it's inode->i_mutex.
+> Well I've been doing this ever since I moved to git.  The motivation was
+> actually to make things easier for patch authors by allowing them to
+> work against a tree of all applied patches, while the update for the
+> next merge window is just a subset, with more fixes going into the merge
+> window even late in the cycle, and features being deferred to the next
+> one.  I also fold fixes or reverts into their parent patches to improve
+> bisectability.
 > 
-> Then running the test kernel quickly told me that neither ext4 nor xfs
-> (I didn't try ocfs2) holds inode->i_mutex where holepunching calls
-> truncate_inode_pages_range().
-> 
-> Now, there might or might not be reasons why ext4 or xfs ought to hold
-> i_mutex there for its own consistency, but it's beyond me to determine
-> that: let's assume they're correct without evidence to the contrary.
-> 
-> Stabilizing i_size is not a reason: holepunching does not affect i_size
-> and is not affected by i_size (okay, ext4 still has the bug I reported
-> a couple of months ago, whereby its holepunching stops at i_size,
-> forgetting blocks fallocated beyond; but no doubt that will get fixed).
-> 
-> And nothing that truncate_pagecache_range() does needs i_mutex:
-> neither the unmap_mapping_range() nor the truncate_inode_pages_range()
-> needs i_mutex.  A year ago, yes, Miklos showed how unmap_mapping_range()
-> was relying on mutex serialization, and added an additional mutex for
-> that, which Peter was able to remove once he mutified i_mmap_lock.
-> 
-> truncate_pagecache_range() is just a drop-in replacement for
-> truncate_inode_pages_range(), and has no different locking needs.
+> I can switch to fast-forward-only in the future, but I'm afraid that
+> this particular tree is broken for good.  The un-rebased
+> fast-forward-only source for this is kvm.git master, which I don't think
+> you want to pull.  It will cause every kvm commit to appear twice and
+> confuse everyone. 
 
-Does anything prevent new pages from getting added to pagecache and
-perhaps faulted into VMAs after or during the execution of these
-functions?
+The problem is that it makes it very hard if not impossible to work
+with a combination of your tree & other trees (for example at some point
+I had to work on a merge of alex'tree, powerpc-next and pci-next).
 
-Also, I wonder what prevents pages in the range from being dirtied
-between ext4_ext_punch_hole()'s filemap_write_and_wait_range() and
-truncate_inode_pages_range().
+I don't see the problem with using the standard way and having
+sub-maintainers/developers.... Most of my sub-maintainers work on top of
+some upstream or they branch off my -next branch (which is known to
+never be rebased, so it's resync'ed as soon as Linux pulls it). Dealing
+with branches & merges in git is trivial and easier than dealing with
+the clashes caused by the rebases :-)
+
+One thing I do, is to also sometimes put out a powerpc-test branch that
+people know can and will be rebased, it's purely there if I want some
+folks to test a bunch of stuff but without basing their own work on top
+of it.
+
+And yes, there's a drawback vs. bisectability. You can still fold-in if
+you pickup patches from the list (vs pulling from sub-maintainers) as
+long as you haven't committed them to a "non-rebase" branch (ie, you can
+let things stage in a test branch for example for a couple of weeks to
+flush out those issues).
+
+Cheers,
+Ben.
+
+
