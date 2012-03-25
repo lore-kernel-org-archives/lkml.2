@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab2CYTRE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 15:17:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58730 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807Ab2CYTRC (ORCPT
+	id S1756896Ab2CYTW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 15:22:26 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:57294 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756844Ab2CYTWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 15:17:02 -0400
-Date: Sun, 25 Mar 2012 12:16:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Rik van Riel <riel@redhat.com>
-cc: Anton Blanchard <anton@samba.org>, aarcange@redhat.com, mel@csn.ul.ie,
-        akpm@linux-foundation.org, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Re: kswapd stuck using 100% CPU
-In-Reply-To: <20120324102621.353114da@annuminas.surriel.com>
-Message-ID: <alpine.LSU.2.00.1203251212050.1984@eggly.anvils>
-References: <20120324130353.48f2e4c8@kryten> <20120324102621.353114da@annuminas.surriel.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 25 Mar 2012 15:22:25 -0400
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Mar 2012 15:22:25 EDT
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Hagen Paul Pfeifer <hagen@jauu.net>
+Subject: [PATCH] epoll: add EPOLLEXCLUSIVE support
+Date: Sun, 25 Mar 2012 21:12:41 +0200
+Message-Id: <1332702761-4655-1-git-send-email-hagen@jauu.net>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Mar 2012, Rik van Riel wrote:
-> 
-> Only test compaction_suitable if the kernel is built with CONFIG_COMPACTION,
-> otherwise the stub compaction_suitable function will always return
-> COMPACT_SKIPPED and send kswapd into an infinite loop.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Reported-by: Anton Blanchard <anton@samba.org>
+High performance server sometimes create one listening socket (e.g. port
+80), create a epoll file descriptor and add the socket. Afterwards
+create SC_NPROCESSORS_ONLN threads and wait for events. This often
+result in a thundering herd problem because all CPUs are scheduled.
 
-Thank you, Anton and Rik.  I never quite got around to investigating
-why swapping had been nearly twice as slow with linux-next on my Aspire
-One (with a relatively minimal config, omitting COMPACTION).  That was
-the reason (one half of the HT cpu busy in kswapd), and this fixes it.
+This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
+If a descriptor is added with this flag only one CPU is scheduled in.
 
-Tested-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+---
 
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 7658fd6..33c332b 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2946,7 +2946,8 @@ out:
->  				continue;
->  
->  			/* Would compaction fail due to lack of free memory? */
-> -			if (compaction_suitable(zone, order) == COMPACT_SKIPPED)
-> +			if (COMPACTION_BUILD &&
-> +			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
->  				goto loop_again;
->  
->  			/* Confirm the zone is balanced for order-0 */
+Dave rejected the patch and said not network specific. Because there
+is no epoll maintainer I send it now directly.
+
+ fs/eventpoll.c            |    7 +++++--
+ include/linux/eventpoll.h |    3 +++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 629e9ed..16d787f 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -88,7 +88,7 @@
+  */
+ 
+ /* Epoll private bits inside the event mask */
+-#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
++#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET | EPOLLEXCLUSIVE)
+ 
+ /* Maximum number of nesting allowed inside epoll sets */
+ #define EP_MAX_NESTS 4
+@@ -969,7 +969,10 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
+ 		init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
+ 		pwq->whead = whead;
+ 		pwq->base = epi;
+-		add_wait_queue(whead, &pwq->wait);
++		if (unlikely(epi->event.events & EPOLLEXCLUSIVE))
++			add_wait_queue_exclusive(whead, &pwq->wait);
++		else
++			add_wait_queue(whead, &pwq->wait);
+ 		list_add_tail(&pwq->llink, &epi->pwqlist);
+ 		epi->nwait++;
+ 	} else {
+diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
+index 657ab55..d334389 100644
+--- a/include/linux/eventpoll.h
++++ b/include/linux/eventpoll.h
+@@ -26,6 +26,9 @@
+ #define EPOLL_CTL_DEL 2
+ #define EPOLL_CTL_MOD 3
+ 
++/* Set Exclusive wake up behaviour for the target file descriptor */
++#define EPOLLEXCLUSIVE (1 << 29)
++
+ /* Set the One Shot behaviour for the target file descriptor */
+ #define EPOLLONESHOT (1 << 30)
+ 
+-- 
+1.7.9.1
+
