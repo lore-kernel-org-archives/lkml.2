@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab2CYSbW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 14:31:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48514 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab2CYSbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 14:31:21 -0400
-Date: Sun, 25 Mar 2012 19:31:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Richard Weinberger <richard@nod.at>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: TTY: tty_port questions
-Message-ID: <20120325183114.GM6589@ZenIV.linux.org.uk>
-References: <4F5BD51B.7030907@nod.at>
- <4F5BDB09.3020407@suse.cz>
- <4F5BE1E6.9000201@nod.at>
- <4F5C861F.2000507@nod.at>
- <4F5DCF39.8080308@nod.at>
- <20120312105312.665d2362@pyramind.ukuu.org.uk>
- <4F5DDAD4.4060504@nod.at>
- <20120312114832.784bb6fe@pyramind.ukuu.org.uk>
- <20120324232001.GK6589@ZenIV.linux.org.uk>
- <20120325155143.7ca7cb13@ultron>
+	id S1756766Ab2CYSjw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 14:39:52 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:34979 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756736Ab2CYSju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 14:39:50 -0400
+Date: Sun, 25 Mar 2012 20:38:07 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Subject: [git pull] cpupowerutils updates for 3.4
+Message-ID: <20120325183807.GA26398@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	torvalds@osdl.org, linux-kernel@vger.kernel.org,
+	cpufreq@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120325155143.7ca7cb13@ultron>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How is tty_port supposed to work wrt hotplug?  I.e. are those guys (OK,
-the structures they are embedded into) supposed to live as long as
-tty_driver lives?  AFAICS, for serial we have an extra layer atop of
-those guys (uart_port) and that's where removals seem to act, but there
-seems to be more to it...
+Linus,
 
-Suppose we handle uml reconfig requests as port removal + port addition;
-what's needed to make sure that port is out of use and we can play with
-it without stepping on anyone's toes?  Something along the lines of what
-uart_remove_one_port() is doing?  I.e. tty_unregister_device() + tty_vhangup()?
-But serial_core seems to be open-coding tty_port_open() for some reason
-and _there_ we have port->count updates under port->mutex, so the
-situation might be different...
+a few cpupower updates for 3.4 are available in the git repository at:
 
-Is there any FMtoR/thread/search terms that would give the description of
-the situation?
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git master
+
+Please pull from that location. The diffstat and list of changes is below,
+the individual diffs are sent (at least) to the cpufreq list.
+
+Thanks,
+        Dominik
+
+Franck Bui-Huu (5):
+      cpupower tool: remove use of undefined variables from the clean target of the top makefile
+      cpupower tool: makefile: simplify the recipe used to generate cpupower.pot target
+      cpupower tool: allow to build in a separate directory
+      cpupower tools: allow to build debug tools in a separate directory too
+      cpupower tools: add install target to the debug tools' makefiles
+
+Ozan Çağlayan (1):
+      cpupower: Fix linking with --as-needed
+
+Thomas Renninger (7):
+      cpupower: Better interface for accessing AMD pci registers
+      cpupower: AMD fam14h/Ontario monitor can also be used by fam12h cpus
+      cpupower: Add cpupower-idle-info manpage
+      cpupower: Unify cpupower-frequency-* manpages
+      cpupower: Fix number of idle states
+      cpupower: Remove unneeded code and by that fix a memleak
+      cpupower: Fix broken mask values
+
+ tools/power/cpupower/Makefile                      |   93 ++++++++++++--------
+ tools/power/cpupower/bench/Makefile                |   23 +++--
+ tools/power/cpupower/debug/i386/Makefile           |   40 ++++++---
+ tools/power/cpupower/debug/x86_64/Makefile         |   26 +++++-
+ tools/power/cpupower/man/cpupower-frequency-info.1 |    4 +-
+ tools/power/cpupower/man/cpupower-frequency-set.1  |    4 +-
+ tools/power/cpupower/man/cpupower-idle-info.1      |   90 +++++++++++++++++++
+ tools/power/cpupower/man/cpupower-monitor.1        |    2 +-
+ tools/power/cpupower/utils/cpuidle-info.c          |   12 +--
+ tools/power/cpupower/utils/helpers/amd.c           |    4 +-
+ tools/power/cpupower/utils/helpers/helpers.h       |   11 ++-
+ tools/power/cpupower/utils/helpers/pci.c           |   35 +++++---
+ .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |   25 +++---
+ 13 files changed, 259 insertions(+), 110 deletions(-)
+ create mode 100644 tools/power/cpupower/man/cpupower-idle-info.1
