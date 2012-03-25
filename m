@@ -1,136 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2CYPUh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 11:20:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43114 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab2CYPUg (ORCPT
+	id S1756428Ab2CYP1o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 11:27:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38686 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756356Ab2CYP1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 11:20:36 -0400
-Message-ID: <4F6F37B6.3050506@gmail.com>
-Date: Sun, 25 Mar 2012 10:20:22 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	Sun, 25 Mar 2012 11:27:43 -0400
+Date: Sun, 25 Mar 2012 19:27:36 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
+Message-ID: <20120325152736.GB4391@albatros>
+References: <201203220903.15360.a.miskiewicz@gmail.com>
+ <20120323171058.GA3279@albatros>
+ <20120323161504.dced28b9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Thomas Abraham <thomas.abraham@linaro.org>
-CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, rob.herring@calxeda.com,
-        patches@linaro.org
-Subject: Re: [PATCH] of/irq: of_irq_init: Call initialization function for
- all controllers
-References: <CAJuYYwS5Srw2-D6hdk=-=YN3iB37+KTWVqQPPPVbb-e7it+uVQ@mail.gmail.com> <1332679129-23864-1-git-send-email-thomas.abraham@linaro.org>
-In-Reply-To: <1332679129-23864-1-git-send-email-thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120323161504.dced28b9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2012 07:38 AM, Thomas Abraham wrote:
-> The of_irq_init function stops processing the interrupt controller hierarchy
-> when there are no more interrupt controller parents identified. Though this
-> condition suffices most cases, there are cases where a interrupt controller's
-> parent controller does not participate in the initialization of the interrupt
-> hierarchy. An example of such a case is the use of a interrupt nexus node
-> by a interrupt controller node which delivers interrupts to separate interrupt
-> parent controllers.
+On Fri, Mar 23, 2012 at 16:15 -0700, Andrew Morton wrote:
+> I'm surprised.  "mount -o remount,<options>" doesn't work on a mounted
+> procfs, and nobody noticed until now?
 > 
-> Instead of stopping the processing of interrupt controller hierarchy in such
-> a case, the orphan interrupt controller node's descriptor can be identified
-> and its 'logical' parent in the descriptor is set as NULL. The processing of
-> interrupt hierarchy is then restarted by looking for descriptors which have
-> a NULL interrupt parent.
+> The patch looks OK - has it been tested with both valid and invalid
+> mount options?
 > 
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
-
-Wouldn't this accomplish the same thing? You just need to add the
-wakeup-map node name to your matches list.
-
-
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 9cf0060..deeaf00 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -416,8 +416,6 @@ void __init of_irq_init(const struct of_device_id
-*matches)
-        INIT_LIST_HEAD(&intc_parent_list);
-
-        for_each_matching_node(np, matches) {
--               if (!of_find_property(np, "interrupt-controller", NULL))
--                       continue;
-                /*
-                 * Here, we allocate and populate an intc_desc with the node
-                 * pointer, interrupt-parent device_node etc.
-
-
->  drivers/of/irq.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 44 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 9cf0060..70c6ece 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -400,6 +400,38 @@ struct intc_desc {
->  };
->  
->  /**
-> + * of_irq_mark_orphan_desc - Set parent as NULL for a orphan intc_desc
-> + * @intc_desc_list: the list of intc_desc to search for orphan intc_desc
-> + *
-> + * This is a helper function for the of_irq_init function and is invoked
-> + * when there are child nodes available in intc_desc_list but there are
-> + * no parent nodes in intc_parent_list. When invoked, this function
-> + * searches for a intc_desc instance that does not have a parent intc_desc
-> + * instance in intc_desc_list. The very reason of the invocation of this
-> + * function ensures that a orphan intc_desc will be found. When found, the
-> + * interrupt_parent of the orphan intc_desc is set to NULL.
-> + */
-> +static void of_irq_mark_orphan_desc(struct list_head *intc_desc_list)
-> +{
-> +	struct intc_desc *desc, *temp_desc;
-> +
-> +	list_for_each_entry_safe(desc, temp_desc, intc_desc_list, list) {
-> +		struct intc_desc *td1, *td2;
-> +		list_for_each_entry_safe(td1, td2, intc_desc_list, list) {
-> +			if (desc->interrupt_parent == td1->dev)
-> +				break;
-> +		}
-> +		if (desc->interrupt_parent == td1->dev)
-> +			continue;
-> +
-> +		pr_debug("%s: set interrupt_parent of 'intc_desc' with dev name"
-> +			" %s as NULL\n", __func__, desc->dev->full_name);
-> +		desc->interrupt_parent = NULL;
-> +		return;
-> +	}
-> +}
-> +
-> +/**
->   * of_irq_init - Scan and init matching interrupt controllers in DT
->   * @matches: 0 terminated array of nodes to match and init function to call
->   *
-> @@ -481,8 +513,19 @@ void __init of_irq_init(const struct of_device_id *matches)
->  		/* Get the next pending parent that might have children */
->  		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
->  		if (list_empty(&intc_parent_list) || !desc) {
-> +			/*
-> +			 * This has reached a point where there are children in
-> +			 * the intc_desc_list but no parent in intc_parent_list.
-> +			 * This means there is a child desc in intc_desc_list
-> +			 * whose parent is not one of the remaining elements of
-> +			 * the intc_desc_list. Such a child node is marked as
-> +			 * orphan (interrupt_parent is set to NULL) and the
-> +			 * process continues with parent set to NULL.
-> +			 */
->  			pr_err("of_irq_init: children remain, but no parents\n");
-> -			break;
-> +			of_irq_mark_orphan_desc(&intc_desc_list);
-> +			parent = NULL;
-> +			continue;
->  		}
->  		list_del(&desc->list);
->  		parent = desc->dev;
+> I redid the changelog:
+> 
+> 
+> From: Vasiliy Kulikov <segoon@openwall.com>
+> Subject: proc: fix mount -t proc -o AAA
+> 
+> The proc_parse_options() call from proc_mount() runs only once at boot
+> time.  So on any later mount attempt, any mount options are ignored
+> because ->s_root is already initialized.
+> 
+> As a consequence, "mount -o remount,<options>" will ignore the options.
 
+No, remount works as it should.  _mount_ doesn't work.  Why it was not spotted:
+Live case is:
+
+1) upstart and systemd don't use /etc/fstab for /proc when mounting it at
+the boot time.
+2) dbus, etc. use /proc/ from the boot, so /proc cannot be umounted without
+dbus stop.
+
+So, to apply hidepid=X without system reboot procfs should be remounted
+instead of umount+mount.
+
+> To fix this, parse the mount options unconditionally.
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
