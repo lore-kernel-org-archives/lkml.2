@@ -1,101 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab2CZUkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 16:40:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32733 "EHLO mx1.redhat.com"
+	id S1756793Ab2CZUlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 16:41:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38390 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab2CZUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 16:40:39 -0400
-Date: Mon, 26 Mar 2012 22:39:51 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hillf Danton <dhillf@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dan Smith <danms@us.ibm.com>, Paul Turner <pjt@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>, linux-mm@kvack.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>, Bharata B Rao <bharata.rao@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/39] autonuma: CPU follow memory algorithm
-Message-ID: <20120326203951.GZ5906@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
- <1332783986-24195-12-git-send-email-aarcange@redhat.com>
- <1332786353.16159.173.camel@twins>
- <4F70C365.8020009@redhat.com>
- <20120326194435.GW5906@redhat.com>
- <CA+55aFwk0Etg_UhoZcKsfFJ7PQNLdQ58xxXiwcA-jemuXdZCZQ@mail.gmail.com>
+	id S1756479Ab2CZUlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 16:41:45 -0400
+Date: Mon, 26 Mar 2012 22:41:43 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: rusty@rustcorp.com.au, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] modpost: fix ALL_INIT_DATA_SECTIONS
+Message-ID: <20120326204143.GB10259@sepie.suse.cz>
+References: <4F588CD50200007800077112@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwk0Etg_UhoZcKsfFJ7PQNLdQ58xxXiwcA-jemuXdZCZQ@mail.gmail.com>
+In-Reply-To: <4F588CD50200007800077112@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Mar 26, 2012 at 12:58:05PM -0700, Linus Torvalds wrote:
-> On Mar 26, 2012 12:45 PM, "Andrea Arcangeli" <aarcange@redhat.com> wrote:
-> >
-> > As I wrote in the comment before the function, math speaking, this
-> > looks like O(N) but it is O(1), not O(N) nor O(N^2). This is because N
-> > = NR_CPUS = 1.
+On Thu, Mar 08, 2012 at 09:41:25AM +0000, Jan Beulich wrote:
+> This was lacking a comma between two supposed to be separate strings.
 > 
-> That's just stupid sophistry.
-
-I agree, this is why I warned everyone in the comment before the
-function with the adjective "misleading":
-
- * O(1) misleading math
- * aside, the number of cachelines touched with thousands of CPU might
- * make it measurable.
-
-> No, you can't just say that it's limited to some large constant, and thus
-> the same as O(1).
-
-I pointed out it is O(1) just because if we use the O notation we may
-as well do the math right about it.
-
-I may not have been clear but I never meant that because it is O(1)
-(NR_CPUS constant) it means it's already ok as it is now.
-
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
 > 
-> That's the worst kind of lie: something that's technically true if you look
-> at it a certain stupid way, but isn't actually true in practice.
+> ---
+>  scripts/mod/modpost.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> It's clearly O(n) in number of CPUs, and people told you it can't go into
-> the scheduler. Stop arguing idiotic things. Just say you'll fix it, instead
-> of looking like a tool.
+> --- 3.3-rc6/scripts/mod/modpost.c
+> +++ 3.3-rc6-modpost-all-init-data/scripts/mod/modpost.c
+> @@ -849,7 +849,7 @@ static void check_section(const char *mo
+>  
+>  #define ALL_INIT_DATA_SECTIONS \
+>  	".init.setup$", ".init.rodata$", \
+> -	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$" \
+> +	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$", \
 
-About fixing it, this can be called at a regular interval like
-load_balance() (which also has an higher cost than the per-cpu
-schedule fast path, in having to walk over the other CPU runqueues) or
-to be more integrated within CFS so it doesn't need to be called at
-all.
+Applied to kbuild.git#kbuild with a Cc: stable. BTW, was it causing actual
+false positives to be reported?
 
-I didn't think it was urgent to fix (also because it has a debug
-benefit to keep it like this in the short term), but I definitely
-intended to fix it.
-
-I also would welcome people who knows the scheduler so much better
-than me to rewrite or fix it as they like it.
-
-To be crystal clear: I totally agree to fix this, in the comment
-before the code I wrote:
-
- * it's good in the
- * short term for stressing the algorithm.
-
-I probably wasn't clear enough, but I already implicitly meant it
-shall be optimized further later.
-
-If there's a slight disagreement is only on the "urgency" to fix it but
-I will certainly change my priorities on this after reading your
-comments!
-
-Thanks for looking into this.
-Andrea
+Thanks,
+Michal
