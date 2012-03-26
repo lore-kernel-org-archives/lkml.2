@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab2CZRhp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:37:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56246 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933122Ab2CZRho (ORCPT
+	id S933172Ab2CZRiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:38:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39394 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933122Ab2CZRiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:37:44 -0400
-Date: Mon, 26 Mar 2012 18:37:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: Convert tps65023 to set_voltage_sel
-Message-ID: <20120326173742.GH3789@opensource.wolfsonmicro.com>
-References: <1332740804.15735.3.camel@phoenix>
+	Mon, 26 Mar 2012 13:38:21 -0400
+Date: Mon, 26 Mar 2012 14:38:17 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RFC PATCHSET] perf ui: Small preparation on further UI work
+Message-ID: <20120326173817.GN25820@infradead.org>
+References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v2Uk6McLiE8OV1El"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332740804.15735.3.camel@phoenix>
-X-Cookie: Your step will soil many countries.
+In-Reply-To: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Mon, Mar 26, 2012 at 05:51:31PM +0900, Namhyung Kim escreveu:
+> This is my initial work of UI generalization. As we now get GTK2 support on
+> perf report, improve setup_browser() to handle it properly so that we can
+> add various UI specific initialization codes to the function. At least, we
+> need basic error/warning handlers ASAP to see what's going on when an error
+> occurred, IMHO.
+> 
+> I put new file setup.c under ui directory (not under util/ui) and it may or
+> may not be compiled depending on the system configuration. I think it'd be
+> better moving generic UI codes to the directory and TUI specific codes to
+> ui/tui, and so on, so that the util directory doesn't contain any UI codes.
+> But before proceeding, I'd like to listen to your opinions :).
 
---v2Uk6McLiE8OV1El
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+My plans were for util/ui/ to be this generalization you want to, hence
+I didn't use the 't', i.e. I didn't call it util/tui/, because tui would
+be just one of the possible backends.
 
-On Mon, Mar 26, 2012 at 01:46:44PM +0800, Axel Lin wrote:
-> This patch also changes the define for TPS65023_LDO_CTRL_LDOx_MASK,
-> because regmap_update_bits actually does:
->         (orig & ~mask) | (val & mask)
-> This change makes the code consists for all regmap_update_bits calls.
+But that still needs more work that I haven't be able to pursue. Pekka
+thinks that doing it that way is not OK as it would limit what one could
+do with a more featureful UI like GTK+.
 
-Applied, thanks.
+I would like to still pursue a simple GUI using a function table for
+the simple operations we use in the hists browser in
+tools/perf/util/ui/ but if others want to pursue it the way the GTK+
+browser is being worked on, more power to them.
 
---v2Uk6McLiE8OV1El
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So I would just leave things in tools/perf/util/ui/ and do what you did
+in moving the TUI specific bits to a separate function, even ui__init()
+would be ok for now, and then at setup_browser() check what kind of
+interface is being used and call ui__init() if it is the TUI and the
+gtk init one if GTK+ was chosen.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+But wouldn't introduce tools/perf/ui/setup.c for that, no need for new
+directory trees, I think :-)
 
-iQIcBAEBAgAGBQJPcKkqAAoJEBus8iNuMP3dNgcP/j+fBrhpiLaYGo32ul539Zkx
-Ar/IZlbl1nDME4lFBUmBVIFVWy0+1JiDlWck6rhbRdin1Z+rpvb6Hw9QLgw7viG+
-R+Jm7m/0dy9b4KfpWKw/ntlOBlZWLc6gqlsLTSuA4pR0DaYkFcan7RUvDSFCSg0C
-x6qmW2F7/4LC19QjcDYFRA7yNcSsMMKk/FYJYG425BlZt58euytapnvvTQoFF5rt
-SbyIXB3LFgx5cL5AICoT1k1uVXIQMWz3yaoiu7Vj+TbWluTceiNJ2eukQ46ymWFB
-z9/qZO2vhgm/0sk7mCML4uaBS9ehHInWPTn1SNAcgiekGhyFwVwBcEs4vcDL6fM0
-gDHBSTir4fodyyIBy3Y8gVrTHYOzuM2llTTQ997Xd9dSmB73E3mg1a9tZSKFXnei
-qiKnUFVv+xCixAOGBuhalXQbUf4fiMsvSOmagigRLtw9i37dhFYGRevx7YXe5lLd
-0/z9jWvOdWMZ/1tOx7VVcBJZpLvy4ExBMSKrPcMeOKIH79hG6kQp0JZ1EMXGFyT2
-yul/T8NNwHhcmf0CHcbBIRxAEUWUixRpriOmTQABunHbUHwLriYPydSyZORJFI4N
-+zcqwPLTKUtYTzl4a4Chqc2b/5pKsFMNtJuU0SIVzx5fu0Cnw042bHWPsfxds+IC
-YxPn1MAVD//Ld+316FYg
-=kSNI
------END PGP SIGNATURE-----
-
---v2Uk6McLiE8OV1El--
+- Arnaldo
+ 
+> Any comments are welcome.
+> Thanks.
+> 
+> Namhyung Kim (5):
+>   perf ui: Make setup_browser() generic
+>   perf ui: Drop arg[cv] arguments from perf_gtk_setup_browser()
+>   perf ui: Add gtk2 support into setup_browser()
+>   perf gtk: Rename functions for consistency
+>   perf ui: Change fallback policy of setup_browser()
+> 
+>  tools/perf/Makefile           |    7 ++++-
+>  tools/perf/builtin-report.c   |    5 +---
+>  tools/perf/ui/setup.c         |   44 +++++++++++++++++++++++++++++
+>  tools/perf/util/cache.h       |   24 +++++++++++-----
+>  tools/perf/util/gtk/browser.c |   27 +++++++++---------
+>  tools/perf/util/gtk/gtk.h     |    4 +++
+>  tools/perf/util/ui/setup.c    |   61 +++++++++++++++-------------------------
+>  7 files changed, 108 insertions(+), 64 deletions(-)
+>  create mode 100644 tools/perf/ui/setup.c
+> 
+> -- 
+> 1.7.7.6
