@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2CZXKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 19:10:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39632 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2CZXKV (ORCPT
+	id S1753359Ab2CZXOO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 19:14:14 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46099 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab2CZXON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 19:10:21 -0400
-Date: Mon, 26 Mar 2012 16:10:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, devel@linuxdriverproject.org,
-        olaf@aepfle.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
- watermark
-Message-ID: <20120326231017.GA30684@kroah.com>
-References: <1332800304-5060-1-git-send-email-haiyangz@microsoft.com>
- <1332800304-5060-2-git-send-email-haiyangz@microsoft.com>
+	Mon, 26 Mar 2012 19:14:13 -0400
+Date: Tue, 27 Mar 2012 01:14:08 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Drake <dsd@laptop.org>, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        dilinger@queued.net, pgf@laptop.org
+Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
+Message-ID: <20120326231408.GA7495@gmail.com>
+References: <20120326180710.8DF9C9D401E@zog.reactivated.net>
+ <20120326142908.c5248aec.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332800304-5060-2-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <20120326142908.c5248aec.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 03:18:24PM -0700, Haiyang Zhang wrote:
-> In the existing code, we only stop queue when the ringbuffer is full,
-> so the current packet has to be dropped or retried from upper layer.
+
+* Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> > Signed-off-by: Daniel Drake <dsd@laptop.org>
+> > Originally-from: Paul Fox <pgf@laptop.org>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Andres Salomon <dilinger@queued.net>
+> > 
+> > ...
+> >
+> > v4: really fix sign-off tags
 > 
-> This patch stops the tx queue when available ringbuffer is below
-> the low watermark. So the ringbuffer still has small amount of space
-> available for the current packet. This will reduce the overhead of
-> retries on sending.
-> 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/hv/ring_buffer.c        |   15 +++++++++++++++
->  drivers/net/hyperv/hyperv_net.h |    3 +++
->  drivers/net/hyperv/netvsc.c     |   23 +++++++++++++++++++----
->  drivers/net/hyperv/netvsc_drv.c |   16 +++++++++++++++-
->  include/linux/hyperv.h          |    3 +++
->  5 files changed, 55 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
-> index 8af25a0..8cc3f63 100644
-> --- a/drivers/hv/ring_buffer.c
-> +++ b/drivers/hv/ring_buffer.c
-> @@ -23,6 +23,7 @@
->   */
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
-> +#include <linux/module.h>
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
->  #include <linux/hyperv.h>
-> @@ -160,6 +161,20 @@ hv_get_ring_buffersize(struct hv_ring_buffer_info *ring_info)
->  }
->  
->  /*
-> + * Get the percentage of available bytes to write in the ring.
-> + * The return value is in range from 0 to 100.
-> + */
-> +u32 hv_ringbuf_avail_percent(struct hv_ring_buffer_info *ring_info)
-> +{
-> +	u32 avail_read, avail_write;
-> +
-> +	hv_get_ringbuffer_availbytes(ring_info, &avail_read, &avail_write);
-> +
-> +	return avail_write * 100 / hv_get_ring_buffersize(ring_info);
-> +}
-> +EXPORT_SYMBOL(hv_ringbuf_avail_percent);
+> s/fix/break/?  "Originally-from" is not a recognised tag.  If this code
+> is based upon an earlier version from Paul then Signed-off-by: is
+> correct.
 
-That makes no sense, what happens 1 second later to the buffer?  You
-can't expect this result to be valid anymore, right?
+No, the original ordering was *not* correct:
 
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -51,6 +51,16 @@ static int ring_size = 128;
->  module_param(ring_size, int, S_IRUGO);
->  MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
->  
-> +uint ring_avail_percent_hiwater = 20;
-> +module_param(ring_avail_percent_hiwater, uint, S_IRUGO | S_IWUSR);
-> +MODULE_PARM_DESC(ring_avail_percent_hiwater,
-> +	"Ring buffer available percentiles to wake up xmit queue");
-> +
-> +uint ring_avail_percent_lowater = 10;
-> +module_param(ring_avail_percent_lowater, uint, S_IRUGO | S_IWUSR);
-> +MODULE_PARM_DESC(ring_avail_percent_lowater,
-> +	"Ring buffer available percentiles to stop xmit queue");
+  From: Daniel Drake <dsd@laptop.org>
 
-Eeek, no, how in the world is someone supposed to know to set these
-things?
+  [...]
 
-Please make this work "automatically", otherwise no one will ever get it
-right.  Don't make it tunable as a way out of making a decision on how
-the driver should work.
+  Signed-off-by: Daniel Drake <dsd@laptop.org>
+  Signed-off-by: Paul Fox <pgf@laptop.org>
 
-Ick.
+In the previous discussion we had I explained what the rules for 
+signoffs are. Let me quote Linus as well:
 
-David, please do NOT apply this as-is.
+  " The sign-off chain should be very simple: the first person 
+    to sign off should be the author, and the last person to 
+    sign off should be the committer. "
 
-greg k-h
+  https://lkml.org/lkml/2012/3/22/489
+  
+This is not true for this patch, because the first signoff does 
+not match the 'From:' line (author).
+
+Nor is the last signoff the committer - i.e. the person sending 
+me this patch to apply. Every maintainer along the route adds a 
+signoff to the tail if it's propagated via email, or does a 
+merge commit if it's a pull.
+
+If Daniel sends me a patch he should be the last signoff. If he 
+authored the patch then he should also be the first (and, by 
+implication, only) signoff. Signed-off-by does not recognize 
+multiple authorship - that has to be written into the changelog, 
+added via another type of tag - either approach is fine to me. 
+
+What I cannot do is to apply patches that have visibly broken 
+signoff chains.
+
+Thanks,
+
+	Ingo
