@@ -1,190 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab2CZGVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 02:21:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41405 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab2CZGVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 02:21:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="125063405"
-Subject: Re: [PATCH v5 1/2] dmaengine: Add context parameter to prep_dma_sg
- and prep_interleaved_dma
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Ravi Kumar V <kumarrav@codeaurora.org>
-Cc: tsoni@codeaurora.org, Russell King <linux@arm.linux.org.uk>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-arm-msm@vger.kernel.or,
-        linux-kernel@vger.kernel.org, Zhang Wei <zw@zh-kernel.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Barry Song <baohua.song@csr.com>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Dan Williams <dan.j.williams@intel.com>, Li Yang <leoli@freescale.com>,
-        linuxppc-dev@lists.ozlabs.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1332426167-25213-1-git-send-email-kumarrav@codeaurora.org>
-References: <1332426167-25213-1-git-send-email-kumarrav@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Mar 2012 11:54:33 +0530
-Message-ID: <1332743073.19804.26.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754519Ab2CZGaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 02:30:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44660 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab2CZGaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 02:30:05 -0400
+Date: Sun, 25 Mar 2012 23:29:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 08/11] input/amijoy: Add missing platform check
+Message-ID: <20120326062959.GB1054@core.coreip.homeip.net>
+References: <1332323515-7314-1-git-send-email-geert@linux-m68k.org>
+ <1332323515-7314-8-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332323515-7314-8-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-22 at 19:52 +0530, Ravi Kumar V wrote:
-> Add new context parameter to DMA SG and Interleaveid mode for passing
-Typo					  ^^^^^^^^^^^^
-> per transfer specific private data, using this it enables the
-> dma devices which needs to pass the parameters which changes per
-> each transfer
+On Wed, Mar 21, 2012 at 10:51:52AM +0100, Geert Uytterhoeven wrote:
+> On multi-platform kernels, the Amiga joystick driver may be initialized
+> when running on Amiga only. Else it may crash later.
+> Fortunately this driver is almost always compiled as a module (to avoid
+> conflicts with the mouse driver), so it needs an explicit insmod to
+> trigger a crash.
 > 
-> Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+
+Applied, thanks Geert.
+
 > ---
->  drivers/dma/fsldma.c                    |    2 +-
->  drivers/dma/sirf-dma.c                  |    2 +-
->  drivers/dma/ste_dma40.c                 |    2 +-
->  drivers/misc/carma/carma-fpga-program.c |    2 +-
->  drivers/misc/carma/carma-fpga.c         |    7 +++----
->  include/linux/dmaengine.h               |   22 ++++++++++++++++++++--
->  6 files changed, 27 insertions(+), 10 deletions(-)
+>  drivers/input/joystick/amijoy.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-> index b98070c..f9f77db 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -645,7 +645,7 @@ fail:
->  static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
->  	struct scatterlist *dst_sg, unsigned int dst_nents,
->  	struct scatterlist *src_sg, unsigned int src_nents,
-> -	unsigned long flags)
-> +	unsigned long flags, void *context)
->  {
->  	struct fsl_desc_sw *first = NULL, *prev = NULL, *new = NULL;
->  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
-> index 2333810..ff4d344 100644
-> --- a/drivers/dma/sirf-dma.c
-> +++ b/drivers/dma/sirf-dma.c
-> @@ -428,7 +428,7 @@ sirfsoc_dma_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+> diff --git a/drivers/input/joystick/amijoy.c b/drivers/input/joystick/amijoy.c
+> index 0bc8620..3aa93bf 100644
+> --- a/drivers/input/joystick/amijoy.c
+> +++ b/drivers/input/joystick/amijoy.c
+> @@ -108,6 +108,9 @@ static int __init amijoy_init(void)
+>  	int i, j;
+>  	int err;
 >  
->  static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
->  	struct dma_chan *chan, struct dma_interleaved_template *xt,
-> -	unsigned long flags)
-> +	unsigned long flags, void *context)
->  {
->  	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
->  	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index cc5ecbc..2f58ba9 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -2287,7 +2287,7 @@ static struct dma_async_tx_descriptor *
->  d40_prep_memcpy_sg(struct dma_chan *chan,
->  		   struct scatterlist *dst_sg, unsigned int dst_nents,
->  		   struct scatterlist *src_sg, unsigned int src_nents,
-> -		   unsigned long dma_flags)
-> +		   unsigned long dma_flags, void *context)
->  {
->  	if (dst_nents != src_nents)
->  		return NULL;
-> diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
-> index a2d25e4..3739a12 100644
-> --- a/drivers/misc/carma/carma-fpga-program.c
-> +++ b/drivers/misc/carma/carma-fpga-program.c
-> @@ -530,7 +530,7 @@ static noinline int fpga_program_dma(struct fpga_dev *priv)
->  	}
->  
->  	/* setup and submit the DMA transaction */
-> -	tx = chan->device->device_prep_dma_sg(chan,
-> +	tx = chan->device->dmaengine_prep_dma_sg(chan,
->  					      table.sgl, num_pages,
->  					      vb->sglist, vb->sglen, 0);
-No the idea is that clients will not know anything about additionlay
-parameter hence avoiding abuse. You need to reread the patches sent by
-Alexandre.
-
-You need to 
-1) add wrappers over interleaved api which dont expose this additional
-parameter
-2) move existing users to use these wrappers
-3) add a new API which has your additional argument (not an opaque
-object) and this calls .device_xx callback with additional arg.
-4. Above can be under conditional of your specific subsystem where these
-parameters are valid.
-
->  	if (!tx) {
-> diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
-> index 14e974b2..be0baf6 100644
-> --- a/drivers/misc/carma/carma-fpga.c
-> +++ b/drivers/misc/carma/carma-fpga.c
-> @@ -638,10 +638,9 @@ static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
->  	 */
->  
->  	/* setup the scatterlist to scatterlist transfer */
-> -	tx = chan->device->device_prep_dma_sg(chan,
-> -					      dst_sg, dst_nents,
-> -					      src_sg, src_nents,
-> -					      0);
-> +	tx = dmaengine_prep_dma_sg(chan, dst_sg, dst_nents,
-> +					 src_sg, src_nents,
-> +					 0);
->  	if (!tx) {
->  		dev_err(priv->dev, "unable to prep scatterlist DMA\n");
->  		return -ENOMEM;
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 679b349..68a57da 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -570,7 +570,7 @@ struct dma_device {
->  		struct dma_chan *chan,
->  		struct scatterlist *dst_sg, unsigned int dst_nents,
->  		struct scatterlist *src_sg, unsigned int src_nents,
-> -		unsigned long flags);
-> +		unsigned long flags, void *context);
->  
->  	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
->  		struct dma_chan *chan, struct scatterlist *sgl,
-> @@ -581,7 +581,7 @@ struct dma_device {
->  		size_t period_len, enum dma_transfer_direction direction);
->  	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->  		struct dma_chan *chan, struct dma_interleaved_template *xt,
-> -		unsigned long flags);
-> +		unsigned long flags, void *context);
->  	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  		unsigned long arg);
->  
-> @@ -615,6 +615,24 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
->  	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
->  }
->  
-> +static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_sg(
-> +			struct dma_chan *chan, struct scatterlist *dst_sg,
-> +			unsigned int dst_nents,	struct scatterlist *src_sg,
-> +			unsigned int src_nents,	unsigned long flags)
-> +{
-> +	return chan->device->device_prep_dma_sg(chan, dst_sg, dst_nents,
-> +					src_sg, src_nents, flags, NULL);
-> +}
+> +	if (!MACH_IS_AMIGA)
+> +		return -ENODEV;
 > +
-> +static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
-> +			struct dma_chan *chan,
-> +			struct dma_interleaved_template *xt,
-> +			unsigned long flags)
-> +{
-> +	return chan->device->device_prep_interleaved_dma(chan, xt,
-> +							flags, NULL);
-> +}
-> +
->  static inline int dmaengine_terminate_all(struct dma_chan *chan)
->  {
->  	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
-
+>  	for (i = 0; i < 2; i++) {
+>  		if (!amijoy[i])
+>  			continue;
+> -- 
+> 1.7.0.4
+> 
 
 -- 
-~Vinod
-
+Dmitry
