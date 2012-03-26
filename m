@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab2CZOvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:51:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36513 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932652Ab2CZOvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:51:00 -0400
-Date: Mon, 26 Mar 2012 15:50:55 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        marc.reilly@gmail.com, s.hauer@pengutronix.de,
-        fabio.estevam@freescale.com
-Subject: Re: [PATCH] regmap: Add 24 bits support
-Message-ID: <20120326145054.GV3098@opensource.wolfsonmicro.com>
-References: <1332772808-13346-1-git-send-email-alexg@meprolight.com>
+	id S932775Ab2CZOvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:51:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47741 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932722Ab2CZOvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 10:51:32 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
+Date: Mon, 26 Mar 2012 16:51:29 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203261619.31766.trenn@suse.de> <4F70812A.4080205@zytor.com>
+In-Reply-To: <4F70812A.4080205@zytor.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jWL1oGPK2mPq0rME"
-Content-Disposition: inline
-In-Reply-To: <1332772808-13346-1-git-send-email-alexg@meprolight.com>
-X-Cookie: Q:	Are we not men?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203261651.29640.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, March 26, 2012 04:46:02 PM H. Peter Anvin wrote:
+> On 03/26/2012 07:19 AM, Thomas Renninger wrote:
+> > Do the names have to be fixed?
+> 
+> No, I assume it would "all files inside this namespace".
+> 
+> > If there is only one file where all ACPI table binaries are glued
+> > together kernel/acpi_tables.binary.blob
+> > my code should already work as good as unmodified.
+> > 
+> > Not sure what is best and whether anybody cares about how the tables
+> > are layed out.
+> > 
+> > I guess I just wait until your functionality is in linux-next and
+> > give it a closer look then and may come up with a new patch.
+> 
+> I doubt it will get into linux-next without a user.  If you have time to
+> pull in the code I sent it will be quicker, otherwise I'll probably
+> setup a git tree upon which things can be put.
 
---jWL1oGPK2mPq0rME
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I need some weeks to have time to revisit this.
+But as it slips this merge window anyway it should not matter.
+Please add me to CC if someone else looks at or goes on with this.
 
-On Mon, Mar 26, 2012 at 04:40:08PM +0200, Alex Gershgorin wrote:
-> This patch adds support for PMIC who use regmap and 24 bit registers
-> For example MC13892, the patch was tested on i.MX35-PDK
-
-A similar patch from Marc Reilly has already been applied.  You don't
-have his signoff here but then...
-
-> +typedef struct { __u8 b[3]; } __be24;
-
-...you're adding stuff like this to the regmap headers which *clearly*
-isn't regmap specific so this looks like a separate development.
-
---jWL1oGPK2mPq0rME
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcIJEAAoJEBus8iNuMP3d/p4P/00FzJ9nJp5JoV7HP8eXJr23
-qpZtn2hmk/TmxuYebRAaduEg85H6WXBRgihF/td1I3o74fIh7KZIog1cklj7IYck
-dLT1cII4ssJSuHP3KvQi2iLbOJYDR1nSK4eYyx0RpmStb4/0X2xQHDzQ7/yrlarC
-GHqOeExN7EKhdx2FOS96JzDpeZwf7aUHJyL9v+uMUHg6XPaP+BJlEMEoK4kQ5GjC
-sXCqP3BZ+xchPd1IKG8Dz7JuK2GfsKoUss48bDHQVyoTYvGeJqpD3Y42s8BbrOjw
-l9Xcu3WFFnj1oI8bDjTI3XR2wIQgNxJoOjD2So0Dljqe/FbGS4qjd2FSmMoTbmEt
-SCAJvdFziCPdE9lW5/SdZ9lrpk+yBB9eKcY4o77giv+DRrWG2ALeKn2T+kvQDVtG
-0cPxmMshgmklcyroV6tHLmOJAKroBZYdBRZ3c0P2Q+6HgJskBa0yEImAcHNU1OOH
-WAYMdEC6uX8KaVotIR3opdy+uAKUeOn+lzXEuidK86LinqL99tiMH/IzqmUjFijz
-ExngVHP6Qk/YluboSKRTT0cDX5nxnIl00UmactJiXrU+quFFMUW3F4GOqZPGOZ3D
-0qYpzpiDVGNw31U3s4MkZK+sR3Bxh/iUdWd+by6NJPy2YRQvF+u/Joqf4ypAMJJW
-KQsfeXzJaduv4oTw/7B6
-=1Qqm
------END PGP SIGNATURE-----
-
---jWL1oGPK2mPq0rME--
+  Thomas
