@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab2CZNAL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 09:00:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38377 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756155Ab2CZNAK (ORCPT
+	id S1757356Ab2CZNBB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 09:01:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52270 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756899Ab2CZNBA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 09:00:10 -0400
-Date: Mon, 26 Mar 2012 14:00:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Michael Bohan <mbohan@codeaurora.org>
-Cc: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: Regulator supplies when using Device Tree
-Message-ID: <20120326130005.GQ3098@opensource.wolfsonmicro.com>
-References: <4F6BCF47.4090200@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IjNIXuzrMEaOuFwn"
-Content-Disposition: inline
-In-Reply-To: <4F6BCF47.4090200@codeaurora.org>
-X-Cookie: Q:	Are we not men?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Mar 2012 09:01:00 -0400
+Message-ID: <1332765676.16159.108.camel@twins>
+Subject: Re: [PATCH] perf: Fix RCU dereference check in perf_event_comm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ari Savolainen <ari.m.savolainen@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Mon, 26 Mar 2012 14:41:16 +0200
+In-Reply-To: <CAEbykaUbkgCEcufTx4ZBSdqwrifVbV384Ru4xTyF7BXYtJ85Zg@mail.gmail.com>
+References: <CAEbykaXUy7HEyW7mBaTNmB94NwyjuJBbA1R-H49Jjk5M-iL_fw@mail.gmail.com>
+	 <1332409996.18960.511.camel@twins>
+	 <CAEbykaUbkgCEcufTx4ZBSdqwrifVbV384Ru4xTyF7BXYtJ85Zg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-03-22 at 13:36 +0200, Ari Savolainen wrote:
+> 22. maaliskuuta 2012 11.53 Peter Zijlstra <a.p.zijlstra@chello.nl> kirjoitti:
+> > On Thu, 2012-03-22 at 01:43 +0200, Ari Savolainen wrote:
+> >> The warning below is printed when executing a command like
+> >> sudo perf record su - user -c "echo hello"
+> >>
+> >> It's fixed by moving the call of perf_event_comm to be protected
+> >> by the task lock.
+> >
+> > That seems like a rather poor solution since it increases the lock hold
+> > time for no explained reason.
+> >
+> >> include/linux/cgroup.h:567 suspicious rcu_dereference_check() usage!
+> >
+> >>  [<ffffffff8109be55>] lockdep_rcu_suspicious+0xe5/0x100
+> >>  [<ffffffff811131fa>] perf_event_comm+0x37a/0x4d0
+> >
+> > So where exactly is this, perf_event_comm_event() takes rcu_read_lock()
+> > so I presume its before that.
+> 
+> I think the warning comes from this source-level call path:
+> 
+> perf_event_comm ->
+>   perf_event_enable_on_exec ->
+>     perf_cgroup_sched_out ->
+>       perf_cgroup_from_task ->
+>         task_subsys_state ->
+>           task_subsys_state_check
+> 
+> It seems there that path does not take rcu_read_lock(). Where should
+> rcu_read_lock/unlock be added? In perf_group_sched_out around the
+> calls of perf_cgroup_from_task? Like this:
 
---IjNIXuzrMEaOuFwn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ah, ok. So IIRC this too is not needed. As the comment near
+perf_cgroup_from_task() says, we hold explicit references to the cgroup.
 
-On Thu, Mar 22, 2012 at 06:17:59PM -0700, Michael Bohan wrote:
+Ideally we'd come up with a better validation condition but all variants
+I could come up with make the code ugly and might actually generate
+worse code, the current true simply shuts it up.
 
-> I'm curious if there was a reason we didn't standardize on a binding
-> name for regulator supplies when using Device Tree. This appears to
-> cause duplicated code for regulator drivers that support devices
-> that may or may not have supplies specified.
+Stephane any thoughts?
 
-Supplies are *always* specified using the name from the part data sheet,
-anything to do with regulator-regulator supplies is a Linux
-implementation detail.
+---
+ kernel/events/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Also, I'm curious why we need two pointers for the supply name.
-> There's currently regulator_desc->supply_name, recently added for
-> Device Tree, and then the old init_data->supply_regulator. Is there
-> a need for both?
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a6a9ec4..e423261 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -240,7 +240,7 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
+ static inline struct perf_cgroup *
+ perf_cgroup_from_task(struct task_struct *task)
+ {
+-	return container_of(task_subsys_state(task, perf_subsys_id),
++	return container_of(task_subsys_state_check(task, perf_subsys_id, true),
+ 			struct perf_cgroup, css);
+ }
+ 
 
-We can't just break the build for systems using supply_regulator.
-
---IjNIXuzrMEaOuFwn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcGhCAAoJEBus8iNuMP3d7jEP/Rp+GPrJE8oyBhkupgUK0nh1
-gf1z3VTyAdMDca+Gh5M0165SCBvwLQm7Cv/cy5Xn16WR1roLRuX6X0ohAaNOTNbv
-pV/Hnz/zzlxk3F0m9idM18HiKsTV/tvVPhKSYPcbp6VXiqXzCT6hxUlpczc5hi31
-pHM9/PgnHAwcD2ojPUc6JcoFTMs1XwajVPWk6K6/I6UBSoZBBoAoq7k6q4BAFWSd
-Udinm0yqJunKJWu5pO2aGmyZu2v+mMMIIwWNupsqozZZXApERG+gcVNVI6uZg+az
-R8YA9OtTjySN/KCxOdTsLHHBVwkrZnRShw8lhDLHf0OAcfQwvsk39KYVG5KQI4Jw
-5Of2CNRDQ3HjMR3Q+sL6uXG5Jb6DqzirBfN8Ztop7GeSMF5L3DUcZXjp2IVPvsb3
-eIqhQIPFQgoJ04LV9IAiFiui00BbZNAhxmDVZXOBDIYLw+GtAEU/fo8EKRR56Zo7
-4V5AYxd1M+U9rstZxEwVTmuBOrtcgZJFYGxGXH5u74odMmyf2jx8s/vSuVcQLbzI
-kskZ32cXLNUcuKgFUYN16lxwvHCJZk95+qsseeThItR4GG2HTahR4gSGu4kq0zzM
-lxfcCaHNqxoMIlb6ezV/FqUd3s0gMFFukUY8/z0591JVlKzVOhv0LPTmADF9IUH/
-ryQY93HDUmLwgc7Pd7Ru
-=7ar7
------END PGP SIGNATURE-----
-
---IjNIXuzrMEaOuFwn--
