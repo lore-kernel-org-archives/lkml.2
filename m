@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab2CZRg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:36:28 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:54974 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933122Ab2CZRg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:36:27 -0400
-Date: Mon, 26 Mar 2012 19:36:24 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Sylver Bruneau <sylver.bruneau@googlemail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFT v2] watchdog: Convert orion_wdt driver to watchdog
- core
-Message-ID: <20120326173624.GA12884@lunn.ch>
-References: <1332761395.20711.1.camel@phoenix>
- <20120326141233.GR2484@titan.lakedaemon.net>
+	id S933160Ab2CZRhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:37:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56246 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933122Ab2CZRho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 13:37:44 -0400
+Date: Mon, 26 Mar 2012 18:37:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT] regulator: Convert tps65023 to set_voltage_sel
+Message-ID: <20120326173742.GH3789@opensource.wolfsonmicro.com>
+References: <1332740804.15735.3.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v2Uk6McLiE8OV1El"
 Content-Disposition: inline
-In-Reply-To: <20120326141233.GR2484@titan.lakedaemon.net>
+In-Reply-To: <1332740804.15735.3.camel@phoenix>
+X-Cookie: Your step will soil many countries.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  static int __devinit orion_wdt_probe(struct platform_device *pdev)
-> > @@ -241,26 +146,28 @@ static int __devinit orion_wdt_probe(struct platform_device *pdev)
-> >  	struct resource *res;
-> >  	int ret;
-> >  
-> > -	if (pdata) {
-> > -		wdt_tclk = pdata->tclk;
-> > -	} else {
-> > +	if (!pdata) {
-> >  		pr_err("misses platform data\n");
-> >  		return -ENODEV;
-> >  	}
-> 
-> Platform data is changing soon with devicetree support (and converting
-> to common clock).  Please don't change this if you don't need to.
-> 
-> Also, I'll include Andrew Lunn in the CC.  He's doing the conversion of
-> orion over to common clock, which affects this driver.
 
-Yep,
+--v2Uk6McLiE8OV1El
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Once the merge is over and the first -rc kernel is released, i will
-post my patches rebased on that. For wdt, clk is no longer in the
-platform data.
+On Mon, Mar 26, 2012 at 01:46:44PM +0800, Axel Lin wrote:
+> This patch also changes the define for TPS65023_LDO_CTRL_LDOx_MASK,
+> because regmap_update_bits actually does:
+>         (orig & ~mask) | (val & mask)
+> This change makes the code consists for all regmap_update_bits calls.
 
-	 Andrew
+Applied, thanks.
+
+--v2Uk6McLiE8OV1El
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPcKkqAAoJEBus8iNuMP3dNgcP/j+fBrhpiLaYGo32ul539Zkx
+Ar/IZlbl1nDME4lFBUmBVIFVWy0+1JiDlWck6rhbRdin1Z+rpvb6Hw9QLgw7viG+
+R+Jm7m/0dy9b4KfpWKw/ntlOBlZWLc6gqlsLTSuA4pR0DaYkFcan7RUvDSFCSg0C
+x6qmW2F7/4LC19QjcDYFRA7yNcSsMMKk/FYJYG425BlZt58euytapnvvTQoFF5rt
+SbyIXB3LFgx5cL5AICoT1k1uVXIQMWz3yaoiu7Vj+TbWluTceiNJ2eukQ46ymWFB
+z9/qZO2vhgm/0sk7mCML4uaBS9ehHInWPTn1SNAcgiekGhyFwVwBcEs4vcDL6fM0
+gDHBSTir4fodyyIBy3Y8gVrTHYOzuM2llTTQ997Xd9dSmB73E3mg1a9tZSKFXnei
+qiKnUFVv+xCixAOGBuhalXQbUf4fiMsvSOmagigRLtw9i37dhFYGRevx7YXe5lLd
+0/z9jWvOdWMZ/1tOx7VVcBJZpLvy4ExBMSKrPcMeOKIH79hG6kQp0JZ1EMXGFyT2
+yul/T8NNwHhcmf0CHcbBIRxAEUWUixRpriOmTQABunHbUHwLriYPydSyZORJFI4N
++zcqwPLTKUtYTzl4a4Chqc2b/5pKsFMNtJuU0SIVzx5fu0Cnw042bHWPsfxds+IC
+YxPn1MAVD//Ld+316FYg
+=kSNI
+-----END PGP SIGNATURE-----
+
+--v2Uk6McLiE8OV1El--
