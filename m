@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab2CZPcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:32:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52744 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932663Ab2CZPcR (ORCPT
+	id S932847Ab2CZPch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:32:37 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55394 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab2CZPcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:32:17 -0400
-Date: Mon, 26 Mar 2012 08:32:05 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-2c86bf172e550b4bf089ac7f0de3f6370e243842@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <1332753425-3299-1-git-send-email-jolsa@redhat.com>
-References: <1332753425-3299-1-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Switch module.h into export.h
-Git-Commit-ID: 2c86bf172e550b4bf089ac7f0de3f6370e243842
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 26 Mar 2012 11:32:35 -0400
+Date: Mon, 26 Mar 2012 17:33:18 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 00/11 v3] fix gmbus writes and related issues
+Message-ID: <20120326153318.GX4014@phenom.ffwll.local>
+Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Benson Leung <bleung@chromium.org>,
+	Yufeng Shen <miletus@chromium.org>
+References: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 26 Mar 2012 08:32:11 -0700 (PDT)
+In-Reply-To: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c86bf172e550b4bf089ac7f0de3f6370e243842
-Gitweb:     http://git.kernel.org/tip/2c86bf172e550b4bf089ac7f0de3f6370e243842
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 26 Mar 2012 11:17:05 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 26 Mar 2012 17:19:57 +0200
+On Mon, Mar 26, 2012 at 10:26:39PM +0800, Daniel Kurtz wrote:
+> This patchset addresses a couple of issues with the i915 gmbus implementation:
+>  * fixes misassigned pin port pair for HDMI-D
+>  * fixes write transactions when they are the only transaction requested
+>    (including large >4-byte writes) by terminating every transaction with a
+>    WAIT cycle.
+>  * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
+>    i2c transaction failures
+>  * optimizes the typical read transaction case by using the INDEX cycle
+> v3:
+>  * rebased onto Daniel Vetter's drm-intel-next-queued branch
+>    at git://people.freedesktop.org/~danvet/drm-intel
+>  * replace intel_i2c_quirk_xfer with pre/post_xfer i2c routines
+>  * pre-allocate gmbus array
+>  * drop interrupt approach since I could not make it stable, probably due to
+>    difficulty in clearing and resetting the GMBUS interrupt which is buffered
+>    behind the SDE's PCH interrupt.
+>  * Fix zero-length writes
+>  * Wait for IDLE before clearing NAK
 
-perf tools: Switch module.h into export.h
+Ok, I've found a few more things to complain about ;-) I haven't looked to
+closely add the later patches that fix up the actual gmbus code, but on a
+quick read I don't see any issues there - I'll cross check the code
+somewhen later with Bspec.
 
-When merged to Linus's latest tree the perf build is broken
-due to following change in lib/rbtree.c object:
-
-  lib: reduce the use of module.h wherever possible
-  commit 8bc3bcc93a2b4e47d5d410146f6546bca6171663
-  Author: Paul Gortmaker <paul.gortmaker@windriver.com>
-  Date:   Wed Nov 16 21:29:17 2011 -0500
-
-We need to move module.h header into export.h.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com
-Cc: a.p.zijlstra@chello.nl
-Cc: paulus@samba.org
-Cc: cjashfor@linux.vnet.ibm.com
-Cc: fweisbec@gmail.com
-Link: http://lkml.kernel.org/r/1332753425-3299-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/Makefile                                |    2 +-
- .../perf/util/include/linux/{module.h => export.h} |    0
- 2 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b492e3a..2f42886 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -251,7 +251,7 @@ LIB_H += util/include/linux/const.h
- LIB_H += util/include/linux/ctype.h
- LIB_H += util/include/linux/kernel.h
- LIB_H += util/include/linux/list.h
--LIB_H += util/include/linux/module.h
-+LIB_H += util/include/linux/export.h
- LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/prefetch.h
- LIB_H += util/include/linux/rbtree.h
-diff --git a/tools/perf/util/include/linux/module.h b/tools/perf/util/include/linux/export.h
-similarity index 100%
-rename from tools/perf/util/include/linux/module.h
-rename to tools/perf/util/include/linux/export.h
+Yours, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
