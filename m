@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2CZIka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:40:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49269 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab2CZIk3 (ORCPT
+	id S1755269Ab2CZInI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:43:08 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:37345 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab2CZInE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:40:29 -0400
-MIME-Version: 1.0
-From: Guan Xin <guanx.bac@gmail.com>
-Date: Mon, 26 Mar 2012 10:39:48 +0200
-Message-ID: <CANeMGR5xS6GwG18q5QnKt5_pWJB4fEKFoywZDx=kA_JFVREGxw@mail.gmail.com>
-Subject: Re: Remove over-broad module alias from zaurus.
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Mar 2012 04:43:04 -0400
+X-AuditID: cbfee61a-b7c49ae0000061d4-f3-4f702c17220a
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: rpurdie@rpsys.net, florianSchandinat@gmx.de,
+        devicetree-discuss@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        augulis.darius@gmail.com, ben-linux@fluff.org, lars@metafoo.de,
+        patches@linaro.org
+Subject: [PATCH v3 0/2] Add lcd driver for panels with gpio controlled panel
+ reset
+Date: Mon, 26 Mar 2012 14:16:38 +0530
+Message-id: <1332751600-11371-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, 17 Jun 2011 20:02:10 -0400, Dave Jones wrote:
-> This module and a bunch of dependancies are getting loaded on several
-> of laptops I have (probably picking up the mobile broadband device),
-> that have nothing to do with zaurus. Matching by class without
-> any vendor/device pair isn't the right thing to do here, as it
-> will prevent any other driver from correctly binding to it.
-> (Or in the absense of a driver, will just waste time & memory by
->  unnecessarily loading modules)
->
-> Signed-off-by: Dave Jones <davej@redhat.com>
->
-> diff --git a/drivers/net/usb/zaurus.c b/drivers/net/usb/zaurus.c
-> index 241756e..1a2234c 100644
-> --- a/drivers/net/usb/zaurus.c
-> +++ b/drivers/net/usb/zaurus.c
-> @@ -331,17 +331,7 @@ static const struct usb_device_id	products [] = {
->  	ZAURUS_MASTER_INTERFACE,
->  	.driver_info = ZAURUS_PXA_INFO,
->  },
-> -
-> -
-> -/* At least some of the newest PXA units have very different lies about
-> - * their standards support:  they claim to be cell phones offering
-> - * direct access to their radios!  (No, they don't conform to CDC MDLM.)
-> - */
->  {
-> -	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_MDLM,
-> -			USB_CDC_PROTO_NONE),
-> -	.driver_info = (unsigned long) &bogus_mdlm_info,
-> -}, {
->  	/* Motorola MOTOMAGX phones */
->  	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
->  			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
+Changes since v2:
+- Reworked as per comments[1] from Mark Brown.
+  - removed the setting of regulator voltage.
 
-After removal of this, my Motorola Rokr E6 (22b8:6027) cannot be recognized.
-Can this be added back with more specific device info, just like the
-Motorola MOTOMAGX phones?
+[1] http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg08743.html
 
-Regards,
-Guan
+Changes since v1:
+- Fixed gpio leak, added MODULE_DEVICE_TABLE and dev_pm_ops.
+- Changed device tree bindings.
+
+This patchset adds support for passive panels that use a nRESET line which is
+controlled by a GPIO of the host system and which do not use a serial comamnd
+interface (i2c or spi) or memory-mapped-io interface. Platforms that do not
+require any additional control apart from the nRESET line can use this driver
+for lcd power control.
+
+The first patch adds driver for passive raster-type lcd's with gpio controlled
+panel reset. It includes support for both dt and non-dt platforms. The second
+patch adds support for using this driver on Origen board.
+
+Thomas Abraham (2):
+  backlight: lcd: add driver for raster-type lcd's with gpio controlled panel reset
+  ARM: Exynos: Use lcd power control driver for lcd panel
+
+ .../devicetree/bindings/lcd/lcd-pwrctrl.txt        |   36 +++
+ arch/arm/mach-exynos/mach-origen.c                 |   29 +--
+ drivers/video/backlight/Kconfig                    |    7 +
+ drivers/video/backlight/Makefile                   |    1 +
+ drivers/video/backlight/lcd_pwrctrl.c              |  226 ++++++++++++++++++++
+ include/video/lcd_pwrctrl.h                        |   24 ++
+ 6 files changed, 300 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/lcd/lcd-pwrctrl.txt
+ create mode 100644 drivers/video/backlight/lcd_pwrctrl.c
+ create mode 100644 include/video/lcd_pwrctrl.h
+
