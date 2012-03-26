@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab2CZTJl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 15:09:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42087 "EHLO mx1.redhat.com"
+	id S1753283Ab2CZTJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 15:09:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11560 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab2CZTJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 15:09:39 -0400
+	id S1751819Ab2CZTJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 15:09:56 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -21,57 +21,35 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 02/39] xen: document Xen is using an unused bit for the pagetables
-Date: Mon, 26 Mar 2012 19:45:49 +0200
-Message-Id: <1332783986-24195-3-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 34/39] autonuma: reset autonuma page data when pages are freed
+Date: Mon, 26 Mar 2012 19:46:21 +0200
+Message-Id: <1332783986-24195-35-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen has taken over the last reserved bit available for the pagetables
-which is set through ioremap, this documents it and makes the code
-more readable.
+When pages are freed abort any pending migration. If knuma_migrated
+arrives first it will notice because get_page_unless_zero would fail.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/x86/include/asm/pgtable_types.h |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 013286a..b74cac9 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -17,7 +17,7 @@
- #define _PAGE_BIT_PAT		7	/* on 4KB pages */
- #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
- #define _PAGE_BIT_UNUSED1	9	/* available for programmer */
--#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
-+#define _PAGE_BIT_UNUSED2	10
- #define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
- #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
- #define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
-@@ -41,7 +41,7 @@
- #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
- #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
- #define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
--#define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
-+#define _PAGE_UNUSED2	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED2)
- #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
- #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
- #define _PAGE_SPECIAL	(_AT(pteval_t, 1) << _PAGE_BIT_SPECIAL)
-@@ -49,6 +49,13 @@
- #define _PAGE_SPLITTING	(_AT(pteval_t, 1) << _PAGE_BIT_SPLITTING)
- #define __HAVE_ARCH_PTE_SPECIAL
- 
-+/* flag used to indicate IO mapping */
-+#ifdef CONFIG_XEN
-+#define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED2)
-+#else
-+#define _PAGE_IOMAP	(_AT(pteval_t, 0))
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b9c80df..c986c0c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -614,6 +614,10 @@ static inline int free_pages_check(struct page *page)
+ 		bad_page(page);
+ 		return 1;
+ 	}
++	autonuma_migrate_page_remove(page);
++#ifdef CONFIG_AUTONUMA
++	ACCESS_ONCE(page->autonuma_last_nid) = -1;
 +#endif
-+
- #ifdef CONFIG_KMEMCHECK
- #define _PAGE_HIDDEN	(_AT(pteval_t, 1) << _PAGE_BIT_HIDDEN)
- #else
+ 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+ 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+ 	return 0;
