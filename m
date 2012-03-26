@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2CZK4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:56:02 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53778 "EHLO
+	id S1757330Ab2CZK4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:56:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51208 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757257Ab2CZK4A (ORCPT
+	by vger.kernel.org with ESMTP id S1757261Ab2CZK4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:56:00 -0400
-Date: Mon, 26 Mar 2012 11:55:58 +0100
+	Mon, 26 Mar 2012 06:56:53 -0400
+Date: Mon, 26 Mar 2012 11:56:52 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: wm831x-dcdc: Use devm_kzalloc
-Message-ID: <20120326105558.GH3098@opensource.wolfsonmicro.com>
-References: <1332493201.27981.5.camel@phoenix>
+Cc: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>,
+        Danny Huang <dahuang@nvidia.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/4] regulator: tps6586x: Fix list minimal voltage
+ setting for LDO0
+Message-ID: <20120326105651.GI3098@opensource.wolfsonmicro.com>
+References: <1332553050.14114.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fmEUq8M7S0s+Fl0V"
+	protocol="application/pgp-signature"; boundary="pe+tqlI1iYzVj1X/"
 Content-Disposition: inline
-In-Reply-To: <1332493201.27981.5.camel@phoenix>
+In-Reply-To: <1332553050.14114.1.camel@phoenix>
 X-Cookie: Q:	Are we not men?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,35 +28,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---fmEUq8M7S0s+Fl0V
+--pe+tqlI1iYzVj1X/
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Mar 23, 2012 at 05:00:01PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Sat, Mar 24, 2012 at 09:37:30AM +0800, Axel Lin wrote:
+> According to the datasheet, LDO0 has minimal voltage 1.2V rather than 1.25V.
 
 Applied, thanks.
 
---fmEUq8M7S0s+Fl0V
+--pe+tqlI1iYzVj1X/
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPcEs3AAoJEBus8iNuMP3dvqwP/RWLw64mweUWQ/oyPd4+HJKk
-oiFIqKd5h+s5MTxUVT5Tua8UdNZ/zS5p8PHW8CbWmo7+O+ENxK9RqokC2cbDDiFc
-eESjgswXrGN44zcmD6WX6G2N9jtSGc52eImOBBSetCp1K8HJn3AFdpD5eF6iZLFD
-+mS9AIqE0HCYo1nbolO7RPC0e0VU/+HaJz4kUfRtzcXclPAaHOpALuzgr6ikzGl8
-dTis2rFRGBykvU0i3v2qQGOTjVIKXwvE2EbZ9FagIUH0/tl5yCCTvhxa+smPLOsE
-00SAVgN+AjR5waSVXR16/+fnOvez1r6/UQ13jEF0CvK4t8PtxhReGj2G11VIbkF6
-5VjddczrNqKs2eSK4OC4m0RqcjfRR8vfjOz6riEy8TcZzbSLk2GYmT56VQlpain1
-e+hoMcLoG38007gsVzo5+/WTh5AvhRR7M9WGohH1IGtpijyQyK2Zk87r+mmdkI0R
-Huz6iYcYUiob4aETBryCT6WlP3FM6mgf8xpBOMCs5AKLQ1dTOWlb1uMOcqtWV5LW
-2Nou9VBUlFdLdnNFr1A5YFLyJ1wNIYdrc4dT4O1EjIt2lihd1h5c6mtIv7+LhEP3
-5lPZ/io0yfz34dBx7aepAYNlGO7NUF88yyNDTEsfd+B+4qpXHXZb12buXpyAwENX
-D5AxzclqXzdvcRtTiyNJ
-=Xbu3
+iQIcBAEBAgAGBQJPcEtJAAoJEBus8iNuMP3dADIP/i1p1VavOM2SSTKcM5cnzDIV
+2ncNsGHqh/1GYw0CRNspmCzRegrZVfDOtYtw9UFPAZtJ+y7ipNsHkLoveqLFIbdz
+qpFvwV0hXgiW2S5mjJsSHNvWCLeAbM67TW8Km+w9ajbzh0f4gHkJciPhx7W+21Ul
+glIqpVix4eWxjHCSDuO8golqM4llAuCidSLmlB3vV1BAEJpV/LqVY7adCr3MB3eq
+WTxFYqL8ZTKfl9kb9N9cK7TVHki2e7VbWnxvlK0t4C3qlY0mNIyz+Y6UCYRAoE4Y
++wwWbKARv/oyz+avI61CLHAMwriqfhGrn5vc+MTC5x+sK9BS/BRmHmdVPrDW3Akx
+IXCV4UfLegx3pxXo2iaIf10tRmqDOxdEUPA9F+c6fQPhEbJ279P41uZVeXM4yrnq
+KmQOPgZNI7e53mv3Gc7ZtJXdIOCvR2xSyUPe2/iqMPzSE0ujW+KEvO54JCvu9ssF
+MlZGWk/ND98o+oewlz02ZzOo1H62RwGH95FQQ8OI+umr5wGvMUeIbEJUpTO0XAD4
+B/3d3Ch/dzEjYpOUhP+WX1bvX2HARH23BiY65LscUJU8QNzYrkaIlpGBDN7QWUpq
+lBKVB544snh5hjAHBM4En9KfpK6yIh2RHtdDyTOacqqxs0WMDmTYFe5aZQBtPVrq
+xkqVcM7dDP1/ekL0IjNE
+=ZEbq
 -----END PGP SIGNATURE-----
 
---fmEUq8M7S0s+Fl0V--
+--pe+tqlI1iYzVj1X/--
