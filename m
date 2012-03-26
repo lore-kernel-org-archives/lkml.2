@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab2CZLFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 07:05:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56938 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757307Ab2CZLFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 07:05:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="123281524"
-Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        paul.gortmaker@windriver.com, dan.j.williams@intel.com,
-        samuel@sortiz.org, lrg@ti.com, perex@perex.cz, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        netdev@vger.kernel.org, fabio.estevam@freescale.com,
-        alsa-devel@alsa-project.org
-In-Reply-To: <20120326110149.GL3098@opensource.wolfsonmicro.com>
-References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
-	 <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
-	 <1332740082.19804.15.camel@vkoul-udesk3>
-	 <20120326094200.GA3098@opensource.wolfsonmicro.com>
-	 <1332755670.19804.91.camel@vkoul-udesk3>
-	 <20120326103354.GD3098@opensource.wolfsonmicro.com>
-	 <1332758906.19804.97.camel@vkoul-udesk3>
-	 <20120326110149.GL3098@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Mar 2012 16:37:57 +0530
-Message-ID: <1332760077.19804.98.camel@vkoul-udesk3>
+	id S1757415Ab2CZLII (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 07:08:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58585 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757307Ab2CZLIG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 07:08:06 -0400
+Message-ID: <1332760047.16159.93.camel@twins>
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v3
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 26 Mar 2012 13:07:27 +0200
+In-Reply-To: <1332759384.16159.92.camel@twins>
+References: <20120307180852.GE17697@suse.de>
+	 <1332759384.16159.92.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 12:01 +0100, Mark Brown wrote:
-> On Mon, Mar 26, 2012 at 04:18:26PM +0530, Vinod Koul wrote:
-> 
-> > But we don't want the clients to use this additional parameter or be
-> > exposed to it if not required. Every client is expected to use the
-> > dmaengine wrappers for prepare and not invoke .device_ callbacks.
-> 
-> Are those wrappers present in what's gone to Linus' tree, and can
-> someone please send a patch to convert to using them?
+On Mon, 2012-03-26 at 12:56 +0200, Peter Zijlstra wrote:
+>  static inline bool put_mems_allowed(unsigned int seq)
+>  {
+> -       return !read_seqcount_retry(&current->mems_allowed_seq, seq);
+> +       return likely(!read_seqcount_retry(&current->mems_allowed_seq, seq));
+>  } 
 
-Yes that are already there :-)
-
-I will send sound specific update now
-
--- 
-~Vinod
-
+Ignore this hunk, read_seqcount_retry() already has a branch hint in.
+I'll send a new version if people thing the rest of the patch is worth
+it.
