@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab2CZEZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 00:25:18 -0400
-Received: from ozlabs.org ([203.10.76.45]:60690 "EHLO ozlabs.org"
+	id S1751685Ab2CZEZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 00:25:22 -0400
+Received: from ozlabs.org ([203.10.76.45]:54062 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094Ab2CZEYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751102Ab2CZEYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Mar 2012 00:24:33 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-In-Reply-To: <20120324002347.GD2450@linux.vnet.ibm.com>
-References: <4F674649.2000300@linux.vnet.ibm.com> <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins> <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins> <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com> <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "lkml" <linux-kernel@vger.kernel.org>
+Cc: Dave Young <dyoung@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: stable@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tim Abbott <tim.abbott@oracle.com>
+Subject: [PULL] module and param
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 26 Mar 2012 11:11:27 +1030
-Message-ID: <87bonkchxk.fsf@rustcorp.com.au>
+Date: Mon, 26 Mar 2012 13:04:38 +1030
+Message-ID: <87zkb4ay4h.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Mar 2012 17:23:47 -0700, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> On Sat, Mar 24, 2012 at 09:57:32AM +1030, Rusty Russell wrote:
-> > On Thu, 22 Mar 2012 15:49:20 -0700, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > On Thu, Mar 22, 2012 at 02:55:04PM +1030, Rusty Russell wrote:
-> > > > On Wed, 21 Mar 2012 10:01:59 +0100, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > > > Thing is, if its really too much for some people, they can orchestrate
-> > > > > it such that its not. Just move everybody in a cpuset, clear the to be
-> > > > > offlined cpu from the cpuset's mask -- this will migrate everybody away.
-> > > > > Then hotplug will find an empty runqueue and its fast, no?
-> > > > 
-> > > > I like this solution better.
-> > > 
-> > > As long as we have some way to handle kthreads that are algorithmically
-> > > tied to a given CPU.  There are coding conventions to handle this, for
-> > > example, do everything with preemption disabled and just after each
-> > > preempt_disable() verify that you are in fact running on the correct
-> > > CPU, but it is easy to imagine improvements.
-> > 
-> > I don't think we should move per-cpu kthreads at all.  Let's stop trying
-> > to save a few bytes of memory, and just leave them frozen.  They'll run
-> > again if/when the CPU returns.
-> 
-> OK, that would work for me.  So, how do I go about freezing RCU's
-> per-CPU kthreads?
+Note: I'm getting married next week, and then honeymoon until 6th May.
+I'll be offline from next week, except to post the compulsory pictures
+if Alex shaves her head...
 
-Good question.
-
-Obviously, having callbacks hanging around until the CPU comes back is
-not viable, nor is blocking preempt during the callbacks.  Calling
-get_online_cpus() is too heavy.
-
-I can think of three approaches:
-
-1) Put the being-processed rcu calls into a per-cpu var, and pull them
-   off that list with preempt disabled.  This lets us cleanup after the
-   thread gets frozen as its CPU goes ofline, but doesn't solve the case
-   of going offline during a callback.
-
-2) Sync with the thread somehow during a notifier callback.  This is the
-   same kind of logic as shutting the thread down, so it's not really
-   attractive from a simplicity POV.
-
-3) Create to a per-cpu rwsem to stop a specific CPU from going down, and
-   just grab that while we're processing rcu callbacks.
-
-If this pattern of kthread is common, then #3 (or some equiv lightwieght
-way of stopping a specific CPU from going offline) is looking
-attractive.
-
-Cheers,
+Thanks,
 Rusty.
+
+To git@github.com:rustyrussell/linux.git
+   4eb05d5..f946eeb  master -> master
+ + 847ce6c...9dcbe9d for-linus -> for-linus (forced update)
+The following changes since commit e22057c8599373e5caef0bc42bdb95d2a361ab0d:
+
+  Merge tag 'stable/for-linus-3.4-tag-two' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen (2012-03-24 12:20:25 -0700)
+
+are available in the git repository at:
+
+  git://github.com/rustyrussell/linux.git master
+
+Dave Young (1):
+      module: add kernel param to force disable module load
+
+Pawel Moll (1):
+      params: <level>_initcall-like kernel parameters
+
+Rusty Russell (1):
+      module_param: remove support for bool parameters which are really int.
+
+Sasha Levin (1):
+      module: Remove module size limit
+
+Steven Rostedt (1):
+      module: move __module_get and try_module_get() out of line.
+
+ Documentation/kernel-parameters.txt |    2 +
+ arch/powerpc/mm/hugetlbpage.c       |    3 +-
+ include/asm-generic/vmlinux.lds.h   |   35 +++++++-----------
+ include/linux/module.h              |   32 ++---------------
+ include/linux/moduleparam.h         |   58 +++++++++++++++++++++++--------
+ init/main.c                         |   65 +++++++++++++++++++++++++++++++---
+ kernel/module.c                     |   37 ++++++++++++++++++--
+ kernel/params.c                     |   39 +++++++-------------
+ 8 files changed, 172 insertions(+), 99 deletions(-)
+
 -- 
   How could I marry someone with more hair than me?  http://baldalex.org
