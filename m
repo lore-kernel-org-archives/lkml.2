@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2CZGvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 02:51:25 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8020 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab2CZGvY (ORCPT
+	id S1756007Ab2CZGw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 02:52:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35478 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab2CZGwX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 02:51:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 25 Mar 2012 23:51:19 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 26 Mar 2012 12:21:15 +0530
-Subject: RE: [PATCH 2/2] regulator: Remove _en_reg, _en_bit and _ops
- parameters from tps65090_REG macro
-Thread-Topic: [PATCH 2/2] regulator: Remove _en_reg, _en_bit and _ops
- parameters from tps65090_REG macro
-Thread-Index: Ac0Jae8DT9UDgBgVQMaMsIePzDoCggBsscBw
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD31281F5@BGMAIL02.nvidia.com>
-References: <1332557760.10528.0.camel@phoenix>
- <1332557873.10528.2.camel@phoenix>
-In-Reply-To: <1332557873.10528.2.camel@phoenix>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 26 Mar 2012 02:52:23 -0400
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <4f66c337.473f440a.7ece.2904@mx.google.com>
+References: <4f66c337.473f440a.7ece.2904@mx.google.com>
+From: Yang Bai <hamo.by@gmail.com>
+Date: Mon, 26 Mar 2012 14:52:01 +0800
+Message-ID: <CAO_0yfMVQzrRcq99yOfh923+6KP5nvPt6z2E5vQWMAcbfRpN1g@mail.gmail.com>
+Subject: Re: [PATCH][RESEND] scripts: refactor remove structure forward declarations
+To: mmarek@suse.cz, rostedt@goodmis.org, sboyd@codeaurora.org,
+        adobriyan@gmail.com, imunsie@au1.ibm.com
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Yang Bai <hamo.by@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2Q6pr0w012288
 
-> Both _en_bit and _ops parameters for all DCDCs and FETs are the same, so we
-> can hardcode it in tps65090_REG macro.
-> 
-> _en_reg can be calculated by _id + 12, so we can also remove it.
-Looks good to me.
-Acked by: Venu Byravarasu <vbyravarasu@nvidia.com>
- 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+ping.
+
+Any comment?
+
+On Mon, Mar 19, 2012 at 1:24 PM,  <hamo.by@gmail.com> wrote:
+> From: Yang Bai <hamo.by@gmail.com>
+>
+> Since now it has some problems when generate TAGS,
+> refactor this code. Now it will not show the error
+> message and will remove declarations using emacs etags.
+>
+> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  drivers/regulator/tps65090-regulator.c |   28 ++++++++++++++--------------
->  1 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/regulator/tps65090-regulator.c
-> b/drivers/regulator/tps65090-regulator.c
-> index 470ca7e..7baff2e 100644
-> --- a/drivers/regulator/tps65090-regulator.c
-> +++ b/drivers/regulator/tps65090-regulator.c
-> @@ -94,31 +94,31 @@ static struct regulator_ops tps65090_ops = {
->  	.is_enabled	= tps65090_reg_is_enabled,
->  };
-> 
-> -#define tps65090_REG(_id, _en_reg, _en_bit, _ops)	\
-> +#define tps65090_REG(_id)				\
->  {							\
-> -	.reg_en_reg	= _en_reg,			\
-> -	.en_bit		= _en_bit,			\
-> +	.reg_en_reg	= (TPS65090_ID_##_id) + 12,	\
-> +	.en_bit		= 0,				\
->  	.id		= TPS65090_ID_##_id,		\
->  	.desc = {					\
->  		.name = tps65090_rails(_id),		\
->  		.id = TPS65090_ID_##_id,		\
-> -		.ops = &_ops,				\
-> +		.ops = &tps65090_ops,			\
->  		.type = REGULATOR_VOLTAGE,		\
->  		.owner = THIS_MODULE,			\
->  	},						\
->  }
-> 
->  static struct tps65090_regulator TPS65090_regulator[] = {
-> -	tps65090_REG(DCDC1, 12, 0, tps65090_ops),
-> -	tps65090_REG(DCDC2, 13, 0, tps65090_ops),
-> -	tps65090_REG(DCDC3, 14, 0, tps65090_ops),
-> -	tps65090_REG(FET1,  15, 0, tps65090_ops),
-> -	tps65090_REG(FET2,  16, 0, tps65090_ops),
-> -	tps65090_REG(FET3,  17, 0, tps65090_ops),
-> -	tps65090_REG(FET4,  18, 0, tps65090_ops),
-> -	tps65090_REG(FET5,  19, 0, tps65090_ops),
-> -	tps65090_REG(FET6,  20, 0, tps65090_ops),
-> -	tps65090_REG(FET7,  21, 0, tps65090_ops),
-> +	tps65090_REG(DCDC1),
-> +	tps65090_REG(DCDC2),
-> +	tps65090_REG(DCDC3),
-> +	tps65090_REG(FET1),
-> +	tps65090_REG(FET2),
-> +	tps65090_REG(FET3),
-> +	tps65090_REG(FET4),
-> +	tps65090_REG(FET5),
-> +	tps65090_REG(FET6),
-> +	tps65090_REG(FET7),
->  };
-> 
->  static inline struct tps65090_regulator *find_regulator_info(int id)
+> Â scripts/tags.sh | Â  11 ++++++++---
+> Â 1 files changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/scripts/tags.sh b/scripts/tags.sh
+> index 833813a..2b377fc 100755
+> --- a/scripts/tags.sh
+> +++ b/scripts/tags.sh
+> @@ -166,9 +166,6 @@ exuberant()
+> Â  Â  Â  Â all_defconfigs | xargs -r $1 -a Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  \
+> Â  Â  Â  Â --langdef=dotconfig --language-force=dotconfig Â  Â  Â  Â  Â \
+> Â  Â  Â  Â --regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
+> -
+> - Â  Â  Â  # Remove structure forward declarations.
+> - Â  Â  Â  LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
+> Â }
+>
+> Â emacs()
+> @@ -233,6 +230,7 @@ if [ "${ARCH}" = "um" ]; then
+> Â  Â  Â  Â fi
+> Â fi
+>
+> +remove_structs=
+> Â case "$1" in
+> Â  Â  Â  Â "cscope")
+> Â  Â  Â  Â  Â  Â  Â  Â docscope
+> @@ -245,10 +243,17 @@ case "$1" in
+> Â  Â  Â  Â "tags")
+> Â  Â  Â  Â  Â  Â  Â  Â rm -f tags
+> Â  Â  Â  Â  Â  Â  Â  Â xtags ctags
+> + Â  Â  Â  Â  Â  Â  Â  remove_structs=y
+> Â  Â  Â  Â  Â  Â  Â  Â ;;
+>
+> Â  Â  Â  Â "TAGS")
+> Â  Â  Â  Â  Â  Â  Â  Â rm -f TAGS
+> Â  Â  Â  Â  Â  Â  Â  Â xtags etags
+> + Â  Â  Â  Â  Â  Â  Â  remove_structs=y
+> Â  Â  Â  Â  Â  Â  Â  Â ;;
+> Â esac
+> +
+> +# Remove structure forward declarations.
+> +if [ -n $remove_structs ]; then
+> + Â  Â LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' $1
+> +fi
 > --
-> 1.7.5.4
-> 
-> 
+> 1.7.9.1
+>
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+
+-- 
+Â  Â  """
+Â  Â  Keep It Simple,Stupid.
+Â  Â  """
+
+Chinese Name: ç™½æ¨
+Nick Name: Hamo
+Homepage: http://hamobai.com/
+GPG KEY ID: 0xA4691A33
+Key fingerprint = 09D5 2D78 8E2B 0995 CF8EÂ  4331 33C4 3D24 A469 1A33
