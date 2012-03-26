@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099Ab2CZRXT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:23:19 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52331 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932742Ab2CZRXS (ORCPT
+	id S933104Ab2CZR1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:27:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57425 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932730Ab2CZR1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:23:18 -0400
-Date: Mon, 26 Mar 2012 14:23:13 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: perf crashes related to map/sym mismatch
-Message-ID: <20120326172313.GM25820@infradead.org>
-References: <20120325.015719.1170644257291462749.davem@davemloft.net>
+	Mon, 26 Mar 2012 13:27:21 -0400
+Message-ID: <4F70A6F6.7080401@gmail.com>
+Date: Mon, 26 Mar 2012 10:27:18 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120325.015719.1170644257291462749.davem@davemloft.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: david.daney@cavium.com, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH]drivers:staging:octeon Fix typos in staging:octeon
+References: <1332771969-14754-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1332771969-14754-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Mar 25, 2012 at 01:57:19AM -0400, David Miller escreveu:
-> 
-> I have perf crashes that eminate in two different ways, but the cause
-> seems to be identical.  The two symptoms are:
-> 
-> 1) SYM rbtree corruption, pointers have their low bits set.
-> 
-> 2) segmentation fault in symbol__inc_addr_samples
-> 
->    h->addr[offset]++ crashes because offset is "huge" and
->    offset is "huge" because addr < sym->start
-> 
-> It turns out that #2 is what causes #1, incrementing random addresses
-> eventually hits a SYM rbtree linkage address thus corrupting the
-> pointer to be odd.
+On 03/26/2012 07:26 AM, Justin P. Mattock wrote:
+> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>
+> The below patch fixes some typos an comments I found while reading.
+>
+> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>
+> ---
+>   drivers/staging/octeon/ethernet-rx.c   |    2 +-
+>   drivers/staging/octeon/ethernet-tx.c   |   10 +++++-----
+>   drivers/staging/octeon/ethernet-util.h |    2 +-
+>   drivers/staging/octeon/ethernet.c      |    2 +-
+>   4 files changed, 8 insertions(+), 8 deletions(-)
 
-Agreed
- 
-> Why is "addr" smaller than sym->start?  It's because the 'map' used to
-> perform ->map_ip() and adjust "ip" in perf_top__record_precise_ip() is
-> different from the 'map' used earlier to invoke ->map_ip() to
-> calculate the final al->addr value in thread__find_addr_map().
-> 
-> Basically if al->map != he->ms.map we are in trouble.
-> 
-> As best I can tell this happens because the hist entry sort routines
-> do not take the map into account when doing comparisons of whether the
-> symbols of two hist entries are equal.
+For the most part I am fine with this, however ...
 
-And this seems the problematic part
- 
-> So you can end up with a hist entry from a lookup which uses a 'map'
-> on a DSO which is stale and has subsequently been updated from a more
-> recent MMAP event.  In my case we have two map objects of libc, the
-> older one in the hist_entry covers:
-> 
-> start = 0xf77bc000
-> end = 0xf7928000
-> 
-> whereas the newer one in the al->map covers:
-> 
-> start = 0xf765c000
-> end = 0xf77c8000
+[...]
+> --- a/drivers/staging/octeon/ethernet-tx.c
+> +++ b/drivers/staging/octeon/ethernet-tx.c
+> @@ -61,7 +61,7 @@
+>    * You can define GET_SKBUFF_QOS() to override how the skbuff output
+>    * function determines which output queue is used. The default
+>    * implementation always uses the base queue for the port. If, for
+> - * example, you wanted to use the skb->priority fieid, define
+> + * example, you wanted to use the skb->priority field, define
+>    * GET_SKBUFF_QOS as: #define GET_SKBUFF_QOS(skb) ((skb)->priority)
+>    */
+>   #ifndef GET_SKBUFF_QOS
+> @@ -164,8 +164,8 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+>   #endif
+>
+>   	/*
+> -	 * Prefetch the private data structure.  It is larger that one
+> -	 * cache line.
+> +	 * Prefetch the private data structure.  If it is larger than the
+> +	 * one cache line.
+>   	 */
 
-Having multiple hists seems the way to go, i.e. we still would have the
-hits that happened to that old map constrained to it, i.e.  annotation,
-etc would work on them and the new hits, that take place after the
-previous one was retired would be associated with the new one, no?
- 
-> The hist_entry map is probably in the current thread's removed_maps
-> tree, and indeed there is an explicit comment about this in
-> map_groups__flush()
-> 
-> So it looks like we did a lookup on a symbol in libc pre-exec() and
-> created a hist_entry for it, then we flush the map groups on the
-> exec() and in the newly exec'd program we then do a lookup on the same
-> symbol and this is where we find the hist_entry with the out-of-date
-> map information.
-> 
-> Perhaps that the right thing to do is to explicitly detect this
-> situation and flush out the hist_entry with the stale map information
-> so we can create one with more uptodate mapping info.
+The size of the private data structure is known, and it is indeed larger 
+than a single cache line. So if you are intent on fixing comments, lets 
+not make this conditional and go ahead and remove that 'If'.
 
-Checking hist_entry->ms.map would solve this case, I think.
-
-Will read this code a bit more to check possible complications...
-
-- Arnaldo
+Thanks,
+David Daney
