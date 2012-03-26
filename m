@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2CZICW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:02:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55986 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab2CZICT convert rfc822-to-8bit (ORCPT
+	id S1754906Ab2CZINA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:13:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58204 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754337Ab2CZIM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:02:19 -0400
-Message-ID: <1332748920.16159.65.camel@twins>
-Subject: Re: CPU Hotplug rework
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: paulmck@linux.vnet.ibm.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Mon, 26 Mar 2012 10:02:00 +0200
-In-Reply-To: <87bonkchxk.fsf@rustcorp.com.au>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-	 <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins>
-	 <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins>
-	 <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com>
-	 <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com>
-	 <87bonkchxk.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 26 Mar 2012 04:12:58 -0400
+Message-ID: <4F702503.3060009@suse.cz>
+Date: Mon, 26 Mar 2012 10:12:51 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120314 Thunderbird/12.0
+MIME-Version: 1.0
+To: Tilman Schmidt <tilman@imap.cc>
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, netdev@vger.kernel.org, hjlipp@web.de
+Subject: Re: [GIT PATCH] TTY/serial patches for 3.4-rc1
+References: <20120319195649.GD9883@kroah.com> <20120325171837.67310140074@xenon.ts.pxnet.com>
+In-Reply-To: <20120325171837.67310140074@xenon.ts.pxnet.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 11:11 +1030, Rusty Russell wrote:
-> Obviously, having callbacks hanging around until the CPU comes back is
-> not viable, nor is blocking preempt during the callbacks.  Calling
-> get_online_cpus() is too heavy. 
+On 03/25/2012 07:12 PM, Tilman Schmidt wrote:
+> Jiri, Greg,
+> 
+> On 19.03.2012 20:56, Greg KH wrote:
+>> tty and serial merge for 3.4-rc1
+> [...]
+>> Jiri Slaby (77):
+> [...]
+>>       TTY: isdn/gigaset, do not set tty->driver_data to NULL
+> 
+> It seems that the amendment we discussed on 05.03.2012 did not
+> make it into this patch. It would be nice if the following patch
+> could still be added on top of it.
 
--rt has patches (albeit somewhat ugly) to make get_online_cpus() a br
-style rw-lock. That is, it makes the read side a per-cpu lock/counter so
-that its much faster and only touches cpu-local state in the common
-case.
+Ah, yes, I forgot, of course. Thanks for posting it.
 
-It would be good to clean those up and make get_online_cpus() fast and
-usable.
+> From: Tilman Schmidt <tilman@imap.cc>
+> Date: Sun, 25 Mar 2012 12:21:57 +0200
+> Subject: [PATCH] isdn/gigaset: use gig_dbg() for debugging output
+> 
+> The "TTY buffer in tty_port" patchset introduced an opencoded
+> debug message in the Gigaset tty device if_close() function.
+> Change it to use the gig_dbg() macro like everywhere else in
+> the driver.
+> 
+> Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+> ---
+>  drivers/isdn/gigaset/interface.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
+> index b3d6ac1..a6d9fd2 100644
+> --- a/drivers/isdn/gigaset/interface.c
+> +++ b/drivers/isdn/gigaset/interface.c
+> @@ -176,7 +176,7 @@ static void if_close(struct tty_struct *tty, struct file *filp)
+>  	struct cardstate *cs = tty->driver_data;
+>  
+>  	if (!cs) { /* happens if we didn't find cs in open */
+> -		printk(KERN_DEBUG "%s: no cardstate\n", __func__);
+> +		gig_dbg(DEBUG_IF, "%s: no cardstate", __func__);
+>  		return;
+>  	}
+>  
+
+
+-- 
+js
+suse labs
