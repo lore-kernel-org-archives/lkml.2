@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab2CZWnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 18:43:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36032 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab2CZWnE (ORCPT
+	id S1757571Ab2CZWpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 18:45:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53270 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab2CZWpL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 18:43:04 -0400
-Date: Mon, 26 Mar 2012 15:43:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sysrq: Use SEND_SIG_FORCED instead of force_sig()
-Message-Id: <20120326154303.86126785.akpm@linux-foundation.org>
-In-Reply-To: <20120324110024.GA14067@lizard>
-References: <20120324110024.GA14067@lizard>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Mar 2012 18:45:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120326142908.c5248aec.akpm@linux-foundation.org>
+References: <20120326180710.8DF9C9D401E@zog.reactivated.net>
+	<20120326142908.c5248aec.akpm@linux-foundation.org>
+Date: Mon, 26 Mar 2012 16:45:10 -0600
+X-Google-Sender-Auth: 52PytxvE-oNTmkEx_wPcjKRq_uY
+Message-ID: <CAMLZHHSD8eRd17NyUb=Druj==4Eh+XtY=86vGQUGU1fiPMcMNg@mail.gmail.com>
+Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
+From: Daniel Drake <dsd@laptop.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dilinger@queued.net, pgf@laptop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Mar 2012 15:00:24 +0400
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+On Mon, Mar 26, 2012 at 3:29 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> s/fix/break/?  "Originally-from" is not a recognised tag.  If this code
+> is based upon an earlier version from Paul then Signed-off-by: is
+> correct.
+>
+> What's going on here?  What are you trying to communicate?
 
-> Change send_sig_all() to use do_send_sig_info(SEND_SIG_FORCED)
-> instead of force_sig(SIGKILL). With the recent changes we do not
-> need force_ to kill the CLONE_NEWPID tasks.
-> 
-> And this is more correct. force_sig() can race with the exiting
-> thread, while do_send_sig_info(group => true) kill the whole
-> process.
-> 
-> Some more notes from Oleg Nesterov:
-> 
-> > Just one note. This change makes no difference for sysrq_handle_kill().
-> > But it obviously changes the behaviour sysrq_handle_term(). I think
-> > this is fine, if you want to really kill the task which blocks/ignores
-> > SIGTERM you can use sysrq_handle_kill().
-> >
-> > Even ignoring the reasons why force_sig() is simply wrong here,
-> > force_sig(SIGTERM) looks strange. The task won't be killed if it has
-> > a handler, but SIG_IGN can't help. However if it has the handler
-> > but blocks SIGTERM temporary (this is very common) it will be killed.
-> 
-> Also,
-> 
-> > force_sig() can't kill the process if the main thread has already
-> > exited. IOW, it is trivial to create the process which can't be
-> > killed by sysrq.
-> 
-> So, this patch fixes the issue.
-> 
-> Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Acked-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
-> 
-> The patch depends on a few Oleg's patches in -mm, so I believe
-> this should be -mm material as well.
-> 
->  drivers/tty/sysrq.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-> index 8db9125..5ab8039 100644
-> --- a/drivers/tty/sysrq.c
-> +++ b/drivers/tty/sysrq.c
-> @@ -329,7 +329,7 @@ static void send_sig_all(int sig)
->  		if (is_global_init(p))
->  			continue;
->  
-> -		force_sig(sig, p);
-> +		do_send_sig_info(sig, SEND_SIG_FORCED, p, true);
->  	}
->  	read_unlock(&tasklist_lock);
->  }
+I'm trying to take Ingo's suggestion, in the thread "[patch 1/8] x86,
+olpc: add debugfs interface for EC commands" he wrote:
 
-It's unclear how serious this race is (I'm guessing "not very"), but
-this patch looks like 3.3 material anyway, yes?
+====
+This is not a valid signoff sequence - the 'From: ' author of
+the patch must be the first SOB line.
 
+The way to do this is either to have a:
+
+ From: Paul Fox <pgf@laptop.org>
+
+or to covert Paul Fox's SOB to a credit line, such as:
+
+ Originally-from: Paul Fox <pgf@laptop.org>
+====
+
+The original code was from Paul Fox. I changed it somewhat
+significantly, and Paul approves of the end result.
+Can someone suggest a way of expressing this, including tag ordering,
+that will be accepted by all parties?  :)
+
+Thanks
+Daniel
