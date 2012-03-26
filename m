@@ -1,78 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab2CZJRZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 05:17:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48294 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab2CZJRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 05:17:23 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf, tool: Switch module.h into export.h
-Date: Mon, 26 Mar 2012 11:17:05 +0200
-Message-Id: <1332753425-3299-1-git-send-email-jolsa@redhat.com>
+	id S1755275Ab2CZJTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 05:19:44 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:23176 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab2CZJTm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 05:19:42 -0400
+Date: Mon, 26 Mar 2012 11:19:36 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 1/2] regulator: Convert lp3971 to set_voltage_sel
+In-reply-to: <1332470994.13074.2.camel@phoenix>
+To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Liam Girdwood'" <lrg@ti.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Message-id: <000301cd0b31$9081c860$b1855920$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Ac0In6ezxtv+lqo4R/y3K0by+5LsiQCkTykQ
+References: <1332470994.13074.2.camel@phoenix>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf build is broken due to following change in
-lib/rbtree.c object:
+Hello,
 
-  lib: reduce the use of module.h wherever possible
-  commit 8bc3bcc93a2b4e47d5d410146f6546bca6171663
-  Author: Paul Gortmaker <paul.gortmaker@windriver.com>
-  Date:   Wed Nov 16 21:29:17 2011 -0500
+On Friday, March 23, 2012 3:50 AM Axel Lin wrote:
 
-We need to move module.h header into export.h.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/Makefile                    |    2 +-
- tools/perf/util/include/linux/export.h |    6 ++++++
- tools/perf/util/include/linux/module.h |    6 ------
- 3 files changed, 7 insertions(+), 7 deletions(-)
- create mode 100644 tools/perf/util/include/linux/export.h
- delete mode 100644 tools/perf/util/include/linux/module.h
+The patch looks good, but I don't have access to the hardware to test it.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b492e3a..2f42886 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -251,7 +251,7 @@ LIB_H += util/include/linux/const.h
- LIB_H += util/include/linux/ctype.h
- LIB_H += util/include/linux/kernel.h
- LIB_H += util/include/linux/list.h
--LIB_H += util/include/linux/module.h
-+LIB_H += util/include/linux/export.h
- LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/prefetch.h
- LIB_H += util/include/linux/rbtree.h
-diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
-new file mode 100644
-index 0000000..b43e2dc
---- /dev/null
-+++ b/tools/perf/util/include/linux/export.h
-@@ -0,0 +1,6 @@
-+#ifndef PERF_LINUX_MODULE_H
-+#define PERF_LINUX_MODULE_H
-+
-+#define EXPORT_SYMBOL(name)
-+
-+#endif
-diff --git a/tools/perf/util/include/linux/module.h b/tools/perf/util/include/linux/module.h
-deleted file mode 100644
-index b43e2dc..0000000
---- a/tools/perf/util/include/linux/module.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef PERF_LINUX_MODULE_H
--#define PERF_LINUX_MODULE_H
--
--#define EXPORT_SYMBOL(name)
--
--#endif
+Acked-By: Marek Szyprowski <m.szyprowski@samsung.com>
+
+> ---
+>  drivers/regulator/lp3971.c |   58 +++++++++++--------------------------------
+>  1 files changed, 15 insertions(+), 43 deletions(-)
+> 
+> diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+> index 0cfabd3..49bcdb0 100644
+> --- a/drivers/regulator/lp3971.c
+> +++ b/drivers/regulator/lp3971.c
+> @@ -124,6 +124,10 @@ static const int *ldo_voltage_map[] = {
+>  static int lp3971_ldo_list_voltage(struct regulator_dev *dev, unsigned index)
+>  {
+>  	int ldo = rdev_get_id(dev) - LP3971_LDO1;
+> +
+> +	if (index > LDO_VOL_MAX_IDX)
+> +		return -EINVAL;
+> +
+>  	return 1000 * LDO_VOL_VALUE_MAP(ldo)[index];
+>  }
+> 
+> @@ -168,32 +172,15 @@ static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
+>  	return 1000 * LDO_VOL_VALUE_MAP(ldo)[val];
+>  }
+> 
+> -static int lp3971_ldo_set_voltage(struct regulator_dev *dev,
+> -				  int min_uV, int max_uV,
+> -				  unsigned int *selector)
+> +static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
+> +				      unsigned int selector)
+>  {
+>  	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+>  	int ldo = rdev_get_id(dev) - LP3971_LDO1;
+> -	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+> -	const int *vol_map = LDO_VOL_VALUE_MAP(ldo);
+> -	u16 val;
+> -
+> -	if (min_vol < vol_map[LDO_VOL_MIN_IDX] ||
+> -	    min_vol > vol_map[LDO_VOL_MAX_IDX])
+> -		return -EINVAL;
+> -
+> -	for (val = LDO_VOL_MIN_IDX; val <= LDO_VOL_MAX_IDX; val++)
+> -		if (vol_map[val] >= min_vol)
+> -			break;
+> -
+> -	if (val > LDO_VOL_MAX_IDX || vol_map[val] > max_vol)
+> -		return -EINVAL;
+> -
+> -	*selector = val;
+> 
+>  	return lp3971_set_bits(lp3971, LP3971_LDO_VOL_CONTR_REG(ldo),
+>  			LDO_VOL_CONTR_MASK << LDO_VOL_CONTR_SHIFT(ldo),
+> -			val << LDO_VOL_CONTR_SHIFT(ldo));
+> +			selector << LDO_VOL_CONTR_SHIFT(ldo));
+>  }
+> 
+>  static struct regulator_ops lp3971_ldo_ops = {
+> @@ -202,11 +189,14 @@ static struct regulator_ops lp3971_ldo_ops = {
+>  	.enable = lp3971_ldo_enable,
+>  	.disable = lp3971_ldo_disable,
+>  	.get_voltage = lp3971_ldo_get_voltage,
+> -	.set_voltage = lp3971_ldo_set_voltage,
+> +	.set_voltage_sel = lp3971_ldo_set_voltage_sel,
+>  };
+> 
+>  static int lp3971_dcdc_list_voltage(struct regulator_dev *dev, unsigned index)
+>  {
+> +	if (index < BUCK_TARGET_VOL_MIN_IDX || index > BUCK_TARGET_VOL_MAX_IDX)
+> +		return -EINVAL;
+> +
+>  	return 1000 * buck_voltage_map[index];
+>  }
+> 
+> @@ -259,33 +249,15 @@ static int lp3971_dcdc_get_voltage(struct regulator_dev *dev)
+>  	return val;
+>  }
+> 
+> -static int lp3971_dcdc_set_voltage(struct regulator_dev *dev,
+> -				   int min_uV, int max_uV,
+> -				   unsigned int *selector)
+> +static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
+> +				       unsigned int selector)
+>  {
+>  	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+>  	int buck = rdev_get_id(dev) - LP3971_DCDC1;
+> -	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+> -	const int *vol_map = buck_voltage_map;
+> -	u16 val;
+>  	int ret;
+> 
+> -	if (min_vol < vol_map[BUCK_TARGET_VOL_MIN_IDX] ||
+> -	    min_vol > vol_map[BUCK_TARGET_VOL_MAX_IDX])
+> -		return -EINVAL;
+> -
+> -	for (val = BUCK_TARGET_VOL_MIN_IDX; val <= BUCK_TARGET_VOL_MAX_IDX;
+> -	     val++)
+> -		if (vol_map[val] >= min_vol)
+> -			break;
+> -
+> -	if (val > BUCK_TARGET_VOL_MAX_IDX || vol_map[val] > max_vol)
+> -		return -EINVAL;
+> -
+> -	*selector = val;
+> -
+>  	ret = lp3971_set_bits(lp3971, LP3971_BUCK_TARGET_VOL1_REG(buck),
+> -	       BUCK_TARGET_VOL_MASK, val);
+> +	       BUCK_TARGET_VOL_MASK, selector);
+>  	if (ret)
+>  		return ret;
+> 
+> @@ -306,7 +278,7 @@ static struct regulator_ops lp3971_dcdc_ops = {
+>  	.enable = lp3971_dcdc_enable,
+>  	.disable = lp3971_dcdc_disable,
+>  	.get_voltage = lp3971_dcdc_get_voltage,
+> -	.set_voltage = lp3971_dcdc_set_voltage,
+> +	.set_voltage_sel = lp3971_dcdc_set_voltage_sel,
+>  };
+> 
+>  static struct regulator_desc regulators[] = {
+> --
+> 1.7.5.4
+> 
+
+Best regards
 -- 
-1.7.6.5
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
