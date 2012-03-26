@@ -1,100 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2CZLtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 07:49:32 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:54648 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932430Ab2CZLta (ORCPT
+	id S932461Ab2CZL6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 07:58:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34761 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442Ab2CZL57 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 07:49:30 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <akpm@linux-foundation.org>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <rajeev-dlh.kumar@st.com>,
-        <sr@denx.de>, <rtc-linux@googlegroups.com>, <a.zummo@towertech.it>,
-        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2] rtc/spear: Add Device Tree probing capability
-Date: Mon, 26 Mar 2012 17:18:10 +0530
-Message-ID: <0e8f36e3ab86241dd2352eaa298843a586b5dfa3.1332762373.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.10.rc2.10.gb47606
+	Mon, 26 Mar 2012 07:57:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120326030239.GA4623@envy17>
+References: <1330491360-1283-1-git-send-email-myungjoo.ham@samsung.com>
+	<1331096778-26186-1-git-send-email-myungjoo.ham@samsung.com>
+	<20120324163542.GA23888@envy17>
+	<CAJ0PZbSn_gf5yhO4bbmZ8duv19E8zLrKigx0ttb38TY_BOnLyg@mail.gmail.com>
+	<20120326030239.GA4623@envy17>
+Date: Mon, 26 Mar 2012 20:57:59 +0900
+Message-ID: <CAJ0PZbThSc=WkmeOYtykTKZ7bhBHJa7KYYPeWPLNy_suCD0f+A@mail.gmail.com>
+Subject: Re: [PATCH v3] PM / QoS: add pm_qos_update_request_timeout API
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: markgross@thegnar.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPEAr platforms now support DT and so must convert all drivers support DT. This
-patch adds DT probing support for rtc and updates its documentation too.
+On Mon, Mar 26, 2012 at 12:02 PM, mark gross <markgross@thegnar.org> wrote:
+> On Mon, Mar 26, 2012 at 10:41:15AM +0900, MyungJoo Ham wrote:
+>> On Sun, Mar 25, 2012 at 1:35 AM, mark gross <markgross@thegnar.org> wrote:
+>> > I apologize for the lat replay and admit that I was probably wrong to
+>> > oppose the idea of time out pm_qos requests.  (last week we bumped into
+>> > a need for them and now I get it.)
+>> >
+>> >
+>> > On Wed, Mar 07, 2012 at 02:06:18PM +0900, MyungJoo Ham wrote:
+>> >> The new API, pm_qos_update_request_timeout() is to provide a timeout
+>> >> with pm_qos_update_request.
+>> >>
+>> >> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+>> >> QoS request on req with value 100 will be active for 1000 jiffies.
+>> >> After 1000 jiffies, the QoS request thru req is rolled back to the
+>> >> request status when pm_qos_update_request_timeout() was called. If there
+>> >> were another pm_qos_update_request(req, x) during the 1000 jiffies, this
+>> >> new request with value x will override as this is another request on the
+>> >> same req handle. A new request on the same req handle will always
+>> >> override the previous request whether it is the conventional request or
+>> >> it is the new timeout request.
+>> >>
+>> >> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> []
+>> >> @@ -77,6 +79,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+>> >>                       s32 value);
+>> >>  void pm_qos_update_request(struct pm_qos_request *req,
+>> >>                          s32 new_value);
+>> >> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
+>> >> +                                s32 new_value, unsigned long timeout_ms);
+>> > is ms the right units?  could we ever need us?
+>> >
+>>
+>> Because jiffies are used for scheduling tasks, I thought ms should be
+>> fine and having some devices running fast for some msecs longer won't
+>> hurt. However, do you expect scheduling tasks or jiffies may use usecs
+>> later? I don't mind using usecs instead of msecs here; thus, I'll
+>> update this to use usecs. I'll resend patchset soon.
+>>
+>
+> I am just asking a question.  I'm not sure if us or ms are the better
+> units off the top of my head.
+>
+> --mark
+>
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
-Changes in V2:
-- updated compatible to spear600-rtc instead of spear-rtc
 
- Documentation/devicetree/bindings/rtc/spear-rtc.txt |   18 ++++++++++++++++++
- drivers/rtc/rtc-spear.c                             |   10 ++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/spear-rtc.txt
+For the current structure of Linux (scheduling task, jiffies), I
+thought that none of the two is better than the another because the
+duration should not be so long and the jiffies are larger than 1 ms.
 
-diff --git a/Documentation/devicetree/bindings/rtc/spear-rtc.txt b/Documentation/devicetree/bindings/rtc/spear-rtc.txt
-new file mode 100644
-index 0000000..153946e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/spear-rtc.txt
-@@ -0,0 +1,18 @@
-+* SPEAr RTC
-+
-+Required properties:
-+- compatible : "st,spear600-rtc"
-+- reg : Address range of the rtc registers
-+- interrupt-parent: Should be the phandle for the interrupt controller
-+  that services interrupts for this device
-+- interrupt: Should contain the rtc interrupt number
-+
-+Example:
-+
-+	rtc@fc000000 {
-+		compatible = "st,spear600-rtc";
-+		reg = <0xfc000000 0x1000>;
-+		interrupt-parent = <&vic1>;
-+		interrupts = <12>;
-+	};
-+
-diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
-index e38da0d..1f76320 100644
---- a/drivers/rtc/rtc-spear.c
-+++ b/drivers/rtc/rtc-spear.c
-@@ -16,6 +16,7 @@
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/rtc.h>
- #include <linux/slab.h>
-@@ -519,6 +520,14 @@ static void spear_rtc_shutdown(struct platform_device *pdev)
- 	clk_disable(config->clk);
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id spear_rtc_id_table[] = {
-+	{ .compatible = "st,spear600-rtc" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, spear_rtc_id_table);
-+#endif
-+
- static struct platform_driver spear_rtc_driver = {
- 	.probe = spear_rtc_probe,
- 	.remove = __devexit_p(spear_rtc_remove),
-@@ -527,6 +536,7 @@ static struct platform_driver spear_rtc_driver = {
- 	.shutdown = spear_rtc_shutdown,
- 	.driver = {
- 		.name = "rtc-spear",
-+		.of_match_table = of_match_ptr(spear_rtc_id_table),
- 	},
- };
- 
+However, it turns out to be not true: some uses jiffies < 1ms (alpha),
+some uses jiffies not cleanly dividable with msecs (omap). Thus, it
+appears that usecs is better. Thus, the parameter should be usecs
+rather than msecs.
+
+
+
+Cheers!
+MyungJoo.
+
+
+
 -- 
-1.7.10.rc2.10.gb47606
-
+MyungJoo Ham, Ph.D.
+System S/W Lab, S/W Center, Samsung Electronics
