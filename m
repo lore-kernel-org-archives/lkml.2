@@ -1,211 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250Ab2CZSHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:07:16 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:2841 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932933Ab2CZSHP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:07:15 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: mingo@redhat.com
-To: tglx@linutronix.de
-To: hpa@zytor.com
-To: x86@kernel.org
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Cc: dilinger@queued.net
-Cc: pgf@laptop.org
-Subject: [PATCH v4] x86, olpc: add debugfs interface for EC commands
-Message-Id: <20120326180710.8DF9C9D401E@zog.reactivated.net>
-Date: Mon, 26 Mar 2012 19:07:07 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=LDwLnZL1B1IA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=oGMlB6cnAAAA:8 a=In_Hgl4hAAAA:8 a=kF77FlFh9K5kFNqHXAgA:9 a=Hmh8QCAFR3ab2_lDwTYA:7 a=d4CUUju0HPYA:10 a=Zh68SRI7RUMA:10 a=CY6gl2JlH4YA:10 a=ro211Ng2IWAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S933265Ab2CZSHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:07:32 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43065 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932933Ab2CZSHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:07:23 -0400
+Date: Mon, 26 Mar 2012 11:07:19 -0700
+Message-Id: <E1SCEK7-0008CY-LJ@tytso-glaptop.cam.corp.google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: GIT PULL] ext4 updates for 3.4
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a debugfs interface for sending commands to the OLPC Embedded
-Controller (EC) and reading the responses.  The EC provides functionality
-for machine identification, battery and AC control, wakeup control, etc.
 
-Having a debugfs interface available is useful for EC development and
-debugging.
+The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
 
-Based on code by Paul Fox.
+  Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Originally-from: Paul Fox <pgf@laptop.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andres Salomon <dilinger@queued.net>
----
- Documentation/ABI/testing/debugfs-olpc |   16 +++++
- arch/x86/platform/olpc/olpc.c          |   97 ++++++++++++++++++++++++++++++++
- 2 files changed, 113 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-olpc
+are available in the git repository at:
 
-v2: incorporate feedback from Andrew Morton (thanks!): documentation in
-Documentation/, fixed input checking, more correct command bytes construction
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git ext4_for_linus
 
-v3: incorporate feedback from Ingo Molnar (thanks!): whitespace/cast fixes,
-fix potential overflow when nonsense resp_bytes is passed from userspace,
-add mutex to protect data and to protect against concurrent read/write, give
-node name 'cmd' which is better than 'generic'
+for you to fetch changes up to 9d547c35799a4ddd235f1565cec2fff6c9263504:
 
-v4: really fix sign-off tags
+  vfs: remove unused superblock helpers (2012-03-21 22:34:55 -0400)
 
-diff --git a/Documentation/ABI/testing/debugfs-olpc b/Documentation/ABI/testing/debugfs-olpc
-new file mode 100644
-index 0000000..bd76cc6
---- /dev/null
-+++ b/Documentation/ABI/testing/debugfs-olpc
-@@ -0,0 +1,16 @@
-+What:		/sys/kernel/debug/olpc-ec/cmd
-+Date:		Dec 2011
-+KernelVersion:	3.4
-+Contact:	devel@lists.laptop.org
-+Description:
-+
-+A generic interface for executing OLPC Embedded Controller commands and
-+reading their responses.
-+
-+To execute a command, write data with the format: CC:N A A A A
-+CC is the (hex) command, N is the count of expected reply bytes, and A A A A
-+are optional (hex) arguments.
-+
-+To read the response (if any), read from the generic node after executing
-+a command. Hex reply bytes will be returned, *whether or not* they came from
-+the immediately previous command.
-diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-index 7cce722..a4bee53 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -20,6 +20,8 @@
- #include <linux/platform_device.h>
- #include <linux/of.h>
- #include <linux/syscore_ops.h>
-+#include <linux/debugfs.h>
-+#include <linux/mutex.h>
- 
- #include <asm/geode.h>
- #include <asm/setup.h>
-@@ -31,6 +33,15 @@ EXPORT_SYMBOL_GPL(olpc_platform_info);
- 
- static DEFINE_SPINLOCK(ec_lock);
- 
-+/* debugfs interface to EC commands */
-+#define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
-+#define EC_MAX_CMD_REPLY (8)
-+
-+static struct dentry *ec_debugfs_dir;
-+static DEFINE_MUTEX(ec_debugfs_cmd_lock);
-+static unsigned char ec_debugfs_resp[EC_MAX_CMD_REPLY];
-+static unsigned int ec_debugfs_resp_bytes;
-+
- /* EC event mask to be applied during suspend (defining wakeup sources). */
- static u16 ec_wakeup_mask;
- 
-@@ -269,6 +280,91 @@ int olpc_ec_sci_query(u16 *sci_value)
- }
- EXPORT_SYMBOL_GPL(olpc_ec_sci_query);
- 
-+static ssize_t ec_debugfs_cmd_write(struct file *file, const char __user *buf,
-+				    size_t size, loff_t *ppos)
-+{
-+	int i, m;
-+	unsigned char ec_cmd[EC_MAX_CMD_ARGS];
-+	unsigned int ec_cmd_int[EC_MAX_CMD_ARGS];
-+	char cmdbuf[64];
-+	int ec_cmd_bytes;
-+
-+	mutex_lock(&ec_debugfs_cmd_lock);
-+
-+	size = simple_write_to_buffer(cmdbuf, sizeof(cmdbuf), ppos, buf, size);
-+
-+	m = sscanf(cmdbuf, "%x:%u %x %x %x %x %x", &ec_cmd_int[0],
-+		   &ec_debugfs_resp_bytes,
-+		   &ec_cmd_int[1], &ec_cmd_int[2], &ec_cmd_int[3],
-+		   &ec_cmd_int[4], &ec_cmd_int[5]);
-+	if (m < 2 || ec_debugfs_resp_bytes > EC_MAX_CMD_REPLY) {
-+		/* reset to prevent overflow on read */
-+		ec_debugfs_resp_bytes = 0;
-+
-+		printk(KERN_DEBUG "olpc-ec: bad ec cmd:  "
-+		       "cmd:response-count [arg1 [arg2 ...]]\n");
-+		size = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* convert scanf'd ints to char */
-+	ec_cmd_bytes = m - 2;
-+	for (i = 0; i <= ec_cmd_bytes; i++)
-+		ec_cmd[i] = ec_cmd_int[i];
-+
-+	printk(KERN_DEBUG "olpc-ec: debugfs cmd 0x%02x with %d args "
-+	       "%02x %02x %02x %02x %02x, want %d returns\n",
-+	       ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2], ec_cmd[3],
-+	       ec_cmd[4], ec_cmd[5], ec_debugfs_resp_bytes);
-+
-+	olpc_ec_cmd(ec_cmd[0], (ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
-+		    ec_cmd_bytes, ec_debugfs_resp, ec_debugfs_resp_bytes);
-+
-+	printk(KERN_DEBUG "olpc-ec: response "
-+	       "%02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
-+	       ec_debugfs_resp[0], ec_debugfs_resp[1], ec_debugfs_resp[2],
-+	       ec_debugfs_resp[3], ec_debugfs_resp[4], ec_debugfs_resp[5],
-+	       ec_debugfs_resp[6], ec_debugfs_resp[7], ec_debugfs_resp_bytes);
-+
-+out:
-+	mutex_unlock(&ec_debugfs_cmd_lock);
-+	return size;
-+}
-+
-+static ssize_t ec_debugfs_cmd_read(struct file *file, char __user *buf,
-+				   size_t size, loff_t *ppos)
-+{
-+	unsigned int i, r;
-+	char *rp;
-+	char respbuf[64];
-+
-+	mutex_lock(&ec_debugfs_cmd_lock);
-+	rp = respbuf;
-+	rp += sprintf(rp, "%02x", ec_debugfs_resp[0]);
-+	for (i = 1; i < ec_debugfs_resp_bytes; i++)
-+		rp += sprintf(rp, ", %02x", ec_debugfs_resp[i]);
-+	mutex_unlock(&ec_debugfs_cmd_lock);
-+	rp += sprintf(rp, "\n");
-+
-+	r = rp - respbuf;
-+	return simple_read_from_buffer(buf, size, ppos, respbuf, r);
-+}
-+
-+static const struct file_operations ec_debugfs_genops = {
-+	.write	 = ec_debugfs_cmd_write,
-+	.read	 = ec_debugfs_cmd_read,
-+};
-+
-+static void setup_debugfs(void)
-+{
-+	ec_debugfs_dir = debugfs_create_dir("olpc-ec", 0);
-+	if (ec_debugfs_dir == ERR_PTR(-ENODEV))
-+		return;
-+
-+	debugfs_create_file("cmd", 0600, ec_debugfs_dir, NULL,
-+			    &ec_debugfs_genops);
-+}
-+
- static int olpc_ec_suspend(void)
- {
- 	return olpc_ec_mask_write(ec_wakeup_mask);
-@@ -372,6 +468,7 @@ static int __init olpc_init(void)
- 	}
- 
- 	register_syscore_ops(&olpc_syscore_ops);
-+	setup_debugfs();
- 
- 	return 0;
- }
--- 
-1.7.7.6
+----------------------------------------------------------------
+Ext4 commits for 3.3 merge window; mostly cleanups and bug fixes
 
+The changes to export dirty_writeback_interval are from Artem's s_dirt
+cleanup patch series.  The same is true of the change to remove the
+s_dirt helper functions which never got used by anyone in-tree.  I've
+run these changes by Al Viro, and am carrying them so that Artem can
+more easily fix up the rest of the file systems during the next merge
+window.  (Originally we had hopped to remove the use of s_dirt from
+ext4 during this merge window, but his patches had some bugs, so I
+ultimately ended dropping them from the ext4 tree.)
+
+----------------------------------------------------------------
+Allison Henderson (1):
+      ext4: correct ext4_punch_hole return codes
+
+Artem Bityutskiy (5):
+      ext4: do not mark superblock as dirty unnecessarily
+      ext4: write superblock only once on unmount
+      ext4: remove useless s_dirt assignment
+      mm: export dirty_writeback_interval
+      vfs: remove unused superblock helpers
+
+Bobi Jam (1):
+      ext4: expand commit callback and
+
+Curt Wohlgemuth (3):
+      ext4: mark possibly unused variable in ext4_mb_normalize_request()
+      ext4: don't release page refs in ext4_end_bio()
+      ext4: add comments to definition of ext4_io_end_t
+
+Dan Carpenter (2):
+      ext4: remove an unneeded NULL check in __ext4_check_dir_entry()
+      ext4: using PTR_ERR() on the wrong variable in ext4_ext_migrate()
+
+Darrick J. Wong (1):
+      ext4: update s_free_{inodes,blocks}_count during online resize
+
+Eric Sandeen (4):
+      jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
+      ext4: remove the journal=update mount option
+      ext4: remove the resize mount option
+      ext4: avoid deadlock on sync-mounted FS w/o journal
+
+Heiko Carstens (1):
+      ext4: fix balloc.c printk-format-warning
+
+Jan Kara (8):
+      jbd2: split updating of journal superblock and marking journal empty
+      jbd2: protect all log tail updates with j_checkpoint_mutex
+      jbd2: issue cache flush after checkpointing even with internal journal
+      jbd2: fix BH_JWrite setting in checkpointing code
+      jbd2: declare __jbd2_journal_temp_unlink_buffer() static
+      jbd2: remove always true condition in __journal_try_to_free_buffer()
+      jbd2: remove bh_state lock from checkpointing code
+      jbd2: cleanup journal tail after transaction commit
+
+Jeff Moyer (3):
+      ext4: fix race between unwritten extent conversion and truncate
+      ext4: clean up the flags passed to __blockdev_direct_IO
+      ext4: fix race between sync and completed io work
+
+Joe Perches (3):
+      ext4: remove redundant "EXT4-fs: " from uses of ext4_msg
+      ext4: add no_printk argument validation, fix fallout
+      ext4: avoid output message interleaving in ext4_error_<foo>()
+
+Lukas Czerner (9):
+      ext4: ignore EXT4_INODE_JOURNAL_DATA flag with delalloc
+      ext4: fix resize when resizing within single group
+      ext4: rewrite punch hole to use ext4_ext_remove_space()
+      ext4: remove unused code from ext4_ext_map_blocks()
+      ext4: give more helpful error message in ext4_ext_rm_leaf()
+      ext4: fix start and len arguments handling in ext4_trim_fs()
+      ext4: fix trimmed block count accunting
+      ext4: always set then trimmed blocks count into len
+      ext4: remove restrictive checks for EOFBLOCKS_FL
+
+Santosh Nayak (1):
+      ext4: Fix endianness bug when reading the MMP block
+
+Seiji Aguchi (1):
+      jbd2: add drop_transaction/update_superblock_end tracepoints
+
+Theodore Ts'o (18):
+      ext4: fold ext4_claim_inode into ext4_new_inode
+      ext4: fix race when setting bitmap_uptodate flag
+      ext4: fix INCOMPAT feature codepoint reservation for INLINEDATA
+      ext4: remove EXT4_MB_{BITMAP,BUDDY} macros
+      ext4: remove deprecation warnings for minix_df and grpid
+      ext4: remove Opt_ignore
+      ext4: remove the I_VERSION mount flag and use the super_block flag instead
+      ext4: simplify handling of the errors=* mount options
+      ext4: unify handling of mount options which have been removed
+      ext4: use a table-driven handler for mount options
+      ext4: move ext4_show_options() after parse_options()
+      ext4: make ext4_show_options() be table-driven
+      ext4: add debugging /proc file showing file system options
+      ext4: ignore mount options supported by ext2/3 (but have since been removed)
+      ext4: try to deprecate noacl and noxattr_user mount options
+      ext4: check for zero length extent
+      ext4: remove trailing newlines from ext4_msg() and ext4_error() messages
+      ext4: change some printk() calls to use ext4_msg() instead
+
+Yongqiang Yang (3):
+      jbd2: allocate transaction from separate slab cache
+      jbd2: rename functions which initialize slab caches
+      jbd2: use KMEM_CACHE instead of kmem_cache_create()
+
+Zheng Liu (2):
+      ext4: remove unneeded variable in ext4_xattr_check_block()
+      ext4: format flag in dx_probe()
+
+ Documentation/filesystems/ext4.txt |    8 -
+ fs/ext4/balloc.c                   |   63 ++-
+ fs/ext4/dir.c                      |   13 +-
+ fs/ext4/ext4.h                     |   34 +-
+ fs/ext4/ext4_extents.h             |    4 +-
+ fs/ext4/ext4_jbd2.h                |  128 ++++-
+ fs/ext4/extents.c                  |  330 +++++-------
+ fs/ext4/fsync.c                    |    2 +
+ fs/ext4/ialloc.c                   |  260 ++++-----
+ fs/ext4/inode.c                    |   95 ++--
+ fs/ext4/mballoc.c                  |  342 +++++-------
+ fs/ext4/mballoc.h                  |   20 +-
+ fs/ext4/migrate.c                  |    2 +-
+ fs/ext4/mmp.c                      |    4 +-
+ fs/ext4/namei.c                    |    2 +-
+ fs/ext4/page-io.c                  |   18 +-
+ fs/ext4/resize.c                   |   37 +-
+ fs/ext4/super.c                    | 1075 ++++++++++++++++--------------------
+ fs/ext4/xattr.c                    |   25 +-
+ fs/jbd2/checkpoint.c               |  140 +----
+ fs/jbd2/commit.c                   |   47 ++-
+ fs/jbd2/journal.c                  |  361 ++++++++-----
+ fs/jbd2/recovery.c                 |    5 +-
+ fs/jbd2/revoke.c                   |   12 +-
+ fs/jbd2/transaction.c              |   48 ++-
+ include/linux/fs.h                 |   13 -
+ include/linux/jbd2.h               |   12 +-
+ include/linux/journal-head.h       |    2 +
+ include/trace/events/jbd2.h        |   29 +-
+ mm/page-writeback.c                |    2 +
+ 30 files changed, 1522 insertions(+), 1611 deletions(-)
