@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab2CZIw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:52:58 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65100 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433Ab2CZIvk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:51:40 -0400
-X-AuditID: 9c93016f-b7cc6ae00000317e-19-4f702e185e9b
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 2/5] perf ui: Drop arg[cv] arguments from perf_gtk_setup_browser()
-Date: Mon, 26 Mar 2012 17:51:33 +0900
-Message-Id: <1332751896-11210-3-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
-References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1754181Ab2CZJFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 05:05:25 -0400
+Received: from mail4.ccl.ru ([195.222.140.73]:52398 "EHLO mail4.ccl.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254Ab2CZJFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 05:05:24 -0400
+Message-ID: <4F703140.5030005@permonline.ru>
+Date: Mon, 26 Mar 2012 15:05:04 +0600
+From: Mike Sinkovsky <msink@permonline.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Ethernet driver for the WIZnet W5300 chip
+References: <1332149037-12025-1-git-send-email-msink@permonline.ru> <1332586938-2804-1-git-send-email-msink@permonline.ru> <1332605415.3487.14.camel@edumazet-laptop>
+In-Reply-To: <1332605415.3487.14.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As perf doesn't allow to specify gtk command-line option,
-drop the arguments and pass NULL to gtk_init(). This makes
-the function easier to be called from setup_browser().
+24.03.2012 22:10, Eric Dumazet wrote:
+> As there is no tx interrupt at the end of transmit to eventually XON the
+> queue, you cant XOFF it when there it no room in transmit queue.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/builtin-report.c   |    2 +-
- tools/perf/util/cache.h       |    4 ++--
- tools/perf/util/gtk/browser.c |    5 ++---
- 3 files changed, 5 insertions(+), 6 deletions(-)
+Actually there is, but is unused in original driver, don't know why.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 2e317438980b..50a05739091d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -675,7 +675,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 
- 	if (strcmp(report.input_name, "-") != 0) {
- 		if (report.use_gtk)
--			perf_gtk_setup_browser(argc, argv, true);
-+			perf_gtk_setup_browser(true);
- 		else
- 			setup_browser(true);
- 	} else {
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 8dd224df3e54..d22ca689fb15 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -46,14 +46,14 @@ void exit_browser(bool wait_for_ok);
- #endif
- 
- #ifdef NO_GTK2_SUPPORT
--static inline void perf_gtk_setup_browser(int argc __used, const char *argv[] __used, bool fallback_to_pager)
-+static inline void perf_gtk_setup_browser(bool fallback_to_pager)
- {
- 	if (fallback_to_pager)
- 		setup_pager();
- }
- static inline void perf_gtk_exit_browser(bool wait_for_ok __used) {}
- #else
--void perf_gtk_setup_browser(int argc, const char *argv[], bool fallback_to_pager);
-+void perf_gtk_setup_browser(bool fallback_to_pager);
- void perf_gtk_exit_browser(bool wait_for_ok);
- #endif
- 
-diff --git a/tools/perf/util/gtk/browser.c b/tools/perf/util/gtk/browser.c
-index 258352a2356c..a1a83de3f459 100644
---- a/tools/perf/util/gtk/browser.c
-+++ b/tools/perf/util/gtk/browser.c
-@@ -9,10 +9,9 @@
- 
- #define MAX_COLUMNS			32
- 
--void perf_gtk_setup_browser(int argc, const char *argv[],
--			    bool fallback_to_pager __used)
-+void perf_gtk_setup_browser(bool fallback_to_pager __used)
- {
--	gtk_init(&argc, (char ***)&argv);
-+	gtk_init(NULL, NULL);
- }
- 
- void perf_gtk_exit_browser(bool wait_for_ok __used)
+
+> Rule to use NETDEV_TX_BUSY is :
+>
+> Before returning NETDEV_TX_BUSY, qdisc must have been stopped by
+> netif_stop_queue(ndev) (and tx completion might call netif_wake_queue()
+> later)
+
+I tried handle this situation, and it seems to work perfectly:
+
+@@ -377,7 +377,8 @@ static int w5300_start_tx(struct sk_buff *skb, 
+struct net_device *ndev)
+          struct w5300_private *priv = netdev_priv(ndev);
+
+          if (unlikely(w5300_read32(priv, W5300_S0_TX_FSR) < skb->len)) {
+-                ndev->stats.tx_dropped++;
++                netif_stop_queue(ndev);
++                w5300_write(priv, W5300_S0_IMR, S0_IR_RECV | S0_IR_SENDOK);
+                  return NETDEV_TX_BUSY;
+          }
+
+@@ -443,6 +444,12 @@ static irqreturn_t w5300_interrupt(int irq, void 
+*ndev_instance)
+                  __napi_schedule(&priv->napi);
+          }
+
++        if (unlikely(netif_queue_stopped(ndev))) {
++                w5300_write(priv, W5300_S0_IR, S0_IR_SENDOK);
++                w5300_write(priv, W5300_S0_IMR, S0_IR_RECV);
++                netif_wake_queue(ndev);
++        }
++
+          return IRQ_HANDLED;
+  }
+
 -- 
-1.7.7.6
+Mike
 
