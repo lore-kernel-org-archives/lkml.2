@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab2CZS1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:27:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16453 "EHLO mx1.redhat.com"
+	id S933090Ab2CZS3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:29:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28060 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530Ab2CZS1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:27:41 -0400
+	id S932842Ab2CZS1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:27:42 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -21,90 +21,181 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 09/39] autonuma: define the autonuma flags
-Date: Mon, 26 Mar 2012 19:45:56 +0200
-Message-Id: <1332783986-24195-10-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 39/39] autonuma: NUMA scheduler SMT awareness
+Date: Mon, 26 Mar 2012 19:46:26 +0200
+Message-Id: <1332783986-24195-40-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These flags are the ones tweaked through sysfs, they control the
-behavior of autonuma, from enabling disabling it, to selecting various
-runtime options.
+Add SMT awareness to the NUMA scheduler so that it will not move load
+from fully idle SMT threads, to semi idle SMT threads.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma_flags.h |   62 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/autonuma_flags.h
+ include/linux/autonuma_flags.h |   10 ++++++++
+ kernel/sched/numa.c            |   50 +++++++++++++++++++++++++++++++++++++--
+ mm/autonuma.c                  |    7 +++++
+ 3 files changed, 64 insertions(+), 3 deletions(-)
 
 diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
-new file mode 100644
-index 0000000..9c702fd
---- /dev/null
+index 9c702fd..d6b34b0 100644
+--- a/include/linux/autonuma_flags.h
 +++ b/include/linux/autonuma_flags.h
-@@ -0,0 +1,62 @@
-+#ifndef _LINUX_AUTONUMA_FLAGS_H
-+#define _LINUX_AUTONUMA_FLAGS_H
-+
-+enum autonuma_flag {
-+	AUTONUMA_FLAG,
-+	AUTONUMA_IMPOSSIBLE,
-+	AUTONUMA_DEBUG_FLAG,
-+	AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-+	AUTONUMA_SCHED_CLONE_RESET_FLAG,
-+	AUTONUMA_SCHED_FORK_RESET_FLAG,
-+	AUTONUMA_SCAN_PMD_FLAG,
-+	AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
-+	AUTONUMA_MIGRATE_DEFER_FLAG,
-+};
-+
-+extern unsigned long autonuma_flags;
-+
-+static bool inline autonuma_enabled(void)
+@@ -8,6 +8,7 @@ enum autonuma_flag {
+ 	AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
+ 	AUTONUMA_SCHED_CLONE_RESET_FLAG,
+ 	AUTONUMA_SCHED_FORK_RESET_FLAG,
++	AUTONUMA_SCHED_SMT_FLAG,
+ 	AUTONUMA_SCAN_PMD_FLAG,
+ 	AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
+ 	AUTONUMA_MIGRATE_DEFER_FLAG,
+@@ -43,6 +44,15 @@ static bool inline autonuma_sched_fork_reset(void)
+ 			  &autonuma_flags);
+ }
+ 
++static bool inline autonuma_sched_smt(void)
 +{
-+	return !!test_bit(AUTONUMA_FLAG, &autonuma_flags);
++#ifdef CONFIG_SCHED_SMT
++	return !!test_bit(AUTONUMA_SCHED_SMT_FLAG, &autonuma_flags);
++#else
++	return 0;
++#endif
 +}
 +
-+static bool inline autonuma_debug(void)
+ static bool inline autonuma_scan_pmd(void)
+ {
+ 	return !!test_bit(AUTONUMA_SCAN_PMD_FLAG, &autonuma_flags);
+diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
+index d51e1ec..4211305 100644
+--- a/kernel/sched/numa.c
++++ b/kernel/sched/numa.c
+@@ -11,6 +11,30 @@
+ 
+ #include "sched.h"
+ 
++static inline bool idle_cpu_avg(int cpu, bool require_avg_idle)
 +{
-+	return !!test_bit(AUTONUMA_DEBUG_FLAG, &autonuma_flags);
++	struct rq *rq = cpu_rq(cpu);
++	return idle_cpu(cpu) && (!require_avg_idle ||
++				 rq->avg_idle > sysctl_sched_migration_cost);
 +}
 +
-+static bool inline autonuma_sched_load_balance_strict(void)
++/* A false avg_idle param makes it easier for smt_idle() to return true */
++static bool smt_idle(int _cpu, bool require_avg_idle)
 +{
-+	return !!test_bit(AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-+			  &autonuma_flags);
++#ifdef CONFIG_SCHED_SMT
++	int cpu;
++
++	for_each_cpu_and(cpu, topology_thread_cpumask(_cpu), cpu_online_mask) {
++		if (cpu == _cpu)
++			continue;
++		if (!idle_cpu_avg(cpu, require_avg_idle))
++			return false;
++	}
++#endif
++
++	return true;
 +}
 +
-+static bool inline autonuma_sched_clone_reset(void)
-+{
-+	return !!test_bit(AUTONUMA_SCHED_CLONE_RESET_FLAG,
-+			  &autonuma_flags);
-+}
+ #define AUTONUMA_BALANCE_SCALE 1000
+ 
+ /*
+@@ -47,6 +71,7 @@ void sched_autonuma_balance(void)
+ 	int cpu, nid, selected_cpu, selected_nid;
+ 	int cpu_nid = numa_node_id();
+ 	int this_cpu = smp_processor_id();
++	int this_smt_idle;
+ 	unsigned long p_w, p_t, m_w, m_t;
+ 	unsigned long weight_delta_max, weight;
+ 	struct cpumask *allowed;
+@@ -96,6 +121,7 @@ void sched_autonuma_balance(void)
+ 		weight_current[nid] = p_w*AUTONUMA_BALANCE_SCALE/p_t;
+ 	}
+ 
++	this_smt_idle = smt_idle(this_cpu, false);
+ 	bitmap_zero(mm_mask, NR_CPUS);
+ 	for_each_online_node(nid) {
+ 		if (nid == cpu_nid)
+@@ -103,11 +129,24 @@ void sched_autonuma_balance(void)
+ 		for_each_cpu_and(cpu, cpumask_of_node(nid), allowed) {
+ 			struct mm_struct *mm;
+ 			struct rq *rq = cpu_rq(cpu);
++			bool other_smt_idle;
+ 			if (!cpu_online(cpu))
+ 				continue;
+ 			weight_others[cpu] = LONG_MAX;
+-			if (idle_cpu(cpu) &&
+-			    rq->avg_idle > sysctl_sched_migration_cost) {
 +
-+static bool inline autonuma_sched_fork_reset(void)
-+{
-+	return !!test_bit(AUTONUMA_SCHED_FORK_RESET_FLAG,
-+			  &autonuma_flags);
-+}
++			other_smt_idle = smt_idle(cpu, true);
++			if (autonuma_sched_smt() &&
++			    this_smt_idle && !other_smt_idle)
++				continue;
 +
-+static bool inline autonuma_scan_pmd(void)
-+{
-+	return !!test_bit(AUTONUMA_SCAN_PMD_FLAG, &autonuma_flags);
-+}
++			if (idle_cpu_avg(cpu, true)) {
++				if (autonuma_sched_smt() &&
++				    !this_smt_idle && other_smt_idle) {
++					/* NUMA affinity override */
++					weight_others[cpu] = -2;
++					continue;
++				}
 +
-+static bool inline autonuma_scan_use_working_set(void)
-+{
-+	return !!test_bit(AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
-+			  &autonuma_flags);
-+}
+ 				if (weight_current[nid] >
+ 				    weight_current[cpu_nid] &&
+ 				    weight_current_mm[nid] >
+@@ -115,6 +154,11 @@ void sched_autonuma_balance(void)
+ 					weight_others[cpu] = -1;
+ 				continue;
+ 			}
 +
-+static bool inline autonuma_migrate_defer(void)
-+{
-+	return !!test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
-+}
++			if (autonuma_sched_smt() &&
++			    this_smt_idle && cpu_rq(this_cpu)->nr_running <= 1)
++				continue;
 +
-+#endif /* _LINUX_AUTONUMA_FLAGS_H */
+ 			mm = rq->curr->mm;
+ 			if (!mm)
+ 				continue;
+@@ -169,7 +213,7 @@ void sched_autonuma_balance(void)
+ 				w_cpu_nid = weight_current_mm[cpu_nid];
+ 			}
+ 			if (w_nid > weight_others[cpu] &&
+-			    w_nid > w_cpu_nid) {
++			    (w_nid > w_cpu_nid || weight_others[cpu] == -2)) {
+ 				weight = w_nid -
+ 					weight_others[cpu] +
+ 					w_nid -
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index 7ca4992..4cce6a1 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -23,6 +23,7 @@ unsigned long autonuma_flags __read_mostly =
+ 	(1<<AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG)|
+ 	(1<<AUTONUMA_SCHED_CLONE_RESET_FLAG)|
+ 	(1<<AUTONUMA_SCHED_FORK_RESET_FLAG)|
++	(1<<AUTONUMA_SCHED_SMT_FLAG)|
+ #ifdef CONFIG_AUTONUMA_DEFAULT_ENABLED
+ 	(1<<AUTONUMA_FLAG)|
+ #endif
+@@ -1089,6 +1090,9 @@ SYSFS_ENTRY(defer, AUTONUMA_MIGRATE_DEFER_FLAG);
+ SYSFS_ENTRY(load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
+ SYSFS_ENTRY(clone_reset, AUTONUMA_SCHED_CLONE_RESET_FLAG);
+ SYSFS_ENTRY(fork_reset, AUTONUMA_SCHED_FORK_RESET_FLAG);
++#ifdef CONFIG_SCHED_SMT
++SYSFS_ENTRY(smt, AUTONUMA_SCHED_SMT_FLAG);
++#endif
+ 
+ #undef SYSFS_ENTRY
+ 
+@@ -1205,6 +1209,9 @@ static struct attribute *scheduler_attr[] = {
+ 	&clone_reset_attr.attr,
+ 	&fork_reset_attr.attr,
+ 	&load_balance_strict_attr.attr,
++#ifdef CONFIG_SCHED_SMT
++	&smt_attr.attr,
++#endif
+ 	NULL,
+ };
+ static struct attribute_group scheduler_attr_group = {
