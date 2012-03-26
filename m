@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab2CZSxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:53:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21506 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932749Ab2CZSxc (ORCPT
+	id S933250Ab2CZS5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:57:04 -0400
+Received: from ftp.meprolight.com ([194.90.149.17]:34234 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933059Ab2CZS5D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:53:32 -0400
-X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=NFM--E4xPHYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=m3rNscxq_2rgUerDx74A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1332788008.23924.114.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RFC] rcu: Make __rcu_read_lock() inlinable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
-        torvalds@linux-foundation.org
-Date: Mon, 26 Mar 2012 14:53:28 -0400
-In-Reply-To: <20120326183232.GK2450@linux.vnet.ibm.com>
-References: <20120325205249.GA29528@linux.vnet.ibm.com>
-	 <1332748484.16159.61.camel@twins>
-	 <20120326183232.GK2450@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 26 Mar 2012 14:57:03 -0400
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Date: Mon, 26 Mar 2012 20:56:35 +0200
+Subject: RE: [PATCH v1] regulator: i.MX35-PDK Add regulator support
+Thread-Topic: [PATCH v1] regulator: i.MX35-PDK Add regulator support
+Thread-Index: Ac0LZe8TqXpIcvznSmaZQB9BvCvUzAAF+3vW
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD1F@MEP-EXCH.meprolight.com>
+References: <1332772593-13313-1-git-send-email-alexg@meprolight.com>
+	<20120326144712.GA8579@sirena.org.uk>
+	<4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>,<20120326153429.GX3098@opensource.wolfsonmicro.com>
+In-Reply-To: <20120326153429.GX3098@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 11:32 -0700, Paul E. McKenney wrote:
 
-> Preemption is disabled at this point, correct?
-> 
-Is this a philosophical question? You're asking if preemption is
-disabled while a task is currently being preempted ;-)
+On Mon, Mar 26, 2012 at 05:28:55PM +0200, Alex Gershgorin wrote:
+> On Mon, Mar 26, 2012 at 04:36:33PM +0200, Alex Gershgorin wrote:
 
--- Steve
+> It's not quite true, I was based on the Freescale BSP and I assume,
+> that this is checked.  I also tested it on v3.3
+
+> > Uh, presence in a vendor BSP isn't a guarantee of sanity...  Since you
+> > didn't specify any consumers the regulator API obviously won't do
+> > anything with the voltage range provided but to repeat it's really not
+> > at all obvious that anything sane ever would.
+
+Thanks Mark I think that understand you,
+if not have consumers do not set ranges.
+I will correct it
+
+Thanks 
+Alex Gershgorin
+
 
 
