@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2CZItd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:49:33 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:53617 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab2CZItc (ORCPT
+	id S1755935Ab2CZIvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:51:42 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46627 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231Ab2CZIvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:49:32 -0400
-Message-ID: <1332751768.3511.3.camel@jlt3.sipsolutions.net>
-Subject: Re: [PATCH 4/4] compat: add some tracing backport work
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lf_driver_backport@lists.linux-foundation.org
-Date: Mon, 26 Mar 2012 10:49:28 +0200
-In-Reply-To: <CAB=NE6XXd-T5B37Cc_eCwnWHRk-_UVn0JY0mQjzMQcK+ZcLuWQ@mail.gmail.com> (sfid-20120322_053002_038310_D468A77C)
-References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
-	 <1332214021-9716-5-git-send-email-mcgrof@frijolero.org>
-	 <1332245766.3329.14.camel@jlt3.sipsolutions.net>
-	 <CAB=NE6XyDDfzu71K-1ecMQ+F-0Z1iTN4OKCUjJ+E3yxvydks0Q@mail.gmail.com>
-	 <CAB=NE6XXd-T5B37Cc_eCwnWHRk-_UVn0JY0mQjzMQcK+ZcLuWQ@mail.gmail.com>
-	 (sfid-20120322_053002_038310_D468A77C)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 26 Mar 2012 04:51:39 -0400
+X-AuditID: 9c93016f-b7cc6ae00000317e-15-4f702e186ec9
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
+Subject: [RFC PATCHSET] perf ui: Small preparation on further UI work
+Date: Mon, 26 Mar 2012 17:51:31 +0900
+Message-Id: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 21:29 -0700, Luis R. Rodriguez wrote:
+Hi,
 
-> But no dice. I then figured it may be my kernel with
-> CONFIG_TRACEPOINTS=y and indeed that is the case -- so we have to
-> consider the case where the target kernel may have tracing enabled and
-> we have to disable it somehow. Undef'ing CONFIG_TRACEPOINTS and
-> DECLARE_TRACE doesn't really do it.
+This is my initial work of UI generalization. As we now get GTK2 support on
+perf report, improve setup_browser() to handle it properly so that we can
+add various UI specific initialization codes to the function. At least, we
+need basic error/warning handlers ASAP to see what's going on when an error
+occurred, IMHO.
 
-Oh, ok, yuck. So I guess we can't easily disable tracing if it's enabled
-in the base kernel ...
+I put new file setup.c under ui directory (not under util/ui) and it may or
+may not be compiled depending on the system configuration. I think it'd be
+better moving generic UI codes to the directory and TUI specific codes to
+ui/tui, and so on, so that the util directory doesn't contain any UI codes.
+But before proceeding, I'd like to listen to your opinions :).
 
-> We may need to redefine each macro to some COMPAT_TRACE_ macro, not sure yet.
+Any comments are welcome.
+Thanks.
 
-That would require patches again though, no fun either.
+Namhyung Kim (5):
+  perf ui: Make setup_browser() generic
+  perf ui: Drop arg[cv] arguments from perf_gtk_setup_browser()
+  perf ui: Add gtk2 support into setup_browser()
+  perf gtk: Rename functions for consistency
+  perf ui: Change fallback policy of setup_browser()
 
-johannes
+ tools/perf/Makefile           |    7 ++++-
+ tools/perf/builtin-report.c   |    5 +---
+ tools/perf/ui/setup.c         |   44 +++++++++++++++++++++++++++++
+ tools/perf/util/cache.h       |   24 +++++++++++-----
+ tools/perf/util/gtk/browser.c |   27 +++++++++---------
+ tools/perf/util/gtk/gtk.h     |    4 +++
+ tools/perf/util/ui/setup.c    |   61 +++++++++++++++-------------------------
+ 7 files changed, 108 insertions(+), 64 deletions(-)
+ create mode 100644 tools/perf/ui/setup.c
+
+-- 
+1.7.7.6
 
