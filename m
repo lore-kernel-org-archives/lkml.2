@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab2CZM0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 08:26:38 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:60701 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab2CZM0h (ORCPT
+	id S1756434Ab2CZMg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 08:36:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61558 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab2CZMg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 08:26:37 -0400
-Date: Mon, 26 Mar 2012 14:26:32 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] tools: Add a toplevel Makefile
-Message-ID: <20120326122632.GC32090@aftab>
-References: <1332513788-9726-1-git-send-email-bp@amd64.org>
- <20120324074412.GE20145@gmail.com>
+	Mon, 26 Mar 2012 08:36:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefan Roese <sr@denx.de>
+Subject: Re: [PATCH] rtc/spear: Add Device Tree probing capability
+Date: Mon, 26 Mar 2012 12:36:04 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Viresh Kumar <viresh.kumar@st.com>, akpm@linux-foundation.org,
+        devicetree-discuss@lists.ozlabs.org, rajeev-dlh.kumar@st.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        a.zummo@towertech.it, spear-devel@list.st.com, viresh.linux@gmail.com,
+        Rob Herring <robherring2@gmail.com>
+References: <8747a4b3bdcfb7b3384c14ca909228e1164d0fc5.1332755275.git.viresh.kumar@st.com> <201203261332.02073.sr@denx.de>
+In-Reply-To: <201203261332.02073.sr@denx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120324074412.GE20145@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203261236.05037.arnd@arndb.de>
+X-Provags-ID: V02:K0:EyVckJ0EtUvKrqFdolaNQQwlkpgCHs6dPDz+Iyq4f/y
+ oWdzqKk2tVCuaVxjWdxqtFqCFp4d8E9iIw6sVLK8fTp+JxiMb+
+ E7sH1o6o4mgK04P9d5ATmHNqgaLizKLVD1q1egAL/HbQCqWALl
+ Ec+tM5n22F9DBVGA/rqB72n8qNA8URLIAkDlRfJ6lNh8riG5gA
+ W8M01L/7Ncx4d40zPYAeW5SLJrSEDSS9zietIDyzLcb0x63b6L
+ wcukuKVug4yhz44ifMm1di88+kNxOnrTU61a37NlPZ//OjVgOA
+ JiU1wmsbj1OF2R/iQQ1TyIQxAlmMLzhfhjyi30ZYExCB1DHC7w
+ dVf17uRlVraMqHYgU8XU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 08:44:12AM +0100, Ingo Molnar wrote:
-> Could this also be accessible via 'make tools' in the toplevel 
-> Makefile?
+On Monday 26 March 2012, Stefan Roese wrote:
+> > diff --git a/Documentation/devicetree/bindings/rtc/spear-rtc.txt
+> > b/Documentation/devicetree/bindings/rtc/spear-rtc.txt new file mode 100644
+> > index 0000000..928410f
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/rtc/spear-rtc.txt
+> > @@ -0,0 +1,18 @@
+> > +* SPEAr RTC
+> > +
+> > +Required properties:
+> > +- compatible : "st,spear-rtc"
+> > +- reg : Address range of the rtc registers
+> > +- interrupt-parent: Should be the phandle for the interrupt controller
+> > +  that services interrupts for this device
+> > +- interrupt: Should contain the rtc interrupt number
+> > +
+> > +Example:
+> > +
+> > +     rtc@fc000000 {
+> > +             compatible = "st,spear-rtc";
 > 
-> I'd love to be able to type:
-> 
->   make -j tools perf install
+> With Rob's comments in mind, wouldn't it be better to use a more specific 
+> compatible property? Should we stick with "st,spear600-rtc"? Or use "st-
+> spear300-rtc" as "oldest" SoC variant?
 
-Well,
+I wouldn't mind if you list all three, or at least spear600 as the actual
+chip and spear300 as the one that introduced the device. Of course, if the
+device itself is licensed from some other vendor or was used in a prior product,
+I would list that one.
 
-you could do
-
-$ make -j -C tools perf
-
-which builds perf. I'd need to make it work with the install target too
-so that when you do
-
-$ make -j -C tools perf install
-
-it knows that you mean the install target of perf. Let me play with it a
-bit ...
-
-[..]
-
-> Btw., please fix the perf line to say:
-> 
-> s/performance measurements tool/performance measurement and analysis tool
-
-Done,
-thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+	Arnd
