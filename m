@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab2CZGAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 02:00:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55121 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab2CZF7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 01:59:43 -0400
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH 2/3] i2c-eg20t: Call init() when wait-event timeout occurs
-Date: Mon, 26 Mar 2012 14:55:24 +0900
-Message-Id: <1332741325-7746-2-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332741325-7746-1-git-send-email-tomoya.rohm@gmail.com>
-References: <1332741325-7746-1-git-send-email-tomoya.rohm@gmail.com>
+	id S1754070Ab2CZGB0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 02:01:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15417 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187Ab2CZGBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 02:01:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="145335722"
+Subject: Re: [PATCH v3 00/13] dmaengine: imx-dma: merge dma arch code into
+ dmaengine.
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: javier Martin <javier.martin@vista-silicon.com>
+Cc: kernel@pengutronix.de, dan.j.williams@intel.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CACKLOr0JTgp+poXCNg8+8pXko3s2JWQhovMw8Z1j-q4aL4oaKQ@mail.gmail.com>
+References: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
+	 <1332344363.19804.12.camel@vkoul-udesk3>
+	 <CACKLOr03tTymT1vdTH7=nqEHu3OvAinPUHEusK+mR+J6Yc35mQ@mail.gmail.com>
+	 <CACKLOr0JTgp+poXCNg8+8pXko3s2JWQhovMw8Z1j-q4aL4oaKQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Mar 2012 11:33:53 +0530
+Message-ID: <1332741833.19804.17.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-03-22 at 15:11 +0100, javier Martin wrote:
+> On 22 March 2012 10:39, javier Martin <javier.martin@vista-silicon.com> wrote:
+> > On 21 March 2012 16:39, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+> >> This doesn't apply for me (starting with 6th) on current slave-dma.next
+> >> due to obvious changes which have gone into imx.
+> >>
+> >> Can you quickly rebase the series and resend.
+> >
+> > Great,
+> > now your 'next' branch is actually broken for imx-dma.
+> >
+> > I'm currently trying a bisect to find out what is the commit
+> > responsible for that but I suspect it will be related to the cookie
+> > changes submitted by Russell.
+I had these in branch for quite some time for people to look and point
+out any issues with merge.
+> 
+> Here,
+> take a look at this series:
+> 
+> [PATCH v4 00/15] dmaengine: imx-dma: rebase of features for 3.4.
+> 
+> I've included a new fix patch which solves the merge issue.
+Thanks Applied all, now
+> 
+> Regards.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
- drivers/i2c/busses/i2c-eg20t.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index d73975b..714b070 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -445,7 +445,9 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
- 			pch_i2c_init(adap);
- 			return -EAGAIN;
- 		} else { /* wait-event timeout */
-+			pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 			pch_i2c_stop(adap);
-+			pch_i2c_init(adap);
- 			return -ETIME;
- 		}
- 	} else {
-@@ -469,7 +471,9 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
- 		pch_i2c_init(adap);
- 		return -EAGAIN;
- 	} else { /* wait-event timeout */
-+		pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 		pch_i2c_stop(adap);
-+		pch_i2c_init(adap);
- 		return -ETIME;
- 	}
- 
-@@ -490,7 +494,9 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
- 			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
- 				   I2CMIF_BIT);
- 		} else { /* wait-event timeout */
-+			pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 			pch_i2c_stop(adap);
-+			pch_i2c_init(adap);
- 			return -ETIME;
- 		}
- 	}
-@@ -598,7 +604,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
- 			pch_i2c_init(adap);
- 			return -EAGAIN;
- 		} else { /* wait-event timeout */
-+			pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 			pch_i2c_stop(adap);
-+			pch_i2c_init(adap);
- 			return -ETIME;
- 		}
- 		pch_i2c_restart(adap);
-@@ -621,7 +629,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
- 			pch_i2c_init(adap);
- 			return -EAGAIN;
- 		} else { /* wait-event timeout */
-+			pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 			pch_i2c_stop(adap);
-+			pch_i2c_init(adap);
- 			return -ETIME;
- 		}
- 	} else {
-@@ -648,7 +658,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
- 		pch_i2c_init(adap);
- 		return -EAGAIN;
- 	} else { /* wait-event timeout */
-+		pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 		pch_i2c_stop(adap);
-+		pch_i2c_init(adap);
- 		return -ETIME;
- 	}
- 
-@@ -677,7 +689,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
- 					return -EIO;
- 				}
- 			} else { /* wait-event timeout */
-+				pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 				pch_i2c_stop(adap);
-+				pch_i2c_init(adap);
- 				return -ETIME;
- 			}
- 
-@@ -698,7 +712,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
- 				return -EIO;
- 			}
- 		} else { /* wait-event timeout */
-+			pch_err(adap, "%s(L.%d):wait-event timeout\n", __func__, __LINE__);
- 			pch_i2c_stop(adap);
-+			pch_i2c_init(adap);
- 			return -ETIME;
- 		}
- 
 -- 
-1.7.7.6
+~Vinod
 
