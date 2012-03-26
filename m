@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab2CZDCk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 23:02:40 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45124 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab2CZDCi (ORCPT
+	id S932398Ab2CZDDD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 23:03:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45372 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287Ab2CZDCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 23:02:38 -0400
+	Sun, 25 Mar 2012 23:02:43 -0400
+Date: Sun, 25 Mar 2012 20:02:39 -0700
+From: mark gross <markgross@thegnar.org>
+To: myungjoo.ham@gmail.com
+Cc: markgross@thegnar.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Kevin Hilman <khilman@ti.com>,
+        Jean Pihet <j-pihet@ti.com>, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] PM / QoS: add pm_qos_update_request_timeout API
+Message-ID: <20120326030239.GA4623@envy17>
+Reply-To: markgross@thegnar.org
+References: <1330491360-1283-1-git-send-email-myungjoo.ham@samsung.com>
+ <1331096778-26186-1-git-send-email-myungjoo.ham@samsung.com>
+ <20120324163542.GA23888@envy17>
+ <CAJ0PZbSn_gf5yhO4bbmZ8duv19E8zLrKigx0ttb38TY_BOnLyg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAP=VYLpUzuom-HUS-LYSuQmMZSRvC_Qjgyy9hnKqBowh-95YPQ@mail.gmail.com>
-References: <4F57A3EC.7070101@gmail.com>
-	<1331660076-32766-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<20120313131616.f66dbdad.akpm@linux-foundation.org>
-	<CAAHN_R3mFzmtCey_0JEHp=EAGh1sb87szpsKD_JkFwwYLCnKug@mail.gmail.com>
-	<CAP=VYLpUzuom-HUS-LYSuQmMZSRvC_Qjgyy9hnKqBowh-95YPQ@mail.gmail.com>
-Date: Mon, 26 Mar 2012 08:32:35 +0530
-Message-ID: <CAAHN_R1_DordNLDjBfWMHyMJ1yhgwiuQfPvtwQzUKpGMkrJ0jw@mail.gmail.com>
-Subject: Re: [PATCH] -mm/linux-next: procfs: Mark thread stack correctly in proc/<pid>/maps
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-next <linux-next@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Matt Mackall <mpm@selenic.com>, Mike Frysinger <vapier@gentoo.org>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Salter <msalter@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJ0PZbSn_gf5yhO4bbmZ8duv19E8zLrKigx0ttb38TY_BOnLyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 25, 2012 at 11:35 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> Now it is:
->
-> mm/nommu.o: In function `vm_is_stack':
-> nommu.c:(.text+0x2178): multiple definition of `vm_is_stack'
-> mm/util.o:util.c:(.text+0x2bc): first defined here
-> make[2]: *** [mm/built-in.o] Error 1
->
-> http://kisskb.ellerman.id.au/kisskb/buildresult/5941188/
+On Mon, Mar 26, 2012 at 10:41:15AM +0900, MyungJoo Ham wrote:
+> On Sun, Mar 25, 2012 at 1:35 AM, mark gross <markgross@thegnar.org> wrote:
+> > I apologize for the lat replay and admit that I was probably wrong to
+> > oppose the idea of time out pm_qos requests.  (last week we bumped into
+> > a need for them and now I get it.)
+> >
+> >
+> > On Wed, Mar 07, 2012 at 02:06:18PM +0900, MyungJoo Ham wrote:
+> >> The new API, pm_qos_update_request_timeout() is to provide a timeout
+> >> with pm_qos_update_request.
+> >>
+> >> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+> >> QoS request on req with value 100 will be active for 1000 jiffies.
+> >> After 1000 jiffies, the QoS request thru req is rolled back to the
+> >> request status when pm_qos_update_request_timeout() was called. If there
+> >> were another pm_qos_update_request(req, x) during the 1000 jiffies, this
+> >> new request with value x will override as this is another request on the
+> >> same req handle. A new request on the same req handle will always
+> >> override the previous request whether it is the conventional request or
+> >> it is the new timeout request.
+> >>
+> >> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> []
+> >> @@ -77,6 +79,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+> >>                       s32 value);
+> >>  void pm_qos_update_request(struct pm_qos_request *req,
+> >>                          s32 new_value);
+> >> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
+> >> +                                s32 new_value, unsigned long timeout_ms);
+> > is ms the right units?  could we ever need us?
+> >
+> 
+> Because jiffies are used for scheduling tasks, I thought ms should be
+> fine and having some devices running fast for some msecs longer won't
+> hurt. However, do you expect scheduling tasks or jiffies may use usecs
+> later? I don't mind using usecs instead of msecs here; thus, I'll
+> update this to use usecs. I'll resend patchset soon.
+> 
 
-Looks like the problem is because this patch got included in
-linux-next 2 days ago:
+I am just asking a question.  I'm not sure if us or ms are the better
+units off the top of my head.
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=47d1ab583408e5b8e900c5080aec9bbcf210df22
+--mark
 
-When I had consolidated all of these changes into what Andrew got the
-v3 patch from, this patch should have been removed since I moved this
-function definition from memory.c and nommu.c into util.c, but it
-looks like the patch got merged in once again, causing the build error
-above. Dropping this patch should be sufficient to fix the build
-problem. This is also the reason why the March 22 build was successful
-(with my final changes) and the March 24 build wasn't (with this
-additional patch).
-
--- 
-Siddhesh Poyarekar
-http://siddhesh.in
