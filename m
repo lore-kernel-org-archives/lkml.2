@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2CZAyl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 20:54:41 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37250 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2CZAyj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 20:54:39 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F6FBDEC.5040605@jp.fujitsu.com>
-Date: Mon, 26 Mar 2012 09:53:00 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: Ulrich Drepper <drepper@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: last fs/proc/array.c change
-References: <CAOPLpQe+SP7Nvr_EU44hcCu3UXVtF84EmL-_eskA1UfGr6JrPQ@mail.gmail.com>
-In-Reply-To: <CAOPLpQe+SP7Nvr_EU44hcCu3UXVtF84EmL-_eskA1UfGr6JrPQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753401Ab2CZA7k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 20:59:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51524 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752430Ab2CZA7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 20:59:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="145243550"
+Subject: Re: [PATCH 2/2] enable dumpstack() to printk log level
+From: "he, bo" <bo.he@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foudation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        rusty@rustcorp.com.au, william.douglas@intel.com,
+        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com
+In-Reply-To: <20120323122208.GB13920@gmail.com>
+References: <1332493027.2359.5.camel@hebo> <1332493269.2359.9.camel@hebo>
+	 <20120323122208.GB13920@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Mar 2012 08:59:29 +0800
+Message-ID: <1332723569.2359.16.camel@hebo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/24 21:26), Ulrich Drepper wrote:
-
-
-> See the second to last seq_put_decimal_ull.  This is a copy&paste
-> mistake since given the original format it should read
+On Fri, 2012-03-23 at 13:22 +0100, Ingo Molnar wrote:
+> * he, bo <bo.he@intel.com> wrote:
 > 
-> +       seq_put_decimal_ull(m, ' ', data);
+> > --- a/arch/x86/kernel/dumpstack.c
+> > +++ b/arch/x86/kernel/dumpstack.c
+> > @@ -177,20 +177,29 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+> >  }
+Ingo,
+
+Thanks for your kind comments. It's the 1st time for me to send patches to LKML.
+There are 2 patches. I sent the 1st one to a wrong address. I will resend the 2 patches.
+
+> >  
+> >  /*
+> > - * The architecture-independent dump_stack generator
+> > + * The architecture-independent dump_stack_log_lvl generator
 > 
-> (i.e., data instead of text).
+> I guess it wants to say "architecture-dependent"?
+Right. I will change it to architecture-dependent.
 
-Thank you for finding..
+> 
+> > +	show_trace_log_lvl(NULL, NULL, &stack, bp, log_lvl);
+> > +}
+> > +EXPORT_SYMBOL(dump_stack_log_lvl);
+> 
+> this should be a _GPL export.
+Yes. I will change it.
 
-==
-Subject: [PATCH] proc: fix /proc/statm
-
-The patch 'procfs: speed up /proc/pid/stat, statm' breaks /proc/statm
-and 'text' is printed twice by mistake.
-
-Reported-by: drepper@gmail.com
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/proc/array.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index fbb53c2..f9bd395 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -550,7 +550,7 @@ int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
- 	seq_put_decimal_ull(m, ' ', shared);
- 	seq_put_decimal_ull(m, ' ', text);
- 	seq_put_decimal_ull(m, ' ', 0);
--	seq_put_decimal_ull(m, ' ', text);
-+	seq_put_decimal_ull(m, ' ', data);
- 	seq_put_decimal_ull(m, ' ', 0);
- 	seq_putc(m, '\n');
- 
--- 
-1.7.4.1
+> 
+> > +}
+> > +EXPORT_SYMBOL(dump_stack_log_lvl);
+Yes. I will change it.
 
 
