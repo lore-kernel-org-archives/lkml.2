@@ -1,198 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933352Ab2CZSr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:47:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60398 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933059Ab2CZSrY (ORCPT
+	id S933373Ab2CZSsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:48:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39883 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933059Ab2CZSsI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:47:24 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
-Date: Mon, 26 Mar 2012 20:47:17 +0200
-User-Agent: KMail/1.8.2
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
+	Mon, 26 Mar 2012 14:48:08 -0400
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_1mLcPv/14JkEnjo"
-Message-Id: <201203262047.17865.vda.linux@googlemail.com>
+In-Reply-To: <CAOMZO5Am-igTOwWhGRmd0PCihUaWMQPEMxWJk4YuezafMJStjA@mail.gmail.com>
+References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
+	<1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
+	<CAOMZO5DL8YQT2qb=vxdQtdN+zfZLK9H9_1qu5sS+1YAvSo5SAA@mail.gmail.com>
+	<20120326181912.GV3852@pengutronix.de>
+	<CAOMZO5Bw4fFOYSDyiE8o9AnnrzTOukJtA1JFbNBeMMzx-jBVvA@mail.gmail.com>
+	<CAOMZO5Am-igTOwWhGRmd0PCihUaWMQPEMxWJk4YuezafMJStjA@mail.gmail.com>
+Date: Mon, 26 Mar 2012 15:48:07 -0300
+Message-ID: <CAOMZO5AW8EHBcs+YZk9wpaTBCDHe8ZErUDdJoPQAofHCivQxGw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] ARM i.MX 3ds debugboard: register a dummy regulator
+ for the smsc911x device
+From: Fabio Estevam <festevam@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Estevam Fabio-R49496 <r49496@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_1mLcPv/14JkEnjo
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+On Mon, Mar 26, 2012 at 3:38 PM, Fabio Estevam <festevam@gmail.com> wrote:
 
-Hi Andrew,
+>  static struct regulator_consumer_supply dummy_supplies[] = {
+> -       REGULATOR_SUPPLY("vdd33a", "smsc911x"),
+> -       REGULATOR_SUPPLY("vddvario", "smsc911x"),
+> +       REGULATOR_SUPPLY("vdd33a", NULL),
+> +       REGULATOR_SUPPLY("vddvario", NULL),
 
-Can you take this patch into -mm?
+Actually the proper fix is:
 
-Michal, Jones - can you review the code?
+--- a/arch/arm/plat-mxc/3ds_debugboard.c
++++ b/arch/arm/plat-mxc/3ds_debugboard.c
+@@ -80,7 +80,7 @@ static struct smsc911x_platform_config smsc911x_config = {
 
-Sometime ago, Michal Nazarewicz <mina86@mina86.com> optimized our
-(already fast) decimal-to-string conversion even further.
-Somehow this effort did not reach the kernel.
+ static struct platform_device smsc_lan9217_device = {
+        .name = "smsc911x",
+-       .id = 0,
++       .id = -1,
+        .dev = {
+                .platform_data = &smsc911x_config,
+        },
 
-Here is a new iteration of his code.
-
-Optimizations and patch follow in next email.
-
-Please find test programs attached.
-
-32-bit test programs were built using gcc 4.6.2
-64-bit test programs were built using gcc 4.2.1
-Command line: gcc --static [-m32] -O2 -Wall test_{org,new}.c
-
-Sizes:
-org32.o: 2850 bytes
-new32.o: 2858 bytes
-org64.o: 2155 bytes
-new64.o: 2283 bytes
-
-Correctness: I tested first and last 40 billion values from [0, 2^64-1] range,
-they all produced correct result.
-
-Speed:
-I measured how many thousands of conversions per second are done, for several values
-(it takes different amount of time to convert, say, 123 and 2^64-1 to their
-string representations).
-Format of data below: VALUE:THOUSANDS_OF_CONVS_PER_SEC.
-
-Intel Core i7 2.7GHz:
-org32: 8:46852 123:39252 123456:23992 12345678:21992 123456789:21048 2^32-1:20424 2^64-1:10216
-new32: 8:55300 123:43208 123456:34456 12345678:31272 123456789:23584 2^32-1:23568 2^64-1:16720
-
-AMD Phenom II X4 2.4GHz:
-org32: 8:29244 123:23988 123456:13792 12345678:12056 123456789:11368 2^32-1:10804 2^64-1:5224
-new32: 8:38040 123:30356 123456:22832 12345678:20676 123456789:13556 2^32-1:13472 2^64-1:9228
-
-org64: 8:38664 123:29256 123456:19188 12345678:16320 123456789:15380 2^32-1:14896 2^64-1:7864
-new64: 8:42664 123:31660 123456:21632 12345678:19220 123456789:20880 2^32-1:17580 2^64-1:9596
-
-Summary: in all cases new code is faster than old one, in many cases by 30%,
-in few cases by more than 50% (for example, on x86-32, conversion of num=12345678).
-Code growth is ~0 in 32-bit case and ~130 bytes in 64-bit case.
-
--- 
-vda
-
---Boundary-00=_1mLcPv/14JkEnjo
-Content-Type: application/x-tgz;
-  name="test_dec_conversion.tar.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="test_dec_conversion.tar.gz"
-
-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
-gQ4w7bbWrFmzZv+zF+a0cVsAZgAA
-
---Boundary-00=_1mLcPv/14JkEnjo--
+Will send you the patch shortly.
