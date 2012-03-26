@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab2CZS1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:27:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530Ab2CZS1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:27:40 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 32/39] autonuma: retain page last_nid information in khugepaged
-Date: Mon, 26 Mar 2012 19:46:19 +0200
-Message-Id: <1332783986-24195-33-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+	id S932949Ab2CZScH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:32:07 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57674 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932796Ab2CZScE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:32:04 -0400
+Date: Mon, 26 Mar 2012 15:32:00 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] perf tools: Fix parsing of unary operator in ?:
+ expression
+Message-ID: <20120326183200.GB5195@infradead.org>
+References: <05a6b9ad17375452aedc994c4553137750db0a13.1332709498.git.joerg@alea.gnuu.de>
+ <bc768c12ba3df410cb3a049ea6d88d39a993768d.1332709498.git.joerg@alea.gnuu.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <bc768c12ba3df410cb3a049ea6d88d39a993768d.1332709498.git.joerg@alea.gnuu.de>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When pages are collapsed try to keep the last_nid information from one
-of the original pages.
+Em Sun, Mar 25, 2012 at 11:11:32PM +0200, Jörg Sommer escreveu:
+> Parsing an expression like
+> 
+> print fmt: "reason %s (%d)", …, REC->errno < 0 ? -REC->errno : REC->reason
+> 
+> in kvm_space_exit fails with
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/huge_memory.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+There is no 'kvm_space_exit' I could google for except in this patch,
+this is 'kvm_userspace_exit', right?
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d388517..76bdc48 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1805,7 +1805,18 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
- 			clear_user_highpage(page, address);
- 			add_mm_counter(vma->vm_mm, MM_ANONPAGES, 1);
- 		} else {
-+#ifdef CONFIG_AUTONUMA
-+			int autonuma_last_nid;
-+#endif
- 			src_page = pte_page(pteval);
-+#ifdef CONFIG_AUTONUMA
-+			/* pick the last one, better than nothing */
-+			autonuma_last_nid =
-+				ACCESS_ONCE(src_page->autonuma_last_nid);
-+			if (autonuma_last_nid >= 0)
-+				ACCESS_ONCE(page->autonuma_last_nid) =
-+					autonuma_last_nid;
-+#endif
- 			copy_user_highpage(page, src_page, address, vma);
- 			VM_BUG_ON(page_mapcount(src_page) != 1);
- 			VM_BUG_ON(page_count(src_page) != 2);
+Fixing that in the changeset log.
+
+- Arnaldo
+ 
+> Fatal unknown op ':'
+> 
+> The colon after a simple operator signals the end of this expression. The
+> token should not be advanced, because the colon is handled in
+> process_cond(). Hence, it's enough to signal there's an operation
+> heading.
+> 
+> Signed-off-by: Jörg Sommer <joerg@alea.gnuu.de>
+> ---
+> An alternative could be:
+> 
+>  --- a/tools/perf/util/trace-event-parse.c
+>  +++ b/tools/perf/util/trace-event-parse.c
+>  @@ -1287,7 +1287,7 @@ process_op(struct event *event, struct print_arg *arg, char **tok)
+>                 return EVENT_NONE;
+>         }
+>  
+> -       if (type == EVENT_OP) {
+> +       if (type == EVENT_OP && strcmp(*tok, ":") != 0) {
+>                 int prio;
+>  
+>                 /* higher prios need to be closer to the root */
+> 
+> 
+>  tools/perf/util/trace-event-parse.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+> index 185e284..d7b5880 100644
+> --- a/tools/perf/util/trace-event-parse.c
+> +++ b/tools/perf/util/trace-event-parse.c
+> @@ -1125,6 +1125,7 @@ static int get_op_prio(char *op)
+>  		case '|':
+>  			return 13;
+>  		case '?':
+> +		case ':':
+>  			return 16;
+>  		default:
+>  			die("unknown op '%c'", op[0]);
+> @@ -1202,6 +1203,8 @@ process_op(struct event *event, struct print_arg *arg, char **tok)
+>  
+>  		type = process_arg(event, right, tok);
+>  
+> +	} else if (strcmp(token, ":") == 0) {
+> +		return EVENT_OP;
+>  	} else if (strcmp(token, "?") == 0) {
+>  
+>  		left = malloc_or_die(sizeof(*left));
+> -- 
+> 1.7.9.1
