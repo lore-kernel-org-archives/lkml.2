@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab2CZBVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 21:21:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62281 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab2CZBVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 21:21:08 -0400
-Message-ID: <1332724858.7078.1.camel@phoenix>
-Subject: [PATCH] regulator: Convert max8952 to set_voltage_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Mon, 26 Mar 2012 09:20:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1754556Ab2CZBZj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 21:25:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46016 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754243Ab2CZBZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 21:25:38 -0400
+Message-ID: <4F6FC57D.3050404@zytor.com>
+Date: Sun, 25 Mar 2012 18:25:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Thomas Renninger <trenn@suse.de>
+CC: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
+ initrd
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240402.38749.trenn@suse.de> <4F6D50DD.4050306@zytor.com> <201203260245.43177.trenn@suse.de>
+In-Reply-To: <201203260245.43177.trenn@suse.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8952.c |   28 +++++++---------------------
- 1 files changed, 7 insertions(+), 21 deletions(-)
+On 03/25/2012 05:45 PM, Thomas Renninger wrote:
+> Best would be if no distro specific mkinitrd magic is needed and it's
+> just as easy as it is:
+> cp DSDT.aml /boot/initrd-test
+> cat /boot/initrd >>/boot/initrd-test
+> and add a test boot entry to grub's menu.lst or whereever.
+> Then developers would not have to look at distro specific implementations
+> (which should not exist) about how to test a table quickly.
 
-diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
-index e9c0a0e..c35236a 100644
---- a/drivers/regulator/max8952.c
-+++ b/drivers/regulator/max8952.c
-@@ -130,11 +130,10 @@ static int max8952_get_voltage(struct regulator_dev *rdev)
- 	return max8952_voltage(max8952, vid);
- }
- 
--static int max8952_set_voltage(struct regulator_dev *rdev,
--			       int min_uV, int max_uV, unsigned *selector)
-+static int max8952_set_voltage_sel(struct regulator_dev *rdev,
-+				   unsigned selector)
- {
- 	struct max8952_data *max8952 = rdev_get_drvdata(rdev);
--	s8 vid = -1, i;
- 
- 	if (!gpio_is_valid(max8952->pdata->gpio_vid0) ||
- 			!gpio_is_valid(max8952->pdata->gpio_vid1)) {
-@@ -142,23 +141,10 @@ static int max8952_set_voltage(struct regulator_dev *rdev,
- 		return -EPERM;
- 	}
- 
--	for (i = 0; i < MAX8952_NUM_DVS_MODE; i++) {
--		int volt = max8952_voltage(max8952, i);
--
--		/* Set the voltage as low as possible within the range */
--		if (volt <= max_uV && volt >= min_uV)
--			if (vid == -1 || max8952_voltage(max8952, vid) > volt)
--				vid = i;
--	}
--
--	if (vid >= 0 && vid < MAX8952_NUM_DVS_MODE) {
--		max8952->vid0 = vid & 0x1;
--		max8952->vid1 = (vid >> 1) & 0x1;
--		*selector = vid;
--		gpio_set_value(max8952->pdata->gpio_vid0, max8952->vid0);
--		gpio_set_value(max8952->pdata->gpio_vid1, max8952->vid1);
--	} else
--		return -EINVAL;
-+	max8952->vid0 = selector & 0x1;
-+	max8952->vid1 = (selector >> 1) & 0x1;
-+	gpio_set_value(max8952->pdata->gpio_vid0, max8952->vid0);
-+	gpio_set_value(max8952->pdata->gpio_vid1, max8952->vid1);
- 
- 	return 0;
- }
-@@ -169,7 +155,7 @@ static struct regulator_ops max8952_ops = {
- 	.enable			= max8952_enable,
- 	.disable		= max8952_disable,
- 	.get_voltage		= max8952_get_voltage,
--	.set_voltage		= max8952_set_voltage,
-+	.set_voltage_sel	= max8952_set_voltage_sel,
- 	.set_suspend_disable	= max8952_disable,
- };
- 
--- 
-1.7.5.4
+There is no distro-specific magic needed.  What I'm proposing is
+basically what you have above, except that your DSDT.aml would be
+wrapped in a cpio header.  What I would like to ask from you is if it
+makes sense to have kernel/acpi/DSDT, kernel/acpi/SSDT and so on, or
+just make it a single kernel/acpi member.
 
+By wrapping in a cpio container it becomes a generic mechanism.
 
+>> By the way, if "relying on the bootloader" was an option in any way
+> 
+> Why exactly is a change in the bootloader not an option?
+> Not sure whether a version number is passed, but the magic number could be
+> changed for now.
 
+There are a lot of bootloaders, and one of the most commonly used ones
+has a very adversarial relationship with the kernel maintainers.
+
+> If the new magic number is passed, we get a linked list.
+
+The linked list stuff is already supported.  This interface has been
+supported in the kernel since 2007.
+
+	-hpa
