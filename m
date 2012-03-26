@@ -1,45 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab2CZXJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 19:09:12 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:57631 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750934Ab2CZXJL (ORCPT
+	id S1753376Ab2CZXKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 19:10:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39632 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2CZXKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 19:09:11 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: mathieu.poirier@linaro.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 9/9] ARM: omap: select CPU_FREQ_TABLE where needed
-Organization: Texas Instruments, Inc.
-References: <1332522836-29517-1-git-send-email-mathieu.poirier@linaro.org>
-	<1332522836-29517-10-git-send-email-mathieu.poirier@linaro.org>
-	<20120323182746.GF9859@atomide.com>
-Date: Mon, 26 Mar 2012 16:09:07 -0700
-In-Reply-To: <20120323182746.GF9859@atomide.com> (Tony Lindgren's message of
-	"Fri, 23 Mar 2012 11:27:46 -0700")
-Message-ID: <87limnq7sb.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 26 Mar 2012 19:10:21 -0400
+Date: Mon, 26 Mar 2012 16:10:17 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+ watermark
+Message-ID: <20120326231017.GA30684@kroah.com>
+References: <1332800304-5060-1-git-send-email-haiyangz@microsoft.com>
+ <1332800304-5060-2-git-send-email-haiyangz@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332800304-5060-2-git-send-email-haiyangz@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Lindgren <tony@atomide.com> writes:
+On Mon, Mar 26, 2012 at 03:18:24PM -0700, Haiyang Zhang wrote:
+> In the existing code, we only stop queue when the ringbuffer is full,
+> so the current packet has to be dropped or retried from upper layer.
+> 
+> This patch stops the tx queue when available ringbuffer is below
+> the low watermark. So the ringbuffer still has small amount of space
+> available for the current packet. This will reduce the overhead of
+> retries on sending.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hv/ring_buffer.c        |   15 +++++++++++++++
+>  drivers/net/hyperv/hyperv_net.h |    3 +++
+>  drivers/net/hyperv/netvsc.c     |   23 +++++++++++++++++++----
+>  drivers/net/hyperv/netvsc_drv.c |   16 +++++++++++++++-
+>  include/linux/hyperv.h          |    3 +++
+>  5 files changed, 55 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
+> index 8af25a0..8cc3f63 100644
+> --- a/drivers/hv/ring_buffer.c
+> +++ b/drivers/hv/ring_buffer.c
+> @@ -23,6 +23,7 @@
+>   */
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> +#include <linux/module.h>
+>  #include <linux/kernel.h>
+>  #include <linux/mm.h>
+>  #include <linux/hyperv.h>
+> @@ -160,6 +161,20 @@ hv_get_ring_buffersize(struct hv_ring_buffer_info *ring_info)
+>  }
+>  
+>  /*
+> + * Get the percentage of available bytes to write in the ring.
+> + * The return value is in range from 0 to 100.
+> + */
+> +u32 hv_ringbuf_avail_percent(struct hv_ring_buffer_info *ring_info)
+> +{
+> +	u32 avail_read, avail_write;
+> +
+> +	hv_get_ringbuffer_availbytes(ring_info, &avail_read, &avail_write);
+> +
+> +	return avail_write * 100 / hv_get_ring_buffersize(ring_info);
+> +}
+> +EXPORT_SYMBOL(hv_ringbuf_avail_percent);
 
-> * mathieu.poirier@linaro.org <mathieu.poirier@linaro.org> [120323 10:17]:
->> From: Arnd Bergmann <arnd@arndb.de>
->> 
->> The omap platform requires CPU_FREQ_TABLE support to be enabled for its
->> CPU_FREQ implementations, so automatically select that when CPU_FREQ
->> is enabled.
->
-> I think this is also solved now, Kevin might be able to confirm this.
+That makes no sense, what happens 1 second later to the buffer?  You
+can't expect this result to be valid anymore, right?
 
-Yes, this is solved in mainline by selecting it from
-drivers/cpufreq/Kconfig.arm
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -51,6 +51,16 @@ static int ring_size = 128;
+>  module_param(ring_size, int, S_IRUGO);
+>  MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
+>  
+> +uint ring_avail_percent_hiwater = 20;
+> +module_param(ring_avail_percent_hiwater, uint, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(ring_avail_percent_hiwater,
+> +	"Ring buffer available percentiles to wake up xmit queue");
+> +
+> +uint ring_avail_percent_lowater = 10;
+> +module_param(ring_avail_percent_lowater, uint, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(ring_avail_percent_lowater,
+> +	"Ring buffer available percentiles to stop xmit queue");
 
-Kevin
+Eeek, no, how in the world is someone supposed to know to set these
+things?
+
+Please make this work "automatically", otherwise no one will ever get it
+right.  Don't make it tunable as a way out of making a decision on how
+the driver should work.
+
+Ick.
+
+David, please do NOT apply this as-is.
+
+greg k-h
