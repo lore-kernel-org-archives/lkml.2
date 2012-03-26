@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933349Ab2CZSmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:42:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34859 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933147Ab2CZSmW (ORCPT
+	id S933247Ab2CZSp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:45:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17060 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932944Ab2CZSp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:42:22 -0400
-Date: Mon, 26 Mar 2012 11:42:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] firmware_class: Fix problems with usermodehelper test
-Message-ID: <20120326184217.GC29332@kroah.com>
-References: <201203032122.36745.chunkeey@googlemail.com>
- <201203191225.00199.rjw@sisk.pl>
- <201203200000.43316.rjw@sisk.pl>
- <201203260000.34377.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203260000.34377.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Mar 2012 14:45:28 -0400
+X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wBLf1-ka6lYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=57neN2dlDuRsF5ViA4oA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rajesh Bhagat <rajesh.lnx@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1332597305.12799.2.camel@acer.local.home>
+References: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
+	 <1332531400.23924.71.camel@gandalf.stny.rr.com>
+	 <CA+jqyFAzpTs+JeemD7wpSgW0hmECMSPMsaZtQ7zLgn+ebXSJFQ@mail.gmail.com>
+	 <1332597305.12799.2.camel@acer.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Mar 2012 13:45:32 -0400
+Message-ID: <1332783932.12799.16.camel@acer.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 12:00:34AM +0200, Rafael J. Wysocki wrote:
-> Hi all,
-> 
-> The following series of patches fixes two problems with
-> request_firmware() and request_firmware_nowait() resulting from commit
-> a144c6a6c924aa1da04dd77fb84b89927354fdff
-> 
->     PM: Print a warning if firmware is requested when tasks are frozen
-> 
-> The first problem is that request_firmware_nowait() may fail if it happens
-> to run in parallel with system suspend.  It should't fail in such situations
-> and that is addressed by the first three patches (that code has been discussed
-> with Linus at al already).
-> 
-> The second issue is that request_firmware() may be called in a thread which
-> isn't related to system suspend and if suspend happens exactly at that time,
-> request_firmware() will fail (and print a scary warning), although it shouldn't.
-> This problem is addressed by the remaining three patches, which are new.
+On Sat, 2012-03-24 at 09:55 -0400, Steven Rostedt wrote:
 
-At first glance, they all look good to me, thanks for doing this work:
-	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> That said, I may consider taking the patch, as another way of resetting
+> the tracer. I have to see what workflows it will affect first.
 
-I'm guessing this will go in through one of your trees, right?
+This is what I was afraid of. The tracers irqsoff and preemptoff do not
+get reset if you echo the tracer name into the current_tracer. This
+makes different tracers inconsistent.
 
-thanks,
+All tracers must act the same. So, it's a no go for this patch, at least
+in its current form.
 
-greg k-h
+-- Steve
+
+
