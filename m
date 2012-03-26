@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab2CZPXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:23:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50525 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932303Ab2CZPXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:23:16 -0400
-Date: Mon, 26 Mar 2012 17:23:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 6/7] mm/memcg: kill mem_cgroup_lru_del()
-Message-ID: <20120326152315.GC22754@tiehlicka.suse.cz>
-References: <20120322214944.27814.42039.stgit@zurg>
- <20120322215639.27814.4996.stgit@zurg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322215639.27814.4996.stgit@zurg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932809Ab2CZPX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:23:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55605 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab2CZPX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 11:23:56 -0400
+Message-ID: <1332775433.22830.7.camel@ayu>
+Subject: Re: Linux 3.3 release
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: Romain Francoise <romain@orebokech.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Mon, 26 Mar 2012 11:23:53 -0400
+In-Reply-To: <87r4wpx7lr.fsf@silenus.orebokech.com>
+References: <CA+55aFyR2TXcKdzXontH8B4Reu40bdY_APhuUJeUxm6D-OuQkg@mail.gmail.com>
+	 <87r4wpx7lr.fsf@silenus.orebokech.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-03-12 01:56:39, Konstantin Khlebnikov wrote:
-> This patch kills mem_cgroup_lru_del(), we can use mem_cgroup_lru_del_list()
-> instead. On 0-order isolation we already have right lru list id.
+On Mon, 2012-03-19 at 10:28 +0100, Romain Francoise wrote:
+> There seems to be a regression in the final release compared to -rc7,
+> specifically this commit:
 > 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Hugh Dickins <hughd@google.com>
-
-Yes, looks good
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Just a small nit..
-[...]
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 5f6ed98..9de66be 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-[...]
-> @@ -1205,8 +1205,11 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  
->  			if (__isolate_lru_page(cursor_page, mode) == 0) {
->  				unsigned int isolated_pages;
-> +				enum lru_list cursor_lru;
->  
-> -				mem_cgroup_lru_del(cursor_page);
-> +				cursor_lru = page_lru(cursor_page);
-> +				mem_cgroup_lru_del_list(cursor_page,
-> +							cursor_lru);
-
-Why not mem_cgroup_lru_del_list(cursor_page,
-				page_lru(cursor_page));
-The patch would be smaller and it doesn't make checkpatch unhappy as well.
-
->  				list_move(&cursor_page->lru, dst);
->  				isolated_pages = hpage_nr_pages(cursor_page);
->  				nr_taken += isolated_pages;
+> > Matthew Garrett (1):
+> >       PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> causes an early kernel panic on my machine (Intel DP67BG). Reverting the
+> change fixes it. Unfortunately it crashes before setting up the video mode
+> so I don't have the full stack trace, but RIP points to
+> pcie_aspm_init_link_state().
+> 
+> When the machine boots successfully, dmesg contains the following related
+> to ASPM:
+> 
+> [    0.382384] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+> [    0.433016] pci 0000:06:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+
+This commit is also breaking boot on one of my boxes; it's causing the
+pata_jmicron driver to fail to detect my IDE boot drive. This was
+reported in this thread as well:
+https://lkml.org/lkml/2012/3/22/6
+
+Apparently, using the 'pcie_aspm=force' may work around the issue, from
+some reports that I've seen when searching around. Haven't tried it
+myself, yet.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Calvin Walton <calvin.walton@kepstin.ca>
+
