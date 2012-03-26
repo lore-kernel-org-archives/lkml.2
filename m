@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab2C0Onk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 10:43:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46656 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab2C0Onf (ORCPT
+	id S1755087Ab2C0OoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 10:44:03 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18677 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab2C0Onj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 10:43:35 -0400
-Date: Tue, 27 Mar 2012 10:31:42 -0400
+	Tue, 27 Mar 2012 10:43:39 -0400
+Date: Mon, 26 Mar 2012 12:38:20 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [PATCH 1/2] xen: enter/exit lazy_mmu_mode around m2p_override
- calls
-Message-ID: <20120327143142.GA31081@phenom.dumpdata.com>
-References: <1332856364-29995-1-git-send-email-stefano.stabellini@eu.citrix.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>, "Brown, Len" <len.brown@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH 2/2] RFC: Xen pad logic
+Message-ID: <20120326163820.GD10236@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923350AD0A6@SHSMSX101.ccr.corp.intel.com>
+ <20120314001833.GB20363@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335105DB9@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332856364-29995-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335105DB9@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F71D20C.0095,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4F71D20E.00B6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 02:52:43PM +0100, Stefano Stabellini wrote:
-> This patch is a significant performance improvement for the
+On Mon, Mar 26, 2012 at 06:18:36AM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Thu, Feb 23, 2012 at 01:31:25PM +0000, Liu, Jinsong wrote:
+> >>> From ba9abf6ee7e5fe0515e2d51b14743c8d5416285c Mon Sep 17 00:00:00
+> >>> 2001 
+> >> From: Liu, Jinsong <jinsong.liu@intel.com>
+> >> Date: Fri, 24 Feb 2012 02:18:02 +0800
+> >> Subject: [PATCH 2/2] Xen pad logic
+> >> 
+> >> This patch implement Xen pad logic, and when getting pad device
+> >> notification, it hypercalls to Xen hypervisor for core parking.
+> > 
+> > Can you explain to me how and what pad device is? And how it functions
+> > right now in baremetal? And what kind of hardware do you need to use
+> > this? 
+> > And what happens if you do not use it? Can one ignore the "pad"
+> > support? 
+> > Please assume that I've a basic understanding of ACPI.
+> > 
+> > 
+> > Also, what happens now, if the this patch is not implemented? What
+> > will/is dom0 doing without these patches (so 3.2 for example on this
+> > machine)? 
+> > Is it just idling using mwait on idle CPUs and ending up trapping in
+> > the hypervisor? Or is not mwaiting since the cstate.c doesn't get
+> > executed since we have: 
+> > 
+> >        boot_option_idle_override = IDLE_HALT;
+> > 
+> > in arch/x86/xen/setup.c ?
+> 
+> 
+> Pad is an ACPI device used to direct os taking some action (depend on os itsef) for the sake of power consumption. 2 objs (PUR and OST) could be declared under PAD and as bios/os interface.
+> 
+> PAD itself is pointless, unless it co-work with some external power control s/w (like NPTM). For example currently in baremetal, NPTM engine trigger sci to ospm, then evaluate and call sci handler, through which bios notify os with PUR value by which os could take corresponding action and feedback bios through OST. I don't think it's a problem if user don't use PAD or ignore it, it only make some external power control s/w unuseable.
 
-How much? 10%? 90%?
-
-> m2p_override.
-
-Can you explain what those calls do in the git commit description please?
+What is NPTM? Sounds like a SMI firmware?
 
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/block/xen-blkback/blkback.c |    4 ++++
->  drivers/xen/grant-table.c           |    8 ++++++++
->  2 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> index 0088bf6..60abff6 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -342,6 +342,7 @@ static void xen_blkbk_unmap(struct pending_req *req)
->  	 * Note, we use invcount, so nr->pages, so we can't index
->  	 * using vaddr(req, i).
->  	 */
-> +	arch_enter_lazy_mmu_mode();
->  	for (i = 0; i < invcount; i++) {
->  		ret = m2p_remove_override(
->  			virt_to_page(unmap[i].host_addr), false);
-> @@ -351,6 +352,7 @@ static void xen_blkbk_unmap(struct pending_req *req)
->  			continue;
->  		}
->  	}
-> +	arch_leave_lazy_mmu_mode();
->  }
->  
->  static int xen_blkbk_map(struct blkif_request *req,
-> @@ -386,6 +388,7 @@ static int xen_blkbk_map(struct blkif_request *req,
->  	 * so that when we access vaddr(pending_req,i) it has the contents of
->  	 * the page from the other domain.
->  	 */
-> +	arch_enter_lazy_mmu_mode();
->  	for (i = 0; i < nseg; i++) {
->  		if (unlikely(map[i].status != 0)) {
->  			pr_debug(DRV_PFX "invalid buffer -- could not remap it\n");
-> @@ -410,6 +413,7 @@ static int xen_blkbk_map(struct blkif_request *req,
->  		seg[i].buf  = map[i].dev_bus_addr |
->  			(req->u.rw.seg[i].first_sect << 9);
->  	}
-> +	arch_leave_lazy_mmu_mode();
->  	return ret;
->  }
->  
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index b4d4eac..c7dc2d6 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -751,6 +751,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  	if (xen_feature(XENFEAT_auto_translated_physmap))
->  		return ret;
->  
-> +	arch_enter_lazy_mmu_mode();
-> +
->  	for (i = 0; i < count; i++) {
->  		/* Do not add to override if the map failed. */
->  		if (map_ops[i].status)
-> @@ -769,6 +771,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  			return ret;
->  	}
->  
-> +	arch_leave_lazy_mmu_mode();
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(gnttab_map_refs);
-> @@ -785,12 +789,16 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  	if (xen_feature(XENFEAT_auto_translated_physmap))
->  		return ret;
->  
-> +	arch_enter_lazy_mmu_mode();
-> +
->  	for (i = 0; i < count; i++) {
->  		ret = m2p_remove_override(pages[i], clear_pte);
->  		if (ret)
->  			return ret;
->  	}
->  
-> +	arch_leave_lazy_mmu_mode();
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
-> -- 
-> 1.7.2.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> As for how os handle pad notify is os business. Native kernel use round robin and mwait, considering some app workload affinity (I was told so). For xen we don't need care it since it's a question of vcpu level. For xen acpi_pad, dom0 patches used to parse PUR and hypercall to hypervisor, which in turn idle pcpu by its own algorithm.
+
+I presume you have some of this hardware - if you launch the latest linus/master (along with these
+patches https://bugzilla.redhat.com/show_bug.cgi?id=804347 patches) and compile CONFIG_ACPI_PAD_PROCESSOR=y
+and are running under Xen 4.1, what happens when the _PUR notifcation takes affect?
