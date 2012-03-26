@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab2CZSSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:18:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23132 "EHLO mx1.redhat.com"
+	id S933345Ab2CZSSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:18:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22241 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932959Ab2CZSSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:18:49 -0400
+	id S932959Ab2CZSSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:18:52 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -21,134 +21,71 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 33/39] autonuma: numa hinting page faults entry points
-Date: Mon, 26 Mar 2012 19:46:20 +0200
-Message-Id: <1332783986-24195-34-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 18/39] autonuma: alloc/free/init mm_autonuma
+Date: Mon, 26 Mar 2012 19:46:05 +0200
+Message-Id: <1332783986-24195-19-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where the numa hinting page faults are detected and are passed
-over to the AutoNUMA core logic.
+This is where the mm_autonuma structure is being handled. Just like
+sched_autonuma, this is only allocated at runtime if the hardware the
+kernel is running on has been detected as NUMA. On not NUMA hardware
+the memory cost is reduced to one pointer per mm.
+
+To get rid of the pointer in the each mm, the kernel can be compiled
+with CONFIG_AUTONUMA=n.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/huge_mm.h |    2 ++
- mm/huge_memory.c        |   17 +++++++++++++++++
- mm/memory.c             |   32 ++++++++++++++++++++++++++++++++
- 3 files changed, 51 insertions(+), 0 deletions(-)
+ kernel/fork.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index c8af7a2..72eac1d 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -11,6 +11,8 @@ extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
- 			       pmd_t orig_pmd);
-+extern pmd_t __huge_pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
-+				   pmd_t pmd, pmd_t *pmdp);
- extern pgtable_t get_pmd_huge_pte(struct mm_struct *mm);
- extern struct page *follow_trans_huge_pmd(struct mm_struct *mm,
- 					  unsigned long addr,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 76bdc48..017c0a3 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1030,6 +1030,23 @@ out:
- 	return page;
- }
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 938098b..aefe24f 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -492,6 +492,8 @@ static void mm_init_aio(struct mm_struct *mm)
  
-+#ifdef CONFIG_AUTONUMA
-+pmd_t __huge_pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
-+			    pmd_t pmd, pmd_t *pmdp)
-+{
-+	spin_lock(&mm->page_table_lock);
-+	if (pmd_same(pmd, *pmdp)) {
-+		struct page *page = pmd_page(pmd);
-+		pmd = pmd_mknotnuma(pmd);
-+		set_pmd_at(mm, addr & HPAGE_PMD_MASK, pmdp, pmd);
-+		numa_hinting_fault(page, HPAGE_PMD_NR);
-+		VM_BUG_ON(pmd_numa(pmd));
-+	}
-+	spin_unlock(&mm->page_table_lock);
-+	return pmd;
-+}
-+#endif
-+
- int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		 pmd_t *pmd, unsigned long addr)
+ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
  {
-diff --git a/mm/memory.c b/mm/memory.c
-index a0f35cd..9dcfc35 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -57,6 +57,7 @@
- #include <linux/swapops.h>
- #include <linux/elf.h>
- #include <linux/gfp.h>
-+#include <linux/autonuma.h>
- 
- #include <asm/io.h>
- #include <asm/pgalloc.h>
-@@ -3401,6 +3402,32 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
-+static inline pte_t pte_numa_fixup(struct mm_struct *mm,
-+				   struct vm_area_struct *vma,
-+				   unsigned long addr, pte_t pte, pte_t *ptep)
-+{
-+	if (pte_numa(pte))
-+		pte = __pte_numa_fixup(mm, vma, addr, pte, ptep);
-+	return pte;
-+}
-+
-+static inline void pmd_numa_fixup(struct mm_struct *mm,
-+				  struct vm_area_struct *vma,
-+				  unsigned long addr, pmd_t *pmd)
-+{
-+	if (pmd_numa(*pmd))
-+		__pmd_numa_fixup(mm, vma, addr, pmd);
-+}
-+
-+static inline pmd_t huge_pmd_numa_fixup(struct mm_struct *mm,
-+					unsigned long addr,
-+					pmd_t pmd, pmd_t *pmdp)
-+{
-+	if (pmd_numa(pmd))
-+		pmd = __huge_pmd_numa_fixup(mm, addr, pmd, pmdp);
-+	return pmd;
-+}
-+
- /*
-  * These routines also need to handle stuff like marking pages dirty
-  * and/or accessed for architectures that don't do it in hardware (most
-@@ -3443,6 +3470,7 @@ int handle_pte_fault(struct mm_struct *mm,
- 	spin_lock(ptl);
- 	if (unlikely(!pte_same(*pte, entry)))
- 		goto unlock;
-+	entry = pte_numa_fixup(mm, vma, address, entry, pte);
- 	if (flags & FAULT_FLAG_WRITE) {
- 		if (!pte_write(entry))
- 			return do_wp_page(mm, vma, address,
-@@ -3504,6 +3532,8 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pmd_t orig_pmd = *pmd;
- 		barrier();
- 		if (pmd_trans_huge(orig_pmd)) {
-+			orig_pmd = huge_pmd_numa_fixup(mm, address,
-+						       orig_pmd, pmd);
- 			if (flags & FAULT_FLAG_WRITE &&
- 			    !pmd_write(orig_pmd) &&
- 			    !pmd_trans_splitting(orig_pmd))
-@@ -3513,6 +3543,8 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
++	if (unlikely(alloc_mm_autonuma(mm)))
++		goto out_free_mm;
+ 	atomic_set(&mm->mm_users, 1);
+ 	atomic_set(&mm->mm_count, 1);
+ 	init_rwsem(&mm->mmap_sem);
+@@ -514,6 +516,8 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 		return mm;
  	}
  
-+	pmd_numa_fixup(mm, vma, address, pmd);
-+
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
++	free_mm_autonuma(mm);
++out_free_mm:
+ 	free_mm(mm);
+ 	return NULL;
+ }
+@@ -563,6 +567,7 @@ void __mmdrop(struct mm_struct *mm)
+ 	destroy_context(mm);
+ 	mmu_notifier_mm_destroy(mm);
+ 	check_mm(mm);
++	free_mm_autonuma(mm);
+ 	free_mm(mm);
+ }
+ EXPORT_SYMBOL_GPL(__mmdrop);
+@@ -842,6 +847,7 @@ fail_nocontext:
+ 	 * If init_new_context() failed, we cannot use mmput() to free the mm
+ 	 * because it calls destroy_context()
+ 	 */
++	free_mm_autonuma(mm);
+ 	mm_free_pgd(mm);
+ 	free_mm(mm);
+ 	return NULL;
+@@ -1664,6 +1670,7 @@ void __init proc_caches_init(void)
+ 	mm_cachep = kmem_cache_create("mm_struct",
+ 			sizeof(struct mm_struct), ARCH_MIN_MMSTRUCT_ALIGN,
+ 			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_NOTRACK, NULL);
++	mm_autonuma_init();
+ 	vm_area_cachep = KMEM_CACHE(vm_area_struct, SLAB_PANIC);
+ 	mmap_init();
+ 	nsproxy_cache_init();
