@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab2CZReg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:34:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57930 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933106Ab2CZRee (ORCPT
+	id S933142Ab2CZRfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:35:46 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43644 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933106Ab2CZRfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:34:34 -0400
-Date: Mon, 26 Mar 2012 18:34:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Add MAX8997_VOLTAGE_REGULATOR and
- MAX8997_CURRENT_REGULATOR macros
-Message-ID: <20120326173433.GF3789@opensource.wolfsonmicro.com>
-References: <1331621638.3932.1.camel@phoenix>
+	Mon, 26 Mar 2012 13:35:45 -0400
+Date: Mon, 26 Mar 2012 23:05:33 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120326173533.GA4689@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1329764866.2293.376.camhel@twins>
+ <20120305152443.GE26559@linux.vnet.ibm.com>
+ <20120306091410.GD27238@elte.hu>
+ <20120322153205.GA28570@linux.vnet.ibm.com>
+ <1332750960.16159.81.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="twz1s1Hj1O0rHoT0"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1331621638.3932.1.camel@phoenix>
-X-Cookie: Your step will soil many countries.
+In-Reply-To: <1332750960.16159.81.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12032617-5816-0000-0000-000001E83876
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Zijlstra <peterz@infradead.org> [2012-03-26 10:36:00]:
 
---twz1s1Hj1O0rHoT0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> >                 tip     tip + patch 
+> > 
+> > volano          1       1.29   (29% improvement)
+> > sysbench [n3]   1       2      (100% improvement)
+> > tbench 1 [n4]   1       1.07   (7% improvement)
+> > tbench 8 [n5]   1       1.26   (26% improvement)
+> > httperf  [n6]   1       1.05   (5% improvement)
+> > Trade           1       1.31   (31% improvement) 
+> 
+> That smells like there's more to the story, a 100% improvement is too
+> much..
 
-On Tue, Mar 13, 2012 at 02:53:58PM +0800, Axel Lin wrote:
-> MAX8997_VOLTAGE_REGULATOR macro has _name and _ops parameters so we can use it
-> for all regulators with REGULATOR_VOLTAGE type.
-> The MAX8997_VOLTAGE_REGULATOR now replaces regulator_desc_ldo and
-> regulator_desc_buck macros.
+Yeah I have rubbed my eyes several times to make sure its true and ran
+the same benchmark (sysbench) again now! I can recreate that ~100%
+improvement with the patch even now.
 
-Applied, thanks.
+To quickly re-cap my environment, I have a 16-cpu machine w/ 5 cgroups.
+1 cgroup (8192 shares) hosts sysbench inside 8-vcpu VM while remaining 4
+cgroups (1024 shares each) hosts 4 cpu hogs running on bare metal.
+Given this overcommittment, select_idle_sibling() should mostly be a 
+no-op (i.e it won't find any idle cores and thus defaults to prev_cpu).
+Also the only tasks that will (sleep and) wakeup are the VM tasks.
 
---twz1s1Hj1O0rHoT0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Since the patch potentially affects (improves) scheduling latencies, I measured 
+Sum(se.statistics.wait_sum) for the VM tasks over the benchmark run (5
+iterations of sysbench).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+tip	    : 987240 ms
+tip + patch : 280275 ms 
 
-iQIcBAEBAgAGBQJPcKiiAAoJEBus8iNuMP3dHLMP/0SvG19AONEbhVDsZ/v3gQlk
-7E3PJANwrAkeaDs+aEpN/WMP7x2hpTmHt1dSsANdR4F+CuAlWZTKMHgOH3eX0HC2
-D8ZmiAYswMhJgAcoc/HKJOT9jsSw0hHGuL6/VBdk5Dp0US+869hihCuW+fhNRTof
-J/6kUByoZbcSZ6zS/50W6dd/AGnA8s9cVtzbYAF1u/4Dmxfk0QHiEEX22uj97Xfa
-g5LF+wCjZ7McOeaabnI7ikukEk9S36J4vDJdbD3ab6W8Xepi9bE3saQrVaQKHGEC
-JbKttVtH9IoQItz0PNd1w/cPj6YURS81DGG3jqmqAnI0f5EE4KKcniionw3bm0VD
-xE4U1iTTtm3FvqOdJzILdDuevg5HcaRGJ4xGRZc8JG61rqSCr/n0rxcFRSZlCzmx
-a2hCNhQE+8fGapvMRalppApGf5Zqny+ln4mBupYVc2SCh1NqTqgvbE0+JCQkR7vp
-sCAZJK9plXyJYx5xgH4Vgw/WcMAoJLY/b0czyrpm5emYrapvbrvub+y8Lq5BHpiW
-9p1cBvIjFBdjWy7okvWmU6oKqWlaUlo2o0vdddEUfj+LT4iSBZcw0Je+Ad0XD9sk
-WB65ArdGnXHT5/claUMYnb8ZPU4w27P8g/9uFohdlqeIdnxrz9j/w0M/eFX4FgYT
-ptKCpm+pVyb7khlFqiTL
-=gAtd
------END PGP SIGNATURE-----
+I will get more comprehensive perf data shortly and post. 
 
---twz1s1Hj1O0rHoT0--
+>From what I can tell, the huge improvement in benchmark score is coming from 
+reduced latencies for its VM tasks. 
+
+The hard part to figure out (when we are inside select_task_rq_fair()) is 
+whether any potential improvement in latencies (because of waking up on a
+less loaded cpu) will offshoot the cost of potentially more L2-cache misses, 
+for which IMHO we don't have enough data to make a good decision.
+
+- vatsa
+
