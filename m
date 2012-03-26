@@ -1,91 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab2CZGV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 02:21:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49390 "EHLO mga09.intel.com"
+	id S1755374Ab2CZGVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 02:21:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41405 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753805Ab2CZGVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 02:21:23 -0400
+	id S1753541Ab2CZGVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 02:21:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="125063330"
-From: Alex Shi <alex.shi@intel.com>
-To: JBottomley@parallels.com
-Cc: Nagalakshmi.Nandigama@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi/mpt2sas: fix unsafe preempt setting for ioc
-Date: Mon, 26 Mar 2012 14:20:10 +0800
-Message-Id: <1332742810-5116-1-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+   d="scan'208";a="125063405"
+Subject: Re: [PATCH v5 1/2] dmaengine: Add context parameter to prep_dma_sg
+ and prep_interleaved_dma
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Ravi Kumar V <kumarrav@codeaurora.org>
+Cc: tsoni@codeaurora.org, Russell King <linux@arm.linux.org.uk>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-arm-msm@vger.kernel.or,
+        linux-kernel@vger.kernel.org, Zhang Wei <zw@zh-kernel.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Barry Song <baohua.song@csr.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Dan Williams <dan.j.williams@intel.com>, Li Yang <leoli@freescale.com>,
+        linuxppc-dev@lists.ozlabs.org, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1332426167-25213-1-git-send-email-kumarrav@codeaurora.org>
+References: <1332426167-25213-1-git-send-email-kumarrav@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Mar 2012 11:54:33 +0530
+Message-ID: <1332743073.19804.26.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 911ae943 add a new function:
-+_base_get_msix_index(struct MPT2SAS_ADAPTER *ioc)
-+{
-+       return ioc->cpu_msix_table[smp_processor_id()];
-+}
-Here smp_processor_id() need be used in preempt safe condition. but
-caller did not give this assurance. So fix this in caller.
+On Thu, 2012-03-22 at 19:52 +0530, Ravi Kumar V wrote:
+> Add new context parameter to DMA SG and Interleaveid mode for passing
+Typo					  ^^^^^^^^^^^^
+> per transfer specific private data, using this it enables the
+> dma devices which needs to pass the parameters which changes per
+> each transfer
+> 
+> Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+> ---
+>  drivers/dma/fsldma.c                    |    2 +-
+>  drivers/dma/sirf-dma.c                  |    2 +-
+>  drivers/dma/ste_dma40.c                 |    2 +-
+>  drivers/misc/carma/carma-fpga-program.c |    2 +-
+>  drivers/misc/carma/carma-fpga.c         |    7 +++----
+>  include/linux/dmaengine.h               |   22 ++++++++++++++++++++--
+>  6 files changed, 27 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index b98070c..f9f77db 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -645,7 +645,7 @@ fail:
+>  static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
+>  	struct scatterlist *dst_sg, unsigned int dst_nents,
+>  	struct scatterlist *src_sg, unsigned int src_nents,
+> -	unsigned long flags)
+> +	unsigned long flags, void *context)
+>  {
+>  	struct fsl_desc_sw *first = NULL, *prev = NULL, *new = NULL;
+>  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+> diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+> index 2333810..ff4d344 100644
+> --- a/drivers/dma/sirf-dma.c
+> +++ b/drivers/dma/sirf-dma.c
+> @@ -428,7 +428,7 @@ sirfsoc_dma_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+>  
+>  static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
+>  	struct dma_chan *chan, struct dma_interleaved_template *xt,
+> -	unsigned long flags)
+> +	unsigned long flags, void *context)
+>  {
+>  	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+>  	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index cc5ecbc..2f58ba9 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+> @@ -2287,7 +2287,7 @@ static struct dma_async_tx_descriptor *
+>  d40_prep_memcpy_sg(struct dma_chan *chan,
+>  		   struct scatterlist *dst_sg, unsigned int dst_nents,
+>  		   struct scatterlist *src_sg, unsigned int src_nents,
+> -		   unsigned long dma_flags)
+> +		   unsigned long dma_flags, void *context)
+>  {
+>  	if (dst_nents != src_nents)
+>  		return NULL;
+> diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
+> index a2d25e4..3739a12 100644
+> --- a/drivers/misc/carma/carma-fpga-program.c
+> +++ b/drivers/misc/carma/carma-fpga-program.c
+> @@ -530,7 +530,7 @@ static noinline int fpga_program_dma(struct fpga_dev *priv)
+>  	}
+>  
+>  	/* setup and submit the DMA transaction */
+> -	tx = chan->device->device_prep_dma_sg(chan,
+> +	tx = chan->device->dmaengine_prep_dma_sg(chan,
+>  					      table.sgl, num_pages,
+>  					      vb->sglist, vb->sglen, 0);
+No the idea is that clients will not know anything about additionlay
+parameter hence avoiding abuse. You need to reread the patches sent by
+Alexandre.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+You need to 
+1) add wrappers over interleaved api which dont expose this additional
+parameter
+2) move existing users to use these wrappers
+3) add a new API which has your additional argument (not an opaque
+object) and this calls .device_xx callback with additional arg.
+4. Above can be under conditional of your specific subsystem where these
+parameters are valid.
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index a78036f..55a368e 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1803,6 +1803,7 @@ mpt2sas_base_put_smid_scsi_io(struct MPT2SAS_ADAPTER *ioc, u16 smid, u16 handle)
- 	u64 *request = (u64 *)&descriptor;
- 
- 
-+	preempt_disable();
- 	descriptor.SCSIIO.RequestFlags = MPI2_REQ_DESCRIPT_FLAGS_SCSI_IO;
- 	descriptor.SCSIIO.MSIxIndex =  _base_get_msix_index(ioc);
- 	descriptor.SCSIIO.SMID = cpu_to_le16(smid);
-@@ -1810,6 +1811,7 @@ mpt2sas_base_put_smid_scsi_io(struct MPT2SAS_ADAPTER *ioc, u16 smid, u16 handle)
- 	descriptor.SCSIIO.LMID = 0;
- 	_base_writeq(*request, &ioc->chip->RequestDescriptorPostLow,
- 	    &ioc->scsi_lookup_lock);
-+	preempt_enable();
- }
- 
- 
-@@ -1849,6 +1851,7 @@ mpt2sas_base_put_smid_default(struct MPT2SAS_ADAPTER *ioc, u16 smid)
- 	Mpi2RequestDescriptorUnion_t descriptor;
- 	u64 *request = (u64 *)&descriptor;
- 
-+	preempt_disable();
- 	descriptor.Default.RequestFlags = MPI2_REQ_DESCRIPT_FLAGS_DEFAULT_TYPE;
- 	descriptor.Default.MSIxIndex =  _base_get_msix_index(ioc);
- 	descriptor.Default.SMID = cpu_to_le16(smid);
-@@ -1856,6 +1859,7 @@ mpt2sas_base_put_smid_default(struct MPT2SAS_ADAPTER *ioc, u16 smid)
- 	descriptor.Default.DescriptorTypeDependent = 0;
- 	_base_writeq(*request, &ioc->chip->RequestDescriptorPostLow,
- 	    &ioc->scsi_lookup_lock);
-+	preempt_enable();
- }
- 
- /**
-@@ -1873,6 +1877,7 @@ mpt2sas_base_put_smid_target_assist(struct MPT2SAS_ADAPTER *ioc, u16 smid,
- 	Mpi2RequestDescriptorUnion_t descriptor;
- 	u64 *request = (u64 *)&descriptor;
- 
-+	preempt_disable();
- 	descriptor.SCSITarget.RequestFlags =
- 	    MPI2_REQ_DESCRIPT_FLAGS_SCSI_TARGET;
- 	descriptor.SCSITarget.MSIxIndex =  _base_get_msix_index(ioc);
-@@ -1881,6 +1886,7 @@ mpt2sas_base_put_smid_target_assist(struct MPT2SAS_ADAPTER *ioc, u16 smid,
- 	descriptor.SCSITarget.IoIndex = cpu_to_le16(io_index);
- 	_base_writeq(*request, &ioc->chip->RequestDescriptorPostLow,
- 	    &ioc->scsi_lookup_lock);
-+	preempt_enable();
- }
- 
- /**
+>  	if (!tx) {
+> diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+> index 14e974b2..be0baf6 100644
+> --- a/drivers/misc/carma/carma-fpga.c
+> +++ b/drivers/misc/carma/carma-fpga.c
+> @@ -638,10 +638,9 @@ static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
+>  	 */
+>  
+>  	/* setup the scatterlist to scatterlist transfer */
+> -	tx = chan->device->device_prep_dma_sg(chan,
+> -					      dst_sg, dst_nents,
+> -					      src_sg, src_nents,
+> -					      0);
+> +	tx = dmaengine_prep_dma_sg(chan, dst_sg, dst_nents,
+> +					 src_sg, src_nents,
+> +					 0);
+>  	if (!tx) {
+>  		dev_err(priv->dev, "unable to prep scatterlist DMA\n");
+>  		return -ENOMEM;
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 679b349..68a57da 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -570,7 +570,7 @@ struct dma_device {
+>  		struct dma_chan *chan,
+>  		struct scatterlist *dst_sg, unsigned int dst_nents,
+>  		struct scatterlist *src_sg, unsigned int src_nents,
+> -		unsigned long flags);
+> +		unsigned long flags, void *context);
+>  
+>  	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+>  		struct dma_chan *chan, struct scatterlist *sgl,
+> @@ -581,7 +581,7 @@ struct dma_device {
+>  		size_t period_len, enum dma_transfer_direction direction);
+>  	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>  		struct dma_chan *chan, struct dma_interleaved_template *xt,
+> -		unsigned long flags);
+> +		unsigned long flags, void *context);
+>  	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  		unsigned long arg);
+>  
+> @@ -615,6 +615,24 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
+>  	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
+>  }
+>  
+> +static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_sg(
+> +			struct dma_chan *chan, struct scatterlist *dst_sg,
+> +			unsigned int dst_nents,	struct scatterlist *src_sg,
+> +			unsigned int src_nents,	unsigned long flags)
+> +{
+> +	return chan->device->device_prep_dma_sg(chan, dst_sg, dst_nents,
+> +					src_sg, src_nents, flags, NULL);
+> +}
+> +
+> +static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
+> +			struct dma_chan *chan,
+> +			struct dma_interleaved_template *xt,
+> +			unsigned long flags)
+> +{
+> +	return chan->device->device_prep_interleaved_dma(chan, xt,
+> +							flags, NULL);
+> +}
+> +
+>  static inline int dmaengine_terminate_all(struct dma_chan *chan)
+>  {
+>  	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+
+
 -- 
-1.7.5.4
+~Vinod
 
