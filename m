@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab2CZTaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 15:30:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40512 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab2CZTaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 15:30:03 -0400
-Message-ID: <4F70C365.8020009@redhat.com>
-Date: Mon, 26 Mar 2012 15:28:37 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 11/39] autonuma: CPU follow memory algorithm
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>  <1332783986-24195-12-git-send-email-aarcange@redhat.com> <1332786353.16159.173.camel@twins>
-In-Reply-To: <1332786353.16159.173.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754179Ab2CZTbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 15:31:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37208 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab2CZTb2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 15:31:28 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v7 1/4] MIPS: Don't define early_init_devtree() and device_tree_init() in prom.c for CPU_CAVIUM_OCTEON
+Date: Mon, 26 Mar 2012 12:31:18 -0700
+Message-Id: <1332790281-9648-2-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1332790281-9648-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1332790281-9648-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 02:25 PM, Peter Zijlstra wrote:
-> On Mon, 2012-03-26 at 19:45 +0200, Andrea Arcangeli wrote:
->> @@ -3220,6 +3214,8 @@ need_resched:
->>
->>          post_schedule(rq);
->>
->> +       sched_autonuma_balance();
->> +
->>          sched_preempt_enable_no_resched();
->>          if (need_resched())
->>                  goto need_resched;
->
-> I already told you, this isn't ever going to happen. You do _NOT_ put a
-> for_each_online_cpu() loop in the middle of schedule().
+From: David Daney <david.daney@cavium.com>
 
-Agreed, it looks O(N), but because every CPU will be calling
-it its behaviour will be O(N^2) and has the potential to
-completely break systems with a large number of CPUs.
+This code is not common enough to be in a shared file, so OCTEON defines
+it's own versions.
 
-Finding a lower overhead way of doing the balancing does not
-seem like an unsurmountable problem.
+When the last of this target specific code is moved out, we can remove
+all of this.
 
-> You also do not call stop_one_cpu(migration_cpu_stop) in schedule to
-> force migrate the task you just scheduled to away from this cpu. That's
-> retarded.
->
-> Nacked-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/kernel/prom.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-
+diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+index 558b539..4aaa5c0 100644
+--- a/arch/mips/kernel/prom.c
++++ b/arch/mips/kernel/prom.c
+@@ -60,6 +60,7 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
+ }
+ #endif
+ 
++#ifndef CONFIG_CPU_CAVIUM_OCTEON
+ void __init early_init_devtree(void *params)
+ {
+ 	/* Setup flat device-tree pointer */
+@@ -95,3 +96,4 @@ void __init device_tree_init(void)
+ 	/* free the space reserved for the dt blob */
+ 	free_mem_mach(base, size);
+ }
++#endif /* !CONFIG_CPU_CAVIUM_OCTEON */
 -- 
-All rights reversed
+1.7.2.3
+
