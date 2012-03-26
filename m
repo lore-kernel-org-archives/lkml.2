@@ -1,225 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab2C0OoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 10:44:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19015 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab2C0OoE (ORCPT
+	id S1755187Ab2C0Oo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 10:44:26 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47221 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab2C0OoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 10:44:04 -0400
-Date: Mon, 26 Mar 2012 10:21:35 -0400
+	Tue, 27 Mar 2012 10:44:23 -0400
+Date: Mon, 26 Mar 2012 12:35:58 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Renninger <trenn@suse.de>,
-        eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
- initrd
-Message-ID: <20120326142135.GC18285@phenom.dumpdata.com>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de>
- <201203240242.07724.trenn@suse.de>
- <4F6D2AF8.3070707@zytor.com>
- <201203240402.38749.trenn@suse.de>
- <4F6D50DD.4050306@zytor.com>
- <20120324092451.GA3352@liondog.tnic>
- <4F6E1742.6060709@zytor.com>
- <20120325085420.GA12565@liondog.tnic>
- <4F6FC838.7000904@zytor.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Message-ID: <20120326163558.GC10236@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120324003111.GA11777@andromeda.dapyr.net>
+ <DE8DF0795D48FD4CA783C40EC8292335105AAF@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F6FC838.7000904@zytor.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335105AAF@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F71D20F.00B8,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090204.4F71D20E.0060,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 25, 2012 at 06:36:56PM -0700, H. Peter Anvin wrote:
-> On 03/25/2012 01:54 AM, Borislav Petkov wrote:
+On Mon, Mar 26, 2012 at 02:50:50AM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Fri, Feb 17, 2012 at 08:56:43AM +0000, Liu, Jinsong wrote:
+> >>> From f66a2df1392bbe69426387657a220177be50d58a Mon Sep 17 00:00:00
+> >>> 2001 
+> >> From: Liu, Jinsong <jinsong.liu@intel.com>
+> >> Date: Fri, 10 Feb 2012 20:32:50 +0800
+> >> Subject: [PATCH 1/3] PAD helper for native and paravirt platform
+> >> 
+> >> This patch is PAD (Processor Aggregator Device) helper.
+> >> It provides a native interface for natvie platform, and a template
+> >> for paravirt platform, so that os can implicitly hook to proper ops
+> >> accordingly. The paravirt template will further redirect to Xen pv
+> >>  ops in later patch for Xen core parking.
 > > 
-> > One other downside for this approach would be the need to have
-> > initrd/initramfs support always compiled into the kernel in order to do
-> > all those things but, hey, distro kernels already have that so we're
-> > probably stuck with it anyway.
+> > Liu,
+> > 
+> > With this patch: "  xen/enlighten: Expose MWAIT and MWAIT_LEAF if
+> > hypervisor OKs it." which is now in 3.4-rc0:
+> > (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/x86/xen/enlighten.c;h=b132ade26f778f2cfec7c2d5c7b6db48afe424d5;hp=4172af8ceeb363d06912af15bf89e8508752b794;hb=d4c6fa73fe984e504d52f3d6bba291fd76fe49f7;hpb=aab008db8063364dc3c8ccf4981c21124866b395)
+> > it means that now that the drivers/acpi/acpi_pad.c can run
+> > as is under Xen (as the MWAIT_LEAF is exposed) What is the impact
+> > of that? Is the monitor call causing a trap to the hypervisor which
+> > will ignore the call? Or will it have some more worrysome
+> > consequences? 
 > > 
 > 
-> In theory we could make the early stuff independent of the initramfs
-> code in the kernel -- just like we always build in an initramfs.
+> IMO this patch doesn't affect acpi_pad logic (both native and xen acpi_pad).
+
+You are sure? The acpi_pad logic will now be activated so the native driver
+will run under Xen. My question is - what is the impact of that?
+
+My assumption is that the __monitor call will trap and we end up in the hypervisor -
+so that is not so bad, but not sure.
+
+But what I wonder is if what is the impact of the _OST call by the native driver?
+
+Say the firmware tells us - please offline 4 CPUS (we have eight). We enter
+'acpi_pad_handle_notify' -  create four threads, and each thread calls __monitor
+(which ends up in the hypervisor - and the hypervisor might not persue the
+__monitor call).
+
+During this time, the Linux kernel calls the _OST with 4 CPUs and ..
+
+what then? What happens if the _OST values are actually ignored (as it seems
+it would be in this case?) Is that OK? Or is that going to lead to the
+firmware turning off some of the cores anyhow?
 
 
-Were would this payload resize? Would it be tacked on the initramfs.gz
-or perhaps to the vmlinuz? Or would it be a seperate payload (so multiboot
-type)? Or would this be supported by all of those mechanism?
+> For native acpi_pad, it need mwait to enter deep Cx (but irrelative to this patch);
+
+The patch I pointed you to will expose the MWAIT_LEAF in the initial domain.
+Meaning that the native acpi_pad code will run.
+
+> For xen acpi_pad, it doesn't depend on whether hypervisor expose mwait or not. It simply parse 'pur' obj and then hypercall to hypervisor to do rest core_parking things (BTW, hypervisor core parking patches have checkin in as c/s 25095/25096).
+
+I get that, but for right now lets just focus on the native driver. I would like
+to understand not only how it should function in baremetal but also in the native case.
 
 > 
-> Not that it matters much, at this point the no-initramfs configurations
-> are mostly theoretical.
-> 
-> I was able to shave a bit more off the code... optimizing for size can
-> be fun sometimes.  The code is now 442 bytes on x86-64 and 413 on i386
-> when compiled with -O2 -fomit-frame-pointer; with -Os
-> -fomit-frame-pointer it is 372/410... all of that without any library
-> calls or relocations of any kind (which means it should be safe to call
-> from the prepaging environment.)
-> 
-> 	-hpa
-
-> /*
->  * findcpio.c
->  *
->  * Find a specific cpio member; must precede any compressed content.
->  */
-> 
-> #include <stddef.h>
-> #include <stdbool.h>
-> 
-> struct cpio_data {
-> 	void *data;
-> 	unsigned long size;
-> };
-> 
-> enum cpio_fields {
-> 	C_MAGIC,
-> 	C_INO,
-> 	C_MODE,
-> 	C_UID,
-> 	C_GID,
-> 	C_NLINK,
-> 	C_MTIME,
-> 	C_FILESIZE,
-> 	C_MAJ,
-> 	C_MIN,
-> 	C_RMAJ,
-> 	C_RMIN,
-> 	C_NAMESIZE,
-> 	C_CHKSUM,
-> 	C_NFIELDS
-> };
-> 
-> #if defined(__i386__) || defined(__x86_64__)
-> static size_t strlen(const char *name)
-> {
-> 	size_t n = -1;
-> 
-> 	asm("repne; scasb"
-> 	    : "+D" (name), "+c" (n)
-> 	    : "a" (0));
-> 
-> 	return -2 - n;
-> }
-> 
-> static int memcmp(const void *p1, const void *p2, size_t n)
-> {
-> 	unsigned char rv;
-> 
-> 	asm("repe; cmpsb; setne %0"
-> 	    : "=r" (rv), "+S" (p1), "+D" (p2), "+c" (n));
-> 
-> 	return rv;
-> }
-> #else
-> static size_t strlen(const char *name)
-> {
-> 	size_t n = 0;
-> 
-> 	while (*name++)
-> 		n++;
-> 
-> 	return n;
-> }
-> 
-> static int memcmp(const void *p1, const void *p2, size_t n)
-> {
-> 	const unsigned char *u1 = p1;
-> 	const unsigned char *u2 = p2;
-> 	int d;
-> 
-> 	while (n--) {
-> 		d = *u2++ - *u1++;
-> 		if (d)
-> 			return d;
-> 	}
-> 	return 0;
-> }
-> #endif
-> 
-> #define ALIGN4(p) ((void *)(((size_t)p + 3) & ~3))
-> 
-> struct cpio_data find_cpio_data(const char *name, const void *data, size_t len)
-> {
-> 	const size_t cpio_header_len = 8*C_NFIELDS - 2;
-> 	struct cpio_data cd = { NULL, 0 };
-> 	const char *p, *dptr, *nptr;
-> 	unsigned int ch[C_NFIELDS], *chp, v;
-> 	unsigned char c, x;
-> 	size_t mynamesize = strlen(name) + 1;
-> 	int i, j;
-> 
-> 	p = data;
-> 
-> 	while (len > cpio_header_len) {
-> 		if (!*p) {
-> 			/* All cpio headers need to be 4-byte aligned */
-> 			p += 4;
-> 			len -= 4;
-> 			continue;
-> 		}
-> 
-> 		j = 6;		/* The magic field is only 6 characters */
-> 		chp = ch;
-> 		for (i = C_NFIELDS; i; i--) {
-> 			v = 0;
-> 			while (j--) {
-> 				v <<= 4;
-> 				c = *p++;
-> 
-> 				x = c - '0';
-> 				if (x < 10) {
-> 					v += x;
-> 					continue;
-> 				}
-> 
-> 				x = (c | 0x20) - 'a';
-> 				if (x < 6) {
-> 					v += x + 10;
-> 					continue;
-> 				}
-> 
-> 				goto quit; /* Invalid hexadecimal */
-> 			}
-> 			*chp++ = v;
-> 			j = 8;	/* All other fields are 8 characters */
-> 		}
-> 
-> 		if ((ch[C_MAGIC] - 0x070701) > 1)
-> 			goto quit; /* Invalid magic */
-> 
-> 		len -= cpio_header_len;
-> 
-> 		dptr = ALIGN4(p + ch[C_NAMESIZE]);
-> 		nptr = ALIGN4(dptr + ch[C_FILESIZE]);
-> 
-> 		if (nptr > p + len || dptr < p || nptr < dptr)
-> 			goto quit; /* Buffer overrun */
-> 
-> 		if ((ch[C_MODE] & 0170000) == 0100000 &&
-> 		    ch[C_NAMESIZE] == mynamesize &&
-> 		    !memcmp(p, name, mynamesize)) {
-> 			cd.data = (void *)dptr;
-> 			cd.size = ch[C_FILESIZE];
-> 			return cd; /* Found it! */
-> 		}
-> 
-> 		len -= (nptr - p);
-> 		p = nptr;
-> 	}
-> 
-> quit:
-> 	return cd;
-> }
-> 
-
+> Thanks,
+> Jinsong--
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
