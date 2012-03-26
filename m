@@ -1,28 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab2CZQuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:50:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55680 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932960Ab2CZQuL (ORCPT
+	id S933016Ab2CZQxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:53:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52481 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932982Ab2CZQxM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:50:11 -0400
+	Mon, 26 Mar 2012 12:53:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <1332779484.6160.95.camel@joe2Laptop>
-References: <1332775997-2197-1-git-send-email-consul.kautuk@gmail.com>
-	<1332779484.6160.95.camel@joe2Laptop>
-Date: Mon, 26 Mar 2012 12:50:10 -0400
-Message-ID: <CAFPAmTT9ca42hCHd8HMyad8ksLddCtXQDXG=f9VGODXFwRwv3A@mail.gmail.com>
-Subject: Re: [PATCH 20/20 v3] sparc/mm/fault_64.c: Port OOM changes to do_sparc64_fault
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4F6F73B9.2000207@zytor.com>
+References: <1331781125-15658-1-git-send-email-wad@chromium.org>
+	<4F6F73B9.2000207@zytor.com>
+Date: Mon, 26 Mar 2012 11:53:06 -0500
+Message-ID: <CABqD9hZe9t9WeMRcuhvevSb9svp5UH9ZHH4TZg753zzcrX-tnQ@mail.gmail.com>
+Subject: Re: [PATCH v15 00/13] seccomp_filter: syscall filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, I have sent both patches with tab-space as 8 characters and set the
-multiline C statements after the preceding line's paranthesis.
+On Sun, Mar 25, 2012 at 2:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/14/2012 08:11 PM, Will Drewry wrote:
+>> Please see prior revisions of this patch series for a high
+>> level blurb.
+>>
+>> This revision makes a number of refinements and tweaks. The biggest
+>> change is a slight renumbering of the return codes which will break
+>> existing code using this patch series.
+>>
+>> I believe this patch is in good shape, and I don't see the need for
+>> any more API changes at this point.  I plan to start using this revision
+>> more extensively, and I'd certainly appreciate any testing.
+>>
+>> Thanks!
+>> will
+>>
+>
+> x86 portions:
+>
+> Reviewed-by: H. Peter Anvin <hpa@zytor.com>
+
+Thanks!
+
+> What is the preferred way to push this upstream?  (Presumably for 3.5 at
+> this point, but we should get it into -next as soon as possible after
+> the merge window.)
+
+A repost when rc1 has been cut is what's been suggested to me.
+
+Additionally, two tweaks have been pointed out off list (documentation
+cruft and lack if #ifdef for asm/syscall.h), which I have fixed in my
+local and github tree but haven't yet reposted here.  I was planning
+on just posting v17 when rc1 is cut (unless I've blithely missed it
+already) and then trying to pester everyone and anyone who can merge.
+:)
+
+Maybe someone more authoritative than me will answer though.
+
+thanks!
+will
