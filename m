@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab2CZOvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:51:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47741 "EHLO mx2.suse.de"
+	id S932733Ab2CZOxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:53:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52056 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932722Ab2CZOvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:51:32 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
-Date: Mon, 26 Mar 2012 16:51:29 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
-Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203261619.31766.trenn@suse.de> <4F70812A.4080205@zytor.com>
-In-Reply-To: <4F70812A.4080205@zytor.com>
+	id S932602Ab2CZOxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 10:53:32 -0400
+Message-ID: <4F7082BD.9030107@zytor.com>
+Date: Mon, 26 Mar 2012 07:52:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
+Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
+References: <20111128204311.GA2814@aftab> <20111202194658.GF15204@aftab> <20111205092612.GB29641@elte.hu> <20111205151016.GC7834@aftab> <4F6F719B.5020806@zytor.com> <20120326084810.GA31480@aftab>
+In-Reply-To: <20120326084810.GA31480@aftab>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203261651.29640.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 26, 2012 04:46:02 PM H. Peter Anvin wrote:
-> On 03/26/2012 07:19 AM, Thomas Renninger wrote:
-> > Do the names have to be fixed?
+On 03/26/2012 01:48 AM, Borislav Petkov wrote:
+> On Sun, Mar 25, 2012 at 12:27:23PM -0700, H. Peter Anvin wrote:
+>> I keep wondering if we couldn't have the early-static trap handlers be
+>> aware of exception tables, too; they wouldn't have to worry about
+>> modules and so it would be reasonably easy.
 > 
-> No, I assume it would "all files inside this namespace".
+> Well, we talked about this recently and then we decided we needed the
+> extable-sorting-at-build-time patches before we make those static trap
+> handlers aware of extables. What happened to those patches, btw? See
+> thread at http://marc.info/?l=linux-kernel&m=132196692827070
 > 
-> > If there is only one file where all ACPI table binaries are glued
-> > together kernel/acpi_tables.binary.blob
-> > my code should already work as good as unmodified.
-> > 
-> > Not sure what is best and whether anybody cares about how the tables
-> > are layed out.
-> > 
-> > I guess I just wait until your functionality is in linux-next and
-> > give it a closer look then and may come up with a new patch.
-> 
-> I doubt it will get into linux-next without a user.  If you have time to
-> pull in the code I sent it will be quicker, otherwise I'll probably
-> setup a git tree upon which things can be put.
 
-I need some weeks to have time to revisit this.
-But as it slips this merge window anyway it should not matter.
-Please add me to CC if someone else looks at or goes on with this.
+Hm... I hope that didn't stall out because of me... the amount of
+overload I have been under lately is a bit scary.
 
-  Thomas
+I was going to dredge out the perfect hash stuff that I had, but the
+sorting stuff could be done without that.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
