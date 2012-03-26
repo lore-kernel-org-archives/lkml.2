@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2CZVis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 17:38:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:49986 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757057Ab2CZVir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 17:38:47 -0400
-Date: Tue, 27 Mar 2012 08:38:09 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
-Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
-Message-ID: <20120326213809.GA29788@bloggs.ozlabs.ibm.com>
-References: <4F688F48.6090303@redhat.com>
- <1332461414.2982.90.camel@pasglop>
- <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
- <4F6EEEC1.4030608@redhat.com>
+	id S1757445Ab2CZVkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 17:40:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49549 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756954Ab2CZVkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 17:40:18 -0400
+Date: Mon, 26 Mar 2012 14:39:49 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH v6 1/7] mm/memcg: scanning_global_lru means
+ mem_cgroup_disabled
+In-Reply-To: <20120326153131.GA22715@tiehlicka.suse.cz>
+Message-ID: <alpine.LSU.2.00.1203261435110.3550@eggly.anvils>
+References: <20120322214944.27814.42039.stgit@zurg> <20120322215616.27814.40563.stgit@zurg> <20120326150429.GA22754@tiehlicka.suse.cz> <20120326151815.GA1820@cmpxchg.org> <20120326153131.GA22715@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6EEEC1.4030608@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 25, 2012 at 12:09:05PM +0200, Avi Kivity wrote:
+On Mon, 26 Mar 2012, Michal Hocko wrote:
+> 
+> I guess that a note about changed ratio calculation should be added to
+> the changelog.
 
-> I can switch to fast-forward-only in the future, but I'm afraid that
-> this particular tree is broken for good.  The un-rebased
-> fast-forward-only source for this is kvm.git master, which I don't think
-> you want to pull.  It will cause every kvm commit to appear twice and
-> confuse everyone.
+To the changelog of a patch which changes the ratio calculation, yes; but
+not to the changelog of this patch, which changes only the name of the test.
 
-There are patches from me in there that have been pending since
-December last year, and now look like they won't be going upstream
-until June.  So, under the circumstances, how would you (Avi) feel
-about Ben and I committing the KVM patches that only affect powerpc to
-Ben's tree and sending them to Linus that way before the merge window
-closes?
-
-Paul.
+Hugh
