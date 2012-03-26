@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573Ab2CZNrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 09:47:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54011 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab2CZNrI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 09:47:08 -0400
+	id S932511Ab2CZNsv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 09:48:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41162 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757248Ab2CZNst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 09:48:49 -0400
+Message-ID: <4F7073BA.6040403@suse.cz>
+Date: Mon, 26 Mar 2012 15:48:42 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-Originating-IP: [178.164.220.0]
-In-Reply-To: <20120326133028.GA8436@infradead.org>
-References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
-	<1331155362-11132-4-git-send-email-miklos@szeredi.hu>
-	<20120324141251.GA25980@infradead.org>
-	<CAJfpegu8byHvPk3_KM3f1HE0dyaytVtsjZcUH5RB4pfwbQHEYA@mail.gmail.com>
-	<20120326133028.GA8436@infradead.org>
-Date: Mon, 26 Mar 2012 15:47:07 +0200
-Message-ID: <CAJfpegvNKRF1D34K7QLCFcLSfcyRhx8w=G5xkopj1npE__+SAg@mail.gmail.com>
-Subject: Re: [PATCH 03/25] vfs: split __dentry_open()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Trond.Myklebust@netapp.com,
-        sfrench@samba.org, sage@newdream.net, ericvh@gmail.com,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Russell King <linux@arm.linux.org.uk>, nico@fluxnic.net,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] Kbuild: centralize MKIMAGE and cmd_uimage definitions
+References: <1331931835-12346-1-git-send-email-swarren@wwwdotorg.org> <4F6B7226.8000102@wwwdotorg.org>
+In-Reply-To: <4F6B7226.8000102@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 3:30 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Mon, Mar 26, 2012 at 03:22:09PM +0200, Miklos Szeredi wrote:
->> > I think the O_DIRECT checks should move out of the VFS. ??The direct I/O
->> > method isn't called from the VFS anywhere, but just from the
->> > generic_file_* routines in filemap.c, which suggest doing the O_DIRECT
->> > check in there as well.
+On 22.3.2012 19:40, Stephen Warren wrote:
+> On 03/16/2012 03:03 PM, Stephen Warren wrote:
+>> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
+>> to avoid duplication.
 >>
->> Returning the error at the earliest opportunity (from open as opposed
->> to read/write) makes sense.  Given that some apps may actually rely on
->> the return value from open to verify O_DIRECT support, it doesn't seem
->> to be a good idea to move the checks to read/write.
->
-> I'm fine with keeping it in open, bu it should be in generic_file_open,
-> not in the VFS (and yeah, generic_file_open is in open.c not filemap.c
-> where it should be, sorry)
+>> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
+>> parameterized version in Makefile.lib to avoid duplication.
+> 
+> Michal,
+> 
+> Does this change look reasonable?
 
-Unfortunately a lot of filesystems that use generic_file_aio_foo()
-don't actually call generic_file_open() in their ->open method.  And
-it would be difficult to enforce.
+Absolutely.
 
-Thanks,
-Miklos
+> It has acks from people working on 4
+> of the 7 affected architectures; would you prefer acks from all?
+
+I will apply it now.
+
+Michal
