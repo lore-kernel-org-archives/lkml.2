@@ -1,103 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386Ab2CZS6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:58:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20476 "EHLO mx1.redhat.com"
+	id S933363Ab2CZS66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:58:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43494 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933124Ab2CZS5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:57:22 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 08/39] autonuma: mm_autonuma and sched_autonuma data structures
-Date: Mon, 26 Mar 2012 19:45:55 +0200
-Message-Id: <1332783986-24195-9-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+	id S933188Ab2CZS64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:58:56 -0400
+Date: Mon, 26 Mar 2012 20:58:49 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: Tracking regressions for next release(s)
+Message-ID: <20120326185849.GA19481@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+	Steven Rostedt <rostedt@goodmis.org>
+References: <CAG9S4UjTtm_Zx89udbB=Qew7vToWkE_GHc_f78Q-kbOuqh4NRg@mail.gmail.com>
+ <20120323101431.GA8832@liondog.tnic>
+ <201203261847.17521.maciej.rutecki@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201203261847.17521.maciej.rutecki@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the two data structures that collect the per-process (in the
-mm) and per-thread (in the task_struct) statistical information that
-are the input of the CPU follow memory algorithms in the NUMA
-scheduler.
+On Mon, Mar 26, 2012 at 06:47:17PM +0200, Maciej Rutecki wrote:
+> Hi,
+> 
+> On piątek, 23 marca 2012 o 11:14:31 Borislav Petkov wrote:
+> > On Fri, Mar 23, 2012 at 07:01:19AM +0100, Maciej Rutecki wrote:
+> > > I am interested in the opinion of the developers, testers, and
+> > > everyone involved in the development of the kernel, if they thing that
+> > > tracking regressions and monitoring the quality makes sense,
+> > 
+> > Absolutely.
+> > 
+> > > especially since I met several times (put it mildly) dislike of such
+> > > work and the bugs are repaired relatively slowly.
+> > 
+> > I can imagine people getting cranky when someone points out that there's
+> > a "boring" bug they need to fix instead of them working on the cool new
+> > feature they have thought of. It is the same old story we've been having
+> > since forever: people don't really love to fix bugs, especially if the
+> > code works for them and the bug doesn't appear on their boxes.
+> > 
+> > > Perhaps someone has comments or proposals for change (in the way of
+> > > work or me).
+> > 
+> > Yeah, we need a big bad assh*le :) who screams at everyone until their
+> > bugs is fixed.
+> > 
+> > But serioulsy, this hasn't changed: we definitely need a regression
+> > list, I think it works even better when Linus goes over it and says
+> > this is fixed, that is this commit, etc. because he pulls all the trees
+> > in the end, ... so yeah, I think what you guys are doing is good and
+> > important.
+> > 
+> > It would be even cooler if this list be expanded also to regressions in
+> > kernel performance which people have noticed from running benchmarks on
+> > different -rcs and have noticed differences there, maybe a website (not
+> > bugzilla) which lists all those regressions for interested parties to
+> > fix in addition to the LKML mails..., etc...
+> > 
+> > Thanks for your hard work, btw.
+> 
+> 
+> Borislav,  Bjorn Helgaas: thank you for the answer, but observing the 
+> reactions I get the impression that tracking the regression is not likely 
+> anyone's interest. In addition - especially on the last release cycle - 
+> sometimes encountered difficulties in cooperation on this topic with developers: 
+> ignoring request to update the status of the regression, or even add your e-
+> mail to bugzilla.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/autonuma_types.h |   54 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 54 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/autonuma_types.h
+Well, sounds like you've already decided and that's just sad :(. Let's
+add some more people to Cc, see what they think.
 
-diff --git a/include/linux/autonuma_types.h b/include/linux/autonuma_types.h
-new file mode 100644
-index 0000000..818e7c7
---- /dev/null
-+++ b/include/linux/autonuma_types.h
-@@ -0,0 +1,54 @@
-+#ifndef _LINUX_AUTONUMA_TYPES_H
-+#define _LINUX_AUTONUMA_TYPES_H
-+
-+#ifdef CONFIG_AUTONUMA
-+
-+#include <linux/numa.h>
-+
-+struct mm_autonuma {
-+	struct list_head mm_node;
-+	struct mm_struct *mm;
-+	unsigned long numa_fault_tot; /* reset from here */
-+	unsigned long numa_fault_pass;
-+	unsigned long numa_fault[0];
-+};
-+
-+extern int alloc_mm_autonuma(struct mm_struct *mm);
-+extern void free_mm_autonuma(struct mm_struct *mm);
-+extern void __init mm_autonuma_init(void);
-+
-+struct sched_autonuma {
-+	int autonuma_node;
-+	bool autonuma_stop_one_cpu; /* reset from here */
-+	unsigned long numa_fault_pass;
-+	unsigned long numa_fault_tot;
-+	unsigned long numa_fault[0];
-+};
-+
-+extern int alloc_sched_autonuma(struct task_struct *tsk,
-+				struct task_struct *orig,
-+				int node);
-+extern void __init sched_autonuma_init(void);
-+extern void free_sched_autonuma(struct task_struct *tsk);
-+
-+#else /* CONFIG_AUTONUMA */
-+
-+static inline int alloc_mm_autonuma(struct mm_struct *mm)
-+{
-+	return 0;
-+}
-+static inline void free_mm_autonuma(struct mm_struct *mm) {}
-+static inline void mm_autonuma_init(void) {}
-+
-+static inline int alloc_sched_autonuma(struct task_struct *tsk,
-+				       struct task_struct *orig,
-+				       int node)
-+{
-+	return 0;
-+}
-+static inline void sched_autonuma_init(void) {}
-+static inline void free_sched_autonuma(struct task_struct *tsk) {}
-+
-+#endif /* CONFIG_AUTONUMA */
-+
-+#endif /* _LINUX_AUTONUMA_TYPES_H */
+Guys, thread starts here: http://lkml.org/lkml/2012/3/23/31
+
+> I give up tracking the regression, but not the kernel testing. Even now I have 
+> a few hours per week more for it.
+
+Well, if you still can report your results from it, I think maintainers
+who are still interested in the quality of their code will be interested
+in your testing reports.
+
+Thanks again for your work.
+
+-- 
+Regards/Gruss,
+    Boris.
