@@ -1,138 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2CZHVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 03:21:33 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51900 "EHLO mga14.intel.com"
+	id S1752529Ab2CZHZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 03:25:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45423 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab2CZHV0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 03:21:26 -0400
+	id S1751358Ab2CZHZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 03:25:46 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="123217365"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Liu, Jinsong" <jinsong.liu@intel.com>
-Subject: RE: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
-	platform
-Thread-Topic: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
-	platform
-Thread-Index: AQHM9Kz1m4MGy1d3TzK01xgwJYdnxZZSeQoggAD7/5CAKOGBUA==
-Date: Mon, 26 Mar 2012 07:21:22 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335105EFA@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923350AD088@SHSMSX101.ccr.corp.intel.com>
-	<4F46530B020000780007F751@nat28.tlf.novell.com>
-	<DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
-	<DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
-	<20120226173458.GB18098@phenom.dumpdata.com>
-	<DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="125080411"
+Subject: Re: [PATCH v5 2/2] DMAEngine: Add DMAEngine driver based on old
+ MSM ADM DMA APIs
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Ravi Kumar V <kumarrav@codeaurora.org>, tsoni@codeaurora.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.or,
+        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CACRpkdbk=Hu6CzXSkkTgNsXGN0tPjfzLYfUpL8D5sxz2=efFxQ@mail.gmail.com>
+References: <1332426216-25273-1-git-send-email-kumarrav@codeaurora.org>
+	 <CACRpkdbk=Hu6CzXSkkTgNsXGN0tPjfzLYfUpL8D5sxz2=efFxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Mar 2012 12:58:38 +0530
+Message-ID: <1332746918.19804.84.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Liu, Jinsong wrote:
-> Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>> On Sun, Feb 26, 2012 at 08:25:41AM +0000, Liu, Jinsong wrote:
->>>> Liu, Jinsong wrote:
->>>>> Jan Beulich wrote:
->>>>>>>>> "Liu, Jinsong" <jinsong.liu@intel.com> 02/23/12 2:29 PM >>>
->>>>>>> --- a/drivers/acpi/Kconfig
->>>>>>> +++ b/drivers/acpi/Kconfig
->>>>>>> @@ -213,10 +213,11 @@ config ACPI_HOTPLUG_CPU
->>>>>>>    default y
->>>>>>  >
->>>>>>> config ACPI_PROCESSOR_AGGREGATOR
->>>>>>> -    tristate "Processor Aggregator"
->>>>>>> +    bool "Processor Aggregator"
->>>>>> 
->>>>>> There must be ways to address whatever strange problem you see
->>>>>> without making this piece of code non-modular.
->>>>>> 
->>>>> 
->>>>> Yes, another approach is x86_init approach, defining acpi_pad_ops
->>>>> at x86_init.c and overwritten when xen_start_kernel. This patch is
->>>>> just a RFC patch, to evaluate which approch is more reasonable :-)
->>>>> 
->>>> 
->>>> Have a more think about it, x86_init approach still need to disable
->>>> acpi_pad module. Seems we have to set acpi_pad as bool, as long as
->>>> it need to hook to native acpi_pad fucs/variables.
->>> 
->>> What about the other approach I suggested where there are some
->>> function overrides in osl.c? Something similar to
->>> https://lkml.org/lkml/2012/1/17/401, specifically
->>> https://lkml.org/lkml/2012/1/17/403 - that way you are not turning
->>> the modules into being built in, but intead have the function table
->>> already in the kernel (as some form of EXPORT_SYMBOL_GPL or a
->>> registration function). 
->>> 
->> 
->> Thanks for the example (it's good itself :-), but per my
->> understanding they are different cases.
->> 
->> In the osl example case, tboot_late_init call
->> acpi_os_set_prepare_sleep to register func, so it works no matter
->> tboot.c built as y/n/m (through currently it's bool).
->> 
->> However, in our case, we just cannot do so. We need
->> 1. predefine a hook to native acpi pad funcs, take effect when
->> static compile stage; 
->> 2. when xen init, redirect the hook to xen acpi pad funcs, take
->> effect at running time; (The point is, we cannot do init twice for
->> native and xen acpi pad, so we have to statically predefine a hook
->> to native acpi_pad) 
->> 
->> For the reason above, I think we have to remove acpi_pad module, as
->> long as we need to hook to native acpi_pad funcs. Thoughts?
->> 
+On Mon, 2012-03-26 at 09:17 +0200, Linus Walleij wrote:
+> On Thu, Mar 22, 2012 at 3:23 PM, Ravi Kumar V <kumarrav@codeaurora.org> wrote:
 > 
-> Compare approaches:
+> This stuff:
 > 
-> 1. xen overwritten approach (patches V2, x86_init, osl approach)
->     Pros:
->         a little simpler code
->     Cons:
->         1). specific to xen, cannot extend to other virt platform;
->         2). need to change natvie acpi_pad as modular;
+> > +enum adm_flush_type {
+> > +       ADM_FORCED_FLUSH,
+> > +       ADM_GRACEFUL_FLUSH,
+> > +};
 > 
-> 2. paravirt interface approach (original patches V1)
->     Pros:
->         1). standard hypervisor-agnostic interface (USENIX conference
->         2006), can easily hook to Xen/lguest/... on demand; 2). arch
->         independent; 3). no need to change native acpi_pad as
->     non-modular; Cons:
->         a little complicated code, and code patching is some
-> overkilled for this case (but no harm); 
+> > +/*
+> > + *  Controlling the hardware channel like stopping, flushing.
+> > + */
+> > +static int msm_dma_chan_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> > +                                                       unsigned long arg)
+> > +{
+> > +       enum adm_flush_type cmd_type = arg;
+> > +
+> > +       if (cmd == DMA_TERMINATE_ALL) {
+> > +               switch (cmd_type) {
+> > +               case ADM_GRACEFUL_FLUSH:
+> > +                               msm_dmov_stop_cmd(chan->chan_id, NULL, 1);
+> > +                       break;
+> > +               case ADM_FORCED_FLUSH:
+> > +                       /*
+> > +                        * We treate default as forced flush
+> > +                        * so we fall through
+> > +                        */
+> > +               default:
+> > +                               msm_dmov_stop_cmd(chan->chan_id, NULL, 0);
+> > +                       break;
+> > +               }
+> > +       }
+> > +       return 0;
+> > +}
 > 
-> (BTW, in the future we need add more and more pv ops, like pv_pm_ops,
-> pv_cpu_hotplug_ops, pv_mem_hotplug_ops, etc. So how about add a
-> pv_misc_ops template to handle them all? seems it's a common issue).  
+> This is an interesting way of using the opaque arg. Can you describe
+> the different semantics of graceful vs forced flush so we understand
+> the usecases for them?
 > 
-> Your opinion?
+> DMA_TERMINATE_ALL is usually not very graceful.
 > 
+> DMA_PAUSE might be the semantic you're looking for as the
+> graceful path, and then you can do away with this strange
+> enum altogether.
+I am not a big fan of opaque objects. Btw client should use
+dmaengine_terminate_all() only
 
-Konrad,
 
-Comments? we need make sure which approach we choose (patches for both approaches are basically done and tested). IMO I prefer paravirt interface approach (it need slightly update for the purpose of 'not change acpi_pad as non-modular'. If choose it I will update ASAP).
-
-Thanks,
-Jinsong
+-- 
+~Vinod
 
