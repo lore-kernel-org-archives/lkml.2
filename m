@@ -1,307 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab2CZPVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:21:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61955 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab2CZPVv (ORCPT
+	id S932649Ab2CZPWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:22:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14935 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab2CZPWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:21:51 -0400
-Date: Mon, 26 Mar 2012 17:22:34 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 06/11 v3] drm/i915/intel_i2c: refactor using
- intel_gmbus_get_adapter
-Message-ID: <20120326152234.GV4014@phenom.ffwll.local>
-Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
-	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Benson Leung <bleung@chromium.org>,
-	Yufeng Shen <miletus@chromium.org>
-References: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
- <1332772010-19619-7-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332772010-19619-7-git-send-email-djkurtz@chromium.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Mar 2012 11:22:22 -0400
+X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=X4MpolQEQ-25mMzaK08A:9 a=ONYRA_EH2MFLEK1_CkMA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332775340.23924.102.camel@gandalf.stny.rr.com>
+Subject: Re: CPU Hotplug rework
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, paulmck@linux.vnet.ibm.com,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Date: Mon, 26 Mar 2012 11:22:20 -0400
+In-Reply-To: <1332769098.16159.111.camel@twins>
+References: <4F674649.2000300@linux.vnet.ibm.com>
+	 <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins>
+	 <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins>
+	 <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com>
+	 <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com>
+	 <87bonkchxk.fsf@rustcorp.com.au> <1332748920.16159.65.camel@twins>
+	 <1332767386.23924.75.camel@gandalf.stny.rr.com>
+	 <1332769098.16159.111.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 10:26:45PM +0800, Daniel Kurtz wrote:
-> Instead of letting other modules directly access the ->gmbus array,
-> introduce a new API, intel_gmbus_get_adapter(), to lookup an i2c_adapter
-> for a given gmbus pin pair identifier.  This API enables later refactoring
-> of the gmbus pin pair list.
+On Mon, 2012-03-26 at 15:38 +0200, Peter Zijlstra wrote:
+> On Mon, 2012-03-26 at 09:09 -0400, Steven Rostedt wrote:
+> > On Mon, 2012-03-26 at 10:02 +0200, Peter Zijlstra wrote:
+> > > On Mon, 2012-03-26 at 11:11 +1030, Rusty Russell wrote:
+> > > > Obviously, having callbacks hanging around until the CPU comes back is
+> > > > not viable, nor is blocking preempt during the callbacks.  Calling
+> > > > get_online_cpus() is too heavy. 
+> > > 
+> > > -rt has patches (albeit somewhat ugly) to make get_online_cpus() a br
+> > > style rw-lock. 
+> > 
+> > Unfortunately, -rt still has broken cpu hotplug.
 > 
-> Note: The gmbus pin must be checked for validity before requesting the
-> corresponding gmbus port.  This is especially true when using a pin that
-> has been read from VBIOS, as an improperly or uninitialied BIOS might
-> indicate '0' for the 'disabled' pin pair, which doesn't actually exist. In
-> the case of an invalid pin, the driver falls back to using a safer default
-> pin pair.
+> This is still the issue where we take the hotplug lock for write, but
+> then rely on other threads to complete -- say CPU_DOWN_PREPARE notifiers
+> doing flush_workqueue(), and the worker kthread needing to acquire the
+> hotplug lock for read, right?
+
+Right, I did get it working, but required making the current "ugly" code
+even uglier, and Thomas nack'd it for that reason. He wanted a clean up
+on hotplug instead.
+
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> Yes, that is bothersome, but doesn't hinder the work required to get
+> get_online_cpus() usably fast, right?
 
-With the cavet of the patch ordering issue, this looks ok. One comment
-below.
+Yep. What we do in -rt currently (without my updates) is that we create
+a thread pinned to the CPU going down. This thread counts the "readers"
+that is on the CPU. That is, every user that wanted to do a
+"get_online_cpus()", and as -rt allows preemption while doing so, there
+may be more than one of these for a given CPU.
 
-> ---
->  drivers/gpu/drm/i915/i915_drv.h    |    7 +++++++
->  drivers/gpu/drm/i915/intel_bios.c  |    4 ++--
->  drivers/gpu/drm/i915/intel_crt.c   |   14 ++++++++------
->  drivers/gpu/drm/i915/intel_dvo.c   |    6 +++---
->  drivers/gpu/drm/i915/intel_hdmi.c  |    9 ++++++---
->  drivers/gpu/drm/i915/intel_i2c.c   |    8 ++++++++
->  drivers/gpu/drm/i915/intel_lvds.c  |    7 ++++---
->  drivers/gpu/drm/i915/intel_modes.c |    3 ++-
->  drivers/gpu/drm/i915/intel_sdvo.c  |    9 +++++----
->  9 files changed, 45 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-> index b132677..64e0ae1 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.h
-> +++ b/drivers/gpu/drm/i915/i915_drv.h
-> @@ -1346,6 +1346,13 @@ extern int i915_restore_state(struct drm_device *dev);
->  /* intel_i2c.c */
->  extern int intel_setup_gmbus(struct drm_device *dev);
->  extern void intel_teardown_gmbus(struct drm_device *dev);
-> +extern inline bool intel_gmbus_is_port_valid(unsigned port)
-> +{
-> +	return (port >= GMBUS_PORT_SSC && port <= GMBUS_PORT_DPD);
-> +}
-> +
-> +extern struct i2c_adapter *intel_gmbus_get_adapter(
-> +		struct drm_i915_private *dev_priv, unsigned port);
->  extern void intel_gmbus_set_speed(struct i2c_adapter *adapter, int speed);
->  extern void intel_gmbus_force_bit(struct i2c_adapter *adapter, bool force_bit);
->  extern inline bool intel_gmbus_is_forced_bit(struct i2c_adapter *adapter)
-> diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-> index e4317da..871aa27 100644
-> --- a/drivers/gpu/drm/i915/intel_bios.c
-> +++ b/drivers/gpu/drm/i915/intel_bios.c
-> @@ -372,11 +372,11 @@ parse_general_definitions(struct drm_i915_private *dev_priv,
->  		if (block_size >= sizeof(*general)) {
->  			int bus_pin = general->crt_ddc_gmbus_pin;
->  			DRM_DEBUG_KMS("crt_ddc_bus_pin: %d\n", bus_pin);
-> -			if (bus_pin >= 1 && bus_pin <= 6)
-> +			if (intel_gmbus_is_port_valid(bus_pin))
->  				dev_priv->crt_ddc_pin = bus_pin;
->  		} else {
->  			DRM_DEBUG_KMS("BDB_GD too small (%d). Invalid.\n",
-> -				  block_size);
-> +				      block_size);
->  		}
->  	}
->  }
-> diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
-> index 4d3d736..d54d232 100644
-> --- a/drivers/gpu/drm/i915/intel_crt.c
-> +++ b/drivers/gpu/drm/i915/intel_crt.c
-> @@ -278,9 +278,10 @@ static bool intel_crt_detect_ddc(struct drm_connector *connector)
->  	if (intel_ddc_probe(&crt->base, dev_priv->crt_ddc_pin)) {
->  		struct edid *edid;
->  		bool is_digital = false;
-> +		struct i2c_adapter *i2c;
->  
-> -		edid = drm_get_edid(connector,
-> -			&dev_priv->gmbus[dev_priv->crt_ddc_pin].adapter);
-> +		i2c = intel_gmbus_get_adapter(dev_priv, dev_priv->crt_ddc_pin);
-> +		edid = drm_get_edid(connector, i2c);
->  		/*
->  		 * This may be a DVI-I connector with a shared DDC
->  		 * link between analog and digital outputs, so we
-> @@ -483,15 +484,16 @@ static int intel_crt_get_modes(struct drm_connector *connector)
->  	struct drm_device *dev = connector->dev;
->  	struct drm_i915_private *dev_priv = dev->dev_private;
->  	int ret;
-> +	struct i2c_adapter *i2c;
->  
-> -	ret = intel_ddc_get_modes(connector,
-> -				 &dev_priv->gmbus[dev_priv->crt_ddc_pin].adapter);
-> +	i2c = intel_gmbus_get_adapter(dev_priv, dev_priv->crt_ddc_pin);
-> +	ret = intel_ddc_get_modes(connector, i2c);
->  	if (ret || !IS_G4X(dev))
->  		return ret;
->  
->  	/* Try to probe digital port for output in DVI-I -> VGA mode. */
-> -	return intel_ddc_get_modes(connector,
-> -				   &dev_priv->gmbus[GMBUS_PORT_DPB].adapter);
-> +	i2c = intel_gmbus_get_adapter(dev_priv, GMBUS_PORT_DPB);
-> +	return intel_ddc_get_modes(connector, i2c);
->  }
->  
->  static int intel_crt_set_property(struct drm_connector *connector,
-> diff --git a/drivers/gpu/drm/i915/intel_dvo.c b/drivers/gpu/drm/i915/intel_dvo.c
-> index 020a7d7..60ba50b9 100644
-> --- a/drivers/gpu/drm/i915/intel_dvo.c
-> +++ b/drivers/gpu/drm/i915/intel_dvo.c
-> @@ -243,7 +243,7 @@ static int intel_dvo_get_modes(struct drm_connector *connector)
->  	 * that's not the case.
->  	 */
->  	intel_ddc_get_modes(connector,
-> -			    &dev_priv->gmbus[GMBUS_PORT_DPC].adapter);
-> +			    intel_gmbus_get_adapter(dev_priv, GMBUS_PORT_DPC));
->  	if (!list_empty(&connector->probed_modes))
->  		return 1;
->  
-> @@ -375,7 +375,7 @@ void intel_dvo_init(struct drm_device *dev)
->  		 * special cases, but otherwise default to what's defined
->  		 * in the spec.
->  		 */
-> -		if (dvo->gpio != 0)
-> +		if (intel_gmbus_is_port_valid(dvo->gpio))
->  			gpio = dvo->gpio;
->  		else if (dvo->type == INTEL_DVO_CHIP_LVDS)
->  			gpio = GMBUS_PORT_SSC;
-> @@ -386,7 +386,7 @@ void intel_dvo_init(struct drm_device *dev)
->  		 * It appears that everything is on GPIOE except for panels
->  		 * on i830 laptops, which are on GPIOB (DVOA).
->  		 */
-> -		i2c = &dev_priv->gmbus[gpio].adapter;
-> +		i2c = intel_gmbus_get_adapter(dev_priv, gpio);
->  
->  		intel_dvo->dev = *dvo;
->  		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
-> diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-> index cae3e5f..1d00f61 100644
-> --- a/drivers/gpu/drm/i915/intel_hdmi.c
-> +++ b/drivers/gpu/drm/i915/intel_hdmi.c
-> @@ -334,7 +334,8 @@ intel_hdmi_detect(struct drm_connector *connector, bool force)
->  	intel_hdmi->has_hdmi_sink = false;
->  	intel_hdmi->has_audio = false;
->  	edid = drm_get_edid(connector,
-> -			    &dev_priv->gmbus[intel_hdmi->ddc_bus].adapter);
-> +			    intel_gmbus_get_adapter(dev_priv,
-> +						    intel_hdmi->ddc_bus));
->  
->  	if (edid) {
->  		if (edid->input & DRM_EDID_INPUT_DIGITAL) {
-> @@ -367,7 +368,8 @@ static int intel_hdmi_get_modes(struct drm_connector *connector)
->  	 */
->  
->  	return intel_ddc_get_modes(connector,
-> -				   &dev_priv->gmbus[intel_hdmi->ddc_bus].adapter);
-> +				   intel_gmbus_get_adapter(dev_priv,
-> +							   intel_hdmi->ddc_bus));
->  }
->  
->  static bool
-> @@ -379,7 +381,8 @@ intel_hdmi_detect_audio(struct drm_connector *connector)
->  	bool has_audio = false;
->  
->  	edid = drm_get_edid(connector,
-> -			    &dev_priv->gmbus[intel_hdmi->ddc_bus].adapter);
-> +			    intel_gmbus_get_adapter(dev_priv,
-> +						    intel_hdmi->ddc_bus));
->  	if (edid) {
->  		if (edid->input & DRM_EDID_INPUT_DIGITAL)
->  			has_audio = drm_detect_monitor_audio(edid);
-> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-> index aa0670e..a04f773 100644
-> --- a/drivers/gpu/drm/i915/intel_i2c.c
-> +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> @@ -412,6 +412,14 @@ err:
->  	return ret;
->  }
->  
-> +struct i2c_adapter *intel_gmbus_get_adapter(struct drm_i915_private *dev_priv,
-> +					    unsigned port)
-> +{
-> +	BUG_ON(!intel_gmbus_is_port_valid(port));
+Once the count goes to zero, new tasks that enter this path will block
+on the hotplug lock. Then the CPU task we created is done and the cpu
+offline continues.
 
-WARN_ON highly preferred, safe when it's guaranteed that the code will
-later on blow up anyway (e.g. due to a NULL pointer deref).
+But then we call the cpu offline notifiers. Some of the notifiers wakeup
+threads and tell them to exit using kthread_stop(). But if the thread it
+waits for does something that will enter the above path, it will block
+on the hotplug lock too, and cause a deadlock. Unfortunately, in -rt we
+have the sleeping spinlocks go into this path, thus any thread that is
+going down that grabs a sleeping spinlock will hit this deadlock.
 
-> +	/* -1 to map pin pair to gmbus index */
-> +	return &dev_priv->gmbus[port - 1].adapter;
-> +}
-> +
->  void intel_gmbus_set_speed(struct i2c_adapter *adapter, int speed)
->  {
->  	struct intel_gmbus *bus = to_intel_gmbus(adapter);
-> diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-> index c5c0973..4f92a11 100644
-> --- a/drivers/gpu/drm/i915/intel_lvds.c
-> +++ b/drivers/gpu/drm/i915/intel_lvds.c
-> @@ -837,8 +837,8 @@ static bool lvds_is_present_in_vbt(struct drm_device *dev,
->  		    child->device_type != DEVICE_TYPE_LFP)
->  			continue;
->  
-> -		if (child->i2c_pin)
-> -		    *i2c_pin = child->i2c_pin;
-> +		if (intel_gmbus_is_port_valid(child->i2c_pin))
-> +			*i2c_pin = child->i2c_pin;
->  
->  		/* However, we cannot trust the BIOS writers to populate
->  		 * the VBT correctly.  Since LVDS requires additional
-> @@ -979,7 +979,8 @@ bool intel_lvds_init(struct drm_device *dev)
->  	 * preferred mode is the right one.
->  	 */
->  	intel_lvds->edid = drm_get_edid(connector,
-> -					&dev_priv->gmbus[pin].adapter);
-> +					intel_gmbus_get_adapter(dev_priv,
-> +								pin));
->  	if (intel_lvds->edid) {
->  		if (drm_add_edid_modes(connector,
->  				       intel_lvds->edid)) {
-> diff --git a/drivers/gpu/drm/i915/intel_modes.c b/drivers/gpu/drm/i915/intel_modes.c
-> index 2978a3f..cc682a0 100644
-> --- a/drivers/gpu/drm/i915/intel_modes.c
-> +++ b/drivers/gpu/drm/i915/intel_modes.c
-> @@ -55,7 +55,8 @@ bool intel_ddc_probe(struct intel_encoder *intel_encoder, int ddc_bus)
->  		}
->  	};
->  
-> -	return i2c_transfer(&dev_priv->gmbus[ddc_bus].adapter, msgs, 2) == 2;
-> +	return i2c_transfer(intel_gmbus_get_adapter(dev_priv, ddc_bus),
-> +			    msgs, 2) == 2;
->  }
->  
->  /**
-> diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-> index 70fb275..830c8b5 100644
-> --- a/drivers/gpu/drm/i915/intel_sdvo.c
-> +++ b/drivers/gpu/drm/i915/intel_sdvo.c
-> @@ -1254,7 +1254,8 @@ intel_sdvo_get_analog_edid(struct drm_connector *connector)
->  	struct drm_i915_private *dev_priv = connector->dev->dev_private;
->  
->  	return drm_get_edid(connector,
-> -			    &dev_priv->gmbus[dev_priv->crt_ddc_pin].adapter);
-> +			    intel_gmbus_get_adapter(dev_priv,
-> +						    dev_priv->crt_ddc_pin));
->  }
->  
->  enum drm_connector_status
-> @@ -1922,12 +1923,12 @@ intel_sdvo_select_i2c_bus(struct drm_i915_private *dev_priv,
->  	if (mapping->initialized)
->  		pin = mapping->i2c_pin;
->  
-> -	if (pin < GMBUS_NUM_PORTS) {
-> -		sdvo->i2c = &dev_priv->gmbus[pin].adapter;
-> +	if (intel_gmbus_is_port_valid(pin)) {
-> +		sdvo->i2c = intel_gmbus_get_adapter(dev_priv, pin);
->  		intel_gmbus_set_speed(sdvo->i2c, GMBUS_RATE_1MHZ);
->  		intel_gmbus_force_bit(sdvo->i2c, true);
->  	} else {
-> -		sdvo->i2c = &dev_priv->gmbus[GMBUS_PORT_DPB].adapter;
-> +		sdvo->i2c = intel_gmbus_get_adapter(dev_priv, GMBUS_PORT_DPB);
->  	}
->  }
->  
-> -- 
-> 1.7.7.3
-> 
+There's also the case where the thread that is going offline, or even
+the notifier itself, may be grabbing a lock, that happens to be held by
+another thread that is on the offlining CPU but is blocked on the
+hotplug lock. This also causes a deadlock.
 
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+The workaround I added was to do several things:
+
+1) instead of blocking on the hotplug lock, try to migrate itself
+instead. If it succeeds, then we don't need to worry about this thread.
+But if the thread is pinned to the CPU, then we need to worry about it.
+I first had it block only in this case, but that wasn't good enough, so
+I let them just continue.
+
+2) had the CPU thread that was created do a multi-phase. The first phase
+it still waited for the cpu ref counter to go to zero, but instead of
+having tasks block, tasks would instead try to migrate and if I could
+not then just continue.
+
+3) after all the notifiers are finished, notify the created CPU thread
+to sync tasks. Now that the notifiers are done, we can make any
+remaining task block. That is, the old method is done, where the CPU
+thread waits for the ref counter to go to zero, and new tasks will block
+on the hotplug lock. Because this happens after the notifiers, we do not
+need to worry about the previous deadlocks.
+
+The above changes mostly worked. Where it broke was paths in bringing up
+the CPU that may call code with sleeping spin locks where preemption is
+disabled. But this is actually unrelated to the cpu hotplug itself and
+more related to the normal problems caused by sleeping spinlocks added
+by -rt.
+
+The above changes also required reverting the -rt changes done to
+workqueue.
+
+
+Now what are the issues we have:
+
+1) We need to get tasks off the CPU going down. For most tasks this is
+not an issue. But for CPU specific kernel threads, this can be an issue.
+To get tasks off of the CPU is required before the notifiers are called.
+This is to keep them from creating work on the CPU, because after the
+notifiers, there should be no more work added to the CPU.
+
+2) Some tasks are going to go down and exit. We can audit all the
+notifier callbacks for CPU offlining, and see if we can just make them
+dormant instead of killing them. As Rusty said, it may not be that
+important to save the memory of these tasks.
+
+3) Some tasks do not go offline, instead they just get moved to another
+CPU. This is the case of ksoftirqd. As it is killed after the CPU is
+down (POST_DEAD) (at least in -rt it is).
+
+
+All that is needed now is, at the beginning of taking the CPU down is to
+push off tasks from the CPU that may migrate. Then call the notifiers,
+and then block the rest and take the CPU down. This seems to work fine.
+It was just the implementation I proposed was a bit too ugly for
+Thomas's taste.
+
+-- Steve
+
+
