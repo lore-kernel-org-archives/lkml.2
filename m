@@ -1,36 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab2CZGnE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 02:43:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62561 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab2CZGnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 02:43:00 -0400
+	id S1755433Ab2CZGon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 02:44:43 -0400
+Received: from metasoft.pl ([195.149.224.191]:50373 "EHLO smtp.metasoft.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753662Ab2CZGom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 02:44:42 -0400
+X-clamdmail: clamdmail 0.18a
+Message-ID: <4F701052.5000509@metasoft.pl>
+Date: Mon, 26 Mar 2012 08:44:34 +0200
+From: Rafal Prylowski <prylowski@metasoft.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120326063956.GB24023@pengutronix.de>
-References: <1332739713.15735.1.camel@phoenix> <20120326063956.GB24023@pengutronix.de>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 26 Mar 2012 14:42:39 +0800
-Message-ID: <CAF+7xW=TRcW_2AFtDHBP4Dw3QBf0_mvecMO3g+Hqsk1xV8UC9Q@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: Make TXX9_WDT select WATCHDOG_CORE
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
-        Ralf Baechle <ralf@linux-mips.org>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mika Westerberg <mika.westerberg@iki.fi>
+CC: H Hartley Sweeten <hartleys@visionengravers.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+References: <4F683B36.8090101@metasoft.pl> <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com> <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net> <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com> <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net> <20120324073207.GD5812@mwesterb-mobl.ger.corp.intel.com>
+In-Reply-To: <20120324073207.GD5812@mwesterb-mobl.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
->
-> Can we simply fold this into the original patch?
-Wim already applied the original patch.
-I found this build error while compiling with today's linux-next.
-So I think this need to be a separate patch.
+On 2012-03-24 08:32, Mika Westerberg wrote:
+> Please try it. The point there was that we have a problem in ep93xx VIC/DMA
+> code but it is totally different thing and not related to Rafal's patch. We
+> can sort the VIC thing out separately IMHO. ep93xx dma in 3.3 is broken
+> regardless this patch.
 
-Regards,
-Axel
+I think, that we can't be 100% sure that these two problems are not related
+at all. If some changes to VIC/ep93xx interrupt handling etc will be send
+to list, I'll test them in my configuration without my patch. If it will
+help (to fix the problem I'm observing also in 3.2), then double buffering
+for M2M could be much simplier.
+
+Now, I'm trying to test mmc_spi in ep93xx and let you know what the results
+are.
