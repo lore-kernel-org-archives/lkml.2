@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab2CZQrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:47:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60348 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948Ab2CZQrW convert rfc822-to-8bit (ORCPT
+	id S932987Ab2CZQrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:47:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19802 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932948Ab2CZQra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:47:22 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: Tracking regressions for next release(s)
-Date: Mon, 26 Mar 2012 18:47:17 +0200
-User-Agent: KMail/1.13.7 (Linux/3.3.0; KDE/4.7.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-References: <CAG9S4UjTtm_Zx89udbB=Qew7vToWkE_GHc_f78Q-kbOuqh4NRg@mail.gmail.com> <20120323101431.GA8832@liondog.tnic>
-In-Reply-To: <20120323101431.GA8832@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203261847.17521.maciej.rutecki@gmail.com>
+	Mon, 26 Mar 2012 12:47:30 -0400
+X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=hkKkbzRNYrQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=k1_-dt6Pt4EOdDOjOQkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332780448.23924.104.camel@gandalf.stny.rr.com>
+Subject: Re: Not able to use HIGH_RES_TIMERS on ARM
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 26 Mar 2012 12:47:28 -0400
+In-Reply-To: <CAB4K4y46ATRL84XXYf6jYK3R9S_7JKV7hLOWa+PZgZh4eW5j9Q@mail.gmail.com>
+References: <CAB4K4y7ticNGWv1XWtqLatBG69yM2gv31ayt5DqWSSOUWTZrGg@mail.gmail.com>
+	 <20120319130445.GN15988@n2100.arm.linux.org.uk>
+	 <CAB4K4y4Sw4dyT7vX_YzgbYBK42LZuS96=6X3MtVdN-mBqOKr-Q@mail.gmail.com>
+	 <20120319132623.GO15988@n2100.arm.linux.org.uk>
+	 <4F696011.7080409@linaro.org>
+	 <CAB4K4y5ZkGY3pe3ty5fbaVTj626dAS3HuodX6HfDvym8g0qyZQ@mail.gmail.com>
+	 <CAB4K4y5phDP=4Ab1S2XwS+Oa25B5Pxe3p5D2ZO3G=2W=cMKm=w@mail.gmail.com>
+	 <20120322100236.GS15988@n2100.arm.linux.org.uk>
+	 <CAB4K4y5rOFbPm1XjeHxUFtc29tFAQ1besKLy5fz4MHq6UV0fdA@mail.gmail.com>
+	 <4F6BECA7.7030007@linaro.org>
+	 <CAB4K4y4DvUb+908P4NJoyJbDa35R2jP5cHqnoNWr9HRZJYyj4w@mail.gmail.com>
+	 <1332512896.23924.66.camel@gandalf.stny.rr.com>
+	 <CAB4K4y46ATRL84XXYf6jYK3R9S_7JKV7hLOWa+PZgZh4eW5j9Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 2012-03-24 at 12:36 +0530, Ajeet Yadav wrote:
 
-On piątek, 23 marca 2012 o 11:14:31 Borislav Petkov wrote:
-> On Fri, Mar 23, 2012 at 07:01:19AM +0100, Maciej Rutecki wrote:
-> > I am interested in the opinion of the developers, testers, and
-> > everyone involved in the development of the kernel, if they thing that
-> > tracking regressions and monitoring the quality makes sense,
-> 
-> Absolutely.
-> 
-> > especially since I met several times (put it mildly) dislike of such
-> > work and the bugs are repaired relatively slowly.
-> 
-> I can imagine people getting cranky when someone points out that there's
-> a "boring" bug they need to fix instead of them working on the cool new
-> feature they have thought of. It is the same old story we've been having
-> since forever: people don't really love to fix bugs, especially if the
-> code works for them and the bug doesn't appear on their boxes.
-> 
-> > Perhaps someone has comments or proposals for change (in the way of
-> > work or me).
-> 
-> Yeah, we need a big bad assh*le :) who screams at everyone until their
-> bugs is fixed.
-> 
-> But serioulsy, this hasn't changed: we definitely need a regression
-> list, I think it works even better when Linus goes over it and says
-> this is fixed, that is this commit, etc. because he pulls all the trees
-> in the end, ... so yeah, I think what you guys are doing is good and
-> important.
-> 
-> It would be even cooler if this list be expanded also to regressions in
-> kernel performance which people have noticed from running benchmarks on
-> different -rcs and have noticed differences there, maybe a website (not
-> bugzilla) which lists all those regressions for interested parties to
-> fix in addition to the LKML mails..., etc...
-> 
-> Thanks for your hard work, btw.
+> Hi Steve thanks for review, is their anything more I can do or shall I
+> consider this change as already submitted, thanks everyone for helping
+> me.
+> >
+> >
+
+I can pull this in. Do they need to go into 3.4? Or can you wait till
+3.5?
+
+-- Steve
 
 
-Borislav,  Bjorn Helgaas: thank you for the answer, but observing the 
-reactions I get the impression that tracking the regression is not likely 
-anyone's interest. In addition - especially on the last release cycle - 
-sometimes encountered difficulties in cooperation on this topic with developers: 
-ignoring request to update the status of the regression, or even add your e-
-mail to bugzilla.
 
-I give up tracking the regression, but not the kernel testing. Even now I have 
-a few hours per week more for it.
-
-Regards
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
