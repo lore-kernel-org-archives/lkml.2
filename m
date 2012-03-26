@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab2CZD2m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 23:28:42 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19244 "EHLO
+	id S1754697Ab2CZDpL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 23:45:11 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1307 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757046Ab2CZD2j (ORCPT
+	with ESMTP id S1752883Ab2CZDpI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 23:28:39 -0400
+	Sun, 25 Mar 2012 23:45:08 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 25 Mar 2012 20:28:34 -0700
+	by hqnvupgp07.nvidia.com on Sun, 25 Mar 2012 20:45:08 -0700
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 26 Mar 2012 08:58:29 +0530
-Subject: RE: [PATCH 1/2] regulator: tps65090: Use IS_ERR to check return
- value of regulator_register
-Thread-Topic: [PATCH 1/2] regulator: tps65090: Use IS_ERR to check return
- value of regulator_register
-Thread-Index: Ac0Jaa0dbWg+prIgRCe4B5K6YM49fwBlogVw
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD3128165@BGMAIL02.nvidia.com>
-References: <1332557760.10528.0.camel@phoenix>
-In-Reply-To: <1332557760.10528.0.camel@phoenix>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 26 Mar 2012 09:15:03 +0530
+Subject: RE: [PATCH 2/2] mfd: tps65090: Don't use I2C-specific suspend and
+ resume operations
+Thread-Topic: [PATCH 2/2] mfd: tps65090: Don't use I2C-specific suspend and
+ resume operations
+Thread-Index: Ac0IWxV8QwFqDBWDTia6lSaIahETuwCp19qA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD312816D@BGMAIL02.nvidia.com>
+References: <1332441541-28197-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1332441541-28197-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1332441541-28197-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 Accept-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
 MIME-Version: 1.0
 Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2Q3TPAK011394
 
->  	rdev = regulator_register(&ri->desc, &pdev->dev,
->  				&tps_pdata->regulator, ri, NULL);
-> -	if (IS_ERR_OR_NULL(rdev)) {
-> +	if (IS_ERR(rdev)) {
-Thanks Axel, for this patch.
-Just today I saw Mark's mail and about to make this change.
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+> 
+> It's not clear to me that we should have these operations at all...
+Mark,
+Can you please explain why do you think that these operations are not needed?
 
-Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+> 
+>  drivers/mfd/tps65090.c |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+> index ac7e8b1..6dc4c345 100644
+> --- a/drivers/mfd/tps65090.c
+> +++ b/drivers/mfd/tps65090.c
+> @@ -335,21 +335,27 @@ static int __devexit tps65090_i2c_remove(struct
+> i2c_client *client)
+>  }
+> 
+>  #ifdef CONFIG_PM_SLEEP
+> -static int tps65090_i2c_suspend(struct i2c_client *client, pm_message_t state)
+> +static int tps65090_suspend(struct device *dev)
+>  {
+> +	struct i2c_client *client = to_i2c_client(dev);
+>  	if (client->irq)
+>  		disable_irq(client->irq);
+>  	return 0;
+>  }
+> 
+> -static int tps65090_i2c_resume(struct i2c_client *client)
+> +static int tps65090_resume(struct device *dev)
+>  {
+> +	struct i2c_client *client = to_i2c_client(dev);
+>  	if (client->irq)
+>  		enable_irq(client->irq);
+>  	return 0;
+>  }
+>  #endif
+> 
+> +static const struct dev_pm_ops tps65090_pm_ops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(tps65090_suspend, tps65090_resume)
+> +};
+> +
+>  static const struct i2c_device_id tps65090_id_table[] = {
+>  	{ "tps65090", 0 },
+>  	{ },
+> @@ -360,13 +366,10 @@ static struct i2c_driver tps65090_driver = {
+>  	.driver	= {
+>  		.name	= "tps65090",
+>  		.owner	= THIS_MODULE,
+> +		.pm	= &tps65090_pm_ops,
+>  	},
+>  	.probe		= tps65090_i2c_probe,
+>  	.remove		= __devexit_p(tps65090_i2c_remove),
+> -#ifdef CONFIG_PM_SLEEP
+> -	.suspend	= tps65090_i2c_suspend,
+> -	.resume		= tps65090_i2c_resume,
+> -#endif
+>  	.id_table	= tps65090_id_table,
+>  };
+> 
+> --
+> 1.7.9.1
+
