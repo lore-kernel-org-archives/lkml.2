@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab2CZOTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:19:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44224 "EHLO mx2.suse.de"
+	id S932519Ab2CZOXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:23:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757406Ab2CZOTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:19:34 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
-Date: Mon, 26 Mar 2012 16:19:31 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
-Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
-References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203260245.43177.trenn@suse.de> <4F6FC57D.3050404@zytor.com>
-In-Reply-To: <4F6FC57D.3050404@zytor.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203261619.31766.trenn@suse.de>
+	id S1757406Ab2CZOW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 10:22:58 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <18418.1330238913@jrobl>
+References: <18418.1330238913@jrobl> <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, valerie.aurora@gmail.com,
+        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov
+Subject: Re: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
+Date: Mon, 26 Mar 2012 15:22:50 +0100
+Message-ID: <9343.1332771770@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 26, 2012 03:25:17 AM H. Peter Anvin wrote:
-> On 03/25/2012 05:45 PM, Thomas Renninger wrote:
-> > Best would be if no distro specific mkinitrd magic is needed and it's
-> > just as easy as it is:
-> > cp DSDT.aml /boot/initrd-test
-> > cat /boot/initrd >>/boot/initrd-test
-> > and add a test boot entry to grub's menu.lst or whereever.
-> > Then developers would not have to look at distro specific implementations
-> > (which should not exist) about how to test a table quickly.
-> 
-> There is no distro-specific magic needed.  What I'm proposing is
-> basically what you have above, except that your DSDT.aml would be
-> wrapped in a cpio header.  What I would like to ask from you is if it
-> makes sense to have kernel/acpi/DSDT, kernel/acpi/SSDT and so on, or
-> just make it a single kernel/acpi member.
-Do the names have to be fixed?
-Then it would not make much sense. Possibly placeholder file names like:
-table1.aml...table10.aml
-could be defined.
-Especially the possibility of several SSDTs makes a naming convention
-rather ugly: SSDT1.aml, SSDT2.aml...
-If there is a directory which (only) contains all ACPI table files that can
-be scanned and the file names do not matter, it's rather nice to set it
-up in userspace. I guess I have to do 2 iterations then:
-  - Go through all files in this dir, validate each as a valid ACPI table
-    and sum up the size of all these files -> Reserve "size of all files".
-  - Then do a 2nd iteration and copy all these files into the reserved
-    memory area.
-  
-If there is only one file where all ACPI table binaries are glued
-together kernel/acpi_tables.binary.blob
-my code should already work as good as unmodified.
+J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
 
-Not sure what is best and whether anybody cares about how the tables
-are layed out.
+> >  (4) Added some code to override the credentials around upper inode
+> >      creation to make sure the inode gets the right UID/GID.  This doesn't
+> >      help if the lower inode has some sort of foreign user identifier.
+> >
+> >      Also, I'm not sure whether the LSM xattrs should be blindly copied up.
+> >      Should the LSM policies applicable to the lower fs's apply to the upper
+> >      fs too?
+> 
+> Obviously the xattr entry may not have its meanings on the upper fs,
 
-I guess I just wait until your functionality is in linux-next and
-give it a closer look then and may come up with a new patch.
+True.  I'm not sure what's the best way to deal with that.  Possibly add an
+extra flag to vfs_setxattr() and have the fs vet them...  OTOH, this gives us
+files on the lowerfs that may well differ in appearance to files on the
+upperfs with respect to their xattrs.
 
-> By wrapping in a cpio container it becomes a generic mechanism.
-> 
-> >> By the way, if "relying on the bootloader" was an option in any way
-> > 
-> > Why exactly is a change in the bootloader not an option?
-> > Not sure whether a version number is passed, but the magic number could be
-> > changed for now.
-> 
-> There are a lot of bootloaders, and one of the most commonly used ones
-> has a very adversarial relationship with the kernel maintainers.
-> 
-> > If the new magic number is passed, we get a linked list.
-> 
-> The linked list stuff is already supported.  This interface has been
-> supported in the kernel since 2007.
-Ok, got it. Thanks.
+> or the upper fs may return an error when setting the xattr. Additionally the
+> returned errno may not follow the generic semantics (ENOTSUP, ENOSPC, or
+> EDQUOT) since the fs may return fs-specific error.
 
-    Thomas
+Also true.  It's possible that the best way is just to ignore everything but a
+medium-related error such as EIO, ENOSPC and EDQUOT: We tried...  Oh well.
+
+> On the other hand, users may expect that the all xattrs are copied-up,
+> particulary when he knows that the xattrs works well on the upper fs too.
+> In copy-up, it will be hard to support all cases.
+
+Yeah.  Ideally, the copied-up file would be indistinguishable from the lower
+file, but in practice that's not possible unless inode numbers and other
+physical characteristics of the lower file are recorded in the upper fs (say
+on an xattr).
+
+> In order to leave users how to handle the xattrs, I'd suggest
+> introducing some mount options, which are similar to cp(1).
+> cp(1) has several options
+> 	--preserve=mode,ownership,timestamps,context,links,xattr,all
+> 	('mode' includes acl which are based upon xattr)
+> 
+> Since the mode (without acl), ownership and timestamps should always be
+> copied-up, the new mount options will be something like
+> 	cpup-xattr=acl,context,all
+
+I would suggest 'cpyup' or 'copyup' rather than 'cpup' - the latter looks like
+something to do with CPUs, but yes, it's worth considering.
+
+> And only when the option is specfied, the xattrs are copied up. No
+> special error handling is necessary, all the errors should be returned
+> to users unconditionally.
+
+That's not necessarily good enough.  What if and LSM, say SELinux, is in
+force?  Now SELinux will happily label the files for you - but there's a
+reasonable chance they won't be correct.  OTOH, they may not be correct even
+if they are copied up.
+
+> Does union-mount preserve mtime? If not, it is critical for some
+> applications such like "make" I am afraid.
+
+Ummm...  Interesting question.  If it copies up a file, then that file must
+have been opened for writing.  Is the mtime altered by such an event, or only
+by a write() having been issued?  Also, what about ctime?  That doesn't seem
+to have been copied up either.
+
+David
