@@ -1,167 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2CZJTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 05:19:44 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:23176 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab2CZJTm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 05:19:42 -0400
-Date: Mon, 26 Mar 2012 11:19:36 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 1/2] regulator: Convert lp3971 to set_voltage_sel
-In-reply-to: <1332470994.13074.2.camel@phoenix>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Liam Girdwood'" <lrg@ti.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Message-id: <000301cd0b31$9081c860$b1855920$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=utf-8
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Ac0In6ezxtv+lqo4R/y3K0by+5LsiQCkTykQ
-References: <1332470994.13074.2.camel@phoenix>
+	id S1755897Ab2CZJWJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 05:22:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755197Ab2CZJWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 05:22:07 -0400
+Message-ID: <4F703536.3040904@redhat.com>
+Date: Mon, 26 Mar 2012 11:21:58 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC dontapply] kvm_para: add mmio word store hypercall
+References: <20120325220518.GA27879@redhat.com>
+In-Reply-To: <20120325220518.GA27879@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 03/26/2012 12:05 AM, Michael S. Tsirkin wrote:
+> We face a dilemma: IO mapped addresses are legacy,
+> so, for example, PCI express bridges waste 4K
+> of this space for each link, in effect limiting us
+> to 16 devices using this space.
+>
+> Memory is supposed to replace them, but memory
+> exits are much slower than PIO because of the need for
+> emulation and page walks.
+>
+> As a solution, this patch adds an MMIO hypercall with
+> the guest physical address + data.
+>
+> I did test that this works but didn't benchmark yet.
+>
+> TODOs:
+> This only implements a 2 bytes write since this is
+> the minimum required for virtio, but we'll probably need
+> at least 1 byte reads (for ISR read).
+> We can support up to 8 byte reads/writes for 64 bit
+> guests and up to 4 bytes for 32 ones - better limit
+> to 4 bytes for everyone for consistency, or support
+> the maximum that we can?
 
-On Friday, March 23, 2012 3:50 AM Axel Lin wrote:
+Let's support the maximum we can.
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-The patch looks good, but I don't have access to the hardware to test it.
-
-Acked-By: Marek Szyprowski <m.szyprowski@samsung.com>
-
-> ---
->  drivers/regulator/lp3971.c |   58 +++++++++++--------------------------------
->  1 files changed, 15 insertions(+), 43 deletions(-)
-> 
-> diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
-> index 0cfabd3..49bcdb0 100644
-> --- a/drivers/regulator/lp3971.c
-> +++ b/drivers/regulator/lp3971.c
-> @@ -124,6 +124,10 @@ static const int *ldo_voltage_map[] = {
->  static int lp3971_ldo_list_voltage(struct regulator_dev *dev, unsigned index)
+>  
+>  static int handle_invd(struct kvm_vcpu *vcpu)
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 9cbfc06..7bc00ae 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4915,7 +4915,9 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>  
+>  int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
 >  {
->  	int ldo = rdev_get_id(dev) - LP3971_LDO1;
-> +
-> +	if (index > LDO_VOL_MAX_IDX)
-> +		return -EINVAL;
-> +
->  	return 1000 * LDO_VOL_VALUE_MAP(ldo)[index];
->  }
-> 
-> @@ -168,32 +172,15 @@ static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
->  	return 1000 * LDO_VOL_VALUE_MAP(ldo)[val];
->  }
-> 
-> -static int lp3971_ldo_set_voltage(struct regulator_dev *dev,
-> -				  int min_uV, int max_uV,
-> -				  unsigned int *selector)
-> +static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
-> +				      unsigned int selector)
->  {
->  	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
->  	int ldo = rdev_get_id(dev) - LP3971_LDO1;
-> -	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
-> -	const int *vol_map = LDO_VOL_VALUE_MAP(ldo);
-> -	u16 val;
-> -
-> -	if (min_vol < vol_map[LDO_VOL_MIN_IDX] ||
-> -	    min_vol > vol_map[LDO_VOL_MAX_IDX])
-> -		return -EINVAL;
-> -
-> -	for (val = LDO_VOL_MIN_IDX; val <= LDO_VOL_MAX_IDX; val++)
-> -		if (vol_map[val] >= min_vol)
-> -			break;
-> -
-> -	if (val > LDO_VOL_MAX_IDX || vol_map[val] > max_vol)
-> -		return -EINVAL;
-> -
-> -	*selector = val;
-> 
->  	return lp3971_set_bits(lp3971, LP3971_LDO_VOL_CONTR_REG(ldo),
->  			LDO_VOL_CONTR_MASK << LDO_VOL_CONTR_SHIFT(ldo),
-> -			val << LDO_VOL_CONTR_SHIFT(ldo));
-> +			selector << LDO_VOL_CONTR_SHIFT(ldo));
->  }
-> 
->  static struct regulator_ops lp3971_ldo_ops = {
-> @@ -202,11 +189,14 @@ static struct regulator_ops lp3971_ldo_ops = {
->  	.enable = lp3971_ldo_enable,
->  	.disable = lp3971_ldo_disable,
->  	.get_voltage = lp3971_ldo_get_voltage,
-> -	.set_voltage = lp3971_ldo_set_voltage,
-> +	.set_voltage_sel = lp3971_ldo_set_voltage_sel,
->  };
-> 
->  static int lp3971_dcdc_list_voltage(struct regulator_dev *dev, unsigned index)
->  {
-> +	if (index < BUCK_TARGET_VOL_MIN_IDX || index > BUCK_TARGET_VOL_MAX_IDX)
-> +		return -EINVAL;
-> +
->  	return 1000 * buck_voltage_map[index];
->  }
-> 
-> @@ -259,33 +249,15 @@ static int lp3971_dcdc_get_voltage(struct regulator_dev *dev)
->  	return val;
->  }
-> 
-> -static int lp3971_dcdc_set_voltage(struct regulator_dev *dev,
-> -				   int min_uV, int max_uV,
-> -				   unsigned int *selector)
-> +static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
-> +				       unsigned int selector)
->  {
->  	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
->  	int buck = rdev_get_id(dev) - LP3971_DCDC1;
-> -	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
-> -	const int *vol_map = buck_voltage_map;
-> -	u16 val;
->  	int ret;
-> 
-> -	if (min_vol < vol_map[BUCK_TARGET_VOL_MIN_IDX] ||
-> -	    min_vol > vol_map[BUCK_TARGET_VOL_MAX_IDX])
-> -		return -EINVAL;
-> -
-> -	for (val = BUCK_TARGET_VOL_MIN_IDX; val <= BUCK_TARGET_VOL_MAX_IDX;
-> -	     val++)
-> -		if (vol_map[val] >= min_vol)
-> -			break;
-> -
-> -	if (val > BUCK_TARGET_VOL_MAX_IDX || vol_map[val] > max_vol)
-> -		return -EINVAL;
-> -
-> -	*selector = val;
-> -
->  	ret = lp3971_set_bits(lp3971, LP3971_BUCK_TARGET_VOL1_REG(buck),
-> -	       BUCK_TARGET_VOL_MASK, val);
-> +	       BUCK_TARGET_VOL_MASK, selector);
->  	if (ret)
->  		return ret;
-> 
-> @@ -306,7 +278,7 @@ static struct regulator_ops lp3971_dcdc_ops = {
->  	.enable = lp3971_dcdc_enable,
->  	.disable = lp3971_dcdc_disable,
->  	.get_voltage = lp3971_dcdc_get_voltage,
-> -	.set_voltage = lp3971_dcdc_set_voltage,
-> +	.set_voltage_sel = lp3971_dcdc_set_voltage_sel,
->  };
-> 
->  static struct regulator_desc regulators[] = {
-> --
-> 1.7.5.4
-> 
+> +	struct kvm_run *run = vcpu->run;
+>  	unsigned long nr, a0, a1, a2, a3, ret;
+> +	gpa_t gpa;
+>  	int r = 1;
+>  
+>  	if (kvm_hv_hypercall_enabled(vcpu->kvm))
+> @@ -4946,12 +4948,24 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+>  	case KVM_HC_VAPIC_POLL_IRQ:
+>  		ret = 0;
+>  		break;
+> +	case KVM_HC_MMIO_STORE_WORD:
 
-Best regards
+HC_MEMORY_WRITE
+
+> +		gpa = hc_gpa(vcpu, a1, a2);
+> +		if (!write_mmio(vcpu, gpa, 2, &a0) && run) {
+
+What's this && run thing?
+
+> +			run->exit_reason = KVM_EXIT_MMIO;
+> +			run->mmio.phys_addr = gpa;
+> +			memcpy(run->mmio.data, &a0, 2);
+> +			run->mmio.len = 2;
+> +			run->mmio.is_write = 1;
+> +                        r = 0;
+> +		}
+> +		goto noret;
+
+What if the address is in RAM?
+
+Note the guest can't tell if a piece of memory is direct mapped or
+implemented as mmio.
+
+
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+error compiling committee.c: too many arguments to function
 
