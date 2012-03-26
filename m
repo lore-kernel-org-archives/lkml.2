@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2CZNdH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 09:33:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39649 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932214Ab2CZNdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 09:33:05 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-Date: Mon, 26 Mar 2012 14:33:01 +0100
-Message-Id: <1332768782-5201-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S932540Ab2CZNpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 09:45:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43455 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932519Ab2CZNpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 09:45:03 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <spi-devel-general@lists.sourceforge.net>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH  v2 5/5] spi: omap2-mcspi: add support for pm_runtime autosuspend
+Date: Mon, 26 Mar 2012 19:14:40 +0530
+Message-ID: <1332769480-28069-6-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1332769480-28069-1-git-send-email-shubhrajyoti@ti.com>
+References: <1332769480-28069-1-git-send-email-shubhrajyoti@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's -next fails to link for me:
+Adds support for configuring the omap2-mcspi driver use autosuspend for
+runtime power management. This can reduce the latency in starting an
+spi transfer by not suspending the device immediately following
+completion of a transfer. If another transfer then takes place before
+the autosuspend timeout (2 secs), the call to resume the device can
+return immediately saving some save/ restore cycles.
 
-kernel/built-in.o:(.data+0x178e50): undefined reference to `perf_ftrace_event_register'
-
-It looks like multiple fixes have been merged for the issue fixed by
-commit fa73dc9 (tracing: Fix build breakage without CONFIG_PERF_EVENTS)
-though I can't identify the other changes that have gone in at the
-minute, it's possible that the changes which caused the breakage fixed
-by the previous commit got dropped but the fix made it in.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Govindraj.R <govindraj.raja@ti.com>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- kernel/trace/trace.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/spi/spi-omap2-mcspi.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 95059f0..ff639ca 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -836,11 +836,15 @@ extern const char *__stop___trace_bprintk_fmt[];
- 		     filter)
- #include "trace_entries.h"
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 1907ed2..0b0da2f 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -44,6 +44,7 @@
+ #include <plat/mcspi.h>
  
-+#ifdef CONFIG_PERF_EVENTS
- #ifdef CONFIG_FUNCTION_TRACER
- int perf_ftrace_event_register(struct ftrace_event_call *call,
- 			       enum trace_reg type, void *data);
- #else
- #define perf_ftrace_event_register NULL
- #endif /* CONFIG_FUNCTION_TRACER */
-+#else
-+#define perf_ftrace_event_register NULL
-+#endif /* CONFIG_PERF_EVENTS */
+ #define OMAP2_MCSPI_MAX_FREQ		48000000
++#define SPI_AUTOSUSPEND_TIMEOUT		2000
  
- #endif /* _LINUX_KERNEL_TRACE_H */
+ #define OMAP2_MCSPI_REVISION		0x00
+ #define OMAP2_MCSPI_SYSSTATUS		0x14
+@@ -265,7 +266,8 @@ static void omap2_mcspi_restore_ctx(struct omap2_mcspi *mcspi)
+ }
+ static void omap2_mcspi_disable_clocks(struct omap2_mcspi *mcspi)
+ {
+-	pm_runtime_put_sync(mcspi->dev);
++	pm_runtime_mark_last_busy(mcspi->dev);
++	pm_runtime_put_autosuspend(mcspi->dev);
+ }
+ 
+ static int omap2_mcspi_enable_clocks(struct omap2_mcspi *mcspi)
+@@ -1212,6 +1214,8 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+ 	if (status < 0)
+ 		goto dma_chnl_free;
+ 
++	pm_runtime_use_autosuspend(&pdev->dev);
++	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+ 	pm_runtime_enable(&pdev->dev);
+ 
+ 	if (status || omap2_mcspi_master_setup(mcspi) < 0)
 -- 
-1.7.9.1
+1.7.1
 
