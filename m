@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab2CZAGL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 20:06:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40613 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab2CZAGI (ORCPT
+	id S1752666Ab2CZA1U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 20:27:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48367 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab2CZA1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 20:06:08 -0400
-Date: Mon, 26 Mar 2012 11:05:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Jason Baron <jbaron@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: manual merge of the arm tree with Linus' tree
-Message-Id: <20120326110550.5029ac4c49c2be2e2e0381cf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Mar_2012_11_05_50_+1100_hKMFaWFe7P94N02z"
+	Sun, 25 Mar 2012 20:27:16 -0400
+Date: Mon, 26 Mar 2012 08:27:01 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michal Januszewski <spock@gentoo.org>, linux-fbdev@vger.kernel.org,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86: export 'pcibios_enabled'
+Message-ID: <20120326002701.GA3624@udknight>
+Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Michal Januszewski <spock@gentoo.org>, linux-fbdev@vger.kernel.org,
+	x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>
+References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au>
+ <4F5FAE63.3090908@xenotime.net>
+ <4F5FE9AD.7000204@zytor.com>
+ <20120314092955.2250a782@pyramind.ukuu.org.uk>
+ <4F607A18.8080004@gmx.de>
+ <20120314112137.68fa4f70@pyramind.ukuu.org.uk>
+ <20120322004135.GA4253@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322004135.GA4253@udknight>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Mar_2012_11_05_50_+1100_hKMFaWFe7P94N02z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Russell,
-
-Today's linux-next merge of the arm tree got a conflict in
-arch/arm/kernel/process.c between commit 909af768e888 ("coredump: remove
-VM_ALWAYSDUMP flag") from the  tree and commit e19d478e808e ("ARM:
-7294/1: vectors: use gate_vma for vectors user mapping") from the arm
-tree.
-
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/kernel/process.c
-index d3eca45,1531480..0000000
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@@ -529,17 -531,36 +529,35 @@@ unsigned long arch_randomize_brk(struc
-  #ifdef CONFIG_MMU
-  /*
-   * The vectors page is always readable from user space for the
--  * atomic helpers and the signal restart code.  Let's declare a mapping
--  * for it so it is visible through ptrace and /proc/<pid>/mem.
-+  * atomic helpers and the signal restart code. Insert it into the
-+  * gate_vma so that it is visible through ptrace and /proc/<pid>/mem.
-   */
-+ static struct vm_area_struct gate_vma;
- =20
-- int vectors_user_mapping(void)
-+ static int __init gate_vma_init(void)
-  {
-- 	struct mm_struct *mm =3D current->mm;
-- 	return install_special_mapping(mm, 0xffff0000, PAGE_SIZE,
-- 				       VM_READ | VM_EXEC |
-- 				       VM_MAYREAD | VM_MAYEXEC | VM_RESERVED,
-- 				       NULL);
-+ 	gate_vma.vm_start	=3D 0xffff0000;
-+ 	gate_vma.vm_end		=3D 0xffff0000 + PAGE_SIZE;
-+ 	gate_vma.vm_page_prot	=3D PAGE_READONLY_EXEC;
-+ 	gate_vma.vm_flags	=3D VM_READ | VM_EXEC |
- -				  VM_MAYREAD | VM_MAYEXEC |
- -				  VM_ALWAYSDUMP;
-++				  VM_MAYREAD | VM_MAYEXEC;
-+ 	return 0;
-+ }
-+ arch_initcall(gate_vma_init);
-+=20
-+ struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+ {
-+ 	return &gate_vma;
-+ }
-+=20
-+ int in_gate_area(struct mm_struct *mm, unsigned long addr)
-+ {
-+ 	return (addr >=3D gate_vma.vm_start) && (addr < gate_vma.vm_end);
-+ }
-+=20
-+ int in_gate_area_no_mm(unsigned long addr)
-+ {
-+ 	return in_gate_area(NULL, addr);
-  }
- =20
-  const char *arch_vma_name(struct vm_area_struct *vma)
-
---Signature=_Mon__26_Mar_2012_11_05_50_+1100_hKMFaWFe7P94N02z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPb7LeAAoJEECxmPOUX5FEgCQP/A03Vf2JQ2DJMm62fu7y+imO
-294QWlMBZviWpYOc+mlWo+8OTR1n4XU6OAnEHNhGVdBSRgitoBPIuo/yzfSBnueL
-VZiwKro/aNeOtZdQtgLL1VAhd9JJ92Ak7kWbq7Dje4265DSsgrvTe3qhd6DY9+h8
-i4HDEfLI5CbssUHJf51FQQk+9/bXeI4yVILtAhOjOUD/WBIoB0xiYCHO41a+AaTK
-BEtYOQnsRuaQLmR5Dp/2ee0Fv9/9VDDS0QwJydEuPGArv7d1ppmh8uVppFw/kxJk
-oqVCGCQdZHcQtydSWrSM/dASMAA50s1NW4526j4wFMHHpuWtMjZoq7Fbkhjm2HNh
-FyWTjGmvN9Mh2i7E6b1lPtEdvwAlX5/SzIH9/4d5XbonJTYhlCDb0cPvBPPRvMcF
-13Y4R1Tv8TO5NF7SdVW7Wi/AtYi43S/2HRrfE2ppml++OBqwi9rsntSMNMNT/h5h
-xQgZ9eeznyVJQOY45wKSe1mq8zVHL9Qw6CtIpeM46qO+QFxmRtIkrjRA6nNV/T2P
-Zv+lB+N/KUqDUSIg3S41NjsSmL7Bk6cQOeeiG2nCSOrLNqjujDNMWpVkdPpn8hrq
-+S1J2vdk/YlcGznPW1aRE2d46ZJUep/5Y/0wdxzddXbK+WZBmnqJackceBSGSEBl
-IPecyDmO42Y9mG0jv+y9
-=tWgl
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Mar_2012_11_05_50_+1100_hKMFaWFe7P94N02z--
+On Thu, Mar 22, 2012 at 08:41:35AM +0800, Wang YanQing wrote:
+> On Wed, Mar 14, 2012 at 11:21:37AM +0000, Alan Cox wrote:
+> > You can use set_memory_x() to mark memory executable (and _nx to set it back).
+> > 
+> NO I can't, if I set_memory_x and don't set pcibios_enabled = 1, then
+> static_protections will still failed because pcibios_enabled == 0, 
+> and I don't want to use set_memory_x, because I don't want to give the user 
+> of uvesafb that feeling "I will lost BIOS NX protection if I choice uvesafb."
+> 
+> > If you really need to know if NX is being used then the check
+> > 
+> > 	if (__supported_pte_mask & PTE_NX)
+> > 
+> > will do the trick and the variable is exported.
+> I don't understand what do you mean, do you means CONFIG_X86_PAE for 32? Or CONFIG_X86_64?
+> when NX is being used, the pci bios is NX or not also depend on
+> ACPI.ACPI on or off all will influnce the code path in pci_arch_init,
+> decide the set_bios_x have chance to execute or not.See
+> https://lkml.org/lkml/2011/11/16/84
+> 
+> By the way _PAGE_NX instead of PTE_NX, right?
+> 
+> > I'd suggest however you wrap that in a cpu_has_nx() type macro somewhere
+> > in the arch headers.
+> > 
+> The same above.
+> 
+> > If you go poking around pcibios values you are going to get burned if
+> > someone is ever bored enough to make NX and PCIBIOS work together
+> > differently.
+> > 
+> Indeed according to 5bd5a452662bc37c54fb6828db1a3faf87e6511c, who bring me 
+> the trouble, check the pcibios_enabled is the only simple and good way to 
+> resolve the Oops I meet.
+> 
+> If you really don't want it, and if I am not all wrong about your "helper method",
+> you means you want export the below:
+> int check_pcibios_enabled()?
+> See https://lkml.org/lkml/2012/2/26/124
+> 
+> Thanks.
+> 
+Sorry for the delay reply and cross email threads,  Alan Cox.
+But I still can't find a better way then to check the pcibios_enabled variable,
+any better suggestion?
