@@ -1,98 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab2CZJzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 05:55:50 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:46134 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755897Ab2CZJzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 05:55:49 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <akpm@linux-foundation.org>
-Cc: <devicetree-discuss@lists.ozlabs.org>, <rajeev-dlh.kumar@st.com>,
-        <sr@denx.de>, <linux-kernel@vger.kernel.org>,
-        <rtc-linux@googlegroups.com>, <a.zummo@towertech.it>,
-        <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH] rtc/spear: Add Device Tree probing capability
-Date: Mon, 26 Mar 2012 15:24:22 +0530
-Message-ID: <8747a4b3bdcfb7b3384c14ca909228e1164d0fc5.1332755275.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.10.rc2.10.gb47606
+	id S1756901Ab2CZKEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756733Ab2CZKEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 06:04:23 -0400
+Message-ID: <4F703F06.60709@redhat.com>
+Date: Mon, 26 Mar 2012 11:03:50 +0100
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Nick Bowler <nbowler@elliptictech.com>
+CC: Jiri Slaby <jslaby@suse.cz>, Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        apw@canonical.com, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] checkpatch.pl: thou shalt not use () or (...) in
+ function declarations
+References: <1332430038-21057-1-git-send-email-ext-phil.2.carmody@nokia.com> <4F6B51C9.6010904@suse.cz> <20120322171702.GA27776@elliptictech.com>
+In-Reply-To: <20120322171702.GA27776@elliptictech.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPEAr platforms now support DT and so must convert all drivers support DT. This
-patch adds DT probing support for rtc and updates its documentation too.
+On 03/22/2012 05:17 PM, Nick Bowler wrote:
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- Documentation/devicetree/bindings/rtc/spear-rtc.txt |   18 ++++++++++++++++++
- drivers/rtc/rtc-spear.c                             |   10 ++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/spear-rtc.txt
+> GCC will not normally warn about the above (unless you pass
+> -Wold-style-definition) which warns for all function definitions that
+> lack a prototype.
 
-diff --git a/Documentation/devicetree/bindings/rtc/spear-rtc.txt b/Documentation/devicetree/bindings/rtc/spear-rtc.txt
-new file mode 100644
-index 0000000..928410f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/spear-rtc.txt
-@@ -0,0 +1,18 @@
-+* SPEAr RTC
-+
-+Required properties:
-+- compatible : "st,spear-rtc"
-+- reg : Address range of the rtc registers
-+- interrupt-parent: Should be the phandle for the interrupt controller
-+  that services interrupts for this device
-+- interrupt: Should contain the rtc interrupt number
-+
-+Example:
-+
-+	rtc@fc000000 {
-+		compatible = "st,spear-rtc";
-+		reg = <0xfc000000 0x1000>;
-+		interrupt-parent = <&vic1>;
-+		interrupts = <12>;
-+	};
-+
-diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
-index e38da0d..4a12fe5 100644
---- a/drivers/rtc/rtc-spear.c
-+++ b/drivers/rtc/rtc-spear.c
-@@ -16,6 +16,7 @@
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/rtc.h>
- #include <linux/slab.h>
-@@ -519,6 +520,14 @@ static void spear_rtc_shutdown(struct platform_device *pdev)
- 	clk_disable(config->clk);
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id spear_rtc_id_table[] = {
-+	{ .compatible = "st,spear-rtc" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, spear_rtc_id_table);
-+#endif
-+
- static struct platform_driver spear_rtc_driver = {
- 	.probe = spear_rtc_probe,
- 	.remove = __devexit_p(spear_rtc_remove),
-@@ -527,6 +536,7 @@ static struct platform_driver spear_rtc_driver = {
- 	.shutdown = spear_rtc_shutdown,
- 	.driver = {
- 		.name = "rtc-spear",
-+		.of_match_table = of_match_ptr(spear_rtc_id_table),
- 	},
- };
- 
+
+/me asks the stupid question:
+
+Why not make the compiler catch this instead then, with -Werror=old-style-definition?
+
 -- 
-1.7.10.rc2.10.gb47606
-
+Pedro Alves
