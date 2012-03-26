@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab2CZTCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 15:02:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55896 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933090Ab2CZTCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 15:02:22 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] Use NUMA node cpu mask in irq affinity [v3]
-Date: Mon, 26 Mar 2012 15:02:18 -0400
-Message-Id: <1332788538-17425-1-git-send-email-prarit@redhat.com>
+	id S1751883Ab2CZTEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 15:04:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55731 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab2CZTEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 15:04:23 -0400
+Date: Mon, 26 Mar 2012 21:04:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yevgeny Petrilin <yevgenyp@mellanox.com>
+cc: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yael Shenhav <yaeli@mellanox.com>
+Subject: RE: IRQ affinity enforced only after first interrupt.
+In-Reply-To: <953B660C027164448AE903364AC447D2618E1A8B@MTLDAG02.mtl.com>
+Message-ID: <alpine.LFD.2.02.1203262059070.2542@ionos>
+References: <4F7031A4.70601@mellanox.co.il> <CAErSpo7ciBYG1-jCL3F6bFcktmJj4H-SXn_1NcRnhc-gPDsHUw@mail.gmail.com> <4F707E39.50502@gmail.com> <953B660C027164448AE903364AC447D2618E1A8B@MTLDAG02.mtl.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending ... Seems to have died on the vine here
-http://marc.info/?l=linux-kernel&m=132914231706596&q=raw ]
+On Mon, 26 Mar 2012, Yevgeny Petrilin wrote:
 
-The irq affinity files (/proc/irq/.../smp_affinity) contain a mask that is
-used to "pin" an irq to a set of cpus.  On boot this set is currently all
-cpus.  This can be incorrect as ACPI SRAT may tell us that a specific
-device or bus is attached to a particular node and it's cpus.
+> > 
+> > The architecture specific code will determine whether the IRQ could be migrated
+> > in process context. For example, the IRQ_MOVE_PCNTXT flag will be set on x86
+> > systems if interrupt remapping is enabled.
+>
+> Actually I am encountering this issue with x86, and see different
+> behavior with different HW devices (NICs). On same machine I have
+> one device that responds immediately to affinity changes while the
+> other one changes the affinity only after first interrupt.
 
-When setting up the irq affinity we should take into account the NUMA node
-cpu mask by and'ing it into the irq's affinity mask.
+That simply depends on the underlying hardware. On certain hardware we
+can change the affinity only in hard interrupt context, that means
+right when a interrupt of that device is delivered.
 
-[v2]: Thomas and Yinghai pointed out that it is possible that the mask is
-empty after and'ing in the NUMA node's cpumask.  The code now checks to see
-if the mask will be empty before applying the NUMA node's cpumask.
+On the other devices we can change it right away and the corresponding
+interrupt chips set IRQ_MOVE_PCNTXT to indicate that.
 
-[v3]: David requests NUMA_NO_NODE instead of -1
+There is nothing we can do about this. It's dictated by hardware.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Rientjes <rientjes@google.com>
----
- kernel/irq/manage.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Thanks,
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index b0ccd1a..96a18f1 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -301,6 +301,13 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- 	}
- 
- 	cpumask_and(mask, cpu_online_mask, set);
-+	if (desc->irq_data.node != NUMA_NO_NODE) {
-+		const struct cpumask *nodemask =
-+					   cpumask_of_node(desc->irq_data.node);
-+		/* make sure at least one of the cpus in nodemask is online */
-+		if (cpumask_intersects(mask, nodemask))
-+			cpumask_and(mask, mask, nodemask);
-+	}
- 	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
- 	switch (ret) {
- 	case IRQ_SET_MASK_OK:
--- 
-1.7.1
-
+	tglx
