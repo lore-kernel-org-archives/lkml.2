@@ -1,66 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847Ab2CZPch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:32:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55394 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932663Ab2CZPcf (ORCPT
+	id S932780Ab2CZPdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:33:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63201 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932635Ab2CZPdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:32:35 -0400
-Date: Mon, 26 Mar 2012 17:33:18 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 00/11 v3] fix gmbus writes and related issues
-Message-ID: <20120326153318.GX4014@phenom.ffwll.local>
-Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
-	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Benson Leung <bleung@chromium.org>,
-	Yufeng Shen <miletus@chromium.org>
-References: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Mar 2012 11:33:08 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ingo Molnar <mingo@elte.hu>, Joe Perches <joe@perches.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 19/20 v3] sparc/mm/fault_32.c: Port OOM changes to do_sparc_fault
+Date: Mon, 26 Mar 2012 11:32:26 -0400
+Message-Id: <1332775946-2162-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 10:26:39PM +0800, Daniel Kurtz wrote:
-> This patchset addresses a couple of issues with the i915 gmbus implementation:
->  * fixes misassigned pin port pair for HDMI-D
->  * fixes write transactions when they are the only transaction requested
->    (including large >4-byte writes) by terminating every transaction with a
->    WAIT cycle.
->  * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
->    i2c transaction failures
->  * optimizes the typical read transaction case by using the INDEX cycle
-> v3:
->  * rebased onto Daniel Vetter's drm-intel-next-queued branch
->    at git://people.freedesktop.org/~danvet/drm-intel
->  * replace intel_i2c_quirk_xfer with pre/post_xfer i2c routines
->  * pre-allocate gmbus array
->  * drop interrupt approach since I could not make it stable, probably due to
->    difficulty in clearing and resetting the GMBUS interrupt which is buffered
->    behind the SDE's PCH interrupt.
->  * Fix zero-length writes
->  * Wait for IDLE before clearing NAK
+Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+(mm: retry page fault when blocking on disk transfer) and
+commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+(x86,mm: make pagefault killable)
 
-Ok, I've found a few more things to complain about ;-) I haven't looked to
-closely add the later patches that fix up the actual gmbus code, but on a
-quick read I don't see any issues there - I'll cross check the code
-somewhen later with Bspec.
+The above commits introduced changes into the x86 pagefault handler
+for making the page fault handler retryable as well as killable.
 
-Yours, Daniel
+These changes reduce the mmap_sem hold time, which is crucial
+during OOM killer invocation.
+
+Port these changes to 32-bit sparc.
+
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ arch/sparc/mm/fault_32.c |   37 ++++++++++++++++++++++++++++++-------
+ 1 files changed, 30 insertions(+), 7 deletions(-)
+
+diff --git a/arch/sparc/mm/fault_32.c b/arch/sparc/mm/fault_32.c
+index 8023fd7..6da1818 100644
+--- a/arch/sparc/mm/fault_32.c
++++ b/arch/sparc/mm/fault_32.c
+@@ -226,6 +226,8 @@ asmlinkage void do_sparc_fault(struct pt_regs *regs, int text_fault, int write,
+ 	unsigned long g2;
+ 	int from_user = !(regs->psr & PSR_PS);
+ 	int fault, code;
++	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++						  (write ? FAULT_FLAG_WRITE : 0));
+ 
+ 	if(text_fault)
+ 		address = regs->pc;
+@@ -252,6 +254,7 @@ asmlinkage void do_sparc_fault(struct pt_regs *regs, int text_fault, int write,
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+ 
++retry:
+ 	down_read(&mm->mmap_sem);
+ 
+ 	/*
+@@ -290,7 +293,11 @@ good_area:
+ 	 * make sure we exit gracefully rather than endlessly redo
+ 	 * the fault.
+ 	 */
+-	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
++	fault = handle_mm_fault(mm, vma, address, flags);
++
++	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
++		return;
++
+ 	if (unlikely(fault & VM_FAULT_ERROR)) {
+ 		if (fault & VM_FAULT_OOM)
+ 			goto out_of_memory;
+@@ -298,13 +305,29 @@ good_area:
+ 			goto do_sigbus;
+ 		BUG();
+ 	}
+-	if (fault & VM_FAULT_MAJOR) {
+-		current->maj_flt++;
+-		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
+-	} else {
+-		current->min_flt++;
+-		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
++
++	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++		if (fault & VM_FAULT_MAJOR) {
++			current->maj_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
++						  1, regs, address);
++		} else {
++			current->min_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN,
++						  1, regs, address);
++		}
++		if (fault & VM_FAULT_RETRY) {
++			flags &= ~FAULT_FLAG_ALLOW_RETRY;
++
++			/* No need to up_read(&mm->mmap_sem) as we would
++			 * have already released it in __lock_page_or_retry
++			 * in mm/filemap.c.
++			 */
++
++			goto retry;
++		}
+ 	}
++
+ 	up_read(&mm->mmap_sem);
+ 	return;
+ 
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.5.4
+
