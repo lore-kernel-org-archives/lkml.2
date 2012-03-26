@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab2CZFVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 01:21:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23962 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab2CZFVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 01:21:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="145324286"
-Message-ID: <4F6FFCA3.3010000@intel.com>
-Date: Mon, 26 Mar 2012 13:20:35 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1752825Ab2CZFWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 01:22:40 -0400
+Received: from imx9.toshiba.co.jp ([202.33.96.51]:52140 "EHLO
+	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab2CZFWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 01:22:35 -0400
+X-Greylist: delayed 2101 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Mar 2012 01:22:35 EDT
+Message-ID: <4F6FF179.5090600@toshiba.co.jp>
+Date: Mon, 26 Mar 2012 13:32:57 +0900
+From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
-References: <20120326150107.392bc3a7e0175b5009bcfeff@canb.auug.org.au>
-In-Reply-To: <20120326150107.392bc3a7e0175b5009bcfeff@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Santosh Y <santoshsy@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd.bergmann@linaro.org, saugata.das@linaro.org, dsaxena@linaro.org,
+        stephen.doel@linaro.org, venkat@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
+        sreekumar.c@samsung.com, vinholikatti@gmail.com, linkinjeon@gmail.com,
+        michaelc@cs.wisc.edu
+Subject: Re: [PATCH v3 1/5] [SCSI] ufshcd: UFS Host controller driver
+References: <1330497714-26504-2-git-send-email-santoshsy@gmail.com>
+In-Reply-To: <1330497714-26504-2-git-send-email-santoshsy@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 12:01 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the akpm tree got a conflict in  between
-> commit a6fca40f1d7f ("x86, tlb: Switch cr3 in leave_mm() only when
-> needed") from the tip tree and commit "x86: use this_cpu_xxx to replace
-> percpu_xxx funcs" from the akpm tree.
->
-> I fixed it up (see below) and can carry the fix as necessary.
-Thanks!
+> > +        utrdlp[i].response_upiu_length =
+> > +                cpu_to_le16(ALIGNED_UPIU_SIZE);
+
+Response UPIU Length(RUL) shows the response UPIU length in Dword.
+(JEDEC Standard No.223 6.2.1 UTP Transfer Request Descriptor)
+The following will be correct.
+
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 07ec973..feffe65 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -836,7 +836,7 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
+                 utrdlp[i].prd_table_offset =
+                                 cpu_to_le16((prdt_offset >> 2));
+                 utrdlp[i].response_upiu_length =
+-                               cpu_to_le16(ALIGNED_UPIU_SIZE);
++                               cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
+
+                 hba->lrb[i].utr_descriptor_ptr = (utrdlp + i);
+                 hba->lrb[i].ucd_cmd_ptr =
+
