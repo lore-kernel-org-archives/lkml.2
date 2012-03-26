@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932810Ab2CZPdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:33:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45136 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932635Ab2CZPdv (ORCPT
+	id S932811Ab2CZPen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:34:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52630 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932635Ab2CZPem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:33:51 -0400
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@elte.hu>, Joe Perches <joe@perches.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 20/20 v3] sparc/mm/fault_64.c: Port OOM changes to do_sparc64_fault
-Date: Mon, 26 Mar 2012 11:33:17 -0400
-Message-Id: <1332775997-2197-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 26 Mar 2012 11:34:42 -0400
+Date: Mon, 26 Mar 2012 16:34:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alex Gershgorin <alexg@meprolight.com>
+Cc: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v1] regulator: i.MX35-PDK Add regulator support
+Message-ID: <20120326153429.GX3098@opensource.wolfsonmicro.com>
+References: <1332772593-13313-1-git-send-email-alexg@meprolight.com>
+ <20120326144712.GA8579@sirena.org.uk>
+ <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uN3tURjgVTLfI0kr"
+Content-Disposition: inline
+In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>
+X-Cookie: Q:	Are we not men?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+--uN3tURjgVTLfI0kr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
+On Mon, Mar 26, 2012 at 05:28:55PM +0200, Alex Gershgorin wrote:
+> On Mon, Mar 26, 2012 at 04:36:33PM +0200, Alex Gershgorin wrote:
 
-Port these changes to 64-bit sparc.
+Fix your mailer to word wrap within paragraphs, I reflowed your text to
+be legible.
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/sparc/mm/fault_64.c |   38 +++++++++++++++++++++++++++++++-------
- 1 files changed, 31 insertions(+), 7 deletions(-)
+> > >...and in many cases the supply names don't look like things I'd expect
+> > >to be varying too much at runtime.  It looks like you just typed the
+> > >maximum datasheet ranges in, not things that make sense for the board.
 
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index 504c062..8322962 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -279,6 +279,7 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- 	unsigned int insn = 0;
- 	int si_code, fault_code, fault;
- 	unsigned long address, mm_rss;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
- 
- 	fault_code = get_thread_fault_code();
- 
-@@ -333,6 +334,8 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- 			insn = get_fault_insn(regs, insn);
- 			goto handle_kernel_fault;
- 		}
-+
-+retry:
- 		down_read(&mm->mmap_sem);
- 	}
- 
-@@ -423,7 +426,13 @@ good_area:
- 			goto bad_area;
- 	}
- 
--	fault = handle_mm_fault(mm, vma, address, (fault_code & FAULT_CODE_WRITE) ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, address,
-+							flags | ((fault_code & FAULT_CODE_WRITE) ?
-+									 FAULT_FLAG_WRITE : 0);
-+
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return;
-+
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		if (fault & VM_FAULT_OOM)
- 			goto out_of_memory;
-@@ -431,12 +440,27 @@ good_area:
- 			goto do_sigbus;
- 		BUG();
- 	}
--	if (fault & VM_FAULT_MAJOR) {
--		current->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
--	} else {
--		current->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
-+
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			current->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
-+						  1, regs, address);
-+		} else {
-+			current->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN,
-+						  1, regs, address);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+			/* No need to up_read(&mm->mmap_sem) as we would
-+			 * have already released it in __lock_page_or_retry
-+			 * in mm/filemap.c.
-+			 */
-+
-+			goto retry;
-+		}
- 	}
- 	up_read(&mm->mmap_sem);
- 
--- 
-1.7.5.4
+> It's not quite true, I was based on the Freescale BSP and I assume,
+> that this is checked.  I also tested it on v3.3
 
+Uh, presence in a vendor BSP isn't a guarantee of sanity...  Since you
+didn't specify any consumers the regulator API obviously won't do
+anything with the voltage range provided but to repeat it's really not
+at all obvious that anything sane ever would.
+
+--uN3tURjgVTLfI0kr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPcIxdAAoJEBus8iNuMP3d6H0P/0EOL8l57TtnUNrMotCzulH/
+JAg21Jpen+u/y4H/M+jbCTfur/8gMANRyMhl54IPadPz3QhppVbPha9/G2rOVhXP
+z9oTjlXs4RRO2iz3v1jS12Axzc7dBW9mmAvZAyYZaJ2wbfuHzIjl8Kew9uaGBXRb
+Ppc0jXOfBp7TYuulCmM/98yNLqyDL0N97PlNZiYN75Fv9RE/pwSZt0IM0Vgs4qlO
+VNPbSrcblwFCDrzeGdzv+um76dTTVX7pTMPWOmuvXWbXIsK4YpEniH9p7hKplral
+zqnqVUosgU6I+8+KnMh3p7qoAVeAIrvydFQDGd/XMhUj4U5endXpBpDlOT6fM6J3
+MXmawJGyrSZz2e09Si3EExjdZ38kpH8o9vmhOshsQvSYCv5cHQOPf+kIEjBvivDj
+Azj7TkBRLoe3OydBz7VDZDuLXH7bNeeDrLwl3EjVpWxg9E1n6E3c6x7HzlRdfksV
+MchdZKA0TfyN4GQqMOv2uAT+eLM3tG9lazTUkQJgIeqGnGYxwQdzvfaUTw3g8wLA
+G4v3kihXLE8nFIL5MVXVbPVzFQKjSSSj6ViYqE/rF8Hk05ItryMJRgY72eHjHTJE
+cOgzTJBxtLxQulgB5Fey5dz1WLODHjwTUqNI6bXSkg/RHPADuAWUysLK5KvIy8/Z
+p8G4fm8kRMnys8sjpmfD
+=jc/H
+-----END PGP SIGNATURE-----
+
+--uN3tURjgVTLfI0kr--
