@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab2CZSMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:12:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33661 "EHLO mx1.redhat.com"
+	id S933332Ab2CZSM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:12:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933235Ab2CZSMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:12:21 -0400
+	id S933259Ab2CZSMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:12:24 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -21,32 +21,69 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 19/39] mm: add unlikely to the mm allocation failure check
-Date: Mon, 26 Mar 2012 19:46:06 +0200
-Message-Id: <1332783986-24195-20-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 07/39] autonuma: introduce kthread_bind_node()
+Date: Mon, 26 Mar 2012 19:45:54 +0200
+Message-Id: <1332783986-24195-8-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very minor optimization to hint gcc.
+This function makes it easy to bind the per-node knuma_migrated
+threads to their respective NUMA nodes. Those threads take memory from
+the other nodes (in round robin with a incoming queue for each remote
+node) and they move that memory to their local node.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/fork.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/kthread.h |    1 +
+ kernel/kthread.c        |   23 +++++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index aefe24f..31b2f35 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -547,7 +547,7 @@ struct mm_struct *mm_alloc(void)
- 	struct mm_struct *mm;
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index 0714b24..e733f97 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -33,6 +33,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ })
  
- 	mm = allocate_mm();
--	if (!mm)
-+	if (unlikely(!mm))
- 		return NULL;
+ void kthread_bind(struct task_struct *k, unsigned int cpu);
++void kthread_bind_node(struct task_struct *p, int nid);
+ int kthread_stop(struct task_struct *k);
+ int kthread_should_stop(void);
+ bool kthread_freezable_should_stop(bool *was_frozen);
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 3d3de63..48b36f9 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -234,6 +234,29 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
+ EXPORT_SYMBOL(kthread_bind);
  
- 	memset(mm, 0, sizeof(*mm));
+ /**
++ * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
++ * @p: thread created by kthread_create().
++ * @nid: node (might not be online, must be possible) for @k to run on.
++ *
++ * Description: This function is equivalent to set_cpus_allowed(),
++ * except that @nid doesn't need to be online, and the thread must be
++ * stopped (i.e., just returned from kthread_create()).
++ */
++void kthread_bind_node(struct task_struct *p, int nid)
++{
++	/* Must have done schedule() in kthread() before we set_task_cpu */
++	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
++		WARN_ON(1);
++		return;
++	}
++
++	/* It's safe because the task is inactive. */
++	do_set_cpus_allowed(p, cpumask_of_node(nid));
++	p->flags |= PF_THREAD_BOUND;
++}
++EXPORT_SYMBOL(kthread_bind_node);
++
++/**
+  * kthread_stop - stop a thread created by kthread_create().
+  * @k: thread created by kthread_create().
+  *
