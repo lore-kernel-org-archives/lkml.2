@@ -1,153 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab2CZTct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 15:32:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41388 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab2CZTb3 (ORCPT
+	id S1754733Ab2CZTgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 15:36:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42266 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab2CZTgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 15:31:29 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v7 0/4] MIPS: OCTEON: Use Device Tree.
-Date: Mon, 26 Mar 2012 12:31:17 -0700
-Message-Id: <1332790281-9648-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Mon, 26 Mar 2012 15:36:14 -0400
+Date: Mon, 26 Mar 2012 14:36:08 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Arend van Spriel <arend@broadcom.com>,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Michael Green <green@qca.qualcomm.com>,
+        David Quan <dquan@qca.qualcomm.com>,
+        Henry Ptasinski <henry@logout.com>, linux-kernel@vger.kernel.org
+Subject: Re: Problems with regulatory domain support and BCM43224
+Message-ID: <20120326193608.GE17126@thinkpad-t410>
+Mail-Followup-To: Arend van Spriel <arend@broadcom.com>,
+	"Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	Michael Green <green@qca.qualcomm.com>,
+	David Quan <dquan@qca.qualcomm.com>,
+	Henry Ptasinski <henry@logout.com>, linux-kernel@vger.kernel.org
+References: <20120308200734.GC28133@ubuntu-macmini>
+ <4F591E14.4010000@broadcom.com>
+ <CAB=NE6XnorRDEu976uMkPFNKHQjhRT0Craf3ZjL9dYysPjmQng@mail.gmail.com>
+ <20120320220706.GA17272@thinkpad-t410>
+ <4F69B604.4030303@broadcom.com>
+ <20120321141916.GA23643@thinkpad-t410>
+ <4F6A1514.9090907@broadcom.com>
+ <20120321181753.GC24075@tux>
+ <20120321193706.GC23643@thinkpad-t410>
+ <20120322002715.GA3709@tux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322002715.GA3709@tux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Wed, Mar 21, 2012 at 05:27:15PM -0700, Luis R. Rodriguez wrote:
+> > Arend, in order to proceed it looks like what we need to know is what
+> > the custom domains represent, i.e. whether they map to a specific
+> > country or set of countries, etc.
+> 
+> This is why it is crucial for vendors themselves to get involved in this
+> process. Only they will truly know and completely understand what this
+> all means. Since it is hard to keep track of this information it is also
+> why we have documented what our EEPROM regulatory domains look like and
+> what they mean / map to.
+> 
+> http://wireless.kernel.org/en/users/Drivers/ath
+> 
+> Something similar may be worthy for this driver. But just my own 0.02
+> costarican colones.
+> 
+> > From what you've said so far it looks
+> > like X0 may map to US 
+> 
+> BTW if this is the case, you may be able to send the regulatory hint
+> for "US" and then apply any thing you need on top of that after
+> through the reg_notifier() callback.
+> 
+> > while X2 is more of a world roaming domain, but again I'm just guessing.
 
-This code has now had extensive testing, it is running on more
-than 10 different boards and SOC combinations.
+I've been studying the existing brcmsmac regulatory code in more detail,
+and I think there's a lot of potential to make the integration with the
+core regulatory support much better. I'm still making my way through
+some of the code, but here's what I see so far.
 
-The patches in this set are all in the arch/mips tree and should
-probably be merged by Ralf.
+Once full and accurate regdomain information is provided to the core
+regulatory code, all the code in channel.c that's checking against
+regulatory constraints can be eliminated, as that will get done at a
+higher level. I think the code to set the Tx power should also be
+reworked to use the constraints from the core regdom code. At that point
+the need for the custom regdom structures is mostly eliminated.
 
-They do depend on this libfdt patch:
+I'm going to start toying with implementing some of this this week, time
+permitting. I think X2 is the only domain I have enough information on
+to realistically implement. But even with that one it would be helpful
+to understand what it's meant to represent, as Luis pointed out.
 
-https://lkml.org/lkml/2012/3/23/322
+I have one other question as well. Does the data in channel.c generally
+represent the most permissive regulatory parameters that ought to be
+used? That's the assumption I'm working under right now.
 
-As well as thses MIPS patches:
-
-http://www.linux-mips.org/archives/linux-mips/2012-03/msg00159.html
-
-New in v7:
-
-o irq_domain support revised based on feedback from Grant and Rob.
-
-New in v6:
-
-o Device Tree bindings updated based on feedback and more actual use.
-
-o Use of irq_domain support added to recent kernels.
-
-New in v5:
-
-o New irq triggering mode constants.
-
-o Boot protocol to pass flattened device tree from bootloader.  This
-  protocol may change based on attempts to arrive at a common protocol
-  for all MIPS boards.
-
-New in v4:
-
-o Cleanup and error checking suggested by Sergei Shtylyov.
-
-o Use device tree passed by bootloader if present.
-
-New in v3:
-
-o More updates to device tree bindings, and perhaps more importantly
-  descriptions/definitions of the bindings
-
-o Cleanup and style improvements as suggested by Grant Likley.
-
-o Omitted all the driver changes, as they are unchanged from the last
-  set, and at this stage the patches are just an RFC.
-
-New in v2:
-
-o Changed many device tree bindings.  They should be closer to the
-  standard naming scheme now.
-
-o Editing of the template device tree is done in the flattened form
-  using libfdt.
-
-o Standard platform driver functions used in preference to the
-  of_platform variety.
-
-v1:
-
-Background: The Octeon family of SOCs has a variety of on-chip
-controllers for Ethernet, MDIO, I2C, and several other I/O devices.
-These chips are used on boards with a great variety of different
-configurations.  To date, the configuration and bus topology
-information has been hard coded in the drivers and support code.
-
-To facilitate supporting new chips and boards, we are using the Device
-Tree to encode the configuration information.  The migration from the
-legacy approach to the device tree is as follows:
-
-o A device tree template is statically linked into the kernel image.
-  Based on SOC type and board type, legacy configuration probing code
-  is used to prune and patch the device tree template.
-
-o New SOCs and boards will directly use a device tree passed by the
-  bootloader.
-
-
-
-David Daney (4):
-  MIPS: Don't define early_init_devtree() and device_tree_init() in
-    prom.c for CPU_CAVIUM_OCTEON
-  MIPS: Octeon: Setup irq_domains for interrupts.
-  MIPS: Octeon: Add device tree source files.
-  MIPS: Octeon: Initialize and fixup device tree.
-
- .../bindings/ata/cavium-compact-flash.txt          |   30 +
- .../bindings/gpio/cavium-octeon-gpio.txt           |   48 ++
- .../devicetree/bindings/i2c/cavium-i2c.txt         |   34 ++
- .../devicetree/bindings/mips/cavium/bootbus.txt    |  126 ++++
- .../devicetree/bindings/mips/cavium/ciu.txt        |   26 +
- .../devicetree/bindings/mips/cavium/ciu2.txt       |   27 +
- .../devicetree/bindings/mips/cavium/dma-engine.txt |   21 +
- .../devicetree/bindings/mips/cavium/uctl.txt       |   47 ++
- .../devicetree/bindings/net/cavium-mdio.txt        |   27 +
- .../devicetree/bindings/net/cavium-mix.txt         |   40 ++
- .../devicetree/bindings/net/cavium-pip.txt         |   98 +++
- .../devicetree/bindings/serial/cavium-uart.txt     |   19 +
- arch/mips/Kconfig                                  |    2 +
- arch/mips/cavium-octeon/.gitignore                 |    2 +
- arch/mips/cavium-octeon/Makefile                   |   16 +
- arch/mips/cavium-octeon/octeon-irq.c               |  208 +++++++-
- arch/mips/cavium-octeon/octeon-platform.c          |  523 ++++++++++++++++-
- arch/mips/cavium-octeon/octeon_3xxx.dts            |  571 ++++++++++++++++++
- arch/mips/cavium-octeon/octeon_68xx.dts            |  625 ++++++++++++++++++++
- arch/mips/cavium-octeon/setup.c                    |   45 ++
- arch/mips/kernel/prom.c                            |    2 +
- 21 files changed, 2527 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/cavium-compact-flash.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/cavium-octeon-gpio.txt
- create mode 100644 Documentation/devicetree/bindings/i2c/cavium-i2c.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu2.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-mdio.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-mix.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-pip.txt
- create mode 100644 Documentation/devicetree/bindings/serial/cavium-uart.txt
- create mode 100644 arch/mips/cavium-octeon/.gitignore
- create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
- create mode 100644 arch/mips/cavium-octeon/octeon_68xx.dts
-
--- 
-1.7.2.3
+Thanks,
+Seth
 
