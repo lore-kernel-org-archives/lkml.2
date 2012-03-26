@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab2CZKls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:41:48 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44437 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757217Ab2CZKlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:41:47 -0400
-MIME-Version: 1.0
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Mon, 26 Mar 2012 16:11:24 +0530
-Message-ID: <CAO_48GGXBNLqW8cBpAekzVQV8xZ_pLugg7uVaB+dXN4jLEE+iw@mail.gmail.com>
-Subject: [GIT PULL]: dma-buf updates for 3.4
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org
-Cc: Jesse Barker <jesse.barker@linaro.org>, akpm@linux-foundation.org,
-        Daniel Vetter <daniel@ffwll.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Dave Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757267Ab2CZKoZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:44:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41241 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756714Ab2CZKoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 06:44:24 -0400
+Subject: Re: GFS2: Pre-pull patch posting (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: David Teigland <teigland@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+In-Reply-To: <20120323220618.GA30906@d2.synalogic.ca>
+References: <1332152728-4027-1-git-send-email-swhiteho@redhat.com>
+	 <4F674696.7030602@xenotime.net> <1332169153.2689.20.camel@menhir>
+	 <4F674E4F.5080904@xenotime.net> <1332171247.2689.28.camel@menhir>
+	 <20120323194152.GD24746@redhat.com> <4F6CD7AD.9030306@xenotime.net>
+	 <20120323201820.GE24746@redhat.com>
+	 <20120323220618.GA30906@d2.synalogic.ca>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 26 Mar 2012 11:44:22 +0100
+Message-ID: <1332758662.2721.10.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-Could you please pull the dma-buf updates for 3.4? This includes the
-following key items:
+On Fri, 2012-03-23 at 18:06 -0400, Benjamin Poirier wrote:
+[snip]
+> 
+> Instead of trying to select everything in GFS2, how about doing it this way?
+> 
+> [PATCH] gfs2: use depends instead of select in kconfig
+> 
+> Avoids having to duplicate the dependencies of what is 'select'ed (and on
+> down...)
+> 
+> Those dependencies are currently incomplete, leading to broken builds with
+> GFS2_FS_LOCKING_DLM=y and IP_SCTP=n.
+> 
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+> ---
+>  fs/gfs2/Kconfig |    7 ++-----
+>  1 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+> index c465ae0..eb08c9e 100644
+> --- a/fs/gfs2/Kconfig
+> +++ b/fs/gfs2/Kconfig
+> @@ -1,10 +1,6 @@
+>  config GFS2_FS
+>  	tristate "GFS2 file system support"
+>  	depends on (64BIT || LBDAF)
+> -	select DLM if GFS2_FS_LOCKING_DLM
+> -	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+> -	select SYSFS if GFS2_FS_LOCKING_DLM
+> -	select IP_SCTP if DLM_SCTP
+>  	select FS_POSIX_ACL
+>  	select CRC32
+>  	select QUOTACTL
+> @@ -29,7 +25,8 @@ config GFS2_FS
+>  
+>  config GFS2_FS_LOCKING_DLM
+>  	bool "GFS2 DLM locking"
+> -	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && HOTPLUG
+> +	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && \
+> +		HOTPLUG && DLM && CONFIGFS_FS && SYSFS
+>  	help
+>  	  Multiple node locking module for GFS2
+>  
 
-- kernel cpu access support,
-- flag-passing to dma_buf_fd,
-- relevant Documentation updates, and
-- some minor cleanups and fixes.
+That looks ok to me. I've put it in the GFS2 -fixes tree, and if
+everybody is happy with that I'll send a pull request shortly,
 
-These changes are needed for the drm prime/dma-buf interface code that
-Dave Airlie plans to submit in this merge window.
+Steve.
 
-Thanks, and best regards,
-~Sumit.
 
-The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
-
-  Linux 3.3 (2012-03-18 16:15:34 -0700)
-
-are available in the git repository at:
-  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git for-linus-3.4
-
-Daniel Vetter (3):
-      dma-buf: don't hold the mutex around map/unmap calls
-      dma-buf: add support for kernel cpu access
-      dma_buf: Add documentation for the new cpu access support
-
-Dave Airlie (1):
-      dma-buf: pass flags into dma_buf_fd.
-
-Laurent Pinchart (4):
-      dma-buf: Constify ops argument to dma_buf_export()
-      dma-buf: Remove unneeded sanity checks
-      dma-buf: Return error instead of using a goto statement when possible
-      dma-buf: Move code out of mutex-protected section in dma_buf_attach()
-
-Rob Clark (2):
-      dma-buf: add get_dma_buf()
-      dma-buf: document fd flags and O_CLOEXEC requirement
-
-Sumit Semwal (2):
-      dma-buf: add dma_data_direction to unmap dma_buf_op
-      dma-buf: correct dummy function declarations.
-
- Documentation/dma-buf-sharing.txt |  120 ++++++++++++++++++++++++++-
- drivers/base/dma-buf.c            |  165 +++++++++++++++++++++++++++++++------
- include/linux/dma-buf.h           |   97 +++++++++++++++++++--
- 3 files changed, 345 insertions(+), 37 deletions(-)
