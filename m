@@ -1,132 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724Ab2CZOqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:46:32 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36210 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932489Ab2CZOq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:46:29 -0400
-Date: Mon, 26 Mar 2012 16:47:11 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 02/11 v3] drm/i915/intel_i2c: assign HDMI port D to pin
- pair 6
-Message-ID: <20120326144711.GO4014@phenom.ffwll.local>
-Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
-	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Benson Leung <bleung@chromium.org>,
-	Yufeng Shen <miletus@chromium.org>
-References: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
- <1332772010-19619-3-git-send-email-djkurtz@chromium.org>
+	id S932738Ab2CZOqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:46:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51984 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932489Ab2CZOqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 10:46:37 -0400
+Message-ID: <4F70812A.4080205@zytor.com>
+Date: Mon, 26 Mar 2012 07:46:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1332772010-19619-3-git-send-email-djkurtz@chromium.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Thomas Renninger <trenn@suse.de>
+CC: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via
+ initrd
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203260245.43177.trenn@suse.de> <4F6FC57D.3050404@zytor.com> <201203261619.31766.trenn@suse.de>
+In-Reply-To: <201203261619.31766.trenn@suse.de>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 10:26:41PM +0800, Daniel Kurtz wrote:
-> According to i915 documentation [1], "Port D" (DP/HDMI Port D) is
-> actually gmbus pin pair 6 (gmbus0.2:0 == 110b GPIOF), not 7 (111b).
-> Pin pair 7 is a reserved pair.
-> 
-> [1] Documentation for [DevSNB+] and [DevIBX], as found on
-> http://intellinuxgraphics.org
-> 
-> Note: the "reserved" and "disabled" pairs do not actually map to a
-> physical pair of pins, nor GPIO regs and shouldn't be initialized or used.
-> Fixing this is left for a later patch.
-> 
-> This bug has not been noticed for two reasons:
->  1) "gmbus" mode is currently disabled - all transfers are actually using
->     "bit-bang" mode which uses the GPIO port 5 (the "HDMI/DPD CTLDATA/CLK"
->     pair), at register 0x5024 (defined as GPIOF i915_reg.h).
->     Since this is the correct pair of pins for HDMI1, transfers succeed.
+On 03/26/2012 07:19 AM, Thomas Renninger wrote:
+> Do the names have to be fixed?
 
-... this is no longer true on drm-intel-next.
+No, I assume it would "all files inside this namespace".
 
->  2) Even if gmbus mode is re-enabled, the first attempted transaction
->     will fail because it tries to use the wrong ("Reserved") pin pair.
->     However, the driver immediately falls back again to the bit-bang
->     method, which correctly uses GPIOF, so again, transfers succeed.
+> If there is only one file where all ACPI table binaries are glued
+> together kernel/acpi_tables.binary.blob
+> my code should already work as good as unmodified.
 > 
-> However, if gmbus mode is re-enabled and the GPIO fall-back mode is
-> disabled, then reading an attached monitor's EDID fail.
+> Not sure what is best and whether anybody cares about how the tables
+> are layed out.
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> I guess I just wait until your functionality is in linux-next and
+> give it a closer look then and may come up with a new patch.
 
-Otherwise this looks ok to me - I've checked with gen3 Bspec and we seem
-to indeed have a 1:1 mapping, see "Display Registers", 1.5.3 "GPIO Control
-Registers", the list right below the heading.
+I doubt it will get into linux-next without a user.  If you have time to
+pull in the code I sent it will be quicker, otherwise I'll probably
+setup a git tree upon which things can be put.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+	-hpa
 
-When resending, can you please add the Bspec reference above?
-
-Thanks, Daniel
-
-> ---
->  drivers/gpu/drm/i915/i915_reg.h  |    6 +++---
->  drivers/gpu/drm/i915/intel_i2c.c |    4 ++--
->  2 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index f3609f2..accd8ee 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -742,9 +742,9 @@
->  #define   GMBUS_PORT_PANEL	3
->  #define   GMBUS_PORT_DPC	4 /* HDMIC */
->  #define   GMBUS_PORT_DPB	5 /* SDVO, HDMIB */
-> -				  /* 6 reserved */
-> -#define   GMBUS_PORT_DPD	7 /* HDMID */
-> -#define   GMBUS_NUM_PORTS       8
-> +#define   GMBUS_PORT_DPD	6 /* HDMID */
-> +#define   GMBUS_PORT_RESERVED	7 /* 7 reserved */
-> +#define   GMBUS_NUM_PORTS	8
->  #define GMBUS1			0x5104 /* command/status */
->  #define   GMBUS_SW_CLR_INT	(1<<31)
->  #define   GMBUS_SW_RDY		(1<<30)
-> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-> index 86b1861..54f85a1 100644
-> --- a/drivers/gpu/drm/i915/intel_i2c.c
-> +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> @@ -148,8 +148,8 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
->  		GPIOC,
->  		GPIOD,
->  		GPIOE,
-> -		0,
->  		GPIOF,
-> +		0,
->  	};
->  	struct i2c_algo_bit_data *algo;
->  
-> @@ -359,8 +359,8 @@ int intel_setup_gmbus(struct drm_device *dev)
->  		"panel",
->  		"dpc",
->  		"dpb",
-> -		"reserved",
->  		"dpd",
-> +		"reserved",
->  	};
->  	struct drm_i915_private *dev_priv = dev->dev_private;
->  	int ret, i;
-> -- 
-> 1.7.7.3
-> 
 
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
