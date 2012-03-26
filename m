@@ -1,65 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab2CZKpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:45:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50540 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757222Ab2CZKpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:45:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="81621474"
-Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        paul.gortmaker@windriver.com, dan.j.williams@intel.com,
-        samuel@sortiz.org, lrg@ti.com, perex@perex.cz, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        netdev@vger.kernel.org, fabio.estevam@freescale.com,
-        alsa-devel@alsa-project.org
-In-Reply-To: <20120326103354.GD3098@opensource.wolfsonmicro.com>
-References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
-	 <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
-	 <1332740082.19804.15.camel@vkoul-udesk3>
-	 <20120326094200.GA3098@opensource.wolfsonmicro.com>
-	 <1332755670.19804.91.camel@vkoul-udesk3>
-	 <20120326103354.GD3098@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Mar 2012 16:18:26 +0530
-Message-ID: <1332758906.19804.97.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757281Ab2CZKvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:51:18 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46901 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757222Ab2CZKvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 06:51:17 -0400
+X-AuditID: b753bd60-9658fba000007b1b-94-4f704a233334
+X-AuditID: b753bd60-9658fba000007b1b-94-4f704a233334
+Message-ID: <4F704A1E.2040401@hitachi.com>
+Date: Mon, 26 Mar 2012 19:51:10 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, acme@infradead.org,
+        ananth@in.ibm.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        rostedt@goodmis.org
+Subject: Re: [RESEND]Re: [PATCH] perf - probe finder fails to resolve function
+ name to address
+References: <4F6AF410.1010400@linux.vnet.ibm.com> <4F6AFD92.4030603@linux.vnet.ibm.com> <4F6C721B.9060807@hitachi.com> <4F703FB9.9020407@linux.vnet.ibm.com>
+In-Reply-To: <4F703FB9.9020407@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 11:33 +0100, Mark Brown wrote:
-> On Mon, Mar 26, 2012 at 03:24:30PM +0530, Vinod Koul wrote:
+(2012/03/26 19:06), Prashanth Nageshappa wrote:
+> Fixing a coding style issue..
 > 
-> > Now either I drop these from 3.4 or merge Linus's tree and apply
-> > Alexandre's fix (as that is the right fix rather than one in asoc tree)
-> > And since this was required for RIO patches which are still WIP, I think
-> > I am leaning towards former.
+> On 03/23/2012 06:22 PM, Masami Hiramatsu wrote:
 > 
-> Gah, WTF is going on here?  Has this API change not been sent to Linus
-> already, and what is wrong with the changes which Fabio sent?  I've
-> already applied Fabio's change on the understanding that this API change
-> done and dusted.
+>> Hi,
+>>
+>> (2012/03/22 19:23), Prashanth Nageshappa wrote:
+>>> probe finder fails to resolve valid function names into addresses for
+>>> functions which have more than one die entries in DWARF info.
+>>>
+>>> It is valid for DWARF info to contain more than 1 entries for a given
+>>> function name, where one entry corresponds to definition which has code
+>>> address/range attributes and remaining entries (which are only
+>>> declarations) does not have code address/range attributes.
+>>> (example: do_fork, sys_write, sys_wait4, sys_sync etc)
+>>
+>> Hmm, I'd like to reproduce and see what happened on debuginfo in those cases.
+>> Could you tell me your environment or actual dwarf dump of those entries as below?
+>>
 > 
-> It seems better to do a minimal fix at this point rather than churning
-> things again...
+> $ uname -r
+> 3.1.0-7.fc16.x86_64
+> 
+> $ sudo perf probe  do_fork
+> Failed to get entry address of do_fork.
+>   Error: Failed to add events. (-2)
+> 
+> $ readelf -wi /usr/lib/debug/lib/modules/3.1.0-7.fc16.x86_64/vmlinux | grep do_fork -A 16
+>     <2691f7>   DW_AT_name        : (indirect string, offset: 0x1b1e0): do_fork	
+>     <2691fb>   DW_AT_decl_file   : 3	
+>     <2691fc>   DW_AT_decl_line   : 2269	
+>     <2691fe>   DW_AT_prototyped  : 1	
+>     <2691fe>   DW_AT_type        : <0x2593d1>	
+>     <269202>   DW_AT_declaration : 1	
 
-The change is technically correct, so don't worry it wont break
-anything, and API is frozen and not changing.
+OK, compared with mine, this attribute is actually new one
+for this kind of (declaration) entries.
 
-But we don't want the clients to use this additional parameter or be
-exposed to it if not required. Every client is expected to use the
-dmaengine wrappers for prepare and not invoke .device_ callbacks.
+[...]
+>>
+>> At least we must consider this lazy_line case. If I understand correctly,
+>> that can also affect find_probe_point_lazy(sp_die, pf);
+>>
+>> If I find the different attribute, I'd like to add a checker function and
+>> filter it out at early step in this function.
+>>
+> 
+> Based on the above comments I have redone the patch:
+> 
+> If die entries corresponding to declarations appear before definition
+> entry, probe finder returns error instead of continuing to look further
+> for a definition entry.
+> 
+> This patch ensures we reach to the die entry corresponding to the
+> definition and get the function address.
+> 
+> V2: A simpler solution based on Masami's suggestion.
+> 
+> 
+> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+
+Well, OK. This looks good for me too :)
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> ---
+> 
+>  tools/perf/util/probe-finder.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 5d73262..d5914ee 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -963,10 +963,12 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+>  	struct dwarf_callback_param *param = data;
+>  	struct probe_finder *pf = param->data;
+>  	struct perf_probe_point *pp = &pf->pev->point;
+> +	Dwarf_Attribute attr;
+> 
+>  	/* Check tag and diename */
+>  	if (dwarf_tag(sp_die) != DW_TAG_subprogram ||
+> -	    !die_compare_name(sp_die, pp->function))
+> +	    !die_compare_name(sp_die, pp->function) ||
+> +	    dwarf_attr(sp_die, DW_AT_declaration, &attr))
+>  		return DWARF_CB_OK;
+> 
+>  	/* Check declared file */
+> 
+> 
 
 
 -- 
-~Vinod
-
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
