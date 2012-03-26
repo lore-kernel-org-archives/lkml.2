@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945Ab2CZQlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:41:07 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34831 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab2CZQlF (ORCPT
+	id S932967Ab2CZQnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:43:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49818 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932938Ab2CZQm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:41:05 -0400
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@elte.hu>, Joe Perches <joe@perches.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 20/20 v4] sparc/mm/fault_64.c: Port OOM changes to do_sparc64_fault
-Date: Mon, 26 Mar 2012 12:40:49 -0400
-Message-Id: <1332780049-2777-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 26 Mar 2012 12:42:58 -0400
+Date: Mon, 26 Mar 2012 18:42:50 +0200
+From: Julian Andres Klode <jak@jak-linux.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Marc Dietrich <marvin24@gmx.de>
+Subject: Re: [PATCH 1/5]NEXT:drivers:staging:nvec:nvec.h Fix typos in
+ staging:nvec
+Message-ID: <20120326164250.GA21100@jak-linux.org>
+References: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Mon, Mar 19, 2012 at 08:17:49AM -0700, Justin P. Mattock wrote:
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
+> 
+> The below patch fixes a typo I found while reading.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> Cc: Julian Andres Klode <jak@jak-linux.org>
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+You could have CCed Marc Dietrich <marvin24@gmx.de> as well. He's
+also listed in MAINTAINERS.
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
 
-Port these changes to 64-bit sparc.
+> ---
+>  drivers/staging/nvec/nvec.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/nvec/nvec.h b/drivers/staging/nvec/nvec.h
+> index a4c17b0..ba6ed8f 100644
+> --- a/drivers/staging/nvec/nvec.h
+> +++ b/drivers/staging/nvec/nvec.h
+> @@ -42,7 +42,7 @@
+>   * enum nvec_event_size - The size of an event message
+>   * @NVEC_2BYTES: The message has one command byte and one data byte
+>   * @NVEC_3BYTES: The message has one command byte and two data bytes
+> - * @NVEC_VAR_SIZE: The message has one command byte, one count byte, and as
+> + * @NVEC_VAR_SIZE: The message has one command byte, one count byte, and has
+>   *                 up to as many bytes as the number in the count byte. The
+>   *                 maximum is 32
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/sparc/mm/fault_64.c |   37 ++++++++++++++++++++++++++++++-------
- 1 files changed, 30 insertions(+), 7 deletions(-)
+We can probably just drop the [h]as as well, right? That sounds a bit
+better to me.
 
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index 504c062..d8692e4 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -279,6 +279,7 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- 	unsigned int insn = 0;
- 	int si_code, fault_code, fault;
- 	unsigned long address, mm_rss;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
- 
- 	fault_code = get_thread_fault_code();
- 
-@@ -333,6 +334,8 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- 			insn = get_fault_insn(regs, insn);
- 			goto handle_kernel_fault;
- 		}
-+
-+retry:
- 		down_read(&mm->mmap_sem);
- 	}
- 
-@@ -423,7 +426,12 @@ good_area:
- 			goto bad_area;
- 	}
- 
--	fault = handle_mm_fault(mm, vma, address, (fault_code & FAULT_CODE_WRITE) ? FAULT_FLAG_WRITE : 0);
-+	flags |= ((fault_code & FAULT_CODE_WRITE) ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return;
-+
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		if (fault & VM_FAULT_OOM)
- 			goto out_of_memory;
-@@ -431,12 +439,27 @@ good_area:
- 			goto do_sigbus;
- 		BUG();
- 	}
--	if (fault & VM_FAULT_MAJOR) {
--		current->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
--	} else {
--		current->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
-+
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			current->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
-+				      1, regs, address);
-+		} else {
-+			current->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN,
-+				      1, regs, address);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+			/* No need to up_read(&mm->mmap_sem) as we would
-+			 * have already released it in __lock_page_or_retry
-+			 * in mm/filemap.c.
-+			 */
-+
-+			goto retry;
-+		}
- 	}
- 	up_read(&mm->mmap_sem);
- 
 -- 
-1.7.5.4
+Julian Andres Klode  - Debian Developer, Ubuntu Member
 
+See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
