@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2CZJcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 05:32:07 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47354 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755929Ab2CZJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 05:32:05 -0400
-Date: Mon, 26 Mar 2012 10:32:01 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Anton Blanchard <anton@samba.org>, aarcange@redhat.com,
-        akpm@linux-foundation.org, hughd@google.com,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Re: kswapd stuck using 100% CPU
-Message-ID: <20120326093201.GL1007@csn.ul.ie>
-References: <20120324130353.48f2e4c8@kryten>
- <20120324102621.353114da@annuminas.surriel.com>
+	id S1756401Ab2CZJmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 05:42:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50052 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755935Ab2CZJmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 05:42:04 -0400
+Date: Mon, 26 Mar 2012 10:42:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Fabio Estevam <festevam@gmail.com>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        paul.gortmaker@windriver.com, dan.j.williams@intel.com,
+        samuel@sortiz.org, lrg@ti.com, perex@perex.cz, tiwai@suse.de,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        netdev@vger.kernel.org, fabio.estevam@freescale.com,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
+Message-ID: <20120326094200.GA3098@opensource.wolfsonmicro.com>
+References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
+ <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
+ <1332740082.19804.15.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
 Content-Disposition: inline
-In-Reply-To: <20120324102621.353114da@annuminas.surriel.com>
+In-Reply-To: <1332740082.19804.15.camel@vkoul-udesk3>
+X-Cookie: Q:	Are we not men?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 10:26:21AM -0400, Rik van Riel wrote:
-> 
-> Only test compaction_suitable if the kernel is built with CONFIG_COMPACTION,
-> otherwise the stub compaction_suitable function will always return
-> COMPACT_SKIPPED and send kswapd into an infinite loop.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Reported-by: Anton Blanchard <anton@samba.org>
-> 
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Mel Gorman
-SUSE Labs
+On Mon, Mar 26, 2012 at 11:04:42AM +0530, Vinod Koul wrote:
+> On Sat, 2012-03-24 at 12:23 -0300, Fabio Estevam wrote:
+
+> > http://permalink.gmane.org/gmane.linux.alsa.devel/96215
+
+> And this seems to be linux-next.
+
+> Mark, Is this part of the sound updates that went to Linus?
+
+No, not yet - it was only sent after the merge window.  Quite why nobody
+managed to notice it before then I don't know.  It'll go to him soon, or
+at least to Takashi, but don't know if it'll make -rc1 or not.
+
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPcDnfAAoJEBus8iNuMP3dXY4QAJrg3zNc+uF7lg//SBvDus1G
+OjRrNx7rVxe1Ot0KYNvDY9q7iH7/lVJi28pBjHftfKN0RoTpEiCGkWmmOD2SnnGT
+bWSm6qt7Iv2JO5lWViBvwQLPoNRuAyRYJkHbxPMkCKca9mZzuBVXHX1anuvRkvzh
+A3lHlBvDS6YUZsxEJ1J/L/twyxOA9Jub9lE5djcceLQflBRc5vwyIbkySj4terhk
+nkA1UTCqp7kKVxq4XJXIwWeJfIgbKl4heetWh8EWib+KZcPCh/7SKK48rUrcrU9u
+DxUGK+hLiUU+icVvs4YaT/IJe0ipsOOp5SXpv3BJE78McJePDp+doLnMBHosdwMx
+ITBtZMb98ijtdtj7DwcBUOsLaFK3+GzaGAk7oF1SeOmyWEM5VQQnj/TAapmmadRn
+yfoL4mkZaUl0q5PPBwmtjG0KLUiD6XlxsnZwRiZgfMq3WFHn8WtyPaI9zUWQ0OLu
+BRFocGVLqZnorB/TwGyTCnWZNBpR9/FnW/kO87IT8a5zL1XJZBQAwiARXy2vO6YU
+uHhTGQ1VOnylOO3rZK8xYuVFALebvxyCDuVsuRGGgAXoW65rC3/f0d5F5ko4GD3v
+P7cqhWoXE1su5VXpuAS+ItVEvavepf4m5RE/dQZYUsweWoDoeN5RvMVYU8zBn1qR
+pc9+KSCCMi55EluTGRN7
+=/Am0
+-----END PGP SIGNATURE-----
+
+--d6Gm4EdcadzBjdND--
