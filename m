@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab2CZOkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:40:07 -0400
-Received: from mail.meprolight.com ([194.90.149.17]:55457 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932528Ab2CZOkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:40:05 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>,
-        <marc.reilly@gmail.com>, <s.hauer@pengutronix.de>,
-        <fabio.estevam@freescale.com>, Alex Gershgorin <alexg@meprolight.com>
-Subject: [PATCH] mfd: mc13xxx: add I2C support fix building v3.3
-Date: Mon, 26 Mar 2012 16:32:50 +0200
-Message-ID: <1332772370-13272-1-git-send-email-alexg@meprolight.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932703Ab2CZOnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:43:13 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:47498 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932684Ab2CZOnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 10:43:12 -0400
+Date: Mon, 26 Mar 2012 16:43:08 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: Make TXX9_WDT select WATCHDOG_CORE
+Message-ID: <20120326144308.GA9602@spo001.leaseweb.com>
+References: <1332739713.15735.1.camel@phoenix> <20120326063956.GB24023@pengutronix.de> <CAF+7xW=TRcW_2AFtDHBP4Dw3QBf0_mvecMO3g+Hqsk1xV8UC9Q@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF+7xW=TRcW_2AFtDHBP4Dw3QBf0_mvecMO3g+Hqsk1xV8UC9Q@mail.gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the compilation errors after the patches
-from series mc13xxx-add-I2C-support-V4 were applied.
-It was successfully tested on i.MX35 PDK  v3.3
+Hi Axel,
 
-Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
----
- drivers/mfd/Kconfig        |    2 ++
- drivers/mfd/mc13xxx-core.c |    2 +-
- include/linux/regmap.h     |    2 ++
- 3 files changed, 5 insertions(+), 1 deletions(-)
+> > Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+> >
+> > Can we simply fold this into the original patch?
+> Wim already applied the original patch.
+> I found this build error while compiling with today's linux-next.
+> So I think this need to be a separate patch.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 9da32a2..74e00cf 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -576,6 +576,8 @@ config MFD_MC13XXX
- 	depends on SPI_MASTER || I2C
- 	select MFD_CORE
- 	select MFD_MC13783
-+	select REGMAP_I2C if I2C
-+	select REGMAP_SPI if SPI_MASTER
- 	help
- 	  Enable support for the Freescale MC13783 and MC13892 PMICs.
- 	  This driver provides common support for accessing the device,
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 31dbf91..5a60273 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -616,7 +616,7 @@ static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
- #ifdef CONFIG_OF
- static int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
- {
--	struct device_node *np = mc13xxx->dev.of_node;
-+	struct device_node *np = mc13xxx->dev->of_node;
- 
- 	if (!np)
- 		return -ENODEV;
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index eb93921..8c6f5e9 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -45,6 +45,7 @@ struct reg_default {
-  *
-  * @reg_bits: Number of bits in a register address, mandatory.
-  * @val_bits: Number of bits in a register value, mandatory.
-+ * @pad_bits: Number of bits in a register pad, mandatory.
-  *
-  * @writeable_reg: Optional callback returning true if the register
-  *                 can be written to.
-@@ -75,6 +76,7 @@ struct reg_default {
- struct regmap_config {
- 	int reg_bits;
- 	int val_bits;
-+	int pad_bits;
- 
- 	bool (*writeable_reg)(struct device *dev, unsigned int reg);
- 	bool (*readable_reg)(struct device *dev, unsigned int reg);
--- 
-1.7.0.4
+I folded this into the original patch.
+
+Can you test what is in linux-watchdog-next now?
+
+Thanks,
+Wim.
 
