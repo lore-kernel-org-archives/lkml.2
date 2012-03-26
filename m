@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab2CZPKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:10:17 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44656 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932598Ab2CZPKP (ORCPT
+	id S932762Ab2CZPMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:12:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57699 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932598Ab2CZPMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:10:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120326135609.GM1007@csn.ul.ie>
-References: <20120324130353.48f2e4c8@kryten>
-	<20120324102621.353114da@annuminas.surriel.com>
-	<20120326093201.GL1007@csn.ul.ie>
-	<CAOJsxLGcoxxdhe2sNmAbC2e5afnZm9960XxBjY+QoCoc0RRb2w@mail.gmail.com>
-	<20120326135609.GM1007@csn.ul.ie>
-Date: Mon, 26 Mar 2012 18:10:13 +0300
-X-Google-Sender-Auth: cq5-u-ezdsfIPMurCKvurQpCesM
-Message-ID: <CAOJsxLHEHQOQsn9p8v6cq6SKM-E39WAy=CeaY=EN8gb9P5LEKQ@mail.gmail.com>
-Subject: Re: [PATCH] Re: kswapd stuck using 100% CPU
-From: Pekka Enberg <penberg@kernel.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>, Anton Blanchard <anton@samba.org>,
-        aarcange@redhat.com, akpm@linux-foundation.org, hughd@google.com,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Mar 2012 11:12:34 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm8994: Read CUST_ID from the device
+Date: Mon, 26 Mar 2012 16:12:31 +0100
+Message-Id: <1332774751-8506-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+Read CUST_ID from the device and log it for diagnostics.
 
-On Mon, Mar 26, 2012 at 4:56 PM, Mel Gorman <mel@csn.ul.ie> wrote:
->> The API looks fragile and this patch isn't exactly making it any
->> better. Why don't we make compaction_suitable() return something other
->> than COMPACT_SKIPPED for !CONFIG_COMPACTION case?
->
-> Returning COMPACT_PARTIAL or COMPACT_CONTINUE would confuse the check in
-> should_continue_reclaim. A fourth return type could be added but an
-> obvious name does not spring to mind that would end up being similar to
-> just adding a CONFIG_COMPACTION check.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c            |    7 ++++---
+ include/linux/mfd/wm8994/core.h      |    1 +
+ include/linux/mfd/wm8994/registers.h |    3 +++
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-How about COMPACT_DISABLED?
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 9d7ca1e..60e61754 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -500,7 +500,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 			ret);
+ 		goto err_enable;
+ 	}
+-	wm8994->revision = ret;
++	wm8994->revision = ret & WM8994_CHIP_REV_MASK;
++	wm8994->cust_id = (ret & WM8994_CUST_ID_MASK) >> WM8994_CUST_ID_SHIFT;
+ 
+ 	switch (wm8994->type) {
+ 	case WM8994:
+@@ -553,8 +554,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	}
+ 
+-	dev_info(wm8994->dev, "%s revision %c\n", devname,
+-		 'A' + wm8994->revision);
++	dev_info(wm8994->dev, "%s revision %c CUST_ID %02x\n", devname,
++		 'A' + wm8994->revision, wm8994->cust_id);
+ 
+ 	switch (wm8994->type) {
+ 	case WM1811:
+diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
+index 9eff2a3..d41bc7b 100644
+--- a/include/linux/mfd/wm8994/core.h
++++ b/include/linux/mfd/wm8994/core.h
+@@ -57,6 +57,7 @@ struct wm8994 {
+ 
+ 	enum wm8994_type type;
+ 	int revision;
++	int cust_id;
+ 
+ 	struct device *dev;
+ 	struct regmap *regmap;
+diff --git a/include/linux/mfd/wm8994/registers.h b/include/linux/mfd/wm8994/registers.h
+index 86e6a03..0535489 100644
+--- a/include/linux/mfd/wm8994/registers.h
++++ b/include/linux/mfd/wm8994/registers.h
+@@ -2212,6 +2212,9 @@
+ /*
+  * R256 (0x100) - Chip Revision
+  */
++#define WM8994_CUST_ID_MASK                     0xFF00  /* CUST_ID - [15:8] */
++#define WM8994_CUST_ID_SHIFT                         8  /* CUST_ID - [15:8] */
++#define WM8994_CUST_ID_WIDTH                         8  /* CUST_ID - [15:8] */
+ #define WM8994_CHIP_REV_MASK                    0x000F  /* CHIP_REV - [3:0] */
+ #define WM8994_CHIP_REV_SHIFT                        0  /* CHIP_REV - [3:0] */
+ #define WM8994_CHIP_REV_WIDTH                        4  /* CHIP_REV - [3:0] */
+-- 
+1.7.9.1
 
-The current API just doesn't make sense from practical point of view.
-Anyone calling compaction_suitable() needs to do the COMPAT_BUILD
-check first which is a non-obvious and error-prone API.
-
-                        Pekka
