@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab2CZUus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 16:50:48 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:59579 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756894Ab2CZUus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 16:50:48 -0400
-Message-Id: <201203262049.q2QKnNph010298@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 26 Mar 2012 16:46:55 -0400
-Subject: [PATCH] list_debug: WARN for adding something already in the list
-To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 26 Mar 2012 20:49:24.0083 (UTC) FILETIME=[ED2B8C30:01CD0B91]
+	id S1757231Ab2CZUvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 16:51:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39094 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756910Ab2CZUvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 16:51:07 -0400
+Message-ID: <4F70D6BE.6000202@suse.cz>
+Date: Mon, 26 Mar 2012 22:51:10 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, sboyd@codeaurora.org,
+        kernel-janitors@vger.kernel.org, gregkh@linuxfoundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] scripts/coccinelle/api/simple_open.cocci: semantic patch
+ for simple_open()
+References: <1331657917-4552-1-git-send-email-Julia.Lawall@lip6.fr> <20120326204407.GC10259@sepie.suse.cz> <20120326134821.fb74a5b4.akpm@linux-foundation.org>
+In-Reply-To: <20120326134821.fb74a5b4.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We were bitten by this at one point and added an additional sanity
-test for DEBUG_LIST.  You can't validly add a list_head to a list
-where either prev or next is the same as the thing you're adding.
+Dne 26.3.2012 22:48, Andrew Morton napsal(a):
+> On Mon, 26 Mar 2012 22:44:07 +0200
+> Michal Marek <mmarek@suse.cz> wrote:
+> 
+>> On Tue, Mar 13, 2012 at 05:58:37PM +0100, Julia Lawall wrote:
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> Find instances of an open-coded simple_open() and replace them
+>>> with calls to simple_open().
+>>>
+>>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>> Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>> Thanks, applied to kbuild.git#misc now.
+>>
+> 
+> That's a bit premature, as simple_open() isn't upstream yet.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- lib/list_debug.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Oops, sorry. I haven't pushed the branch yet, so I will remove the patch
+again.
 
-diff --git a/lib/list_debug.c b/lib/list_debug.c
-index b8029a5..ee41bd2 100644
---- a/lib/list_debug.c
-+++ b/lib/list_debug.c
-@@ -28,6 +28,9 @@ void __list_add(struct list_head *new,
- 		"list_add corruption. prev->next should be "
- 		"next (%p), but was %p. (prev=%p).\n",
- 		next, prev->next, prev);
-+	WARN(new == prev || new == next,
-+	     "list_add double add: new=%p, prev=%p, next=%p.\n",
-+	     new, prev, next);
- 	next->prev = new;
- 	new->next = next;
- 	new->prev = prev;
--- 
-1.6.5.2
-
+Michal
