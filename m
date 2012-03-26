@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab2CZQJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:09:53 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46372 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932803Ab2CZQJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:09:51 -0400
-Message-ID: <1332778237.6578.3.camel@key-ThinkPad-W510>
-Subject: Re: [PATCH 00/17] Platform Facilities Option and crypto accelerator
- driver
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        rcj@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 26 Mar 2012 11:10:37 -0500
-In-Reply-To: <06B7F1E7-951D-4753-BE00-7B0C84BACDAE@kernel.crashing.org>
-References: <1332365297.3858.5.camel@key-ThinkPad-W510>
-	 <C23F031B-1431-4E98-92DC-3EB7E31D2776@kernel.crashing.org>
-	 <1332443286.3858.70.camel@key-ThinkPad-W510>
-	 <06B7F1E7-951D-4753-BE00-7B0C84BACDAE@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032616-7182-0000-0000-0000011E13B3
+	id S932915Ab2CZQMn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:12:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51911 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809Ab2CZQMm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 12:12:42 -0400
+Date: Mon, 26 Mar 2012 20:11:32 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arun Murthy <arun.murthy@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: linux-next: build failure after merge of the battery tree
+Message-ID: <20120326161132.GA6430@lizard>
+References: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On Thu, Mar 15, 2012 at 01:56:09PM +1100, Stephen Rothwell wrote:
+> Hi Anton,
 > 
-> From what I can tell this isn't ISA level instructions and thus should NOT be in arch/powerpc.  This should be moved into drivers/crypto
+> After merging the battery tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_batctrl_volt_to_res':
+> drivers/power/ab8500_btemp.c:142:2: error: implicit declaration of function 'is_ab8500_1p1_or_earlier' [-Werror=implicit-function-declaration]
+> drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_templow_handler':
+> drivers/power/ab8500_btemp.c:619:2: error: implicit declaration of function 'is_ab8500_2p0_or_earlier' [-Werror=implicit-function-declaration]
+> drivers/power/ab8500_charger.c: In function 'ab8500_charger_ac_en':
+> drivers/power/ab8500_charger.c:1126:3: error: implicit declaration of function 'is_ab8500_1p1_or_earlier' [-Werror=implicit-function-declaration]
+> drivers/power/ab8500_charger.c: In function 'ab8500_charger_remove':
+> drivers/power/ab8500_charger.c:2519:2: error: implicit declaration of function 'usb_unregister_notifier' [-Werror=implicit-function-declaration]
+> drivers/power/ab8500_charger.c:2520:2: error: implicit declaration of function 'usb_put_transceiver' [-Werror=implicit-function-declaration]
+> drivers/power/ab8500_charger.c: In function 'ab8500_charger_probe':
+> drivers/power/ab8500_charger.c:2688:2: error: implicit declaration of function 'usb_get_transceiver' [-Werror=implicit-function-declaration]
+> drivers/power/ab8500_charger.c:2688:14: warning: assignment makes pointer from integer without a cast [enabled by default]
+> drivers/power/ab8500_charger.c:2695:2: error: implicit declaration of function 'usb_register_notifier' [-Werror=implicit-function-declaration]
+> 
+> Caused by commits 89449ac8d6d2 ("ab8500-charger: AB8500 charger driver")
+> and 20ac1aed6206 ("ab8500-btemp: AB8500 battery temperature driver").
+> 
+> I have used the battery tree form next-20120314 for today.
 
-  That makes sense.  I'll move them over in my next submission.
+I pulled my current battery tree into next-20120326, and I can't reproduce
+the issue (using allmodconfig on x86_64).
 
-Kent
+Thanks,
 
-> - k
-
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
