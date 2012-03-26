@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab2CZWV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 18:21:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59501 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757487Ab2CZWV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 18:21:27 -0400
-Date: Mon, 26 Mar 2012 15:21:17 -0700
-From: tip-bot for Matt Fleming <matt.fleming@intel.com>
-Message-ID: <tip-e47bb0bda46bf50f81671db502d0c903e0a32604@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jordan.l.justen@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        matt.fleming@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jordan.l.justen@intel.com, tglx@linutronix.de, matt.fleming@intel.com,
-        hpa@linux.intel.com
-In-Reply-To: <1332520506-6472-4-git-send-email-jordan.l.justen@intel.com>
-References: <1332520506-6472-4-git-send-email-jordan.l.justen@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/efi] x86, efi:
-  Fix NumberOfRvaAndSizes field in PE32 header for EFI_STUB
-Git-Commit-ID: e47bb0bda46bf50f81671db502d0c903e0a32604
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757722Ab2CZW2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 18:28:05 -0400
+Received: from proxima.lp0.eu ([81.2.80.65]:54868 "EHLO proxima.lp0.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756623Ab2CZW2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 18:28:03 -0400
+Message-ID: <4F70ED6F.6070005@simon.arlott.org.uk>
+Date: Mon, 26 Mar 2012 23:27:59 +0100
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110823 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: USB list <linux-usb@vger.kernel.org>
+Subject: ftdi_sio: fix race condition in TIOCMIWAIT, and abort of TIOCMIWAIT
+ when the device is removed
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 26 Mar 2012 15:21:23 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e47bb0bda46bf50f81671db502d0c903e0a32604
-Gitweb:     http://git.kernel.org/tip/e47bb0bda46bf50f81671db502d0c903e0a32604
-Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Fri, 23 Mar 2012 09:35:06 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 26 Mar 2012 13:10:02 -0700
+There are two issues here, one is that the device is generating
+spurious very fast modem status line changes somewhere:
 
-x86, efi: Fix NumberOfRvaAndSizes field in PE32 header for EFI_STUB
+CTS becomes high then low 18µs later:
+[121226.924373] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=6
+[121226.924378] ftdi_process_packet: status=10 prev=00 diff=10
+[121226.924382] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=7
+(wake_up_interruptible is called)
+[121226.924391] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=7
+[121226.924394] ftdi_process_packet: status=00 prev=10 diff=10
+[121226.924397] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=8
+(wake_up_interruptible is called)
 
-We've actually got six data directories in the header, not one. Even
-though the firmware loader doesn't seem to mind, when we come to sign
-the kernel image the signing tool thinks that there is no Certificate
-Table data directory, even though we've allocated space for one.
+This wakes up the task in TIOCMIWAIT:
+[121226.924405] ftdi_ioctl: 19451 rng=0->0 dsr=10->10 dcd=0->0 cts=6->8
+(wait from 20:51:46 returns and observes both changes)
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1332520506-6472-4-git-send-email-jordan.l.justen@intel.com
-Reviewed-by: Jordan Justen <jordan.l.justen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Which then calls TIOCMIWAIT again:
+20:51:46.400239 ioctl(3, TIOCMIWAIT, 0x20) = 0
+22:11:09.441818 ioctl(3, TIOCMGET, [TIOCM_DTR|TIOCM_RTS]) = 0
+22:11:09.442812 ioctl(3, TIOCMIWAIT, 0x20) = -1 EIO (Input/output error)
+(the second wake_up_interruptible takes effect and an I/O error occurs)
+
+The other issue is that TIOCMIWAIT will wait forever (unless the task is
+interrupted) if the device is removed.
+
+This change removes the -EIO return that occurs if the counts don't
+appear to have changed. Multiple counts may have been processed as
+one or the waiting task may have started waiting after recording the
+current count.
+
+It adds a bool to indicate that the device has been removed so that
+TIOCMIWAIT doesn't wait forever, and wakes up any tasks so that they can
+return -EIO.
+
+Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
 ---
- arch/x86/boot/header.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index 4ceb56e..8bbea6a 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -189,7 +189,7 @@ extra_header_fields:
- 	.quad	0				# SizeOfHeapCommit
- #endif
- 	.long	0				# LoaderFlags
--	.long	0x1				# NumberOfRvaAndSizes
-+	.long	0x6				# NumberOfRvaAndSizes
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index d260b79..fc9a901 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -76,6 +76,7 @@ struct ftdi_private {
+ 	struct async_icount	icount;
+ 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	char prev_status;        /* Used for TIOCMIWAIT */
++	bool dev_gone;        /* Used to abort TIOCMIWAIT */
+ 	char transmit_empty;	/* If transmitter is empty or not */
+ 	struct usb_serial_port *port;
+ 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
+@@ -1663,6 +1664,7 @@ static int ftdi_sio_port_probe(struct usb_serial_port *port)
+ 	init_waitqueue_head(&priv->delta_msr_wait);
  
- 	.quad	0				# ExportTable
- 	.quad	0				# ImportTable
+ 	priv->flags = ASYNC_LOW_LATENCY;
++	priv->dev_gone = false;
+ 
+ 	if (quirk && quirk->port_probe)
+ 		quirk->port_probe(priv);
+@@ -1819,6 +1821,9 @@ static int ftdi_sio_port_remove(struct usb_serial_port *port)
+ 
+ 	dbg("%s", __func__);
+ 
++	priv->dev_gone = true;
++	wake_up_interruptible_all(&priv->delta_msr_wait);
++
+ 	remove_sysfs_attrs(port);
+ 
+ 	kref_put(&priv->kref, ftdi_sio_priv_release);
+@@ -2376,15 +2381,12 @@ static int ftdi_ioctl(struct tty_struct *tty,
+ 	 */
+ 	case TIOCMIWAIT:
+ 		cprev = priv->icount;
+-		while (1) {
++		while (!priv->dev_gone) {
+ 			interruptible_sleep_on(&priv->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			cnow = priv->icount;
+-			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+-			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+-				return -EIO; /* no change => error */
+ 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
+ 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
+ 			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
+@@ -2393,7 +2395,7 @@ static int ftdi_ioctl(struct tty_struct *tty,
+ 			}
+ 			cprev = cnow;
+ 		}
+-		/* not reached */
++		return -EIO;
+ 		break;
+ 	case TIOCSERGETLSR:
+ 		return get_lsr_info(port, (struct serial_struct __user *)arg);
+-- 
+1.7.4.1
+
+-- 
+Simon Arlott
