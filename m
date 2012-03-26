@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab2CZVhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 17:37:08 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:34909 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757173Ab2CZVhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 17:37:06 -0400
-Date: Mon, 26 Mar 2012 17:36:06 -0400 (EDT)
-Message-Id: <20120326.173606.1348576857155624658.davem@davemloft.net>
-To: consul.kautuk@gmail.com
-Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
-        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 19/20 v4] sparc/mm/fault_32.c: Port OOM changes to
- do_sparc_fault
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1332780474-2881-1-git-send-email-consul.kautuk@gmail.com>
-References: <1332780474-2881-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 26 Mar 2012 14:36:09 -0700 (PDT)
+	id S1757418Ab2CZVis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 17:38:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:49986 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757057Ab2CZVir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 17:38:47 -0400
+Date: Tue, 27 Mar 2012 08:38:09 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+Message-ID: <20120326213809.GA29788@bloggs.ozlabs.ibm.com>
+References: <4F688F48.6090303@redhat.com>
+ <1332461414.2982.90.camel@pasglop>
+ <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+ <4F6EEEC1.4030608@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6EEEC1.4030608@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kautuk Consul <consul.kautuk@gmail.com>
-Date: Mon, 26 Mar 2012 12:47:54 -0400
+On Sun, Mar 25, 2012 at 12:09:05PM +0200, Avi Kivity wrote:
 
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
-> 
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
-> 
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
-> 
-> Port these changes to 32-bit sparc.
-> 
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> I can switch to fast-forward-only in the future, but I'm afraid that
+> this particular tree is broken for good.  The un-rebased
+> fast-forward-only source for this is kvm.git master, which I don't think
+> you want to pull.  It will cause every kvm commit to appear twice and
+> confuse everyone.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+There are patches from me in there that have been pending since
+December last year, and now look like they won't be going upstream
+until June.  So, under the circumstances, how would you (Avi) feel
+about Ben and I committing the KVM patches that only affect powerpc to
+Ben's tree and sending them to Linus that way before the merge window
+closes?
+
+Paul.
