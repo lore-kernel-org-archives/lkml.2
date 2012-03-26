@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782Ab2CZXRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 19:17:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36194 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab2CZXRG (ORCPT
+	id S1757817Ab2CZXSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 19:18:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34978 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab2CZXSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 19:17:06 -0400
-Date: Mon, 26 Mar 2012 16:17:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: hung task (handle_pte_fault)
-Message-Id: <20120326161705.b96636db.akpm@linux-foundation.org>
-In-Reply-To: <CA+1xoqczdjPD0OGEuZAu6f9Q8gxAQuhVL-ZhhUcELaz_B=Jfjg@mail.gmail.com>
-References: <CA+1xoqczdjPD0OGEuZAu6f9Q8gxAQuhVL-ZhhUcELaz_B=Jfjg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 26 Mar 2012 19:18:42 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 1/1] vsprintf: optimize decimal conversion (again)
+Date: Tue, 27 Mar 2012 01:18:38 +0200
+User-Agent: KMail/1.8.2
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+References: <201203262047.17865.vda.linux@googlemail.com> <20120326131304.018a5f4b.akpm@linux-foundation.org> <CAMuHMdWK-0m9-LUc90e7e8pYsOsECkZ3gjBYVAP-A4p7p=Pyug@mail.gmail.com>
+In-Reply-To: <CAMuHMdWK-0m9-LUc90e7e8pYsOsECkZ3gjBYVAP-A4p7p=Pyug@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201203270118.38639.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Mar 2012 12:45:03 +0200
-Sasha Levin <levinsasha928@gmail.com> wrote:
-
-> Hi guys,
+On Monday 26 March 2012 22:18, Geert Uytterhoeven wrote:
+> On Mon, Mar 26, 2012 at 22:13, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Mon, 26 Mar 2012 21:56:38 +0200
+> > Denys Vlasenko <vda.linux@googlemail.com> wrote:
+> >
+> >> >> +#if BITS_PER_LONG != 32 || (~(0ULL)>>1) != ((1ULL<<63)-1)
+> >> >
+> >> > What's this for?
+> >>
+> >> The second check should be just BITS_PER_LONG_LONG != 64,
+> >> but we don't have BITS_PER_LONG_LONG.
+> >
+> > So let's add BITS_PER_LONG_LONG rather than hacking around its absence!
 > 
-> During fuzzing using trinity inside a KVM tools guest with latest
-> linux-next, I seem to be getting it hung once in a while, with the
-> following spew:
+> I don't think Linux runs on anything with BITS_PER_LONG_LONG != 64...
 > 
-> [ 1441.420617] INFO: task trinity:2706 blocked for more than 120 seconds.
-> [ 1441.421894] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [ 1441.424493] trinity         D 0000000000000000  3472  2706  16846 0x00000004
-> [ 1441.426749]  ffff880029dbbb38 0000000000000086 ffff880029dbbae8
-> ffff880029dbbfd8
-> [ 1441.428582]  00000000001d45c0 ffff880029dba000 00000000001d45c0
-> 00000000001d45c0
-> [ 1441.430156]  00000000001d45c0 00000000001d45c0 ffff880029dbbfd8
-> 00000000001d45c0
-> [ 1441.432371] Call Trace:
-> [ 1441.433042]  [<ffffffff81176dd0>] ? file_read_actor+0x1d0/0x1d0
-> [ 1441.434251]  [<ffffffff827148d4>] schedule+0x24/0x70
-> [ 1441.435314]  [<ffffffff82714e67>] io_schedule+0x87/0xd0
-> [ 1441.436357]  [<ffffffff81176dd9>] sleep_on_page+0x9/0x10
-> [ 1441.437442]  [<ffffffff82712cb7>] __wait_on_bit+0x57/0x80
-> [ 1441.438584]  [<ffffffff81177bff>] ? __lock_page_or_retry+0x8f/0xd0
-> [ 1441.439948]  [<ffffffff811775de>] wait_on_page_bit+0x6e/0x80
-> [ 1441.440859]  [<ffffffff810d6d20>] ? autoremove_wake_function+0x40/0x40
-> [ 1441.441700]  [<ffffffff810dbfbe>] ? up_read+0x1e/0x40
-> [ 1441.442428]  [<ffffffff81177c36>] __lock_page_or_retry+0xc6/0xd0
-> [ 1441.443270]  [<ffffffff81178490>] filemap_fault+0x440/0x4e0
-> [ 1441.444072]  [<ffffffff811991cf>] __do_fault+0x7f/0x5f0
-> [ 1441.444829]  [<ffffffff81112c00>] ?
-> add_lock_to_list.clone.18.clone.27+0xd0/0xe0
-> [ 1441.445886]  [<ffffffff8119cd27>] handle_pte_fault+0xf7/0x1e0
-> [ 1441.446740]  [<ffffffff8119e1ce>] handle_mm_fault+0x1ce/0x330
-> [ 1441.447537]  [<ffffffff8119e53c>] __get_user_pages+0x14c/0x640
-> [ 1441.448399]  [<ffffffff811129ae>] ? put_lock_stats.clone.19+0xe/0x40
-> [ 1441.449288]  [<ffffffff81117b1d>] ? __lock_acquired+0x19d/0x270
-> [ 1441.450164]  [<ffffffff811a0087>] __mlock_vma_pages_range+0x87/0xa0
-> [ 1441.451127]  [<ffffffff811a0129>] do_mlock_pages+0x89/0x160
-> [ 1441.451932]  [<ffffffff811a0b71>] sys_mlockall+0x111/0x1a0
-> [ 1441.452761]  [<ffffffff827176bd>] system_call_fastpath+0x1a/0x1f
-> [ 1441.453659] no locks held by trinity/2706.
-> [ 1441.454267] Kernel panic - not syncing: hung_task: blocked tasks
-> 
-> According to the logs, it's not the direct result of anything specific
-> happening, so I can't give an exact scenario to reproduce it. It does
-> happen rather often.
+> BTW, what about CPUs with slow 32x32 multiplication and/or slow 64-bit
+> division?
 
-The task is waiting for IO to complete against a page, and it isn't
-happening.
+Without 32x32->64 multiply, the best we can generate is 4 decimal digits:
+we produce next digit by approximating x/10 with (x * 0xcccd) >> 19,
+and the first x where it gives wrong result is 81920 if multiply result
+is truncated to 32 bits.
+With it, we can generate 9 digits using (x * 0x1999999a) >> 32.
 
-There are quite a lot of things which could cause this, alas.  VM,
-readahead, scheduler, core wait/wakeup code, IO system, interrupt
-system (if it happens outside KVM, I guess).
+Regrading "slow 64-bit division" - after this patch, 32-bit machines
+wouldn't use it at all. Only 64-bit machines will perform 64-bit
+division, one per 9 decimal digits (thus, at most three divisions
+per one long_long->string conversion).
 
-So....  ugh.  Hopefully someone will hit this in a situation where it
-can be narrowed down or bisected.
+In fact, with small change to #ifdefs, all machines with long long <= 64
+bits can use division-less routine. It might be a good thing to try...
 
+Any people with ARM hardware in hand interesting in running the test
+program I sent in first email?
+
+-- 
+vda
