@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab2CZQkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:40:04 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62751 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495Ab2CZQkC (ORCPT
+	id S932945Ab2CZQlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:41:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34831 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab2CZQlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:40:02 -0400
-Message-ID: <4F709BC3.4070601@windriver.com>
-Date: Mon, 26 Mar 2012 11:39:31 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>,
-        <tim.bird@am.sony.com>
-Subject: Re: [PATCH 2/2] kgdb,debug_core,kgdbts: End DEBUG_RODATA limitation
- using kprobe breakpoints
-References: <1332352536-29186-1-git-send-email-jason.wessel@windriver.com> <1332352536-29186-3-git-send-email-jason.wessel@windriver.com> <4F6A9444.4050603@hitachi.com> <4F6B13BC.2070406@windriver.com> <4F6C83C1.9050704@hitachi.com> <4F6C8AD9.40201@windriver.com> <4F703AE6.5020809@hitachi.com>
-In-Reply-To: <4F703AE6.5020809@hitachi.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Mar 2012 12:41:05 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ingo Molnar <mingo@elte.hu>, Joe Perches <joe@perches.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 20/20 v4] sparc/mm/fault_64.c: Port OOM changes to do_sparc64_fault
+Date: Mon, 26 Mar 2012 12:40:49 -0400
+Message-Id: <1332780049-2777-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 04:46 AM, Masami Hiramatsu wrote:
-> (2012/03/23 23:38), Jason Wessel wrote:
->> On 03/23/2012 09:08 AM, Masami Hiramatsu wrote:
->>> (2012/03/22 20:57), Jason Wessel wrote:
->>>> I will use the arch specific provision to override the
->>>> kgdb_arch_set_breakpoint() and use the text_poke() directly.
->>>
->>> Thanks! that's what I meant. You can use __weak attribute.
->>>
->>
->> I created and tested a patch yesterday which is show below.  I will
->> post a new series at some point soon which addresses this problem as
->> well as a number of problems found with the kgdb test suite.
-> 
-> Yeah, that's better.
-> 
-> BTW, I'm not sure the policy of kgdb about mutex, but it seems
-> that you need to hold a text_mutex when you call the text_poke()
-> since it uses a fixmap page-area for mapping read-only text page
-> to writable page. So, without locking (at least ensuring no one
-> using) text_mutex, it seems not be safe. (some other code may be
-> trying to change the code by using same fixmap pages)
+Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+(mm: retry page fault when blocking on disk transfer) and
+commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+(x86,mm: make pagefault killable)
 
-Thank you very much for the advice.  I had run the kgdb mutex
-validation which checks for mutex's taken any time I change the kgdb
-code and it passed.  However, this did not check for incorrect usage
-where the debug core should really be taking a mutex to prevent
-corruption.  The comments in the text_poke code clearly indicate a
-caller must hold the text_mutex().
+The above commits introduced changes into the x86 pagefault handler
+for making the page fault handler retryable as well as killable.
 
-I started looking through all the code that uses text_mutex and what
-it actually protects.  It looked like it is probably possible to make
-things re-entrant in order to deal with the case where debugger changes
-a location with a fixmap when kernel execution is stopped.  I am not
-convinced this is a good idea, given complexity of the code, vs the
-small number of users and the likely hood of interference being on the
-low side.  For now, I am not going to pursue making any kind of
-changes with fix map or the text_mutex protected regions.  Today there
-are only 3 users of the text_mutex, SMP alternatives, jump labels
-updates, and kprobes, so the risk for collision is fairly low.
+These changes reduce the mmap_sem hold time, which is crucial
+during OOM killer invocation.
 
-At the point in time that the collisions become a real problem, such
-as kgdb starting to use kprobes directly, changing some code for
-special re-entrance considerations after using the kernel debugger
-might get considered again.  Until then, I will use the simple
-approach of checking the mutex and use text_poke() if it is not locked
-when the normal kernel execution is stopped on all cores.
+Port these changes to 64-bit sparc.
 
-The delta to the previous patch is shown below.
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ arch/sparc/mm/fault_64.c |   37 ++++++++++++++++++++++++++++++-------
+ 1 files changed, 30 insertions(+), 7 deletions(-)
 
-Thanks,
-Jason.
-
-
-diff -u b/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
---- b/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -757,6 +757,12 @@ int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
- #ifdef CONFIG_DEBUG_RODATA
- 	if (!err)
- 		return err;
-+	/* 
-+	 * It is safe to call text_poke() because normal kernel execution
-+	 * is stopped on all cores, so long as the text_mutex is not locked.
-+	 */
-+	if (mutex_is_locked(&text_mutex)
-+		return -EBUSY;
- 	text_poke((void *)bpt->bpt_addr, arch_kgdb_ops.gdb_bpt_instr,
- 		  BREAK_INSTR_SIZE);
- 	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
-@@ -777,6 +783,12 @@ int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
+diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
+index 504c062..d8692e4 100644
+--- a/arch/sparc/mm/fault_64.c
++++ b/arch/sparc/mm/fault_64.c
+@@ -279,6 +279,7 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
+ 	unsigned int insn = 0;
+ 	int si_code, fault_code, fault;
+ 	unsigned long address, mm_rss;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- 	if (bpt->type != BP_POKE_BREAKPOINT)
- 		goto knl_write;
-+	/* 
-+	 * It is safe to call text_poke() because normal kernel execution
-+	 * is stopped on all cores, so long as the text_mutex is not locked.
-+	 */
-+	if (mutex_is_locked(&text_mutex)
-+		goto knl_write;
- 	text_poke((void *)bpt->bpt_addr, bpt->saved_instr, BREAK_INSTR_SIZE);
- 	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
- 	if (err || memcmp(opc, bpt->saved_instr, BREAK_INSTR_SIZE))
+ 	fault_code = get_thread_fault_code();
+ 
+@@ -333,6 +334,8 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
+ 			insn = get_fault_insn(regs, insn);
+ 			goto handle_kernel_fault;
+ 		}
++
++retry:
+ 		down_read(&mm->mmap_sem);
+ 	}
+ 
+@@ -423,7 +426,12 @@ good_area:
+ 			goto bad_area;
+ 	}
+ 
+-	fault = handle_mm_fault(mm, vma, address, (fault_code & FAULT_CODE_WRITE) ? FAULT_FLAG_WRITE : 0);
++	flags |= ((fault_code & FAULT_CODE_WRITE) ? FAULT_FLAG_WRITE : 0);
++	fault = handle_mm_fault(mm, vma, address, flags);
++
++	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
++		return;
++
+ 	if (unlikely(fault & VM_FAULT_ERROR)) {
+ 		if (fault & VM_FAULT_OOM)
+ 			goto out_of_memory;
+@@ -431,12 +439,27 @@ good_area:
+ 			goto do_sigbus;
+ 		BUG();
+ 	}
+-	if (fault & VM_FAULT_MAJOR) {
+-		current->maj_flt++;
+-		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
+-	} else {
+-		current->min_flt++;
+-		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
++
++	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++		if (fault & VM_FAULT_MAJOR) {
++			current->maj_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
++				      1, regs, address);
++		} else {
++			current->min_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN,
++				      1, regs, address);
++		}
++		if (fault & VM_FAULT_RETRY) {
++			flags &= ~FAULT_FLAG_ALLOW_RETRY;
++
++			/* No need to up_read(&mm->mmap_sem) as we would
++			 * have already released it in __lock_page_or_retry
++			 * in mm/filemap.c.
++			 */
++
++			goto retry;
++		}
+ 	}
+ 	up_read(&mm->mmap_sem);
+ 
+-- 
+1.7.5.4
+
