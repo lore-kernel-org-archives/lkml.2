@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab2CZPZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:25:06 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:56075 "HELO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932303Ab2CZPZD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:25:03 -0400
-From: Yevgeny Petrilin <yevgenyp@mellanox.com>
-To: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	id S932819Ab2CZPZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:25:59 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33259 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932559Ab2CZPZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 11:25:58 -0400
+Date: Mon, 26 Mar 2012 17:25:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yael Shenhav <yaeli@mellanox.com>
-Subject: RE: IRQ affinity enforced only after first interrupt.
-Thread-Topic: IRQ affinity enforced only after first interrupt.
-Thread-Index: AQHNC1y2rxLl684DNUalJftF5VRURpZ8gpKAgAAuH0A=
-Date: Mon, 26 Mar 2012 15:24:57 +0000
-Message-ID: <953B660C027164448AE903364AC447D2618E1A8B@MTLDAG02.mtl.com>
-References: <4F7031A4.70601@mellanox.co.il>
- <CAErSpo7ciBYG1-jCL3F6bFcktmJj4H-SXn_1NcRnhc-gPDsHUw@mail.gmail.com>
- <4F707E39.50502@gmail.com>
-In-Reply-To: <4F707E39.50502@gmail.com>
-Accept-Language: he-IL, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.0.13.1]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
+Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
+Message-ID: <20120326152553.GI32090@aftab>
+References: <20111128204311.GA2814@aftab>
+ <20111202194658.GF15204@aftab>
+ <20111205092612.GB29641@elte.hu>
+ <20111205151016.GC7834@aftab>
+ <4F6F719B.5020806@zytor.com>
+ <20120326084810.GA31480@aftab>
+ <4F7082BD.9030107@zytor.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7082BD.9030107@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 26, 2012 at 07:52:45AM -0700, H. Peter Anvin wrote:
+> On 03/26/2012 01:48 AM, Borislav Petkov wrote:
+> > On Sun, Mar 25, 2012 at 12:27:23PM -0700, H. Peter Anvin wrote:
+> >> I keep wondering if we couldn't have the early-static trap handlers be
+> >> aware of exception tables, too; they wouldn't have to worry about
+> >> modules and so it would be reasonably easy.
+> > 
+> > Well, we talked about this recently and then we decided we needed the
+> > extable-sorting-at-build-time patches before we make those static trap
+> > handlers aware of extables. What happened to those patches, btw? See
+> > thread at http://marc.info/?l=linux-kernel&m=132196692827070
+> > 
 > 
-> The architecture specific code will determine whether the IRQ could be migrated
-> in process context. For example, the IRQ_MOVE_PCNTXT flag will be set on x86
-> systems if interrupt remapping is enabled.
-
-Actually I am encountering this issue with x86, and see different behavior with different
-HW devices (NICs). On same machine I have one device that responds immediately to affinity changes
-while the other one changes the affinity only after first interrupt.
-
+> Hm... I hope that didn't stall out because of me... the amount of
+> overload I have been under lately is a bit scary.
 > 
-> On 03/26/2012 10:28 PM, Bjorn Helgaas wrote:
-> > [This is not really a PCI question, so +cc Thomas, LKML.]
-> >
-> > On Mon, Mar 26, 2012 at 3:06 AM, Yevgeny Petrilin
-> > <yevgenyp@mellanox.co.il> wrote:
-> >> Hello,
-> >>
-> >> I'm working on an issue where affinity changes to IRQ only have effect after the first interrupt which still happens on the original core.
-> >> I understand that the decision regarding it takes place in this code:
-> >>
-> >>        if (irq_can_move_pcntxt(data)) {
-> >>                ret = chip->irq_set_affinity(data, mask, false);
-> >>                switch (ret) {
-> >>                case IRQ_SET_MASK_OK:
-> >>                        cpumask_copy(data->affinity, mask);
-> >>                case IRQ_SET_MASK_OK_NOCOPY:
-> >>                        irq_set_thread_affinity(desc);
-> >>                        ret = 0;
-> >>                }
-> >>        } else {
-> >>                irqd_set_move_pending(data);
-> >>                irq_copy_pending(desc, mask);
-> >>        }
-> >>
-> >> Which means that the "IRQD_MOVE_PCNTXT" flag is not set in irq_data->state_use_accessors.
-> >> I was able to add this flag using irq_modify_status(), which is probably not the way to go.
-> >> This option also doesn't exist in older kernels (2.6.32)
-> >>
-> >> So the question is, when irq_desc is created, how is it determined that "IRQD_MOVE_PCNTXT" flag is set?
-> >>
-> >> Thanks,
-> >> Yevgeny
+> I was going to dredge out the perfect hash stuff that I had, but the
+> sorting stuff could be done without that.
 
+Ok, let me scratch up something in the coming days.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
