@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab2CZOXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757406Ab2CZOW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:22:58 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <18418.1330238913@jrobl>
-References: <18418.1330238913@jrobl> <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, valerie.aurora@gmail.com,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov
-Subject: Re: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
-Date: Mon, 26 Mar 2012 15:22:50 +0100
-Message-ID: <9343.1332771770@redhat.com>
+	id S932531Ab2CZO0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:26:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40594 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab2CZO0S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 10:26:18 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: david.daney@cavium.com
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers:staging:octeon Fix typos in staging:octeon
+Date: Mon, 26 Mar 2012 07:26:09 -0700
+Message-Id: <1332771969-14754-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-> >  (4) Added some code to override the credentials around upper inode
-> >      creation to make sure the inode gets the right UID/GID.  This doesn't
-> >      help if the lower inode has some sort of foreign user identifier.
-> >
-> >      Also, I'm not sure whether the LSM xattrs should be blindly copied up.
-> >      Should the LSM policies applicable to the lower fs's apply to the upper
-> >      fs too?
-> 
-> Obviously the xattr entry may not have its meanings on the upper fs,
+The below patch fixes some typos an comments I found while reading. 
 
-True.  I'm not sure what's the best way to deal with that.  Possibly add an
-extra flag to vfs_setxattr() and have the fs vet them...  OTOH, this gives us
-files on the lowerfs that may well differ in appearance to files on the
-upperfs with respect to their xattrs.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> or the upper fs may return an error when setting the xattr. Additionally the
-> returned errno may not follow the generic semantics (ENOTSUP, ENOSPC, or
-> EDQUOT) since the fs may return fs-specific error.
+---
+ drivers/staging/octeon/ethernet-rx.c   |    2 +-
+ drivers/staging/octeon/ethernet-tx.c   |   10 +++++-----
+ drivers/staging/octeon/ethernet-util.h |    2 +-
+ drivers/staging/octeon/ethernet.c      |    2 +-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-Also true.  It's possible that the best way is just to ignore everything but a
-medium-related error such as EIO, ENOSPC and EDQUOT: We tried...  Oh well.
+diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+index 400df8c..5699e6f 100644
+--- a/drivers/staging/octeon/ethernet-rx.c
++++ b/drivers/staging/octeon/ethernet-rx.c
+@@ -162,7 +162,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+ 		/*
+ 		 * We received a packet with either an alignment error
+ 		 * or a FCS error. This may be signalling that we are
+-		 * running 10Mbps with GMXX_RXX_FRM_CTL[PRE_CHK}
++		 * running 10Mbps with GMXX_RXX_FRM_CTL[PRE_CHK]
+ 		 * off. If this is the case we need to parse the
+ 		 * packet to determine if we can remove a non spec
+ 		 * preamble and generate a correct packet.
+diff --git a/drivers/staging/octeon/ethernet-tx.c b/drivers/staging/octeon/ethernet-tx.c
+index 56d74dc..34ee51f 100644
+--- a/drivers/staging/octeon/ethernet-tx.c
++++ b/drivers/staging/octeon/ethernet-tx.c
+@@ -61,7 +61,7 @@
+  * You can define GET_SKBUFF_QOS() to override how the skbuff output
+  * function determines which output queue is used. The default
+  * implementation always uses the base queue for the port. If, for
+- * example, you wanted to use the skb->priority fieid, define
++ * example, you wanted to use the skb->priority field, define
+  * GET_SKBUFF_QOS as: #define GET_SKBUFF_QOS(skb) ((skb)->priority)
+  */
+ #ifndef GET_SKBUFF_QOS
+@@ -164,8 +164,8 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+ #endif
+ 
+ 	/*
+-	 * Prefetch the private data structure.  It is larger that one
+-	 * cache line.
++	 * Prefetch the private data structure.  If it is larger than the
++	 * one cache line.
+ 	 */
+ 	prefetch(priv);
+ 
+@@ -290,8 +290,8 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	 * See if we can put this skb in the FPA pool. Any strange
+ 	 * behavior from the Linux networking stack will most likely
+ 	 * be caused by a bug in the following code. If some field is
+-	 * in use by the network stack and get carried over when a
+-	 * buffer is reused, bad thing may happen.  If in doubt and
++	 * in use by the network stack and gets carried over when a
++	 * buffer is reused, bad things may happen.  If in doubt and
+ 	 * you dont need the absolute best performance, disable the
+ 	 * define REUSE_SKBUFFS_WITHOUT_FREE. The reuse of buffers has
+ 	 * shown a 25% increase in performance under some loads.
+diff --git a/drivers/staging/octeon/ethernet-util.h b/drivers/staging/octeon/ethernet-util.h
+index 144fb99..2da5ce1 100644
+--- a/drivers/staging/octeon/ethernet-util.h
++++ b/drivers/staging/octeon/ethernet-util.h
+@@ -38,7 +38,7 @@ static inline void *cvm_oct_get_buffer_ptr(union cvmx_buf_ptr packet_ptr)
+ }
+ 
+ /**
+- * INTERFACE - convert IPD port to locgical interface
++ * INTERFACE - convert IPD port to logical interface
+  * @ipd_port: Port to check
+  *
+  * Returns Logical interface
+diff --git a/drivers/staging/octeon/ethernet.c b/drivers/staging/octeon/ethernet.c
+index 9112cd8..4d70acf 100644
+--- a/drivers/staging/octeon/ethernet.c
++++ b/drivers/staging/octeon/ethernet.c
+@@ -356,7 +356,7 @@ static void cvm_oct_common_set_multicast_list(struct net_device *dev)
+ 			/* Force accept multicast packets */
+ 			control.s.mcst = 2;
+ 		else
+-			/* Force reject multicat packets */
++			/* Force reject multicast packets */
+ 			control.s.mcst = 1;
+ 
+ 		if (dev->flags & IFF_PROMISC)
+-- 
+1.7.5.4
 
-> On the other hand, users may expect that the all xattrs are copied-up,
-> particulary when he knows that the xattrs works well on the upper fs too.
-> In copy-up, it will be hard to support all cases.
-
-Yeah.  Ideally, the copied-up file would be indistinguishable from the lower
-file, but in practice that's not possible unless inode numbers and other
-physical characteristics of the lower file are recorded in the upper fs (say
-on an xattr).
-
-> In order to leave users how to handle the xattrs, I'd suggest
-> introducing some mount options, which are similar to cp(1).
-> cp(1) has several options
-> 	--preserve=mode,ownership,timestamps,context,links,xattr,all
-> 	('mode' includes acl which are based upon xattr)
-> 
-> Since the mode (without acl), ownership and timestamps should always be
-> copied-up, the new mount options will be something like
-> 	cpup-xattr=acl,context,all
-
-I would suggest 'cpyup' or 'copyup' rather than 'cpup' - the latter looks like
-something to do with CPUs, but yes, it's worth considering.
-
-> And only when the option is specfied, the xattrs are copied up. No
-> special error handling is necessary, all the errors should be returned
-> to users unconditionally.
-
-That's not necessarily good enough.  What if and LSM, say SELinux, is in
-force?  Now SELinux will happily label the files for you - but there's a
-reasonable chance they won't be correct.  OTOH, they may not be correct even
-if they are copied up.
-
-> Does union-mount preserve mtime? If not, it is critical for some
-> applications such like "make" I am afraid.
-
-Ummm...  Interesting question.  If it copies up a file, then that file must
-have been opened for writing.  Is the mtime altered by such an event, or only
-by a write() having been issued?  Also, what about ctime?  That doesn't seem
-to have been copied up either.
-
-David
