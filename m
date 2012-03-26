@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab2CZXXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 19:23:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36266 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757675Ab2CZXXh (ORCPT
+	id S1757656Ab2CZXn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 19:43:56 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52982 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab2CZXnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 19:23:37 -0400
-Date: Mon, 26 Mar 2012 16:23:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Daniel Drake <dsd@laptop.org>, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net, pgf@laptop.org, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
-Message-Id: <20120326162335.f45bf001.akpm@linux-foundation.org>
-In-Reply-To: <20120326231408.GA7495@gmail.com>
-References: <20120326180710.8DF9C9D401E@zog.reactivated.net>
-	<20120326142908.c5248aec.akpm@linux-foundation.org>
-	<20120326231408.GA7495@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Mar 2012 19:43:55 -0400
+Date: Mon, 26 Mar 2012 16:43:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC] rcu: Make __rcu_read_lock() inlinable
+Message-ID: <20120326234340.GL2450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120325205249.GA29528@linux.vnet.ibm.com>
+ <1332748484.16159.61.camel@twins>
+ <20120326183232.GK2450@linux.vnet.ibm.com>
+ <1332788008.23924.114.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332788008.23924.114.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032623-5518-0000-0000-0000033A72F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012 01:14:08 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
-
+On Mon, Mar 26, 2012 at 02:53:28PM -0400, Steven Rostedt wrote:
+> On Mon, 2012-03-26 at 11:32 -0700, Paul E. McKenney wrote:
 > 
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > > Signed-off-by: Daniel Drake <dsd@laptop.org>
-> > > Originally-from: Paul Fox <pgf@laptop.org>
-> > > Cc: Ingo Molnar <mingo@elte.hu>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > > Cc: Andres Salomon <dilinger@queued.net>
-> > > 
-> > > ...
-> > >
-> > > v4: really fix sign-off tags
+> > Preemption is disabled at this point, correct?
 > > 
-> > s/fix/break/?  "Originally-from" is not a recognised tag.  If this code
-> > is based upon an earlier version from Paul then Signed-off-by: is
-> > correct.
-> 
-> No, the original ordering was *not* correct:
-> 
->   From: Daniel Drake <dsd@laptop.org>
-> 
->   [...]
-> 
->   Signed-off-by: Daniel Drake <dsd@laptop.org>
->   Signed-off-by: Paul Fox <pgf@laptop.org>
-> 
-> In the previous discussion we had I explained what the rules for 
-> signoffs are. Let me quote Linus as well:
-> 
->   " The sign-off chain should be very simple: the first person 
->     to sign off should be the author, and the last person to 
->     sign off should be the committer. "
-> 
->   https://lkml.org/lkml/2012/3/22/489
->   
-> This is not true for this patch, because the first signoff does 
-> not match the 'From:' line (author).
-> 
-> Nor is the last signoff the committer - i.e. the person sending 
-> me this patch to apply. Every maintainer along the route adds a 
-> signoff to the tail if it's propagated via email, or does a 
-> merge commit if it's a pull.
-> 
-> If Daniel sends me a patch he should be the last signoff. If he 
-> authored the patch then he should also be the first (and, by 
-> implication, only) signoff. Signed-off-by does not recognize 
-> multiple authorship - that has to be written into the changelog, 
-> added via another type of tag - either approach is fine to me. 
+> Is this a philosophical question? You're asking if preemption is
+> disabled while a task is currently being preempted ;-)
 
-That's a bunch of stuff which you and Linus apparently cooked up and
-didn't tell anyone about and didn't document anywhere.  I'd never heard
-about it before and I doubt if many other people knew about it.  And if
-anyone should have known about it, I should have!
+That was my first reaction as well, but never underestimate Peter's
+cleverness.  ;-)
 
-So we have an unknown but probably large number of patches in the tree
-now which do not follow this rule.  So nobody can depend on
-Signed-off-by: ordering in the tree as it stands.
-
-So if we want to implement this (new!) rule then let's write the damn
-thing down (in Documentation/SubmittingPatches) and tell people about
-it!  And, if poss, add a checkpatch rule to detect possible violations.
+							Thanx, Paul
 
