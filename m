@@ -1,216 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2CZNKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 09:10:36 -0400
-Received: from m50-133.163.com ([123.125.50.133]:59862 "EHLO m50-133.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932112Ab2CZNKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 09:10:34 -0400
-Date: Mon, 26 Mar 2012 21:10:03 +0800
-From: Zhaoxiu Zeng <zengzhaoxiu@163.com>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCH] mtd/nand/nand_ecc.c: replace bitsperbyte table by a
- simple operation
-Message-ID: <20120326131002.GA14318@Fedora16>
+	id S932463Ab2CZNOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 09:14:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60054 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440Ab2CZNOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 09:14:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-CM-TRANSID: DdGowEDpR1SsanBPiG33Fw--.2413S2
-X-Coremail-Antispam: 1Uf129KBjvJXoW3JFyfCw1DCw1fAw4xZF43KFg_yoWxJw17pr
-	W5CFW2yr4rGw1xur4kCr4UJryDt3ykXa4UJr43XryfCwsxZF1qyr4DKrWFva47Wr95t34r
-	Xrs5XF1fCFs5Z3JanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07UZFxUUUUUU=
-X-CM-SenderInfo: p2hqw6xkdr5xrx6rljoofrz/1tbiGQp9gE9oyKTe5AAAsf
+In-Reply-To: <20120326124929.GA4190@redhat.com>
+References: <CANeMGR5xS6GwG18q5QnKt5_pWJB4fEKFoywZDx=kA_JFVREGxw@mail.gmail.com>
+ <20120326124929.GA4190@redhat.com>
+From: Guan Xin <guanx.bac@gmail.com>
+Date: Mon, 26 Mar 2012 15:14:00 +0200
+Message-ID: <CANeMGR7-_sDbkSXKJd0svEn0R983WNoaVnDdgBU6OzBt67Db+w@mail.gmail.com>
+Subject: Re: Remove over-broad module alias from zaurus.
+To: Dave Jones <davej@redhat.com>, Guan Xin <guanx.bac@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8fb1f05a2d95ea04bc25280f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--e89a8fb1f05a2d95ea04bc25280f
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Dear Paul and Frans
+On Mon, Mar 26, 2012 at 2:49 PM, Dave Jones <davej@redhat.com> wrote:
+> On Mon, Mar 26, 2012 at 10:39:48AM +0200, Guan Xin wrote:
+> =C2=A0> > On Fri, 17 Jun 2011 20:02:10 -0400, Dave Jones wrote:
+> =C2=A0> > This module and a bunch of dependancies are getting loaded on s=
+everal
+> =C2=A0> > of laptops I have (probably picking up the mobile broadband dev=
+ice),
+> =C2=A0> > that have nothing to do with zaurus. Matching by class without
+> =C2=A0> > any vendor/device pair isn't the right thing to do here, as it
+> =C2=A0> > will prevent any other driver from correctly binding to it.
+> =C2=A0> > (Or in the absense of a driver, will just waste time & memory b=
+y
+> =C2=A0> > =C2=A0unnecessarily loading modules)
+> =C2=A0> >
+> =C2=A0> > Signed-off-by: Dave Jones <davej@redhat.com>
+> =C2=A0> > - =C2=A0USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_MDL=
+M,
+> =C2=A0> > - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0USB_CDC_PROTO_NONE),
+> =C2=A0> > - =C2=A0.driver_info =3D (unsigned long) &bogus_mdlm_info,
+> =C2=A0> > -}, {
+> =C2=A0> > =C2=A0 =C2=A0/* Motorola MOTOMAGX phones */
+> =C2=A0> > =C2=A0 =C2=A0USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_=
+CLASS_COMM,
+> =C2=A0> > =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
+> =C2=A0>
+> =C2=A0> After removal of this, my Motorola Rokr E6 (22b8:6027) cannot be =
+recognized.
+> =C2=A0> Can this be added back with more specific device info, just like =
+the
+> =C2=A0> Motorola MOTOMAGX phones?
+>
+> Yes, just cut-n-paste one of the other entries, change the ID,
+> make sure it works and send a diff.
+>
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0Dave
 
-Thanks for your reply.
+This patch is tested to work with 2.6.39.4 and 3.2.13.
 
-I don't write a commit log because I have ugly eglish! :)
+--- a/drivers/net/usb/zaurus.c  2012-03-26 14:59:36.702998639 +0200
++++ b/drivers/net/usb/zaurus.c  2012-03-26 15:02:16.860801959 +0200
+@@ -332,6 +332,11 @@
+        .driver_info =3D ZAURUS_PXA_INFO,
+ },
+ {
++       /* Motorola Rokr E6 */
++       USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6027, USB_CLASS_COMM,
++                       USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
++       .driver_info =3D (unsigned long) &bogus_mdlm_info,
++}, {
+        /* Motorola MOTOMAGX phones */
+        USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
+                        USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
 
-For all words which has only one "1" bit, "!(tmp & (tmp - 1))" 
-must be true, others except zero must be false!
+Guan
 
-In this instance we just need to check whether the result has 
-only one "1" bit, so "!(tmp & (tmp - 1))" is enough, and faster.
-Rest changes are adjuvant.
+--e89a8fb1f05a2d95ea04bc25280f
+Content-Type: application/octet-stream; name="zaurus.diff"
+Content-Disposition: attachment; filename="zaurus.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h09jffs60
 
-
-> Dear Zhaoxiu
-> 
-> Thanks for contributing this patch.
-> However, I think it has some issues and should not be applied. See my
-> remarks below
-> 
-> 2012/3/24 Zhaoxiu Zeng <zengzhaoxiu <at> 163.com>:
-> >
-> > Signed-off-by: Zhaoxiu Zeng <zengzhaoxiu <at> 163.com>
-> >
-> > ---
-> >  drivers/mtd/nand/nand_ecc.c |   50 +++++++++---------------------------------
-> >  1 files changed, 11 insertions(+), 39 deletions(-)
-> >
-> > diff --git a/drivers/mtd/nand/nand_ecc.c b/drivers/mtd/nand/nand_ecc.c
-> > index b7cfe0d..e05a0fd 100644
-> > --- a/drivers/mtd/nand/nand_ecc.c
-> > +++ b/drivers/mtd/nand/nand_ecc.c
-> > @@ -85,30 +85,6 @@ static const char invparity[256] = {
-> >  };
-> >
-> >  /*
-> > - * bitsperbyte contains the number of bits per byte
-> > - * this is only used for testing and repairing parity
-> > - * (a precalculated value slightly improves performance)
-> > - */
-> > -static const char bitsperbyte[256] = {
-> > -       0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-> > -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-> > -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-> > -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-> > -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-> > -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-> > -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-> > -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-> > -       1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-> > -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-> > -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-> > -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-> > -       2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-> > -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-> > -       3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-> > -       4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
-> > -};
-> > -
-> > -/*
-> >  * addressbits is a lookup table to filter out the bits from the xor-ed
-> >  * ECC data that identify the faulty location.
-> >  * this is only used for repairing parity
-> > @@ -448,12 +424,14 @@ int __nand_correct_data(unsigned char *buf,
-> >        unsigned int byte_addr;
-> >        /* 256 or 512 bytes/ecc  */
-> >        const uint32_t eccsize_mult = eccsize >> 8;
-> > +       const uint32_t check_mask = eccsize_mult == 2 ? 0x555555 : 0x545555;
-> > +       uint32_t tmp;
-> >
-> >        /*
-> >         * b0 to b2 indicate which bit is faulty (if any)
-> >         * we might need the xor result  more than once,
-> >         * so keep them in a local var
-> > -       */
-> > +        */
-> >  #ifdef CONFIG_MTD_NAND_ECC_SMC
-> >        b0 = read_ecc[0] ^ calc_ecc[0];
-> >        b1 = read_ecc[1] ^ calc_ecc[1];
-> > @@ -467,14 +445,11 @@ int __nand_correct_data(unsigned char *buf,
-> >
-> >        /* repeated if statements are slightly more efficient than switch ... */
-> >        /* ordered in order of likelihood */
-> > -
-> > -       if ((b0 | b1 | b2) == 0)
-> > +       tmp = ((uint32_t)b2 << 16) | ((uint32_t)b1 << 8) | b0;
-> 
-> Not sure how efficient this is; on some systems shifting by N takes N
-> clock cycles so this could be relatively expensive.
-> (and the systems where it takes more clock cycles have a higher chance
-> on not having hw crc correction).
-> 
-> > +       if (tmp == 0)
-> >                return 0;       /* no error */
-> >
-> > -       if ((((b0 ^ (b0 >> 1)) & 0x55) == 0x55) &&
-> > -           (((b1 ^ (b1 >> 1)) & 0x55) == 0x55) &&
-> > -           ((eccsize_mult == 1 && ((b2 ^ (b2 >> 1)) & 0x54) == 0x54) ||
-> > -            (eccsize_mult == 2 && ((b2 ^ (b2 >> 1)) & 0x55) == 0x55))) {
-> > +       if (((tmp ^ (tmp >> 1)) & check_mask) == check_mask) {
-> 
-> Have you benchmarked this?
-> 
-> And while it might be an optimisation, it is not mentioned in the
-> commit message.
-> 
-> >        /* single bit error */
-> >                /*
-> >                 * rp17/rp15/13/11/9/7/5/3/1 indicate which byte is the faulty
-> > @@ -492,19 +467,16 @@ int __nand_correct_data(unsigned char *buf,
-> >                 * We could also do addressbits[b2] >> 1 but for the
-> >                 * performance it does not make any difference
-> >                 */
-> > -               if (eccsize_mult == 1)
-> > -                       byte_addr = (addressbits[b1] << 4) + addressbits[b0];
-> > -               else
-> > -                       byte_addr = (addressbits[b2 & 0x3] << 8) +
-> > -                                   (addressbits[b1] << 4) + addressbits[b0];
-> > +               byte_addr = (addressbits[b1] << 4) + addressbits[b0];
-> > +               if (eccsize_mult == 2)
-> > +                       byte_addr += (addressbits[b2 & 0x3] << 8);
-> 
-> I'm not sure if this is a win. It *looks* like an optimisation since
-> you factor out some common code. Then again within the if you need to
-> add to byte_addr.
-> For a naive compiler this is probably more expensive. For a good
-> compiler this probably makes no difference at all.
-> 
-> >                bit_addr = addressbits[b2 >> 2];
-> >                /* flip the bit */
-> >                buf[byte_addr] ^= (1 << bit_addr);
-> >                return 1;
-> > -
-> >        }
-> > -       /* count nr of bits; use table lookup, faster than calculating it */
-> > -       if ((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)
-> > +
-> > +       if (!(tmp & (tmp - 1)))
-> 
-> This is not the same as the code you replace!!!
-> 
-> take as example b0 = 1; b1 =0, b2 = 0;
-> The original if statement will return true:
-> bitsperbyte[b0] in that case is 1
-> bitsperbyte[b1] = 0
-> bitsperbyte[b2] = 0
-> so (bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) equals 1 and
-> ((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)  yields 1 so true
-> 
-> However if I take your code
-> tmp =  ((uint32_t)b2 << 16) | ((uint32_t)b1 << 8) | b0;
-> taking the example values from above this results in tmp being 1;
-> tmp & (tmp - 1)  becomes 1 & 0 which effectively results in 0.
-> 
-> So in my original code  b0 = 1; b1 =0, b2 = 0; results in 1 being
-> returned whereas your code will result in a log entry "incorrectable
-> error" and a return of -1.
-> 
-
-
-You ignore the "!" opeator, Frans.
-
-
-> Given this, I'd say this patch is to be rejected.
-> 
-> BTW: optimisations in this part of code are not too important. This is
-> only called when ecc errors are to be corrected and that is not very
-> likely.
-> So perhaps it is not worth the time to improve it.
-> (and yes, it might be possible to save some bytes by eliminating the
-> array; then again the code and logic is not really trivial so good
-> testing is needed)
-> 
-> See also Documentation/mtd/nand_ecc.txt
-> near the end there is a small section on correcting.
-> 
-> >                return 1;       /* error in ECC data; no action needed */
-> >
-> >        printk(KERN_ERR "uncorrectable error : ");
-> > --
-> > 1.7.7.6
-> >
-> >
-> 
-> Best regards, Frans.
-
+LS0tIGEvZHJpdmVycy9uZXQvdXNiL3phdXJ1cy5jCTIwMTItMDMtMjYgMTQ6NTk6MzYuNzAyOTk4
+NjM5ICswMjAwCisrKyBiL2RyaXZlcnMvbmV0L3VzYi96YXVydXMuYwkyMDEyLTAzLTI2IDE1OjAy
+OjE2Ljg2MDgwMTk1OSArMDIwMApAQCAtMzMyLDYgKzMzMiwxMSBAQAogCS5kcml2ZXJfaW5mbyA9
+IFpBVVJVU19QWEFfSU5GTywKIH0sCiB7CisJLyogTW90b3JvbGEgUm9rciBFNiAqLworCVVTQl9E
+RVZJQ0VfQU5EX0lOVEVSRkFDRV9JTkZPKDB4MjJiOCwgMHg2MDI3LCBVU0JfQ0xBU1NfQ09NTSwK
+KwkJCVVTQl9DRENfU1VCQ0xBU1NfTURMTSwgVVNCX0NEQ19QUk9UT19OT05FKSwKKwkuZHJpdmVy
+X2luZm8gPSAodW5zaWduZWQgbG9uZykgJmJvZ3VzX21kbG1faW5mbywKK30sIHsKIAkvKiBNb3Rv
+cm9sYSBNT1RPTUFHWCBwaG9uZXMgKi8KIAlVU0JfREVWSUNFX0FORF9JTlRFUkZBQ0VfSU5GTygw
+eDIyYjgsIDB4NjQyNSwgVVNCX0NMQVNTX0NPTU0sCiAJCQlVU0JfQ0RDX1NVQkNMQVNTX01ETE0s
+IFVTQl9DRENfUFJPVE9fTk9ORSksCg==
+--e89a8fb1f05a2d95ea04bc25280f--
