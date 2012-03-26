@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab2CZG4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 02:56:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33654 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab2CZG4H (ORCPT
+	id S1756334Ab2CZHAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 03:00:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51368 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab2CZHAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 02:56:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6660"; a="175694829"
-Message-ID: <4F7012FC.10203@codeaurora.org>
-Date: Mon, 26 Mar 2012 12:25:56 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Mon, 26 Mar 2012 03:00:13 -0400
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: Ravi Kumar V <kumarrav@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-arm-msm@vger.kernel.or,
-        linux-kernel@vger.kernel.org, Zhang Wei <zw@zh-kernel.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Barry Song <baohua.song@csr.com>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Dan Williams <dan.j.williams@intel.com>, Li Yang <leoli@freescale.com>,
-        linuxppc-dev@lists.ozlabs.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/2] dmaengine: Add context parameter to prep_dma_sg
- and prep_interleaved_dma
-References: <1332426167-25213-1-git-send-email-kumarrav@codeaurora.org> <1332743073.19804.26.camel@vkoul-udesk3>
-In-Reply-To: <1332743073.19804.26.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1332520186-23476-1-git-send-email-swarren@wwwdotorg.org>
+References: <1332520186-23476-1-git-send-email-swarren@wwwdotorg.org>
+Date: Mon, 26 Mar 2012 09:00:12 +0200
+Message-ID: <CACRpkdb1cp+A-b0hKUVyT_03hiLNTHm1qb=8xMUn-wk=UijO3g@mail.gmail.com>
+Subject: Re: [PATCH V4] pinctrl: core device tree mapping table parsing support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linus.walleij@stericsson.com, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
+        thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/26/2012 11:54 AM, Vinod Koul wrote:
-> On Thu, 2012-03-22 at 19:52 +0530, Ravi Kumar V wrote:
->> Add new context parameter to DMA SG and Interleaveid mode for passing
-> Typo					  ^^^^^^^^^^^^
+On Fri, Mar 23, 2012 at 5:29 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-Sorry, we will fix this.
-
->> diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
->> index a2d25e4..3739a12 100644
->> --- a/drivers/misc/carma/carma-fpga-program.c
->> +++ b/drivers/misc/carma/carma-fpga-program.c
->> @@ -530,7 +530,7 @@ static noinline int fpga_program_dma(struct fpga_dev *priv)
->>   	}
->>
->>   	/* setup and submit the DMA transaction */
->> -	tx = chan->device->device_prep_dma_sg(chan,
->> +	tx = chan->device->dmaengine_prep_dma_sg(chan,
->>   					      table.sgl, num_pages,
->>   					      vb->sglist, vb->sglen, 0);
-> No the idea is that clients will not know anything about additionlay
-> parameter hence avoiding abuse. You need to reread the patches sent by
-> Alexandre.
+> During pinctrl_get(), if the client device has a device tree node, look
+> for the common pinctrl properties there. If found, parse the referenced
+> device tree nodes, with the help of the pinctrl drivers, and generate
+> mapping table entries from them.
 >
-> You need to
-> 1) add wrappers over interleaved api which dont expose this additional
-> parameter
-> 2) move existing users to use these wrappers
+> During pinctrl_put(), free any results of device tree parsing.
+>
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 
-Above two steps would be exactly same as 
-https://lkml.org/lkml/2012/3/8/401 - [PATCH 1/2 V2] dmaengine/dma_slave: 
-introduce inline wrappers, right?
+I really like this patch, nice clean and right to the point.
 
-> 3) add a new API which has your additional argument (not an opaque
-> object) and this calls .device_xx callback with additional arg.
-> 4. Above can be under conditional of your specific subsystem where these
-> parameters are valid.
+Can I have some more ACKs on it?
 
-Now, this would be different from what Alexandre had submitted, since he 
-had added "void *context" parameter directly to existing callbacks 
-dma_slave_sg and and cyclic under struct dma_device.
+If no response in a day or two I'll apply it anyway just because
+I like it.
 
-And you prefer that we add new callbacks under "struct dma_device" for 
-our specific requirement with new name and with that extra non-opaque 
-object. After that add wrappers for these two new callbacks say
-dmaengine_prep_dma_sg_ext and dmagengine_prep_interleaved_dma_ext (same
-name goes for callback).
-
----Trilok Soni
-
--- 
---
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks Stephen,
+Linus Walleij
