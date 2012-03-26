@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab2CZUVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 16:21:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56201 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755872Ab2CZUVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 16:21:02 -0400
-Message-ID: <4F70CFA4.5020503@zytor.com>
-Date: Mon, 26 Mar 2012 13:20:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
-        Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
-Subject: Re: [PATCH 1/1] vsprintf: optimize decimal conversion (again)
-References: <201203262047.17865.vda.linux@googlemail.com> <201203262051.24271.vda.linux@googlemail.com> <20120326125129.78975baf.akpm@linux-foundation.org> <CAK1hOcNZ1QdsT2Gajv1y-yAfF85hOTH=18vqqH4itURLtgYfdQ@mail.gmail.com> <20120326131304.018a5f4b.akpm@linux-foundation.org>
-In-Reply-To: <20120326131304.018a5f4b.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756356Ab2CZUVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 16:21:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44404 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756312Ab2CZUVN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 16:21:13 -0400
+Message-ID: <1332790614.16159.188.camel@twins>
+Subject: Re: [PATCH 20/39] autonuma: avoid CFS select_task_rq_fair to return
+ -1
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Date: Mon, 26 Mar 2012 21:36:54 +0200
+In-Reply-To: <1332783986-24195-21-git-send-email-aarcange@redhat.com>
+References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+	 <1332783986-24195-21-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 01:13 PM, Andrew Morton wrote:
-> On Mon, 26 Mar 2012 21:56:38 +0200
-> Denys Vlasenko <vda.linux@googlemail.com> wrote:
-> 
->>>> +#if BITS_PER_LONG != 32 || (~(0ULL)>>1) != ((1ULL<<63)-1)
->>>
->>> What's this for?
->>
->> The second check should be just BITS_PER_LONG_LONG != 64,
->> but we don't have BITS_PER_LONG_LONG.
-> 
-> So let's add BITS_PER_LONG_LONG rather than hacking around its absence!
+On Mon, 2012-03-26 at 19:46 +0200, Andrea Arcangeli wrote:
+> Fix to avoid -1 retval.
 
-First of all, the #if is wrong: the preprocessor doesn't support data
-types and does all arithmetic at (u)intmax_t precision.
+Please fold this and the following 5 patches into something sane. 6
+patches changing the same few lines and none of them with a useful
+changelog isn't how we do thing.
 
-As far as BITS_PER_LONG_LONG, there are tons of places in the kernel
-which already require that long long is exactly 64 bits.  That may or
-may not be a good thing, but for right now one could simply:
-
-#define BITS_PER_LONG_LONG 64
-
-	-hpa
 
