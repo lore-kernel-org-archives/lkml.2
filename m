@@ -1,39 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab2CZWL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 18:11:28 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51842
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757240Ab2CZWL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 18:11:27 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+	id S1757720Ab2CZWOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 18:14:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35297 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757675Ab2CZWOT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 18:14:19 -0400
+Date: Mon, 26 Mar 2012 18:12:09 -0400 (EDT)
+Message-Id: <20120326.181209.445040996295634478.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
         linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [PATCH 0/1] net/hyperv: Add flow control based on hi/low watermark
-Date: Mon, 26 Mar 2012 15:18:23 -0700
-Message-Id: <1332800304-5060-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+Subject: Re: [PATCH 0/1] net/hyperv: Add flow control based on hi/low
+ watermark
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1332800304-5060-1-git-send-email-haiyangz@microsoft.com>
+References: <1332800304-5060-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 26 Mar 2012 15:12:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is targeting 'net-next' tree.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Mon, 26 Mar 2012 15:18:23 -0700
 
-Thanks to Stephen Hemminger <shemminger@vyatta.com> for his suggestions.
+> This patch is targeting 'net-next' tree.
 
-
-Haiyang Zhang (1):
-  net/hyperv: Add flow control based on hi/low watermark
-
- drivers/hv/ring_buffer.c        |   15 +++++++++++++++
- drivers/net/hyperv/hyperv_net.h |    3 +++
- drivers/net/hyperv/netvsc.c     |   23 +++++++++++++++++++----
- drivers/net/hyperv/netvsc_drv.c |   16 +++++++++++++++-
- include/linux/hyperv.h          |    3 +++
- 5 files changed, 55 insertions(+), 5 deletions(-)
-
--- 
-1.7.4.1
-
+The merge window is still open, and therefore the net-next tree is
+not open yet.
