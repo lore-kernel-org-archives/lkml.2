@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab2CZS66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:58:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43494 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933188Ab2CZS64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:58:56 -0400
-Date: Mon, 26 Mar 2012 20:58:49 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Tracking regressions for next release(s)
-Message-ID: <20120326185849.GA19481@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, florian@mickler.org,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-	Steven Rostedt <rostedt@goodmis.org>
-References: <CAG9S4UjTtm_Zx89udbB=Qew7vToWkE_GHc_f78Q-kbOuqh4NRg@mail.gmail.com>
- <20120323101431.GA8832@liondog.tnic>
- <201203261847.17521.maciej.rutecki@gmail.com>
+	id S933400Ab2CZS7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:59:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42141 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933188Ab2CZS7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:59:20 -0400
+Date: Mon, 26 Mar 2012 13:59:12 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: linux-next: Tree for Mar 26 (platform/x86/apple-gmux)
+Message-ID: <20120326185912.GD17126@thinkpad-t410>
+Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	platform-driver-x86@vger.kernel.org
+References: <20120326152807.debdb1ec426b3c370c121178@canb.auug.org.au>
+ <4F70A27D.9000706@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201203261847.17521.maciej.rutecki@gmail.com>
+In-Reply-To: <4F70A27D.9000706@xenotime.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 06:47:17PM +0200, Maciej Rutecki wrote:
-> Hi,
+On Mon, Mar 26, 2012 at 10:08:13AM -0700, Randy Dunlap wrote:
+> On 03/25/2012 09:28 PM, Stephen Rothwell wrote:
 > 
-> On piątek, 23 marca 2012 o 11:14:31 Borislav Petkov wrote:
-> > On Fri, Mar 23, 2012 at 07:01:19AM +0100, Maciej Rutecki wrote:
-> > > I am interested in the opinion of the developers, testers, and
-> > > everyone involved in the development of the kernel, if they thing that
-> > > tracking regressions and monitoring the quality makes sense,
+> > Hi all,
 > > 
-> > Absolutely.
+> > Reminder: please do not add stuff destined for v3.5 to linux-next
+> > included trees/branches until after v3.4-rc1 has been released.
 > > 
-> > > especially since I met several times (put it mildly) dislike of such
-> > > work and the bugs are repaired relatively slowly.
-> > 
-> > I can imagine people getting cranky when someone points out that there's
-> > a "boring" bug they need to fix instead of them working on the cool new
-> > feature they have thought of. It is the same old story we've been having
-> > since forever: people don't really love to fix bugs, especially if the
-> > code works for them and the bug doesn't appear on their boxes.
-> > 
-> > > Perhaps someone has comments or proposals for change (in the way of
-> > > work or me).
-> > 
-> > Yeah, we need a big bad assh*le :) who screams at everyone until their
-> > bugs is fixed.
-> > 
-> > But serioulsy, this hasn't changed: we definitely need a regression
-> > list, I think it works even better when Linus goes over it and says
-> > this is fixed, that is this commit, etc. because he pulls all the trees
-> > in the end, ... so yeah, I think what you guys are doing is good and
-> > important.
-> > 
-> > It would be even cooler if this list be expanded also to regressions in
-> > kernel performance which people have noticed from running benchmarks on
-> > different -rcs and have noticed differences there, maybe a website (not
-> > bugzilla) which lists all those regressions for interested parties to
-> > fix in addition to the LKML mails..., etc...
-> > 
-> > Thanks for your hard work, btw.
+> > Changes since 20120323:
 > 
 > 
-> Borislav,  Bjorn Helgaas: thank you for the answer, but observing the 
-> reactions I get the impression that tracking the regression is not likely 
-> anyone's interest. In addition - especially on the last release cycle - 
-> sometimes encountered difficulties in cooperation on this topic with developers: 
-> ignoring request to update the status of the regression, or even add your e-
-> mail to bugzilla.
+> on i386:
+> 
+>   CC      drivers/platform/x86/apple-gmux.o
+> drivers/platform/x86/apple-gmux.c: In function 'gmux_read8':
+> drivers/platform/x86/apple-gmux.c:62:2: error: implicit declaration of function 'inb'
+> drivers/platform/x86/apple-gmux.c: In function 'gmux_write8':
+> drivers/platform/x86/apple-gmux.c:68:2: error: implicit declaration of function 'outb'
+> drivers/platform/x86/apple-gmux.c: In function 'gmux_read32':
+> drivers/platform/x86/apple-gmux.c:73:2: error: implicit declaration of function 'inl'
+> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
+> drivers/platform/x86/apple-gmux.c:117:2: error: implicit declaration of function 'kzalloc'
+> drivers/platform/x86/apple-gmux.c:117:12: warning: assignment makes pointer from integer without a cast
+> drivers/platform/x86/apple-gmux.c:198:2: error: implicit declaration of function 'kfree'
+> 
+> 
+> Full randconfig file is attached.
 
-Well, sounds like you've already decided and that's just sad :(. Let's
-add some more people to Cc, see what they think.
+I get the same thing with that config. Sorry about that.
 
-Guys, thread starts here: http://lkml.org/lkml/2012/3/23/31
+Matthew: Adding includes for linux/slab.h and asm/io.h fixes the build
+for me. Do you want to fix it up in your tree, or do you want me to send
+a replacement patch?
 
-> I give up tracking the regression, but not the kernel testing. Even now I have 
-> a few hours per week more for it.
+Seth
 
-Well, if you still can report your results from it, I think maintainers
-who are still interested in the quality of their code will be interested
-in your testing reports.
-
-Thanks again for your work.
-
--- 
-Regards/Gruss,
-    Boris.
