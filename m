@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab2CZIAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:00:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50182 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab2CZIAK convert rfc822-to-8bit (ORCPT
+	id S1754728Ab2CZICW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:02:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55986 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034Ab2CZICT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:00:10 -0400
-Message-ID: <1332748746.16159.62.camel@twins>
-Subject: Re: [PATCH v2.1 01/10] cpu: Introduce clear_tasks_mm_cpumask()
- helper
+	Mon, 26 Mar 2012 04:02:19 -0400
+Message-ID: <1332748920.16159.65.camel@twins>
+Subject: Re: CPU Hotplug rework
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        linux-mm@kvack.org
-Date: Mon, 26 Mar 2012 09:59:06 +0200
-In-Reply-To: <20120325174210.GA23605@redhat.com>
-References: <20120324102609.GA28356@lizard> <20120324102751.GA29067@lizard>
-	 <1332593021.16159.27.camel@twins> <20120324164316.GB3640@lizard>
-	 <20120325174210.GA23605@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: paulmck@linux.vnet.ibm.com,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Date: Mon, 26 Mar 2012 10:02:00 +0200
+In-Reply-To: <87bonkchxk.fsf@rustcorp.com.au>
+References: <4F674649.2000300@linux.vnet.ibm.com>
+	 <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins>
+	 <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins>
+	 <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com>
+	 <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com>
+	 <87bonkchxk.fsf@rustcorp.com.au>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -37,9 +39,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-03-25 at 19:42 +0200, Oleg Nesterov wrote:
-> __cpu_disable() is called by __stop_machine(), we know that nobody
-> can preempt us and other CPUs can do nothing. 
+On Mon, 2012-03-26 at 11:11 +1030, Rusty Russell wrote:
+> Obviously, having callbacks hanging around until the CPU comes back is
+> not viable, nor is blocking preempt during the callbacks.  Calling
+> get_online_cpus() is too heavy. 
 
-It would be very good to not rely on that though, I would love to get
-rid of the stop_machine usage in cpu hotplug some day.
+-rt has patches (albeit somewhat ugly) to make get_online_cpus() a br
+style rw-lock. That is, it makes the read side a per-cpu lock/counter so
+that its much faster and only touches cpu-local state in the common
+case.
+
+It would be good to clean those up and make get_online_cpus() fast and
+usable.
