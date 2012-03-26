@@ -1,75 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab2CZINA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:13:00 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58204 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab2CZIM6 (ORCPT
+	id S1755007Ab2CZIQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:16:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35828 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754401Ab2CZIQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:12:58 -0400
-Message-ID: <4F702503.3060009@suse.cz>
-Date: Mon, 26 Mar 2012 10:12:51 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120314 Thunderbird/12.0
-MIME-Version: 1.0
-To: Tilman Schmidt <tilman@imap.cc>
-CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, netdev@vger.kernel.org, hjlipp@web.de
-Subject: Re: [GIT PATCH] TTY/serial patches for 3.4-rc1
-References: <20120319195649.GD9883@kroah.com> <20120325171837.67310140074@xenon.ts.pxnet.com>
-In-Reply-To: <20120325171837.67310140074@xenon.ts.pxnet.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Mar 2012 04:16:21 -0400
+Message-ID: <1332749776.2836.15.camel@dabdike>
+Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
+ correctly when SRB status is INVALID
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Mon, 26 Mar 2012 09:16:16 +0100
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B76AF70@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1332115915-26805-1-git-send-email-kys@microsoft.com>
+	 <1332115963-26855-1-git-send-email-kys@microsoft.com>
+	 <1332173560.3152.65.camel@dabdike>
+	 <6E21E5352C11B742B20C142EB499E0481B769E88@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	 <1332196819.3152.77.camel@dabdike>
+	 <6E21E5352C11B742B20C142EB499E0481B76A16D@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	 <1332233502.14019.14.camel@dabdike.int.hansenpartnership.com>
+	  <6E21E5352C11B742B20C142EB499E0481B76AF70@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2012 07:12 PM, Tilman Schmidt wrote:
-> Jiri, Greg,
+On Fri, 2012-03-23 at 15:50 +0000, KY Srinivasan wrote:
 > 
-> On 19.03.2012 20:56, Greg KH wrote:
->> tty and serial merge for 3.4-rc1
-> [...]
->> Jiri Slaby (77):
-> [...]
->>       TTY: isdn/gigaset, do not set tty->driver_data to NULL
+> > -----Original Message-----
+> > From: KY Srinivasan
+> > Sent: Tuesday, March 20, 2012 10:42 AM
+> > To: 'James Bottomley'
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> > scsi@vger.kernel.org
+> > Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result correctly
+> > when SRB status is INVALID
+> > 
+> > 
+> > 
+> > > -----Original Message-----
+> > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > > Sent: Tuesday, March 20, 2012 4:52 AM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> > > scsi@vger.kernel.org
+> > > Subject: RE: [PATCH RESEND 1/2] Drivers: scsi: storvsc: Set the scsi result
+> > correctly
+> > > when SRB status is INVALID
+> > >
+> > > On Mon, 2012-03-19 at 22:52 +0000, KY Srinivasan wrote:
+> > > > > >  However, keep in mind
+> > > > > > that there is no current ETA on when Windows will ship with these
+> > changes
+> > > -
+> > > > > Windows 8
+> > > > > > may ship with code where they would return an invalid SRB status, but
+> > they
+> > > are
+> > > > > not
+> > > > > > setting the sense code, hence this patch. When the Window host does
+> > the
+> > > > > "right thing"
+> > > > > > I will clean this up, but I don't know when that will be.
+> > > > >
+> > > > > I thought you just said you'd only just asked them if they could
+> > > > > implemented it, in which case no version of windows currently ships with
+> > > > > this, correct?
+> > > >
+> > > > There are some private builds of windows 8 floating around with this change,
+> > > where
+> > > > they are returning ILLEGAL_REQUEST SRB status  without any sense data.
+> > >
+> > > Sure, but they're not shipped, right ... it's like the test builds we do
+> > > for large companies like IBM and HP to try out certain things before
+> > > deciding they don't work.
+> > 
+> > They are close to shipping and it is very difficult to get any changes in
+> > presently. Furthermore, this is only on windows8; none of the prior
+> > versions of windows servers of interest support this. I am starting an effort to
+> > get this change into prior windows servers. Once again, it is not clear when
+> > these changes will be pushed out.
+> > 
+> > 
+> > >
+> > > > > > More importantly, the second patch  in this series where I filter out
+> > > > > > the ATA_16 command
+> > > > > > on the guest is really important for us. Without that patch on a range
+> > > > > > on windows hosts
+> > > > > > including the current beta version of windows8 where the host is
+> > > > > > returning a generic
+> > > > > > error in response to ATA_16 command, we cannot boot many Linux
+> > > > > > distros. If you
+> > > > > > prefer, I can drop the first patch and re-submit the second patch for
+> > > > > > consideration now.
+> > > > >
+> > > > > I'm not sure about that either.  You presumably translate
+> > > > > SRB_STATUS_ERROR into DID_TARGET_FAILURE.  That should cause the
+> > > > > termination of the command with prejudice in exactly the same way as an
+> > > > > ILLEGAL_REQUEST sense code would (minus the useful error information),
+> > > > > so what's causing the boot failure?
+> > > >
+> > > > You are right, currently without a proper SRB code, I do a
+> > DID_TARGET_FAILURE
+> > > and
+> > > > this results in the device being offlined and if the device happens to be the
+> > root
+> > > device,
+> > > > we obviously cannot boot. I have seen this problem with sles11 sp2 on a win8
+> > > box.
+> > >
+> > > OK, so this may be the root cause of the problem.  DID_TARGET_FAILURE
+> > > returns FAILED from scsi_decide_disposition().  This wakes up the error
+> > > handler to retry the command and, since the command is never going to
+> > > work, this ends up offlining the device.  The same thing will happen for
+> > > every command with no recovery.
+> > >
+> > > The question now is, what else returns SRB_STATUS_ERROR?  If it's always
+> > > for stuff that's unretryable, then the DID_ error is wrong and you
+> > > should be returning DID_PASSTHROUGH with an error code and the problem
+> > > will be solved.  If we can get SRB_STATUS_ERROR on retryable commands,
+> > > then you discriminate at the point of failure, not at the point of input
+> > > and return DID_TARGET_FAILURE for the ones that should be retried and
+> > > DID_PASSTHROUGH + error for the ones that shouldn't.  This will ensure
+> > > the driver is completely backwards compatible and that it will work
+> > > if/when windows properly handles the commands.
+> > 
+> > James, unfortunately based on the current SRB codes I get back from the
+> > host, I don't know which commands that failed ought to be retried and which
+> > ones should not be; I simply get a single SRB error code for cases where the
+> > host filtered the unsupported commands as well as the case where the host
+> > supported the command and something failed in the command execution.
+> > If there is something I can try in this driver to fix this problem, I am more than
+> > happy to try it. If it involves getting changes into  the host (win8, win2k8 etc.),
+> > I am willing to start a conversation with the relevant teams, but I cannot
+> > obviously determine when such changes will ship. However, I do need
+> > solution for the problem now.
+> > 
+> > I appreciate your taking the time to help me gravitate towards the
+> > correct solution here. Given my constraints, let me know what is the
+> > best way forward here.
 > 
-> It seems that the amendment we discussed on 05.03.2012 did not
-> make it into this patch. It would be nice if the following patch
-> could still be added on top of it.
+> Ping.
 
-Ah, yes, I forgot, of course. Thanks for posting it.
+On what? What don't you understand about the above?
 
-> From: Tilman Schmidt <tilman@imap.cc>
-> Date: Sun, 25 Mar 2012 12:21:57 +0200
-> Subject: [PATCH] isdn/gigaset: use gig_dbg() for debugging output
-> 
-> The "TTY buffer in tty_port" patchset introduced an opencoded
-> debug message in the Gigaset tty device if_close() function.
-> Change it to use the gig_dbg() macro like everywhere else in
-> the driver.
-> 
-> Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-> ---
->  drivers/isdn/gigaset/interface.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
-> index b3d6ac1..a6d9fd2 100644
-> --- a/drivers/isdn/gigaset/interface.c
-> +++ b/drivers/isdn/gigaset/interface.c
-> @@ -176,7 +176,7 @@ static void if_close(struct tty_struct *tty, struct file *filp)
->  	struct cardstate *cs = tty->driver_data;
->  
->  	if (!cs) { /* happens if we didn't find cs in open */
-> -		printk(KERN_DEBUG "%s: no cardstate\n", __func__);
-> +		gig_dbg(DEBUG_IF, "%s: no cardstate", __func__);
->  		return;
->  	}
->  
+The failure path needs to look like the following metacode
+
+case SRB_whatever
+
+if (retryable command)
+	return DID_TARGET_FAILURE
+else
+	setup sense and error
+	return DID_PASSTHROUGH
+
+James
 
 
--- 
-js
-suse labs
