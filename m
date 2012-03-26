@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259Ab2CZSJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:09:37 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51902 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932933Ab2CZSJg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:09:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
-References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
-	<1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
-Date: Mon, 26 Mar 2012 15:09:34 -0300
-Message-ID: <CAOMZO5DL8YQT2qb=vxdQtdN+zfZLK9H9_1qu5sS+1YAvSo5SAA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ARM i.MX 3ds debugboard: register a dummy regulator
- for the smsc911x device
-From: Fabio Estevam <festevam@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Estevam Fabio-R49496 <r49496@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S933271Ab2CZSLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:11:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40791 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933232Ab2CZSLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:11:41 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH 26/39] autonuma: select_idle_sibling cleanup target assignment
+Date: Mon, 26 Mar 2012 19:46:13 +0200
+Message-Id: <1332783986-24195-27-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Cleanup the code without reusing the cpu variable to simplify
+readibility.
 
-On Sat, Mar 3, 2012 at 8:40 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ kernel/sched/fair.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-...
->        /* Register Lan device on the debugboard */
-> +       regulator_register_fixed(0, dummy_supplies, ARRAY_SIZE(dummy_supplies));
-
-I am using linux-next, which has this patch applied and I am getting:
-
-smsc911x smsc911x.0: Failed to get supply 'vdd33a': -517
-smsc911x smsc911x.0: (unregistered net_device): couldn't get regulators -517
-platform smsc911x.0: Driver smsc911x requests probe deferral
-
-Does this work for you on pcm037?
-
-If I select CONFIG_REGULATOR_DUMMY then the the smsc driver is probed
-correctly, but if I understand correctly your suggestion was to not
-select CONFIG_REGULATOR_DUMMY, right?
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0d2fe26..693adc5 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2642,6 +2642,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 	struct sched_domain *sd;
+ 	struct sched_group *sg;
+ 	int i;
++	bool idle_target;
+ 
+ 	/*
+ 	 * If the task is going to be woken-up on this cpu and if it is
+@@ -2661,6 +2662,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 	/*
+ 	 * Otherwise, iterate the domains and find an elegible idle cpu.
+ 	 */
++	idle_target = false;
+ 	sd = rcu_dereference(per_cpu(sd_llc, target));
+ 	for_each_lower_domain(sd) {
+ 		sg = sd->groups;
+@@ -2674,7 +2676,6 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 					goto next;
+ 			}
+ 
+-			cpu = -1;
+ 			for_each_cpu_and(i, sched_group_cpus(sg),
+ 						tsk_cpus_allowed(p)) {
+ 				/* Find autonuma cpu only in idle group */
+@@ -2682,10 +2683,11 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 					target = i;
+ 					goto done;
+ 				}
+-				if (cpu == -1)
+-					cpu = i;
++				if (!idle_target) {
++					idle_target = true;
++					target = i;
++				}
+ 			}
+-			target = cpu;
+ next:
+ 			sg = sg->next;
+ 		} while (sg != sd->groups);
