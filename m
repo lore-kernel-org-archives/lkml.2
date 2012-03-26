@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2CZUQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 16:16:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62662 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab2CZUQ1 (ORCPT
+	id S1756023Ab2CZURd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 16:17:33 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:18569 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755417Ab2CZURc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 16:16:27 -0400
-Date: Mon, 26 Mar 2012 13:16:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: linux-next: Tree for Mar 26 (usbcore)
-Message-ID: <20120326201622.GA29228@kroah.com>
-References: <20120326180736.GA2893@kroah.com>
- <Pine.LNX.4.44L0.1203261550290.1179-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1203261550290.1179-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Mar 2012 16:17:32 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH] video/console: Clip the right margin clear to the visible region
+Date: Mon, 26 Mar 2012 21:17:02 +0100
+Message-Id: <1332793022-29292-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.9.1
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 04:06:59PM -0400, Alan Stern wrote:
-> On Mon, 26 Mar 2012, Greg KH wrote:
-> 
-> > On Mon, Mar 26, 2012 at 09:58:36AM -0700, Randy Dunlap wrote:
-> > > On 03/25/2012 09:28 PM, Stephen Rothwell wrote:
-> > > 
-> > > > Hi all,
-> > > > 
-> > > > Reminder: please do not add stuff destined for v3.5 to linux-next
-> > > > included trees/branches until after v3.4-rc1 has been released.
-> > > > 
-> > > > Changes since 20120323:
-> > > 
-> > > 
-> > > 
-> > > on x86_64:
-> > > 
-> > > ERROR: "utf16s_to_utf8s" [drivers/usb/core/usbcore.ko] undefined!
-> > > ERROR: "usb_speed_string" [drivers/usb/core/usbcore.ko] undefined!
-> > > 
-> > > Full randconfig file is attached.
-> > 
-> > Odd, nothing in the usb core has changed in a while in this area,
-> > although we might have gotten some core dependancies mixed up for random
-> > configurations like this.
-> 
-> This is puzzling.
-> 
-> 	utf16s_to_utf8s is defined in fs/nls/nls_base.c,
-> 	which is built according to CONFIG_NLS (in fs/nls/Makefile),
-> 	which is selected by CONFIG_USB (in drivers/usb/Kconfig).
-> 
-> But the config that Randy attached had CONFIG_USB set to M and 
-> CONFIG_NLS not set.  How is that possible?
-> 
-> 	usb_speed_string is defined in drivers/usb/usb-common.c,
-> 	which is built according to CONFIG_USB_COMMON (in
-> 		drivers/usb/Makefile),
-> 	which defaults to Y if CONFIG_USB_SUPPORT and either
-> 		CONFIG_USB or CONFIG_USB_GADGET is set (in 
-> 		drivers/usb/Kconfig).
-> 
-> The problem here was that CONFIG_USB_SUPPORT isn't set but CONFIG_USB
-> is set to M.  This used not to be possible, since CONFIG_USB was
-> defined inside an "if USB_SUPPORT" section.  Maybe that got changed and
-> needs to be fixed (but
-> https://git.kernel.org/?p=linux/kernel/git/next/linux-next.git thinks
-> it's still not possible).  Or maybe Randy's tree is a little out of 
-> date.
+For some unknown reason, yres_virtual was 2x larger the the size specified
+by i915 and so when blit_clear_margins() tried to clear the full virtual
+right-hand margin it tried to write far beyond the end of the buffer.
 
-Yeah, that is strange, thanks for looking into it.
+This limits the clear to only the visible portion of the right-hand
+margin, similar to how the bottom margin is treated.
 
-Randy, any thoughts?
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=38138
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/video/console/bitblit.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
+index 28b1a83..9f89e5a 100644
+--- a/drivers/video/console/bitblit.c
++++ b/drivers/video/console/bitblit.c
+@@ -219,9 +219,9 @@ static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
+ 
+ 	if (rw && !bottom_only) {
+ 		region.dx = info->var.xoffset + rs;
+-		region.dy = 0;
++		region.dy = info->var.yoffset;
+ 		region.width = rw;
+-		region.height = info->var.yres_virtual;
++		region.height = info->var.yres;
+ 		info->fbops->fb_fillrect(info, &region);
+ 	}
+ 
+-- 
+1.7.9.1
+
