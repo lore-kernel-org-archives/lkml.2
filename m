@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab2CZKoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:44:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41241 "EHLO mx1.redhat.com"
+	id S1757287Ab2CZKoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:44:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51185 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756714Ab2CZKoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:44:24 -0400
-Subject: Re: GFS2: Pre-pull patch posting (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: David Teigland <teigland@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-In-Reply-To: <20120323220618.GA30906@d2.synalogic.ca>
-References: <1332152728-4027-1-git-send-email-swhiteho@redhat.com>
-	 <4F674696.7030602@xenotime.net> <1332169153.2689.20.camel@menhir>
-	 <4F674E4F.5080904@xenotime.net> <1332171247.2689.28.camel@menhir>
-	 <20120323194152.GD24746@redhat.com> <4F6CD7AD.9030306@xenotime.net>
-	 <20120323201820.GE24746@redhat.com>
-	 <20120323220618.GA30906@d2.synalogic.ca>
+	id S1757270Ab2CZKog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 06:44:36 -0400
+Message-ID: <1332758696.6913.3.camel@tucsk.pomaz.szeredi.hu>
+Subject: Re: [PATCH 8/9] vfs: split __lookup_hash
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 26 Mar 2012 12:44:56 +0200
+In-Reply-To: <20120320163922.GA24462@infradead.org>
+References: <1331038601-20353-1-git-send-email-miklos@szeredi.hu>
+	 <1331038601-20353-9-git-send-email-miklos@szeredi.hu>
+	 <20120320163922.GA24462@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 26 Mar 2012 11:44:22 +0100
-Message-ID: <1332758662.2721.10.camel@menhir>
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2012-03-20 at 12:39 -0400, Christoph Hellwig wrote:
+> On Tue, Mar 06, 2012 at 01:56:40PM +0100, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > Split __lookup_hash into two component functions:
+> > 
+> >  lookup_dcache - tries cached lookup, returns whether real lookup is needed
+> >  lookup_real - calls i_op->lookup
+> > 
+> > This eliminates code duplication between d_alloc_and_lookup() and
+> > d_inode_lookup().
+> 
+> The return value from lookup_dcache is a bit confusing.  What about
+> returning the need_lookup flag, and passing the dentry as a parameter,
+> that way the callers would do the more obvious:
+> 
+> 	if (lookup_dcache(name, base, nd, &dentry))
+> 		return dentry;
+> 
+> instead of having to check two conditions.
+> 
 
-On Fri, 2012-03-23 at 18:06 -0400, Benjamin Poirier wrote:
-[snip]
-> 
-> Instead of trying to select everything in GFS2, how about doing it this way?
-> 
-> [PATCH] gfs2: use depends instead of select in kconfig
-> 
-> Avoids having to duplicate the dependencies of what is 'select'ed (and on
-> down...)
-> 
-> Those dependencies are currently incomplete, leading to broken builds with
-> GFS2_FS_LOCKING_DLM=y and IP_SCTP=n.
-> 
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-> ---
->  fs/gfs2/Kconfig |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
-> index c465ae0..eb08c9e 100644
-> --- a/fs/gfs2/Kconfig
-> +++ b/fs/gfs2/Kconfig
-> @@ -1,10 +1,6 @@
->  config GFS2_FS
->  	tristate "GFS2 file system support"
->  	depends on (64BIT || LBDAF)
-> -	select DLM if GFS2_FS_LOCKING_DLM
-> -	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
-> -	select SYSFS if GFS2_FS_LOCKING_DLM
-> -	select IP_SCTP if DLM_SCTP
->  	select FS_POSIX_ACL
->  	select CRC32
->  	select QUOTACTL
-> @@ -29,7 +25,8 @@ config GFS2_FS
->  
->  config GFS2_FS_LOCKING_DLM
->  	bool "GFS2 DLM locking"
-> -	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && HOTPLUG
-> +	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && \
-> +		HOTPLUG && DLM && CONFIGFS_FS && SYSFS
->  	help
->  	  Multiple node locking module for GFS2
->  
+The reason I dislike your version is that returning an error value in an
+argument would be strange.
 
-That looks ok to me. I've put it in the GFS2 -fixes tree, and if
-everybody is happy with that I'll send a pull request shortly,
+And this works too:
 
-Steve.
+	dentry = lookup_dcache(name, base, nd, &need_lookup);
+	if (!need_lookup)
+		return dentry;
 
+
+Thanks,
+Miklos
 
