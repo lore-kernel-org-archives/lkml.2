@@ -1,185 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2CZTyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 15:54:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36414 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab2CZTyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 15:54:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chris Ball <cjb@laptop.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PM / SDIO: Use empty system suspend/resume callbacks at the bus level (was: Re: Recent ...)
-Date: Mon, 26 Mar 2012 21:59:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: NeilBrown <neilb@suse.de>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-References: <20120325203849.7a908e32@notabene.brown> <20120326084515.0fd3ee7f@notabene.brown> <201203260029.24826.rjw@sisk.pl>
-In-Reply-To: <201203260029.24826.rjw@sisk.pl>
+	id S1755386Ab2CZT5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 15:57:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54164 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab2CZT47 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 15:56:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203262159.09335.rjw@sisk.pl>
+In-Reply-To: <20120326125129.78975baf.akpm@linux-foundation.org>
+References: <201203262047.17865.vda.linux@googlemail.com> <201203262051.24271.vda.linux@googlemail.com>
+ <20120326125129.78975baf.akpm@linux-foundation.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 26 Mar 2012 21:56:38 +0200
+Message-ID: <CAK1hOcNZ1QdsT2Gajv1y-yAfF85hOTH=18vqqH4itURLtgYfdQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] vsprintf: optimize decimal conversion (again)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 26, 2012, Rafael J. Wysocki wrote:
-> On Sunday, March 25, 2012, NeilBrown wrote:
-> > On Sun, 25 Mar 2012 23:25:37 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > 
-> > > On Sunday, March 25, 2012, Rafael J. Wysocki wrote:
-> > > > Hi,
-> > > > 
-> > > > On Sunday, March 25, 2012, NeilBrown wrote:
-> > > > > 
-> > > > > Hi Rafael,
-> > > > > 
-> > > > >  Your recent patch:
-> > > > >    commit 35cd133c
-> > > > >    PM: Run the driver callback directly if the subsystem one is not there
-> > > > > 
-> > > > >  breaks suspend for my libertas wifi and probably other SDIO devices.
-> > > > 
-> > > > Well, the patch is not recent.  The _commit_ is more than three months old
-> > > > and the patch has been around since the last November (at least).
-> > > > 
-> > > > >  SDIO (and possible MMC in general) has a protocol where the suspend
-> > > > >  method can return -ENOSYS and this means "There is no point in suspending,
-> > > > >  just turn me off".
-> > > > >
-> > > > >  The device itself "mmc1:0001" (I think) doesn't have any bus etc 'suspend'
-> > > > >  function so the new code call the device's suspend function which returns
-> > > > >  ENOSYS and the suspend fails.
-> > > > > 
-> > > > >  The previous code ignores the device as there is no bus suspend, and when it
-> > > > >  gets to suspend the ancestor - which for me is omap_hsmmc.1, it calls the
-> > > > >  device suspend function catches the ENOSYS, and turns it off.
-> > > > 
-> > > > Well, I can only call that a blatant abuse of the PM infrastructure.
-> > > > 
-> > > > >  I suspect just reverting it isn't the right long term solution, however I
-> > > > >  can confirm that it works for me for now.
-> > > > 
-> > > > It's not a solution at all, because there's code that depends on it already in
-> > > > the tree and the fact that it works for you doesn't mean it won't break other
-> > > > systems.  So no, it's not an option.
-> > > > 
-> > > > >  I'm happy to try any alternate fixes you would like to suggest (but I cannot
-> > > > >  promise how quickly I will get the testing done).
-> > > > > 
-> > > > >  (I'm testing with 3.3)
-> > > > 
-> > > > The only fix I can think of is to rework SDIO to stop abusing the PM callbacks.
-> > > > I'll have a look at that next week, although I can't promise anything any time
-> > > > soon, because I'm heading to San Francisco on Saturday.
-> > > 
-> > > Well, this is kind of a long shot, but I wonder if the patch below makes
-> > > any difference?
-> > 
-> > Hi Rafael,
-> >  thanks for looking into this so quickly.
-> > 
-> > I removed the revert and applied this patch instead and can confirm that
-> > suspend completes now (and resume works and the wifi works after resume).
-> > 
-> > Further, this patch fits with my (fairly shallow) understanding of the
-> > problem.
-> > 
-> > Thanks!
-> 
-> Thanks for the confirmation.
-> 
-> Below it goes again with a changelog and tags.
-> 
-> I don't really think that SDIO does the right thing here overall, but that's
-> all I can do to address the problem timely.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / SDIO: Use empty system suspend/resume callbacks at the bus level
-> 
-> Neil Brown reports that commit 35cd133c
-> 
->    PM: Run the driver callback directly if the subsystem one is not there
-> 
-> breaks suspend for his libertas wifi, because SDIO has a protocol
-> where the suspend method can return -ENOSYS and this means "There is
-> no point in suspending, just turn me off".  Moreover, the suspend
-> methods provided by SDIO drivers are not supposed to be called by
-> the PM core or bus-level suspend routines (which aren't presend for
-> SDIO).  Instead, when the SDIO core gets to suspend the device's
-> ancestor, it calls the device driver's suspend function, catches the
-> ENOSYS, and turns the device off.
-> 
-> The commit above breaks the SDIO core's assumption that the device
-> drivers' callbacks won't be executed if it doesn't provide any
-> bus-level callbacks.  If fact, however, this assumption has never
-> been really satisfied, because device class or device type suspend
-> might very well use the driver's callback even without that commit.
-> 
-> The simplest way to address this problem is to make the SDIO core
-> tell the PM core to ignore driver callbacks, for example by providing
-> no-operation suspend/resume callbacks at the bus level for it,
-> which is implemented by this change.
-> 
-> Reported-and-tested-by: Neil Brown <neilb@suse.de>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Mon, Mar 26, 2012 at 9:51 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 26 Mar 2012 20:51:24 +0200
+> Denys Vlasenko <vda.linux@googlemail.com> wrote:
+>
+>> commit 01a2904d31d2373886f489429ec662c9be64a6ab
+>> Author: Denys Vlasenko <vda.linux@googlemail.com>
+>> Date:   Mon Mar 26 20:40:53 2012 +0200
+>>
+>>     vsprintf: optimize decimal conversion (again)
+>>
+>>     Previous code was using optimizations which were developed
+>>     to work well even on narrow-word CPUs (by today's standards).
+>>     But Linux runs only on 32-bit and wider CPUs. We can use that.
+>>
+>>     First: using 32x32->64 multiply and trivial 32-bit shift,
+>>     we can correctly divide by 10 much larger numbers, and thus
+>>     we can print groups of 9 digits instead of groups of 5 digits.
+>>
+>>     Next: there are two algorithms to print larger numbers.
+>>     One is generic: divide by 1000000000 and repeatedly print
+>>     groups of (up to) 9 digits. It's conceptually simple,
+>>     but requires an (unsigned long long) / 1000000000 division.
+>>
+>>     Second algorithm splits 64-bit unsigned long long into 16-bit chunks,
+>>     manipulates them cleverly and generates groups of 4 decimal digits.
+>>     It so happens that it does NOT require long long division.
+>>
+>>     If long is > 32 bits, division of 64-bit values is relatively easy,
+>>     and we will use the first algorithm.
+>>     If long long is > 64 bits (strange architecture with VERY large long long),
+>>     second algorithm can't be used, and we again use the first one.
+>>
+>>     Else (if long is 32 bits and long long is 64 bits) we use second one.
+>>
+>>     And third: there is a simple optimization which takes fast path
+>>     not only for zero as was done before, but for all one-digit numbers.
+>>
+>>     In all tested cases new code is faster than old one, in many cases by 30%,
+>>     in few cases by more than 50% (for example, on x86-32, conversion of 12345678).
+>>     Code growth is ~0 in 32-bit case and ~130 bytes in 64-bit case.
+>>
+>
+> This patch is so nutty that I like it.
+>
+>> +#if BITS_PER_LONG != 32 || (~(0ULL)>>1) != ((1ULL<<63)-1)
+>
+> What's this for?
 
-OK, I don't see any objections.  Does it mean I can push this patch as a fix
-for 3.4?  Chris?
+The second check should be just BITS_PER_LONG_LONG != 64,
+but we don't have BITS_PER_LONG_LONG.
 
-Rafael
-
-
-> ---
->  drivers/mmc/core/sdio_bus.c |   12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> Index: linux/drivers/mmc/core/sdio_bus.c
-> ===================================================================
-> --- linux.orig/drivers/mmc/core/sdio_bus.c
-> +++ linux/drivers/mmc/core/sdio_bus.c
-> @@ -192,9 +192,15 @@ static int sdio_bus_remove(struct device
->  	return ret;
->  }
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
-> +
-> +static int pm_no_operation(struct device *dev)
-> +{
-> +	return 0;
-> +}
->  
->  static const struct dev_pm_ops sdio_bus_pm_ops = {
-> +	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
->  	SET_RUNTIME_PM_OPS(
->  		pm_generic_runtime_suspend,
->  		pm_generic_runtime_resume,
-> @@ -204,11 +210,11 @@ static const struct dev_pm_ops sdio_bus_
->  
->  #define SDIO_PM_OPS_PTR	(&sdio_bus_pm_ops)
->  
-> -#else /* !CONFIG_PM_RUNTIME */
-> +#else /* !CONFIG_PM */
->  
->  #define SDIO_PM_OPS_PTR	NULL
->  
-> -#endif /* !CONFIG_PM_RUNTIME */
-> +#endif /* !CONFIG_PM */
->  
->  static struct bus_type sdio_bus_type = {
->  	.name		= "sdio",
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
+-- 
+vda
