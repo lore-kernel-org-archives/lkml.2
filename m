@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab2CZWhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 18:37:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36020 "EHLO
+	id S932146Ab2CZWnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 18:43:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab2CZWhj convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751956Ab2CZWnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 18:37:39 -0400
-Date: Mon, 26 Mar 2012 15:37:38 -0700
+	Mon, 26 Mar 2012 18:43:04 -0400
+Date: Mon, 26 Mar 2012 15:43:03 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Arkadiusz =?UTF-8?Q?Mi=C5=9Bkie?= =?ISO-8859-1?Q?wicz?= 
-	<a.miskiewicz@gmail.com>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH] proc: fix mount -t proc -o AAA
-Message-Id: <20120326153738.aa728115.akpm@linux-foundation.org>
-In-Reply-To: <97428.1332714196@turing-police.cc.vt.edu>
-References: <201203220903.15360.a.miskiewicz@gmail.com>
-	<20120323171058.GA3279@albatros>
-	<20120323161504.dced28b9.akpm@linux-foundation.org>
-	<201203250924.06908.a.miskiewicz@gmail.com>
-	<20120325153612.GC4391@albatros>
-	<97428.1332714196@turing-police.cc.vt.edu>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysrq: Use SEND_SIG_FORCED instead of force_sig()
+Message-Id: <20120326154303.86126785.akpm@linux-foundation.org>
+In-Reply-To: <20120324110024.GA14067@lizard>
+References: <20120324110024.GA14067@lizard>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Mar 2012 18:23:16 -0400
-Valdis.Kletnieks@vt.edu wrote:
+On Sat, 24 Mar 2012 15:00:24 +0400
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
-> On Sun, 25 Mar 2012 19:36:12 +0400, Vasiliy Kulikov said:
-> > On Sun, Mar 25, 2012 at 09:24 +0200, Arkadiusz MiEkiewicz wrote:
-> > > but there is another problem - unmounting it and mounting without options
-> > > causes old option to persist:
-> > >
-> > > # mount none /proc -t proc -o hidepid=2
-> > > # umount /proc
-> > > # mount none /proc -t proc
-> > > # grep "/proc" /proc/mounts
-> > > none /proc proc rw,relatime,hidepid=2 0 0
-> > >
-> > > There should be no hidepid=2 now.
+> Change send_sig_all() to use do_send_sig_info(SEND_SIG_FORCED)
+> instead of force_sig(SIGKILL). With the recent changes we do not
+> need force_ to kill the CLONE_NEWPID tasks.
+> 
+> And this is more correct. force_sig() can race with the exiting
+> thread, while do_send_sig_info(group => true) kill the whole
+> process.
+> 
+> Some more notes from Oleg Nesterov:
+> 
+> > Just one note. This change makes no difference for sysrq_handle_kill().
+> > But it obviously changes the behaviour sysrq_handle_term(). I think
+> > this is fine, if you want to really kill the task which blocks/ignores
+> > SIGTERM you can use sysrq_handle_kill().
 > >
-> > No, that's an expected behaviour.
+> > Even ignoring the reasons why force_sig() is simply wrong here,
+> > force_sig(SIGTERM) looks strange. The task won't be killed if it has
+> > a handler, but SIG_IGN can't help. However if it has the handler
+> > but blocks SIGTERM temporary (this is very common) it will be killed.
 > 
-> "You keep using that word. I do not think it means what you think it means". ;)
+> Also,
 > 
-> > Procfs is a special filesystem.
+> > force_sig() can't kill the process if the main thread has already
+> > exited. IOW, it is trivial to create the process which can't be
+> > killed by sysrq.
 > 
-> And the fact it's "special" makes this *unexpected* behavior.  Are there
-> any other filesystems where -o values will persist across an unmount
-> and then take effect *even if no -o is given* on a subsequent mount?
+> So, this patch fixes the issue.
 > 
-> Yes, it may be what the code actually *does*, but it certainly violates
-> the Principle of Least Surprise...
+> Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+> 
+> The patch depends on a few Oleg's patches in -mm, so I believe
+> this should be -mm material as well.
+> 
+>  drivers/tty/sysrq.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> index 8db9125..5ab8039 100644
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -329,7 +329,7 @@ static void send_sig_all(int sig)
+>  		if (is_global_init(p))
+>  			continue;
+>  
+> -		force_sig(sig, p);
+> +		do_send_sig_info(sig, SEND_SIG_FORCED, p, true);
+>  	}
+>  	read_unlock(&tasklist_lock);
+>  }
 
-It surprises me ;)  I never noticed that before.
+It's unclear how serious this race is (I'm guessing "not very"), but
+this patch looks like 3.3 material anyway, yes?
 
-It does seem pretty insane.  I wonder how much downstream damage would
-result from fixing it.
