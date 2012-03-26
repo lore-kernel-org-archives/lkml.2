@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab2CZNWM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 09:22:12 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41942 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932458Ab2CZNWK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 09:22:10 -0400
+	id S932495Ab2CZNWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 09:22:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932453Ab2CZNWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 09:22:30 -0400
+Date: Mon, 26 Mar 2012 09:22:27 -0400
+From: Dave Jones <davej@redhat.com>
+To: Guan Xin <guanx.bac@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Remove over-broad module alias from zaurus.
+Message-ID: <20120326132227.GA22887@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Guan Xin <guanx.bac@gmail.com>, linux-kernel@vger.kernel.org
+References: <CANeMGR5xS6GwG18q5QnKt5_pWJB4fEKFoywZDx=kA_JFVREGxw@mail.gmail.com>
+ <20120326124929.GA4190@redhat.com>
+ <CANeMGR7-_sDbkSXKJd0svEn0R983WNoaVnDdgBU6OzBt67Db+w@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.164.220.0]
-In-Reply-To: <20120324141251.GA25980@infradead.org>
-References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
-	<1331155362-11132-4-git-send-email-miklos@szeredi.hu>
-	<20120324141251.GA25980@infradead.org>
-Date: Mon, 26 Mar 2012 15:22:09 +0200
-Message-ID: <CAJfpegu8byHvPk3_KM3f1HE0dyaytVtsjZcUH5RB4pfwbQHEYA@mail.gmail.com>
-Subject: Re: [PATCH 03/25] vfs: split __dentry_open()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Trond.Myklebust@netapp.com,
-        sfrench@samba.org, sage@newdream.net, ericvh@gmail.com,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANeMGR7-_sDbkSXKJd0svEn0R983WNoaVnDdgBU6OzBt67Db+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 24, 2012 at 3:12 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Mar 07, 2012 at 10:22:20PM +0100, Miklos Szeredi wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> Split __dentry_open() into two functions:
->>
->>   do_dentry_open() - does most of the actual work, doesn't put file on failure
->>   open_check_o_direct() - after a successful open, checks direct_IO method
->>
->> This will allow i_op->atomic_open to do just the file initialization and leave
->> the direct_IO checking to the VFS.
->
-> I think the O_DIRECT checks should move out of the VFS.  The direct I/O
-> method isn't called from the VFS anywhere, but just from the
-> generic_file_* routines in filemap.c, which suggest doing the O_DIRECT
-> check in there as well.
+On Mon, Mar 26, 2012 at 03:14:00PM +0200, Guan Xin wrote:
+ > On Mon, Mar 26, 2012 at 2:49 PM, Dave Jones <davej@redhat.com> wrote:
 
-Returning the error at the earliest opportunity (from open as opposed
-to read/write) makes sense.  Given that some apps may actually rely on
-the return value from open to verify O_DIRECT support, it doesn't seem
-to be a good idea to move the checks to read/write.
+ > > Yes, just cut-n-paste one of the other entries, change the ID,
+ > > make sure it works and send a diff.
+ > >
+ > This patch is tested to work with 2.6.39.4 and 3.2.13.
+ > 
+ > --- a/drivers/net/usb/zaurus.c  2012-03-26 14:59:36.702998639 +0200
+ > +++ b/drivers/net/usb/zaurus.c  2012-03-26 15:02:16.860801959 +0200
+ > @@ -332,6 +332,11 @@
+ >         .driver_info = ZAURUS_PXA_INFO,
+ >  },
+ >  {
+ > +       /* Motorola Rokr E6 */
+ > +       USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6027, USB_CLASS_COMM,
+ > +                       USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
+ > +       .driver_info = (unsigned long) &bogus_mdlm_info,
+ > +}, {
+ >         /* Motorola MOTOMAGX phones */
+ >         USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
+ >                         USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
+ > 
 
-Thanks,
-Miklos
+Looks good, but needs a Signed-off-by: line. See Documentation/SubmittingPatches
+(Also Cc: netdev@vger.kernel.org so it gets picked up by patchwork)
+
+thanks,
+
+	Dave
+
