@@ -1,181 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab2CZQUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:20:20 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55545 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655Ab2CZQUS (ORCPT
+	id S932938Ab2CZQVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:21:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54750 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932655Ab2CZQVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:20:18 -0400
+	Mon, 26 Mar 2012 12:21:06 -0400
+Date: Mon, 26 Mar 2012 18:21:01 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+Message-ID: <20120326162101.GA524@gmail.com>
+References: <4F688F48.6090303@redhat.com>
+ <1332461414.2982.90.camel@pasglop>
+ <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+ <4F6EEEC1.4030608@redhat.com>
+ <1332708684.2882.24.camel@pasglop>
+ <4F703F5E.8030700@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1332778595.6160.84.camel@joe2Laptop>
-References: <1332775946-2162-1-git-send-email-consul.kautuk@gmail.com>
-	<1332778595.6160.84.camel@joe2Laptop>
-Date: Mon, 26 Mar 2012 12:20:17 -0400
-Message-ID: <CAFPAmTSyYJkATAD32WqHZY_PdWGjitEq4vgqCZeqjo+V24dh3Q@mail.gmail.com>
-Subject: Re: [PATCH 19/20 v3] sparc/mm/fault_32.c: Port OOM changes to do_sparc_fault
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf303f6d54fbaa1304bc27bf79
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F703F5E.8030700@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf303f6d54fbaa1304bc27bf79
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-> David meant that the indentation should be aligned
-> immediately after the open parenthesis:
->
-> + =A0 =A0 =A0 unsigned int flags =3D (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG=
-_KILLABLE |
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 (write ? FAULT_=
-FLAG_WRITE : 0));
->
-> though perhaps this is clearer as:
->
-> =A0 =A0 =A0 =A0unsigned int flags =3D FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG=
-_KILLABLE;
->
-> =A0 =A0 =A0 =A0if (write)
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0flags |=3D FAULT_FLAG_WRITE;
->
-> or even separate sets.
->
-> =A0 =A0 =A0 =A0if (write)
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0flags =3D foo;
-> =A0 =A0 =A0 =A0else
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0flags =3D bar;
+* Avi Kivity <avi@redhat.com> wrote:
 
-This is how it is in the patch file(immediately after the paramthesis).
-I have now attached both sparc patches to this email.
+> Say a fix comes in which needs to be mainlined during -rc.  So 
+> I put it in some other branch, to be sent off to Linus in a 
+> few days after maturing a little.  Meanwhile developers see an 
+> incomplete tree, since that patch is not in it.
+> 
+> Once Linus pulls, I can merge it back (or even before, if I'm 
+> reasonably certain it's not going to change), but it leaves a 
+> history of unneeded merges.  Or we can do throwaway merges 
+> like tip.git.
 
-you must be having the same problem in viewing the patch file
-as me due to the email client itself inserting invalid spaces here and ther=
-e.
+We don't do throwaway merges in the -tip development branches 
+themselves, i.e. in tip:sched/core, tip:perf/core, 
+tip:timers/core, etc.
 
-by the way, what tab-spaces are you using when you open it in vim ?
+When a fix goes into tip:sched/urgent then until Linus merges it 
+it's not in tip:sched/core. 99% of the fixes don't *have to* go 
+into sched/core straight away.
 
---20cf303f6d54fbaa1304bc27bf79
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0019-sparc-mm-fault_32.c-Port-OOM-changes-to-do_page_faul.patch"
-Content-Disposition: attachment; 
-	filename="0019-sparc-mm-fault_32.c-Port-OOM-changes-to-do_page_faul.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h09q1cus0
+In the odd case where there's some dependency, we can manually 
+merge it into tip:sched/core ahead of Linus pulling into an -rc. 
+Those rare merges are not a problem, and I explain the reason in 
+the merge commit itself.
 
-RnJvbSBhOTVkMDBiMjI5M2Q0MWE1YWZhMTkzZTIwNDVjM2Q4YmI4MWJiYzRhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBLYXV0dWsgQ29uc3VsIDxjb25zdWwua2F1dHVrQGdtYWlsLmNv
-bT4KRGF0ZTogU3VuLCAyNSBNYXIgMjAxMiAxMzo1MDozMCAtMDQwMApTdWJqZWN0OiBbUEFUQ0gg
-MTkvMjAgdjNdIHNwYXJjL21tL2ZhdWx0XzMyLmM6IFBvcnQgT09NIGNoYW5nZXMgdG8gZG9fc3Bh
-cmNfZmF1bHQKCkNvbW1pdCBkMDY1YmQ4MTBiNmRlYjY3ZDQ4OTdhMTRiZmUyMWY4ZWI1MjZiYTk5
-CihtbTogcmV0cnkgcGFnZSBmYXVsdCB3aGVuIGJsb2NraW5nIG9uIGRpc2sgdHJhbnNmZXIpIGFu
-ZApjb21taXQgMzdiMjNlMDUyNWQzOTNkNDhhN2Q1OWY4NzBiM2JjMDYxYTMwY2NkYgooeDg2LG1t
-OiBtYWtlIHBhZ2VmYXVsdCBraWxsYWJsZSkKClRoZSBhYm92ZSBjb21taXRzIGludHJvZHVjZWQg
-Y2hhbmdlcyBpbnRvIHRoZSB4ODYgcGFnZWZhdWx0IGhhbmRsZXIKZm9yIG1ha2luZyB0aGUgcGFn
-ZSBmYXVsdCBoYW5kbGVyIHJldHJ5YWJsZSBhcyB3ZWxsIGFzIGtpbGxhYmxlLgoKVGhlc2UgY2hh
-bmdlcyByZWR1Y2UgdGhlIG1tYXBfc2VtIGhvbGQgdGltZSwgd2hpY2ggaXMgY3J1Y2lhbApkdXJp
-bmcgT09NIGtpbGxlciBpbnZvY2F0aW9uLgoKUG9ydCB0aGVzZSBjaGFuZ2VzIHRvIDMyLWJpdCBz
-cGFyYy4KClNpZ25lZC1vZmYtYnk6IEthdXR1ayBDb25zdWwgPGNvbnN1bC5rYXV0dWtAZ21haWwu
-Y29tPgotLS0KIGFyY2gvc3BhcmMvbW0vZmF1bHRfMzIuYyB8ICAgMzcgKysrKysrKysrKysrKysr
-KysrKysrKysrKysrKysrLS0tLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCAzMCBpbnNlcnRpb25zKCsp
-LCA3IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gvc3BhcmMvbW0vZmF1bHRfMzIuYyBi
-L2FyY2gvc3BhcmMvbW0vZmF1bHRfMzIuYwppbmRleCA4MDIzZmQ3Li42ZGExODE4IDEwMDY0NAot
-LS0gYS9hcmNoL3NwYXJjL21tL2ZhdWx0XzMyLmMKKysrIGIvYXJjaC9zcGFyYy9tbS9mYXVsdF8z
-Mi5jCkBAIC0yMjYsNiArMjI2LDggQEAgYXNtbGlua2FnZSB2b2lkIGRvX3NwYXJjX2ZhdWx0KHN0
-cnVjdCBwdF9yZWdzICpyZWdzLCBpbnQgdGV4dF9mYXVsdCwgaW50IHdyaXRlLAogCXVuc2lnbmVk
-IGxvbmcgZzI7CiAJaW50IGZyb21fdXNlciA9ICEocmVncy0+cHNyICYgUFNSX1BTKTsKIAlpbnQg
-ZmF1bHQsIGNvZGU7CisJdW5zaWduZWQgaW50IGZsYWdzID0gKEZBVUxUX0ZMQUdfQUxMT1dfUkVU
-UlkgfCBGQVVMVF9GTEFHX0tJTExBQkxFIHwKKwkJCQkJCSAgKHdyaXRlID8gRkFVTFRfRkxBR19X
-UklURSA6IDApKTsKIAogCWlmKHRleHRfZmF1bHQpCiAJCWFkZHJlc3MgPSByZWdzLT5wYzsKQEAg
-LTI1Miw2ICsyNTQsNyBAQCBhc21saW5rYWdlIHZvaWQgZG9fc3BhcmNfZmF1bHQoc3RydWN0IHB0
-X3JlZ3MgKnJlZ3MsIGludCB0ZXh0X2ZhdWx0LCBpbnQgd3JpdGUsCiAKIAlwZXJmX3N3X2V2ZW50
-KFBFUkZfQ09VTlRfU1dfUEFHRV9GQVVMVFMsIDEsIHJlZ3MsIGFkZHJlc3MpOwogCityZXRyeToK
-IAlkb3duX3JlYWQoJm1tLT5tbWFwX3NlbSk7CiAKIAkvKgpAQCAtMjkwLDcgKzI5MywxMSBAQCBn
-b29kX2FyZWE6CiAJICogbWFrZSBzdXJlIHdlIGV4aXQgZ3JhY2VmdWxseSByYXRoZXIgdGhhbiBl
-bmRsZXNzbHkgcmVkbwogCSAqIHRoZSBmYXVsdC4KIAkgKi8KLQlmYXVsdCA9IGhhbmRsZV9tbV9m
-YXVsdChtbSwgdm1hLCBhZGRyZXNzLCB3cml0ZSA/IEZBVUxUX0ZMQUdfV1JJVEUgOiAwKTsKKwlm
-YXVsdCA9IGhhbmRsZV9tbV9mYXVsdChtbSwgdm1hLCBhZGRyZXNzLCBmbGFncyk7CisKKwlpZiAo
-KGZhdWx0ICYgVk1fRkFVTFRfUkVUUlkpICYmIGZhdGFsX3NpZ25hbF9wZW5kaW5nKGN1cnJlbnQp
-KQorCQlyZXR1cm47CisKIAlpZiAodW5saWtlbHkoZmF1bHQgJiBWTV9GQVVMVF9FUlJPUikpIHsK
-IAkJaWYgKGZhdWx0ICYgVk1fRkFVTFRfT09NKQogCQkJZ290byBvdXRfb2ZfbWVtb3J5OwpAQCAt
-Mjk4LDEzICszMDUsMjkgQEAgZ29vZF9hcmVhOgogCQkJZ290byBkb19zaWdidXM7CiAJCUJVRygp
-OwogCX0KLQlpZiAoZmF1bHQgJiBWTV9GQVVMVF9NQUpPUikgewotCQljdXJyZW50LT5tYWpfZmx0
-Kys7Ci0JCXBlcmZfc3dfZXZlbnQoUEVSRl9DT1VOVF9TV19QQUdFX0ZBVUxUU19NQUosIDEsIHJl
-Z3MsIGFkZHJlc3MpOwotCX0gZWxzZSB7Ci0JCWN1cnJlbnQtPm1pbl9mbHQrKzsKLQkJcGVyZl9z
-d19ldmVudChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01JTiwgMSwgcmVncywgYWRkcmVzcyk7
-CisKKwlpZiAoZmxhZ3MgJiBGQVVMVF9GTEFHX0FMTE9XX1JFVFJZKSB7CisJCWlmIChmYXVsdCAm
-IFZNX0ZBVUxUX01BSk9SKSB7CisJCQljdXJyZW50LT5tYWpfZmx0Kys7CisJCQlwZXJmX3N3X2V2
-ZW50KFBFUkZfQ09VTlRfU1dfUEFHRV9GQVVMVFNfTUFKLAorCQkJCQkJICAxLCByZWdzLCBhZGRy
-ZXNzKTsKKwkJfSBlbHNlIHsKKwkJCWN1cnJlbnQtPm1pbl9mbHQrKzsKKwkJCXBlcmZfc3dfZXZl
-bnQoUEVSRl9DT1VOVF9TV19QQUdFX0ZBVUxUU19NSU4sCisJCQkJCQkgIDEsIHJlZ3MsIGFkZHJl
-c3MpOworCQl9CisJCWlmIChmYXVsdCAmIFZNX0ZBVUxUX1JFVFJZKSB7CisJCQlmbGFncyAmPSB+
-RkFVTFRfRkxBR19BTExPV19SRVRSWTsKKworCQkJLyogTm8gbmVlZCB0byB1cF9yZWFkKCZtbS0+
-bW1hcF9zZW0pIGFzIHdlIHdvdWxkCisJCQkgKiBoYXZlIGFscmVhZHkgcmVsZWFzZWQgaXQgaW4g
-X19sb2NrX3BhZ2Vfb3JfcmV0cnkKKwkJCSAqIGluIG1tL2ZpbGVtYXAuYy4KKwkJCSAqLworCisJ
-CQlnb3RvIHJldHJ5OworCQl9CiAJfQorCiAJdXBfcmVhZCgmbW0tPm1tYXBfc2VtKTsKIAlyZXR1
-cm47CiAKLS0gCjEuNy41LjQKCg==
---20cf303f6d54fbaa1304bc27bf79
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0020-sparc-mm-fault_64.c-Port-OOM-changes-to-do_page_faul.patch"
-Content-Disposition: attachment; 
-	filename="0020-sparc-mm-fault_64.c-Port-OOM-changes-to-do_page_faul.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h09q1vfd1
+If you look at:
 
-RnJvbSAzZjRhMzE2NmI1YmFmZjlkMDQzZmQzOWYwZjBjMmM4MDQ0Yzg1Y2NlIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBLYXV0dWsgQ29uc3VsIDxjb25zdWwua2F1dHVrQGdtYWlsLmNv
-bT4KRGF0ZTogTW9uLCAyNiBNYXIgMjAxMiAxMToyODo1MCAtMDQwMApTdWJqZWN0OiBbUEFUQ0gg
-MjAvMjAgdjNdIHNwYXJjL21tL2ZhdWx0XzY0LmM6IFBvcnQgT09NIGNoYW5nZXMgdG8KIGRvX3Nw
-YXJjNjRfZmF1bHQKCkNvbW1pdCBkMDY1YmQ4MTBiNmRlYjY3ZDQ4OTdhMTRiZmUyMWY4ZWI1MjZi
-YTk5CihtbTogcmV0cnkgcGFnZSBmYXVsdCB3aGVuIGJsb2NraW5nIG9uIGRpc2sgdHJhbnNmZXIp
-IGFuZApjb21taXQgMzdiMjNlMDUyNWQzOTNkNDhhN2Q1OWY4NzBiM2JjMDYxYTMwY2NkYgooeDg2
-LG1tOiBtYWtlIHBhZ2VmYXVsdCBraWxsYWJsZSkKClRoZSBhYm92ZSBjb21taXRzIGludHJvZHVj
-ZWQgY2hhbmdlcyBpbnRvIHRoZSB4ODYgcGFnZWZhdWx0IGhhbmRsZXIKZm9yIG1ha2luZyB0aGUg
-cGFnZSBmYXVsdCBoYW5kbGVyIHJldHJ5YWJsZSBhcyB3ZWxsIGFzIGtpbGxhYmxlLgoKVGhlc2Ug
-Y2hhbmdlcyByZWR1Y2UgdGhlIG1tYXBfc2VtIGhvbGQgdGltZSwgd2hpY2ggaXMgY3J1Y2lhbApk
-dXJpbmcgT09NIGtpbGxlciBpbnZvY2F0aW9uLgoKUG9ydCB0aGVzZSBjaGFuZ2VzIHRvIDY0LWJp
-dCBzcGFyYy4KClNpZ25lZC1vZmYtYnk6IEthdXR1ayBDb25zdWwgPGNvbnN1bC5rYXV0dWtAZ21h
-aWwuY29tPgotLS0KIGFyY2gvc3BhcmMvbW0vZmF1bHRfNjQuYyB8ICAgMzggKysrKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKy0tLS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgMzEgaW5zZXJ0aW9u
-cygrKSwgNyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3NwYXJjL21tL2ZhdWx0XzY0
-LmMgYi9hcmNoL3NwYXJjL21tL2ZhdWx0XzY0LmMKaW5kZXggNTA0YzA2Mi4uODMyMjk2MiAxMDA2
-NDQKLS0tIGEvYXJjaC9zcGFyYy9tbS9mYXVsdF82NC5jCisrKyBiL2FyY2gvc3BhcmMvbW0vZmF1
-bHRfNjQuYwpAQCAtMjc5LDYgKzI3OSw3IEBAIGFzbWxpbmthZ2Ugdm9pZCBfX2twcm9iZXMgZG9f
-c3BhcmM2NF9mYXVsdChzdHJ1Y3QgcHRfcmVncyAqcmVncykKIAl1bnNpZ25lZCBpbnQgaW5zbiA9
-IDA7CiAJaW50IHNpX2NvZGUsIGZhdWx0X2NvZGUsIGZhdWx0OwogCXVuc2lnbmVkIGxvbmcgYWRk
-cmVzcywgbW1fcnNzOworCXVuc2lnbmVkIGludCBmbGFncyA9IEZBVUxUX0ZMQUdfQUxMT1dfUkVU
-UlkgfCBGQVVMVF9GTEFHX0tJTExBQkxFOwogCiAJZmF1bHRfY29kZSA9IGdldF90aHJlYWRfZmF1
-bHRfY29kZSgpOwogCkBAIC0zMzMsNiArMzM0LDggQEAgYXNtbGlua2FnZSB2b2lkIF9fa3Byb2Jl
-cyBkb19zcGFyYzY0X2ZhdWx0KHN0cnVjdCBwdF9yZWdzICpyZWdzKQogCQkJaW5zbiA9IGdldF9m
-YXVsdF9pbnNuKHJlZ3MsIGluc24pOwogCQkJZ290byBoYW5kbGVfa2VybmVsX2ZhdWx0OwogCQl9
-CisKK3JldHJ5OgogCQlkb3duX3JlYWQoJm1tLT5tbWFwX3NlbSk7CiAJfQogCkBAIC00MjMsNyAr
-NDI2LDEzIEBAIGdvb2RfYXJlYToKIAkJCWdvdG8gYmFkX2FyZWE7CiAJfQogCi0JZmF1bHQgPSBo
-YW5kbGVfbW1fZmF1bHQobW0sIHZtYSwgYWRkcmVzcywgKGZhdWx0X2NvZGUgJiBGQVVMVF9DT0RF
-X1dSSVRFKSA/IEZBVUxUX0ZMQUdfV1JJVEUgOiAwKTsKKwlmYXVsdCA9IGhhbmRsZV9tbV9mYXVs
-dChtbSwgdm1hLCBhZGRyZXNzLAorCQkJCQkJCWZsYWdzIHwgKChmYXVsdF9jb2RlICYgRkFVTFRf
-Q09ERV9XUklURSkgPworCQkJCQkJCQkJIEZBVUxUX0ZMQUdfV1JJVEUgOiAwKTsKKworCWlmICgo
-ZmF1bHQgJiBWTV9GQVVMVF9SRVRSWSkgJiYgZmF0YWxfc2lnbmFsX3BlbmRpbmcoY3VycmVudCkp
-CisJCXJldHVybjsKKwogCWlmICh1bmxpa2VseShmYXVsdCAmIFZNX0ZBVUxUX0VSUk9SKSkgewog
-CQlpZiAoZmF1bHQgJiBWTV9GQVVMVF9PT00pCiAJCQlnb3RvIG91dF9vZl9tZW1vcnk7CkBAIC00
-MzEsMTIgKzQ0MCwyNyBAQCBnb29kX2FyZWE6CiAJCQlnb3RvIGRvX3NpZ2J1czsKIAkJQlVHKCk7
-CiAJfQotCWlmIChmYXVsdCAmIFZNX0ZBVUxUX01BSk9SKSB7Ci0JCWN1cnJlbnQtPm1hal9mbHQr
-KzsKLQkJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01BSiwgMSwgcmVn
-cywgYWRkcmVzcyk7Ci0JfSBlbHNlIHsKLQkJY3VycmVudC0+bWluX2ZsdCsrOwotCQlwZXJmX3N3
-X2V2ZW50KFBFUkZfQ09VTlRfU1dfUEFHRV9GQVVMVFNfTUlOLCAxLCByZWdzLCBhZGRyZXNzKTsK
-KworCWlmIChmbGFncyAmIEZBVUxUX0ZMQUdfQUxMT1dfUkVUUlkpIHsKKwkJaWYgKGZhdWx0ICYg
-Vk1fRkFVTFRfTUFKT1IpIHsKKwkJCWN1cnJlbnQtPm1hal9mbHQrKzsKKwkJCXBlcmZfc3dfZXZl
-bnQoUEVSRl9DT1VOVF9TV19QQUdFX0ZBVUxUU19NQUosCisJCQkJCQkgIDEsIHJlZ3MsIGFkZHJl
-c3MpOworCQl9IGVsc2UgeworCQkJY3VycmVudC0+bWluX2ZsdCsrOworCQkJcGVyZl9zd19ldmVu
-dChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01JTiwKKwkJCQkJCSAgMSwgcmVncywgYWRkcmVz
-cyk7CisJCX0KKwkJaWYgKGZhdWx0ICYgVk1fRkFVTFRfUkVUUlkpIHsKKwkJCWZsYWdzICY9IH5G
-QVVMVF9GTEFHX0FMTE9XX1JFVFJZOworCisJCQkvKiBObyBuZWVkIHRvIHVwX3JlYWQoJm1tLT5t
-bWFwX3NlbSkgYXMgd2Ugd291bGQKKwkJCSAqIGhhdmUgYWxyZWFkeSByZWxlYXNlZCBpdCBpbiBf
-X2xvY2tfcGFnZV9vcl9yZXRyeQorCQkJICogaW4gbW0vZmlsZW1hcC5jLgorCQkJICovCisKKwkJ
-CWdvdG8gcmV0cnk7CisJCX0KIAl9CiAJdXBfcmVhZCgmbW0tPm1tYXBfc2VtKTsKIAotLSAKMS43
-LjUuNAoK
---20cf303f6d54fbaa1304bc27bf79--
+ gll v3.2..v3.3 | grep -E '/urgent.*/core'
+
+you'll see that I only had to do it once in the previous cycle:
+
+ d6c1c49de577 Merge branch 'perf/urgent' into perf/core
+
+and the changelog explains the background:
+
+Merge reason: Add these cherry-picked commits so that future changes
+              on perf/core don't conflict.
+
+it was a rare, oddball situation where we cherry-picked 
+perf/core changes into perf/urgent. Extra merges are perfectly 
+fine in that case.
+
+The 'throwaway' tip:master branch you are probably referring to 
+is basically just a testing branch, a convenient merged tree of 
+the one dozen maintainer trees that are hosted in -tip. Since we 
+don't want to force Linus's hand of him being able to reject 
+individual trees we don't merge them properly - hence the 
+integrated tree is a throwaway tree in theory.
+
+In practice I tend to throw it away only once per cycle, around 
+-rc1, once all pending trees went to Linus. tip:master is not 
+used for any Git based contribution work - it's for testing, 
+it's for people who want to work with patches - the commits 
+themselves always go into persistent non-rebasing, append-only 
+Git trees.
+
+If we mess up bisectability we do a delta fix. When choosing 
+between somewhat better bisectability and a proper history that 
+others can rely on then proper history wins hands down.
+
+Thanks,
+
+	Ingo
