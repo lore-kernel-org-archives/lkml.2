@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab2CZPen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:34:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52630 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932635Ab2CZPem (ORCPT
+	id S932812Ab2CZPf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:35:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37060 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932614Ab2CZPf4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:34:42 -0400
-Date: Mon, 26 Mar 2012 16:34:29 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Subject: Re: [PATCH v1] regulator: i.MX35-PDK Add regulator support
-Message-ID: <20120326153429.GX3098@opensource.wolfsonmicro.com>
-References: <1332772593-13313-1-git-send-email-alexg@meprolight.com>
- <20120326144712.GA8579@sirena.org.uk>
- <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>
+	Mon, 26 Mar 2012 11:35:56 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uN3tURjgVTLfI0kr"
-Content-Disposition: inline
-In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>
-X-Cookie: Q:	Are we not men?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120325.150422.2000357641354896689.davem@davemloft.net>
+References: <1332698315-2218-1-git-send-email-consul.kautuk@gmail.com>
+	<20120325.150422.2000357641354896689.davem@davemloft.net>
+Date: Mon, 26 Mar 2012 11:35:56 -0400
+Message-ID: <CAFPAmTT6pcjzi8WsM+r3izreGiuNaK5c4NkDav=6+wFj55QF4Q@mail.gmail.com>
+Subject: Re: [PATCH 19/20 v2] sparc/mm/fault_32.c: Port OOM changes to do_sparc_fault
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
+        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Mar 25, 2012 at 3:04 PM, David Miller <davem@davemloft.net> wrote:
+> From: Kautuk Consul <consul.kautuk@gmail.com>
+> Date: Sun, 25 Mar 2012 13:58:35 -0400
+>
+>> +     unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+>> +                                     (write ? FAULT_FLAG_WRITE : 0));
+>
+> Still indented wrong, it should be:
+>
+>        unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+>                              (write ? FAULT_FLAG_WRITE : 0));
+>
+> The second line must have the openning parenthesis line up with
+> the column after the openning parenthesis on the first line.  Do
+> not use only tabs to indent this stuff, line it up properly.
+>
+> You need to use tabs and spaces to line it up.  Use something like
+> emacs's C-mode to help you if you can't do it right by hand.
+>
+>> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
+>> +                                     1, regs, address);
+>
+> Still wrong, for the same exact reason.
+>
+> I went out of my way to reply to your private email (which I usually
+> ignore, you should never email developers privately) and you didn't
+> even listen to the feedback I gave you.
 
---uN3tURjgVTLfI0kr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Mon, Mar 26, 2012 at 05:28:55PM +0200, Alex Gershgorin wrote:
-> On Mon, Mar 26, 2012 at 04:36:33PM +0200, Alex Gershgorin wrote:
-
-Fix your mailer to word wrap within paragraphs, I reflowed your text to
-be legible.
-
-> > >...and in many cases the supply names don't look like things I'd expect
-> > >to be varying too much at runtime.  It looks like you just typed the
-> > >maximum datasheet ranges in, not things that make sense for the board.
-
-> It's not quite true, I was based on the Freescale BSP and I assume,
-> that this is checked.  I also tested it on v3.3
-
-Uh, presence in a vendor BSP isn't a guarantee of sanity...  Since you
-didn't specify any consumers the regulator API obviously won't do
-anything with the voltage range provided but to repeat it's really not
-at all obvious that anything sane ever would.
-
---uN3tURjgVTLfI0kr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcIxdAAoJEBus8iNuMP3d6H0P/0EOL8l57TtnUNrMotCzulH/
-JAg21Jpen+u/y4H/M+jbCTfur/8gMANRyMhl54IPadPz3QhppVbPha9/G2rOVhXP
-z9oTjlXs4RRO2iz3v1jS12Axzc7dBW9mmAvZAyYZaJ2wbfuHzIjl8Kew9uaGBXRb
-Ppc0jXOfBp7TYuulCmM/98yNLqyDL0N97PlNZiYN75Fv9RE/pwSZt0IM0Vgs4qlO
-VNPbSrcblwFCDrzeGdzv+um76dTTVX7pTMPWOmuvXWbXIsK4YpEniH9p7hKplral
-zqnqVUosgU6I+8+KnMh3p7qoAVeAIrvydFQDGd/XMhUj4U5endXpBpDlOT6fM6J3
-MXmawJGyrSZz2e09Si3EExjdZ38kpH8o9vmhOshsQvSYCv5cHQOPf+kIEjBvivDj
-Azj7TkBRLoe3OydBz7VDZDuLXH7bNeeDrLwl3EjVpWxg9E1n6E3c6x7HzlRdfksV
-MchdZKA0TfyN4GQqMOv2uAT+eLM3tG9lazTUkQJgIeqGnGYxwQdzvfaUTw3g8wLA
-G4v3kihXLE8nFIL5MVXVbPVzFQKjSSSj6ViYqE/rF8Hk05ItryMJRgY72eHjHTJE
-cOgzTJBxtLxQulgB5Fey5dz1WLODHjwTUqNI6bXSkg/RHPADuAWUysLK5KvIy8/Z
-p8G4fm8kRMnys8sjpmfD
-=jc/H
------END PGP SIGNATURE-----
-
---uN3tURjgVTLfI0kr--
+I use gmail which did not show me the indentation which you wanted.
+I understand what you said now and have sent a v3 for this.
