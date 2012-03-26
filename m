@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2CZBmb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 21:42:31 -0400
-Received: from mta103.odn.ne.jp ([143.90.14.143]:52268 "EHLO cmta103.odn.ne.jp"
+	id S1755167Ab2CZBqz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 21:46:55 -0400
+Received: from mta103.odn.ne.jp ([143.90.14.143]:58701 "EHLO cmta103.odn.ne.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759Ab2CZBmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 21:42:23 -0400
-Message-ID: <4F6FC97C.9030700@fire.name>
-Date: Mon, 26 Mar 2012 10:42:20 +0900
-From: black@fire.name
+	id S1754768Ab2CZBqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 21:46:52 -0400
+Message-ID: <4F6FCA89.9060807@yahoo.co.jp>
+Date: Mon, 26 Mar 2012 10:46:49 +0900
+From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
 To: Gwendal Grignou <gwendal@google.com>
@@ -28,6 +28,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello Gwendal,
+
+I'm sorry for using the wrong e-mail address.
 
 (2012/03/26 09:41), ANEZAKI, Akira wrote:
 >> If possible, could you switch 2 of the 4 enclosures [with their disks]
