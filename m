@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab2CZRNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:13:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7626 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932667Ab2CZRNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:13:19 -0400
-X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wBLf1-ka6lYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pGLkceISAAAA:8 a=h2bMMLQGu82jfTVKS-cA:9 a=BI4mPJJOTQOGITsJzRYA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1332781998.23924.112.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rajesh Bhagat <rajesh.lnx@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 26 Mar 2012 13:13:18 -0400
-In-Reply-To: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
-References: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933091Ab2CZRNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:13:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933067Ab2CZRNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 13:13:44 -0400
+Date: Mon, 26 Mar 2012 19:04:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2.1 01/10] cpu: Introduce clear_tasks_mm_cpumask()
+	helper
+Message-ID: <20120326170443.GA25229@redhat.com>
+References: <20120324102609.GA28356@lizard> <20120324102751.GA29067@lizard> <1332593021.16159.27.camel@twins> <20120324164316.GB3640@lizard> <20120325174210.GA23605@redhat.com> <1332748746.16159.62.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332748746.16159.62.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-21 at 11:22 +0530, Rajesh Bhagat wrote:
+On 03/26, Peter Zijlstra wrote:
+>
+> On Sun, 2012-03-25 at 19:42 +0200, Oleg Nesterov wrote:
+> > __cpu_disable() is called by __stop_machine(), we know that nobody
+> > can preempt us and other CPUs can do nothing.
+>
+> It would be very good to not rely on that though,
 
-> Signed-off-by: Rajesh Bhagat <rajesh.lnx@gmail.com>
-> ---
->  kernel/trace/trace.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index a3f1bc5..f4fb190 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -3058,8 +3058,10 @@ static int tracing_set_tracer(const char *buf)
->         ret = -EINVAL;
->         goto out;
->     }
-> -   if (t == current_trace)
-> +   if (t == current_trace) {
-> +       tracing_reset_online_cpus(tr);
->         goto out;
-> +   }
+Yes, yes, perhaps I wasn't clear but I think the patches are fine.
 
-BTW, this patch has major whitespace problems. You need to fix your mail
-client. For a trivial patch like this, I can fix up, but anything else
-will become a major issue. And we do not accept attachments.
+> I would love to get
+> rid of the stop_machine usage in cpu hotplug some day.
 
--- Steve
+Interesting... Why? I mean, why do you dislike stop_machine() in
+_cpu_down() ? Just curious.
 
+Oleg.
 
