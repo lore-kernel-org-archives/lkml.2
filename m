@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab2CZWrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 18:47:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60802 "EHLO mail.zytor.com"
+	id S1757823Ab2CZWr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 18:47:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60852 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433Ab2CZWrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 18:47:32 -0400
-Message-ID: <4F70F1EC.3070004@zytor.com>
-Date: Mon, 26 Mar 2012 15:47:08 -0700
+	id S1752567Ab2CZWr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 18:47:58 -0400
+Message-ID: <4F70F217.4060005@zytor.com>
+Date: Mon, 26 Mar 2012 15:47:51 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Daniel Drake <dsd@laptop.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net, pgf@laptop.org
-Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
-References: <20120326180710.8DF9C9D401E@zog.reactivated.net> <20120326142908.c5248aec.akpm@linux-foundation.org> <CAMLZHHSD8eRd17NyUb=Druj==4Eh+XtY=86vGQUGU1fiPMcMNg@mail.gmail.com>
-In-Reply-To: <CAMLZHHSD8eRd17NyUb=Druj==4Eh+XtY=86vGQUGU1fiPMcMNg@mail.gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] x86, tlb: switch cr3 in leave_mm() only when needed
+References: <1332459220.16101.144.camel@sbsiddha-desk.sc.intel.com>  <CA+55aFyf9RqAROx7t=CYUSGCDBXvv9z2c+LP1vRJjLU45_pD+Q@mail.gmail.com>  <1332460885.16101.147.camel@sbsiddha-desk.sc.intel.com>  <4F6BC1C4.6050502@zytor.com>  <CA+55aFygUGmL0iCKYn5DBitrPSm0GHZ8e5j0j2OzcBcAkUMiFw@mail.gmail.com>  <1332463899.16101.158.camel@sbsiddha-desk.sc.intel.com>  <20120323083751.GC2886@gmail.com> <1332802025.12381.2.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1332802025.12381.2.camel@sbsiddha-desk.sc.intel.com>
 X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -25,43 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 03:45 PM, Daniel Drake wrote:
-> On Mon, Mar 26, 2012 at 3:29 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> s/fix/break/?  "Originally-from" is not a recognised tag.  If this code
->> is based upon an earlier version from Paul then Signed-off-by: is
->> correct.
+On 03/26/2012 03:47 PM, Suresh Siddha wrote:
+> On Fri, 2012-03-23 at 09:37 +0100, Ingo Molnar wrote:
+>> * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
 >>
->> What's going on here?  What are you trying to communicate?
+>>> I was reviewing this code in some other context and thought 
+>>> this optimization makes sense. Unless someone beats me, I can 
+>>> collect some data on Monday.
+>>
+>> Would be really nice to get this data.
+>>
 > 
-> I'm trying to take Ingo's suggestion, in the thread "[patch 1/8] x86,
-> olpc: add debugfs interface for EC commands" he wrote:
+> On an idle system with 32logical cpu's (2 socket/8-core each) the
+> original kernel did the unnecessary load_cr3 2988 times during an
+> interval of 5 seconds.
 > 
-> ====
-> This is not a valid signoff sequence - the 'From: ' author of
-> the patch must be the first SOB line.
-> 
-> The way to do this is either to have a:
-> 
->  From: Paul Fox <pgf@laptop.org>
-> 
-> or to covert Paul Fox's SOB to a credit line, such as:
-> 
->  Originally-from: Paul Fox <pgf@laptop.org>
-> ====
-> 
-> The original code was from Paul Fox. I changed it somewhat
-> significantly, and Paul approves of the end result.
-> Can someone suggest a way of expressing this, including tag ordering,
-> that will be accepted by all parties?  :)
+> With the fix, that count drops to 9 times.
 > 
 
-My recommendation is:
-
-Originally-by: Paul Fox <pgf@laptop.org>
-
-... followed by Signed-off-by: in the order of patch flow.  Approving a
-patch, when not passing through, is indicated by Acked-by: or Reviewed-by:
+Nice.
 
 	-hpa
 
