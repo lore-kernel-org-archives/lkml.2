@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2CZApf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 20:45:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48876 "EHLO mx2.suse.de"
+	id S1754305Ab2CZAps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 20:45:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48885 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430Ab2CZApe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 20:45:34 -0400
+	id S1753724Ab2CZApp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 20:45:45 -0400
 From: Thomas Renninger <trenn@suse.de>
-To: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
 Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
-Date: Mon, 26 Mar 2012 02:45:29 +0200
+Date: Mon, 26 Mar 2012 02:45:42 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.34.10-0.4-desktop; KDE/4.4.4; x86_64; ; )
 Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
-        robert.moore@intel.com, hpa@zytor.com
-References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240226.35314.trenn@suse.de> <CAE9FiQVxH4cSotaTOKrNe-W+EQEdg=r5AbUaejD3FtyY2bRCsQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQVxH4cSotaTOKrNe-W+EQEdg=r5AbUaejD3FtyY2bRCsQ@mail.gmail.com>
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240402.38749.trenn@suse.de> <4F6D50DD.4050306@zytor.com>
+In-Reply-To: <4F6D50DD.4050306@zytor.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203260245.31105.trenn@suse.de>
+Message-Id: <201203260245.43177.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 24 March 2012 05:41:37 Yinghai Lu wrote:
-> On Fri, Mar 23, 2012 at 6:26 PM, Thomas Renninger <trenn@suse.de> wrote:
-> >> maybe could have dmi checking for more strict checking.
-> > I do not understand what should get checked?
-> > Hm, I guess you mean if a general table is always added that is distributed
-> > on different platforms and you want to white/blacklist machines to
-> > explicitly load/not load the table?
-> > This must not happen.
-> > The tables are always platform specific and you provide tables for
-> > a specific machine only for debugging purposes.
-> >
-> >> also would help if have one boot command that could skip overriding.
-> > Same. Both should not be needed.
-> >
-> > Or you have a use-case in mind I cannot not think of...
+On Saturday 24 March 2012 05:43:09 H. Peter Anvin wrote:
+> On 03/23/2012 08:02 PM, Thomas Renninger wrote:
+> >>
+> >> Sorry, it doesn't work that way.
+> > I guess this would not be the first time a good feature has been added,
+> > knowing that a more general API will be build around it later.
+> > 10 lines are really easy to adopt.
+> > 
 > 
-> For known broken system,  could be old, or vendor does not want to
-> provide updated firmware anymore.
-> if the user could boot system with debug parameter
-> like "noapic maxcpus=1...."
-> then have user space util to extract acpi tables, and patch them and
-> repack them into initrd.
-> next boot will have system running with optimal ...
+> No, what you want is to add a new interface, which is going to have to
+> be maintained indefinitely.  That's the problem.
+It's a debug option...
+Best would be if no distro specific mkinitrd magic is needed and it's
+just as easy as it is:
+cp DSDT.aml /boot/initrd-test
+cat /boot/initrd >>/boot/initrd-test
+and add a test boot entry to grub's menu.lst or whereever.
+Then developers would not have to look at distro specific implementations
+(which should not exist) about how to test a table quickly.
+ 
+> >> I see two realistic options:
+> >>
+> >> 1. We use cpio encapsulation for everything, with a special namespace
+> >>    for items used directly by the kernel, e.g. "kernel/".
+> >>
+> >>    + Simple, existing tools can pick apart
+> >>    - May lead people to believe that the early-initrd portion can be
+> >>      compressed like the "normal" initrd portion, leading to strange
+> >>      problems.
+> > Can this be implemented without using dynamic memory allocations?
+> > If not, it's not suitable for early APCI overriding.
 > 
-> If we could do that, we could avoid or kill workaround and quirks in the kernel.
+> Yes it can, as long as it is uncompressed.  It just becomes a matter of
+> walking the cpio headers which is effectively a linked list.
 > 
-> So we may need some strict check or skip when you are moving disk
-> around or update different bios later.
-NO!
+> It is more code than the simple header option, though.
+> 
+> By the way, if "relying on the bootloader" was an option in any way
 
-This is exactly for what you've written first:
----
-that is very good feature for development and debug.
-will not need to ask for testbios ...
----
+Why exactly is a change in the bootloader not an option?
+Not sure whether a version number is passed, but the magic number could be
+changed for now.
 
-Linux ACPI policy is to support BIOSes which work with latest Windows version
-supported systems. If needed, quirks are added.
-I agree that some very old quirks can vanish, I don't have a nice example at hand,
-there should not be much of them.
-When DSDT overriding via initrd was not possible any more because it has been done
-too early, I saw about 3 bugs of poor souls with old machines who really needed this
-to get the system half way running. For such old systems this may be an option and
-they do not need to compile a modified DSDT into their kernel anymore.
+> then
+> we would already have a solution in the form of the kernel data linked
+> list.  Unfortunately to the best of my knowledge not a single bootloader
+> provides support for it.
+If the new magic number is passed, we get a linked list.
+Otherwise we get it the old style and can still support that for several
+years.
+I agree that this should not be subject to change every here and there, but
+"never ever change..." sounds as if something went wrong.
+This is just an interface to the kernel, some apps, called bootloaders are
+making use of?
 
-
-If this was not clear by tainting the kernel and adding this to Documentation/ :
-+Please keep in mind that this is a debug option.
-+ACPI tables should not get overridden for productive use.
-+If BIOS ACPI tables are overridden the kernel will get tainted with the
-+TAINT_OVERRIDDEN_ACPI_TABLE flag.
-+Complain to your platform/BIOS vendor if you find a bug which is that sever
-+that a workaround is not accepted in the Linus kernel.
-
-a message like "Overriding an ACPI table, don't do that unless you know exactly
-what you are doing" or the Kconfig option can be moved from the ACPI to the
-"Kernel hacking" section to make this even more obvious.
-
-Len has a bunch of arguments why fixing things by overriding ACPI tables is
-the wrong approach.
-
-This still is a very convenient feature:
-  - to find bugs in BIOS ACPI tables or in the kernel.
-  - for research -> in the end ACPI is an essential part of the X86
-    architecture and e.g. by clustering the DSDT with debug statements it's
-    now easy to get an idea how bits are shifted around and where they
-    are coming from.
-  - for BIOS developers and platform vendors to easily test the impact of their
-    changes on the Linux kernel. Also to let them use the Intel ACPI aka ACPICA
-    tools which is the code base syned into (used in) the kernel.
+It's not that I want to propagate a bigger change, I am all for the quick change
+and proceed solution, I just wonder why above is not possible.
 
    Thomas
