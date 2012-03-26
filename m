@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932898Ab2CZQIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:08:25 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49454 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932540Ab2CZQIY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:08:24 -0400
-MIME-Version: 1.0
-From: Eric Van Hensbergen <ericvh@gmail.com>
-Date: Mon, 26 Mar 2012 11:08:02 -0500
-Message-ID: <CAFkjPTmxh7neMTNDTkus3NNLmjiUP2CiWAcDDWpdbom4D1A2ug@mail.gmail.com>
-Subject: [GIT PULL] 9p changes for 3.4 merge window
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932906Ab2CZQJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:09:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46372 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932803Ab2CZQJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 12:09:51 -0400
+Message-ID: <1332778237.6578.3.camel@key-ThinkPad-W510>
+Subject: Re: [PATCH 00/17] Platform Facilities Option and crypto accelerator
+ driver
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        rcj@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 26 Mar 2012 11:10:37 -0500
+In-Reply-To: <06B7F1E7-951D-4753-BE00-7B0C84BACDAE@kernel.crashing.org>
+References: <1332365297.3858.5.camel@key-ThinkPad-W510>
+	 <C23F031B-1431-4E98-92DC-3EB7E31D2776@kernel.crashing.org>
+	 <1332443286.3858.70.camel@key-ThinkPad-W510>
+	 <06B7F1E7-951D-4753-BE00-7B0C84BACDAE@kernel.crashing.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032616-7182-0000-0000-0000011E13B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3c761ea05a8900a907f32b628611873f6bef24b2:
 
-  Fix autofs compile without CONFIG_COMPAT (2012-02-26 09:44:55 -0800)
+> 
+> From what I can tell this isn't ISA level instructions and thus should NOT be in arch/powerpc.  This should be moved into drivers/crypto
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git
-for-linus-3.4-merge-window
+  That makes sense.  I'll move them over in my next submission.
 
-Jim Garlick (3):
-      net/9p: don't allow Tflush to be interrupted
-      net/9p: handle flushed Tclunk/Tremove
-      9p: statfs should not override server f_type
+Kent
 
- fs/9p/vfs_super.c |    2 +-
- net/9p/client.c   |   26 +++++++++++++++++++++++---
- 2 files changed, 24 insertions(+), 4 deletions(-)
+> - k
+
+
