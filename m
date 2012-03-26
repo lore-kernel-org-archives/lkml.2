@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938Ab2CZQVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:21:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54750 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655Ab2CZQVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:21:06 -0400
-Date: Mon, 26 Mar 2012 18:21:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
-Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
-Message-ID: <20120326162101.GA524@gmail.com>
-References: <4F688F48.6090303@redhat.com>
- <1332461414.2982.90.camel@pasglop>
- <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
- <4F6EEEC1.4030608@redhat.com>
- <1332708684.2882.24.camel@pasglop>
- <4F703F5E.8030700@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F703F5E.8030700@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932950Ab2CZQb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:31:26 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40605 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932561Ab2CZQbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 12:31:25 -0400
+Message-ID: <1332779484.6160.95.camel@joe2Laptop>
+Subject: Re: [PATCH 20/20 v3] sparc/mm/fault_64.c: Port OOM changes to
+ do_sparc64_fault
+From: Joe Perches <joe@perches.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 26 Mar 2012 09:31:24 -0700
+In-Reply-To: <1332775997-2197-1-git-send-email-consul.kautuk@gmail.com>
+References: <1332775997-2197-1-git-send-email-consul.kautuk@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-03-26 at 11:33 -0400, Kautuk Consul wrote:
+> diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
+> index 504c062..8322962 100644
+> --- a/arch/sparc/mm/fault_64.c
+> +++ b/arch/sparc/mm/fault_64.c
+> @@ -279,6 +279,7 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
+>  	unsigned int insn = 0;
+>  	int si_code, fault_code, fault;
+>  	unsigned long address, mm_rss;
+> +	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+>  
+>  	fault_code = get_thread_fault_code();
+>  
+[]
+> @@ -423,7 +426,13 @@ good_area:
+>  			goto bad_area;
+>  	}
+>  
+> -	fault = handle_mm_fault(mm, vma, address, (fault_code & FAULT_CODE_WRITE) ? FAULT_FLAG_WRITE : 0);
+> +	fault = handle_mm_fault(mm, vma, address,
+> +							flags | ((fault_code & FAULT_CODE_WRITE) ?
+> +									 FAULT_FLAG_WRITE : 0);
 
-* Avi Kivity <avi@redhat.com> wrote:
+A bit redundant and very poor style argument alignment
+Make sure your tab indentation is set to 8.
 
-> Say a fix comes in which needs to be mainlined during -rc.  So 
-> I put it in some other branch, to be sent off to Linus in a 
-> few days after maturing a little.  Meanwhile developers see an 
-> incomplete tree, since that patch is not in it.
-> 
-> Once Linus pulls, I can merge it back (or even before, if I'm 
-> reasonably certain it's not going to change), but it leaves a 
-> history of unneeded merges.  Or we can do throwaway merges 
-> like tip.git.
+	fault = handle_mm_fault(mm, vma, address,
+				flags | (fault_code & FAULT_CODE_WRITE));
 
-We don't do throwaway merges in the -tip development branches 
-themselves, i.e. in tip:sched/core, tip:perf/core, 
-tip:timers/core, etc.
+though perhaps fault_code could be unsigned and
+perhaps you could use the same style initializer
+for fault_code as patch 19/20.
 
-When a fix goes into tip:sched/urgent then until Linus merges it 
-it's not in tip:sched/core. 99% of the fixes don't *have to* go 
-into sched/core straight away.
 
-In the odd case where there's some dependency, we can manually 
-merge it into tip:sched/core ahead of Linus pulling into an -rc. 
-Those rare merges are not a problem, and I explain the reason in 
-the merge commit itself.
-
-If you look at:
-
- gll v3.2..v3.3 | grep -E '/urgent.*/core'
-
-you'll see that I only had to do it once in the previous cycle:
-
- d6c1c49de577 Merge branch 'perf/urgent' into perf/core
-
-and the changelog explains the background:
-
-Merge reason: Add these cherry-picked commits so that future changes
-              on perf/core don't conflict.
-
-it was a rare, oddball situation where we cherry-picked 
-perf/core changes into perf/urgent. Extra merges are perfectly 
-fine in that case.
-
-The 'throwaway' tip:master branch you are probably referring to 
-is basically just a testing branch, a convenient merged tree of 
-the one dozen maintainer trees that are hosted in -tip. Since we 
-don't want to force Linus's hand of him being able to reject 
-individual trees we don't merge them properly - hence the 
-integrated tree is a throwaway tree in theory.
-
-In practice I tend to throw it away only once per cycle, around 
--rc1, once all pending trees went to Linus. tip:master is not 
-used for any Git based contribution work - it's for testing, 
-it's for people who want to work with patches - the commits 
-themselves always go into persistent non-rebasing, append-only 
-Git trees.
-
-If we mess up bisectability we do a delta fix. When choosing 
-between somewhat better bisectability and a proper history that 
-others can rely on then proper history wins hands down.
-
-Thanks,
-
-	Ingo
