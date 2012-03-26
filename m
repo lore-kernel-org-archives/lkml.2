@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab2CZK1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:27:40 -0400
-Received: from fw2.prolan.hu ([193.68.50.107]:41860 "EHLO fw2.prolan.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092Ab2CZK1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:27:30 -0400
-Message-ID: <4F704490.7000308@prolan.hu>
-Date: Mon, 26 Mar 2012 12:27:28 +0200
-From: Peter Rusko <rusko.peter@prolan.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S932076Ab2CZK11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:27:27 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63499 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756667Ab2CZK10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 06:27:26 -0400
+Date: Mon, 26 Mar 2012 13:27:11 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Christoph Lameter <cl@linux.com>
+cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+Subject: Re: [PATCH 2/2] tools: Add a toplevel Makefile
+In-Reply-To: <alpine.DEB.2.00.1203221646450.32581@router.home>
+Message-ID: <alpine.LFD.2.02.1203261326310.7116@tux.localdomain>
+References: <1332435713-32143-1-git-send-email-bp@amd64.org> <1332435713-32143-3-git-send-email-bp@amd64.org> <alpine.DEB.2.00.1203221332390.25011@router.home> <20120322210431.GA1462@aftab> <alpine.DEB.2.00.1203221646450.32581@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>
-Subject: Re: PCA GPIO interrupt triggers, matrix-keypad
-References: <4F6B4C11.4000608@prolan.hu> <20120325074012.GA25173@pengutronix.de>
-In-Reply-To: <20120325074012.GA25173@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [193.91.83.115]
-X-EsetResult: clean, is OK
-X-EsetId: 525F3323825E3531001D68
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ? I fail to see why having EDGE_FALLING together with EDGE_RISING is not
-> supported. Are you sure you didn't use some other IRQ_TYPE here?
->
-Yes, you're right, the problem is not there.
+On Thu, 22 Mar 2012, Christoph Lameter wrote:
+> On Thu, 22 Mar 2012, Borislav Petkov wrote:
+> 
+> > It basically does:
+> >
+> > $ make -C slub/ clean
+> >
+> > which runs the target of the same name in the Makefile in slub/.
+> 
+> Ok.
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
 
->> I think, this patch should work:
->
-> Think? Can't you test it :)
-I wish that could be that simple :)
-
-I can test it with the matrix-keypad driver. But there's an inverter
-(+delay) in the circuit (to prevent contact bounce) and I don't know how
-it affects the signals. But in the end sometimes I don't get e.g. the
-key-release event.
-
-Another change in the code was with the IRQ request. I could only make
-the matrix-keypad driver working with threaded interrupts:
-
-diff --git a/drivers/input/keyboard/matrix_keypad.c 
-b/drivers/input/keyboard/matrix_keypad.c
-index e2ae657..f047502 100644
---- a/drivers/input/keyboard/matrix_keypad.c
-+++ b/drivers/input/keyboard/matrix_keypad.c
-@@ -48,7 +48,7 @@ struct matrix_keypad {
-  static void __activate_col(const struct matrix_keypad_platform_data 
-*pdata,
-                            int col, bool on)
-  {
--       bool level_on = !pdata->active_low;
-+       bool level_on = (!pdata->active_low)^(!!pdata->invert_output);
-
-         if (on) {
-                 gpio_direction_output(pdata->col_gpios[col], level_on);
-@@ -341,7 +341,8 @@ static int __devinit init_matrix_gpio(struct 
-platform_device *pdev,
-                 }
-         } else {
-                 for (i = 0; i < pdata->num_row_gpios; i++) {
--                       err = request_irq(gpio_to_irq(pdata->row_gpios[i]),
-+                       err = 
-request_threaded_irq(gpio_to_irq(pdata->row_gpios[i]),
-+                                       NULL,
-                                         matrix_keypad_interrupt,
-                                         IRQF_TRIGGER_RISING |
-                                         IRQF_TRIGGER_FALLING,
-
-Is this okay, or is there another way?
-
-Regards,
-Peter
+Didn't Andrew already patches that moved this under tools/vm and added 
+proper Makefiles for it?
