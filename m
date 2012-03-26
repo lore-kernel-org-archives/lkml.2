@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274Ab2CZEMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 00:12:13 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55346 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab2CZEMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 00:12:10 -0400
-Date: Mon, 26 Mar 2012 15:11:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: linux-next: build warning after merge of the final tree
-Message-Id: <20120326151147.30727745f5a3410d87f391dc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Mar_2012_15_11_47_+1100_ySqO76+w6Ym==KQo"
+	id S1751358Ab2CZEYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 00:24:36 -0400
+Received: from ozlabs.org ([203.10.76.45]:51069 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062Ab2CZEYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 00:24:33 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jim Cromie <jim.cromie@gmail.com>, Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [00/11] pr_debug during module initialization
+In-Reply-To: <CAJfuBxztMMUrbUvVft8gXB4Jk2yi+AXVV-TVLXAFdtgMf4AUgg@mail.gmail.com>
+References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com> <20120323202713.GA6039@redhat.com> <CAJfuBxztMMUrbUvVft8gXB4Jk2yi+AXVV-TVLXAFdtgMf4AUgg@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 26 Mar 2012 10:54:30 +1030
+Message-ID: <87ehsgcipt.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Mar_2012_15_11_47_+1100_ySqO76+w6Ym==KQo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 23 Mar 2012 18:12:51 -0600, Jim Cromie <jim.cromie@gmail.com> wrote:
+> > A previous version had a build-time error if a module used 'dyndbg' as a
+> > module param - why did that get dropped?
+> 
+> Rusty expressed view that if developers add it, they meant it.
+> He also said the macro was redundant with another,
+> but I didnt look further cuz of the 1st point.
 
-Hi all,
+Yeah, it was ugly overkill.  I can't see someone accidently overriding
+dyndbg, and let's assume that they know what they're doing (who knows,
+they might want to enhance the parsing before calling the real dyndbg
+parser).
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-produced these warnings (and many similar):
-
-In file included from drivers/scsi/hosts.c:41:0:
-drivers/scsi/scsi_priv.h:166:1: warning: "__enabled_CONFIG_PM" is not defin=
-ed [-Wundef]
-drivers/scsi/scsi_priv.h:166:1: warning: "__enabled_CONFIG_PM_MODULE" is no=
-t defined [-Wundef]
-
-Introduced by commit a6a95fad44f1 ("scsi, sd: limit the scope of the
-async probe domain").
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__26_Mar_2012_15_11_47_+1100_ySqO76+w6Ym==KQo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPb+yDAAoJEECxmPOUX5FEUv8P/0drDHyuUGfH1dBw6BfleHWl
-QmxmHJKAMb1lf4VhLArB/00tVqo+TmysuEQNGwXvLaLZrTUoEDuVkaGRqw2ByyWe
-y2cSx7upsTwHmfu5kRn9WcKDFtBSjN2LcJEI21mAMM9ijSJWhB9KaJgV9WsCckq7
-ioCmk/bNy9PZSDXwpnPHlVLlev7gGHIjOQ7dSzMI5YhuS3gByQkRW/stcde2s3Z+
-T/Fn3/q7JggOti3lQZAD9HnO2/8JoNhu8c9hZI8fJiHKZgJst1h6qHKp4y21Jj6L
-G3yCqETFdgHg/EDYa8uulw/4bGCDktd29PgM/ktBriVyoDvo4Qx0DIkq1dd5ScMf
-BsdviTt4KYzEBsdY+Rw+vVF5kcDjlRTnD9alRxtTzlRVdrsl3ydDC0x/RXeRl5w7
-9cJQ5x8YjJJFlzSg5N75fjRGvCO7UENOpBOK7lPyU7zPAgwRdvVDldZVhZFiuG/U
-78/tMwz0oWem4UAv6kwzqfhhatMhRH+2bsU1Xj+HgMXgGnBmhEKzUODVZ1ofNP47
-+WcXbnqIDnnbx1yO3b3OIqjRURZQTUvoCeZdWH8I+TiRdtyKF6Ynx9Tyo4mbVktV
-BvuUzHpr1BSZjUXVYbjzJHtNa515UHWt9fB4w0+Cv2L+c5MOnNTIl/I44gbEw91L
-lHRbr3w2+vNAF+MQ9BpA
-=dVUm
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Mar_2012_15_11_47_+1100_ySqO76+w6Ym==KQo--
+Rusty.
+-- 
+  How could I marry someone with more hair than me?  http://baldalex.org
