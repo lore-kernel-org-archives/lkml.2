@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab2CZW2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 18:28:05 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:54868 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756623Ab2CZW2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 18:28:03 -0400
-Message-ID: <4F70ED6F.6070005@simon.arlott.org.uk>
-Date: Mon, 26 Mar 2012 23:27:59 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110823 Thunderbird/5.0
+	id S1757745Ab2CZWaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 18:30:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53215 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757546Ab2CZWaW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 18:30:22 -0400
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: USB list <linux-usb@vger.kernel.org>
-Subject: ftdi_sio: fix race condition in TIOCMIWAIT, and abort of TIOCMIWAIT
- when the device is removed
+In-Reply-To: <1332682650.9154.111.camel@marge.simpson.net>
+References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
+	<201203240553.32526.gene.heskett@gmail.com>
+	<57375.1332641134@turing-police.cc.vt.edu>
+	<1332682650.9154.111.camel@marge.simpson.net>
+Date: Tue, 27 Mar 2012 09:30:21 +1100
+X-Google-Sender-Auth: 5m--uoEbW32d0ZTXv8qWyEYQhaE
+Message-ID: <CABqErrGaBLisO4YK5dP2O9Pv0QonZ+q9G43jm=Nf12yWVGv6tw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
+ linux kernel 3.3.0
+From: Con Kolivas <kernel@kolivas.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Valdis.Kletnieks@vt.edu, Gene Heskett <gene.heskett@gmail.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two issues here, one is that the device is generating
-spurious very fast modem status line changes somewhere:
+On 26 March 2012 00:37, Mike Galbraith <efault@gmx.de> wrote:
+> Yeah.  In all the interactivity testing I've ever done, it's really hard
+> to not see what you expect and/or hope to see.  For normal desktop use,
+> I don't see any real difference with BFS vs CFS unless I load test of
+> course, and that can go either way, depending on the load.
+>
+> Example:
+>
+> 3.3.0-bfs vs 3.3.0-cfs - identical config
+>
+> Q6600 desktop box doing a measured interactivity test.
+>
+> time mplayer BigBuckBunny-DivXPlusHD.mkv, with massive_intr 8 as competition
+>
+> no bg load real    9m56.627s              1.000
+> CFS        real    9m59.199s              1.004
+> BFS        real    12m8.166s              1.220
+>
+> As you can see, neither scheduler can run that perfectly on my box, as
+> the load needs a tad more than its fair share.  However, the Interactive
+> Experience was far better in CFS in this case due to it being more fair.
+> In BFS, the interactive tasks (mplayer/Xorg) could not get their fair
+> share, causing interactivity to measurably suffer.
 
-CTS becomes high then low 18µs later:
-[121226.924373] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=6
-[121226.924378] ftdi_process_packet: status=10 prev=00 diff=10
-[121226.924382] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=7
-(wake_up_interruptible is called)
-[121226.924391] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=7
-[121226.924394] ftdi_process_packet: status=00 prev=10 diff=10
-[121226.924397] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=8
-(wake_up_interruptible is called)
+massive_intr runs a number of threads that each run for 8ms and then
+sleep for 1ms. That means they are 89% cpu bound. Run 8 of them and
+your CPU load is 88.8 * 8 = 7.1. So now you're testing a difficult
+mplayer benchmark in the presence of a load of 7.1 on a CPU with 4
+cores. I don't know how much CPU the playback of your particular video
+is but I suspect it does require a fair amount of CPU based on the CPU
+it got back in your test. I can virtually guarantee that the amount of
+CPU BFS is giving to mplayer is proportional to how much CPU is left.
+Ergo as far as I can see, BFS is likely being absolutely perfectly
+fair. This sort of fairness equation has been already elucidated in
+the pHD that I linked to in my original post and he has done a much
+more thorough analysis than this kind of drive-by test that you're
+doing and misinterpreting has already shown that BFS is fair to a
+fault.
 
-This wakes up the task in TIOCMIWAIT:
-[121226.924405] ftdi_ioctl: 19451 rng=0->0 dsr=10->10 dcd=0->0 cts=6->8
-(wait from 20:51:46 returns and observes both changes)
+snip the rest
 
-Which then calls TIOCMIWAIT again:
-20:51:46.400239 ioctl(3, TIOCMIWAIT, 0x20) = 0
-22:11:09.441818 ioctl(3, TIOCMGET, [TIOCM_DTR|TIOCM_RTS]) = 0
-22:11:09.442812 ioctl(3, TIOCMIWAIT, 0x20) = -1 EIO (Input/output error)
-(the second wake_up_interruptible takes effect and an I/O error occurs)
+'top' snapshots are uninteresting because CFS and BFS report cpu time
+completely differently and a single snapshot tells us nothing.
 
-The other issue is that TIOCMIWAIT will wait forever (unless the task is
-interrupted) if the device is removed.
-
-This change removes the -EIO return that occurs if the counts don't
-appear to have changed. Multiple counts may have been processed as
-one or the waiting task may have started waiting after recording the
-current count.
-
-It adds a bool to indicate that the device has been removed so that
-TIOCMIWAIT doesn't wait forever, and wakes up any tasks so that they can
-return -EIO.
-
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
----
- drivers/usb/serial/ftdi_sio.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index d260b79..fc9a901 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -76,6 +76,7 @@ struct ftdi_private {
- 	struct async_icount	icount;
- 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
- 	char prev_status;        /* Used for TIOCMIWAIT */
-+	bool dev_gone;        /* Used to abort TIOCMIWAIT */
- 	char transmit_empty;	/* If transmitter is empty or not */
- 	struct usb_serial_port *port;
- 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
-@@ -1663,6 +1664,7 @@ static int ftdi_sio_port_probe(struct usb_serial_port *port)
- 	init_waitqueue_head(&priv->delta_msr_wait);
- 
- 	priv->flags = ASYNC_LOW_LATENCY;
-+	priv->dev_gone = false;
- 
- 	if (quirk && quirk->port_probe)
- 		quirk->port_probe(priv);
-@@ -1819,6 +1821,9 @@ static int ftdi_sio_port_remove(struct usb_serial_port *port)
- 
- 	dbg("%s", __func__);
- 
-+	priv->dev_gone = true;
-+	wake_up_interruptible_all(&priv->delta_msr_wait);
-+
- 	remove_sysfs_attrs(port);
- 
- 	kref_put(&priv->kref, ftdi_sio_priv_release);
-@@ -2376,15 +2381,12 @@ static int ftdi_ioctl(struct tty_struct *tty,
- 	 */
- 	case TIOCMIWAIT:
- 		cprev = priv->icount;
--		while (1) {
-+		while (!priv->dev_gone) {
- 			interruptible_sleep_on(&priv->delta_msr_wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
- 			cnow = priv->icount;
--			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
--			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
--				return -EIO; /* no change => error */
- 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
- 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
- 			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
-@@ -2393,7 +2395,7 @@ static int ftdi_ioctl(struct tty_struct *tty,
- 			}
- 			cprev = cnow;
- 		}
--		/* not reached */
-+		return -EIO;
- 		break;
- 	case TIOCSERGETLSR:
- 		return get_lsr_info(port, (struct serial_struct __user *)arg);
--- 
-1.7.4.1
-
--- 
-Simon Arlott
+Snip uninteresting-to-desktop-user throughput benchmarks.
