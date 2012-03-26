@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab2CZQeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:34:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64392 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932610Ab2CZQeI (ORCPT
+	id S932921Ab2CZQgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:36:53 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:11592 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809Ab2CZQgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:34:08 -0400
-Date: Mon, 26 Mar 2012 20:33:01 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] max17042_battery: Clean up interrupt handling
-Message-ID: <20120326163301.GA19623@lizard>
-References: <1332279196-17991-1-git-send-email-ramakrishna.pallala@intel.com>
+	Mon, 26 Mar 2012 12:36:52 -0400
+Date: Mon, 26 Mar 2012 18:36:44 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: davem@davemloft.net, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ingo Molnar <mingo@elte.hu>, Joe Perches <joe@perches.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20 v3] sparc/mm/fault_32.c: Port OOM changes to
+	do_sparc_fault
+Message-ID: <20120326163644.GA23176@merkur.ravnborg.org>
+References: <1332775946-2162-1-git-send-email-consul.kautuk@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332279196-17991-1-git-send-email-ramakrishna.pallala@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1332775946-2162-1-git-send-email-consul.kautuk@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 03:03:16AM +0530, Ramakrishna Pallala wrote:
-> Max17042 driver has dummy hardIRQ function which
-> does nothing but waking the threaded handler.
+On Mon, Mar 26, 2012 at 11:32:26AM -0400, Kautuk Consul wrote:
+> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+> (mm: retry page fault when blocking on disk transfer) and
+> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+> (x86,mm: make pagefault killable)
 > 
-> This patch removes the hardIRQ function and also
-> modifies the interrupt type to falling edge. While
-> we are there, change the macros to comply with the
-> Data sheet.
+> The above commits introduced changes into the x86 pagefault handler
+> for making the page fault handler retryable as well as killable.
 > 
-> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> These changes reduce the mmap_sem hold time, which is crucial
+> during OOM killer invocation.
+> 
+> Port these changes to 32-bit sparc.
+> 
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 > ---
+>  arch/sparc/mm/fault_32.c |   37 ++++++++++++++++++++++++++++++-------
+>  1 files changed, 30 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/sparc/mm/fault_32.c b/arch/sparc/mm/fault_32.c
+> index 8023fd7..6da1818 100644
+> --- a/arch/sparc/mm/fault_32.c
+> +++ b/arch/sparc/mm/fault_32.c
+> @@ -226,6 +226,8 @@ asmlinkage void do_sparc_fault(struct pt_regs *regs, int text_fault, int write,
+>  	unsigned long g2;
+>  	int from_user = !(regs->psr & PSR_PS);
+>  	int fault, code;
+> +	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+> +						  (write ? FAULT_FLAG_WRITE : 0));
+Hi Kautuk.
 
-Applied, thank you!
+The indention still look like shit.
+It looks like this (tabs converted to spaces):
+        unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+                                          (write ? FAULT_FLAG_WRITE : 0));
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+
+	Sam
+
