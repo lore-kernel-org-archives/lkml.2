@@ -1,133 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab2CZP4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:56:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56291 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932568Ab2CZP4j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:56:39 -0400
+	id S932849Ab2CZP7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:59:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53063 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932568Ab2CZP7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 11:59:38 -0400
+Date: Mon, 26 Mar 2012 17:59:35 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Subject: Re: [PATCH v6 7/7] mm/memcg: use vm_swappiness from target memory
+ cgroup
+Message-ID: <20120326155935.GE22754@tiehlicka.suse.cz>
+References: <20120322214944.27814.42039.stgit@zurg>
+ <20120322215643.27814.58756.stgit@zurg>
 MIME-Version: 1.0
-In-Reply-To: <4F6F6839.6020605@schaufler-ca.com>
-References: <20120323233212.GA18484@www.outflux.net>
-	<4F6F6839.6020605@schaufler-ca.com>
-Date: Mon, 26 Mar 2012 08:56:39 -0700
-X-Google-Sender-Auth: Pnx17eRH1xg3UHG4lRwqLdRq2JA
-Message-ID: <CAGXu5jJB8nD1LJSJSDx2CF_j_-uLKOmq++2OHBVvXhvao37EeQ@mail.gmail.com>
-Subject: Re: [PATCH] audit: always report seccomp violations
-From: Kees Cook <keescook@chromium.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322215643.27814.58756.stgit@zurg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 25, 2012 at 11:47 AM, Casey Schaufler
-<casey@schaufler-ca.com> wrote:
-> On 3/23/2012 4:32 PM, Kees Cook wrote:
->> When a program violates its own seccomp rules, that is a pretty dire
->> situation, and the audit message should always be reported (not just
->> when there is already a rule active for the process).
->
-> Hmm. If the program is never going to violate its own
-> seccomp rules it seems sort of silly to have them in the
-> first place, doesn't it? Oh, I know that the expectation
-> of seccomp is that the application would only try something
-> you've disallowed if it gets compromised. Problem is that
+On Fri 23-03-12 01:56:43, Konstantin Khlebnikov wrote:
+> Use vm_swappiness from memory cgroup which is triggered this memory reclaim.
+> This is more reasonable and allows to kill one argument.
 
-Well, either compromised or doing something new (e.g. a library in the
-code has changed).
+Could you be more specific why is this more reasonable? 
+I am afraid this might lead to an unexpected behavior when the target
+memcg has quite high swappiness while other groups in the hierarchy have
+it 0 so we would end up swapping even from those groups.
 
-> Modern Programmers tend to rely very heavily on the opaque
-> behavior of APIs that they don't understand nor particularly
-> care if they understand. When assumptions are made about the
-> behavior of the API code, and the API code changes, as
-> occurs with amazing frequency on today's mobile devices,
-> there are going to be surprises. I would wager that the
-> modern frequency of API changes will result in this behavior
-> being very unpopular.
-
-You seem to be advocating for my patch -- instead of the program
-"silently" getting killed, now there will be notification. A seccomp
-failure is extremely uncommon; much less common that core dumps. This
-is why it should always be reported -- it is uncommon and important to
-notice.
-
->> This change makes the audit_seccomp() logic similar to audit_core_dumps()
->> (it does not require an active context). Since core dumps are more
->> common, they sit behind an "audit_enabled" test. Audit reports of seccomp
->> failures should always be visible, and fall back to printk when auditd
->> is not running.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  include/linux/audit.h |    8 +-------
->>  kernel/auditsc.c      |   11 +++++++++--
->>  2 files changed, 10 insertions(+), 9 deletions(-)
->>
->> diff --git a/include/linux/audit.h b/include/linux/audit.h
->> index ed3ef19..596077f 100644
->> --- a/include/linux/audit.h
->> +++ b/include/linux/audit.h
->> @@ -463,7 +463,7 @@ extern void audit_putname(const char *name);
->>  extern void __audit_inode(const char *name, const struct dentry *dentry);
->>  extern void __audit_inode_child(const struct dentry *dentry,
->>                               const struct inode *parent);
->> -extern void __audit_seccomp(unsigned long syscall);
->> +extern void audit_seccomp(unsigned long syscall);
->>  extern void __audit_ptrace(struct task_struct *t);
->>
->>  static inline int audit_dummy_context(void)
->> @@ -508,12 +508,6 @@ static inline void audit_inode_child(const struct dentry *dentry,
->>  }
->>  void audit_core_dumps(long signr);
->>
->> -static inline void audit_seccomp(unsigned long syscall)
->> -{
->> -     if (unlikely(!audit_dummy_context()))
->> -             __audit_seccomp(syscall);
->> -}
->> -
->>  static inline void audit_ptrace(struct task_struct *t)
->>  {
->>       if (unlikely(!audit_dummy_context()))
->> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
->> index af1de0f..a5caecd 100644
->> --- a/kernel/auditsc.c
->> +++ b/kernel/auditsc.c
->> @@ -2693,7 +2693,7 @@ static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
->>   * @signr: signal value
->>   *
->>   * If a process ends with a core dump, something fishy is going on and we
->> - * should record the event for investigation.
->> + * should record the event for investigation, if auditing is enabled.
->>   */
->>  void audit_core_dumps(long signr)
->>  {
->> @@ -2710,7 +2710,14 @@ void audit_core_dumps(long signr)
->>       audit_log_end(ab);
->>  }
->>
->> -void __audit_seccomp(unsigned long syscall)
->> +/**
->> + * audit_seccomp - record information about processes that violate seccomp
->> + * @syscall: syscall number that triggered the seccomp violation
->> + *
->> + * If a process violates its own seccomp rules, something has gone very
->> + * wrong, and this event should always be reported for investigation.
->> + */
->> +void audit_seccomp(unsigned long syscall)
->>  {
->>       struct audit_buffer *ab;
->>
->
-
-
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+> ---
+>  mm/vmscan.c |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 9de66be..5e2906d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1840,12 +1840,11 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+>  	return shrink_inactive_list(nr_to_scan, mz, sc, priority, lru);
+>  }
+>  
+> -static int vmscan_swappiness(struct mem_cgroup_zone *mz,
+> -			     struct scan_control *sc)
+> +static int vmscan_swappiness(struct scan_control *sc)
+>  {
+>  	if (global_reclaim(sc))
+>  		return vm_swappiness;
+> -	return mem_cgroup_swappiness(mz->mem_cgroup);
+> +	return mem_cgroup_swappiness(sc->target_mem_cgroup);
+>  }
+>  
+>  /*
+> @@ -1913,8 +1912,8 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+>  	 * With swappiness at 100, anonymous and file have the same priority.
+>  	 * This scanning priority is essentially the inverse of IO cost.
+>  	 */
+> -	anon_prio = vmscan_swappiness(mz, sc);
+> -	file_prio = 200 - vmscan_swappiness(mz, sc);
+> +	anon_prio = vmscan_swappiness(sc);
+> +	file_prio = 200 - vmscan_swappiness(sc);
+>  
+>  	/*
+>  	 * OK, so we have swap space and a fair amount of page cache
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Kees Cook
-ChromeOS Security
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
