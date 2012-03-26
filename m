@@ -1,115 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab2CZRpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:45:13 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33399 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932774Ab2CZRpL convert rfc822-to-8bit (ORCPT
+	id S933191Ab2CZRuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:50:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43818 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903Ab2CZRuM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:45:11 -0400
+	Mon, 26 Mar 2012 13:50:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <m1ty1esa52.fsf@fess.ebiederm.org>
-References: <20120313005855.GA24639@redhat.com> <CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
- <20120318192755.GB6589@ZenIV.linux.org.uk> <CAMOw1v4qa_AxJgc+qAsY6M=K--2JDvO-+CNj8OwKuE7piRViGw@mail.gmail.com>
- <m1vclw1fx8.fsf@fess.ebiederm.org> <CAMOw1v4gszzV7F3z1m+RWEe9UDgR2Jrp9wX_w9z_1UkXT=FL5Q@mail.gmail.com>
- <m1iphuu9pd.fsf_-_@fess.ebiederm.org> <CAMOw1v65TePmMOxzGsnW4xv1ge1RDD=Stxgo9-eqtyi8hdjZOQ@mail.gmail.com>
- <m1ty1esa52.fsf@fess.ebiederm.org>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Mon, 26 Mar 2012 14:44:50 -0300
-Message-ID: <CAMOw1v4hZFk20QzvwWUL73Nax2m77HOkfp0KkuOPFjCgYprZgw@mail.gmail.com>
-Subject: Re: [REVIEW][PATCH] Making poll generally useful for sysctls
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+In-Reply-To: <20120326150835.GQ4014@phenom.ffwll.local>
+References: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
+ <1332772010-19619-3-git-send-email-djkurtz@chromium.org> <20120326144711.GO4014@phenom.ffwll.local>
+ <20120326150835.GQ4014@phenom.ffwll.local>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Tue, 27 Mar 2012 01:49:51 +0800
+X-Google-Sender-Auth: LhfiVqn33kRQ1BYgtvvRuCJdngo
+Message-ID: <CAGS+omAkRiVMJCEK5eyEvWrVEZxCqyjkd3ocNZq=69mC29o-PA@mail.gmail.com>
+Subject: Re: [PATCH 02/11 v3] drm/i915/intel_i2c: assign HDMI port D to pin
+ pair 6
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-
-On Sat, Mar 24, 2012 at 4:58 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
+On Mon, Mar 26, 2012 at 11:08 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
 >
->>>  /* A sysctl table is an array of struct ctl_table: */
->>>  struct ctl_table
->>>  {
->>>        const char *procname;           /* Text ID for /proc/sys, or zero */
->>>        void *data;
->>> +       atomic_t event;
->>>        int maxlen;
->>>        umode_t mode;
->>>        struct ctl_table *child;        /* Deprecated */
->>>        proc_handler *proc_handler;     /* Callback for text formatting */
->>> -       struct ctl_table_poll *poll;
->>>        void *extra1;
->>>        void *extra2;
->>>  };
->>> @@ -1042,6 +1025,7 @@ struct ctl_table_header
->>>                };
->>>                struct rcu_head rcu;
->>>        };
->>> +       wait_queue_head_t wait;
->>
->> If you have a waitqueue per table instead of per entry you will get
->> spurious notifications when other entries change. The easiest way to
->> test this is to poll /proc/sys/kernel/hostname and change your
->> domainname.
+> On Mon, Mar 26, 2012 at 04:47:11PM +0200, Daniel Vetter wrote:
+> > On Mon, Mar 26, 2012 at 10:26:41PM +0800, Daniel Kurtz wrote:
+> > > According to i915 documentation [1], "Port D" (DP/HDMI Port D) is
+> > > actually gmbus pin pair 6 (gmbus0.2:0 == 110b GPIOF), not 7 (111b).
+> > > Pin pair 7 is a reserved pair.
+> > >
+> > > [1] Documentation for [DevSNB+] and [DevIBX], as found on
+> > > http://intellinuxgraphics.org
+> > >
+> > > Note: the "reserved" and "disabled" pairs do not actually map to a
+> > > physical pair of pins, nor GPIO regs and shouldn't be initialized or
+> > > used.
+> > > Fixing this is left for a later patch.
+> > >
+> > > This bug has not been noticed for two reasons:
+> > >  1) "gmbus" mode is currently disabled - all transfers are actually
+> > > using
+> > >     "bit-bang" mode which uses the GPIO port 5 (the "HDMI/DPD
+> > > CTLDATA/CLK"
+> > >     pair), at register 0x5024 (defined as GPIOF i915_reg.h).
+> > >     Since this is the correct pair of pins for HDMI1, transfers
+> > > succeed.
+> >
+> > ... this is no longer true on drm-intel-next.
+> >
+> > >  2) Even if gmbus mode is re-enabled, the first attempted transaction
+> > >     will fail because it tries to use the wrong ("Reserved") pin pair.
+> > >     However, the driver immediately falls back again to the bit-bang
+> > >     method, which correctly uses GPIOF, so again, transfers succeed.
+> > >
+> > > However, if gmbus mode is re-enabled and the GPIO fall-back mode is
+> > > disabled, then reading an attached monitor's EDID fail.
+> > >
+> > > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> >
+> > Otherwise this looks ok to me - I've checked with gen3 Bspec and we seem
+> > to indeed have a 1:1 mapping, see "Display Registers", 1.5.3 "GPIO
+> > Control
+> > Registers", the list right below the heading.
 >
-> You will get spurious wakeups but not spurious notifications to
-> userspace since event is still per entry.
-
-Yeah, indeed.
-
-> For my money that seemed a nice compromise of code simplicity, and
-> generality.  We could of course do something much closer to what
-> sysfs does and allocate and refcount something similar to your
-> ctl_table_poll when we have a ctl_table opened.  But that just looked
-> like a pain.
-
-I don't think we want spurious wakeups in favor of a slightly simpler code.
-
-
+> well, scrap that, I've confused myself here a bit. Afaict we don't
+> actually use these gmbus ports on earlier chips.
+> >
+> > Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >
+> > When resending, can you please add the Bspec reference above?
 >
-> Of course we already have spurious notifications for hostname and
-> domainname when multiple uts namespaces are involved, but that
-> is a different problem.
+> Can you you instead add a clear reference (Volume, Full Section plus
+> Heading Title) for the Snb/Ibx public Bspec.
 >
->> I couldn't apply this patch to any tree (linus/master + my previous
->> patch, your master, 3.3 + my previous patch), so I couldn't test. On
->> top of your tree:
->
-> How odd.  It should have applied cleanly to my tree and it applies
-> with just a two line offset top of Linus's latest with my tree merged
-> in.  Those two lines of offset coming from the two extra includes
-> that came in through the merge.
->
-> patch -p1 --dry-run <  ~/tmp/sysctl-poll-test.patch
-> patching file fs/proc/proc_sysctl.c
-> Hunk #1 succeeded at 18 (offset 2 lines).
-> Hunk #2 succeeded at 173 (offset 2 lines).
-> Hunk #3 succeeded at 245 (offset 2 lines).
-> Hunk #4 succeeded at 512 (offset 2 lines).
-> Hunk #5 succeeded at 542 (offset 2 lines).
-> Hunk #6 succeeded at 561 (offset 2 lines).
-> patching file include/linux/sysctl.h
-> patching file kernel/utsname_sysctl.c
->
->> [lucas@vader kernel]$ git am /tmp/a.patch
->> Applying: Making poll generally useful for sysctls
->> error: patch failed: fs/proc/proc_sysctl.c:16
->> error: fs/proc/proc_sysctl.c: patch does not apply
->> error: patch failed: include/linux/sysctl.h:992
->> error: include/linux/sysctl.h: patch does not apply
->> Patch failed at 0001 Making poll generally useful for sysctls
->
-> Here is rebased version of the patch just in case that helps.
+> Thanks, Daneil
+> --
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
 
-Now I can apply, but I can't boot: we hit a NULL dereference in
-__wake_up_common(), called by proc_sys_poll_notify(). It seems that
-you forgot to initialize the waitqueue with
-__WAIT_QUEUE_HEAD_INITIALIZER().
+I'm not sure what a "Bspec" is, but here is the documents I used:
 
+[DevSNB+]: http://intellinuxgraphics.org/documentation/SNB/IHD_OS_Vol3_Part3.pdf
+Section 2.2.2 lists the 6 gmbus ports (gpio pin pairs):
+  [ 5: HDMI/DPD, 4: HDMIB, 3: HDMI/DPC, 2: LVDS, 1: SSC, 0: VGA ]
+2.2.2.1 lists the GPIO registers to control these 6 ports.
+2.2.3.1 lists the mapping between 5 of these gmbus ports and the 3
+Pin_Pair_Select bits (of the GMBUS0 register).  This table is missing
+HDMIB (port 101).
 
-Lucas De Marchi
+[DevIBX]: http://intellinuxgraphics.org/IHD_OS_Vol3_Part3r2.pdf
+Section 2.2.2 lists the same 6 gmbus ports plus two 'reserved' gpio ports.
+2.2.2.1 lists 8 GPIO registers... however, it says the size of the
+block is 6x32, which implies that those 2 reserved GPIO registers
+(GPIO_6 & GPIO_7) don't actually exist (or are irrelevant).
+2.2.3.1 lists the mapping between the 6 named gmbus ports and the 3
+Pin_Pair_Select bits (of the GMBUS0 register).  This table has HDMIB.
+
+HTH,
+-Daniel
