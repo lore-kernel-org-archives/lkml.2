@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab2CZQFj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 12:05:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38949 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932540Ab2CZQFi (ORCPT
+	id S932888Ab2CZQGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 12:06:21 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59591 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932540Ab2CZQGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 12:05:38 -0400
-Message-ID: <4F7093CD.4060008@openvz.org>
-Date: Mon, 26 Mar 2012 20:05:33 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 6/7] mm/memcg: kill mem_cgroup_lru_del()
-References: <20120322214944.27814.42039.stgit@zurg> <20120322215639.27814.4996.stgit@zurg> <20120326152315.GC22754@tiehlicka.suse.cz>
-In-Reply-To: <20120326152315.GC22754@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Mar 2012 12:06:20 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/1] mmap.c: find_vma: replace if(mm) check with BUG_ON(!mm)
+Date: Mon, 26 Mar 2012 12:06:05 -0400
+Message-Id: <1332777965-2534-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko wrote:
-> On Fri 23-03-12 01:56:39, Konstantin Khlebnikov wrote:
->> This patch kills mem_cgroup_lru_del(), we can use mem_cgroup_lru_del_list()
->> instead. On 0-order isolation we already have right lru list id.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->> Cc: Hugh Dickins<hughd@google.com>
->
-> Yes, looks good
-> Acked-by: Michal Hocko<mhocko@suse.cz>
->
-> Just a small nit..
-> [...]
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 5f6ed98..9de66be 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
-> [...]
->> @@ -1205,8 +1205,11 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->>
->>   			if (__isolate_lru_page(cursor_page, mode) == 0) {
->>   				unsigned int isolated_pages;
->> +				enum lru_list cursor_lru;
->>
->> -				mem_cgroup_lru_del(cursor_page);
->> +				cursor_lru = page_lru(cursor_page);
->> +				mem_cgroup_lru_del_list(cursor_page,
->> +							cursor_lru);
->
-> Why not mem_cgroup_lru_del_list(cursor_page,
-> 				page_lru(cursor_page));
-> The patch would be smaller and it doesn't make checkpatch unhappy as well.
+find_vma is called from kernel code where it is absolutely
+sure that the mm_struct arg being passed to it is non-NULL.
 
-Lumpy-reclaim supposed to be removed soon, so...
+Convert the if check to a BUG_ON.
+This will also serve the purpose of mandating that the execution
+context(user-mode/kernel-mode) be known before find_vma is called.
 
->
->>   				list_move(&cursor_page->lru, dst);
->>   				isolated_pages = hpage_nr_pages(cursor_page);
->>   				nr_taken += isolated_pages;
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+Also fixed 2 checkpatch.pl errors in this function for the rb_node
+and vma_tmp local variables.
+
+I have tested this patch on my x86 PC and there are no BUG_ON crashes
+due to this in the course of normal desktop execution.
+
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ mm/mmap.c |   52 ++++++++++++++++++++++++++--------------------------
+ 1 files changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index a7bf6a3..7589965 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1589,33 +1589,33 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ {
+ 	struct vm_area_struct *vma = NULL;
+ 
+-	if (mm) {
+-		/* Check the cache first. */
+-		/* (Cache hit rate is typically around 35%.) */
+-		vma = mm->mmap_cache;
+-		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+-			struct rb_node * rb_node;
+-
+-			rb_node = mm->mm_rb.rb_node;
+-			vma = NULL;
+-
+-			while (rb_node) {
+-				struct vm_area_struct * vma_tmp;
+-
+-				vma_tmp = rb_entry(rb_node,
+-						struct vm_area_struct, vm_rb);
+-
+-				if (vma_tmp->vm_end > addr) {
+-					vma = vma_tmp;
+-					if (vma_tmp->vm_start <= addr)
+-						break;
+-					rb_node = rb_node->rb_left;
+-				} else
+-					rb_node = rb_node->rb_right;
+-			}
+-			if (vma)
+-				mm->mmap_cache = vma;
++	BUG_ON(!mm);
++
++	/* Check the cache first. */
++	/* (Cache hit rate is typically around 35%.) */
++	vma = mm->mmap_cache;
++	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
++		struct rb_node *rb_node;
++
++		rb_node = mm->mm_rb.rb_node;
++		vma = NULL;
++
++		while (rb_node) {
++			struct vm_area_struct *vma_tmp;
++
++			vma_tmp = rb_entry(rb_node,
++					struct vm_area_struct, vm_rb);
++
++			if (vma_tmp->vm_end > addr) {
++				vma = vma_tmp;
++				if (vma_tmp->vm_start <= addr)
++					break;
++				rb_node = rb_node->rb_left;
++			} else
++				rb_node = rb_node->rb_right;
+ 		}
++		if (vma)
++			mm->mmap_cache = vma;
+ 	}
+ 	return vma;
+ }
+-- 
+1.7.5.4
 
