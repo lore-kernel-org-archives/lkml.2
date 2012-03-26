@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab2CZO2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:28:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56773 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab2CZO21 convert rfc822-to-8bit (ORCPT
+	id S932611Ab2CZO3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:29:33 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61085 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932565Ab2CZO3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 10:28:27 -0400
+	Mon, 26 Mar 2012 10:29:31 -0400
+Message-ID: <4F707D47.9060103@gmail.com>
+Date: Mon, 26 Mar 2012 07:29:27 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <4F7031A4.70601@mellanox.co.il>
-References: <4F7031A4.70601@mellanox.co.il>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 26 Mar 2012 08:28:05 -0600
-Message-ID: <CAErSpo7ciBYG1-jCL3F6bFcktmJj4H-SXn_1NcRnhc-gPDsHUw@mail.gmail.com>
-Subject: Re: IRQ affinity enforced only after first interrupt.
-To: Yevgeny Petrilin <yevgenyp@mellanox.co.il>
-Cc: linux-pci@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org
+CC: gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/5]NEXT:drivers:staging:nvec:nvec.h Fix typos in staging:nvec
+References: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1332170273-3482-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[This is not really a PCI question, so +cc Thomas, LKML.]
+before these get lost in the sands of time; are you wanting to pick 
+these up?
 
-On Mon, Mar 26, 2012 at 3:06 AM, Yevgeny Petrilin
-<yevgenyp@mellanox.co.il> wrote:
-> Hello,
+On 03/19/2012 08:17 AM, Justin P. Mattock wrote:
+> From: "Justin P. Mattock"<justinmattock@gmail.com>
 >
-> I'm working on an issue where affinity changes to IRQ only have effect after the first interrupt which still happens on the original core.
-> I understand that the decision regarding it takes place in this code:
+> The below patch fixes a typo I found while reading.
 >
->        if (irq_can_move_pcntxt(data)) {
->                ret = chip->irq_set_affinity(data, mask, false);
->                switch (ret) {
->                case IRQ_SET_MASK_OK:
->                        cpumask_copy(data->affinity, mask);
->                case IRQ_SET_MASK_OK_NOCOPY:
->                        irq_set_thread_affinity(desc);
->                        ret = 0;
->                }
->        } else {
->                irqd_set_move_pending(data);
->                irq_copy_pending(desc, mask);
->        }
+> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> Cc: Julian Andres Klode<jak@jak-linux.org>
+> ---
+>   drivers/staging/nvec/nvec.h |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> Which means that the "IRQD_MOVE_PCNTXT" flag is not set in irq_data->state_use_accessors.
-> I was able to add this flag using irq_modify_status(), which is probably not the way to go.
-> This option also doesn't exist in older kernels (2.6.32)
->
-> So the question is, when irq_desc is created, how is it determined that "IRQD_MOVE_PCNTXT" flag is set?
->
-> Thanks,
-> Yevgeny
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/drivers/staging/nvec/nvec.h b/drivers/staging/nvec/nvec.h
+> index a4c17b0..ba6ed8f 100644
+> --- a/drivers/staging/nvec/nvec.h
+> +++ b/drivers/staging/nvec/nvec.h
+> @@ -42,7 +42,7 @@
+>    * enum nvec_event_size - The size of an event message
+>    * @NVEC_2BYTES: The message has one command byte and one data byte
+>    * @NVEC_3BYTES: The message has one command byte and two data bytes
+> - * @NVEC_VAR_SIZE: The message has one command byte, one count byte, and as
+> + * @NVEC_VAR_SIZE: The message has one command byte, one count byte, and has
+>    *                 up to as many bytes as the number in the count byte. The
+>    *                 maximum is 32
+>    *
+
