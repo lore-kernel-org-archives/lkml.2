@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723Ab2CZP3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:29:25 -0400
-Received: from ftp.meprolight.com ([194.90.149.17]:52675 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932494Ab2CZP3X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:29:23 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Date: Mon, 26 Mar 2012 17:28:55 +0200
-Subject: RE: [PATCH v1] regulator: i.MX35-PDK Add regulator support
-Thread-Topic: [PATCH v1] regulator: i.MX35-PDK Add regulator support
-Thread-Index: Ac0LX1cllZ5cxVKgRF6ZgANW1v2kiAABGZ6u
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>
-References: <1332772593-13313-1-git-send-email-alexg@meprolight.com>,<20120326144712.GA8579@sirena.org.uk>
-In-Reply-To: <20120326144712.GA8579@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932683Ab2CZPbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:31:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51290 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932539Ab2CZPbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 11:31:33 -0400
+Date: Mon, 26 Mar 2012 17:31:31 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH v6 1/7] mm/memcg: scanning_global_lru means
+ mem_cgroup_disabled
+Message-ID: <20120326153131.GA22715@tiehlicka.suse.cz>
+References: <20120322214944.27814.42039.stgit@zurg>
+ <20120322215616.27814.40563.stgit@zurg>
+ <20120326150429.GA22754@tiehlicka.suse.cz>
+ <20120326151815.GA1820@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120326151815.GA1820@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 26-03-12 17:18:15, Johannes Weiner wrote:
+> On Mon, Mar 26, 2012 at 05:04:29PM +0200, Michal Hocko wrote:
+> > [Adding Johannes to CC]
+> > 
+> > On Fri 23-03-12 01:56:16, Konstantin Khlebnikov wrote:
+> > > From: Hugh Dickins <hughd@google.com>
+> > > 
+> > > Although one has to admire the skill with which it has been concealed,
+> > > scanning_global_lru(mz) is actually just an interesting way to test
+> > > mem_cgroup_disabled().  Too many developer hours have been wasted on
+> > > confusing it with global_reclaim(): just use mem_cgroup_disabled().
+> > 
+> > Is this really correct?
+> 
+> Yes, if the memory controller is enabled, we never have a global LRU
+> and always scan the per-memcg lists.
+> 
+> > > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> > > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > Acked-by: Glauber Costa <glommer@parallels.com>
+> > > ---
+> > >  mm/vmscan.c |   18 ++++--------------
+> > >  1 files changed, 4 insertions(+), 14 deletions(-)
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index 49f15ef..c684f44 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > [...]
+> > > @@ -1806,7 +1796,7 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+> > >  	if (!total_swap_pages)
+> > >  		return 0;
+> > >  
+> > > -	if (!scanning_global_lru(mz))
+> > > +	if (!mem_cgroup_disabled())
+> > >  		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
+> > >  						       mz->zone);
+> > 
+> > mem_cgroup_inactive_anon_is_low calculation is slightly different than
+> > what we have for cgroup_disabled case. calculate_zone_inactive_ratio
+> > considers _all_ present pages in the zone while memcg variant only
+> > active+inactive.
+> 
+> The memcg has nothing to go by but actual number of LRU pages; there
+> is no 'present pages' equivalent.
 
-Hi Mark,
+Yes
 
-Thanks for you quick responds and comments.
- 
-On Mon, Mar 26, 2012 at 04:36:33PM +0200, Alex Gershgorin wrote:
+> I don't think that it matters much in reality given the sqrt scale,
+> but the difference is still unfortunate.  
 
-> +static struct regulator_init_data sw1_init = {
-> +     .constraints = {
-> +             .name = "SW1",
-> +             .min_uV = 600000,
-> +             .max_uV = 1375000,
-> +             .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-> +             .valid_modes_mask = 0,
-> +             .always_on = 1,
-> +             .boot_on = 1,
-> +     }
-> +};
+OK you are probably right that the scale is too small to be a problem.
+I guess that a note about changed ratio calculation should be added to
+the changelog.
 
-> >These constraints don't make sense, you've got a voltage range and the
-> >ability to change voltages but no consumers so nothing that could ever
-> >change the voltage...
+> Konstantin was meaning to unify all this, though.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Yes, you are right I will add  consumers. 
-
-> +static struct regulator_init_data vpll_init = {
-> +     .constraints = {
-> +             .name = "VPLL",
-> +             .min_uV = 1050000,
-> +             .max_uV = 1800000,
-> +             .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-> +             .boot_on = 1,
-> +     }
-> +};
-
-> >...and in many cases the supply names don't look like things I'd expect
-> >to be varying too much at runtime.  It looks like you just typed the
-> >maximum datasheet ranges in, not things that make sense for the board.
-
-It's not quite true, I was based on the Freescale BSP and I assume, that this is checked.
-I also tested it on v3.3
-
-Regards,
-Alex Gershgorin 
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
