@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab2CZPMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 11:12:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57699 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932598Ab2CZPMe (ORCPT
+	id S932805Ab2CZPOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 11:14:38 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34293 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932502Ab2CZPOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 11:12:34 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm8994: Read CUST_ID from the device
-Date: Mon, 26 Mar 2012 16:12:31 +0100
-Message-Id: <1332774751-8506-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	Mon, 26 Mar 2012 11:14:37 -0400
+Date: Mon, 26 Mar 2012 17:14:32 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] tools: Add a toplevel Makefile
+Message-ID: <20120326151432.GA8527@gmail.com>
+References: <1332513788-9726-1-git-send-email-bp@amd64.org>
+ <20120324074412.GE20145@gmail.com>
+ <20120326122632.GC32090@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120326122632.GC32090@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read CUST_ID from the device and log it for diagnostics.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm8994-core.c            |    7 ++++---
- include/linux/mfd/wm8994/core.h      |    1 +
- include/linux/mfd/wm8994/registers.h |    3 +++
- 3 files changed, 8 insertions(+), 3 deletions(-)
+* Borislav Petkov <bp@amd64.org> wrote:
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 9d7ca1e..60e61754 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -500,7 +500,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 			ret);
- 		goto err_enable;
- 	}
--	wm8994->revision = ret;
-+	wm8994->revision = ret & WM8994_CHIP_REV_MASK;
-+	wm8994->cust_id = (ret & WM8994_CUST_ID_MASK) >> WM8994_CUST_ID_SHIFT;
- 
- 	switch (wm8994->type) {
- 	case WM8994:
-@@ -553,8 +554,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 		break;
- 	}
- 
--	dev_info(wm8994->dev, "%s revision %c\n", devname,
--		 'A' + wm8994->revision);
-+	dev_info(wm8994->dev, "%s revision %c CUST_ID %02x\n", devname,
-+		 'A' + wm8994->revision, wm8994->cust_id);
- 
- 	switch (wm8994->type) {
- 	case WM1811:
-diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
-index 9eff2a3..d41bc7b 100644
---- a/include/linux/mfd/wm8994/core.h
-+++ b/include/linux/mfd/wm8994/core.h
-@@ -57,6 +57,7 @@ struct wm8994 {
- 
- 	enum wm8994_type type;
- 	int revision;
-+	int cust_id;
- 
- 	struct device *dev;
- 	struct regmap *regmap;
-diff --git a/include/linux/mfd/wm8994/registers.h b/include/linux/mfd/wm8994/registers.h
-index 86e6a03..0535489 100644
---- a/include/linux/mfd/wm8994/registers.h
-+++ b/include/linux/mfd/wm8994/registers.h
-@@ -2212,6 +2212,9 @@
- /*
-  * R256 (0x100) - Chip Revision
-  */
-+#define WM8994_CUST_ID_MASK                     0xFF00  /* CUST_ID - [15:8] */
-+#define WM8994_CUST_ID_SHIFT                         8  /* CUST_ID - [15:8] */
-+#define WM8994_CUST_ID_WIDTH                         8  /* CUST_ID - [15:8] */
- #define WM8994_CHIP_REV_MASK                    0x000F  /* CHIP_REV - [3:0] */
- #define WM8994_CHIP_REV_SHIFT                        0  /* CHIP_REV - [3:0] */
- #define WM8994_CHIP_REV_WIDTH                        4  /* CHIP_REV - [3:0] */
--- 
-1.7.9.1
+> On Sat, Mar 24, 2012 at 08:44:12AM +0100, Ingo Molnar wrote:
+> > Could this also be accessible via 'make tools' in the toplevel 
+> > Makefile?
+> > 
+> > I'd love to be able to type:
+> > 
+> >   make -j tools perf install
+> 
+> Well,
+> 
+> you could do
+> 
+> $ make -j -C tools perf
 
+Arguably I could also type:
+
+  cd tools/perf; make -j install
+
+:-)
+
+So I just wanted to bring this up, that integrating it into the 
+top level Makefile might make sense. Or not.
+
+Thanks,
+
+	Ingo
