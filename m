@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab2CZIjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:39:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54673 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab2CZIjx (ORCPT
+	id S1755197Ab2CZIka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:40:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49269 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab2CZIk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:39:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH RESEND] misc: Fix irq leak in max8997_muic_probe error path
-Date: Mon, 26 Mar 2012 08:17:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Donggeun Kim <dg77.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Greg Kroah-Hartman" <greg@kroah.com>
-References: <1332727028.7078.4.camel@phoenix>
-In-Reply-To: <1332727028.7078.4.camel@phoenix>
+	Mon, 26 Mar 2012 04:40:29 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203260817.29733.arnd@arndb.de>
-X-Provags-ID: V02:K0:153mAVLqheaPsymC2AYuh6Qhv5k9TCZT7H0XRxlnEzO
- 0+vUTRTqMl/bImB+cfNffPMdA+nr+lfYKHFXGjlkcR7XNNIeCh
- cSZgqnhpFSm3FmZ5SNldO0EJrig74uP0mOeOafUt9yPq7uup0t
- Vq/m3y85HFoMd2nMd2r41QtQeGmr39SdCvIutWoXdGjxmFYfDl
- oMZENi+kpGCgewSDPWOcBrjHEH2KAHrkeJhNb7AXXcNNsMsXNA
- JUjyEwKY37xnEcdA9b/QYKOj3vmCb5N2McCobQbcRrhgoetv2V
- gRLqk7TK+8EFcK/FzL92DZlLFgCHuXwqCSplq4dxyq7Dw0OWV2
- ESZWHcBJPO87DfFPg+y4=
+From: Guan Xin <guanx.bac@gmail.com>
+Date: Mon, 26 Mar 2012 10:39:48 +0200
+Message-ID: <CANeMGR5xS6GwG18q5QnKt5_pWJB4fEKFoywZDx=kA_JFVREGxw@mail.gmail.com>
+Subject: Re: Remove over-broad module alias from zaurus.
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 March 2012, Axel Lin wrote:
-> 
-> Current code does not properly free allocated irqs if request_threaded_irq
-> returns error, fix it.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> On Fri, 17 Jun 2011 20:02:10 -0400, Dave Jones wrote:
+> This module and a bunch of dependancies are getting loaded on several
+> of laptops I have (probably picking up the mobile broadband device),
+> that have nothing to do with zaurus. Matching by class without
+> any vendor/device pair isn't the right thing to do here, as it
+> will prevent any other driver from correctly binding to it.
+> (Or in the absense of a driver, will just waste time & memory by
+>  unnecessarily loading modules)
+>
+> Signed-off-by: Dave Jones <davej@redhat.com>
+>
+> diff --git a/drivers/net/usb/zaurus.c b/drivers/net/usb/zaurus.c
+> index 241756e..1a2234c 100644
+> --- a/drivers/net/usb/zaurus.c
+> +++ b/drivers/net/usb/zaurus.c
+> @@ -331,17 +331,7 @@ static const struct usb_device_id	products [] = {
+>  	ZAURUS_MASTER_INTERFACE,
+>  	.driver_info = ZAURUS_PXA_INFO,
+>  },
+> -
+> -
+> -/* At least some of the newest PXA units have very different lies about
+> - * their standards support:  they claim to be cell phones offering
+> - * direct access to their radios!  (No, they don't conform to CDC MDLM.)
+> - */
+>  {
+> -	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_MDLM,
+> -			USB_CDC_PROTO_NONE),
+> -	.driver_info = (unsigned long) &bogus_mdlm_info,
+> -}, {
+>  	/* Motorola MOTOMAGX phones */
+>  	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
+>  			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
 
-It took me a while to see why this is correct.
+After removal of this, my Motorola Rokr E6 (22b8:6027) cannot be recognized.
+Can this be added back with more specific device info, just like the
+Motorola MOTOMAGX phones?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-Note: It would be nicer to move the dev_err() down into the error path as well
-and also fix the message to print the correct irq number, but your patch is
-the important part.
-
-Note to the driver maintainers: It looks like there is a race in the 
-max8997_muic_irq_handler() function assigning the info->irq member
-when multiple interrupts come in at the same time. Also, calling
-sched_work from a threaded interrupt handler is pointless. I would suggest
-fixing both of these by removing the work function and calling moving
-its contents into the interrupt handler directly. Please correct me if I
-am missing somehting here.
-
-	Arnd
-
+Regards,
+Guan
