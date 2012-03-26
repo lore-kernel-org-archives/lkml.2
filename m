@@ -1,140 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab2CZRF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 13:05:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4193 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932974Ab2CZRFo (ORCPT
+	id S933074Ab2CZRGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 13:06:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47411 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932974Ab2CZRGA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 13:05:44 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=MbZPM-BUxYyz_XsIBYIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1332781541.23924.110.camel@gandalf.stny.rr.com>
-Subject: Re: CPU Hotplug rework
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, paulmck@linux.vnet.ibm.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Mon, 26 Mar 2012 13:05:41 -0400
-In-Reply-To: <1332778438.16159.136.camel@twins>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-	 <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins>
-	 <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins>
-	 <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com>
-	 <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com>
-	 <87bonkchxk.fsf@rustcorp.com.au> <1332748920.16159.65.camel@twins>
-	 <1332767386.23924.75.camel@gandalf.stny.rr.com>
-	 <1332769098.16159.111.camel@twins>
-	 <1332775340.23924.102.camel@gandalf.stny.rr.com>
-	 <1332778438.16159.136.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Mar 2012 13:06:00 -0400
+Message-ID: <1332778852.16159.138.camel@twins>
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v3
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 26 Mar 2012 18:20:52 +0200
+In-Reply-To: <20120326155027.GF16573@suse.de>
+References: <20120307180852.GE17697@suse.de>
+	 <1332759384.16159.92.camel@twins> <20120326155027.GF16573@suse.de>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 18:13 +0200, Peter Zijlstra wrote:
-> On Mon, 2012-03-26 at 11:22 -0400, Steven Rostedt wrote:
-
-> So how about we add another variant of kthread_freezable_should_stop(),
-> maybe call it kthread_bound_should_stop() that checks if the cpu its
-> bound to goes awol, if so, park it.
-
-Do you mean to have this function automate the "park". When it is
-called, if the cpu is going down it should simply schedule off and not
-return until the CPU comes back on line?
-
-Actually, why not just keep "kthread_should_stop()" and instead create a
-"kthread_park()", and call that instead of kthread_stop(). Then when the
-task calls kthread_should_stop(), that can park the thread then.
-
-> 
-> Then after CPU_DOWN_PREPARE, wait for all such threads (as registered
-> per kthread_bind()) to pass through kthread_bound_should_stop() and get
-> frozen.
-
-We could have the notifiers call kthread_park().
-
-> 
-> This should restore PF_THREAD_BOUND to mean its actually bound to this
-> cpu, since if the cpu goes down, the task won't actually run at all.
-> Which means you can again use PF_THREAD_BOUND to by-pass the whole
-> get_online_cpus()/pin_curr_cpu() muck.
-> 
-> Any subsystem that can still accrue state after this (eg, softirq/rcu
-> and possible kworker) need to register a CPU_DYING or CPU_DEAD notifier
-> to either complete the state or take it away and give it to someone
-> else.
-
-I'm afraid that this part sounds easier than done.
-
-> 
-> > Now what are the issues we have:
+On Mon, 2012-03-26 at 16:50 +0100, Mel Gorman wrote:
+> On Mon, Mar 26, 2012 at 12:56:24PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-03-07 at 18:08 +0000, Mel Gorman wrote:
+> > > +               } while (!put_mems_allowed(cpuset_mems_cookie) && !page);
 > > 
-> > 1) We need to get tasks off the CPU going down. For most tasks this is
-> > not an issue. But for CPU specific kernel threads, this can be an issue.
-> > To get tasks off of the CPU is required before the notifiers are called.
-> > This is to keep them from creating work on the CPU, because after the
-> > notifiers, there should be no more work added to the CPU.
-> 
-> This is hard for things like ksoftirq, because for as long as interrupts
-> are enabled we can trigger softirqs. And since we need to deal with
-> that, we might as well deal with it for all and not bother.
-
-Heh, at least for -rt we don't need to worry about that. As interrupts
-are threads and are moved to other CPUS. Although I'm not sure that's
-true about the timer softirq.
-
-> 
-> See the CPU_DYING/DEAD notifier as described above that can deal with
-> this.
-> 
+> > Sorry for only noticing this now, but wouldn't it be better to first
+> > check page and only then bother with the put_mems_allowed() thing? That
+> > avoids the smp_rmb() and seqcount conditional all together in the likely
+> > case the allocation actually succeeded.
 > > 
-> > 2) Some tasks are going to go down and exit. We can audit all the
-> > notifier callbacks for CPU offlining, and see if we can just make them
-> > dormant instead of killing them. As Rusty said, it may not be that
-> > important to save the memory of these tasks.
+> > <SNIP>
+> >
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index c3811bc..3b41553 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -504,7 +504,7 @@ struct page *__page_cache_alloc(gfp_t gfp)
+> >  			cpuset_mems_cookie = get_mems_allowed();
+> >  			n = cpuset_mem_spread_node();
+> >  			page = alloc_pages_exact_node(n, gfp, 0);
+> > -		} while (!put_mems_allowed(cpuset_mems_cookie) && !page);
+> > +		} while (!page && !put_mems_allowed(cpuset_mems_cookie));
+> >  
+> >  		return page;
+> >  	}
 > 
-> Right, this shouldn't be a difficult task, but isn't required for -rt
-> afaict, its just good practise.
+> I think such a change would be better but should also rename the API.
+> If developers see a get_foo type call, they will expect to see a put_foo
+> call or assume it's a bug even though the implementation happens to be ok
+> with that. Any suggestion on what a good new name would be?
+> 
+> How about read_mems_allowed_begin() and read_mems_allowed_retry()?
+> 
+> read_mems_allowed_begin would be a rename of get_mems_allowed().  In an
+> error path, read_mems_allowed_retry() would documented to be *optionally*
+> called when deciding whether to retry the operation or not. In this scheme,
+> !put_mems_allowed would become read_mems_allowed_retry() which might be
+> a bit easier to read overall.
 
-If we get a consensus to do this, then sure.
+One:
+
+git grep -l "\(get\|put\)_mems_allowed" | while read file; do sed -i -e
+'s/\<get_mems_allowed\>/read_mems_allowed_begin/g' -e
+'s/\<put_mems_allowed\>/read_mems_allowed_retry/g' $file; done
+
+and a few edits later..
+
+---
+ include/linux/cpuset.h |   18 +++++++++---------
+ kernel/cpuset.c        |    2 +-
+ mm/filemap.c           |    4 ++--
+ mm/hugetlb.c           |    4 ++--
+ mm/mempolicy.c         |   14 +++++++-------
+ mm/page_alloc.c        |    8 ++++----
+ mm/slab.c              |    4 ++--
+ mm/slub.c              |   16 +++-------------
+ 8 files changed, 30 insertions(+), 40 deletions(-)
+
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index 7a7e5fd..d008b03 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -89,25 +89,25 @@ extern void rebuild_sched_domains(void);
+ extern void cpuset_print_task_mems_allowed(struct task_struct *p);
  
-> 
-> > 3) Some tasks do not go offline, instead they just get moved to another
-> > CPU. This is the case of ksoftirqd. As it is killed after the CPU is
-> > down (POST_DEAD) (at least in -rt it is).
-> 
-> No, we should really stop allowing tasks that were kthread_bind() to run
-> anywhere else. Breaking the strict affinity and letting them run
-> someplace else to complete their work is what gets is in a whole heap of
-> trouble.
-
-Agreed, but to fix this is not a easy problem.
-
-> 
-> > All that is needed now is, at the beginning of taking the CPU down is to
-> > push off tasks from the CPU that may migrate. Then call the notifiers,
-> > and then block the rest and take the CPU down. This seems to work fine.
-> > It was just the implementation I proposed was a bit too ugly for
-> > Thomas's taste.
-> 
-> I really don't see the point in that.
-
-It was the easiest fix for the current state of the kernel.
-
--- Steve
-
+ /*
+- * get_mems_allowed is required when making decisions involving mems_allowed
++ * read_mems_allowed_begin is required when making decisions involving mems_allowed
+  * such as during page allocation. mems_allowed can be updated in parallel
+  * and depending on the new value an operation can fail potentially causing
+- * process failure. A retry loop with get_mems_allowed and put_mems_allowed
++ * process failure. A retry loop with read_mems_allowed_begin and read_mems_allowed_retry
+  * prevents these artificial failures.
+  */
+-static inline unsigned int get_mems_allowed(void)
++static inline unsigned int read_mems_allowed_begin(void)
+ {
+ 	return read_seqcount_begin(&current->mems_allowed_seq);
+ }
+ 
+ /*
+- * If this returns false, the operation that took place after get_mems_allowed
++ * If this returns false, the operation that took place after read_mems_allowed_begin
+  * may have failed. It is up to the caller to retry the operation if
+  * appropriate.
+  */
+-static inline bool put_mems_allowed(unsigned int seq)
++static inline bool read_mems_allowed_retry(unsigned int seq)
+ {
+-	return !read_seqcount_retry(&current->mems_allowed_seq, seq);
++	return read_seqcount_retry(&current->mems_allowed_seq, seq);
+ }
+ 
+ static inline void set_mems_allowed(nodemask_t nodemask)
+@@ -225,14 +225,14 @@ static inline void set_mems_allowed(nodemask_t nodemask)
+ {
+ }
+ 
+-static inline unsigned int get_mems_allowed(void)
++static inline unsigned int read_mems_allowed_begin(void)
+ {
+ 	return 0;
+ }
+ 
+-static inline bool put_mems_allowed(unsigned int seq)
++static inline bool read_mems_allowed_retry(unsigned int seq)
+ {
+-	return true;
++	return false;
+ }
+ 
+ #endif /* !CONFIG_CPUSETS */
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 1010cc6..703df59 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -976,7 +976,7 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 	task_lock(tsk);
+ 	/*
+ 	 * Determine if a loop is necessary if another thread is doing
+-	 * get_mems_allowed().  If at least one node remains unchanged and
++	 * read_mems_allowed_begin().  If at least one node remains unchanged and
+ 	 * tsk does not have a mempolicy, then an empty nodemask will not be
+ 	 * possible when mems_allowed is larger than a word.
+ 	 */
+diff --git a/mm/filemap.c b/mm/filemap.c
+index c3811bc..5694807 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -501,10 +501,10 @@ struct page *__page_cache_alloc(gfp_t gfp)
+ 	if (cpuset_do_page_mem_spread()) {
+ 		unsigned int cpuset_mems_cookie;
+ 		do {
+-			cpuset_mems_cookie = get_mems_allowed();
++			cpuset_mems_cookie = read_mems_allowed_begin();
+ 			n = cpuset_mem_spread_node();
+ 			page = alloc_pages_exact_node(n, gfp, 0);
+-		} while (!put_mems_allowed(cpuset_mems_cookie) && !page);
++		} while (!page && read_mems_allowed_retry(cpuset_mems_cookie));
+ 
+ 		return page;
+ 	}
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index b8ce6f4..6c52f6a 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -541,7 +541,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	unsigned int cpuset_mems_cookie;
+ 
+ retry_cpuset:
+-	cpuset_mems_cookie = get_mems_allowed();
++	cpuset_mems_cookie = read_mems_allowed_begin();
+ 	zonelist = huge_zonelist(vma, address,
+ 					htlb_alloc_mask, &mpol, &nodemask);
+ 	/*
+@@ -570,7 +570,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	}
+ 
+ 	mpol_cond_put(mpol);
+-	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
++	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 	return page;
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index cfb6c86..ee5f48c 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1692,7 +1692,7 @@ int node_random(const nodemask_t *maskp)
+  * If the effective policy is 'BIND, returns a pointer to the mempolicy's
+  * @nodemask for filtering the zonelist.
+  *
+- * Must be protected by get_mems_allowed()
++ * Must be protected by read_mems_allowed_begin()
+  */
+ struct zonelist *huge_zonelist(struct vm_area_struct *vma, unsigned long addr,
+ 				gfp_t gfp_flags, struct mempolicy **mpol,
+@@ -1857,7 +1857,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 
+ retry_cpuset:
+ 	pol = get_vma_policy(current, vma, addr);
+-	cpuset_mems_cookie = get_mems_allowed();
++	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
+ 	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+ 		unsigned nid;
+@@ -1865,7 +1865,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+ 		mpol_cond_put(pol);
+ 		page = alloc_page_interleave(gfp, order, nid);
+-		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
++		if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 			goto retry_cpuset;
+ 
+ 		return page;
+@@ -1878,7 +1878,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 		struct page *page =  __alloc_pages_nodemask(gfp, order,
+ 						zl, policy_nodemask(gfp, pol));
+ 		__mpol_put(pol);
+-		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
++		if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 			goto retry_cpuset;
+ 		return page;
+ 	}
+@@ -1887,7 +1887,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 	 */
+ 	page = __alloc_pages_nodemask(gfp, order, zl,
+ 				      policy_nodemask(gfp, pol));
+-	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
++	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 	return page;
+ }
+@@ -1921,7 +1921,7 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ 		pol = &default_policy;
+ 
+ retry_cpuset:
+-	cpuset_mems_cookie = get_mems_allowed();
++	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
+ 	/*
+ 	 * No reference counting needed for current->mempolicy
+@@ -1934,7 +1934,7 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ 				policy_zonelist(gfp, pol, numa_node_id()),
+ 				policy_nodemask(gfp, pol));
+ 
+-	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
++	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 
+ 	return page;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index caea788..b586d96 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2402,7 +2402,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 		return NULL;
+ 
+ retry_cpuset:
+-	cpuset_mems_cookie = get_mems_allowed();
++	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
+ 	/* The preferred zone is used for statistics later */
+ 	first_zones_zonelist(zonelist, high_zoneidx,
+@@ -2429,7 +2429,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	 * the mask is being updated. If a page allocation is about to fail,
+ 	 * check if the cpuset changed during allocation and if so, retry.
+ 	 */
+-	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
++	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 
+ 	return page;
+@@ -2651,9 +2651,9 @@ bool skip_free_areas_node(unsigned int flags, int nid)
+ 		goto out;
+ 
+ 	do {
+-		cpuset_mems_cookie = get_mems_allowed();
++		cpuset_mems_cookie = read_mems_allowed_begin();
+ 		ret = !node_isset(nid, cpuset_current_mems_allowed);
+-	} while (!put_mems_allowed(cpuset_mems_cookie));
++	} while (read_mems_allowed_retry(cpuset_mems_cookie));
+ out:
+ 	return ret;
+ }
+diff --git a/mm/slab.c b/mm/slab.c
+index 29c8716..e5a4533 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3318,7 +3318,7 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
+ 	local_flags = flags & (GFP_CONSTRAINT_MASK|GFP_RECLAIM_MASK);
+ 
+ retry_cpuset:
+-	cpuset_mems_cookie = get_mems_allowed();
++	cpuset_mems_cookie = read_mems_allowed_begin();
+ 	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
+ 
+ retry:
+@@ -3374,7 +3374,7 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
+ 		}
+ 	}
+ 
+-	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !obj))
++	if (unlikely(!obj && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 	return obj;
+ }
+diff --git a/mm/slub.c b/mm/slub.c
+index f4a6229..7a158be 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1606,7 +1606,7 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 		return NULL;
+ 
+ 	do {
+-		cpuset_mems_cookie = get_mems_allowed();
++		cpuset_mems_cookie = read_mems_allowed_begin();
+ 		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
+ 		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+ 			struct kmem_cache_node *n;
+@@ -1616,21 +1616,11 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 			if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+ 					n->nr_partial > s->min_partial) {
+ 				object = get_partial_node(s, n, c);
+-				if (object) {
+-					/*
+-					 * Return the object even if
+-					 * put_mems_allowed indicated that
+-					 * the cpuset mems_allowed was
+-					 * updated in parallel. It's a
+-					 * harmless race between the alloc
+-					 * and the cpuset update.
+-					 */
+-					put_mems_allowed(cpuset_mems_cookie);
++				if (object)
+ 					return object;
+-				}
+ 			}
+ 		}
+-	} while (!put_mems_allowed(cpuset_mems_cookie));
++	} while (read_mems_allowed_retry(cpuset_mems_cookie));
+ #endif
+ 	return NULL;
+ }
 
