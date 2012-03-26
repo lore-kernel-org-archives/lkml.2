@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab2CZUJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 16:09:23 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:34334 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab2CZUJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 16:09:22 -0400
-Date: Mon, 26 Mar 2012 13:08:50 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: lib/crc32: new Kconfig prompt without help text
-Message-ID: <20120326200850.GA14821@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20120325113525.778eb2cd@stein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120325113525.778eb2cd@stein>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032620-5112-0000-0000-000006848DE0
+	id S1755564Ab2CZUJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 16:09:44 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34092 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab2CZUJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 16:09:42 -0400
+Date: Mon, 26 Mar 2012 16:09:23 -0400 (EDT)
+Message-Id: <20120326.160923.1071907261787727015.davem@davemloft.net>
+To: consul.kautuk@gmail.com
+Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
+        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20 v3] sparc/mm/fault_32.c: Port OOM changes to
+ do_sparc_fault
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1332775946-2162-1-git-send-email-consul.kautuk@gmail.com>
+References: <1332775946-2162-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 26 Mar 2012 13:09:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 25, 2012 at 11:35:25AM +0200, Stefan Richter wrote:
-> Hi Darrick,
-> 
-> the new prompt "CRC32 implementation" doesn't have an own help text, only
-> its subsequent options have.  This is fine with a configurator like
-> xconfig.  But "make oldconfig" only shows help text at the choice itself,
-> not at the options:
-> 
-> $ make oldconfig
-> [...]
-> > CRC32/CRC32c functions (CRC32) [Y/?] y
-> >   CRC32 perform self test on init (CRC32_SELFTEST) [N/y/?] (NEW) 
-> >   CRC32 implementation
-> >   > 1. Slice by 8 bytes (CRC32_SLICEBY8) (NEW)
-> >     2. Slice by 4 bytes (CRC32_SLICEBY4) (NEW)
-> >     3. Sarwate's Algorithm (one byte at a time) (CRC32_SARWATE) (NEW)
-> >     4. Classic Algorithm (one bit at a time) (CRC32_BIT) (NEW)
-> >   choice[1-4]: ?
-> > 
-> > There is no help available for this option.
+From: Kautuk Consul <consul.kautuk@gmail.com>
+Date: Mon, 26 Mar 2012 11:32:26 -0400
 
-Hmmm, I guess there should be help available for this option.  Will send one
-soon.
+> +	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+> +						  (write ? FAULT_FLAG_WRITE : 0));
 
---D
-> 
-> -- 
-> Stefan Richter
-> -=====-===-- --== ==--=
-> http://arcgraph.de/sr/
-> 
+Indentation is still wrong.  The "(write ..." on the second line must
+line up with the column of the first "F" in "(FAULT_FLAG..." on the
+first line.
+
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
++						  1, regs, address);
+
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN,
++						  1, regs, address);
+
+These are still wrong too, for the same reason.
+
+You didn't fix anything.
 
