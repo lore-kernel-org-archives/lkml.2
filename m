@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250Ab2CZS5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:57:04 -0400
-Received: from ftp.meprolight.com ([194.90.149.17]:34234 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933059Ab2CZS5D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:57:03 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Date: Mon, 26 Mar 2012 20:56:35 +0200
-Subject: RE: [PATCH v1] regulator: i.MX35-PDK Add regulator support
-Thread-Topic: [PATCH v1] regulator: i.MX35-PDK Add regulator support
-Thread-Index: Ac0LZe8TqXpIcvznSmaZQB9BvCvUzAAF+3vW
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD1F@MEP-EXCH.meprolight.com>
-References: <1332772593-13313-1-git-send-email-alexg@meprolight.com>
-	<20120326144712.GA8579@sirena.org.uk>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD16@MEP-EXCH.meprolight.com>,<20120326153429.GX3098@opensource.wolfsonmicro.com>
-In-Reply-To: <20120326153429.GX3098@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S933343Ab2CZS50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37752 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933059Ab2CZS5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:57:24 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH 28/39] autonuma: follow_page check for pte_numa/pmd_numa
+Date: Mon, 26 Mar 2012 19:46:15 +0200
+Message-Id: <1332783986-24195-29-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Without this, follow_page wouldn't trigger the NUMA hinting faults.
 
-On Mon, Mar 26, 2012 at 05:28:55PM +0200, Alex Gershgorin wrote:
-> On Mon, Mar 26, 2012 at 04:36:33PM +0200, Alex Gershgorin wrote:
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ mm/memory.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> It's not quite true, I was based on the Freescale BSP and I assume,
-> that this is checked.  I also tested it on v3.3
-
-> > Uh, presence in a vendor BSP isn't a guarantee of sanity...  Since you
-> > didn't specify any consumers the regulator API obviously won't do
-> > anything with the voltage range provided but to repeat it's really not
-> > at all obvious that anything sane ever would.
-
-Thanks Mark I think that understand you,
-if not have consumers do not set ranges.
-I will correct it
-
-Thanks 
-Alex Gershgorin
-
-
-
+diff --git a/mm/memory.c b/mm/memory.c
+index eac888a..a0f35cd 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1486,7 +1486,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		goto no_page_table;
+ 
+ 	pmd = pmd_offset(pud, address);
+-	if (pmd_none(*pmd))
++	if (pmd_none(*pmd) || pmd_numa(*pmd))
+ 		goto no_page_table;
+ 	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+ 		BUG_ON(flags & FOLL_GET);
+@@ -1520,7 +1520,7 @@ split_fallthrough:
+ 	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 
+ 	pte = *ptep;
+-	if (!pte_present(pte))
++	if (!pte_present(pte) || pte_numa(pte))
+ 		goto no_page;
+ 	if ((flags & FOLL_WRITE) && !pte_write(pte))
+ 		goto unlock;
