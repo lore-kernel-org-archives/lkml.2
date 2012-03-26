@@ -1,128 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2CZAlk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Mar 2012 20:41:40 -0400
-Received: from mta103.odn.ne.jp ([143.90.14.143]:52988 "EHLO cmta103.odn.ne.jp"
+	id S1753608Ab2CZApf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Mar 2012 20:45:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48876 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab2CZAlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Mar 2012 20:41:36 -0400
-Message-ID: <4F6FBB3E.8060409@yahoo.co.jp>
-Date: Mon, 26 Mar 2012 09:41:34 +0900
-From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1752430Ab2CZApe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Mar 2012 20:45:34 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables via initrd
+Date: Mon, 26 Mar 2012 02:45:29 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34.10-0.4-desktop; KDE/4.4.4; x86_64; ; )
+Cc: eric.piel@tremplin-utc.net, vojcek@tlen.pl, dsdt@gaugusch.at,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, hpa@zytor.com
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240226.35314.trenn@suse.de> <CAE9FiQVxH4cSotaTOKrNe-W+EQEdg=r5AbUaejD3FtyY2bRCsQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQVxH4cSotaTOKrNe-W+EQEdg=r5AbUaejD3FtyY2bRCsQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Gwendal Grignou <gwendal@google.com>
-CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
- Sil3726
-References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com> <4F6C4967.80309@yahoo.co.jp> <4F6E728A.3090203@yahoo.co.jp> <CAMHSBOVtj8pXVtSK7qUmzSzXTCJWTK6-m7ZY6TB3gj-dT70ptw@mail.gmail.com>
-In-Reply-To: <CAMHSBOVtj8pXVtSK7qUmzSzXTCJWTK6-m7ZY6TB3gj-dT70ptw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203260245.31105.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Gwendal,
-
-Thank you for your kindness response.
-
-(2012/03/26 00:28), Gwendal Grignou wrote:
-> I reread your logs.
+On Saturday 24 March 2012 05:41:37 Yinghai Lu wrote:
+> On Fri, Mar 23, 2012 at 6:26 PM, Thomas Renninger <trenn@suse.de> wrote:
+> >> maybe could have dmi checking for more strict checking.
+> > I do not understand what should get checked?
+> > Hm, I guess you mean if a general table is always added that is distributed
+> > on different platforms and you want to white/blacklist machines to
+> > explicitly load/not load the table?
+> > This must not happen.
+> > The tables are always platform specific and you provide tables for
+> > a specific machine only for debugging purposes.
+> >
+> >> also would help if have one boot command that could skip overriding.
+> > Same. Both should not be needed.
+> >
+> > Or you have a use-case in mind I cannot not think of...
 > 
-> Assuming you don't mind long boot from cold power, the remaining
-> problem is with the 4 disk enclosures [ata7-ata10] on the second
-> machines where the first disk is not found and boot from warm reboot
-> is very long.
-
-Not only first disk. 2 or more HDDs are missed for every PMP.
-
-> I try to understand why it works with the other 4 enclosures
-> [ata5-ata6] on the first and second machines.
+> For known broken system,  could be old, or vendor does not want to
+> provide updated firmware anymore.
+> if the user could boot system with debug parameter
+> like "noapic maxcpus=1...."
+> then have user space util to extract acpi tables, and patch them and
+> repack them into initrd.
+> next boot will have system running with optimal ...
 > 
-> Also, just to be sure I understand you configuration correctly, your
-> second machine has 30 disks total, not 40:
-> 2 direct on ata1.00  and ata1.01
-> 8 on 2 enclosures [ 2 * 4] on ata5 and ata6
-> 20 on 4 enclosures [ 4 * 5] on ata7 - ata10
-
-Oops! You are right. I'm very sorry!
-
-> Also, from the log, ata5 and ata6 is behind a Sil3132 based
-> controller, while ata7-ata10 behind a single Sil3124, not the opposite
-> as you said in a precedent mail.
+> If we could do that, we could avoid or kill workaround and quirks in the kernel.
 > 
-> If possible, could you switch 2 of the 4 enclosures [with their disks]
-> that fails to the port controlled by the Sil3132 controller, reboot
-> the machine with all its 30 drives and see if the failures follow the
-> controller or the enclosure.
+> So we may need some strict check or skip when you are moving disk
+> around or update different bios later.
+NO!
 
-Yes, I will do it as soon as possible. (Sorry, resyncing is runnning now.)
+This is exactly for what you've written first:
+---
+that is very good feature for development and debug.
+will not need to ask for testbios ...
+---
 
-> If you based your raid configuration on signature that should be fine,
-> but if it based on kernel device name [sdX] that will confuse md and
-> will mess with your data.
+Linux ACPI policy is to support BIOSes which work with latest Windows version
+supported systems. If needed, quirks are added.
+I agree that some very old quirks can vanish, I don't have a nice example at hand,
+there should not be much of them.
+When DSDT overriding via initrd was not possible any more because it has been done
+too early, I saw about 3 bugs of poor souls with old machines who really needed this
+to get the system half way running. For such old systems this may be an option and
+they do not need to compile a modified DSDT into their kernel anymore.
 
-The problem is that some HDDs on every PMP from ata7 - ata10 are missed.
-The RAID problem seems to be caused by it. mdadm.conf uses uuid. So I
-think that kernel uses uuids of RAIDs.
 
-Best Regards,
-Akira
+If this was not clear by tainting the kernel and adding this to Documentation/ :
++Please keep in mind that this is a debug option.
++ACPI tables should not get overridden for productive use.
++If BIOS ACPI tables are overridden the kernel will get tainted with the
++TAINT_OVERRIDDEN_ACPI_TABLE flag.
++Complain to your platform/BIOS vendor if you find a bug which is that sever
++that a workaround is not accepted in the Linus kernel.
 
-> I am sorry I don't have any other suggestion right now,
+a message like "Overriding an ACPI table, don't do that unless you know exactly
+what you are doing" or the Kconfig option can be moved from the ACPI to the
+"Kernel hacking" section to make this even more obvious.
 
-The HDDs connected to ata7 -- ata10 are very old and support only Serial
-ATA 1.0a. I checked data sheet and chip(JM20330) supports SRST command.
-While booting, indicator LED brinks repeatedly. And more than half of
-HDDs are identified. So, I have thought that the HDD side is not a
-problem. How is your opinion about it?
+Len has a bunch of arguments why fixing things by overriding ACPI tables is
+the wrong approach.
 
-> Regards,
-> Gwendal.
-> 
-> On Sat, Mar 24, 2012 at 6:19 PM, ANEZAKI, Akira
-> <fireblade1230@yahoo.co.jp> wrote:
->> Hello Gwendal,
->>
->> I want to confirm one thing.
->> The kernel 3.1.x driver still works?
->>
->> It seems to take long time to solve the problem. Of course I understand
->> staggered spin-up is better solution. But I can't wait it so long. And
->> it affects only SiI3726 only.
->>
->> Best Regards,
->> Akira
->>
->> (2012/03/23 18:59), ANEZAKI, Akira wrote:
->>> Hello Gwendal,
->>>
->>> (2012/03/23 17:31), Gwendal Grignou wrote:
->>>>>>>> I notice however some messages I did not see before:
->>>>>>>>>> [    4.856382] ata7.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
->>>>>>>>>> [    4.858742] ata7.00: hard resetting link
->>>>>>>>>> [   14.843039] ata7.00: softreset failed (timeout)
->>>>>>>>>> [   17.836402] ata7.15: qc timeout (cmd 0xe4)
->>>>>>>> The later indicates that the PMP is stuck and the host can not read
->>>>>>>> its internal register.
->>>>>>>> Is it possible that the PMP in these 4 enclosures you are using have a
->>>>>>>> different firmware than the other ones?
->>>>>>>> Firmware 1.0114 is available at:
->>>>>>>> http://www.siliconimage.com/support/searchresults.aspx?pid=26&cat=23
->>>>>>>>
->>>>>>>> From the release notes:
->>>>>>>> """- Fix SRST and initial two RegFIS Problem."""
->>>>>
->>>>> I'm still fixing broken RAID. Sorry for my slow response.
->>>
->>> I checked those firmware version. All of them use version 1.0114.
->>>
->>> Best Regards,
->>> Akira
->>
+This still is a very convenient feature:
+  - to find bugs in BIOS ACPI tables or in the kernel.
+  - for research -> in the end ACPI is an essential part of the X86
+    architecture and e.g. by clustering the DSDT with debug statements it's
+    now easy to get an idea how bits are shifted around and where they
+    are coming from.
+  - for BIOS developers and platform vendors to easily test the impact of their
+    changes on the Linux kernel. Also to let them use the Intel ACPI aka ACPICA
+    tools which is the code base syned into (used in) the kernel.
 
+   Thomas
