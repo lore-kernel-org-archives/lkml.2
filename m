@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab2CZO06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 10:26:58 -0400
-Received: from mail-gy0-f202.google.com ([209.85.160.202]:36011 "EHLO
-	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932505Ab2CZO04 (ORCPT
+	id S932606Ab2CZO1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 10:27:03 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:59875 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab2CZO04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Mar 2012 10:26:56 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -14,9 +14,9 @@ To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
         Chris Wilson <chris@chris-wilson.co.uk>
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 02/11 v3] drm/i915/intel_i2c: assign HDMI port D to pin pair 6
-Date: Mon, 26 Mar 2012 22:26:41 +0800
-Message-Id: <1332772010-19619-3-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 01/11 v3] drm/i915/intel_i2c: cleanup
+Date: Mon, 26 Mar 2012 22:26:40 +0800
+Message-Id: <1332772010-19619-2-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
 References: <1332772010-19619-1-git-send-email-djkurtz@chromium.org>
@@ -24,78 +24,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to i915 documentation [1], "Port D" (DP/HDMI Port D) is
-actually gmbus pin pair 6 (gmbus0.2:0 == 110b GPIOF), not 7 (111b).
-Pin pair 7 is a reserved pair.
-
-[1] Documentation for [DevSNB+] and [DevIBX], as found on
-http://intellinuxgraphics.org
-
-Note: the "reserved" and "disabled" pairs do not actually map to a
-physical pair of pins, nor GPIO regs and shouldn't be initialized or used.
-Fixing this is left for a later patch.
-
-This bug has not been noticed for two reasons:
- 1) "gmbus" mode is currently disabled - all transfers are actually using
-    "bit-bang" mode which uses the GPIO port 5 (the "HDMI/DPD CTLDATA/CLK"
-    pair), at register 0x5024 (defined as GPIOF i915_reg.h).
-    Since this is the correct pair of pins for HDMI1, transfers succeed.
-
- 2) Even if gmbus mode is re-enabled, the first attempted transaction
-    will fail because it tries to use the wrong ("Reserved") pin pair.
-    However, the driver immediately falls back again to the bit-bang
-    method, which correctly uses GPIOF, so again, transfers succeed.
-
-However, if gmbus mode is re-enabled and the GPIO fall-back mode is
-disabled, then reading an attached monitor's EDID fail.
+80 col, spaces around operators and other basic cleanup.
+Some info message cleanup.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/gpu/drm/i915/i915_reg.h  |    6 +++---
- drivers/gpu/drm/i915/intel_i2c.c |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/intel_i2c.c |   32 +++++++++++++++++++++-----------
+ 1 files changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index f3609f2..accd8ee 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -742,9 +742,9 @@
- #define   GMBUS_PORT_PANEL	3
- #define   GMBUS_PORT_DPC	4 /* HDMIC */
- #define   GMBUS_PORT_DPB	5 /* SDVO, HDMIB */
--				  /* 6 reserved */
--#define   GMBUS_PORT_DPD	7 /* HDMID */
--#define   GMBUS_NUM_PORTS       8
-+#define   GMBUS_PORT_DPD	6 /* HDMID */
-+#define   GMBUS_PORT_RESERVED	7 /* 7 reserved */
-+#define   GMBUS_NUM_PORTS	8
- #define GMBUS1			0x5104 /* command/status */
- #define   GMBUS_SW_CLR_INT	(1<<31)
- #define   GMBUS_SW_RDY		(1<<30)
 diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 86b1861..54f85a1 100644
+index 0713cc2..86b1861 100644
 --- a/drivers/gpu/drm/i915/intel_i2c.c
 +++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -148,8 +148,8 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
- 		GPIOC,
- 		GPIOD,
- 		GPIOE,
--		0,
- 		GPIOF,
-+		0,
- 	};
- 	struct i2c_algo_bit_data *algo;
+@@ -230,13 +230,16 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 				   (len << GMBUS_BYTE_COUNT_SHIFT) |
+ 				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
+ 				   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
+-			POSTING_READ(GMBUS2+reg_offset);
++			POSTING_READ(GMBUS2 + reg_offset);
+ 			do {
+ 				u32 val, loop = 0;
  
-@@ -359,8 +359,8 @@ int intel_setup_gmbus(struct drm_device *dev)
- 		"panel",
- 		"dpc",
- 		"dpb",
--		"reserved",
- 		"dpd",
-+		"reserved",
- 	};
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int ret, i;
+-				if (wait_for(I915_READ(GMBUS2 + reg_offset) & (GMBUS_SATOER | GMBUS_HW_RDY), 50))
++				if (wait_for(I915_READ(GMBUS2 + reg_offset) &
++					     (GMBUS_SATOER | GMBUS_HW_RDY),
++					     50))
+ 					goto timeout;
+-				if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
++				if (I915_READ(GMBUS2 + reg_offset) &
++				    GMBUS_SATOER)
+ 					goto clear_err;
+ 
+ 				val = I915_READ(GMBUS3 + reg_offset);
+@@ -260,12 +263,15 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 				   (msgs[i].len << GMBUS_BYTE_COUNT_SHIFT) |
+ 				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
+ 				   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
+-			POSTING_READ(GMBUS2+reg_offset);
++			POSTING_READ(GMBUS2 + reg_offset);
+ 
+ 			while (len) {
+-				if (wait_for(I915_READ(GMBUS2 + reg_offset) & (GMBUS_SATOER | GMBUS_HW_RDY), 50))
++				if (wait_for(I915_READ(GMBUS2 + reg_offset) &
++					     (GMBUS_SATOER | GMBUS_HW_RDY),
++					     50))
+ 					goto timeout;
+-				if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
++				if (I915_READ(GMBUS2 + reg_offset) &
++				    GMBUS_SATOER)
+ 					goto clear_err;
+ 
+ 				val = loop = 0;
+@@ -274,11 +280,14 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 				} while (--len && ++loop < 4);
+ 
+ 				I915_WRITE(GMBUS3 + reg_offset, val);
+-				POSTING_READ(GMBUS2+reg_offset);
++				POSTING_READ(GMBUS2 + reg_offset);
+ 			}
+ 		}
+ 
+-		if (i + 1 < num && wait_for(I915_READ(GMBUS2 + reg_offset) & (GMBUS_SATOER | GMBUS_HW_WAIT_PHASE), 50))
++		if (i + 1 < num &&
++		    wait_for(I915_READ(GMBUS2 + reg_offset) &
++			     (GMBUS_SATOER | GMBUS_HW_WAIT_PHASE),
++			     50))
+ 			goto timeout;
+ 		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
+ 			goto clear_err;
+@@ -300,14 +309,15 @@ done:
+ 	 * till then let it sleep.
+ 	 */
+ 	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
+-		DRM_INFO("GMBUS timed out waiting for idle\n");
++		DRM_INFO("GMBUS [%s] timed out waiting for idle\n",
++			 bus->adapter.name);
+ 	I915_WRITE(GMBUS0 + reg_offset, 0);
+ 	ret = i;
+ 	goto out;
+ 
+ timeout:
+-	DRM_INFO("GMBUS timed out, falling back to bit banging on pin %d [%s]\n",
+-		 bus->reg0 & 0xff, bus->adapter.name);
++	DRM_INFO("GMBUS [%s] timed out, falling back to bit banging on pin %d\n",
++		 bus->adapter.name, bus->reg0 & 0xff);
+ 	I915_WRITE(GMBUS0 + reg_offset, 0);
+ 
+ 	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
 -- 
 1.7.7.3
 
