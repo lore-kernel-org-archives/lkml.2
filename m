@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2CZKcD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:32:03 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39635 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766Ab2CZKcB convert rfc822-to-8bit (ORCPT
+	id S1757242Ab2CZKeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:34:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47841 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757131Ab2CZKd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:32:01 -0400
+	Mon, 26 Mar 2012 06:33:58 -0400
+Date: Mon, 26 Mar 2012 11:33:55 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Fabio Estevam <festevam@gmail.com>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        paul.gortmaker@windriver.com, dan.j.williams@intel.com,
+        samuel@sortiz.org, lrg@ti.com, perex@perex.cz, tiwai@suse.de,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        netdev@vger.kernel.org, fabio.estevam@freescale.com,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
+Message-ID: <20120326103354.GD3098@opensource.wolfsonmicro.com>
+References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
+ <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
+ <1332740082.19804.15.camel@vkoul-udesk3>
+ <20120326094200.GA3098@opensource.wolfsonmicro.com>
+ <1332755670.19804.91.camel@vkoul-udesk3>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
-References: <5535e246-b7c0-4f69-a27b-1abbadd42db0@zmail14.collab.prod.int.phx2.redhat.com>
-	<65a23329-d843-4859-8b7b-430f12882492@zmail14.collab.prod.int.phx2.redhat.com>
-	<CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
-Date: Mon, 26 Mar 2012 18:32:00 +0800
-Message-ID: <CAM_iQpXvzG8=1xrJGcwr2LYVuY561N6rwDk2YtgZHQ6PX4+NAw@mail.gmail.com>
-Subject: Re: crash dump memory reservation regression
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: CAI Qian <caiqian@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q9KOos5vDmpwPx9o"
+Content-Disposition: inline
+In-Reply-To: <1332755670.19804.91.camel@vkoul-udesk3>
+X-Cookie: Q:	Are we not men?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 1:31 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sun, Mar 11, 2012 at 8:00 PM, CAI Qian <caiqian@redhat.com> wrote:
->> commit 3661ca66a42e306aaf53246fb75aec1ea01be0f0
->> x86, memblock: Fix crashkernel allocation
->>
->> introduced a regression that crashkernel=512M
->> according to bisecting will fail like this,
->>
->> crashkernel reservation failed - No suitable area found.
->> The full dmesg can be found here.
->>
->> http://people.redhat.com/qcai/dmesg.bad
->
-> The reason is: we put pagetable for [0,2g) just blow 512M.
->
-> Later we have other patches that will put pagetable for [0,2g) just
-> below 2g. even at that time we only can access 512M, because we use
-> early_ioremap to access page table.
->
-> But that good_end part get reverted in following because it cause s4
-> resume fail.
->
-> So there will be pagetable around just below 512M again. So you have
-> no chance to get 512M below 768M.
->
-> Solution will be:
-> 1.  remove the good_end setting for 64 bit again. and root cause S4 resume.
-> 2.  get page low?
-> 3.  fix kdump, and make kdump could take two ranges, one is small
-> segment below 512M, other part could be more than 4G.
 
-Is increasing CRASH_KERNEL_ADDR_MAX a 4th solution? I know we need
-to fix kexec-tools too, but we will get more benefits...
+--q9KOos5vDmpwPx9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Mar 26, 2012 at 03:24:30PM +0530, Vinod Koul wrote:
+
+> Now either I drop these from 3.4 or merge Linus's tree and apply
+> Alexandre's fix (as that is the right fix rather than one in asoc tree)
+> And since this was required for RIO patches which are still WIP, I think
+> I am leaning towards former.
+
+Gah, WTF is going on here?  Has this API change not been sent to Linus
+already, and what is wrong with the changes which Fabio sent?  I've
+already applied Fabio's change on the understanding that this API change
+done and dusted.
+
+It seems better to do a minimal fix at this point rather than churning
+things again...
+
+--q9KOos5vDmpwPx9o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPcEYBAAoJEBus8iNuMP3dvIEQAIGpSA1r/3J24HpN5VCXzmV0
+akMfoEPivJrcVMhp7tBTQukXoPan8HCvoFkvEDcqO6dkuwQoPxCE6ADYs/5WGwS0
+LQ9oeUNo+hMq/bZhODewkfifzzcwIfz3AenP43QJw4i9VDrD5iaXGil6IO/2iM+G
+/moGmblgyZ4Cax7jxf+/uddrEm5+05hF1KgDhvK14iw1iz8cGC4rKHXtAuynO7Ok
+O6Aok+uj9QpyS45NwdSE/3iMgXR2D0t4Z1PMPhMe3fn3txQV9jXkpt0EV0sQ8j4j
+N6Uy48ILDwgWFA7d6aWgJ2ELdfHlrcmiYG1/m85sAi5fe/xdzUzezyHHKcCwDFPr
+TNmgoJWbYAx/jFqstIAUGYpXoz+6jvYIrOXWXGIBeGaETNM3Ryed5q20G0WOa6cA
+QmOyR3pNTbw8k/T2amgO25emTFKlTZfbcGcAB26VHFrYg39n6N4EitzqWca/tUjQ
+WupjaGw984q9IlNp/4lpZjbeS7vLM50YbBVcC0aP32XBnAMxswUZLaQEQImVgPiY
+yKabsoCFoYOuo6h8GtI/x5N39HJAchMQMSSZO6y7NmIbpcES2xq/Q7LUZMzOierH
+b2/V/b3rsm/Vp8Lj5vluxgT3Y6Tm/s4Lwa2P55qYLFzORqDsOWtOc9dospClipgF
+P3TB4R/mS/jsw2n+xQT+
+=Y5TF
+-----END PGP SIGNATURE-----
+
+--q9KOos5vDmpwPx9o--
