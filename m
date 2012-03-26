@@ -1,89 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab2CZVFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 17:05:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39638 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab2CZVF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 17:05:28 -0400
-Message-ID: <1332795910.2882.34.camel@pasglop>
-Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
-Date: Tue, 27 Mar 2012 08:05:10 +1100
-In-Reply-To: <4F703F5E.8030700@redhat.com>
-References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>
-	 <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
-	 <4F6EEEC1.4030608@redhat.com> <1332708684.2882.24.camel@pasglop>
-	 <4F703F5E.8030700@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755683Ab2CZVIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 17:08:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55165 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab2CZVI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 17:08:29 -0400
+Date: Mon, 26 Mar 2012 14:08:00 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Kautuk Consul <consul.kautuk@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mmap.c: find_vma: replace if(mm) check with
+ BUG_ON(!mm)
+In-Reply-To: <1332777965-2534-1-git-send-email-consul.kautuk@gmail.com>
+Message-ID: <alpine.LSU.2.00.1203261346360.3443@eggly.anvils>
+References: <1332777965-2534-1-git-send-email-consul.kautuk@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 12:05 +0200, Avi Kivity wrote:
-
-> Say a fix comes in which needs to be mainlined during -rc.  So I put it
-> in some other branch, to be sent off to Linus in a few days after
-> maturing a little.  Meanwhile developers see an incomplete tree, since
-> that patch is not in it.
+On Mon, 26 Mar 2012, Kautuk Consul wrote:
+> find_vma is called from kernel code where it is absolutely
+> sure that the mm_struct arg being passed to it is non-NULL.
 > 
-> Once Linus pulls, I can merge it back (or even before, if I'm reasonably
-> certain it's not going to change), but it leaves a history of unneeded
-> merges.  Or we can do throwaway merges like tip.git.
+> Convert the if check to a BUG_ON.
+> This will also serve the purpose of mandating that the execution
+> context(user-mode/kernel-mode) be known before find_vma is called.
+> 
+> Also fixed 2 checkpatch.pl errors in this function for the rb_node
+> and vma_tmp local variables.
+> 
+> I have tested this patch on my x86 PC and there are no BUG_ON crashes
+> due to this in the course of normal desktop execution.
+> 
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 
-So to give an example, take powerpc. There's two branches, next and
-merge. After the merge window, at rc1, they are basically empty.
+That seems very reasonable: perhaps there was a reason for checking
+find_vma()'s mm way back in the distant past, but I cannot see it now.
+But please make two small changes noted below before resubmitting.
 
-Developers are encouraged to work on top of Linus upstream. If they
-depend on each other they are free to pull each other stuff in, as long
-as they avoid rebasing or deal with each other when that is done.
+Since we ask for mm->mmap_sem to be held before calling find_vma(),
+it's hard to reach here with NULL mm.  There are a few strange places
+in arch and drivers/media/video which appear to be taking risks by
+not holding mmap_sem, but only one of them looks like it _might_ be
+endangered by your change.
 
-At later rc's (it should be as soon as rc1/rc2 but I trend to be a bit
-late there) I open powerpc-next where I start putting stuff that's
-intended for the next merge window. This is virtually upstream, this
-branch doesn't get rebased.
+Ralf, that octeon_flush_cache_sigtramp() in arch/mips/mm/c-octeon.c:
+is there ever a danger that it can be called with NULL current->mm?  Is
+current->mm set to &init_mm in the initial call from octeon_cache_init()?
 
-So developers can fork of it if they wish to, or merge it into their
-branch if they need some of the new work, there's really no big deal
-with a few spurrious merges if there's a good reason for that, git is
-good at it and it's pretty harmless.
+> ---
+>  mm/mmap.c |   52 ++++++++++++++++++++++++++--------------------------
+>  1 files changed, 26 insertions(+), 26 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index a7bf6a3..7589965 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1589,33 +1589,33 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+>  {
+>  	struct vm_area_struct *vma = NULL;
 
-Every now and then, I have fixes that I want to send Linus during -rc,
-in which case I put them in a "powerpc-merge" branch. This is very short
-lived, the fixes have generally been on the list/patchwork already, and
-except maybe around rc1, have to be simple enough to be fairly low risk,
-so they don't need that much "maturation" (besides it's not like anybody
-tests "merge" anyways). So I put things in there, run it through my
-automated build tests, do a few runtime tests and send them to Linus,
-sometimes even the same day, though the patches themselves will usually
-have been on the list & patchwork for a few days.
+Please remove the " = NULL": vma is immediately set to mm->mmap_cache.
 
-Now those patches don't absolutely need to be in "next". If they fix
-something nasty enough or potentially conflicting with work in progress,
-then I can just pull Linus back into next after he merges or even pull
-"merge" into "next" if I don't want to wait for Linus.
+>  
+> -	if (mm) {
+> -		/* Check the cache first. */
+> -		/* (Cache hit rate is typically around 35%.) */
+> -		vma = mm->mmap_cache;
+> -		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+> -			struct rb_node * rb_node;
+> -
+> -			rb_node = mm->mm_rb.rb_node;
+> -			vma = NULL;
+> -
+> -			while (rb_node) {
+> -				struct vm_area_struct * vma_tmp;
+> -
+> -				vma_tmp = rb_entry(rb_node,
+> -						struct vm_area_struct, vm_rb);
+> -
+> -				if (vma_tmp->vm_end > addr) {
+> -					vma = vma_tmp;
+> -					if (vma_tmp->vm_start <= addr)
+> -						break;
+> -					rb_node = rb_node->rb_left;
+> -				} else
+> -					rb_node = rb_node->rb_right;
+> -			}
+> -			if (vma)
+> -				mm->mmap_cache = vma;
+> +	BUG_ON(!mm);
 
-Another option, is to actually cherry pick some of those patches and
-apply them to both next and merge. This is perfectly fine, git will
-resolve things 99% of the time and at worst it's going to be a bit of
-context fixup in the final merge which is easy to deal with.
+And please remove the BUG_ON(!mm): it's a waste of space and time,
+it gives very little value over the easily recognizable oops we
+shall get from "vma = mm->mmap_cache" with NULL mm.
 
-Basically that means that I have -0- history fight after a merge window.
-My trees essentially all fast-forward to Linus as soon as he has pulled.
+Thanks,
+Hugh
 
-My throw-away test branch is seldomly used, mostly if there's stuff that
-I want beaten up a bit more than usual, in which case I ask folks around
-to give it a go and put it up there.
-
-Cheers,
-Ben.
-
-
+> +
+> +	/* Check the cache first. */
+> +	/* (Cache hit rate is typically around 35%.) */
+> +	vma = mm->mmap_cache;
+> +	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+> +		struct rb_node *rb_node;
+> +
+> +		rb_node = mm->mm_rb.rb_node;
+> +		vma = NULL;
+> +
+> +		while (rb_node) {
+> +			struct vm_area_struct *vma_tmp;
+> +
+> +			vma_tmp = rb_entry(rb_node,
+> +					struct vm_area_struct, vm_rb);
+> +
+> +			if (vma_tmp->vm_end > addr) {
+> +				vma = vma_tmp;
+> +				if (vma_tmp->vm_start <= addr)
+> +					break;
+> +				rb_node = rb_node->rb_left;
+> +			} else
+> +				rb_node = rb_node->rb_right;
+>  		}
+> +		if (vma)
+> +			mm->mmap_cache = vma;
+>  	}
+>  	return vma;
+>  }
+> -- 
+> 1.7.5.4
