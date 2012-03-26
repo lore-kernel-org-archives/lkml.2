@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab2C0E5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 00:57:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42986 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2C0E5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 00:57:31 -0400
-Date: Tue, 27 Mar 2012 15:57:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Shi <alex.shi@intel.com>, Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120327155717.b940b29403ec5d1c1fa54360@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__27_Mar_2012_15_57_17_+1100_+kvb0dkst_JsrZvi"
+	id S1753683Ab2C0FAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 01:00:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23872 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753044Ab2C0FAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 01:00:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="125461545"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] max17042_battery: add suspend/resume hooks
+Date: Tue, 27 Mar 2012 02:23:40 +0530
+Message-Id: <1332795220-8343-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Mar_2012_15_57_17_+1100_+kvb0dkst_JsrZvi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds suspend/resume methods to the driver.
 
-Hi all,
+In suspend method irq line is disabled to avoid i2c
+read/write errors from the interrupt handler as the
+i2c bus itself could be in suspend state.
+In resume function irq  line will be re-enabled.
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/kernel/process_64.c between commit 90e240142bd3 ("x86: Merge the
-x86_32 and x86_64 cpu_idle() functions") from the tip tree and commit
-54d16004d978 ("x86: use this_cpu_xxx to replace percpu_xxx funcs") from
-the akpm tree.
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ drivers/power/max17042_battery.c |   41 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 41 insertions(+), 0 deletions(-)
 
-The former moved the code to another file, so I did this change from the
-latter (in enter_idle) to arch/x86/kernel/process.c.
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index d4868c5..cf5c855 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -28,6 +28,7 @@
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
++#include <linux/pm.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/power_supply.h>
+ #include <linux/power/max17042_battery.h>
+@@ -728,6 +729,40 @@ static int __devexit max17042_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int max17042_suspend(struct device *dev)
++{
++	struct max17042_chip *chip = dev_get_drvdata(dev);
++
++	/* disable the irq and enable irq_wake
++	 * capability to the interrupt line.
++	 */
++	if (chip->client->irq) {
++		disable_irq(chip->client->irq);
++		enable_irq_wake(chip->client->irq);
++	}
++
++	return 0;
++}
++
++static int max17042_resume(struct device *dev)
++{
++	struct max17042_chip *chip = dev_get_drvdata(dev);
++
++	if (chip->client->irq) {
++		disable_irq_wake(chip->client->irq);
++		enable_irq(chip->client->irq);
++		/* re-program the SOC thresholds to 1% change */
++		max17042_set_soc_threshold(chip, 1);
++	}
++
++	return 0;
++}
++#else
++#define max17042_suspend NULL
++#define max17042_resume NULL
++#endif
++
+ #ifdef CONFIG_OF
+ static const struct of_device_id max17042_dt_match[] = {
+ 	{ .compatible = "maxim,max17042" },
+@@ -742,10 +777,16 @@ static const struct i2c_device_id max17042_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, max17042_id);
+ 
++static const struct dev_pm_ops max17042_pm_ops = {
++	.suspend		= max17042_suspend,
++	.resume			= max17042_resume,
++};
++
+ static struct i2c_driver max17042_i2c_driver = {
+ 	.driver	= {
+ 		.name	= "max17042",
+ 		.of_match_table = of_match_ptr(max17042_dt_match),
++		.pm	= &max17042_pm_ops,
+ 	},
+ 	.probe		= max17042_probe,
+ 	.remove		= __devexit_p(max17042_remove),
+-- 
+1.7.0.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__27_Mar_2012_15_57_17_+1100_+kvb0dkst_JsrZvi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPcUitAAoJEECxmPOUX5FEu5gP/1O5i0aK14AJmwzkzILxuI7P
-KSRx38GLCBL6OR5AScySw591YeJVOZ8GOxITVx3v/rJZsUNcQhd9RBJieVHTwzKA
-0mHjRjj/cx3mC44Jd8ekTBBF/X9PjOxOY6p31KYxkYGNbrruhT7eDHEc4QZAUccA
-znUTWi6AGuiNfrTndxGR/7RGAQi62cZx6naoc9VuK8S1pCqv7ZBUZ7GB8xQ7/t7B
-Tews8Tzyu8DdPmBF64VjY7epguX+3ccGGHYgzZr9ToY9e9K85e0iE64Sfh7s4D3y
-hgahF0Z8d/Vwtkjq+m8Q2B2ZNCviltW+zqHTOmDsHDVXTZIUeli4f9ysMRVxtNSx
-4HVYBPv2aVYOOFUvGpmjcKQ8hsKnmtVazw/UE7Y2Oy1Ede82Ywtt7fNYWRsUoab2
-jn/55VQPdXbFvFUs07cjWwY+9vzoEOXLhXd1jGvnF4sS6b6N7q5eN64Rj3mCTRbH
-mKd18Isdu0h7ULNvfKdE3zou9tNz4xkCK5TMchtLj5m729hMEmG+0O/bbwjvFTgd
-e99UCW8HLh9iFLhcDlT6jqQfcA1FEoG6b8TTQlfyEjIyWaM1ZnQs0yGD9wp1CN5r
-nhBmwWTOLAzGwqjfyC30eI1zVgaLwTcKYv7VlYA1bkZyM8H69xrZUROw0rVzs8Ph
-jVCduy7onPOz1p1vs3s1
-=ZUX8
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Mar_2012_15_57_17_+1100_+kvb0dkst_JsrZvi--
