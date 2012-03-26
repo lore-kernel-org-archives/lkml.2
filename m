@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab2CZS14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 14:27:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48800 "EHLO mx1.redhat.com"
+	id S932971Ab2CZS1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 14:27:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33501 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932846Ab2CZS1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 14:27:54 -0400
+	id S932837Ab2CZS1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 14:27:41 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -21,65 +21,50 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 12/39] autonuma: add page structure fields
-Date: Mon, 26 Mar 2012 19:45:59 +0200
-Message-Id: <1332783986-24195-13-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 29/39] autonuma: default mempolicy follow AutoNUMA
+Date: Mon, 26 Mar 2012 19:46:16 +0200
+Message-Id: <1332783986-24195-30-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 64bit archs, 20 bytes are used for async memory migration (specific
-to the knuma_migrated per-node threads), and 4 bytes are used for the
-thread NUMA false sharing detection logic.
-
-This is a bad implementation due lack of time to do a proper one.
-
-These AutoNUMA new fields must be moved to the pgdat like memcg
-does. So that they're only allocated at boot time if the kernel is
-booted on NUMA hardware. And so that they're not allocated even if
-booted on NUMA hardware if "noautonuma" is passed as boot parameter to
-the kernel.
+If the task has already been moved to an autonuma_node try to allocate
+memory from it even if it's temporarily not the local node. Chances
+are it's where most of its memory is already located and where it will
+run in the future.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/mm_types.h |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+ mm/mempolicy.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 2567798..0a163bd 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -125,6 +125,31 @@ struct page {
- 		struct page *first_page;	/* Compound tail pages */
- 	};
- 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index cfb6c86..f3c03cb 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1929,10 +1929,21 @@ retry_cpuset:
+ 	 */
+ 	if (pol->mode == MPOL_INTERLEAVE)
+ 		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
+-	else
++	else {
++		int nid;
 +#ifdef CONFIG_AUTONUMA
-+	/*
-+	 * FIXME: move to pgdat section along with the memcg and allocate
-+	 * at runtime only in presence of a numa system.
-+	 */
-+	/*
-+	 * To modify autonuma_last_nid lockless the architecture,
-+	 * needs SMP atomic granularity < sizeof(long), not all archs
-+	 * have that, notably some alpha. Archs without that requires
-+	 * autonuma_last_nid to be a long.
-+	 */
-+#if BITS_PER_LONG > 32
-+	int autonuma_migrate_nid;
-+	int autonuma_last_nid;
++		nid = -1;
++		if (current->sched_autonuma)
++			nid = current->sched_autonuma->autonuma_node;
++		if (nid < 0)
++			nid = numa_node_id();
 +#else
-+#if MAX_NUMNODES >= 32768
-+#error "too many nodes"
++		nid = numa_node_id();
 +#endif
-+	/* FIXME: remember to check the updates are atomic */
-+	short autonuma_migrate_nid;
-+	short autonuma_last_nid;
-+#endif
-+	struct list_head autonuma_migrate_node;
-+#endif
-+
- 	/*
- 	 * On machines where all RAM is mapped into kernel address space,
- 	 * we can simply calculate the virtual address. On machines with
+ 		page = __alloc_pages_nodemask(gfp, order,
+-				policy_zonelist(gfp, pol, numa_node_id()),
++				policy_zonelist(gfp, pol, nid),
+ 				policy_nodemask(gfp, pol));
++	}
+ 
+ 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+ 		goto retry_cpuset;
