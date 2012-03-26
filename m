@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab2CZLCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 07:02:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32802 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757276Ab2CZLB6 (ORCPT
+	id S1757380Ab2CZLDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 07:03:12 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14009 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757235Ab2CZLDL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 07:01:58 -0400
-Date: Mon, 26 Mar 2012 12:01:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        paul.gortmaker@windriver.com, dan.j.williams@intel.com,
-        samuel@sortiz.org, lrg@ti.com, perex@perex.cz, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        netdev@vger.kernel.org, fabio.estevam@freescale.com,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
-Message-ID: <20120326110149.GL3098@opensource.wolfsonmicro.com>
-References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
- <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
- <1332740082.19804.15.camel@vkoul-udesk3>
- <20120326094200.GA3098@opensource.wolfsonmicro.com>
- <1332755670.19804.91.camel@vkoul-udesk3>
- <20120326103354.GD3098@opensource.wolfsonmicro.com>
- <1332758906.19804.97.camel@vkoul-udesk3>
+	Mon, 26 Mar 2012 07:03:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 26 Mar 2012 04:03:11 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 26 Mar 2012 16:30:57 +0530
+Subject: RE: [PATCH 2/2] mfd: tps65090: Don't use I2C-specific suspend and
+ resume operations
+Thread-Topic: [PATCH 2/2] mfd: tps65090: Don't use I2C-specific suspend and
+ resume operations
+Thread-Index: Ac0LP3wJJp1CdslUQeerqItkLmn8uwAACw7A
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD3128292@BGMAIL02.nvidia.com>
+References: <1332441541-28197-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1332441541-28197-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <D958900912E20642BCBC71664EFECE3E6DD312816D@BGMAIL02.nvidia.com>
+ <20120326105908.GJ3098@opensource.wolfsonmicro.com>
+In-Reply-To: <20120326105908.GJ3098@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gwtGiOGliFx8mAnm"
-Content-Disposition: inline
-In-Reply-To: <1332758906.19804.97.camel@vkoul-udesk3>
-X-Cookie: Q:	Are we not men?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---gwtGiOGliFx8mAnm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Mar 26, 2012 at 04:18:26PM +0530, Vinod Koul wrote:
-
-> But we don't want the clients to use this additional parameter or be
-> exposed to it if not required. Every client is expected to use the
-> dmaengine wrappers for prepare and not invoke .device_ callbacks.
-
-Are those wrappers present in what's gone to Linus' tree, and can
-someone please send a patch to convert to using them?
-
---gwtGiOGliFx8mAnm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcEyPAAoJEBus8iNuMP3dm3EP/3oRKL1MVbrQkzaWbv/qdl5t
-xsVECi+gMJJOfLF8VFVQrgWkF9Wov9CVUWd3FovsHsEf16tdiLi4CqxgVC9fXxN6
-Sh9K4S47acJpPZufG3FUYgib+94PlgjfG1PFDApK9mBmDagVPODNdXuyZpVqK2hO
-102aDt95xuC+qq1Z+ERn+nO0RrAwRLK2Zl9PWToSUPHkJBEeSQqXlgbPIFzqijpG
-cWlCRbAf2fn+Y3tiGo4jpw63coSqPknZUNtkHMhuxBU/+euAZf+fZaIlPoeWJJ0d
-kY6T57XQJ9m4DcUSYccVSAkgw1pJ1uPqE7+rBeIQfp5AfXbLtNR60BT+SCZ4fzuY
-rA8jDF+NbBweLZf6dyq9a3LKI08MMeclkf10XRA4jMvGFbIGDJ34DWYZgmKur8Zb
-HSDLfBEsOteJahe8z5rH+fU19mbD4yIJbV7QbzlMOOgVX4fT3TQc0fy8SbBFvbZZ
-6M5ZHH3UA7qwfyCURmcBlHQT7767euDpSkxbTXfZQsebsOZFRevZDn/LitHQovB4
-1K4Vuo/HYCsW99G8wEKGbga082xk4RwatYz0nCmbAxNScqfPMYP0r4AAfB9XGljA
-hEvmMY56sM/3fRHl9ZNJJ9oZP63oMAIre/U+j/o/l715Y3V607iGLPDt/0NNKLwN
-l3vYf83ze8bsUISQrfj2
-=Y5p1
------END PGP SIGNATURE-----
-
---gwtGiOGliFx8mAnm--
+> > > It's not clear to me that we should have these operations at all...
+> 
+> > Can you please explain why do you think that these operations are not
+> needed?
+> 
+> They've been deprecated for over a year, if you'd looked at the kernel
+> boot log you'd see that it's been complaining about them at startup
+> time.
+Thanks, understood.
