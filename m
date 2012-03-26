@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab2C0Ooi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 10:44:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19209 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab2C0OoZ (ORCPT
+	id S1754957Ab2C0On5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 10:43:57 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46691 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500Ab2C0Onh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 10:44:25 -0400
-Date: Mon, 26 Mar 2012 11:50:19 -0400
+	Tue, 27 Mar 2012 10:43:37 -0400
+Date: Mon, 26 Mar 2012 12:49:10 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
-Message-ID: <20120326155018.GA6163@phenom.dumpdata.com>
-References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20120316213227.GB24556@kroah.com>
- <4F678100.1000707@linux.vnet.ibm.com>
- <20120319233409.GA16124@kroah.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>, "Brown, Len" <len.brown@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH 2/2] RFC: Xen pad logic
+Message-ID: <20120326164910.GF10236@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923350AD0A6@SHSMSX101.ccr.corp.intel.com>
+ <20120314002442.GC20363@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335105F35@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120319233409.GA16124@kroah.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335105F35@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F71D20F.0002,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090201.4F71D20D.00B6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 04:34:09PM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Mar 19, 2012 at 01:54:56PM -0500, Seth Jennings wrote:
-> > > I'm sorry, I know this isn't fair for your specific patch, but we have
-> > > to stop this sometime, and as this patch adds code isn't even used by
-> > > anyone, its a good of a time as any.
+On Mon, Mar 26, 2012 at 07:29:09AM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> >> +static struct acpi_driver xen_acpi_pad_driver = {
+> >> +	.name = "processor_aggregator",
+> >> +	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
+> >> +	.ids = xen_pad_device_ids,
+> >> +	.ops = {
+> >> +		.add = xen_acpi_pad_add,
+> >> +		.remove = xen_acpi_pad_remove,
+> >> +	},
+> >> +};
+> >> +
+> >> +static int __init xen_acpi_pad_init(void)
+> >> +{
+> >> +	return acpi_bus_register_driver(&xen_acpi_pad_driver);
 > > 
-> > So, this the my first "promotion from staging" rodeo.  I would love to
-> > see this code mainlined ASAP.  How would I/we go about doing that?
+> > If the acpi_bus_register_driver function could work with multiple
+> > acpi_drivers that define the same class (and have some priority) would
+> > this be easier?
 > 
-> What subsystem should this code live in?  The -mm code, I'm guessing,
-> right?  If so, submit it to the linux-mm mailing list for inclusion, you
-> can point them at what is in drivers/staging right now, or probably it's
-> easier if you just make a new patch that adds the code that is in
-> drivers/staging/ to the correct location in the kernel.  That way it's
-> easier to review and change.  When it finally gets accepted, we can then
-> delete the drivers/staging code.
+> Not quite clear your point, could you elaborate more?
 
-
-Hey Greg,
-
-Little background - for zcache to kick-butts (both Dan and Seth posted some
-pretty awesome benchmark numbers) it depends on the frontswap - which is in
-the #linux-next. Dan made an attempt to post it for a GIT PULL and an interesting
-conversation ensued where folks decided it needs more additions before they were
-comfortable with it. zcache isn't using those additions, but I don't see why
-it couldn't use them.
-
-The things that bouncing around in my head are:
- - get a punch-out list (ie todo) of what MM needs for the zcache to get out.
-   I think posting it as a new driver would be right way to do it (And then
-   based on feedback work out the issues in drivers/staging). But what
-   about authorship - there are mulitple authors ?
-
- - zcache is a bit different that the normal drivers type - and it is unclear
-   yet what will be required to get it out - and both Seth and Nitin have this
-   hungry look in their eyes of wanting to make it super-duper. So doing
-   the work to do it - is not going to be a problem at all - just some form
-   of clear goals of what we need "now" vs "would love to have".
-
- - folks are using it, which means continued -stable kernel back-porting.
-
-So with that in mind I was wondering whether you would be up for:
- - me sending to you before a merge window some updates to the zcache
-   as a git pull - that way you won't have to deal with a bunch of
-   small patches and when there is something you don't like we can fix
-   it up to your liking. The goal would be for us - Dan, Nitin, Seth and me
-   working on promoting the driver out of staging and you won't have to
-   be bugged every time we have a new change that might be perceived
-   as feature, but is in fact a step towards mainstreaming it. I figured
-   that is what you are most annoyed at - handling those uncoordinated
-   requests and not seeing a clear target.
-
- - alongside of that, I work on making those frontswap changes folks
-   have asked for. Since those changes can affect zcache, that means
-   adding them in zcache alongside.
-
-Hopefully, by the time those two items are done, both pieces can go in
-the kernel at the same time-ish.
+I was thinking it could do multiple registration of a driver servicing the
+same PNPxxx.
