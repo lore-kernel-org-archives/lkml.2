@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab2CZIhh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 04:37:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63916 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2CZIhg (ORCPT
+	id S1754843Ab2CZIjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 04:39:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54673 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab2CZIjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 04:37:36 -0400
-Date: Mon, 26 Mar 2012 12:36:29 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Arun MURTHY <arun.murthy@stericsson.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the battery tree
-Message-ID: <20120326083629.GA28024@lizard>
-References: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
- <20120320153912.b97107ca4128d0692de17799@canb.auug.org.au>
- <20120326131316.b791ebefd94d8cbcac5bccfa@canb.auug.org.au>
- <F45880696056844FA6A73F415B568C6958BEEDDB7F@EXDCVYMBSTM006.EQ1STM.local>
- <CACRpkdY2SrRNhQKTH1V_MJ2ZoLMnOD8-=Qfzc3XeXBHZk-dUUg@mail.gmail.com>
+	Mon, 26 Mar 2012 04:39:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH RESEND] misc: Fix irq leak in max8997_muic_probe error path
+Date: Mon, 26 Mar 2012 08:17:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Donggeun Kim <dg77.kim@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Greg Kroah-Hartman" <greg@kroah.com>
+References: <1332727028.7078.4.camel@phoenix>
+In-Reply-To: <1332727028.7078.4.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CACRpkdY2SrRNhQKTH1V_MJ2ZoLMnOD8-=Qfzc3XeXBHZk-dUUg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203260817.29733.arnd@arndb.de>
+X-Provags-ID: V02:K0:153mAVLqheaPsymC2AYuh6Qhv5k9TCZT7H0XRxlnEzO
+ 0+vUTRTqMl/bImB+cfNffPMdA+nr+lfYKHFXGjlkcR7XNNIeCh
+ cSZgqnhpFSm3FmZ5SNldO0EJrig74uP0mOeOafUt9yPq7uup0t
+ Vq/m3y85HFoMd2nMd2r41QtQeGmr39SdCvIutWoXdGjxmFYfDl
+ oMZENi+kpGCgewSDPWOcBrjHEH2KAHrkeJhNb7AXXcNNsMsXNA
+ JUjyEwKY37xnEcdA9b/QYKOj3vmCb5N2McCobQbcRrhgoetv2V
+ gRLqk7TK+8EFcK/FzL92DZlLFgCHuXwqCSplq4dxyq7Dw0OWV2
+ ESZWHcBJPO87DfFPg+y4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 08:55:37AM +0200, Linus Walleij wrote:
-> On Mon, Mar 26, 2012 at 4:31 AM, Arun MURTHY <arun.murthy@stericsson.com> wrote:
+On Monday 26 March 2012, Axel Lin wrote:
 > 
-> > There is a dependency with MFD tree. Please pull the MFD tree along with
-> > these patches to overcome the build errors.
+> Current code does not properly free allocated irqs if request_threaded_irq
+> returns error, fix it.
 > 
-> Maybe the problem is that the needed MFD changes have not reached
-> the MFD for-next branch? (To me that looks like the actual issue.)
-> I think Anton pulled these in to some branch to test it and had it working
-> fine so some cross-dependency issue...
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Yes, exactly. I don't know what happened with MFD-related chanes in -next,
-I'll take a look...
+It took me a while to see why this is correct.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Note: It would be nicer to move the dev_err() down into the error path as well
+and also fix the message to print the correct irq number, but your patch is
+the important part.
+
+Note to the driver maintainers: It looks like there is a race in the 
+max8997_muic_irq_handler() function assigning the info->irq member
+when multiple interrupts come in at the same time. Also, calling
+sched_work from a threaded interrupt handler is pointless. I would suggest
+fixing both of these by removing the work function and calling moving
+its contents into the interrupt handler directly. Please correct me if I
+am missing somehting here.
+
+	Arnd
+
