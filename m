@@ -1,130 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab2CZKvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 06:51:18 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46901 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222Ab2CZKvR (ORCPT
+	id S1757296Ab2CZKwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 06:52:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53767 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757222Ab2CZKwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 06:51:17 -0400
-X-AuditID: b753bd60-9658fba000007b1b-94-4f704a233334
-X-AuditID: b753bd60-9658fba000007b1b-94-4f704a233334
-Message-ID: <4F704A1E.2040401@hitachi.com>
-Date: Mon, 26 Mar 2012 19:51:10 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Mon, 26 Mar 2012 06:52:24 -0400
+Date: Mon, 26 Mar 2012 11:52:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2] regulator: tps65090: Use IS_ERR to check return
+ value of regulator_register
+Message-ID: <20120326105221.GG3098@opensource.wolfsonmicro.com>
+References: <1332557760.10528.0.camel@phoenix>
 MIME-Version: 1.0
-To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, acme@infradead.org,
-        ananth@in.ibm.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        rostedt@goodmis.org
-Subject: Re: [RESEND]Re: [PATCH] perf - probe finder fails to resolve function
- name to address
-References: <4F6AF410.1010400@linux.vnet.ibm.com> <4F6AFD92.4030603@linux.vnet.ibm.com> <4F6C721B.9060807@hitachi.com> <4F703FB9.9020407@linux.vnet.ibm.com>
-In-Reply-To: <4F703FB9.9020407@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9Iq5ULCa7nGtWwZS"
+Content-Disposition: inline
+In-Reply-To: <1332557760.10528.0.camel@phoenix>
+X-Cookie: Q:	Are we not men?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/26 19:06), Prashanth Nageshappa wrote:
-> Fixing a coding style issue..
-> 
-> On 03/23/2012 06:22 PM, Masami Hiramatsu wrote:
-> 
->> Hi,
->>
->> (2012/03/22 19:23), Prashanth Nageshappa wrote:
->>> probe finder fails to resolve valid function names into addresses for
->>> functions which have more than one die entries in DWARF info.
->>>
->>> It is valid for DWARF info to contain more than 1 entries for a given
->>> function name, where one entry corresponds to definition which has code
->>> address/range attributes and remaining entries (which are only
->>> declarations) does not have code address/range attributes.
->>> (example: do_fork, sys_write, sys_wait4, sys_sync etc)
->>
->> Hmm, I'd like to reproduce and see what happened on debuginfo in those cases.
->> Could you tell me your environment or actual dwarf dump of those entries as below?
->>
-> 
-> $ uname -r
-> 3.1.0-7.fc16.x86_64
-> 
-> $ sudo perf probe  do_fork
-> Failed to get entry address of do_fork.
->   Error: Failed to add events. (-2)
-> 
-> $ readelf -wi /usr/lib/debug/lib/modules/3.1.0-7.fc16.x86_64/vmlinux | grep do_fork -A 16
->     <2691f7>   DW_AT_name        : (indirect string, offset: 0x1b1e0): do_fork	
->     <2691fb>   DW_AT_decl_file   : 3	
->     <2691fc>   DW_AT_decl_line   : 2269	
->     <2691fe>   DW_AT_prototyped  : 1	
->     <2691fe>   DW_AT_type        : <0x2593d1>	
->     <269202>   DW_AT_declaration : 1	
 
-OK, compared with mine, this attribute is actually new one
-for this kind of (declaration) entries.
+--9Iq5ULCa7nGtWwZS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[...]
->>
->> At least we must consider this lazy_line case. If I understand correctly,
->> that can also affect find_probe_point_lazy(sp_die, pf);
->>
->> If I find the different attribute, I'd like to add a checker function and
->> filter it out at early step in this function.
->>
-> 
-> Based on the above comments I have redone the patch:
-> 
-> If die entries corresponding to declarations appear before definition
-> entry, probe finder returns error instead of continuing to look further
-> for a definition entry.
-> 
-> This patch ensures we reach to the die entry corresponding to the
-> definition and get the function address.
-> 
-> V2: A simpler solution based on Masami's suggestion.
-> 
-> 
-> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+On Sat, Mar 24, 2012 at 10:56:00AM +0800, Axel Lin wrote:
+> regulator_register never returns NULL.
 
-Well, OK. This looks good for me too :)
+Applied both, thanks.  In theory it may return NULL but that's not an
+error code.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+--9Iq5ULCa7nGtWwZS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> ---
-> 
->  tools/perf/util/probe-finder.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index 5d73262..d5914ee 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -963,10 +963,12 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
->  	struct dwarf_callback_param *param = data;
->  	struct probe_finder *pf = param->data;
->  	struct perf_probe_point *pp = &pf->pev->point;
-> +	Dwarf_Attribute attr;
-> 
->  	/* Check tag and diename */
->  	if (dwarf_tag(sp_die) != DW_TAG_subprogram ||
-> -	    !die_compare_name(sp_die, pp->function))
-> +	    !die_compare_name(sp_die, pp->function) ||
-> +	    dwarf_attr(sp_die, DW_AT_declaration, &attr))
->  		return DWARF_CB_OK;
-> 
->  	/* Check declared file */
-> 
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPcEpXAAoJEBus8iNuMP3dRUsP/2XH/Vnuy1JDtot+F8GqhCAL
+rM6TAD57i86QH25G+pp9bT7d1nF7luZzhd5a894fvAbFiheXjKivRVJaSIJmfC/y
+Fv+PfBubVormR40ZA2R/Df827kG7vh/elkd70LY6nnCavcaorxr/DjnerPCxuwL4
+7SJVGUyBBkM1f6ao3VFWSoCbKWY/FW60S1jzEHQG9QNzw/30lSVAzvzB6DjTPpiD
+FKGpVZofnnYpIPFB3fsnnMvPqMGiv1o+Oz476N1Z54o52kynlJL7wTJ76nNZq0Za
+BksOpIhm8iVH2CfH3u3AyP9f3E4x3S6ThP8ybsp4rItne2jo2w3//N8+SdTCTYpE
+heWhBmCRkmwCA1sBvvjCzI6SqehxiUEcsLud81hGKTd7O+v+CrB3O2OflMNFNZiV
+K9Qr3KP5FHGlPZTO+fnEjpubMIMkWnwZ7lB+Ry/Yhnu+D0QQ+8pLC5hItV/Yn/jk
+mJA1TuZGr9KQUHllx1Zc8AWum48o5/CNPKLIruIyBj3M49eJghwoGYFO9w/36Ecn
+mGXv+RESrCdXSKU9IbyTRxAf0x6bKl098rw6kC+I6GkkEQbtwKT9iost2Mud8mpE
+58jFIU9K6D2BAxuXxb5q29uHLqZbbmETCyqZFg3PC+VhodKwvvrp+XBiJEHMcJuu
+97M3SP7ngA59d/UEc/GY
+=r8/t
+-----END PGP SIGNATURE-----
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--9Iq5ULCa7nGtWwZS--
