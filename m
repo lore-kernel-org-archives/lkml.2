@@ -1,221 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2C0WPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:15:48 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:58123
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756702Ab2C0WPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:15:46 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [PATCH 1/1] net/hyperv: Add flow control based on hi/low watermark
-Date: Tue, 27 Mar 2012 15:23:07 -0700
-Message-Id: <1332886987-11613-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1332886987-11613-1-git-send-email-haiyangz@microsoft.com>
-References: <1332886987-11613-1-git-send-email-haiyangz@microsoft.com>
+	id S1756742Ab2C0WR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:17:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55292 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab2C0WR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 18:17:26 -0400
+Date: Wed, 28 Mar 2012 01:17:21 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the scsi tree
+Message-ID: <20120327221721.GA3233@p183.telecom.by>
+References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
+ <1332748641.2836.8.camel@dabdike>
+ <20120326140721.GA19827@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120326140721.GA19827@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the existing code, we only stop queue when the ringbuffer is full,
-so the current packet has to be dropped or retried from upper layer.
+On Mon, Mar 26, 2012 at 07:07:21AM -0700, Greg KH wrote:
+> On Mon, Mar 26, 2012 at 08:57:21AM +0100, James Bottomley wrote:
+> > On Mon, 2012-03-26 at 12:17 +1100, Stephen Rothwell wrote:
+> > > Hi James,
+> > > 
+> > > After merging the scsi tree, today's linux-next build (x86_64 allmodconfig)
+> > > failed like this:
+> > > 
+> > > drivers/staging/keucr/scsiglue.c:349:2: error: unknown field 'proc_info' specified in initializer
+> > > drivers/staging/rts_pstor/rtsx.c:258:2: error: unknown field 'proc_info' specified in initializer
+> > > drivers/staging/rts5139/rts51x_scsi.c:2190:2: error: unknown field 'proc_info' specified in initializer
+> > > 
+> > > Caused by commit 104c4fe25dc9 ("[SCSI] remove scsi_host_template::proc_info").
+> > > 
+> > > Since this is a staging driver, I applied these following patches:
+> > 
+> > Yes, that looks about right, thanks.  We haven't seen anything about
+> > these drivers on the SCSI list, so I've no idea where they are in
+> > development.
+> 
+> Why is new patches going into your tree right now, during the 3.4 merge
+> window?  API changes should have happened weeks ago, to let others fix
+> up things like this.
+> 
+> As for the "where they are in development", they vary, but, a simple
+> grep should have shown you that these in-kernel drivers should also be
+> fixed up, or at the least, give me the heads up to let me do it for you.
+> 
+> Care to send me the patch that causes this problem so I can create a fix
+> for this?
 
-This patch stops the tx queue when available ringbuffer is below
-the low watermark. So the ringbuffer still has small amount of space
-available for the current packet. This will reduce the overhead of
-retries on sending.
+See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
+Especially the first one.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/ring_buffer.c        |   31 -----------------------------
- drivers/net/hyperv/netvsc.c     |   41 +++++++++++++++++++++++++++++++++++---
- drivers/net/hyperv/netvsc_drv.c |    6 ++++-
- include/linux/hyperv.h          |   29 +++++++++++++++++++++++++++
- 4 files changed, 71 insertions(+), 36 deletions(-)
+Probably the best course of action is to remove proc_info code from
+these drivers because the interface was deprecated for a long time.
 
-diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
-index 8af25a0..7233c88 100644
---- a/drivers/hv/ring_buffer.c
-+++ b/drivers/hv/ring_buffer.c
-@@ -30,37 +30,6 @@
- #include "hyperv_vmbus.h"
- 
- 
--/* #defines */
--
--
--/* Amount of space to write to */
--#define BYTES_AVAIL_TO_WRITE(r, w, z) \
--	((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w))
--
--
--/*
-- *
-- * hv_get_ringbuffer_availbytes()
-- *
-- * Get number of bytes available to read and to write to
-- * for the specified ring buffer
-- */
--static inline void
--hv_get_ringbuffer_availbytes(struct hv_ring_buffer_info *rbi,
--			  u32 *read, u32 *write)
--{
--	u32 read_loc, write_loc;
--
--	smp_read_barrier_depends();
--
--	/* Capture the read/write indices before they changed */
--	read_loc = rbi->ring_buffer->read_index;
--	write_loc = rbi->ring_buffer->write_index;
--
--	*write = BYTES_AVAIL_TO_WRITE(read_loc, write_loc, rbi->ring_datasize);
--	*read = rbi->ring_datasize - *write;
--}
--
- /*
-  * hv_get_next_write_location()
-  *
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index d025c83..8b91947 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -428,6 +428,24 @@ int netvsc_device_remove(struct hv_device *device)
- 	return 0;
- }
- 
-+
-+#define RING_AVAIL_PERCENT_HIWATER 20
-+#define RING_AVAIL_PERCENT_LOWATER 10
-+
-+/*
-+ * Get the percentage of available bytes to write in the ring.
-+ * The return value is in range from 0 to 100.
-+ */
-+static inline u32 hv_ringbuf_avail_percent(
-+		struct hv_ring_buffer_info *ring_info)
-+{
-+	u32 avail_read, avail_write;
-+
-+	hv_get_ringbuffer_availbytes(ring_info, &avail_read, &avail_write);
-+
-+	return avail_write * 100 / ring_info->ring_datasize;
-+}
-+
- static void netvsc_send_completion(struct hv_device *device,
- 				   struct vmpacket_descriptor *packet)
- {
-@@ -455,6 +473,8 @@ static void netvsc_send_completion(struct hv_device *device,
- 		complete(&net_device->channel_init_wait);
- 	} else if (nvsp_packet->hdr.msg_type ==
- 		   NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE) {
-+		int num_outstanding_sends;
-+
- 		/* Get the send context */
- 		nvsc_packet = (struct hv_netvsc_packet *)(unsigned long)
- 			packet->trans_id;
-@@ -463,10 +483,14 @@ static void netvsc_send_completion(struct hv_device *device,
- 		nvsc_packet->completion.send.send_completion(
- 			nvsc_packet->completion.send.send_completion_ctx);
- 
--		atomic_dec(&net_device->num_outstanding_sends);
-+		num_outstanding_sends =
-+			atomic_dec_return(&net_device->num_outstanding_sends);
- 
--		if (netif_queue_stopped(ndev) && !net_device->start_remove)
--			netif_wake_queue(ndev);
-+		if (netif_queue_stopped(ndev) && !net_device->start_remove &&
-+			(hv_ringbuf_avail_percent(&device->channel->outbound)
-+			> RING_AVAIL_PERCENT_HIWATER ||
-+			num_outstanding_sends < 1))
-+				netif_wake_queue(ndev);
- 	} else {
- 		netdev_err(ndev, "Unknown send completion packet type- "
- 			   "%d received!!\n", nvsp_packet->hdr.msg_type);
-@@ -519,10 +543,19 @@ int netvsc_send(struct hv_device *device,
- 
- 	if (ret == 0) {
- 		atomic_inc(&net_device->num_outstanding_sends);
-+		if (hv_ringbuf_avail_percent(&device->channel->outbound) <
-+			RING_AVAIL_PERCENT_LOWATER) {
-+			netif_stop_queue(ndev);
-+			if (atomic_read(&net_device->
-+				num_outstanding_sends) < 1)
-+				netif_wake_queue(ndev);
-+		}
- 	} else if (ret == -EAGAIN) {
- 		netif_stop_queue(ndev);
--		if (atomic_read(&net_device->num_outstanding_sends) < 1)
-+		if (atomic_read(&net_device->num_outstanding_sends) < 1) {
- 			netif_wake_queue(ndev);
-+			ret = -ENOSPC;
-+		}
- 	} else {
- 		netdev_err(ndev, "Unable to send packet %p ret %d\n",
- 			   packet, ret);
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index dd29478..a0cc127 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -224,9 +224,13 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 		net->stats.tx_packets++;
- 	} else {
- 		kfree(packet);
-+		if (ret != -EAGAIN) {
-+			dev_kfree_skb_any(skb);
-+			net->stats.tx_dropped++;
-+		}
- 	}
- 
--	return ret ? NETDEV_TX_BUSY : NETDEV_TX_OK;
-+	return (ret == -EAGAIN) ? NETDEV_TX_BUSY : NETDEV_TX_OK;
- }
- 
- /*
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 5852545..2c366f0 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -274,6 +274,35 @@ struct hv_ring_buffer_debug_info {
- 	u32 bytes_avail_towrite;
- };
- 
-+/* Amount of space to write to */
-+#define BYTES_AVAIL_TO_WRITE(r, w, z) \
-+	(((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w)))
-+
-+
-+/*
-+ *
-+ * hv_get_ringbuffer_availbytes()
-+ *
-+ * Get number of bytes available to read and to write to
-+ * for the specified ring buffer
-+ */
-+extern inline void
-+hv_get_ringbuffer_availbytes(struct hv_ring_buffer_info *rbi,
-+			  u32 *read, u32 *write)
-+{
-+	u32 read_loc, write_loc;
-+
-+	smp_read_barrier_depends();
-+
-+	/* Capture the read/write indices before they changed */
-+	read_loc = rbi->ring_buffer->read_index;
-+	write_loc = rbi->ring_buffer->write_index;
-+
-+	*write = BYTES_AVAIL_TO_WRITE(read_loc, write_loc, rbi->ring_datasize);
-+	*read = rbi->ring_datasize - *write;
-+}
-+
-+
- /*
-  * We use the same version numbering for all Hyper-V modules.
-  *
--- 
-1.7.4.1
+The amount of code once removed from staging prevented me from doing
+any work on them.
 
+Looking at staging ->read_proc users this is going to be a problem for
+its removal. :-(
