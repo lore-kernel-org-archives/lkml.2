@@ -1,29 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1758508Ab2CUAOm (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Tue, 20 Mar 2012 20:14:42 -0400
-Received: from smtp.inpi.gov.br ([189.3.205.182]:24048 "EHLO smtp.inpi.gov.br"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1756070Ab2CUAOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 20 Mar 2012 20:14:41 -0400
-Date: Tue, 20 Mar 2012 19:45:09 -0300 (BRT)
-From: Mr Leung Cheung <luna@inpi.gov.br>
-Reply-To: Mr Leung Cheung <cheungl@kimo.com>
+        id S1753579Ab2C0Mdm (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Tue, 27 Mar 2012 08:33:42 -0400
+Received: from [203.151.20.144] ([203.151.20.144]:29275 "EHLO rack.athink.net"
+        rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1752118Ab2C0Mdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Tue, 27 Mar 2012 08:33:41 -0400
+X-Greylist: delayed 14624 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Mar 2012 08:33:39 EDT
+Date: Tue, 27 Mar 2012 15:36:59 +0700
+Message-Id: <E1SCRtj-0003q0-22@rack.athink.net>
+To: linux-kernel@vger.kernel.org
 Subject: Hello
-Message-ID: <a9c31d2a-0229-49a3-b8af-2bbb65ea70f1@mail.inpi.gov.br>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+X-PHP-Script: www.think.co.th/think//wp-content/uploads/2011/06/zbbss.php for 41.83.163.79
+From: joy kaine <joykaine4u@yahoo.in>
+Reply-To: joykaine4u@yahoo.in
 MIME-Version: 1.0
-X-Originating-IP: [108.62.194.34]
-X-Mailer: Zimbra 7.1.0_GA_3140 (zclient/7.1.0_GA_3140)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
+Hello
+My name is Ms. joy kaine,i saw your profile today and became interested
+in you,i will also like to know you the more,and if you do not mind i
+will like you to send an email to my email address so i can give you
+my picture for you to know whom i am.Here is my email
+address(joykaine4u@yahoo.in ) believe we can move from here!I am
+waiting for your mail to my email address above.(Remember the distance
+or color does not matter even our age different because i have
+something very IMPORTANT to tell you,but love matters allot in life"
+
+Name: joy
+E-mail: joykaine4u@yahoo.in
 
 
-I need your assistance to transfer an abandoned $22.5 Million Dollars from Hong-Kong to your country. You will get more info when i receive a positive reply from you.
-
-Best Regards,
-Mr.Leung Cheung
