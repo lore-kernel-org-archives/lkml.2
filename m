@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2C0CBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 22:01:23 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:59252 "EHLO
+	id S1756655Ab2C0CC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 22:02:57 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59282 "EHLO
 	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab2C0CBV (ORCPT
+	with ESMTP id S1756063Ab2C0CCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 22:01:21 -0400
-Message-ID: <4F711F4C.7030902@panasas.com>
-Date: Mon, 26 Mar 2012 19:00:44 -0700
+	Mon, 26 Mar 2012 22:02:54 -0400
+Message-ID: <4F711FAB.3020408@panasas.com>
+Date: Mon, 26 Mar 2012 19:02:19 -0700
 From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -29,7 +29,7 @@ CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: [PATCH 1/6] kmod: Unexport call_usermodehelper_freeinfo()
+Subject: [PATCH 2/6] kmod: Convert two call sites to call_usermodehelper_fns()
 References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com>
 In-Reply-To: <4F711EA2.4030608@panasas.com>
 Content-Type: text/plain; charset="UTF-8"
@@ -39,49 +39,79 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-call_usermodehelper_freeinfo() is not used outside of kmod.c. So
-unexport it, and make it static to kmod.c
+Both   kernel/sys.c && security/keys/request_key.c where inlining the exact same
+code as call_usermodehelper_fns(); So simply convert these sites to directly
+use  call_usermodehelper_fns().
 
 Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 ---
- include/linux/kmod.h |    4 ----
- kernel/kmod.c        |    2 +-
- 2 files changed, 1 insertions(+), 5 deletions(-)
+ kernel/sys.c                |   19 ++++++++-----------
+ security/keys/request_key.c |   13 +++----------
+ 2 files changed, 11 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index 9efeae6..ba89dc2 100644
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -79,10 +79,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
- /* Actually execute the sub-process */
- int call_usermodehelper_exec(struct subprocess_info *info, int wait);
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 9eb7fca..37b1971 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -2013,7 +2013,6 @@ int orderly_poweroff(bool force)
+ 		NULL
+ 	};
+ 	int ret = -ENOMEM;
+-	struct subprocess_info *info;
  
--/* Free the subprocess_info. This is only needed if you're not going
--   to call call_usermodehelper_exec */
--void call_usermodehelper_freeinfo(struct subprocess_info *info);
+ 	if (argv == NULL) {
+ 		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+@@ -2021,18 +2020,16 @@ int orderly_poweroff(bool force)
+ 		goto out;
+ 	}
+ 
+-	info = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC);
+-	if (info == NULL) {
+-		argv_free(argv);
+-		goto out;
+-	}
 -
- static inline int
- call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
- 			int (*init)(struct subprocess_info *info, struct cred *new),
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 957a7aa..c5af66a 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -221,13 +221,13 @@ static int ____call_usermodehelper(void *data)
- 	return 0;
+-	call_usermodehelper_setfns(info, NULL, argv_cleanup, NULL);
++	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT,
++				      NULL, argv_cleanup, NULL);
++out:
++	if (likely(!ret))
++		return 0;
+ 
+-	ret = call_usermodehelper_exec(info, UMH_NO_WAIT);
++	if (ret == -ENOMEM)
++		argv_free(argv);
+ 
+-  out:
+-	if (ret && force) {
++	if (force) {
+ 		printk(KERN_WARNING "Failed to start orderly shutdown: "
+ 		       "forcing the issue\n");
+ 
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index cc37903..000e750 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -93,16 +93,9 @@ static void umh_keys_cleanup(struct subprocess_info *info)
+ static int call_usermodehelper_keys(char *path, char **argv, char **envp,
+ 					struct key *session_keyring, int wait)
+ {
+-	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+-	struct subprocess_info *info =
+-		call_usermodehelper_setup(path, argv, envp, gfp_mask);
+-
+-	if (!info)
+-		return -ENOMEM;
+-
+-	call_usermodehelper_setfns(info, umh_keys_init, umh_keys_cleanup,
+-					key_get(session_keyring));
+-	return call_usermodehelper_exec(info, wait);
++	return call_usermodehelper_fns(path, argv, envp, wait,
++				       umh_keys_init, umh_keys_cleanup,
++				       key_get(session_keyring));
  }
  
-+static
- void call_usermodehelper_freeinfo(struct subprocess_info *info)
- {
- 	if (info->cleanup)
- 		(*info->cleanup)(info);
- 	kfree(info);
- }
--EXPORT_SYMBOL(call_usermodehelper_freeinfo);
- 
- static void umh_complete(struct subprocess_info *sub_info)
- {
+ /*
 -- 
 1.7.6.5
 
