@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab2C0OKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 10:10:55 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53834 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab2C0OKv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 10:10:51 -0400
+	id S1753633Ab2C0OOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 10:14:05 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50451 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956Ab2C0OOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 10:14:03 -0400
+Date: Wed, 28 Mar 2012 01:13:58 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Johansen <john.johansen@canonical.com>
+Subject: [GIT] Apparmor bugfix
+Message-ID: <alpine.LRH.2.02.1203280112180.22779@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1332338318-5958-23-git-send-email-fweisbec@gmail.com>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	<1332338318-5958-23-git-send-email-fweisbec@gmail.com>
-Date: Tue, 27 Mar 2012 16:10:49 +0200
-Message-ID: <CAOtvUMegNxbb4OHRo6cB3EWT6R0F0rpzZAd8d=pxoHjehSCgKw@mail.gmail.com>
-Subject: Re: [PATCH 21/32] nohz/cpuset: Flush cputime on threads in nohz
- cpusets when waiting leader
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> When we wait for a zombie task, flush the cputimes on nohz cpusets
-> in case we are waiting for a group leader that has threads running
-> in nohz CPUs. This way thread_group_times() doesn't report stale
-> values.
->
-> <doubts>
-> If I understood well the code, by the time we call that thread_group_times(),
-> we may have childs that are still running, so this is necessary.
-> But I need to check deeper.
-> </doubts>
->
-...
->
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 4b4042f..c194662 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -52,6 +52,7 @@
->  #include <linux/hw_breakpoint.h>
->  #include <linux/oom.h>
->  #include <linux/writeback.h>
-> +#include <linux/cpuset.h>
->
->  #include <asm/uaccess.h>
->  #include <asm/unistd.h>
-> @@ -1712,6 +1713,13 @@ repeat:
->           (!wo->wo_pid || hlist_empty(&wo->wo_pid->tasks[wo->wo_type])))
->                goto notask;
->
-> +       /*
-> +        * For cputime in sub-threads before adding them.
-> +        * Must be called outside tasklist_lock lock because write lock
-> +        * can be acquired under irqs disabled.
-> +        */
-> +       cpuset_nohz_flush_cputimes();
-> +
->        set_current_state(TASK_INTERRUPTIBLE);
->        read_lock(&tasklist_lock);
->        tsk = current;
-> --
-> 1.7.5.4
->
+Hi Linus,
 
-I believe this patch is not needed because after this point we call
-do_wait_thread /ptrace_do_wait, which both call wait_consider_task,
-which calls wait_task_stopped/zombie/continued, which all eventually
-calls getrusage, which calls k_getrusage where you added a call to
-cpuset_noz_flush_cputimes() in another patch :-)
+Please pull this fix for Apparmor.
 
-Gilad
+The following changes since commit e22057c8599373e5caef0bc42bdb95d2a361ab0d:
+  Linus Torvalds (1):
+        Merge tag 'stable/for-linus-3.4-tag-two' of git://git.kernel.org/.../konrad/xen
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+are available in the git repository at:
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+John Johansen (1):
+      apparmor: Fix change_onexec when called from a confined task
+
+ security/apparmor/domain.c |    3 ++-
+ security/apparmor/file.c   |    2 ++
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+commit 0421ea91ddc7895a5a68d3bc670ed4b8e6448a42
+Author: John Johansen <john.johansen@canonical.com>
+Date:   Tue Mar 27 04:14:33 2012 -0700
+
+    apparmor: Fix change_onexec when called from a confined task
+    
+    Fix failure in aa_change_onexec api when the request is made from a confined
+    task.  This failure was caused by two problems
+    
+     The AA_MAY_ONEXEC perm was not being mapped correctly for this case.
+    
+     The executable name was being checked as second time instead of using the
+     requested onexec profile name, which may not be the same as the exec
+     profile name. This mistake can not be exploited to grant extra permission
+     because of the above flaw where the ONEXEC permission was not being mapped
+     so it will not be granted.
+    
+    BugLink: http://bugs.launchpad.net/bugs/963756
+    
+    Signed-off-by: John Johansen <john.johansen@canonical.com>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index 7c69599..6327685 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -410,7 +410,8 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 		 * exec\0change_profile
+ 		 */
+ 		state = aa_dfa_null_transition(profile->file.dfa, state);
+-		cp = change_profile_perms(profile, cxt->onexec->ns, name,
++		cp = change_profile_perms(profile, cxt->onexec->ns,
++					  cxt->onexec->base.name,
+ 					  AA_MAY_ONEXEC, state);
+ 
+ 		if (!(cp.allow & AA_MAY_ONEXEC))
+diff --git a/security/apparmor/file.c b/security/apparmor/file.c
+index 3022c0f..5d176f2 100644
+--- a/security/apparmor/file.c
++++ b/security/apparmor/file.c
+@@ -215,6 +215,8 @@ static struct file_perms compute_perms(struct aa_dfa *dfa, unsigned int state,
+ 	/* change_profile wasn't determined by ownership in old mapping */
+ 	if (ACCEPT_TABLE(dfa)[state] & 0x80000000)
+ 		perms.allow |= AA_MAY_CHANGE_PROFILE;
++	if (ACCEPT_TABLE(dfa)[state] & 0x40000000)
++		perms.allow |= AA_MAY_ONEXEC;
+ 
+ 	return perms;
+ }
