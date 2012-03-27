@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2C0Rhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 13:37:51 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:51741 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754466Ab2C0Rhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 13:37:47 -0400
-Date: Tue, 27 Mar 2012 10:37:44 -0700
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Kees Cook <keescook@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Correct way to include siginfo.h?
-Message-ID: <20120327173744.GD10142@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Kees Cook <keescook@google.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <CAGXu5jK3ezCN2=hy=AARh=T9L8YzCTKAXH6dbAH7FGX3P8VkoQ@mail.gmail.com>
- <20120327172133.GB10142@thunk.org>
- <CAGXu5jJx85b2ysgx2aXWUUf4dJMc34Cukp3S1VKiC_Pc5U2+Pw@mail.gmail.com>
+	id S1754802Ab2C0RlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 13:41:24 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50525 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2C0RlT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 13:41:19 -0400
+Date: Tue, 27 Mar 2012 13:36:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, davem@davemloft.net
+Cc: xen-devel@lists.xensource.com, Stefano.Stabellini@eu.citrix.com
+Subject: Re: [Xen-devel] [PATCH] xen: only check xen_platform_pci_unplug if
+ hvm
+Message-ID: <20120327173637.GA2982@phenom.dumpdata.com>
+References: <1332869468-12617-1-git-send-email-imammedo@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJx85b2ysgx2aXWUUf4dJMc34Cukp3S1VKiC_Pc5U2+Pw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1332869468-12617-1-git-send-email-imammedo@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090201.4F71FBB5.002B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 10:29:39AM -0700, Kees Cook wrote:
+On Tue, Mar 27, 2012 at 07:31:08PM +0200, Igor Mammedov wrote:
+> commit b9136d207f08
+>   xen: initialize platform-pci even if xen_emul_unplug=never
 > 
-> I'm trying to get at the future seccomp fields on siginfo_t, namely
-> "si_syscall":
+> breaks blkfront/netfront by not loading them because of
+> xen_platform_pci_unplug=0 and it is never set for PV guest.
 
-Ah, I didn't realize you were trying to do that.  siginfo_t has been
-stable since forever, and so I think we've always depending on glibc
-to export the structure.  As a result I don't know that much effort
-has been made to make siginfo.h safe for any userspace user other than
-glibc.
+Looks good to me.
 
-Silly question; we're not going to actually change the size of the
-siginfo_t structure in a userspace visible way, are we?  I don't know
-of are any shared libraries that fill in a siginfo_t structure passed
-in by the caller (which could be located on the stack), but it's
-certainly possible that such library ABI's could exist.
+If the networking/block maintainers don't object I can push this out to
+Linus when rc1 comes out.
 
-	  	   	     	     	   - Ted
+> 
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+>  drivers/block/xen-blkfront.c |    2 +-
+>  drivers/net/xen-netfront.c   |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index d5e1ab9..98cbeba 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -1475,7 +1475,7 @@ static int __init xlblk_init(void)
+>  	if (!xen_domain())
+>  		return -ENODEV;
+>  
+> -	if (!xen_platform_pci_unplug)
+> +	if (xen_hvm_domain() && !xen_platform_pci_unplug)
+>  		return -ENODEV;
+>  
+>  	if (register_blkdev(XENVBD_MAJOR, DEV_NAME)) {
+> diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+> index 663b32c..0ebbb19 100644
+> --- a/drivers/net/xen-netfront.c
+> +++ b/drivers/net/xen-netfront.c
+> @@ -1965,7 +1965,7 @@ static int __init netif_init(void)
+>  	if (xen_initial_domain())
+>  		return 0;
+>  
+> -	if (!xen_platform_pci_unplug)
+> +	if (xen_hvm_domain() && !xen_platform_pci_unplug)
+>  		return -ENODEV;
+>  
+>  	printk(KERN_INFO "Initialising Xen virtual ethernet driver.\n");
+> -- 
+> 1.7.5
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
