@@ -1,42 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2C0ITI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 04:19:08 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41197 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab2C0ITE convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 27 Mar 2012 04:19:04 -0400
-Message-Id: <4F719449020000780007B0CD@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 27 Mar 2012 09:19:53 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <hirofumi@mail.parknet.co.jp>
-Cc: <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: hpet_disable() call sites
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754109Ab2C0IVT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 04:21:19 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35656 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab2C0IVO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 04:21:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332450067-16600-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1332450067-16600-1-git-send-email-ddaney.cavm@gmail.com>
+From: Peter Chen <hzpeterchen@gmail.com>
+Date: Tue, 27 Mar 2012 16:20:53 +0800
+Message-ID: <CAL411-pe2W3ueDukv6GD-yGGjoc2nxMXOS3+-MU4xsxnyH29Pg@mail.gmail.com>
+Subject: Re: [PATCH] usb: Put USB Kconfig items back under USB.
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Julian Wollrath <jwollrath@web.de>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In c86c7fbc829e27e2a4093f98ded9fbd75e515adb (and subsequently
-0c1b2724069951b1902373e688042b2ec382f68f) hpet_disable() gets
-called in the shutdown path. The first of them gives HPET enabling
-through PCI quirks in conjunction with the use of legacy replacement
-as sole reason, yet even outside of the context of either the starting
-up kernel has a problem if the HPET is in an unexpected state, in
-particular preventing "normal" timer interrupts from occurring (which
-was in particular found to be the case during kdump attempts after
-Xen was running).
+>
+> Reported-by: Julian Wollrath <jwollrath@web.de>
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+>  drivers/usb/Kconfig |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+> index e4405e0..437a77e 100644
+> --- a/drivers/usb/Kconfig
+> +++ b/drivers/usb/Kconfig
+> @@ -2,14 +2,6 @@
+>  # USB device configuration
+>  #
+>
+> -menuconfig USB_SUPPORT
+> -       bool "USB support"
+> -       depends on HAS_IOMEM
+> -       default y
+> -       ---help---
+> -         This option adds core support for Universal Serial Bus (USB).
+> -         You will also need drivers from the following menu to make use of it.
+> -
+>  # many non-PCI SOC chips embed OHCI
+>  config USB_ARCH_HAS_OHCI
+>        boolean
+> @@ -63,6 +55,14 @@ config USB_ARCH_HAS_XHCI
+>        boolean
+>        default PCI
+>
+> +menuconfig USB_SUPPORT
+> +       bool "USB support"
+> +       depends on HAS_IOMEM
+> +       default y
+> +       ---help---
+> +         This option adds core support for Universal Serial Bus (USB).
+> +         You will also need drivers from the following menu to make use of it.
+> +
+>  if USB_SUPPORT
+>
+>  config USB_COMMON
+Yes, it works.
 
-Is there any reason why hpet_disable() should not also be called
-from (or some equivalent action be taken, perhaps including clearing
-certain bits in the individual counters' configuration registers, which
-are apparently - but perhaps wrongly - implied to be clear in e.g.
-hpet_set_mode(), in) hpet_enable()?
+Tested-by: Peter Chen <peter.chen@freescale.com>
 
-Thanks, Jan
+> --
+> 1.7.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+
+
+-- 
+BR,
+Peter Chen
