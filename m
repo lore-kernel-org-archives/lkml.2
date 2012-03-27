@@ -1,146 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab2C0Wb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:31:29 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:36160 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab2C0Wb2 (ORCPT
+	id S1756984Ab2C0WcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:32:00 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:9919 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756947Ab2C0Wb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:31:28 -0400
-Message-ID: <1332887486.2040.10.camel@shrek.rexursive.com>
-Subject: [PATCH v5]: Hibernation: lower/better control the amount of pages
- used for buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 28 Mar 2012 09:31:26 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+	Tue, 27 Mar 2012 18:31:58 -0400
+Message-ID: <4F723FDD.4080708@cavium.com>
+Date: Tue, 27 Mar 2012 15:31:57 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: David Daney <ddaney.cavm@gmail.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 2/4] MIPS: Octeon: Setup irq_domains for interrupts.
+References: <1332790281-9648-1-git-send-email-ddaney.cavm@gmail.com> <1332790281-9648-3-git-send-email-ddaney.cavm@gmail.com> <4F711E69.1080302@gmail.com> <4F7205F3.3000108@cavium.com> <4F7239A4.7070905@gmail.com>
+In-Reply-To: <4F7239A4.7070905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-OriginalArrivalTime: 27 Mar 2012 22:31:37.0491 (UTC) FILETIME=[5F611630:01CD0C69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On 03/27/2012 03:05 PM, Rob Herring wrote:
+> On 03/27/2012 01:24 PM, David Daney wrote:
+>> On 03/26/2012 06:56 PM, Rob Herring wrote:
+>>> On 03/26/2012 02:31 PM, David Daney wrote:
+>>>> From: David Daney<david.daney@cavium.com>
+>> [...]
+>>>> +static bool octeon_irq_ciu_is_edge(unsigned int line, unsigned int bit)
+>>>> +{
+>>>> +    bool edge = false;
+>>>> +
+>>>> +    if (line == 0)
+>>>> +        switch (bit) {
+>>>> +        case 48 ... 49: /* GMX DRP */
+>>>> +        case 50: /* IPD_DRP */
+>>>> +        case 52 ... 55: /* Timers */
+>>>> +        case 58: /* MPI */
+>>>> +            edge = true;
+>>>> +            break;
+>>>> +        default:
+>>>> +            break;
+>>>> +        }
+>>>> +    else /* line == 1 */
+>>>> +        switch (bit) {
+>>>> +        case 47: /* PTP */
+>>>> +            edge = true;
+>>>> +            break;
+>>>> +        default:
+>>>> +            break;
+>>>> +        }
+>>>> +    return edge;
+>>>
+>>> Moving in the right direction, but I still don't get why this is not in
+>>> the CIU binding as a 3rd cell?
+>>
+>> There are a several reasons, in no particular order they are:
+>>
+>> o There is no 3rd cell.  The bindings were discussed with Grant here:
+>>    http://www.linux-mips.org/archives/linux-mips/2011-05/msg00355.html
+>>
+>
+> Then add one.
 
-Hopefully, this one has your comments addressed. Thanks for reviewing!
+I can't.  The dtb is already programmed into the bootloader ROMs, 
+changing the kernel code will not change that.  It is fait accompli.
 
----------------------------------------
-Hibernation/thaw improvements:
+>
+>> o The edge/level thing cannot be changed, and the irq lines don't leave
+>> the SOC, so hard coding it is possible.
+>
+> Right, but DT describes h/w connections and this is an aspect of the
+> connection. This may be fixed for the SOC, but it's not fixed for the
+> CIU (i.e. could change in future chips), right?
 
-1. Set maximum number of pages for read buffering consistently, instead
-of inadvertently depending on the size of the sector type.
+In theory yes.  However:
 
-2. Use at most one quarter of free pages for read buffering.
+1) The chip designers will not change it.
 
-3. Require that number of free pages when writing the image never falls
-below three quarters of total free pages available.
+2) There will likely be no more designs with either CIU or CIU2, so we 
+know what all the different possibilities are today.
 
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
----
- kernel/power/swap.c |   32 +++++++++++++++++++++-----------
- 1 files changed, 21 insertions(+), 11 deletions(-)
+When CIU3 is deployed, we will use the lessons we have learned to do 
+things the Right Way.
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 8742fd0..6c58fa3 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -6,7 +6,7 @@
-  *
-  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
-  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
-+ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  *
-@@ -51,6 +51,12 @@
- 
- #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
- 
-+/*
-+ * Number of pages required to be kept free while writing the image. Always
-+ * three quarters of all available pages before the writing starts.
-+ */
-+#define reqd_free_pages()	((nr_free_pages() / 4) * 3)
-+
- struct swap_map_page {
- 	sector_t entries[MAP_PAGE_ENTRIES];
- 	sector_t next_swap;
-@@ -72,7 +78,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -316,8 +322,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = reqd_free_pages();
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -352,11 +357,15 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		handle->cur_swap = offset;
- 		handle->k = 0;
- 	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-+	if (bio_chain && nr_free_pages() < handle->reqd_free_pages) {
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		handle->written = 0;
-+		/*
-+		 * Recalculate the number of required free pages, to make sure
-+		 * we never take more than a quarter.
-+		 */
-+		handle->reqd_free_pages = reqd_free_pages();
- 	}
-  out:
- 	return error;
-@@ -404,7 +413,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
- #define LZO_THREADS	3
- 
- /* Maximum number of pages for read buffering. */
--#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
-+#define LZO_READ_PAGES	8192
- 
- 
- /**
-@@ -615,10 +624,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 	}
- 
- 	/*
--	 * Adjust number of free pages after all allocations have been done.
--	 * We don't want to run out of pages when writing.
-+	 * Adjust the number of required free pages after all allocations have
-+	 * been done. We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = reqd_free_pages();
- 
- 	/*
- 	 * Start the CRC32 thread.
-@@ -1129,8 +1138,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 
- 	/*
- 	 * Adjust number of pages for read buffering, in case we are short.
-+	 * Never take more than a quarter of all available pages.
- 	 */
--	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
-+	read_pages = (nr_free_pages() - snapshot_get_image_size()) / 4;
- 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
- 
- 	for (i = 0; i < read_pages; i++) {
----------------------------------------
+>
+> There's 2 reasons why you would not put this into DTS:
+>
+> - All irq lines' trigger type are the same, fixed and known.
+> - You can read a register to tell you the trigger type.
+>
+> Even if it's not going to change ever, it's still worth putting into the
+> DTS as it is well suited for holding that data and it is just data.
 
--- 
-Bojan
+Agreed that it could be in the DTS, and retrospect it probably should 
+have been put in the DTS, but it wasn't.  So I think what we have now is 
+a workable solution, and has the added attraction of working with 
+already deployed boards.
 
+David Daney
