@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab2C0W3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:29:07 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45703 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570Ab2C0W3G (ORCPT
+	id S1756930Ab2C0W3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:29:51 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46338 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570Ab2C0W3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:29:06 -0400
-Date: Tue, 27 Mar 2012 22:29:23 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120327222923.GA31692@mail.hallyn.com>
-References: <20120326150924.GG19395@moon>
- <20120326164347.GA24394@redhat.com>
- <20120326183330.GM19395@moon>
- <20120327152534.GA18478@redhat.com>
- <20120327165853.GH11875@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327165853.GH11875@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Mar 2012 18:29:50 -0400
+Date: Tue, 27 Mar 2012 18:28:41 -0400 (EDT)
+Message-Id: <20120327.182841.1664052401394959748.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-03-27
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120327183242.GB20938@tuxdriver.com>
+References: <20120327183242.GB20938@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 27 Mar 2012 15:28:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> On Tue, Mar 27, 2012 at 05:25:34PM +0200, Oleg Nesterov wrote:
-> > user_ns_map_uid() should translate uid_t from one namespace to another,
-> > in this case the namespace is the same.
-> > 
-> > user_ns_map_uid(cred->user_ns, cred) must be the identical mapping,
-> > no matter how we change the implementation.
-> > 
-> > What I think you need is
-> > user_ns_map_uid(current_user_ns(), filp->f_owner.cred), the only
-> > problem is that f_owner.cred doesn't exist.
-> > 
-> 
-> Hmm, I was confused by likely() in user_ns_map_uid. But indeed, I think
-> you're so right. Is there some reason why we can't carry f_owner.cred
-> pointer?
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 27 Mar 2012 14:32:42 -0400
 
-We would need that for this, yes.  However, Eric is working on a new
-patchset which changes the cross-userns uid mappings.  I think it's
-worth simply leaving a comment that this will need to be addressed,
-and leave in the unconverted uid.
+> First, we have a MAINTAINERS update -- not truly a "fix", but it might
+> help to keep unwanted traffic out of Bob's inbox.  We also have a
+> removal of an outdated comment that was overlooked when the related
+> code was removed.
 
-thanks,
--serge
+MAINTAINERS updates can always go in, so no problems with this.
+
+> Beyond those, we have a fix for a memory leak in ath9k, a cfg80211
+> fix to prevent passing bad info over nl80211 to userspace, a tuning
+> fix for some rtlwifi family drivers, a couple of minor ath9k tuning
+> fixes, a mac80211 use-after-free fix, a couple of rt2x00 thinko fixes,
+> an iwlegacy fix to properly set BSSID after an association, and an
+> iwlegacy fix to avoid an oops by properly reinitializing a variable
+> after reset.
+
+Ok.
+
+I'll pull this in as soon as Linus processes my most recent networking
+pull request.
+
+Thanks!
