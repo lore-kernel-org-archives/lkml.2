@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab2C0Qm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:42:57 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63908 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2C0Qmz (ORCPT
+	id S1754672Ab2C0Qr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:47:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54052 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab2C0Qr1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:42:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6661"; a="176220009"
-Date: Tue, 27 Mar 2012 11:42:53 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Linas Vepstas <linas@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/20] hexagon/mm/vm_fault.c: Port OOM changes to
- do_page_fault
-Message-ID: <20120327164253.GB3916@codeaurora.org>
-References: <1332249813-2970-1-git-send-email-consul.kautuk@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332249813-2970-1-git-send-email-consul.kautuk@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Mar 2012 12:47:27 -0400
+Message-ID: <1332866823.16159.246.camel@twins>
+Subject: Re: [PATCH 08/32] nohz: Try not to give the timekeeping duty to an
+ adaptive tickless cpu
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>,
+        Dimitri Sivanich <sivanich@sgi.com>
+Date: Tue, 27 Mar 2012 18:47:03 +0200
+In-Reply-To: <alpine.DEB.2.00.1203271106130.1170@router.home>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+	 <1332338318-5958-10-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1203210950500.20482@router.home>
+	 <20120327105034.GA13196@somewhere>
+	 <alpine.DEB.2.00.1203271106130.1170@router.home>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 09:23:33AM -0400, Kautuk Consul wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
+On Tue, 2012-03-27 at 11:08 -0500, Christoph Lameter wrote:
 > 
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
-> 
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
-> 
-> Port these changes to hexagon.
-> 
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-> ---
->  arch/hexagon/mm/vm_fault.c |   22 +++++++++++++++++-----
->  1 files changed, 17 insertions(+), 5 deletions(-)
-> 
+> I wish you would disentangle the nohz work from the cpusets. Cpusets is
+> aged and being replaced by cgroups. And the cgroup work is something that
+> is not suitable for many loads given the VM overhead added. 
 
-Sorry for the delay; got around to it this morning.  Looks good; thanks!
+What VM overhead? Are you talking about the memcg nonsense? That's
+entirely optional, you don't need to either build that or enable it.
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+And if we ever get rid of that multiple hierarchy nonsense I don't see a
+reason to get rid of cpuset at all. The only reason to want to replace
+it is to avoid the dis-joint-ness it has with the cpu controller (and
+possible the memcg one).
 
 
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
