@@ -1,123 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2C0RCq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 13:02:46 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:30782 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab2C0RCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 13:02:45 -0400
-X-IronPort-AV: E=Sophos;i="4.75,327,1330923600"; 
-   d="scan'208";a="23554294"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: Stefano.Stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 1/2] xen: enter/exit lazy_mmu_mode around m2p_override calls
-Date: Tue, 27 Mar 2012 18:03:53 +0100
-Message-ID: <1332867833-2226-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755061Ab2C0RGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 13:06:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52348 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab2C0RGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 13:06:07 -0400
+Date: Tue, 27 Mar 2012 10:06:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
+Message-ID: <20120327170600.GA18222@kroah.com>
+References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20120316213227.GB24556@kroah.com>
+ <4F678100.1000707@linux.vnet.ibm.com>
+ <20120319233409.GA16124@kroah.com>
+ <20120326155018.GA6163@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120326155018.GA6163@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a significant performance improvement for the
-m2p_override: about 6% using the gntdev device.
+On Mon, Mar 26, 2012 at 11:50:19AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Mar 19, 2012 at 04:34:09PM -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Mar 19, 2012 at 01:54:56PM -0500, Seth Jennings wrote:
+> > > > I'm sorry, I know this isn't fair for your specific patch, but we have
+> > > > to stop this sometime, and as this patch adds code isn't even used by
+> > > > anyone, its a good of a time as any.
+> > > 
+> > > So, this the my first "promotion from staging" rodeo.  I would love to
+> > > see this code mainlined ASAP.  How would I/we go about doing that?
+> > 
+> > What subsystem should this code live in?  The -mm code, I'm guessing,
+> > right?  If so, submit it to the linux-mm mailing list for inclusion, you
+> > can point them at what is in drivers/staging right now, or probably it's
+> > easier if you just make a new patch that adds the code that is in
+> > drivers/staging/ to the correct location in the kernel.  That way it's
+> > easier to review and change.  When it finally gets accepted, we can then
+> > delete the drivers/staging code.
+> 
+> 
+> Hey Greg,
+> 
+> Little background - for zcache to kick-butts (both Dan and Seth posted some
+> pretty awesome benchmark numbers) it depends on the frontswap - which is in
+> the #linux-next. Dan made an attempt to post it for a GIT PULL and an interesting
+> conversation ensued where folks decided it needs more additions before they were
+> comfortable with it. zcache isn't using those additions, but I don't see why
+> it couldn't use them.
+> 
+> The things that bouncing around in my head are:
+>  - get a punch-out list (ie todo) of what MM needs for the zcache to get out.
+>    I think posting it as a new driver would be right way to do it (And then
+>    based on feedback work out the issues in drivers/staging). But what
+>    about authorship - there are mulitple authors ?
 
-Each m2p_add/remove_override call issues a MULTI_grant_table_op and a
-__flush_tlb_single if kmap_op != NULL.  Batching all the calls together
-is a great performance benefit because it means issuing one hypercall
-total rather than two hypercall per page.
-If paravirt_lazy_mode is set PARAVIRT_LAZY_MMU, all these calls are
-going to be batched together, otherwise they are issued one at a time.
+What does authorship matter here?  To move files out of staging, just
+send a patch that does that, all authorship history is preserved.
 
-Adding arch_enter_lazy_mmu_mode/arch_leave_lazy_mmu_mode around the
-m2p_add/remove_override calls forces paravirt_lazy_mode to
-PARAVIRT_LAZY_MMU, therefore makes sure that they are always batched.
+And as a new driver, that's up to the mm developers, not me.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/block/xen-blkback/blkback.c |    4 ++++
- drivers/xen/grant-table.c           |    8 ++++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+>  - zcache is a bit different that the normal drivers type - and it is unclear
+>    yet what will be required to get it out - and both Seth and Nitin have this
+>    hungry look in their eyes of wanting to make it super-duper. So doing
+>    the work to do it - is not going to be a problem at all - just some form
+>    of clear goals of what we need "now" vs "would love to have".
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 0088bf6..60abff6 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -342,6 +342,7 @@ static void xen_blkbk_unmap(struct pending_req *req)
- 	 * Note, we use invcount, so nr->pages, so we can't index
- 	 * using vaddr(req, i).
- 	 */
-+	arch_enter_lazy_mmu_mode();
- 	for (i = 0; i < invcount; i++) {
- 		ret = m2p_remove_override(
- 			virt_to_page(unmap[i].host_addr), false);
-@@ -351,6 +352,7 @@ static void xen_blkbk_unmap(struct pending_req *req)
- 			continue;
- 		}
- 	}
-+	arch_leave_lazy_mmu_mode();
- }
- 
- static int xen_blkbk_map(struct blkif_request *req,
-@@ -386,6 +388,7 @@ static int xen_blkbk_map(struct blkif_request *req,
- 	 * so that when we access vaddr(pending_req,i) it has the contents of
- 	 * the page from the other domain.
- 	 */
-+	arch_enter_lazy_mmu_mode();
- 	for (i = 0; i < nseg; i++) {
- 		if (unlikely(map[i].status != 0)) {
- 			pr_debug(DRV_PFX "invalid buffer -- could not remap it\n");
-@@ -410,6 +413,7 @@ static int xen_blkbk_map(struct blkif_request *req,
- 		seg[i].buf  = map[i].dev_bus_addr |
- 			(req->u.rw.seg[i].first_sect << 9);
- 	}
-+	arch_leave_lazy_mmu_mode();
- 	return ret;
- }
- 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index b4d4eac..c7dc2d6 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -751,6 +751,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return ret;
- 
-+	arch_enter_lazy_mmu_mode();
-+
- 	for (i = 0; i < count; i++) {
- 		/* Do not add to override if the map failed. */
- 		if (map_ops[i].status)
-@@ -769,6 +771,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 			return ret;
- 	}
- 
-+	arch_leave_lazy_mmu_mode();
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(gnttab_map_refs);
-@@ -785,12 +789,16 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return ret;
- 
-+	arch_enter_lazy_mmu_mode();
-+
- 	for (i = 0; i < count; i++) {
- 		ret = m2p_remove_override(pages[i], clear_pte);
- 		if (ret)
- 			return ret;
- 	}
- 
-+	arch_leave_lazy_mmu_mode();
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
--- 
-1.7.2.5
+Again, work with the -mm developers.
 
+>  - folks are using it, which means continued -stable kernel back-porting.
+
+What do you mean by this?
+
+> So with that in mind I was wondering whether you would be up for:
+>  - me sending to you before a merge window some updates to the zcache
+>    as a git pull - that way you won't have to deal with a bunch of
+>    small patches and when there is something you don't like we can fix
+>    it up to your liking. The goal would be for us - Dan, Nitin, Seth and me
+>    working on promoting the driver out of staging and you won't have to
+>    be bugged every time we have a new change that might be perceived
+>    as feature, but is in fact a step towards mainstreaming it. I figured
+>    that is what you are most annoyed at - handling those uncoordinated
+>    requests and not seeing a clear target.
+
+Lots of small patches are fine, as long as they are obviously working
+toward getting the code out of staging.  This specific patch was just
+adding a new feature, one that no one could even use, so that was not
+something that would help it get out of the staging tree.
+
+So no, I don't need patches batched up, and a git pull, I just need to
+see that every patch I am sent is working toward getting it out of here.
+
+>  - alongside of that, I work on making those frontswap changes folks
+>    have asked for. Since those changes can affect zcache, that means
+>    adding them in zcache alongside.
+
+Ok.
+
+> Hopefully, by the time those two items are done, both pieces can go in
+> the kernel at the same time-ish.
+
+That would be good to see have happen.
+
+thanks,
+
+greg k-h
