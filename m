@@ -1,69 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2C0W5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:57:35 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:50267 "EHLO violet"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756724Ab2C0W5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:57:34 -0400
-Date: Wed, 28 Mar 2012 00:54:53 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 5/5] r8169: support RTL8411
-Message-ID: <20120327225453.GD22177@electric-eye.fr.zoreil.com>
-References: <1332834834-5185-1-git-send-email-hayeswang@realtek.com> <1332834834-5185-5-git-send-email-hayeswang@realtek.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332834834-5185-5-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S1755229Ab2C0XA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 19:00:28 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:20805
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751365Ab2C0XA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 19:00:26 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zzbb2dI103dK1432N98dKzz1202hzz8275bhz2fh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F724658.6010404@am.sony.com>
+Date: Tue, 27 Mar 2012 15:59:36 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alessio Igor Bogani <abogani@kernel.org>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jan Beulich <jbeulich@novell.com>,
+        Kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Bird, Tim" <Tim.Bird@am.sony.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
+References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com>	<1310626276-4541-1-git-send-email-abogani@kernel.org>	<4F6D2BC5.9070200@am.sony.com>	<4F711EC0.3080708@am.sony.com> <CAPk1OjELnXiZVreaEh94e3RT306mmkQxxyg2DH5aYy=rQ9yr1w@mail.gmail.com>
+In-Reply-To: <CAPk1OjELnXiZVreaEh94e3RT306mmkQxxyg2DH5aYy=rQ9yr1w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-[...]
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index 6c2835f..99daad7 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-[...]
-> @@ -250,6 +252,9 @@ static const struct {
->  							JUMBO_9K, false),
->  	[RTL_GIGA_MAC_VER_37] =
->  		_R("RTL8402",		RTL_TD_1, FIRMWARE_8402_1,
-> +							JUMBO_1K, true),
-> +	[RTL_GIGA_MAC_VER_38] =
-> +		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
->  							JUMBO_1K, true)
+On 03/27/12 00:19, Alessio Igor Bogani wrote:
+> Dear Mr. Rowand,
+> 
+> Il 27 marzo 2012 03:58, Frank Rowand <frank.rowand@am.sony.com> ha scritto:
+>> On 03/23/12 19:04, Frank Rowand wrote:
+>>> On 07/13/11 23:51, Alessio Igor Bogani wrote:
+>>>> The commit f02e8a6 sorts symbols placing each of them in its own elf section.
+>>>> The sorting and merging into the canonical sections are done by the linker.
+>>>> Unfortunately modpost to generate Module.symvers file parses vmlinux
+>>>
+>>> Yet another unfortunately: modpost parses vmlinux.o instead of vmlinux (vmlinux
+>>> does not yet exist at this point of the build).  vmlinux.o also does not have
+>>> the many sections sorted and merged into the canonical sections.  As a result,
+>>> the Module.symvers created my modpost incorrectly reports the license of all
+>>> exports as "(unknown)".
+>>>
+>>> Can you fix this also please?
+>>
+>> The attached patch modifies your patch to also use export_from_secname()
+>> for vmlinux and vmlinux.o.
+>>
+>> This is a rather blind shot at fixing the problem, so please review
+>> carefully.  After applying the patch, Module.symvers reports the license
+>> correctly for exports from vmlinux.o.
 
-Realtek's product page documents this chipset as a gigabit one. It seems
-strange to configure it as a jumbo packet unable one.
+That version of my patch broke modpost for vmlinux.  I don't know if
+anyone uses modpost against vmlinux instead of vmlinux.o, but the
+attached patch works for both vmlinux and vmlinux.o
 
-The patch seems otherwise fine.
+> 
+> Could you show me how reproduce that problem? Indeed on my system
+> "unknown" is reported (erroneously) in the v3.0 series before the
+> commit 62a2635610dbc83c5e8d724e00941eee4d18c186 (and obviously after
+> my patchset which adds that bug).
 
-On a tangent topic:
+I'm not sure what you are asking here.
 
-"The RTL8411 supports Receive Side Scaling (RSS) to hash incoming TCP
-connections and load-balance received data processing across multiple CPUs.
-RSS improves the number of transactions per second and number of connections
-per second, for increased network throughput. Header Data Split (HDS) support
-enables faster processing of TCP/IP networking protocols for improved network
-performance.
+You mention "my patchset which adds that bug" (which from looking at
+the source, appears to me to probably be commit
+f02e8a6596b7dc9b2171f7ff5654039ef0950cdc).
 
-Virtual Machine Queue (VMQ) is a hardware virtualization technology for the
-efficient transfer of network traffic to a virtualized host OS. VMQ uses
-hardware packets filtering to deliver packet data from an external virtual
-machine network directly to virtual machines, which reduces the overhead of
-routing packets and copying them from the management operating system to the
-virtual machine.
+The email that I originally replied to is your fix to modpost for modules,
+and shows up as commit 62a2635610dbc83c5e8d724e00941eee4d18c186.
 
-Note: RTL8411 Virtual Machine Queue (VMQ) is only functional in computers
-running Windows Server 2008 R2 with the Hyper-V server role installed."
+My attached fix is meant to extend 62a2635610dbc83c5e8d724e00941eee4d18c186
+to also fix modpost for vmlinux.o.
 
-Will Realtek consider helping make those being available on Linux ?
+> 
+> Thanks!
+> 
+> Ciao,
+> Alessio
+> 
 
--- 
-Ueimor
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+---
+ scripts/mod/modpost.c |    7 	5 +	2 -	0 !
+ scripts/mod/modpost.h |    1 	1 +	0 -	0 !
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+Index: b/scripts/mod/modpost.c
+===================================================================
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -132,8 +132,10 @@ static struct module *new_module(char *m
+ 	/* strip trailing .o */
+ 	s = strrchr(p, '.');
+ 	if (s != NULL)
+-		if (strcmp(s, ".o") == 0)
++		if (strcmp(s, ".o") == 0) {
+ 			*s = '\0';
++			mod->is_dot_o = 1;
++		}
+ 
+ 	/* add to list */
+ 	mod->name = p;
+@@ -589,7 +591,8 @@ static void handle_modversions(struct mo
+ 	unsigned int crc;
+ 	enum export export;
+ 
+-	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
++	if ((!is_vmlinux(mod->name) || mod->is_dot_o)
++	    && strncmp(symname, "__ksymtab", 9) == 0)
+ 		export = export_from_secname(info, get_secindex(info, sym));
+ 	else
+ 		export = export_from_sec(info, get_secindex(info, sym));
+Index: b/scripts/mod/modpost.h
+===================================================================
+--- a/scripts/mod/modpost.h
++++ b/scripts/mod/modpost.h
+@@ -115,6 +115,7 @@ struct module {
+ 	char **markers;
+ 	size_t nmarkers;
+ 	char	     srcversion[25];
++	int is_dot_o;
+ };
+ 
+ struct elf_info {
+
