@@ -1,159 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab2C0Vk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 17:40:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41917 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2C0VkY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 17:40:24 -0400
+	id S1756417Ab2C0Vmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 17:42:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38427 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab2C0Vms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 17:42:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 1/2] firmware_class: Reorganize fw_create_instance()
+Date: Tue, 27 Mar 2012 23:47:06 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203260000.34377.rjw@sisk.pl> <1332883710-7486-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1332883710-7486-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <4F68E1D3.1060309@gmx.net>
-References: <4F68D14B.60409@gmx.net> <4F68E1D3.1060309@gmx.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 27 Mar 2012 14:38:49 -0600
-Message-ID: <CAErSpo75MV2-XvVQdMrcunFbC+bZvPQXmh5Hzt1ihOOjz2pS0w@mail.gmail.com>
-Subject: Re: [PATCH 2/3] PNP: Allow resources to be set as disabled
-To: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203272347.06621.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 2:00 PM, Witold Szczeponik
-<Witold.Szczeponik@gmx.net> wrote:
-> This patch allows to set PNP resources as "disabled".  As such, the patch is
-> a follow-up to commit 18fd470a48396c8795ba7256c5973e92ffa25cb3 where parsing
-> of ACPI PNP resources that can be disabled was enabled.
->
-> The patch achieves this by doing two things: (1) it allows the strings
-> "disabled" and "<none>" to be used as a valid PNP resource value, and (2) when
-> assigning PNP resources, it copies the flags masked by IORESOURCE_BITS from the
-> resource's templates.
+On Tuesday, March 27, 2012, Stephen Boyd wrote:
+> Recent patches to split up the three phases of request_firmware()
+> lead to a casting away of const in fw_create_instance(). We can
+> avoid this cast by splitting up fw_create_instance() a bit.
+> 
+> Make _request_firmware_setup() return a struct fw_priv and use
+> that struct instead of passing struct firmware to
+> _request_firmware(). Move the uevent and device file creation
+> bits to the loading phase and rename the function to
+> _request_firmware_load() to better reflect its purpose.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-These look like reasonable things to do, but (2) doesn't seem to
-depend on (1), so you might just split them into two patches.
+Looks good to me.
 
->  The latter is necessary because the resource settings
-> require proper IORESOURCE_BITS which are not known during the definition of
-> these resources using the "/sys/bus/pnp/*/*/resources" interface.  (In fact,
-> they should not be set by the user as the resource templates define the
-> proper settings.)
->
-> The patch is required in order to support the setting of "disabled" IRQs like
-> described in the commit 29df8d8f8702f0f53c1375015f09f04bc8d023c1, i.e., with
-> this patch applied, some vintage IBM ThinkPads like the 600E can allocate the
-> resources such that all devices can be used simultaneously.
->
-> If the second part of the patch is not applied, the resource flags are not
-> initialized properly and obscure messages in the kernel log have be seen
+Greg, if that's fine with you, I'll add this patch (and the next one)
+to my firmware_class series you've looked at recently.
 
-s/be/been/
+Thanks,
+Rafael
 
-> ("invalid flags").
->
-> The patch is applied against Linux 3.3.x.
->
->
-> Signed-off-by: Witold Szczeponik <Witold.Szczeponik@gmx.net>
->
->
-> Index: linux/drivers/pnp/interface.c
-> ===================================================================
-> --- linux.orig/drivers/pnp/interface.c
-> +++ linux/drivers/pnp/interface.c
-> @@ -311,10 +311,14 @@ static char *pnp_get_resource_value(char
->        if (flags)
->                *flags = 0;
->
-> -       /* TBD: allow for disabled resources */
+> ---
+>  drivers/base/firmware_class.c |  135 +++++++++++++++++++----------------------
+>  1 file changed, 62 insertions(+), 73 deletions(-)
+> 
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 72c644b..ae00a2f 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -440,21 +440,19 @@ static void firmware_class_timeout(u_long data)
+>  }
+>  
+>  static struct firmware_priv *
+> -fw_create_instance(const struct firmware *firmware, const char *fw_name,
+> +fw_create_instance(struct firmware *firmware, const char *fw_name,
+>  		   struct device *device, bool uevent, bool nowait)
+>  {
+>  	struct firmware_priv *fw_priv;
+>  	struct device *f_dev;
+> -	int error;
+>  
+>  	fw_priv = kzalloc(sizeof(*fw_priv) + strlen(fw_name) + 1 , GFP_KERNEL);
+>  	if (!fw_priv) {
+>  		dev_err(device, "%s: kmalloc failed\n", __func__);
+> -		error = -ENOMEM;
+> -		goto err_out;
+> +		return ERR_PTR(-ENOMEM);
+>  	}
+>  
+> -	fw_priv->fw = (struct firmware *)firmware;
+> +	fw_priv->fw = firmware;
+>  	fw_priv->nowait = nowait;
+>  	strcpy(fw_priv->fw_id, fw_name);
+>  	init_completion(&fw_priv->completion);
+> @@ -468,74 +466,37 @@ fw_create_instance(const struct firmware *firmware, const char *fw_name,
+>  	f_dev->parent = device;
+>  	f_dev->class = &firmware_class;
+>  
+> -	dev_set_uevent_suppress(f_dev, true);
 > -
->        buf = skip_spaces(buf);
-> -       if (start) {
-> +       if (flags && !strnicmp(buf, "disabled", 8)) {
-> +               buf += 8;
-> +               *flags |= IORESOURCE_DISABLED;
-> +       } else if (flags && !strnicmp(buf, "<none>", 6)) {
-> +               buf += 6;
-> +               *flags |= IORESOURCE_DISABLED;
+> -	/* Need to pin this module until class device is destroyed */
+> -	__module_get(THIS_MODULE);
+> -
+> -	error = device_add(f_dev);
+> -	if (error) {
+> -		dev_err(device, "%s: device_register failed\n", __func__);
+> -		goto err_put_dev;
+> -	}
+> -
+> -	error = device_create_bin_file(f_dev, &firmware_attr_data);
+> -	if (error) {
+> -		dev_err(device, "%s: sysfs_create_bin_file failed\n", __func__);
+> -		goto err_del_dev;
+> -	}
+> -
+> -	error = device_create_file(f_dev, &dev_attr_loading);
+> -	if (error) {
+> -		dev_err(device, "%s: device_create_file failed\n", __func__);
+> -		goto err_del_bin_attr;
+> -	}
+> -
+> -	if (uevent)
+> -		dev_set_uevent_suppress(f_dev, false);
+> -
+>  	return fw_priv;
+> -
+> -err_del_bin_attr:
+> -	device_remove_bin_file(f_dev, &firmware_attr_data);
+> -err_del_dev:
+> -	device_del(f_dev);
+> -err_put_dev:
+> -	put_device(f_dev);
+> -err_out:
+> -	return ERR_PTR(error);
+> -}
+> -
+> -static void fw_destroy_instance(struct firmware_priv *fw_priv)
+> -{
+> -	struct device *f_dev = &fw_priv->dev;
+> -
+> -	device_remove_file(f_dev, &dev_attr_loading);
+> -	device_remove_bin_file(f_dev, &firmware_attr_data);
+> -	device_unregister(f_dev);
+>  }
+>  
+> -static int _request_firmware_prepare(const struct firmware **firmware_p,
+> -				     const char *name, struct device *device)
+> +static struct firmware_priv *
+> +_request_firmware_prepare(const struct firmware **firmware_p, const char *name,
+> +			  struct device *device, bool uevent, bool nowait)
+>  {
+>  	struct firmware *firmware;
+> +	struct firmware_priv *fw_priv;
+>  
+>  	if (!firmware_p)
+> -		return -EINVAL;
+> +		return ERR_PTR(-EINVAL);
+>  
+>  	*firmware_p = firmware = kzalloc(sizeof(*firmware), GFP_KERNEL);
+>  	if (!firmware) {
+>  		dev_err(device, "%s: kmalloc(struct firmware) failed\n",
+>  			__func__);
+> -		return -ENOMEM;
+> +		return ERR_PTR(-ENOMEM);
+>  	}
+>  
+>  	if (fw_get_builtin_firmware(firmware, name)) {
+>  		dev_dbg(device, "firmware: using built-in firmware %s\n", name);
+> -		return 0;
+> +		return NULL;
+>  	}
+>  
+> -	return 1;
+> +	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
+> +	if (IS_ERR(fw_priv)) {
+> +		release_firmware(firmware);
+> +		*firmware_p = NULL;
+> +	}
+> +	return fw_priv;
+>  }
+>  
+>  static void _request_firmware_cleanup(const struct firmware **firmware_p)
+> @@ -544,21 +505,38 @@ static void _request_firmware_cleanup(const struct firmware **firmware_p)
+>  	*firmware_p = NULL;
+>  }
+>  
+> -static int _request_firmware(const struct firmware *firmware,
+> -			     const char *name, struct device *device,
+> -			     bool uevent, bool nowait, long timeout)
+> +static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+> +				  long timeout)
+>  {
+> -	struct firmware_priv *fw_priv;
+>  	int retval = 0;
+> +	struct device *f_dev = &fw_priv->dev;
+> +
+> +	dev_set_uevent_suppress(f_dev, true);
+>  
+> -	if (uevent)
+> -		dev_dbg(device, "firmware: requesting %s\n", name);
+> +	/* Need to pin this module until class device is destroyed */
+> +	__module_get(THIS_MODULE);
+>  
+> -	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
+> -	if (IS_ERR(fw_priv))
+> -		return PTR_ERR(fw_priv);
+> +	retval = device_add(f_dev);
+> +	if (retval) {
+> +		dev_err(f_dev, "%s: device_register failed\n", __func__);
+> +		goto err_put_dev;
+> +	}
+> +
+> +	retval = device_create_bin_file(f_dev, &firmware_attr_data);
+> +	if (retval) {
+> +		dev_err(f_dev, "%s: sysfs_create_bin_file failed\n", __func__);
+> +		goto err_del_dev;
+> +	}
+> +
+> +	retval = device_create_file(f_dev, &dev_attr_loading);
+> +	if (retval) {
+> +		dev_err(f_dev, "%s: device_create_file failed\n", __func__);
+> +		goto err_del_bin_attr;
+> +	}
+>  
+>  	if (uevent) {
+> +		dev_set_uevent_suppress(f_dev, false);
+> +		dev_dbg(f_dev, "firmware: requesting %s\n", fw_priv->fw_id);
+>  		if (timeout != MAX_SCHEDULE_TIMEOUT)
+>  			mod_timer(&fw_priv->timeout,
+>  				  round_jiffies_up(jiffies + timeout));
+> @@ -577,7 +555,13 @@ static int _request_firmware(const struct firmware *firmware,
+>  	fw_priv->fw = NULL;
+>  	mutex_unlock(&fw_lock);
+>  
+> -	fw_destroy_instance(fw_priv);
+> +	device_remove_file(f_dev, &dev_attr_loading);
+> +err_del_bin_attr:
+> +	device_remove_bin_file(f_dev, &firmware_attr_data);
+> +err_del_dev:
+> +	device_del(f_dev);
+> +err_put_dev:
+> +	put_device(f_dev);
+>  	return retval;
+>  }
+>  
+> @@ -600,17 +584,19 @@ int
+>  request_firmware(const struct firmware **firmware_p, const char *name,
+>                   struct device *device)
+>  {
+> +	struct firmware_priv *fw_priv;
+>  	int ret;
+>  
+> -	ret = _request_firmware_prepare(firmware_p, name, device);
+> -	if (ret <= 0)
+> -		return ret;
+> +	fw_priv = _request_firmware_prepare(firmware_p, name, device, true,
+> +					    false);
+> +	if (IS_ERR_OR_NULL(fw_priv))
+> +		return PTR_RET(fw_priv);
+>  
+>  	ret = usermodehelper_read_trylock();
+>  	if (WARN_ON(ret)) {
+>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+>  	} else {
+> -		ret = _request_firmware(*firmware_p, name, device, true, false,
+> +		ret = _request_firmware_load(fw_priv, true,
+>  					firmware_loading_timeout());
+>  		usermodehelper_read_unlock();
+>  	}
+> @@ -648,6 +634,7 @@ static int request_firmware_work_func(void *arg)
+>  {
+>  	struct firmware_work *fw_work = arg;
+>  	const struct firmware *fw;
+> +	struct firmware_priv *fw_priv;
+>  	long timeout;
+>  	int ret;
+>  
+> @@ -656,14 +643,16 @@ static int request_firmware_work_func(void *arg)
+>  		return 0;
+>  	}
+>  
+> -	ret = _request_firmware_prepare(&fw, fw_work->name, fw_work->device);
+> -	if (ret <= 0)
+> +	fw_priv = _request_firmware_prepare(&fw, fw_work->name, fw_work->device,
+> +			fw_work->uevent, true);
+> +	if (IS_ERR_OR_NULL(fw_priv)) {
+> +		ret = PTR_RET(fw_priv);
+>  		goto out;
+> +	}
+>  
+>  	timeout = usermodehelper_read_lock_wait(firmware_loading_timeout());
+>  	if (timeout) {
+> -		ret = _request_firmware(fw, fw_work->name, fw_work->device,
+> -					fw_work->uevent, true, timeout);
+> +		ret = _request_firmware_load(fw_priv, fw_work->uevent, timeout);
+>  		usermodehelper_read_unlock();
+>  	} else {
+>  		dev_dbg(fw_work->device, "firmware: %s loading timed out\n",
+> 
 
-What's the value in supporting both "disabled" and "<none>"?  Having
-both suggests that they do different things, but it looks like they
-have the same effect.
-
-> +       } else if (start) {
->                *start = simple_strtoull(buf, &buf, 0);
->                if (end) {
->                        buf = skip_spaces(buf);
-> Index: linux/drivers/pnp/manager.c
-> ===================================================================
-> --- linux.orig/drivers/pnp/manager.c
-> +++ linux/drivers/pnp/manager.c
-> @@ -18,11 +18,27 @@
->
->  DEFINE_MUTEX(pnp_res_mutex);
->
-> +static struct resource *pnp_find_resource(struct pnp_dev *dev,
-> +                                         unsigned char rule,
-> +                                         unsigned long type,
-> +                                         unsigned int bar)
-> +{
-> +       struct resource *res = pnp_get_resource(dev, type, bar);
-> +
-> +       /* when the resource already exists, set its resource bits from rule */
-> +       if (res) {
-> +               res->flags &= ~IORESOURCE_BITS;
-> +               res->flags |= rule & IORESOURCE_BITS;
-> +       }
-> +
-> +       return res;
-> +}
-> +
->  static int pnp_assign_port(struct pnp_dev *dev, struct pnp_port *rule, int idx)
->  {
->        struct resource *res, local_res;
->
-> -       res = pnp_get_resource(dev, IORESOURCE_IO, idx);
-> +       res = pnp_find_resource(dev, rule->flags, IORESOURCE_IO, idx);
->        if (res) {
->                pnp_dbg(&dev->dev, "  io %d already set to %#llx-%#llx "
->                        "flags %#lx\n", idx, (unsigned long long) res->start,
-> @@ -65,7 +81,7 @@ static int pnp_assign_mem(struct pnp_dev
->  {
->        struct resource *res, local_res;
->
-> -       res = pnp_get_resource(dev, IORESOURCE_MEM, idx);
-> +       res = pnp_find_resource(dev, rule->flags, IORESOURCE_MEM, idx);
->        if (res) {
->                pnp_dbg(&dev->dev, "  mem %d already set to %#llx-%#llx "
->                        "flags %#lx\n", idx, (unsigned long long) res->start,
-> @@ -78,6 +94,7 @@ static int pnp_assign_mem(struct pnp_dev
->        res->start = 0;
->        res->end = 0;
->
-> +       /* ??? rule->flags restricted to 8 bits, all tests bogus ??? */
->        if (!(rule->flags & IORESOURCE_MEM_WRITEABLE))
->                res->flags |= IORESOURCE_READONLY;
->        if (rule->flags & IORESOURCE_MEM_CACHEABLE)
-> @@ -123,7 +140,7 @@ static int pnp_assign_irq(struct pnp_dev
->                5, 10, 11, 12, 9, 14, 15, 7, 3, 4, 13, 0, 1, 6, 8, 2
->        };
->
-> -       res = pnp_get_resource(dev, IORESOURCE_IRQ, idx);
-> +       res = pnp_find_resource(dev, rule->flags, IORESOURCE_IRQ, idx);
->        if (res) {
->                pnp_dbg(&dev->dev, "  irq %d already set to %d flags %#lx\n",
->                        idx, (int) res->start, res->flags);
-> @@ -182,7 +199,7 @@ static int pnp_assign_dma(struct pnp_dev
->                1, 3, 5, 6, 7, 0, 2, 4
->        };
->
-> -       res = pnp_get_resource(dev, IORESOURCE_DMA, idx);
-> +       res = pnp_find_resource(dev, rule->flags, IORESOURCE_DMA, idx);
->        if (res) {
->                pnp_dbg(&dev->dev, "  dma %d already set to %d flags %#lx\n",
->                        idx, (int) res->start, res->flags);
->
