@@ -1,102 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab2C0NQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 09:16:25 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:41778 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752566Ab2C0NQX (ORCPT
+	id S1754077Ab2C0NQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 09:16:54 -0400
+Received: from countercultured.net ([209.51.175.25]:52896 "HELO
+	countercultured.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753238Ab2C0NQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 09:16:23 -0400
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Arnd Bergmann <arnd@arndb.de>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>
-Date: Tue, 27 Mar 2012 15:15:57 +0200
-Subject: Using remoteproc with ST-Ericsson modem. 
-Thread-Topic: Using remoteproc with ST-Ericsson modem. 
-Thread-Index: Ac0ITNcDEBP8qd3eRaq3xSQWtO9HEwDzKO1g
-Message-ID: <81C3A93C17462B4BBD7E272753C105792060C098E4@EXDCVYMBSTM005.EQ1STM.local>
-References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
- <201112091442.04294.arnd@arndb.de>
- <81C3A93C17462B4BBD7E272753C105792060B42C9C@EXDCVYMBSTM005.EQ1STM.local>
- <201203221657.09820.arnd@arndb.de>
-In-Reply-To: <201203221657.09820.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: BbCp E6df Figu MPRr W6jF eui5 io0B kLto mOnB nK8O qpHl
- sXIQ suvN u5Db wni3
- 0JeF;5;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGwAaQBuAHUAcwAuAHcAYQBsAGwAZQBpAGoAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG8AaABhAGQAQAB3AGkAegBlAHIAeQAuAGMAbwBtADsAcwBqAHUAcgBiAHIAZQBuAEAAZwBtAGEAaQBsAC4AYwBvAG0A;Sosha1_v1;7;{1185281C-20B1-4CB5-9701-DC93D5791321};cwBqAHUAcgAuAGIAcgBhAG4AZABlAGwAYQBuAGQAQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0A;Tue,
- 27 Mar 2012 13:15:57
- GMT;VQBzAGkAbgBnACAAcgBlAG0AbwB0AGUAcAByAG8AYwAgAHcAaQB0AGgAIABTAFQALQBFAHIAaQBjAHMAcwBvAG4AIABtAG8AZABlAG0ALgA=
-x-cr-puzzleid: {1185281C-20B1-4CB5-9701-DC93D5791321}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 27 Mar 2012 09:16:49 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Mar 2012 09:16:49 EDT
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 27 Mar 2012 09:10:07 -0400
+From: David Quigley <selinux@davequigley.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: David Howells <dhowells@redhat.com>,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        <linux-fsdevel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
+        <valerie.aurora@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <sds@tycho.nsa.gov>, <selinux@tycho.nsa.gov>,
+        LSM <linux-security-module@vger.kernel.org>
+Subject: Re: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
+In-Reply-To: <4F714463.7090508@schaufler-ca.com>
+References: <18418.1330238913@jrobl>
+ <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+ <9343.1332771770@redhat.com> <4F714463.7090508@schaufler-ca.com>
+Message-ID: <12cbdde6e0fb9e497d7cd9c277ab9cf5@countercultured.net>
+User-Agent: RoundCube Webmail/0.8-svn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2RDGVjt022369
 
-Hi Ohad,
+On 03/27/2012 00:38, Casey Schaufler wrote:
+> On 3/26/2012 7:22 AM, David Howells wrote:
+>> J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>>
+>>>>  (4) Added some code to override the credentials around upper 
+>>>> inode
+>>>>      creation to make sure the inode gets the right UID/GID.  This 
+>>>> doesn't
+>>>>      help if the lower inode has some sort of foreign user 
+>>>> identifier.
+>>>>
+>>>>      Also, I'm not sure whether the LSM xattrs should be blindly 
+>>>> copied up.
+>>>>      Should the LSM policies applicable to the lower fs's apply to 
+>>>> the upper
+>>>>      fs too?
+>>> Obviously the xattr entry may not have its meanings on the upper 
+>>> fs,
+>> True.  I'm not sure what's the best way to deal with that.  Possibly 
+>> add an
+>> extra flag to vfs_setxattr() and have the fs vet them...  OTOH, this 
+>> gives us
+>> files on the lowerfs that may well differ in appearance to files on 
+>> the
+>> upperfs with respect to their xattrs.
+>
+> Are you suggesting that you would have heterogeneous filesystems
+> with different xattr behavior stacked at the same time as you're
+> using an LSM that cares about the behavior of xattrs? Oh dear. As
+> I typed that sentence I identified a viable use case.
 
-[Arnd]
->Remoteproc and rpmsg are now in the arm-soc tree and will be merged
->upstream for v3.4, I suggest you discuss with Ohad how to best hook in
->there.
+The most common use case for union mounts is a livecd. In this case the 
+livecd iso has a tmpfs rw mount above it for copyup. I don't know how 
+useful having a smart xattr copyup mechanism is in that place as most of 
+the labels will be whatever is assigned to the iso. Another usecase is 
+snapshotting of a filesystem for rollback. In this case it is probably 
+important to retain the existing label as the copyup is supposed to be 
+to the same location. The last case which is similar to the snapshotting 
+case but with a persistant upper branch would be to have an NFS mount 
+and have local configuration changes stored locally. In that case as 
+well I can see simple copy up as being ok to do since you're using it 
+more as an overlay than a union mount.
 
-I would like to discuss with how to use remoteproc for the ST-Ericsson
-modem. For a while, I have been working on a shared memory interface
-for ST-Ericsson modems. I already have one version in linux-next, but
-I'm planning on redoing parts of the implementation. As part of this, I
-want to investigate if I can use remoteproc for handling the start-up
-of our modem. One solution could be to make firmware and resource handling
-pluggable.
+Now the tricky case is when you have two filesystems with two different 
+directories with the same name. You're going to merge those namespaces. 
+The problem occurs when the parent directories have different labels.
 
-The principles for remoteproc and modem_shm are not so different.
- a) We have a number of channels in shared memory, and the shm-address is
-   predefined.
- b) Boot images are copied into shared memory before start.
+For example /mnt/upper/foo is labeled foo_t and /mnt/lower/foo is 
+labeled foo2_t. What do you use for the label for files created in 
+/mnt/union/foo?
 
-However, we have a couple of requirements that are different.
-- We don't use a ELF binary for resource definition. We have resource
-  definitions in a binary format outside the binary. (I'm afraid I'm
-  not able to change this).
-- We need user-space to access sequential data streams.
-- We use CAIF (a muxing protocol) implemented in the networking subsystem.
+>
+>>> or the upper fs may return an error when setting the xattr. 
+>>> Additionally the
+>>> returned errno may not follow the generic semantics (ENOTSUP, 
+>>> ENOSPC, or
+>>> EDQUOT) since the fs may return fs-specific error.
+>> Also true.  It's possible that the best way is just to ignore 
+>> everything but a
+>> medium-related error such as EIO, ENOSPC and EDQUOT: We tried...  Oh 
+>> well.
+>>
+>>> On the other hand, users may expect that the all xattrs are 
+>>> copied-up,
+>>> particulary when he knows that the xattrs works well on the upper 
+>>> fs too.
+>>> In copy-up, it will be hard to support all cases.
+>> Yeah.  Ideally, the copied-up file would be indistinguishable from 
+>> the lower
+>> file, but in practice that's not possible unless inode numbers and 
+>> other
+>> physical characteristics of the lower file are recorded in the upper 
+>> fs (say
+>> on an xattr).
+>>
+>>> In order to leave users how to handle the xattrs, I'd suggest
+>>> introducing some mount options, which are similar to cp(1).
+>>> cp(1) has several options
+>>> 	--preserve=mode,ownership,timestamps,context,links,xattr,all
+>>> 	('mode' includes acl which are based upon xattr)
+>>>
+>>> Since the mode (without acl), ownership and timestamps should 
+>>> always be
+>>> copied-up, the new mount options will be something like
+>>> 	cpup-xattr=acl,context,all
+>> I would suggest 'cpyup' or 'copyup' rather than 'cpup' - the latter 
+>> looks like
+>> something to do with CPUs, but yes, it's worth considering.
+>>
+>>> And only when the option is specfied, the xattrs are copied up. No
+>>> special error handling is necessary, all the errors should be 
+>>> returned
+>>> to users unconditionally.
+>> That's not necessarily good enough.  What if and LSM, say SELinux, 
+>> is in
+>> force?  Now SELinux will happily label the files for you - but 
+>> there's a
+>> reasonable chance they won't be correct.  OTOH, they may not be 
+>> correct even
+>> if they are copied up.
+>
+> The underlying storage (the "real" file) has to have the xattr 
+> attached
+> to it.
+> Any other behavior is incorrect. If the underlying filesystem does 
+> not
+> support
+> xattrs that lack of support has to be propagated upwards even if the 
+> higher
+> layer filesystem supports xattrs.
+>
+> In the case of Smack filesystems that don't support xattrs are still 
+> given
+> labels based on mount options. If the lower filesystem is NTFS and 
+> the upper
+> ext4 you've got to respect the NTFS labeling behavior for files 
+> there.
+>
+>>> Does union-mount preserve mtime? If not, it is critical for some
+>>> applications such like "make" I am afraid.
+>> Ummm...  Interesting question.  If it copies up a file, then that 
+>> file must
+>> have been opened for writing.  Is the mtime altered by such an 
+>> event, or only
+>> by a write() having been issued?  Also, what about ctime?  That 
+>> doesn't seem
+>> to have been copied up either.
+>
+> What is the expected behavior of union mounts for all attributes? Is 
+> it
+> specified anywhere?
+>
 
-In order to use remoteproc, I think it could be a good idea to make the
-firmware, resource and possible Virtio handling pluggable. E.g:
+I would assume its under their documentation patch. I tried to lookup 
+up what we did for our copyup semantics for file attributes. Its not 
+simple or straight forward in the original UnionFS. I think its safe to 
+say all the first class attributes need to be copied up. When possible 
+we also copied the xattrs as well. Its important to realize though that 
+union mounts are namespace unification and not fileunification so if you 
+copy one xattr up you need to copy them all because any that don't get 
+copied will get left behind.
 
-static struct rproc_ops rproc_ops = {
-      ...
-       .fw_sanity_check = fw_sanity_check,
-       .fw_resource_handler = fw_resource_handler,
-       .fw_load = fw_load,
-       .fw_config_virtio = fw_config_virtio,
-};
+>>
+>> David
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+>
+> --
+> This message was distributed to subscribers of the selinux mailing 
+> list.
+> If you no longer wish to subscribe, send mail to 
+> majordomo@tycho.nsa.gov with
+> the words "unsubscribe selinux" without quotes as the message.
 
-I think we need to be able to launch other Virtio device types than
-VIRTIO_ID_RPMSG as well. Most likely, I need to make a CAIF specific
-VIRTIO type due to the fact that I need RX direction to be reversed
-(modem must be able to post it's payload buffer to Virtio ring).
-
-[Sjur:]
->> For the stream interface it's tempting to reuse the ring buffer interface
->> to the modem from last time. But perhaps the Virtio-console could be as the
->> user-space interface...
-[Arnd:]
->sounds doable, but again Ohad may have better suggestions as well.
-
-We also define stream channels. As mentioned, I'm considering the possibility
-of reusing Virtio console.
-
-So, I'd really like to get your viewpoint and ideas for how we could use
-remoteproc to manage the ST-Ericsson modem.
-
-Regards,
-Sjur
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
