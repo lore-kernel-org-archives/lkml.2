@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab2C0Jpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 05:45:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43144 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757895Ab2C0Jpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 05:45:50 -0400
-Date: Tue, 27 Mar 2012 11:45:38 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL] ext3, UDF, and quota fixes
-Message-ID: <20120327094538.GC5020@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757959Ab2C0JvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 05:51:17 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60955 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab2C0JvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 05:51:13 -0400
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH] pch_uart: Fix dma channel unallocated issue
+Date: Tue, 27 Mar 2012 18:56:02 +0900
+Message-Id: <1332842162-26113-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+This driver anticipates pch_uart_verify_port() is not called
+during installation.
+However, actually pch_uart_verify_port() is called during
+installation.
+As a result, memory access violation occurs like below.
 
-  could you please pull from
+0. initial value: use_dma=0
+1. starup()
+    - dma channel is not allocated because use_dma=0
+2. pch_uart_verify_port()
+    - Set use_dma=1
+3. UART processing acts DMA mode because use_dma=1
+     - memory access violation occurs!
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+This patch fixes the issue.
 
-to get a couple of ext3 & UDF fixes and also one improvement in quota locking.
-Top of the tree is e703c20. The full shortlog is:
+Solution:
+Whenever pch_uart_verify_port() is called and then
+dma channel is not allocated, the channel should be allocated.
 
-Jan Kara (3):
-      quota: Make quota code not call tty layer with dqptr_sem held
-      udf: Fix handling of i_blocks
-      udf: Fix deadlock in udf_release_file()
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/tty/serial/pch_uart.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Joe Perches (1):
-      udf: Remove unnecessary OOM messages
-
-Kazuya Mio (2):
-      ext3: Don't call dquot_free_block() if we don't update anything
-      ext3: Update ctime in ext3_splice_branch() only when needed
-
-Lukas Czerner (1):
-      ext3: fix start and len arguments handling in ext3_trim_fs()
-
-Steve Nickel (2):
-      udf: Init/maintain file entry checkpoint field
-      udf: Fix file entry logicalBlocksRecorded
-
-The diffstat is
-
- fs/ext3/balloc.c |   84 +++++++++++++-----------
- fs/ext3/inode.c  |    9 ++-
- fs/quota/dquot.c |  189 ++++++++++++++++++++++++++++++++----------------------
- fs/udf/balloc.c  |   84 +++++++++++++-----------
- fs/udf/file.c    |    2 -
- fs/udf/ialloc.c  |    1 +
- fs/udf/inode.c   |   20 ++++--
- fs/udf/super.c   |    5 +-
- fs/udf/udf_i.h   |    1 +
- 9 files changed, 226 insertions(+), 169 deletions(-)
-
-							Thanks
-								Honza
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 803847b..e297b7c 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1452,8 +1452,10 @@ static int pch_uart_verify_port(struct uart_port *port,
+ 			__func__);
+ 		return -EOPNOTSUPP;
+ #endif
+-		priv->use_dma = 1;
+ 		dev_info(priv->port.dev, "PCH UART : Use DMA Mode\n");
++		if (!priv->use_dma)
++			pch_request_dma(port);
++		priv->use_dma = 1;
+ 	}
+ 
+ 	return 0;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.7.6
+
