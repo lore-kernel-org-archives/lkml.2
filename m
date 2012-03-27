@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab2C0IRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 04:17:14 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:52929 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751956Ab2C0IRJ (ORCPT
+	id S1753826Ab2C0ISh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 04:18:37 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39174 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2C0ISd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 04:17:09 -0400
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] block: Make cfq_target_latency tunable through sysfs.
-Date: Tue, 27 Mar 2012 16:16:53 +0800
-Message-Id: <1332836213-5266-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Tue, 27 Mar 2012 04:18:33 -0400
+Date: Tue, 27 Mar 2012 04:18:20 -0400 (EDT)
+Message-Id: <20120327.041820.1291740602811700132.davem@davemloft.net>
+To: acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org
+Subject: perf grows endlessly
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 27 Mar 2012 01:18:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
 
-In cfq, when we calculate a time slice for a process(or a cfqq to
-be precise), we have to consider the cfq_target_latency so that all the
-sync request have an estimated latency(300ms) and it is controlled by
-cfq_target_latency. But in some hadoop test, we have found that if
-there are many processes doing sequential read(24 for example), the
-throughput is bad because every process can only work for about 25ms
-and the cfqq is switched. That leads to a higher disk seek. We can
-achive the good throughput by setting low_latency=0, but then some
-read's latency is too much for the application.
+This is easy to trigger, just run perf top or similar while something
+loops doing "gcc -o foo ...; ./foo; rm foo;"  dsos__find() starts to
+move up gradually in the profiles (yes, even if you turn the dso
+lists into hash tables, guess what I tried first... :-)
 
-So this patch makes cfq_target_latency tunable through sysfs so that
-we can tune it and find some magic number which is not bad for both
-the throughput and the read latency.
+Essentially, the problem is that perf never throws away dsos, so the
+dso list grows every iteration of that loop.  This isn't a
+manufactured test case, the glibc testsuite does this during it's
+conformance test.  It's basically trying to build and execute a
+program referencing a symbol, once for every symbol specified in
+each and every standard (ISO, ISO99, POSIX, XPG3, etc.)
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- block/cfq-iosched.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+I suppose you could say this dso issue is indirectly related to the
+issue discussed over the weekend where we refer to out-of-date maps
+from hist entries.
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 4572952..3c38536 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -295,6 +295,7 @@ struct cfq_data {
- 	unsigned int cfq_slice_idle;
- 	unsigned int cfq_group_idle;
- 	unsigned int cfq_latency;
-+	unsigned int cfq_target_latency;
- 
- 	/*
- 	 * Fallback dummy cfqq for extreme OOM conditions
-@@ -604,7 +605,7 @@ cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
- 
--	return cfq_target_latency * cfqg->weight / st->total_weight;
-+	return cfqd->cfq_target_latency * cfqg->weight / st->total_weight;
- }
- 
- static inline unsigned
-@@ -2271,7 +2272,8 @@ new_workload:
- 		 * to have higher weight. A more accurate thing would be to
- 		 * calculate system wide asnc/sync ratio.
- 		 */
--		tmp = cfq_target_latency * cfqg_busy_async_queues(cfqd, cfqg);
-+		tmp = cfqd->cfq_target_latency *
-+			cfqg_busy_async_queues(cfqd, cfqg);
- 		tmp = tmp/cfqd->busy_queues;
- 		slice = min_t(unsigned, slice, tmp);
- 
-@@ -3737,6 +3739,7 @@ static void *cfq_init_queue(struct request_queue *q)
- 	cfqd->cfq_back_penalty = cfq_back_penalty;
- 	cfqd->cfq_slice[0] = cfq_slice_async;
- 	cfqd->cfq_slice[1] = cfq_slice_sync;
-+	cfqd->cfq_target_latency = cfq_target_latency;
- 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
- 	cfqd->cfq_slice_idle = cfq_slice_idle;
- 	cfqd->cfq_group_idle = cfq_group_idle;
-@@ -3788,6 +3791,7 @@ SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
- SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
- SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
- SHOW_FUNCTION(cfq_low_latency_show, cfqd->cfq_latency, 0);
-+SHOW_FUNCTION(cfq_target_latency_show, cfqd->cfq_target_latency, 1);
- #undef SHOW_FUNCTION
- 
- #define STORE_FUNCTION(__FUNC, __PTR, MIN, MAX, __CONV)			\
-@@ -3821,6 +3825,7 @@ STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
- 		UINT_MAX, 0);
- STORE_FUNCTION(cfq_low_latency_store, &cfqd->cfq_latency, 0, 1, 0);
-+STORE_FUNCTION(cfq_target_latency_store, &cfqd->cfq_target_latency, 1, UINT_MAX, 1);
- #undef STORE_FUNCTION
- 
- #define CFQ_ATTR(name) \
-@@ -3838,6 +3843,7 @@ static struct elv_fs_entry cfq_attrs[] = {
- 	CFQ_ATTR(slice_idle),
- 	CFQ_ATTR(group_idle),
- 	CFQ_ATTR(low_latency),
-+	CFQ_ATTR(target_latency),
- 	__ATTR_NULL
- };
- 
--- 
-1.7.0.4
+Hist and thread entries do eventually get collapsed and purged, but
+this just never propagates properly.
 
+My initial impression is that we'll need to properly reference count
+and periodically sweep dso objects are some point.
