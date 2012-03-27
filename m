@@ -1,49 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab2C0C0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 22:26:16 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54072 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755133Ab2C0C0K convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 22:26:10 -0400
+	id S1757415Ab2C0Cdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 22:33:47 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59758 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756063Ab2C0Cdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 22:33:44 -0400
+Message-ID: <4F7126E0.5080700@panasas.com>
+Date: Mon, 26 Mar 2012 19:33:04 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120327005307.GB26825@windriver.com>
-References: <20120327005307.GB26825@windriver.com>
-Date: Mon, 26 Mar 2012 22:26:08 -0400
-X-Google-Sender-Auth: 75DT4np4mr_0HztH-UVDlJxqt_o
-Message-ID: <CAP=VYLrvnD7qWAPbCkf_4RtEgznF-tL=d+z4TaKt1QJ2TWs7AA@mail.gmail.com>
-Subject: Re: linux-next: triage for March 26th, 2012
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        <linux-security-module@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
+Subject: Re: [PATCH 4/6 OPTION-A version 3] completion: Add new wait_for_completion_timeout_state
+References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <4F7120B6.2090509@panasas.com>
+In-Reply-To: <4F7120B6.2090509@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 8:53 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
+Sorry had a checkpatch problem near the switch statement (missing space)
 
-> New breakage since last report:
->        ARM:rpc_defconfig (scsi/arm/powertec.c: implicit 'seq_printf')
->        ARM:omap2plus_defconfig (board-omap4panda.c: 'btwilink_device' undecl)
->        m68k:sun3_defconfig,m68k_defconfig (sun3_NCR5380.c: static decl of
->                                 'sun3scsi_proc_info' follows non-static)
->        ia64:defconfig (asm-offsets.c:322: unterm arg list invoking macro "DEFINE")
+Boaz
+---
+From: Boaz Harrosh <bharrosh@panasas.com>
+Subject: [PATCH] completion: Add new wait_for_completion_timeout_state
 
-[...]
+There are sometime places where an API hides a completion
+inside it's implementation, and needs to expose the kind of
+wait it does to it's upper users. Instead of such cases that
+now need an ugly switch case to call the different
+wait_for_completion_xxx function define a generic one
+which can do all.
 
-> ia64:defconfig
->        when:   Mar 26
->        why:    asm-offsets.c:322: unterminated arg list invoking macro "DEFINE"
->        status:
->        fix:
->        ref:
+A new user will be added to this API in linux/kmod.h.
 
-Cause and trivial fix is here:
+The return value from this member is a more Linux Kernel natural.
+It will return:
+	0  - If the wait was actually completed by a complete() signal.
+	-ERESTARTSYS - If interrupted
+	-ETIMEDOUT - If timeout expired
 
-          https://lkml.org/lkml/2012/3/26/496
+CC: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ include/linux/completion.h |    2 +
+ kernel/sched/core.c        |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 0 deletions(-)
 
-Paul.
+diff --git a/include/linux/completion.h b/include/linux/completion.h
+index 51494e6..c41b836 100644
+--- a/include/linux/completion.h
++++ b/include/linux/completion.h
+@@ -85,6 +85,8 @@ extern long wait_for_completion_interruptible_timeout(
+ 	struct completion *x, unsigned long timeout);
+ extern long wait_for_completion_killable_timeout(
+ 	struct completion *x, unsigned long timeout);
++extern int wait_for_completion_timeout_state(
++	struct completion *x, unsigned long timeout, int state);
+ extern bool try_wait_for_completion(struct completion *x);
+ extern bool completion_done(struct completion *x);
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 503d642..7aef53e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3664,6 +3664,62 @@ int __sched wait_for_completion_killable(struct completion *x)
+ EXPORT_SYMBOL(wait_for_completion_killable_timeout);
+ 
+ /**
++ * wait_for_completion_timeout_state: - waits for completion of a task all modes
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ * @state: Can be either 0 or TASK_KILLABLE or TASK_INTERRUPTIBLE
++ *
++ * This waits for either a completion of a specific task to be
++ * signaled or for a specified timeout to expire.
++ * If @state == TASK_KILLABLE It can be interrupted by a kill signal only.
++ * If @state == TASK_INTERRUPTIBLE It can be interrupted by any signal.
++ *
++ * This is a Swiss-army-knife of all the above, for API's that needs to hide
++ * a completion, and needs to expose it's control to users.
++ *
++ * The return value is:
++ *	0 means completion was signaled with a complete call.
++ *	-ERESTARTSYS if interrupted
++ *	-ETIMEDOUT if timeout expired
++ *  Be careful the return value is Boolean opposite to the above _timeout
++ *  members.
++ */
++int __sched
++wait_for_completion_timeout_state(struct completion *x,
++				  unsigned long timeout, int state)
++{
++	long t;
++	int ret;
++
++	if (!timeout)
++		timeout = MAX_SCHEDULE_TIMEOUT;
++
++	switch (state) {
++	default:
++		WARN_ON_ONCE(1);
++		/* fall through */
++	case 0:
++		state = TASK_UNINTERRUPTIBLE;
++		break;
++	case TASK_KILLABLE:
++	case TASK_INTERRUPTIBLE:
++		break;
++	}
++
++	t = wait_for_common(x, timeout, state);
++	if (likely(t > 0)) {
++		ret = 0;
++	} else  {
++		if (t < 0)
++			ret = t;
++		else
++			ret = -ETIMEDOUT;
++	}
++	return ret;
++}
++EXPORT_SYMBOL(wait_for_completion_timeout_state);
++
++/**
+  *	try_wait_for_completion - try to decrement a completion without blocking
+  *	@x:	completion structure
+  *
+-- 
+1.7.6.5
+
+
