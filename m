@@ -1,135 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab2C0QMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:12:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36806 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab2C0QMW (ORCPT
+	id S1753817Ab2C0QNr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:13:47 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:27621 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751365Ab2C0QNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:12:22 -0400
-From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] HID: autoload hid-multitouch as needed
-Date: Tue, 27 Mar 2012 18:12:15 +0200
-Message-Id: <1332864735-18709-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 27 Mar 2012 12:13:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ZqDzEN0VM1nGdY08XxcjviNCzS5F0YZABuq_X.Q.B1rHdCL
+ a.Z.fuL.kplZ80lKGGlSOScsNZBvMs8jIAmJYIasqBUfq9OZTctw6Pu7As7O
+ RjqHCtJ4TSQzHDzy_y6Um3k1pWVa2y5oY3xiaM6kA3yHqmYKznlRdQfEN5QB
+ QfeLM_EHE7EiKfMqm0cZk6ixpLKlbdms43TAO2xlIJO_EjlxrEbJuDQMOAXA
+ zbViHcODWnJ15YgGXTnY2tPdR8blg4S9F8K3Grj2RyXdaGl6Dh4vbIwuPgb8
+ 9YNgL_q9iZr8W_gwc5sNkMBGf.NjrV4zH7AHLAmwcgozr_V3gBKEGITegfH2
+ QUQBTQnHOBR4zoy.W6fxo1Rfd5iQYql8Ult7YcQAjh8HVe8kyIktm9VsFnaB
+ Z
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 27 Mar 2012 11:13:39 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+In-Reply-To: <20120327121341.GE13196@somewhere>
+Message-ID: <alpine.DEB.2.00.1203271111110.1170@router.home>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com> <1332338318-5958-13-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1203210953220.20482@router.home> <20120327121341.GE13196@somewhere>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+On Tue, 27 Mar 2012, Frederic Weisbecker wrote:
 
-When the generic hid parsing of the report descriptors in hid-core
-detects that the device contains the field ContactID, the device should
-be handled by hid-multitouch, and hid-core should release it.
-This patch implements a temporary fix for hid-core to automatically
-call the loading of hid-multitouch. A better solution would involve
-userspace.
+> > Is there any way for userspace to know that the tick is not off yet due to
+> > this? It would make sense for us to have busy loop in user space that
+> > waits until the OS has completed all processing if that avoids future
+> > latencies for the application.
+>
+> What is the usecase you have in mind? Is it for realtime purpose?
 
-The code is inspired from what is done in the bttv module.
+Please do not use "realtime" since I am not sure what you mean by that.
+Its for a low latency applications that cannot use "realtime" because that
+implies high latencies.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
+> The "tick stopped" is a volatile and relative state.
 
-Hi guys,
+The use case is an application that cannot tolerate the latencies
+introduced by timer tick processing. It will only start running when the
+system is in a sufficiently quiet state.
 
-I finally managed to find some time to resend this patch.
+> Relative because if a timer list is enqueued to fire 1 second later,
+> the tick will be stopped until that happens. How do we consider this (common)
+> case?
+>
+> Also as Chris noted it is volatile because the tick can be restarted anytime
+> for random reasons: the CPU receives an IPI which makes it restart the
+> periodic tick.
 
-Cheers,
-Benjamin
-
- drivers/hid/hid-core.c |   33 ++++++++++++++++++++++++++++++++-
- include/linux/hid.h    |    8 ++++++++
- 2 files changed, 40 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 990fe19..a84221e 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1210,6 +1210,31 @@ static struct bin_attribute dev_bin_attr_report_desc = {
- 	.size = HID_MAX_DESCRIPTOR_SIZE,
- };
- 
-+#if defined(CONFIG_MODULES) && defined(MODULE)
-+/* Loading of hid_multitouch. This is done from the kernel until we come up
-+ * with a more robust solution. */
-+static void hid_request_hid_mt_module_async(struct work_struct *work)
-+{
-+	request_module("hid-multitouch");
-+}
-+
-+static void hid_request_hid_mt_module(struct hid_device *dev)
-+{
-+	dev->request_hid_mt_module = 1;
-+	INIT_WORK(&dev->request_hid_mt_module_wk,
-+		hid_request_hid_mt_module_async);
-+	schedule_work(&dev->request_hid_mt_module_wk);
-+}
-+
-+static void hid_flush_request_modules(struct hid_device *dev)
-+{
-+	flush_work_sync(&dev->request_hid_mt_module_wk);
-+}
-+#else
-+#define hid_request_hid_mt_module(dev)
-+#define hid_flush_request_modules(dev)
-+#endif /* CONFIG_MODULES */
-+
- int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- {
- 	static const char *types[] = { "Device", "Pointer", "Mouse", "Device",
-@@ -1235,7 +1260,9 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- 				connect_mask & HID_CONNECT_HIDINPUT_FORCE))
- 		hdev->claimed |= HID_CLAIMED_INPUT;
- 	if (hdev->quirks & HID_QUIRK_MULTITOUCH) {
--		/* this device should be handled by hid-multitouch, skip it */
-+		/* this device should be handled by hid-multitouch, request
-+		 * for hid-multitouch to be loaded and leave the device to it */
-+		hid_request_hid_mt_module(hdev);
- 		return -ENODEV;
- 	}
- 
-@@ -2107,6 +2134,8 @@ struct hid_device *hid_allocate_device(void)
- 	INIT_LIST_HEAD(&hdev->debug_list);
- 	sema_init(&hdev->driver_lock, 1);
- 
-+	hdev->request_hid_mt_module = 0;
-+
- 	return hdev;
- err:
- 	put_device(&hdev->dev);
-@@ -2121,6 +2150,8 @@ static void hid_remove_device(struct hid_device *hdev)
- 		hid_debug_unregister(hdev);
- 		hdev->status &= ~HID_STAT_ADDED;
- 	}
-+	if (hdev->request_hid_mt_module)
-+		hid_flush_request_modules(hdev);
- }
- 
- /**
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 3a95da6..0058ca9 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -538,6 +538,14 @@ struct hid_device {							/* device report descriptor */
- 	struct dentry *debug_events;
- 	struct list_head debug_list;
- 	wait_queue_head_t debug_wait;
-+
-+	/* This is a temporary fix to make hid-multitouch loadable from
-+	 * the kernel before we come up with more robust solution
-+	 * (with userspace involvement).
-+	 * In case we detect a multitouch device through the parsing of
-+	 * hid-core, we request for hid-multitouch to be loaded. */
-+	struct work_struct request_hid_mt_module_wk;
-+	bool request_hid_mt_module;
- };
- 
- static inline void *hid_get_drvdata(struct hid_device *hdev)
--- 
-1.7.7.6
+Ok some sort of notification would be good for that case. If a timer tick
+happens and that was unavoidable then it would be good to log the reason
+why this occured so that the system can be configured in such a way that
+these interruptions are minimized.
 
