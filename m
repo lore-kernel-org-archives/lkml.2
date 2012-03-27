@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab2C0N4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 09:56:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48259 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab2C0Nz7 (ORCPT
+	id S1754599Ab2C0N4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 09:56:44 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:46659 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754276Ab2C0N4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 09:55:59 -0400
-Date: Tue, 27 Mar 2012 10:55:54 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCHSET] perf ui: Small preparation on further UI work
-Message-ID: <20120327135554.GC5195@infradead.org>
-References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
- <20120326173817.GN25820@infradead.org>
- <alpine.LFD.2.02.1203271337290.19635@tux.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1203271337290.19635@tux.localdomain>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Mar 2012 09:56:42 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19j77Eq14tjl2X+tMk6vlr1pVrS7i4C1c0nWi2OXZ
+	8CTulo9UR760Qr
+Message-ID: <1332856598.7425.25.camel@marge.simpson.net>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Date: Tue, 27 Mar 2012 15:56:38 +0200
+In-Reply-To: <1332785212.16159.170.camel@twins>
+References: <1329764866.2293.376.camhel@twins>
+	 <20120305152443.GE26559@linux.vnet.ibm.com>
+	 <20120306091410.GD27238@elte.hu>
+	 <20120322153205.GA28570@linux.vnet.ibm.com>
+	 <1332750960.16159.81.camel@twins>
+	 <20120326173533.GA4689@linux.vnet.ibm.com>
+	 <1332785212.16159.170.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 27, 2012 at 01:44:42PM +0300, Pekka Enberg escreveu:
-> I completely missed the newly added tools/perf/ui directory which doesn't 
-> make much sense. We definitely ought to consolidate all this code under 
-> tools/perf/util/ui and gradually move the tui code out of it instead.
-> 
-> [ I would, however, like to make the directory nesting less deep by 
->   dropping the "util" part from the directory name. But that's a 
->   completely different topic. ]
+On Mon, 2012-03-26 at 20:06 +0200, Peter Zijlstra wrote:
 
-Yeah, the tools/perf/util/ should go away at some point, Borislav's
-patches are a step in that direction, he is again at it, this time
-carving out subsets so that we can go on gradually doing this
-separation, see the tools top level Makefile discussion.
+> The biggest regression came from tbench, wasn't that mostly a random
+> number generator anyway?
 
-- Arnaldo
+That's dbench ;-)  Tbench does wiggle around more than you'd like
+though.  I've never tracked, but in lots of running the thing, 2-3% you
+can forget chasing, and I once bisected a 5% regression to an unrelated
+change, reverted and re-applied the suspect a few times in disbelief,
+and it tracked.  You can't trust it _too_ much.  I consider it a
+reliable indicator that I'd better do more testing.  If others agree,
+it's a real regression, if not, it's those damn Elves 'n Gremlins ;-)
+
+-Mike
+
+
