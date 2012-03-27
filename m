@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2C0INP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 04:13:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42749 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab2C0INH convert rfc822-to-8bit (ORCPT
+	id S1754947Ab2C0IRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 04:17:14 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:52929 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751956Ab2C0IRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 04:13:07 -0400
-Message-ID: <1332835919.16159.195.camel@twins>
-Subject: Re: [PATCH 4/6 OPTION-A version 3] completion: Add new
- wait_for_completion_timeout_state
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Date: Tue, 27 Mar 2012 10:11:59 +0200
-In-Reply-To: <4F7126E0.5080700@panasas.com>
-References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com>
-	 <4F7120B6.2090509@panasas.com> <4F7126E0.5080700@panasas.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 27 Mar 2012 04:17:09 -0400
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] block: Make cfq_target_latency tunable through sysfs.
+Date: Tue, 27 Mar 2012 16:16:53 +0800
+Message-Id: <1332836213-5266-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 19:33 -0700, Boaz Harrosh wrote:
-> +int __sched
-> +wait_for_completion_timeout_state(struct completion *x,
-> +                                 unsigned long timeout, int state)
-> +{
-> +       long t;
-> +       int ret;
-> +
-> +       if (!timeout)
-> +               timeout = MAX_SCHEDULE_TIMEOUT;
-> +
-> +       switch (state) {
-> +       default:
-> +               WARN_ON_ONCE(1);
-> +               /* fall through */
-> +       case 0:
-> +               state = TASK_UNINTERRUPTIBLE;
-> +               break;
-> +       case TASK_KILLABLE:
-> +       case TASK_INTERRUPTIBLE:
-> +               break;
-> +       }
+From: Tao Ma <boyu.mt@taobao.com>
 
-Don't do this, just pass in TASK_UNINTERRUPTIBLE (or TASK_NORMAL)
-whatever you like/need.
+In cfq, when we calculate a time slice for a process(or a cfqq to
+be precise), we have to consider the cfq_target_latency so that all the
+sync request have an estimated latency(300ms) and it is controlled by
+cfq_target_latency. But in some hadoop test, we have found that if
+there are many processes doing sequential read(24 for example), the
+throughput is bad because every process can only work for about 25ms
+and the cfqq is switched. That leads to a higher disk seek. We can
+achive the good throughput by setting low_latency=0, but then some
+read's latency is too much for the application.
 
-Don't fudge it by over-loading TASK_RUNNING (aka. 0).
+So this patch makes cfq_target_latency tunable through sysfs so that
+we can tune it and find some magic number which is not bad for both
+the throughput and the read latency.
 
-> +       t = wait_for_common(x, timeout, state);
-> +       if (likely(t > 0)) {
-> +               ret = 0;
-> +       } else  {
-> +               if (t < 0)
-> +                       ret = t;
-> +               else
-> +                       ret = -ETIMEDOUT;
-> +       }
-> +       return ret;
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ block/cfq-iosched.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-Again, why wreck an entirely reasonable return code and break with the
-rest of the API.
-
-> +}
-> +EXPORT_SYMBOL(wait_for_completion_timeout_state); 
-
-
-So I'm fine with adding wait_for_completion_timeout_state(), but make it
-look and smell like wait_for_completion_timeout() and use a proper
-state, like wake_up_state().
-
-IOW:
-
-unsigned long __sched 
-wait_for_completion_timeout_state(struct completion *x, 
-				  unsigned long timeout,
-				  unsigned int state)
-{
-	return wait_for_common(x, timeout, state);
-}
-EXPORT_SYMBOL(wait_for_completion_timeout_state);
-
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 4572952..3c38536 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -295,6 +295,7 @@ struct cfq_data {
+ 	unsigned int cfq_slice_idle;
+ 	unsigned int cfq_group_idle;
+ 	unsigned int cfq_latency;
++	unsigned int cfq_target_latency;
+ 
+ 	/*
+ 	 * Fallback dummy cfqq for extreme OOM conditions
+@@ -604,7 +605,7 @@ cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
+ 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+ 
+-	return cfq_target_latency * cfqg->weight / st->total_weight;
++	return cfqd->cfq_target_latency * cfqg->weight / st->total_weight;
+ }
+ 
+ static inline unsigned
+@@ -2271,7 +2272,8 @@ new_workload:
+ 		 * to have higher weight. A more accurate thing would be to
+ 		 * calculate system wide asnc/sync ratio.
+ 		 */
+-		tmp = cfq_target_latency * cfqg_busy_async_queues(cfqd, cfqg);
++		tmp = cfqd->cfq_target_latency *
++			cfqg_busy_async_queues(cfqd, cfqg);
+ 		tmp = tmp/cfqd->busy_queues;
+ 		slice = min_t(unsigned, slice, tmp);
+ 
+@@ -3737,6 +3739,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfqd->cfq_back_penalty = cfq_back_penalty;
+ 	cfqd->cfq_slice[0] = cfq_slice_async;
+ 	cfqd->cfq_slice[1] = cfq_slice_sync;
++	cfqd->cfq_target_latency = cfq_target_latency;
+ 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
+ 	cfqd->cfq_slice_idle = cfq_slice_idle;
+ 	cfqd->cfq_group_idle = cfq_group_idle;
+@@ -3788,6 +3791,7 @@ SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
+ SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
+ SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
+ SHOW_FUNCTION(cfq_low_latency_show, cfqd->cfq_latency, 0);
++SHOW_FUNCTION(cfq_target_latency_show, cfqd->cfq_target_latency, 1);
+ #undef SHOW_FUNCTION
+ 
+ #define STORE_FUNCTION(__FUNC, __PTR, MIN, MAX, __CONV)			\
+@@ -3821,6 +3825,7 @@ STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
+ 		UINT_MAX, 0);
+ STORE_FUNCTION(cfq_low_latency_store, &cfqd->cfq_latency, 0, 1, 0);
++STORE_FUNCTION(cfq_target_latency_store, &cfqd->cfq_target_latency, 1, UINT_MAX, 1);
+ #undef STORE_FUNCTION
+ 
+ #define CFQ_ATTR(name) \
+@@ -3838,6 +3843,7 @@ static struct elv_fs_entry cfq_attrs[] = {
+ 	CFQ_ATTR(slice_idle),
+ 	CFQ_ATTR(group_idle),
+ 	CFQ_ATTR(low_latency),
++	CFQ_ATTR(target_latency),
+ 	__ATTR_NULL
+ };
+ 
+-- 
+1.7.0.4
 
