@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab2C0Lgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 07:36:38 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33456 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2C0Lge (ORCPT
+	id S1753019Ab2C0Llx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 07:41:53 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38750 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab2C0Llt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 07:36:34 -0400
-Date: Tue, 27 Mar 2012 13:37:17 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
- PAGE_SIZE
-Message-ID: <20120327113717.GJ4276@phenom.ffwll.local>
-Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-References: <20120229153216.8c3ae31d.akpm@linux-foundation.org>
- <1330629779-1449-1-git-send-email-daniel.vetter@ffwll.ch>
- <20120301121557.0e0fd728.akpm@linux-foundation.org>
+	Tue, 27 Mar 2012 07:41:49 -0400
+Date: Tue, 27 Mar 2012 14:43:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: array underflow in receive_SyncParam()?
+Message-ID: <20120327114343.GB3200@mwanda>
+References: <20120327071036.GA19008@elgon.mountain>
+ <2865608.JOP40HBeUa@fat-tyre>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120301121557.0e0fd728.akpm@linux-foundation.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
+In-Reply-To: <2865608.JOP40HBeUa@fat-tyre>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090203.4F71A778.008D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 12:15:57PM -0800, Andrew Morton wrote:
-> On Thu,  1 Mar 2012 20:22:59 +0100
-> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+On Tue, Mar 27, 2012 at 01:32:35PM +0200, Philipp Reisner wrote:
+> Hi Dan,
 > 
-> > drm/i915 wants to read/write more than one page in its fastpath
-> > and hence needs to prefault more than PAGE_SIZE bytes.
-> > 
-> > Add new functions in filemap.h to make that possible.
-> > 
-> > Also kill a copy&pasted spurious space in both functions while at it.
-> > 
-> >
-> > ...
-> >
-> > +/* Multipage variants of the above prefault helpers, useful if more than
-> > + * PAGE_SIZE of date needs to be prefaulted. These are separate from the above
-> > + * functions (which only handle up to PAGE_SIZE) to avoid clobbering the
-> > + * filemap.c hotpaths. */
+> You are right, we are relying on the fact that DRBD peers that
+> use the protocol 88 send a positive data_size (what they do).
 > 
-> Like this please:
-> 
-> /*
->  * Multipage variants of the above prefault helpers, useful if more than
->  * PAGE_SIZE of date needs to be prefaulted. These are separate from the above
->  * functions (which only handle up to PAGE_SIZE) to avoid clobbering the
->  * filemap.c hotpaths.
->  */
-> 
-> and s/date/data/
+> But if we consider a modified peer, then this is a bug. Suggesting
+> the following patch:
 
-...
+Looks good to me.  Could you give me a Reported-by tag when you send
+this?
 
-> Please merge it via the DRI tree.
+regards,
+dan carpenter
 
-Ok, I've queued this up 3.5 (it missed the 3.4 merge because a few of the
-drm/i915 patches from that series haven't been reviewed in time) with the
-comment fixed up and your Acked-by on the commit message. I hope the later
-is ok, otherwise please yell.
-
-Thanks for reviewing this.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
