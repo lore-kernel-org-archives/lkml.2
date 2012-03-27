@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2C0DtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 23:49:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34626 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab2C0DtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 23:49:21 -0400
-Message-ID: <4F7138B0.8030100@zytor.com>
-Date: Mon, 26 Mar 2012 20:49:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1756645Ab2C0Dvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 23:51:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62221 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044Ab2C0Dvw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 23:51:52 -0400
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
-Subject: Re: [PATCH 1/1] vsprintf: optimize decimal conversion (again)
-References: <201203262047.17865.vda.linux@googlemail.com> <20120326131304.018a5f4b.akpm@linux-foundation.org> <CAMuHMdWK-0m9-LUc90e7e8pYsOsECkZ3gjBYVAP-A4p7p=Pyug@mail.gmail.com> <201203270118.38639.vda.linux@googlemail.com>
-In-Reply-To: <201203270118.38639.vda.linux@googlemail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1332783932.12799.16.camel@acer.local.home>
+References: <CA+jqyFDRBkeAA8OPuBmAoj_ZF_HgR-U6Eu1QQ8oe_PKeN1pVFQ@mail.gmail.com>
+	<1332531400.23924.71.camel@gandalf.stny.rr.com>
+	<CA+jqyFAzpTs+JeemD7wpSgW0hmECMSPMsaZtQ7zLgn+ebXSJFQ@mail.gmail.com>
+	<1332597305.12799.2.camel@acer.local.home>
+	<1332783932.12799.16.camel@acer.local.home>
+Date: Tue, 27 Mar 2012 09:21:51 +0530
+Message-ID: <CA+jqyFD7bq1jSNG9QV+iQx-PGsOmjSAyzo-pjLFau96ei=xNGA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ftrace: fix dynamic ftrace filter reset issue
+From: Rajesh Bhagat <rajesh.lnx@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 04:18 PM, Denys Vlasenko wrote:
-> Only 64-bit machines will perform 64-bit
-> division, one per 9 decimal digits (thus, at most three divisions
-> per one long_long->string conversion).
+Hi Steven,
 
-FWIW, gcc supports 128-bit integers on 64-bit platforms using the
-__int128 keyword.
+Thanks for your feedback.
+I will work on the V2 of this patch to get the mentioned issue resolved.
 
-	-hpa
+- Rajesh
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
+On Mon, Mar 26, 2012 at 11:15 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sat, 2012-03-24 at 09:55 -0400, Steven Rostedt wrote:
+>
+>> That said, I may consider taking the patch, as another way of resetting
+>> the tracer. I have to see what workflows it will affect first.
+>
+> This is what I was afraid of. The tracers irqsoff and preemptoff do not
+> get reset if you echo the tracer name into the current_tracer. This
+> makes different tracers inconsistent.
+>
+> All tracers must act the same. So, it's a no go for this patch, at least
+> in its current form.
+>
+> -- Steve
+>
+>
