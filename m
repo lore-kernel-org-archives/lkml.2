@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab2C0DF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 23:05:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20388 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875Ab2C0DFY (ORCPT
+	id S1757602Ab2C0DKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 23:10:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55393 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab2C0DKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 23:05:24 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=_D6bx_0x8lNCu6SoVkQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1332817521.23924.122.camel@gandalf.stny.rr.com>
-Subject: Re: CPU Hotplug rework
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paulmck@linux.vnet.ibm.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Mon, 26 Mar 2012 23:05:21 -0400
-In-Reply-To: <87iphqbzgw.fsf@rustcorp.com.au>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-	 <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins>
-	 <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins>
-	 <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com>
-	 <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com>
-	 <87bonkchxk.fsf@rustcorp.com.au> <1332748920.16159.65.camel@twins>
-	 <1332767386.23924.75.camel@gandalf.stny.rr.com>
-	 <1332769098.16159.111.camel@twins>
-	 <1332775340.23924.102.camel@gandalf.stny.rr.com>
-	 <1332778438.16159.136.camel@twins>
-	 <1332781541.23924.110.camel@gandalf.stny.rr.com>
-	 <87iphqbzgw.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Mar 2012 23:10:43 -0400
+Date: Tue, 27 Mar 2012 14:10:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the mmc tree with the s5p tree
+Message-Id: <20120327141033.352dfd5cc4ee937ee7371860@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Mar_2012_14_10_33_+1100_CssjVMcg8u3v0izY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 12:02 +1030, Rusty Russell wrote:
+--Signature=_Tue__27_Mar_2012_14_10_33_+1100_CssjVMcg8u3v0izY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> PS.  And I'm sure you'll finish the work while I'm on honeymoon :)
+Hi Chris,
 
-I'll be getting ready for Linux Collaboration. But have fun on your
-honeymoon, and congrats!
+This conflict has been caused in part because you rebased your tree and
+copied some commits that used to be merged into your tree from a shared
+branch.   Do *not* do that ... BTW, when you rebased those commits into
+your tree, you did not sign them either.  This is exactly what Linus has
+just berated one of the other maintainers for ...
 
--- Steve
+I am not fixing this conflict, I am just using the version of your tree
+that I have from next-20120326.  Please fix your tree up properly.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__27_Mar_2012_14_10_33_+1100_CssjVMcg8u3v0izY
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPcS+pAAoJEECxmPOUX5FEKuwQAJUgUsH9mBUTfIkDkl99e1lw
+buV9xNpbNmpmdxHcSkAnm2qY3S83/0q1W8Kotg8l98UkF+qFa1EpWuah5+GlvO7M
+VZIe6MpYHd+06un9zqAC/lB4h/1lr3jYgTJRSNukaud8vBVCnYjt62mTWOV1biSK
+qakinjpW/fYIejddpUg4H+WtVOy9QDbEHjfy/yAltkYuf6OTPhN1VcX6arZN7d8b
+cdXosT1x6/UcTcdvyt9KPSOZExduD9hXem+JI43FUA2bcOBkRgskagBo9Y3B1k9d
+TJlCqcM6dl0F5Baf09RN9QpIl2LENfGYRxUdJxadGvf5pUNBNDtTsKI9RmFVepaA
+pPcXnwPD56tKJwJUoKMN8gdX6ZN5Ay+Db3R07ORGaSvPE35RfXMHCF7piNTKt05U
+JFzXV4i4e3aCrfPmD9JkF745FJI0FRPyGLucYR2jf0j91uziV1Dzk7GTOFQEDkH5
+1N4tExDzAsdSVZfA0xBgautP9IZDY+1Dc1NoFbmMCqlyiuitVqZD/RBdZhR37vfu
+WAjn2dVAp4MApfFmWFtuBUeYPK4uIlzVXh8+wrCetF/TJtKIG2GmfYHqs8vBm6LV
+lWXM40pEi/wiulscDxmlS6mkLx4pB5sdBH8xch83pQChadmsCeSwNvPXz4lYJ8EH
+uYoAzcOKaIsaPm5PSLkr
+=u3yi
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Mar_2012_14_10_33_+1100_CssjVMcg8u3v0izY--
