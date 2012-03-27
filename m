@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2C0Mrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 08:47:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57374 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab2C0Mrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 08:47:40 -0400
-Date: Tue, 27 Mar 2012 13:47:34 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
- related damage v3
-Message-ID: <20120327124734.GH16573@suse.de>
-References: <20120307180852.GE17697@suse.de>
- <1332759384.16159.92.camel@twins>
- <20120326155027.GF16573@suse.de>
- <1332778852.16159.138.camel@twins>
+	id S1753425Ab2C0Mwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 08:52:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33459 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2C0Mwi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 08:52:38 -0400
+Date: Tue, 27 Mar 2012 14:52:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yevgeny Petrilin <yevgenyp@mellanox.com>
+cc: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yael Shenhav <yaeli@mellanox.com>
+Subject: RE: IRQ affinity enforced only after first interrupt.
+In-Reply-To: <953B660C027164448AE903364AC447D2618E24BF@MTLDAG02.mtl.com>
+Message-ID: <alpine.LFD.2.02.1203271444310.2542@ionos>
+References: <4F7031A4.70601@mellanox.co.il> <CAErSpo7ciBYG1-jCL3F6bFcktmJj4H-SXn_1NcRnhc-gPDsHUw@mail.gmail.com> <4F707E39.50502@gmail.com> <953B660C027164448AE903364AC447D2618E1A8B@MTLDAG02.mtl.com> <alpine.LFD.2.02.1203262059070.2542@ionos>
+ <953B660C027164448AE903364AC447D2618E24BF@MTLDAG02.mtl.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1332778852.16159.138.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 06:20:52PM +0200, Peter Zijlstra wrote:
-> > <SNIP>
+On Tue, 27 Mar 2012, Yevgeny Petrilin wrote:
+
+> > > >
+> > > > The architecture specific code will determine whether the IRQ could be migrated
+> > > > in process context. For example, the IRQ_MOVE_PCNTXT flag will be set on x86
+> > > > systems if interrupt remapping is enabled.
+> > >
+> > > Actually I am encountering this issue with x86, and see different
+> > > behavior with different HW devices (NICs). On same machine I have
+> > > one device that responds immediately to affinity changes while the
+> > > other one changes the affinity only after first interrupt.
 > > 
-> > I think such a change would be better but should also rename the API.
-> > If developers see a get_foo type call, they will expect to see a put_foo
-> > call or assume it's a bug even though the implementation happens to be ok
-> > with that. Any suggestion on what a good new name would be?
+> > That simply depends on the underlying hardware. On certain hardware we
+> > can change the affinity only in hard interrupt context, that means
+> > right when a interrupt of that device is delivered.
 > > 
-> > How about read_mems_allowed_begin() and read_mems_allowed_retry()?
+> > On the other devices we can change it right away and the corresponding
+> > interrupt chips set IRQ_MOVE_PCNTXT to indicate that.
 > > 
-> > read_mems_allowed_begin would be a rename of get_mems_allowed().  In an
-> > error path, read_mems_allowed_retry() would documented to be *optionally*
-> > called when deciding whether to retry the operation or not. In this scheme,
-> > !put_mems_allowed would become read_mems_allowed_retry() which might be
-> > a bit easier to read overall.
+> > There is nothing we can do about this. It's dictated by hardware.
+> > 
 > 
-> One:
-> 
-> git grep -l "\(get\|put\)_mems_allowed" | while read file; do sed -i -e
-> 's/\<get_mems_allowed\>/read_mems_allowed_begin/g' -e
-> 's/\<put_mems_allowed\>/read_mems_allowed_retry/g' $file; done
-> 
-> and a few edits later..
-> 
-> ---
->  include/linux/cpuset.h |   18 +++++++++---------
->  kernel/cpuset.c        |    2 +-
->  mm/filemap.c           |    4 ++--
->  mm/hugetlb.c           |    4 ++--
->  mm/mempolicy.c         |   14 +++++++-------
->  mm/page_alloc.c        |    8 ++++----
->  mm/slab.c              |    4 ++--
->  mm/slub.c              |   16 +++-------------
->  8 files changed, 30 insertions(+), 40 deletions(-)
-> 
-> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> index 7a7e5fd..d008b03 100644
-> --- a/include/linux/cpuset.h
-> +++ b/include/linux/cpuset.h
-> @@ -89,25 +89,25 @@ extern void rebuild_sched_domains(void);
->  extern void cpuset_print_task_mems_allowed(struct task_struct *p);
->  
->  /*
-> - * get_mems_allowed is required when making decisions involving mems_allowed
-> + * read_mems_allowed_begin is required when making decisions involving mems_allowed
->   * such as during page allocation. mems_allowed can be updated in parallel
->   * and depending on the new value an operation can fail potentially causing
-> - * process failure. A retry loop with get_mems_allowed and put_mems_allowed
-> + * process failure. A retry loop with read_mems_allowed_begin and read_mems_allowed_retry
->   * prevents these artificial failures.
->   */
+> Thanks for the explanation,
+> Which capabilities of the HW show whether IRQ_MOVE_PCNTXT can be set or not?
+> Is it done by reading configuration from PCI?
 
-Going over 80 columns there. This happens in other places in the patch
-but the alternative in those cases is less readable.
+It's done by reading the specs of the interrupt controllers. This is
+not at PCI (device) level. It's a property of the interrupt controller
+(PIC, APIC, IOAPIC) and additional features like interrupt remapping.
 
-> -static inline unsigned int get_mems_allowed(void)
-> +static inline unsigned int read_mems_allowed_begin(void)
->  {
->  	return read_seqcount_begin(&current->mems_allowed_seq);
->  }
->  
->  /*
-> - * If this returns false, the operation that took place after get_mems_allowed
-> + * If this returns false, the operation that took place after read_mems_allowed_begin
->   * may have failed. It is up to the caller to retry the operation if
->   * appropriate.
->   */
+The device merily uses an interrupt, but it does not know at all which
+underlying interrupt controller is handling it. 
 
-80 cols again and it should be "returns true". Something like this?
+The only choice a device driver has is between pin based interrupts
+and Message Signaled Interrupts, when the hardware supports it. This
+information is retrieved from the PCI config space.
 
-/*
- * If this returns true, the operation that took place after 
- * read_mems_allowed_begin may have failed artifically due to a paralle
- * update of mems_allowed. It is up to the caller to retry the operation
- * if appropriate.
- */
+Thanks,
 
-Other than that, the changes looked good and I agree that it is better
-overall.
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
+	tglx
