@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab2C0Sg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:36:29 -0400
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:41337 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab2C0Sg0 (ORCPT
+	id S1755954Ab2C0Sgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:36:42 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:36695 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab2C0Sg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:36:26 -0400
+	Tue, 27 Mar 2012 14:36:29 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
         David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 02/13 v4] drm/i915/intel_i2c: cleanup error messages and comments
-Date: Wed, 28 Mar 2012 02:36:11 +0800
-Message-Id: <1332873382-29373-3-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 09/13 v4] drm/i915/intel_i2c: use double-buffered writes
+Date: Wed, 28 Mar 2012 02:36:18 +0800
+Message-Id: <1332873382-29373-10-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
 References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
@@ -23,40 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The GMBUS controller GMBUS3 register is double-buffered.  Take advantage
+of this  by writing two 4-byte words before the first wait for HW_RDY.
+This helps keep the GMBUS controller from becoming idle during long writes.
+
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/gpu/drm/i915/intel_i2c.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_i2c.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 30675ce..e6c090b 100644
+index 5a94e9b..c576e02 100644
 --- a/drivers/gpu/drm/i915/intel_i2c.c
 +++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -333,17 +333,20 @@ done:
- 	 * till then let it sleep.
- 	 */
- 	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
--		DRM_INFO("GMBUS timed out waiting for idle\n");
-+		DRM_INFO("GMBUS [%s] timed out waiting for idle\n",
-+			 bus->adapter.name);
- 	I915_WRITE(GMBUS0 + reg_offset, 0);
- 	ret = i;
- 	goto out;
+@@ -262,13 +262,6 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
+ 		   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
+ 	POSTING_READ(GMBUS2 + reg_offset);
+ 	while (len) {
+-		if (wait_for(I915_READ(GMBUS2 + reg_offset) &
+-			     (GMBUS_SATOER | GMBUS_HW_RDY),
+-			     50))
+-			return -ETIMEDOUT;
+-		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
+-			return -ENXIO;
+-
+ 		val = loop = 0;
+ 		do {
+ 			val |= *buf++ << (8 * loop);
+@@ -276,6 +269,13 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
  
- timeout:
--	DRM_INFO("GMBUS timed out, falling back to bit banging on pin %d [%s]\n",
--		 bus->reg0 & 0xff, bus->adapter.name);
-+	DRM_INFO("GMBUS [%s] timed out, falling back to bit banging on pin %d\n",
-+		 bus->adapter.name, bus->reg0 & 0xff);
- 	I915_WRITE(GMBUS0 + reg_offset, 0);
- 
--	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
-+	/* Hardware may not support GMBUS over these pins?
-+	 * Try GPIO bitbanging instead.
-+	 */
- 	if (!bus->has_gpio) {
- 		ret = -EIO;
- 	} else {
+ 		I915_WRITE(GMBUS3 + reg_offset, val);
+ 		POSTING_READ(GMBUS2 + reg_offset);
++
++		if (wait_for(I915_READ(GMBUS2 + reg_offset) &
++			     (GMBUS_SATOER | GMBUS_HW_RDY),
++			     50))
++			return -ETIMEDOUT;
++		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
++			return -ENXIO;
+ 	}
+ 	return 0;
+ }
 -- 
 1.7.7.3
 
