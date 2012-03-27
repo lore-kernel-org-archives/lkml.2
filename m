@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab2C0COL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 22:14:11 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:59509 "EHLO
+	id S1757177Ab2C0CQJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 22:16:09 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59576 "EHLO
 	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab2C0COI (ORCPT
+	with ESMTP id S1752487Ab2C0CQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 22:14:08 -0400
-Message-ID: <4F712246.6030201@panasas.com>
-Date: Mon, 26 Mar 2012 19:13:26 -0700
+	Mon, 26 Mar 2012 22:16:04 -0400
+Message-ID: <4F7122C0.2070800@panasas.com>
+Date: Mon, 26 Mar 2012 19:15:28 -0700
 From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -29,7 +29,7 @@ CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: [PATCH 5/6] kmod: Add new call_usermodehelper_timeout() API
+Subject: [PATCH 6/6] kmod: optional: Convert the use of xchg to a kref
 References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com>
 In-Reply-To: <4F711EA2.4030608@panasas.com>
 Content-Type: text/plain; charset="UTF-8"
@@ -39,189 +39,142 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-In the blasphemous occasions that the Kernel must call a user-mode program
-half of the times it is more robust to not wait forever but limit the wait
-for a specified timeout.
+if we use a kref instead of xchg to govern the lifetime
+of struct subprocess_info, the code becomes simpler and
+more generic. We can avoid some of the special cases.
 
-So add a new  call_usermodehelper_timeout() that implements that.
-(Users of this new API will be added once this API is in mainline)
+Actually I like the xchg use here. But if it will break
+some ARCHs that do not like xchg, then here is the work
+needed.
 
-call_usermodehelper_fns() is added an extra timeout parameter which
-is then implemented in call_usermodehelper_exec. The few users of
-call_usermodehelper_fns() are also changed in this patch.
+No functional change
 
-Also an gfp_t parameter is added, for finer allocation control
-
-The code in call_usermodehelper_exec is simplified by the use of
-the all-mighty wait_for_completion_timeout_state() which is able
-to wait in all the different modes. See:
-	completion: Add wait_for_completion_timeout_state()
-
-Should some wait-forever callers today, be converted to this new
-schema?
-
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 ---
- fs/exec.c                   |    4 ++--
- include/linux/kmod.h        |   19 ++++++++++++++-----
- kernel/kmod.c               |   24 ++++++++++++------------
- kernel/sys.c                |    2 +-
- security/keys/request_key.c |    2 +-
- 5 files changed, 30 insertions(+), 21 deletions(-)
+ include/linux/kmod.h |    4 +++-
+ kernel/kmod.c        |   43 +++++++++++++++++--------------------------
+ 2 files changed, 20 insertions(+), 27 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 23559c2..8789ba8 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -2185,8 +2185,8 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		}
- 
- 		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
--					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
--					NULL, &cprm);
-+					NULL, UMH_WAIT_EXEC, 0, 0,
-+					umh_pipe_setup, NULL, &cprm);
- 		argv_free(helper_argv);
- 		if (retval) {
-  			printk(KERN_INFO "Core dump to %s pipe failed\n",
 diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index ae3f9623..4d9f202 100644
+index 4d9f202..bd0c3c9 100644
 --- a/include/linux/kmod.h
 +++ b/include/linux/kmod.h
-@@ -60,21 +60,30 @@ struct subprocess_info {
+@@ -25,6 +25,7 @@
+ #include <linux/compiler.h>
+ #include <linux/workqueue.h>
+ #include <linux/sysctl.h>
++#include <linux/kref.h>
+ 
+ #define KMOD_PATH_LEN 256
+ 
+@@ -54,8 +55,9 @@ extern __printf(2, 3)
+ #define UMH_KILLABLE	4	/* wait for EXEC/PROC killable */
+ 
+ struct subprocess_info {
++	struct kref kref;
+ 	struct work_struct work;
+-	struct completion *complete;
++	struct completion complete;
+ 	char *path;
  	char **argv;
  	char **envp;
- 	int wait;
-+	unsigned long timeout;
- 	int retval;
- 	int (*init)(struct subprocess_info *info, struct cred *new);
- 	void (*cleanup)(struct subprocess_info *info);
- 	void *data;
- };
- 
--extern int
--call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
--			int (*init)(struct subprocess_info *info, struct cred *new),
--			void (*cleanup)(struct subprocess_info *), void *data);
-+extern int call_usermodehelper_fns(char *path, char **argv, char **envp,
-+	int wait, unsigned long timeout, gfp_t gfp,
-+	int (*init)(struct subprocess_info *info, struct cred *new),
-+	void (*cleanup)(struct subprocess_info *), void *data);
- 
- static inline int
- call_usermodehelper(char *path, char **argv, char **envp, int wait)
- {
--	return call_usermodehelper_fns(path, argv, envp, wait,
-+	return call_usermodehelper_fns(path, argv, envp, wait, 0, 0,
-+				       NULL, NULL, NULL);
-+}
-+
-+static inline int
-+call_usermodehelper_timeout(char *path, char **argv, char **envp,
-+			    int wait, unsigned long timeout, gfp_t gfp)
-+{
-+	return call_usermodehelper_fns(path, argv, envp, wait, timeout, gfp,
- 				       NULL, NULL, NULL);
- }
- 
 diff --git a/kernel/kmod.c b/kernel/kmod.c
-index b404f99..588cb6f 100644
+index 588cb6f..948a674 100644
 --- a/kernel/kmod.c
 +++ b/kernel/kmod.c
-@@ -90,7 +90,7 @@ static int call_modprobe(char *module_name, int wait)
- 	argv[4] = NULL;
+@@ -221,9 +221,11 @@ static int ____call_usermodehelper(void *data)
+ 	return 0;
+ }
  
- 	return call_usermodehelper_fns(modprobe_path, argv, envp,
--		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
-+		wait | UMH_KILLABLE, 0, 0, NULL, free_modprobe_argv, NULL);
- free_argv:
- 	kfree(argv);
- out:
-@@ -522,6 +522,7 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
+-static
+-void call_usermodehelper_freeinfo(struct subprocess_info *info)
++static void call_usermodehelper_freeinfo(struct kref *kref)
+ {
++	struct subprocess_info *info =
++		container_of(kref, struct subprocess_info, kref);
++
+ 	if (info->cleanup)
+ 		(*info->cleanup)(info);
+ 	kfree(info);
+@@ -231,15 +233,8 @@ void call_usermodehelper_freeinfo(struct subprocess_info *info)
+ 
+ static void umh_complete(struct subprocess_info *sub_info)
+ {
+-	struct completion *comp = xchg(&sub_info->complete, NULL);
+-	/*
+-	 * See call_usermodehelper_exec(). If xchg() returns NULL
+-	 * we own sub_info, the UMH_KILLABLE caller has gone away.
+-	 */
+-	if (comp)
+-		complete(comp);
+-	else
+-		call_usermodehelper_freeinfo(sub_info);
++	complete(&sub_info->complete);
++	kref_put(&sub_info->kref, call_usermodehelper_freeinfo);
+ }
+ 
+ /* Keventd can't block, but this (a child) can. */
+@@ -302,7 +297,7 @@ static void __call_usermodehelper(struct work_struct *work)
+ 
+ 	switch (wait) {
+ 	case UMH_NO_WAIT:
+-		call_usermodehelper_freeinfo(sub_info);
++		kref_put(&sub_info->kref,  call_usermodehelper_freeinfo);
+ 		break;
+ 
+ 	case UMH_WAIT_PROC:
+@@ -431,6 +426,8 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+ 	if (!sub_info)
+ 		goto out;
+ 
++	kref_init(&sub_info->kref);
++	init_completion(&sub_info->complete);
+ 	INIT_WORK(&sub_info->work, __call_usermodehelper);
+ 	sub_info->path = path;
+ 	sub_info->argv = argv;
+@@ -521,7 +518,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
+ static
  int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
  {
- 	DECLARE_COMPLETION_ONSTACK(done);
-+	int wait_state;
+-	DECLARE_COMPLETION_ONSTACK(done);
+ 	int wait_state;
  	int retval = 0;
  
- 	helper_lock();
-@@ -540,19 +541,15 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
- 		goto unlock;
- 
--	if (wait & UMH_KILLABLE) {
--		retval = wait_for_completion_killable(&done);
--		if (!retval)
--			goto wait_done;
--
-+	wait_state = (wait & UMH_KILLABLE) ? TASK_KILLABLE : 0;
-+	retval = wait_for_completion_timeout_state(&done, sub_info->timeout,
-+						   wait_state);
-+	if (unlikely(retval)) {
- 		/* umh_complete() will see NULL and free sub_info */
- 		if (xchg(&sub_info->complete, NULL))
- 			goto unlock;
--		/* fallthrough, umh_complete() was already called */
- 	}
- 
--	wait_for_completion(&done);
--wait_done:
- 	retval = sub_info->retval;
- out:
- 	call_usermodehelper_freeinfo(sub_info);
-@@ -561,13 +558,15 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	return retval;
- }
- 
--int call_usermodehelper_fns(
--	char *path, char **argv, char **envp, int wait,
-+int call_usermodehelper_fns(char *path, char **argv, char **envp,
-+	int wait, unsigned long timeout, gfp_t gfp_mask,
- 	int (*init)(struct subprocess_info *info, struct cred *new),
- 	void (*cleanup)(struct subprocess_info *), void *data)
- {
- 	struct subprocess_info *info;
--	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
-+
-+	if (!gfp_mask)
-+		gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
- 
- 	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
- 
-@@ -575,6 +574,7 @@ int call_usermodehelper_fns(
- 		return -ENOMEM;
- 
- 	call_usermodehelper_setfns(info, init, cleanup, data);
-+	info->timeout = timeout;
- 
- 	return call_usermodehelper_exec(info, wait);
- }
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 37b1971..16d14d1 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -2020,7 +2020,7 @@ int orderly_poweroff(bool force)
+@@ -534,26 +530,21 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
  		goto out;
  	}
  
--	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT,
-+	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT, 0, 0,
- 				      NULL, argv_cleanup, NULL);
+-	sub_info->complete = &done;
+ 	sub_info->wait = wait;
+ 
++	/* Balanced in __call_usermodehelper or wait_for_helper */
++	kref_get(&sub_info->kref);
+ 	queue_work(khelper_wq, &sub_info->work);
+ 	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
+-		goto unlock;
++		goto out;
+ 
+ 	wait_state = (wait & UMH_KILLABLE) ? TASK_KILLABLE : 0;
+-	retval = wait_for_completion_timeout_state(&done, sub_info->timeout,
+-						   wait_state);
+-	if (unlikely(retval)) {
+-		/* umh_complete() will see NULL and free sub_info */
+-		if (xchg(&sub_info->complete, NULL))
+-			goto unlock;
+-	}
+-
+-	retval = sub_info->retval;
++	retval = wait_for_completion_timeout_state(&sub_info->complete,
++						sub_info->timeout, wait_state);
++	if (likely(!retval))
++		retval = sub_info->retval;
  out:
- 	if (likely(!ret))
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 000e750..aa94dbb 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -93,7 +93,7 @@ static void umh_keys_cleanup(struct subprocess_info *info)
- static int call_usermodehelper_keys(char *path, char **argv, char **envp,
- 					struct key *session_keyring, int wait)
- {
--	return call_usermodehelper_fns(path, argv, envp, wait,
-+	return call_usermodehelper_fns(path, argv, envp, wait, 0, 0,
- 				       umh_keys_init, umh_keys_cleanup,
- 				       key_get(session_keyring));
+-	call_usermodehelper_freeinfo(sub_info);
+-unlock:
++	kref_put(&sub_info->kref, call_usermodehelper_freeinfo);
+ 	helper_unlock();
+ 	return retval;
  }
 -- 
 1.7.6.5
