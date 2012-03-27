@@ -1,117 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab2C0PXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 11:23:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab2C0PXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 11:23:49 -0400
-Date: Tue, 27 Mar 2012 17:22:09 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 07/39] autonuma: introduce kthread_bind_node()
-Message-ID: <20120327152209.GL5906@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
- <1332783986-24195-8-git-send-email-aarcange@redhat.com>
- <1332786755.16159.174.camel@twins>
+	id S1754992Ab2C0PbL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 11:31:11 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41628 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab2C0PbF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 11:31:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332786755.16159.174.camel@twins>
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <4F6B5ED1.1080300@tilera.com>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+	<1332338318-5958-13-git-send-email-fweisbec@gmail.com>
+	<alpine.DEB.2.00.1203210953220.20482@router.home>
+	<CAOtvUMdkU92t0nj9OXsnzCenuOyjb12x6s11xR_GGJu1aJJ7GA@mail.gmail.com>
+	<4F6B5ED1.1080300@tilera.com>
+Date: Tue, 27 Mar 2012 17:31:04 +0200
+Message-ID: <CAOtvUMdtprdVxG3d5B-W6Y98SNg1kZms=Q+tmamqN9YkWsiWBg@mail.gmail.com>
+Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs it
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 08:32:35PM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-03-26 at 19:45 +0200, Andrea Arcangeli wrote:
-> > +void kthread_bind_node(struct task_struct *p, int nid)
-> > +{
-> > +       /* Must have done schedule() in kthread() before we set_task_cpu */
-> > +       if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
-> > +               WARN_ON(1);
-> > +               return;
-> > +       }
-> > +
-> > +       /* It's safe because the task is inactive. */
-> > +       do_set_cpus_allowed(p, cpumask_of_node(nid));
-> > +       p->flags |= PF_THREAD_BOUND;
-> > +}
-> > +EXPORT_SYMBOL(kthread_bind_node);
-> 
-> That's a wrong use of PF_THREAD_BOUND, we should only use that for
-> cpumask_weight(tsk_cpus_allowed()) == 1.
+On Thu, Mar 22, 2012 at 7:18 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 3/22/2012 3:38 AM, Gilad Ben-Yossef wrote:
+>> On Wed, Mar 21, 2012 at 4:54 PM, Christoph Lameter <cl@linux.com> wrote:
+>>> On Wed, 21 Mar 2012, Frederic Weisbecker wrote:
+>>>
+>>>> If RCU is waiting for the current CPU to complete a grace
+>>>> period, don't turn off the tick. Unlike dynctik-idle, we
+>>>> are not necessarily going to enter into rcu extended quiescent
+>>>> state, so we may need to keep the tick to note current CPU's
+>>>> quiescent states.
+>>> Is there any way for userspace to know that the tick is not off yet due to
+>>> this? It would make sense for us to have busy loop in user space that
+>>> waits until the OS has completed all processing if that avoids future
+>>> latencies for the application.
+>>>
+>> I previously suggested having the user register to receive a signal
+>> when the tick
+>> is turned off. Since the tick is always turned off the user task is
+>> the current task
+>> by design, *I think* you can simply mark the signal pending when you
+>> turn the tick off.
+>>
+>> The user would register a signal handler to set a flag when it is
+>> called and then busy
+>> loop waiting for a flag to clear.
+>
+> This sounds plausible, but the kernel would have to know that the tick not
+> only was stopped currently, but also would still be stopped when the signal
+> handler's sigreturn syscall was performed.
 
-I don't see what's wrong with more than 1 CPU in the hard bind cpumask.
+Well, I'd say send a signal when the tick is turned off and another
+signal when it's
+turned on again.
 
-The only two places that care about PF_THREAD_BOUND are quoted.
 
-This is just to avoid the "root" user to shoot itself in the foot and
-crash the kernel by changing the CPU bindings for the kernel thread
-(potentially leading to breaking assumptions the kernel thread does on
-numa_node_id).
+> The problem we've seen is that
+> it's sometimes somewhat nondeterministic when the kernel might decide it
+> needed some more ticking, once you let kernel code start to run.  For
+> example, for RCU ops the kernel can choose to ignore the nohz cpuset cores
+> when they're running userspace code only, but as soon as they get back into
+> the kernel for any reason, you may need to schedule a grace period, and so
+> just returning from the "you have no more ticks!" signal handler ends up
+> causing ticks to be scheduled.
 
-knuma_migratedN for example BUG_ON if the binding is changed under it
-before anything bad can happen.
+There is no real difference from the user stand point between the
+return signal sys call
+doing something that causes the tick to be turned on and an IPI or
+timer that turns on
+the tick a nano second after the signal return system call returned.
 
-Maybe this wasn't the supposed initial semantic of PF_THREAD_BOUND,
-but this extends it without apparent downsides and it adds a bit more
-of robustness.
+The return signal syscall setting the tick on is just a private,
+though annoying, case of the
+tick getting turned on by something.
 
-int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
-{
-	unsigned long flags;
-	struct rq *rq;
-	unsigned int dest_cpu;
-	int ret = 0;
+> The approach we took for the Tilera dataplane mode was to have a syscall
+> that would hold the task in the kernel until any ticks were done, and only
+> then return to userspace.  (This is the same set_dataplane() syscall that
+> also offers some flags to control and debug the dataplane stuff in general;
+> in fact the "hold in kernel" support is a mode we set for all syscalls, to
+> keep things deterministic.)  This way the "busy loop" is done in the
+> kernel, but in fact we explicitly go into idle until the next tick, so it's
+> lower-power.
+>
 
-	rq = task_rq_lock(p, &flags);
+Yes, I saw that. My gripe with it is that puts the policy of what to do
+while we wait for the tick to go away in the kernel. I usually hate the
+kernel to take decisions on what to do. I want it to give mechanisms
+and let the programmer set the policy.- e.g. have a led blink while
+you're waiting for the
+and the tick to go away so that the poor end user will know we are
+still waiting for
+the starts to align just right...
 
-	if (cpumask_equal(&p->cpus_allowed, new_mask))
-		goto out;
+I'm not sure that is so big a deal, but that is why I thought of a
+signal handler.
 
-	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
-		ret = -EINVAL;
-		goto out;
-	}
+> An alternative approach, not so good for power but at least avoiding the
+> "use the kernel to avoid the kernel" aspect of signals, would be to
+> register a location in userspace that the kernel would write to when it
+> disabled the tick, and userspace could then just spin reading memory.
+>
 
-	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current)) {
-		ret = -EINVAL;
-		goto out;
-	}
-[..]
+That's cool for letting you know when the tick goes away but not for alarming
+you when it suddenly came back... :-)
 
-static int cpuset_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
-{
-	struct cpuset *cs = cgroup_cs(cgrp);
-	struct task_struct *task;
-	int ret;
+Gilad
 
-	if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
-		return -ENOSPC;
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
 
-	cgroup_taskset_for_each(task, cgrp, tset) {
-		/*
-		 * Kthreads bound to specific cpus cannot be moved to a new
-		 * cpuset; we cannot change their cpu affinity and
-		 * isolating such threads by their set of allowed nodes is
-		 * unnecessary.  Thus, cpusets are not applicable for such
-		 * threads.  This prevents checking for success of
-		 * set_cpus_allowed_ptr() on all attached tasks before
-		 * cpus_allowed may be changed.
-		 */
-		if (task->flags & PF_THREAD_BOUND)
-			return -EINVAL;
-[..]
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
