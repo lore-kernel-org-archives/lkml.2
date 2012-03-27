@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab2C0QU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:20:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53549 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab2C0QUZ convert rfc822-to-8bit (ORCPT
+	id S1754259Ab2C0QVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:21:09 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:44003 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2C0QVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:20:25 -0400
-Message-ID: <1332865192.16159.243.camel@twins>
-Subject: Re: [PATCH 07/39] autonuma: introduce kthread_bind_node()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Date: Tue, 27 Mar 2012 18:19:52 +0200
-In-Reply-To: <20120327160422.GR5906@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
-	 <1332783986-24195-8-git-send-email-aarcange@redhat.com>
-	 <1332786755.16159.174.camel@twins> <20120327152209.GL5906@redhat.com>
-	 <1332863135.16159.239.camel@twins> <20120327160422.GR5906@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 27 Mar 2012 12:21:06 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Daniel Drake <dsd@laptop.org>,
+        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dilinger@queued.net, pgf@laptop.org
+Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
+In-Reply-To: Your message of "Tue, 27 Mar 2012 17:07:14 +0100."
+             <20120327160714.GA8398@srcf.ucam.org>
+From: Valdis.Kletnieks@vt.edu
+References: <20120326180710.8DF9C9D401E@zog.reactivated.net> <20120326142908.c5248aec.akpm@linux-foundation.org> <4F70E042.4020703@zytor.com> <20120326145146.23fde0db.akpm@linux-foundation.org>
+            <20120327160714.GA8398@srcf.ucam.org>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1332865125_1966P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 27 Mar 2012 12:18:46 -0400
+Message-ID: <22573.1332865126@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4F71E867.00AB,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 18:04 +0200, Andrea Arcangeli wrote:
-> On Tue, Mar 27, 2012 at 05:45:35PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2012-03-27 at 17:22 +0200, Andrea Arcangeli wrote:
-> > > I don't see what's wrong with more than 1 CPU in the hard bind
-> > > cpumask.
-> > 
-> > Because its currently broken, but we're trying to restore its pure
-> > semantic so that we can use it in more places again, like
-> > debug_smp_processor_id(). Testing a single process flag is _much_
-> > cheaper than testing ->cpus_allowed.
-> > 
-> > Adding more broken isn't an option.
-> 
-> I would suggest you to use a new bitflag for that _future_
-> optimization that you plan to do without altering the way the current
-> bitflag works.
-> 
-> I doubt knuma_migrated will ever be the only kernel thread that wants
-> to run with a NUMA NODE-wide CPU binding (instead of single-CPU
-> binding).
-> 
-> Being able to keep using this bitflag for NUMA-wide bindings too in
-> the future as well (after you do the optimization you planned), is
-> going to reduce the chances of the root user shooting himself in the
-> foot for both the kernel thread node-BIND and the single-cpu-BIND.
+--==_Exmh_1332865125_1966P
+Content-Type: text/plain; charset=us-ascii
 
-But then the current flag is a mis-nomer. Also, there's no correctness
-issue with the per-node threads, its perfectly fine if they run some
-place else so I don't think we should restrict userspace to force them
-away from their preferred node.
+On Tue, 27 Mar 2012 17:07:14 +0100, Matthew Garrett said:
 
-So even if you were to introduce a new flag, I'd still object.
+> If a previous author has given a Signed-off-by then they've clearly
+> indicated that their code is under an appropriate license and may be
+> submitted to the kernel. If someone else then takes that code, modifies
+> it and submits it then there's no obvious reason why we still need the
+> original Signed-off-by. Giving credit to the original author is
+> obviously appropriate, but I don't see why we need any more than that.
 
-The only reason to ever refuse userspace moving a task around is if it
-will break stuff. Worst that can happen with a node affine thread is
-that it'll incur remote memory penalties, that's not fatal.
+Conversely, if a maintainer does fixups on a patch while commiting
+it, we *don't* discard the original Signed-off-by.   I'd say if somebody's
+submitting somebody else's patch, the chain should be:
+
+signed-off-by: original author
+signed-off-by: the person who did the updates
+signed-off-by: <chain of maintainers heading upstream>
+
+--==_Exmh_1332865125_1966P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT3HoZQdmEQWDXROgAQKvuA//UwBhCHoX6oj48o3CYIiVsJxEuJZkbk1W
+w8qXSZvNol18GB+vtHl+ajCxU0zAjNiWzV1aUIrZPZ2JZMWzLTLyFG43vFF3E2cS
+ppxzYMqH7pRCej6GxE45x5u/4GEL0hYtXNn3HdBrTSy+hzwDsykPW5jlvvOUaLvd
+LM+Z7N2JrxerUAWpOC322OHgwqIadgA0PmOVRvu3nf8E43aoQY+iiKK6CI0QwyEL
+cRfvcA7Q3jbJTc9yqZGyEFuLQIGRjQ/AbJRY9fkuYt8hmxc0cCXjwPYzGA9obXR7
+7wjrfq9/jAFJ8xKwkBN41Aoy49Mp3YDO7Zraw2oW6dnHFmGQnaSyijpemp2IkmOa
+1rlKww+M/raK2I0JI8x5M3sOUbCF2Puww5/ZZp1IkYlbho6eXUM2jhMIIf26oLKY
+3eXE63LXnP7BBVp+crcBjamTALu4aGse546Zi5mpK5bH9IKFBglF5YSOAOLsNHd0
+vsmVe4jm3opu/cu94SORb28GYCuP8G1pLM8PkRn1Q8hvTnhi7ZFri3oImQofwZSa
+sUBBY0W25bjJ/QyNK9SgVMLKNJe0SDphmTetz8+AbAZHqyBZoDhQd+2vzfUOpOKi
+HfMmnFFTlDZcxXevuSZcKadNxF0lLY4rMNFuMESQ+DxlsjZtpxOb5muo0DKmar42
+X5M0qe2DIl8=
+=Vwzo
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1332865125_1966P--
+
