@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab2C0Wto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:49:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38664 "EHLO ogre.sisk.pl"
+	id S932096Ab2C0Wus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:50:48 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38674 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756670Ab2C0Wtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:49:42 -0400
+	id S1756491Ab2C0Wur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 18:50:47 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
-Subject: Re: [PATCH v5]: Hibernation: lower/better control the amount of pages used for buffering
-Date: Wed, 28 Mar 2012 00:54:01 +0200
+To: Tejun Heo <tj@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 2/2] firmware_class: Move request_firmware_nowait() to workqueues
+Date: Wed, 28 Mar 2012 00:55:06 +0200
 User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
         Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <1332887486.2040.10.camel@shrek.rexursive.com> <201203280047.33501.rjw@sisk.pl> <1332888231.2040.14.camel@shrek.rexursive.com>
-In-Reply-To: <1332888231.2040.14.camel@shrek.rexursive.com>
+References: <201203260000.34377.rjw@sisk.pl> <201203280021.27582.rjw@sisk.pl> <20120327224837.GC22371@google.com>
+In-Reply-To: <20120327224837.GC22371@google.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203280054.01695.rjw@sisk.pl>
+Message-Id: <201203280055.06624.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 28, 2012, Bojan Smojver wrote:
-> On Wed, 2012-03-28 at 00:47 +0200, Rafael J. Wysocki wrote:
-> > Not really, that should be a static inline too. :-)
+On Wednesday, March 28, 2012, Tejun Heo wrote:
+> On Wed, Mar 28, 2012 at 12:21:27AM +0200, Rafael J. Wysocki wrote:
+> > On Wednesday, March 28, 2012, Tejun Heo wrote:
+> > > On Tue, Mar 27, 2012 at 02:28:30PM -0700, Stephen Boyd wrote:
+> > > > Oddly enough a work_struct was already part of the firmware_work
+> > > > structure but nobody was using it. Instead of creating a new
+> > > > kthread for each request_firmware_nowait() call just schedule the
+> > > > work on the long system workqueue. This should avoid some overhead
+> > > > in forking new threads when they're not strictly necessary.
+> > > > 
+> > > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > > > ---
+> > > > 
+> > > > Is it better to use alloc_workqueue() and not put these on the system
+> > > > long workqueue?
+> > > 
+> > > No, just use schedule_work() unless there are specific requirements
+> > > which can't be fulfilled that way (e.g. it's on memory allocation
+> > > path, may consume large amount of cpu cycles, ...)
+> > 
+> > It may wait quite long.
 > 
-> OK, I'll send you a v6 with REQD_FREE_PAGES.
+> That shouldn't matter.  system_long_wq's name is a bit misleading at
+> this point.  The only reason it's used currently is to avoid cyclic
+> dependency involving flush_workqueue(), which calls for clearer
+> solution anyway.  So, yeap, using system_wq should be fine here.
 
-That's better, but what's wrong with a static inline, actually?
+Good, thanks for the explanation.
 
-Those are preferred to macros nowadays.
+Stephen, care to respin?
 
 Rafael
