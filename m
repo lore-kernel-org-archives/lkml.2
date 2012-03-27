@@ -1,51 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab2C0W3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:29:51 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46338 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570Ab2C0W3u (ORCPT
+	id S1756902Ab2C0Wb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:31:29 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:36160 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab2C0Wb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:29:50 -0400
-Date: Tue, 27 Mar 2012 18:28:41 -0400 (EDT)
-Message-Id: <20120327.182841.1664052401394959748.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-03-27
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120327183242.GB20938@tuxdriver.com>
-References: <20120327183242.GB20938@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 27 Mar 2012 18:31:28 -0400
+Message-ID: <1332887486.2040.10.camel@shrek.rexursive.com>
+Subject: [PATCH v5]: Hibernation: lower/better control the amount of pages
+ used for buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 28 Mar 2012 09:31:26 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 27 Mar 2012 15:28:45 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 27 Mar 2012 14:32:42 -0400
+Hi Rafael,
 
-> First, we have a MAINTAINERS update -- not truly a "fix", but it might
-> help to keep unwanted traffic out of Bob's inbox.  We also have a
-> removal of an outdated comment that was overlooked when the related
-> code was removed.
+Hopefully, this one has your comments addressed. Thanks for reviewing!
 
-MAINTAINERS updates can always go in, so no problems with this.
+---------------------------------------
+Hibernation/thaw improvements:
 
-> Beyond those, we have a fix for a memory leak in ath9k, a cfg80211
-> fix to prevent passing bad info over nl80211 to userspace, a tuning
-> fix for some rtlwifi family drivers, a couple of minor ath9k tuning
-> fixes, a mac80211 use-after-free fix, a couple of rt2x00 thinko fixes,
-> an iwlegacy fix to properly set BSSID after an association, and an
-> iwlegacy fix to avoid an oops by properly reinitializing a variable
-> after reset.
+1. Set maximum number of pages for read buffering consistently, instead
+of inadvertently depending on the size of the sector type.
 
-Ok.
+2. Use at most one quarter of free pages for read buffering.
 
-I'll pull this in as soon as Linus processes my most recent networking
-pull request.
+3. Require that number of free pages when writing the image never falls
+below three quarters of total free pages available.
 
-Thanks!
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+---
+ kernel/power/swap.c |   32 +++++++++++++++++++++-----------
+ 1 files changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 8742fd0..6c58fa3 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -51,6 +51,12 @@
+ 
+ #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
+ 
++/*
++ * Number of pages required to be kept free while writing the image. Always
++ * three quarters of all available pages before the writing starts.
++ */
++#define reqd_free_pages()	((nr_free_pages() / 4) * 3)
++
+ struct swap_map_page {
+ 	sector_t entries[MAP_PAGE_ENTRIES];
+ 	sector_t next_swap;
+@@ -72,7 +78,7 @@ struct swap_map_handle {
+ 	sector_t cur_swap;
+ 	sector_t first_sector;
+ 	unsigned int k;
+-	unsigned long nr_free_pages, written;
++	unsigned long reqd_free_pages;
+ 	u32 crc32;
+ };
+ 
+@@ -316,8 +322,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
+-	handle->nr_free_pages = nr_free_pages() >> 1;
+-	handle->written = 0;
++	handle->reqd_free_pages = reqd_free_pages();
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+ err_rel:
+@@ -352,11 +357,15 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+ 	}
+-	if (bio_chain && ++handle->written > handle->nr_free_pages) {
++	if (bio_chain && nr_free_pages() < handle->reqd_free_pages) {
+ 		error = hib_wait_on_bio_chain(bio_chain);
+ 		if (error)
+ 			goto out;
+-		handle->written = 0;
++		/*
++		 * Recalculate the number of required free pages, to make sure
++		 * we never take more than a quarter.
++		 */
++		handle->reqd_free_pages = reqd_free_pages();
+ 	}
+  out:
+ 	return error;
+@@ -404,7 +413,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ #define LZO_THREADS	3
+ 
+ /* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++#define LZO_READ_PAGES	8192
+ 
+ 
+ /**
+@@ -615,10 +624,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
+ 	 */
+-	handle->nr_free_pages = nr_free_pages() >> 1;
++	handle->reqd_free_pages = reqd_free_pages();
+ 
+ 	/*
+ 	 * Start the CRC32 thread.
+@@ -1129,8 +1138,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 
+ 	/*
+ 	 * Adjust number of pages for read buffering, in case we are short.
++	 * Never take more than a quarter of all available pages.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
++	read_pages = (nr_free_pages() - snapshot_get_image_size()) / 4;
+ 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+---------------------------------------
+
+-- 
+Bojan
+
