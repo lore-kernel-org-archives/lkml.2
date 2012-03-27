@@ -1,147 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2C0Sdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:33:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35316 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab2C0Sdm (ORCPT
+	id S1755687Ab2C0Sfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:35:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54007 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755541Ab2C0Sfj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:33:42 -0400
-Date: Tue, 27 Mar 2012 20:33:37 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] perf tools: Including pre-generated flex files
-Message-ID: <20120327183335.GA27621@gmail.com>
-References: <20120327181547.GA7374@infradead.org>
+	Tue, 27 Mar 2012 14:35:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="122324067"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
+ buffer
+Thread-Topic: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
+ buffer
+Thread-Index: AQHM+52OAGJLSTC5XEayndO+1KM0H5Zd7lyAgAjwwGCAAHjXAP//ksOwgACIZoCAF4MHgP//oHFg
+Date: Tue, 27 Mar 2012 18:35:37 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B72395@ORSMSX104.amr.corp.intel.com>
+References: <1331040694-12558-1-git-send-email-bp@amd64.org>
+ <1331040694-12558-4-git-send-email-bp@amd64.org>
+ <4F563067.1090100@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
+ <20120312162646.GB7255@aftab>
+ <3908561D78D1C84285E8C5FCA982C28F15B61A1F@ORSMSX103.amr.corp.intel.com>
+ <20120312180359.GA8214@aftab> <20120327170655.GB7937@aftab>
+In-Reply-To: <20120327170655.GB7937@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327181547.GA7374@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> In any case, if during the safe period of time we haven't received
+> confirmation from userspace that the item has been consumed, we switch
+> irreversibly back to the kernel log buffer and reissue the decoded info
+> through printk.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+I'm not sure I like irreversible things.
 
-> [...]
->
-> 	But Ingo argues that flex and bison are just a 
-> yum/whatever install away, so we shouldn't clutter the kernel 
-> git history with things we can generate at build time.
-> 
-> 	What is your take on this?
+Here's the life cycle:
 
-I.e. we could just autogenerate automatically via something like 
-the patch below.
+1) System boots ... we have a window during this time where there is
+   no daemon (or any user space at all).
 
-My main worry was that Linus would (somewhat rightfully) object 
-to the large diffstats that these things introduce:
+2) Daemon gets started from /etc/init.d or systemd script
 
- tools/perf/util/parse-events-bison.c               | 1917 +++++++++++++++++
- tools/perf/util/parse-events-bison.h               |   81 +
- tools/perf/util/parse-events-flex.c                | 2272 ++++++++++++++++++++
- tools/perf/util/parse-events-flex.h                |  316 +++
- tools/perf/util/parse-events.c                     |  603 +++---
- tools/perf/util/parse-events.h                     |   49 +
- tools/perf/util/parse-events.l                     |  126 ++
- tools/perf/util/parse-events.y                     |  229 ++
- tools/perf/util/pmu-bison.c                        | 1663 ++++++++++++++
- tools/perf/util/pmu-bison.h                        |   73 +
- tools/perf/util/pmu-flex.c                         | 1821 ++++++++++++++++
- tools/perf/util/pmu-flex.h                         |  316 +++
+3) (optional) New version of daemon installed in update (old daemon is terminated, new one starts).
 
-I mean, since auto-generating them is in the Makefile *already*, 
-the only argument in favor of it is that whether we want to make 
-the perf build depend on bison and flex.
+4) System is shutdown - all daemons terminated
 
-Anyway, it would be nice if we could hear an official opinion on 
-this. I didn't want to send the latest perf/urgent with this 
-diffstat until this is settled one way or another.
+5) System actually halts.
 
-Thanks,
 
-	Ingo
+So we clearly have some gaps where there isn't a daemon.  Most of them should
+be pretty short ... but I worry about the gap from #1 to #2 - which can be pretty
+long if we need to fsck some disks (or we on some crazy big system that takes
+many minutes just to find and spin-up all the disks).
 
-------------->
->From 3cfa99c3a09224cc270ed1e1260cc4fe1b79cebc Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@kernel.org>
-Date: Tue, 27 Mar 2012 14:07:50 +0200
-Subject: [PATCH] perf tools: Remove auto-generated bison/flex files
-
-These should not be in the Git history - they are auto-generated.
-
-Extend the Makefile rules of the parser files to include the generation
-run.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: http://lkml.kernel.org/n/tip-h6jnlwdy7by4v7yljrvzbii0@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/Makefile                  |   25 +-
- tools/perf/util/parse-events-bison.c | 1917 ----------------------------
- tools/perf/util/parse-events-bison.h |   81 --
- tools/perf/util/parse-events-flex.c  | 2272 ----------------------------------
- tools/perf/util/parse-events-flex.h  |  316 -----
- tools/perf/util/pmu-bison.c          | 1663 -------------------------
- tools/perf/util/pmu-bison.h          |   73 --
- tools/perf/util/pmu-flex.c           | 1821 ---------------------------
- tools/perf/util/pmu-flex.h           |  316 -----
- 9 files changed, 15 insertions(+), 8469 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2f42886..a9dfd1f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -61,8 +61,6 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
--FLEX = $(CROSS_COMPILE)flex
--BISON= $(CROSS_COMPILE)bison
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
-@@ -236,6 +234,21 @@ endif
- 
- export PERL_PATH
- 
-+FLEX = $(CROSS_COMPILE)flex
-+BISON= $(CROSS_COMPILE)bison
-+
-+event-parser:
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o util/parse-events-bison.c
-+	$(QUIET_FLEX)$(FLEX) --header-file=util/parse-events-flex.h -t util/parse-events.l > util/parse-events-flex.c
-+
-+util/parse-events-flex.c: event-parser
-+
-+pmu-parser:
-+	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o util/pmu-bison.c
-+	$(QUIET_FLEX)$(FLEX) --header-file=util/pmu-flex.h -t util/pmu.l > util/pmu-flex.c
-+
-+util/pmu-flex.c: pmu-parser
-+
- LIB_FILE=$(OUTPUT)libperf.a
- 
- LIB_H += ../../include/linux/perf_event.h
-@@ -883,14 +896,6 @@ cscope:
- 	$(RM) cscope*
- 	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
- 
--event-parser:
--	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o util/parse-events-bison.c
--	$(QUIET_FLEX)$(FLEX) --header-file=util/parse-events-flex.h -t util/parse-events.l > util/parse-events-flex.c
--
--pmu-parser:
--	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o util/pmu-bison.c
--	$(QUIET_FLEX)$(FLEX) --header-file=util/pmu-flex.h -t util/pmu.l > util/pmu-flex.c
--
- ### Detect prefix changes
- TRACK_CFLAGS = $(subst ','\'',$(ALL_CFLAGS)):\
-              $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
-[...]
+-Tony
