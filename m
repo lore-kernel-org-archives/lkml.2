@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab2C0RHC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 13:07:02 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42627 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab2C0RHA (ORCPT
+	id S1755180Ab2C0RJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 13:09:38 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:58459 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab2C0RJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 13:07:00 -0400
-Date: Tue, 27 Mar 2012 19:06:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
- buffer
-Message-ID: <20120327170655.GB7937@aftab>
-References: <1331040694-12558-1-git-send-email-bp@amd64.org>
- <1331040694-12558-4-git-send-email-bp@amd64.org>
- <4F563067.1090100@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
- <20120312162646.GB7255@aftab>
- <3908561D78D1C84285E8C5FCA982C28F15B61A1F@ORSMSX103.amr.corp.intel.com>
- <20120312180359.GA8214@aftab>
+	Tue, 27 Mar 2012 13:09:36 -0400
+Date: Tue, 27 Mar 2012 19:09:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dan Smith <danms@us.ibm.com>, Paul Turner <pjt@google.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>, linux-mm@kvack.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, Bharata B Rao <bharata.rao@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/39] autonuma: CPU follow memory algorithm
+Message-ID: <20120327170929.GA28771@gmail.com>
+References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+ <1332783986-24195-12-git-send-email-aarcange@redhat.com>
+ <1332786353.16159.173.camel@twins>
+ <4F70C365.8020009@redhat.com>
+ <20120326194435.GW5906@redhat.com>
+ <CA+55aFwk0Etg_UhoZcKsfFJ7PQNLdQ58xxXiwcA-jemuXdZCZQ@mail.gmail.com>
+ <20120326203951.GZ5906@redhat.com>
+ <1332837595.16159.208.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120312180359.GA8214@aftab>
+In-Reply-To: <1332837595.16159.208.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 07:03:59PM +0100, Borislav Petkov wrote:
-> On Mon, Mar 12, 2012 at 04:59:37PM +0000, Luck, Tony wrote:
-> > > Sounds better, especially the close-on-exit part. Please elaborate on
-> > > the races...
-> > 
-> > Errors are happening asynchronously to everything. Race looks like:
-> > 
-> > Daemon exits (or is killed)
-> >    <<<< race begins here
-> > kernel close routine called
-> > close routine updates your global variable
-> >    <<<< race ends here
-> 
-> Well, in that case, we're going to miss logging a single error, or log
-> it incomplete.
-> 
-> Unless, we make the global variable atomic and make the daemon zero it
-> as the first action it does when it starts going away. If it is killed,
-> then we probably need some sanity-checking functionality which checks
-> periodically whether the daemon is still alive ...
-> 
-> This probably needs more meditation.
 
-Ok, hm, how about we add a timer which runs for a safe period of say...
-a couple of minutes after the error has been logged into the buffer.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Before it expires we expect that the userspace daemon comes in and
-consumes the information - we test explicitly whether it wrote to some
-file - or implicitly by checking whether the buffer got emptied in the
-meantime (the exact method is still TBD).
+> You can talk pretty much anything down to O(1) that way. Take 
+> an algorithm that is O(n) in the number of tasks, since you 
+> know you have a pid-space constraint of 30bits you can never 
+> have more than 2^30 (aka 1Gi) tasks, hence your algorithm is 
+> O(2^30) aka O(1).
 
-In any case, if during the safe period of time we haven't received
-confirmation from userspace that the item has been consumed, we switch
-irreversibly back to the kernel log buffer and reissue the decoded info
-through printk.
+We can go even further than that, IIRC all physical states of 
+this universe fit into a roughly 2^1000 finite state-space, so 
+every computing problem in this universe is O(2^1000), i.e. 
+every computing problem we can ever work on is O(1).
 
-This way we
+Really, I think Andrea is missing the big picture here.
 
-* don't introduce a device file with a ->close
+Thanks,
 
-* remain races-agnostic: either the timeout has happened and userspace
-hasn't consumed the decoded data or it worked just fine and we continue
-on with our marry error collection.
-
-If other errors happen while the timer is running, we log them as usual
-and restart the timer to give the newest error an equal chance. Error
-size shouldn't overflow the buffer because we're reserving 4 pages per
-CPU currently and this can easily be enlarged...
-
-Hmm, thoughts..?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+	Ingo
