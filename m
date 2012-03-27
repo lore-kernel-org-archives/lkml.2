@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab2C0JHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 05:07:46 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:34681 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab2C0JHp (ORCPT
+	id S1757911Ab2C0JKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 05:10:43 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:51083 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251Ab2C0JKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 05:07:45 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2R8gqon001587, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH 1/3] staging:rts_pstor:Fix unbalanced parentheses
-Date: Tue, 27 Mar 2012 16:42:42 +0800
-Message-ID: <1332837762-9690-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 27 Mar 2012 05:10:37 -0400
+Date: Tue, 27 Mar 2012 11:10:28 +0200
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: [PATCH 2/2] i2c: Dynamically assign adapter id if it wasn't explictly
+ specified
+In-reply-to: <1332839428-29705-1-git-send-email-k.lewandowsk@samsung.com>
+To: w.sang@pengutronix.de
+Cc: ben-linux@fluff.org, m.szyprowski@samsung.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        kyungmin.park@samsung.com, hskinnemoen@gmail.com,
+        bigeasy@linutronix.de, dirk.brandewie@gmail.com,
+        linux@arm.linux.org.uk, Karol Lewandowski <k.lewandowsk@samsung.com>
+Message-id: <1332839428-29705-3-git-send-email-k.lewandowsk@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.9.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <1332839428-29705-1-git-send-email-k.lewandowsk@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wwang <wei_wang@realsil.com.cn>
+Commit 488bf314b ("i2c: Allow i2c_add_numbered_adapter() to assign a
+bus id") reworked i2c_add_numbered_adapter() to call i2c_add_adapter()
+if requested bus was -1.
 
-Signed-off-by: wwang <wei_wang@realsil.com.cn>
+This allows to simplify driver's initialization procedure by using
+just one function for static and dynamic adapter id registration.
+
+This patch updates few more drivers (missed out in original patch)
+to use this functionality.
+
+Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/staging/rts_pstor/ms.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/i2c/busses/i2c-gpio.c         |    7 +------
+ drivers/i2c/busses/i2c-pca-platform.c |    2 +-
+ drivers/i2c/busses/i2c-versatile.c    |    9 ++-------
+ 3 files changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/rts_pstor/ms.c b/drivers/staging/rts_pstor/ms.c
-index 66341df..e098a90 100644
---- a/drivers/staging/rts_pstor/ms.c
-+++ b/drivers/staging/rts_pstor/ms.c
-@@ -4135,7 +4135,7 @@ int mg_set_ICV(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- #else
- 	retval = ms_transfer_data(chip, MS_TM_AUTO_WRITE, PRO_WRITE_LONG_DATA,
- 				2, WAIT_INT, 0, 0, buf + 4, 1024);
--	if ((retval != STATUS_SUCCESS) || check_ms_err(chip) {
-+	if ((retval != STATUS_SUCCESS) || check_ms_err(chip)) {
- 		rtsx_clear_ms_error(chip);
- 		if (ms_card->mg_auth == 0) {
- 			if ((buf[5] & 0xC0) != 0) {
+diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
+index a651779..50a2a94 100644
+--- a/drivers/i2c/busses/i2c-gpio.c
++++ b/drivers/i2c/busses/i2c-gpio.c
+@@ -144,12 +144,7 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
+ 	adap->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
+ 	adap->dev.parent = &pdev->dev;
+ 
+-	/*
+-	 * If "dev->id" is negative we consider it as zero.
+-	 * The reason to do so is to avoid sysfs names that only make
+-	 * sense when there are multiple adapters.
+-	 */
+-	adap->nr = (pdev->id != -1) ? pdev->id : 0;
++	adap->nr = pdev->id;
+ 	ret = i2c_bit_add_numbered_bus(adap);
+ 	if (ret)
+ 		goto err_add_bus;
+diff --git a/drivers/i2c/busses/i2c-pca-platform.c b/drivers/i2c/busses/i2c-pca-platform.c
+index 2adbf1a..675878f 100644
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -171,7 +171,7 @@ static int __devinit i2c_pca_pf_probe(struct platform_device *pdev)
+ 	i2c->io_size = resource_size(res);
+ 	i2c->irq = irq;
+ 
+-	i2c->adap.nr = pdev->id >= 0 ? pdev->id : 0;
++	i2c->adap.nr = pdev->id;
+ 	i2c->adap.owner = THIS_MODULE;
+ 	snprintf(i2c->adap.name, sizeof(i2c->adap.name),
+ 		 "PCA9564/PCA9665 at 0x%08lx",
+diff --git a/drivers/i2c/busses/i2c-versatile.c b/drivers/i2c/busses/i2c-versatile.c
+index 6055601..9458568 100644
+--- a/drivers/i2c/busses/i2c-versatile.c
++++ b/drivers/i2c/busses/i2c-versatile.c
+@@ -102,13 +102,8 @@ static int i2c_versatile_probe(struct platform_device *dev)
+ 	i2c->algo = i2c_versatile_algo;
+ 	i2c->algo.data = i2c;
+ 
+-	if (dev->id >= 0) {
+-		/* static bus numbering */
+-		i2c->adap.nr = dev->id;
+-		ret = i2c_bit_add_numbered_bus(&i2c->adap);
+-	} else
+-		/* dynamic bus numbering */
+-		ret = i2c_bit_add_bus(&i2c->adap);
++	i2c->adap.nr = dev->id;
++	ret = i2c_bit_add_numbered_bus(&i2c->adap);
+ 	if (ret >= 0) {
+ 		platform_set_drvdata(dev, i2c);
+ 		return 0;
 -- 
-1.7.5.4
+1.7.9.1
 
