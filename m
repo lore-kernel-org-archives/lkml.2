@@ -1,249 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab2C0RvY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 13:51:24 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:12701 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754587Ab2C0RvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 13:51:20 -0400
-Message-ID: <4F71FE15.7060708@solarflare.com>
-Date: Tue, 27 Mar 2012 18:51:17 +0100
-From: Stuart Hodgson <smhodgson@solarflare.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1755125Ab2C0Rx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 13:53:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52809 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425Ab2C0Rx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 13:53:57 -0400
+Date: Tue, 27 Mar 2012 19:53:52 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [GIT] HID #2
+In-Reply-To: <4F71D9C5.9040301@canonical.com>
+Message-ID: <alpine.LNX.2.00.1203271952580.25526@pobox.suse.cz>
+References: <alpine.LNX.2.00.1201091248360.24984@pobox.suse.cz> <4F71D9C5.9040301@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: <netdev@vger.kernel.org>
-CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [RFC PATCH 2/2] net: ethtool: Add capability to retrieve plug-in
- module EEPROM
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.173]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18800.005
-X-TM-AS-Result: No--2.988200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implementation in sfc driver to return the plugin module eeprom
+On Tue, 27 Mar 2012, Joseph Salisbury wrote:
 
-Currently allows for SFP+ eeprom to be returned using the ethtool API.
-This can be extended in future to handle different eeprom formats
-and sizes.
+> > this is an updated pull request (I sent you the original one on Thu, 5 Jan 
+> > 2012 22:39:01 +0100 (CET)); as you haven't pulled the previous one yet, I 
+> > have update the for-linus branch with the patches from Jeremy that fix 
+> > battery reporting for apple devices, as due to my mistake, outdated 
+> > version of the patchset has been included in the branch originally.
+> > 
+> > Other than that, nothing new has been added on top of previous request.
+> > 
+> > Thanks in advance.
+> > 
+> > 
+> > The following changes are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+> > 
+> > Aaron Tian (1):
+> >       HID: multitouch: support PixArt optical touch screen
+> > 
+> > Benjamin Tissoires (10):
+> >       HID: multitouch: create sysfs attribute to control quirks from user-space
+> >       HID: multitouch: cleanup eGalax quirks
+> >       HID: multitouch: remove .maxcontacts field for eGalax
+> >       HID: multitouch: cleanup with eGalax PID definitions
+> >       HID: multitouch: add support for the MSI Windpad 110W
+> >       HID: multitouch: correct eGalax a001 protocol
+> >       HID: multitouch: merge quanta driver into hid-multitouch
+> >       HID: hid-multitouch: add support for new Hanvon panels
+> >       HID: multitouch: add support of Atmel multitouch panels
+> >       HID: multitouch: add support for 3M 32"
+> > 
+> > Chase Douglas (1):
+> >       HID: bump maximum global item tag report size to 96 bytes
+> > 
+> > Chris Bagwell (1):
+> >       HID: hid-multitouch - add another eGalax id
+> > 
+> > Dan Delaney (1):
+> >       HID/usbled: add support for Dream Cheeky DL100B Mailbox Friends Alert
+> > 
+> > Daniel Kurtz (3):
+> >       HID: usbhid: remove LED_ON
+> >       HID: usbhid: hid-core: submit queued urbs before suspend
+> >       HID: usbhid: defer LED setting to a workqueue
+> > 
+> > Daniel Nicoletti (1):
+> >       hid-input: add support for HID devices reporting Battery Strength
+> > 
+> > David Herrmann (18):
+> >       HID: wiimote: Rename driver to allow multiple source files
+> >       HID: wiimote: Move common symbols into header
+> >       HID: wiimote: Add read-mem helpers
+> >       HID: wiimote: Add extension support stub
+> >       HID: wiimote: Add extension initializer stubs
+> >       HID: wiimote: Add extension initializers
+> >       HID: wiimote: Add extension sysfs attribute
+> >       HID: wiimote: Register input devices for extensions
+> >       HID: wiimote: Add extension handler stubs
+> >       HID: wiimote: Parse motion+ data
+> >       HID: wiimote: Parse nunchuck data
+> >       HID: wiimote: Parse classic controller data
+> >       HID: wiimote: Add debugfs support stubs
+> >       HID: wiimote: Allow direct eeprom access
+> >       HID: wiimote: Allow direct DRM debug access
+> >       HID: wiimote: Remove module version number
+> >       HID: wiimote: Enable NO_INIT_REPORTS quirk
+> >       HID: wiimote: Select INPUT_FF_MEMLESS
+> > 
+> > Ignaz Forster (1):
+> >       HID: Enable HID_QUIRK_MULTI_INPUT for Trio Linker Plus II
+> > 
+> > Jeremy Fitzhardinge (10):
+> >       HID: debugfs: decode Generic Device Controls Usage Page
+> >       HID: hid-input: add support for HID devices reporting Battery Strength
+> >       HID: hid-input: fix compile for !HID_BATTERY_STRENGTH
+> >       hid-input/battery: remove apparently redundant kmalloc
+> >       hid-input/battery: add quirks for battery
+> >       hid-input/battery: deal with both FEATURE and INPUT report batteries
+> >       hid-input/battery: make the battery setup common for INPUTs and FEATUREs
+> >       hid-input/battery: power-supply type really *is* a battery
+> >       hid-input/battery: remove battery_val
+> >       hid-input/battery: add FEATURE quirk
+> > 
+> > Jiri Kosina (9):
+> >       HID: ignore absolute values which don't fit between logical min and max
+> >       HID: be more strict when ignoring out-of-range fields
+> >       HID: hyperv: fixup Kconfig / Makefile entries
+> >       HID: multitouch: make struct mt_classess static
+> >       HID: picolcd: make fb_pending_lock and picolcd_fb_cleanup static
+> >       HID: make parser more verbose about parsing errors by default
+> >       HID: introduce proper dependency of HID_BATTERY on POWER_SUPPLY
+> >       HID: Kconfig: fix syntax
+> >       HID: emsff: use symbolic name instead of hardcoded PID constant
+> > 
+> > K. Y. Srinivasan (3):
+> >       HID: Move the hid-hyperv driver out of staging
+> >       Staging: hv: mousevsc: Remove the mouse driver from the staging tree
+> >       HID: hv_mouse: Properly add the hid device
+> > 
+> > Marek Vasut (1):
+> >       HID: multitouch: Add egalax ID for Acer Iconia W500
+> > 
+> > Masatoshi Hoshikawa (1):
+> >       HID: hid-multitouch: add support 9 new Xiroku devices
+> > 
+> > Przemo Firszt (2):
+> >       HID: wacom: Move parsing to a separate function
+> >       HID: wacom: Initial driver for Wacom Intuos4 Wireless (Bluetooth)
+> > 
+> > Stefan Achatz (1):
+> >       HID: roccat: Add support for Isku keyboard
+> > 
+> > Thomas Meyer (2):
+> >       HID: hid-lg4ff: Casting (void *) value returned by kmalloc is useless
+> >       HID: roccat: Use kmemdup rather than duplicating its implementation
+> > 
+> > Willem Penninckx (2):
+> >       HID: usbkbd: synchronize LED URB submission
+> >       HID: usbkbd: kill LED URB on disconnect
+> > 
+> >  .../ABI/testing/sysfs-driver-hid-multitouch        |    9 +
+> >  .../ABI/testing/sysfs-driver-hid-roccat-isku       |  135 ++++
+> >  Documentation/ABI/testing/sysfs-driver-hid-wiimote |   12 +
+> >  drivers/hid/Kconfig                                |   38 +-
+> >  drivers/hid/Makefile                               |   11 +-
+> >  drivers/hid/hid-core.c                             |   82 ++-
+> >  drivers/hid/hid-debug.c                            |    8 +
+> >  drivers/hid/hid-emsff.c                            |    2 +-
+> >  .../{staging/hv/hv_mouse.c => hid/hid-hyperv.c}    |  303 ++++----
+> >  drivers/hid/hid-ids.h                              |   43 +-
+> >  drivers/hid/hid-input.c                            |  228 ++++++-
+> >  drivers/hid/hid-lg4ff.c                            |    2 +-
+> >  drivers/hid/hid-multitouch.c                       |  213 +++++--
+> >  drivers/hid/hid-picolcd.c                          |    4 +-
+> >  drivers/hid/hid-quanta.c                           |  261 -------
+> >  drivers/hid/hid-roccat-common.c                    |    4 +-
+> >  drivers/hid/hid-roccat-isku.c                      |  487 +++++++++++++
+> >  drivers/hid/hid-roccat-isku.h                      |  147 ++++
+> >  drivers/hid/hid-roccat-kone.c                      |    4 +-
+> >  drivers/hid/hid-wacom.c                            |  179 ++++-
+> >  drivers/hid/{hid-wiimote.c => hid-wiimote-core.c}  |  246 +++----
+> >  drivers/hid/hid-wiimote-debug.c                    |  227 ++++++
+> >  drivers/hid/hid-wiimote-ext.c                      |  752 ++++++++++++++++++++
+> >  drivers/hid/hid-wiimote.h                          |  208 ++++++
+> >  drivers/hid/usbhid/hid-core.c                      |  241 ++++---
+> >  drivers/hid/usbhid/hid-quirks.c                    |    4 +
+> >  drivers/hid/usbhid/usbhid.h                        |    3 +-
+> >  drivers/hid/usbhid/usbkbd.c                        |   64 ++-
+> >  drivers/staging/hv/Kconfig                         |    6 -
+> >  drivers/staging/hv/Makefile                        |    1 -
+> >  drivers/usb/misc/usbled.c                          |    2 +
+> >  include/linux/hid.h                                |   21 +
+> >  32 files changed, 3151 insertions(+), 796 deletions(-)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-multitouch
+> >  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-isku
+> >  rename drivers/{staging/hv/hv_mouse.c => hid/hid-hyperv.c} (75%)
+> >  delete mode 100644 drivers/hid/hid-quanta.c
+> >  create mode 100644 drivers/hid/hid-roccat-isku.c
+> >  create mode 100644 drivers/hid/hid-roccat-isku.h
+> >  rename drivers/hid/{hid-wiimote.c => hid-wiimote-core.c} (89%)
+> >  create mode 100644 drivers/hid/hid-wiimote-debug.c
+> >  create mode 100644 drivers/hid/hid-wiimote-ext.c
+> >  create mode 100644 drivers/hid/hid-wiimote.h
+> > 
+> 
+> I noticed stable@vger.kernel.org wasn't in the Cc list for this request.
+>  Jiri, will you be submitting a request to have this pulled into stable?
 
-Signed-off-by: Stuart Hodgson <smhodgson@solarflare.com>
----
-  drivers/net/ethernet/sfc/ethtool.c    |   36 +++++++++++
-  drivers/net/ethernet/sfc/mcdi_phy.c   |  105 
-+++++++++++++++++++++++++++++++++
-  drivers/net/ethernet/sfc/net_driver.h |    5 ++
-  3 files changed, 146 insertions(+), 0 deletions(-)
+Definitely not the whole bunch, that's not how it works. Also, stable 
+doesn't pull from random git trees, it selectively cherry-picks commits 
+from Linus' tree.
 
-diff --git a/drivers/net/ethernet/sfc/ethtool.c 
-b/drivers/net/ethernet/sfc/ethtool.c
-index f22f45f..e77895f 100644
---- a/drivers/net/ethernet/sfc/ethtool.c
-+++ b/drivers/net/ethernet/sfc/ethtool.c
-@@ -1108,6 +1108,40 @@ static int efx_ethtool_set_rxfh_indir(struct 
-net_device *net_dev,
-      return 0;
-  }
+If you feel like some commit should be added to -stable pile, you are free 
+to pick it up and submit to stable.
 
-+static int efx_ethtool_get_module_eeprom(struct net_device *net_dev,
-+                     struct ethtool_eeprom *ee,
-+                     u8 *data)
-+{
-+    struct efx_nic *efx = netdev_priv(net_dev);
-+    int ret;
-+
-+    if (!efx->phy_op ||
-+        !efx->phy_op->get_module_eeprom)
-+        return -EOPNOTSUPP;
-+
-+    mutex_lock(&efx->mac_lock);
-+    ret = efx->phy_op->get_module_eeprom(efx, ee, data);
-+    mutex_unlock(&efx->mac_lock);
-+
-+    return ret;
-+}
-+
-+static int efx_ethtool_get_module_info(struct net_device *net_dev,
-+                       struct ethtool_modinfo *modinfo)
-+{
-+    struct efx_nic *efx = netdev_priv(net_dev);
-+    int ret;
-+
-+    if (!efx->phy_op || !efx->phy_op->get_module_info)
-+        return 0;
-+
-+    mutex_lock(&efx->mac_lock);
-+    ret = efx->phy_op->get_module_info(efx, modinfo);
-+    mutex_unlock(&efx->mac_lock);
-+
-+    return ret;
-+}
-+
-  const struct ethtool_ops efx_ethtool_ops = {
-      .get_settings        = efx_ethtool_get_settings,
-      .set_settings        = efx_ethtool_set_settings,
-@@ -1137,4 +1171,6 @@ const struct ethtool_ops efx_ethtool_ops = {
-      .get_rxfh_indir_size    = efx_ethtool_get_rxfh_indir_size,
-      .get_rxfh_indir        = efx_ethtool_get_rxfh_indir,
-      .set_rxfh_indir        = efx_ethtool_set_rxfh_indir,
-+    .get_module_info    = efx_ethtool_get_module_info,
-+    .get_module_eeprom    = efx_ethtool_get_module_eeprom,
-  };
-diff --git a/drivers/net/ethernet/sfc/mcdi_phy.c 
-b/drivers/net/ethernet/sfc/mcdi_phy.c
-index 7bcad89..be8e372 100644
---- a/drivers/net/ethernet/sfc/mcdi_phy.c
-+++ b/drivers/net/ethernet/sfc/mcdi_phy.c
-@@ -304,6 +304,17 @@ static u32 mcdi_to_ethtool_media(u32 media)
-      }
-  }
+Thanks,
 
-+static u32 mcdi_to_module_eeprom_len(u32 media)
-+{
-+    switch (media) {
-+    case MC_CMD_MEDIA_SFP_PLUS:
-+        return SFF_8079_LEN;
-+    case MC_CMD_MEDIA_XFP:
-+    default:
-+        return 0;
-+    }
-+}
-+
-  static int efx_mcdi_phy_probe(struct efx_nic *efx)
-  {
-      struct efx_mcdi_phy_data *phy_data;
-@@ -739,6 +750,98 @@ static const char *efx_mcdi_phy_test_name(struct 
-efx_nic *efx,
-      return NULL;
-  }
-
-+#define SFP_PAGE_SIZE    128
-+#define NUM_PAGES    2
-+#define OFF_TO_BUFF(x)    (x + MC_CMD_GET_PHY_MEDIA_INFO_OUT_DATA_OFST)
-+static int efx_mcdi_phy_get_module_eeprom(struct efx_nic *efx,
-+                      struct ethtool_eeprom *ee, u8 *data)
-+{
-+    u8 outbuf[MC_CMD_GET_PHY_MEDIA_INFO_OUT_LENMAX];
-+    u8 inbuf[MC_CMD_GET_PHY_MEDIA_INFO_IN_LEN];
-+    size_t outlen;
-+    int rc;
-+    int payload_len;
-+    int copied = 0;
-+    int space_remaining = ee->len;
-+    int page;
-+    int page_off;
-+    int to_copy;
-+    u8 *user_data = data;
-+
-+    if (!data || !ee)
-+        return -EINVAL;
-+
-+    if (ee->offset > (SFP_PAGE_SIZE * NUM_PAGES)) {
-+        rc = -EINVAL;
-+        goto fail;
-+    }
-+
-+    page_off = (ee->offset % SFP_PAGE_SIZE);
-+    page = (ee->offset > SFP_PAGE_SIZE) ? 1 : 0;
-+
-+    while (space_remaining && (page < NUM_PAGES)) {
-+
-+        MCDI_SET_DWORD(inbuf, GET_PHY_MEDIA_INFO_IN_PAGE, page);
-+
-+        rc = efx_mcdi_rpc(efx, MC_CMD_GET_PHY_MEDIA_INFO,
-+                  inbuf, sizeof(inbuf),
-+                  outbuf, sizeof(outbuf),
-+ &outlen);
-+
-+        if (rc)
-+            goto fail;
-+
-+        /* Copy as much as we can into data */
-+        if (outlen < MC_CMD_GET_PHY_MEDIA_INFO_OUT_LENMIN ||
-+            outlen > MC_CMD_GET_PHY_MEDIA_INFO_OUT_LENMAX) {
-+            rc = -EIO;
-+            goto fail;
-+        }
-+
-+        payload_len = MCDI_DWORD(outbuf,
-+                     GET_PHY_MEDIA_INFO_OUT_DATALEN);
-+
-+        to_copy = (space_remaining < payload_len) ?
-+                space_remaining : payload_len;
-+
-+        to_copy -= page_off;
-+
-+        memcpy(user_data,
-+               (outbuf + OFF_TO_BUFF(page_off)),
-+               to_copy);
-+
-+        space_remaining -= to_copy;
-+        user_data += to_copy;
-+        copied += to_copy;
-+        page_off = 0;
-+        page++;
-+    }
-+
-+    ee->len = copied;
-+
-+    return 0;
-+fail:
-+    return rc;
-+}
-+
-+static int efx_mcdi_phy_get_module_info(struct efx_nic *efx,
-+                    struct ethtool_modinfo *modinfo)
-+{
-+    /* This will return a length of the eeprom
-+     * type of the module that was detected during the probe,
-+     * if not modules inserted then phy_data will be NULL */
-+    struct efx_mcdi_phy_data *phy_cfg;
-+
-+    if (!efx || !efx->phy_data)
-+        return -EOPNOTSUPP;
-+
-+    phy_cfg = efx->phy_data;
-+    modinfo->eeprom_len = mcdi_to_module_eeprom_len(phy_cfg->media);
-+    modinfo->type = SFF_8079;
-+
-+    return 0;
-+}
-+
-  const struct efx_phy_operations efx_mcdi_phy_ops = {
-      .probe        = efx_mcdi_phy_probe,
-      .init        = efx_port_dummy_op_int,
-@@ -751,4 +854,6 @@ const struct efx_phy_operations efx_mcdi_phy_ops = {
-      .test_alive    = efx_mcdi_phy_test_alive,
-      .run_tests    = efx_mcdi_phy_run_tests,
-      .test_name    = efx_mcdi_phy_test_name,
-+    .get_module_eeprom    = efx_mcdi_phy_get_module_eeprom,
-+    .get_module_info    = efx_mcdi_phy_get_module_info,
-  };
-diff --git a/drivers/net/ethernet/sfc/net_driver.h 
-b/drivers/net/ethernet/sfc/net_driver.h
-index 0b95505..245fc42 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -524,6 +524,11 @@ struct efx_phy_operations {
-      int (*test_alive) (struct efx_nic *efx);
-      const char *(*test_name) (struct efx_nic *efx, unsigned int index);
-      int (*run_tests) (struct efx_nic *efx, int *results, unsigned flags);
-+    int (*get_module_eeprom) (struct efx_nic *efx,
-+                   struct ethtool_eeprom *ee,
-+                   u8 *data);
-+    int (*get_module_info) (struct efx_nic *efx,
-+                struct ethtool_modinfo *modinfo);
-  };
-
-  /**
 -- 
-1.7.7.6
-
-
+Jiri Kosina
+SUSE Labs
