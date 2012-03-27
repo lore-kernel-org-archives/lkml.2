@@ -1,66 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab2C0BQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 21:16:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36481 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab2C0BQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 21:16:17 -0400
-Date: Tue, 27 Mar 2012 12:16:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Gerecke <killertofu@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>
-Subject: linux-next: manual merge of the input tree with Linus' tree
-Message-Id: <20120327121610.e39e648811d5b00ae328077b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL"
+	id S1754242Ab2C0BRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 21:17:37 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:2878 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751828Ab2C0BRf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 21:17:35 -0400
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I542M1432N98dK4015Izz1202hzz8275bh8275dhz2fh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+ watermark
+Thread-Topic: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+ watermark
+Thread-Index: AQHNC6KMktnywj0SeUmyydPm74ZZT5Z9M/GAgAAftwA=
+Date: Tue, 27 Mar 2012 01:17:07 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DD1257E@TK5EX14MBXC222.redmond.corp.microsoft.com>
+References: <1332800304-5060-1-git-send-email-haiyangz@microsoft.com>
+ <1332800304-5060-2-git-send-email-haiyangz@microsoft.com>
+ <20120326231017.GA30684@kroah.com>
+In-Reply-To: <20120326231017.GA30684@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Dmitry,
 
-Today's linux-next merge of the input tree got a conflict in
-drivers/input/tablet/wacom_sys.c between commit 24e3e5ae1e4c ("Input:
-wacom - fix physical size calculation for 3rd-gen Bamboo") from Linus'
-tree and commit 16bf288c4be6 ("Input: wacom - create inputs when wireless
-connect") from the input tree.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Monday, March 26, 2012 7:10 PM
+> To: Haiyang Zhang
+> Cc: davem@davemloft.net; netdev@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+> watermark
+> 
+> On Mon, Mar 26, 2012 at 03:18:24PM -0700, Haiyang Zhang wrote:
+> > In the existing code, we only stop queue when the ringbuffer is full,
+> > so the current packet has to be dropped or retried from upper layer.
+> >
+> > This patch stops the tx queue when available ringbuffer is below the
+> > low watermark. So the ringbuffer still has small amount of space
+> > available for the current packet. This will reduce the overhead of
+> > retries on sending.
+> >
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> > ---
+> >  drivers/hv/ring_buffer.c        |   15 +++++++++++++++
+> >  drivers/net/hyperv/hyperv_net.h |    3 +++
+> >  drivers/net/hyperv/netvsc.c     |   23 +++++++++++++++++++----
+> >  drivers/net/hyperv/netvsc_drv.c |   16 +++++++++++++++-
+> >  include/linux/hyperv.h          |    3 +++
+> >  5 files changed, 55 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c index
+> > 8af25a0..8cc3f63 100644
+> > --- a/drivers/hv/ring_buffer.c
+> > +++ b/drivers/hv/ring_buffer.c
+> > @@ -23,6 +23,7 @@
+> >   */
+> >  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> >
+> > +#include <linux/module.h>
+> >  #include <linux/kernel.h>
+> >  #include <linux/mm.h>
+> >  #include <linux/hyperv.h>
+> > @@ -160,6 +161,20 @@ hv_get_ring_buffersize(struct
+> hv_ring_buffer_info
+> > *ring_info)  }
+> >
+> >  /*
+> > + * Get the percentage of available bytes to write in the ring.
+> > + * The return value is in range from 0 to 100.
+> > + */
+> > +u32 hv_ringbuf_avail_percent(struct hv_ring_buffer_info *ring_info) {
+> > +	u32 avail_read, avail_write;
+> > +
+> > +	hv_get_ringbuffer_availbytes(ring_info, &avail_read, &avail_write);
+> > +
+> > +	return avail_write * 100 / hv_get_ring_buffersize(ring_info);
+> > +}
+> > +EXPORT_SYMBOL(hv_ringbuf_avail_percent);
+> 
+> That makes no sense, what happens 1 second later to the buffer?  You can't
+> expect this result to be valid anymore, right?
 
-The latter seems to incorporate the former, so I used that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+It's not necessary to be very precise for the flow control, just a rough 
+estimate on how full the buffer is enough. We only want to keep a small
+amount of buffer to be available, so the outgoing packets don't need to
+be retried.
 
---Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL
-Content-Type: application/pgp-signature
+> > --- a/drivers/net/hyperv/netvsc_drv.c
+> > +++ b/drivers/net/hyperv/netvsc_drv.c
+> > @@ -51,6 +51,16 @@ static int ring_size = 128;
+> > module_param(ring_size, int, S_IRUGO);  MODULE_PARM_DESC(ring_size,
+> > "Ring buffer size (# of pages)");
+> >
+> > +uint ring_avail_percent_hiwater = 20;
+> > +module_param(ring_avail_percent_hiwater, uint, S_IRUGO | S_IWUSR);
+> > +MODULE_PARM_DESC(ring_avail_percent_hiwater,
+> > +	"Ring buffer available percentiles to wake up xmit queue");
+> > +
+> > +uint ring_avail_percent_lowater = 10;
+> > +module_param(ring_avail_percent_lowater, uint, S_IRUGO | S_IWUSR);
+> > +MODULE_PARM_DESC(ring_avail_percent_lowater,
+> > +	"Ring buffer available percentiles to stop xmit queue");
+> 
+> Eeek, no, how in the world is someone supposed to know to set these things?
+> 
+> Please make this work "automatically", otherwise no one will ever get it right.
+> Don't make it tunable as a way out of making a decision on how the driver
+> should work.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I will remove the tunables. The default values here work fine in our tests.
 
-iQIcBAEBCAAGBQJPcRTaAAoJEECxmPOUX5FE5aUP/0GCRAO2trsUrtjFO5Uv+ApI
-LZaU61tJ4emaBo8vleTjZuBSN+2jb6K1xdntn7tzW8QCTLWuLxvjW3eDP59WK4sv
-TD8dIjyMbSGNuhZ+5ZCjUgQukJwPSs55quydL0kVLfeCLQYVsoDHhdq7uFSCMPO4
-vm887XkuCC7Uo5QPygcxDgx7sfmaQfeOyRrWi1A1ZaQsuNq5uwi++VEmv6R+Ldo/
-7KavbZ8WQYWjtgww+DNTACPRhOTnVa5On/oOXOhMfyXrZZYeATjOoye/A4Z+SUG4
-k05iqCJavru+fxfhRSG2l7wCqI6O8mCHSshJXThMVDSnWXhCUaSw44M4Yi+kBTQS
-pi7gk+8P0dpQT0g2psnV6Ks5l2hsaFkui4j/2JZtUR1jaVPUDf7EtL3FNzYnenMF
-rfVrMxXoSVZtgQo5yupxhSCCPJSxYnC4n5CygOGQZCWde0HGvy4p7wxNs0qGq3DC
-xZUQiQKT50O11118hfM7iQM0Yep7Y5h4RTlCWibPBK4qQdspDiHHWyFk/J8xvCnj
-fcJ6G3hV9dyAvKCWUC3JbMW97b5CIxC6GUJzT/jTEoM8/Ra0Yccug0rt+LlfUgQN
-2Pupjz3zT1Vaa5tOfamLZsrASbIXCNXSVrKO9J2JJauaXh+c3Vi9gR8ZfSvOXU7p
-OxZExqfijZSXQd5X0p5d
-=QV5M
------END PGP SIGNATURE-----
+Thanks,
+- Haiyang
 
---Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL--
+
