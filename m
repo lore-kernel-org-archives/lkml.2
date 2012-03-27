@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab2CZX5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 19:57:52 -0400
-Received: from lunge.queued.net ([173.255.254.236]:51601 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab2CZX5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 19:57:51 -0400
-Date: Mon, 26 Mar 2012 16:57:46 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Drake <dsd@laptop.org>, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        pgf@laptop.org
-Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
-Message-ID: <20120326165746.30588c55@debxo>
-In-Reply-To: <20120326155359.e5092006.akpm@linux-foundation.org>
-References: <20120326180710.8DF9C9D401E@zog.reactivated.net>
-	<20120326142908.c5248aec.akpm@linux-foundation.org>
-	<CAMLZHHSD8eRd17NyUb=Druj==4Eh+XtY=86vGQUGU1fiPMcMNg@mail.gmail.com>
-	<20120326155359.e5092006.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757912Ab2C0ABD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 20:01:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23934 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757859Ab2C0ABA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 20:01:00 -0400
+Date: Tue, 27 Mar 2012 02:00:12 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 39/39] autonuma: NUMA scheduler SMT awareness
+Message-ID: <20120327000012.GC5906@redhat.com>
+References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+ <1332783986-24195-40-git-send-email-aarcange@redhat.com>
+ <1332788223.16159.185.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332788223.16159.185.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Mar 2012 15:53:59 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Mon, Mar 26, 2012 at 08:57:03PM +0200, Peter Zijlstra wrote:
+> On Mon, 2012-03-26 at 19:46 +0200, Andrea Arcangeli wrote:
+> > Add SMT awareness to the NUMA scheduler so that it will not move load
+> > from fully idle SMT threads, to semi idle SMT threads.
+> 
+> This shows a complete fail in design, you're working around the regular
+> scheduler/load-balancer instead of with it and hence are duplicating all
+> kinds of stuff.
+> 
+> I'll not have that..
 
-> On Mon, 26 Mar 2012 16:45:10 -0600
-> Daniel Drake <dsd@laptop.org> wrote:
-> 
-> > On Mon, Mar 26, 2012 at 3:29 PM, Andrew Morton
-> > <akpm@linux-foundation.org> wrote:
-> > > s/fix/break/? __"Originally-from" is not a recognised tag. __If
-> > > this code is based upon an earlier version from Paul then
-> > > Signed-off-by: is correct.
-> > >
-> > > What's going on here? __What are you trying to communicate?
-> > 
-> > I'm trying to take Ingo's suggestion, in the thread "[patch 1/8]
-> > x86, olpc: add debugfs interface for EC commands" he wrote:
-> > 
-> > ====
-> > This is not a valid signoff sequence - the 'From: ' author of
-> > the patch must be the first SOB line.
-> > 
-> > The way to do this is either to have a:
-> > 
-> >  From: Paul Fox <pgf@laptop.org>
-> > 
-> > or to covert Paul Fox's SOB to a credit line, such as:
-> > 
-> >  Originally-from: Paul Fox <pgf@laptop.org>
-> > ====
-> > 
-> > The original code was from Paul Fox. I changed it somewhat
-> > significantly, and Paul approves of the end result.
-> > Can someone suggest a way of expressing this, including tag
-> > ordering, that will be accepted by all parties?  :)
-> 
-> From: Daniel Drake <dsd@laptop.org>
-> 
-> ....
-> 
-> The original code was from Paul Fox.  I changed it somewhat
-> significantly, and Paul approves of the end result.
-> 
-> Signed-off-by: Paul Fox <pgf@laptop.org>
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
+I think here you're misunderstanding implementation issues with
+design.
 
+I already mentioned the need of closer integration in CFS as point 4
+of my TODO list in the first email of this thread. The current
+implementation is just good enough to evaluate the AutoNUMA math and
+the resulting final performance (and after cleaning it up, it'll run
+even faster if something).
 
-This makes a lot more sense to me (and has been used in the past by
-both myself and dsd for OLPC submissions) rather than having a plethora
-of machine-parsable tags that no one cares about.  Minus the "approves
-of the end result" bit, though, as that's implicit in the SOB line.
-There are innumerable possible variants of this (Originally-by,
-Co-authored-with, Based-on-code-in-another-project-by,
-Written-while-being-whipped-by, and so on).
+If you want to contribute to sched/numa.c integrate it with CFS and
+remove the code duplication you're welcome. I tried for a short while
+but it wasn't even obvious the exact lines in fair.c where SMT is
+handled (I'm aware of SD_SHARE_CPUPOWER in SD_SIBLING_INIT but things
+weren't crystal clear there, in fact it's even hard to extrapolate the
+exact semantics of all SD_ bitflags, the comment on the right isn't
+very helpful either). An explanation of the exact lines in CFS where
+SMT is handled would be welcome too if I shall do the cleanup.
 
+Thanks,
+Andrea
