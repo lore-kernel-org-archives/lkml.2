@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab2C0Sgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:36:39 -0400
-Received: from mail-vx0-f202.google.com ([209.85.220.202]:46574 "EHLO
-	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab2C0Sg3 (ORCPT
+	id S1755856Ab2C0Sgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:36:37 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:51502 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab2C0Sg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Mar 2012 14:36:29 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -13,9 +13,9 @@ To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 12/13 v4] drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
-Date: Wed, 28 Mar 2012 02:36:21 +0800
-Message-Id: <1332873382-29373-13-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 04/13 v4] drm/i915/intel_i2c: use i2c pre/post_xfer functions to setup gpio xfers
+Date: Wed, 28 Mar 2012 02:36:13 +0800
+Message-Id: <1332873382-29373-5-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
 References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
@@ -23,78 +23,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is very common for an i2c device to require a small 1 or 2 byte write
-followed by a read.  For example, when reading from an i2c EEPROM it is
-common to write and address, offset or index followed by a reading some
-values.
-
-The i915 gmbus controller provides a special "INDEX" cycle for performing
-such a small write followed by a read.  The INDEX can be either one or two
-bytes long.  The advantage of using such a cycle is that the CPU has
-slightly less work to do once the read with INDEX cycle is started.
+Instead of rolling our own custom quirk_xfer function, use the bit_algo
+pre_xfer and post_xfer functions to setup and teardown bit-banged
+i2c transactions.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- drivers/gpu/drm/i915/intel_i2c.c |   32 ++++++++++++++++++++++++++++++--
- 1 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_i2c.c |   60 +++++++++++++++++++++----------------
+ 1 files changed, 34 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 43a3ca3..c71f3dc 100644
+index 9347281..1bb6362 100644
 --- a/drivers/gpu/drm/i915/intel_i2c.c
 +++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -204,13 +204,15 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+@@ -137,6 +137,35 @@ static void set_data(void *data, int state_high)
+ 	POSTING_READ(bus->gpio_reg);
+ }
+ 
++static int
++intel_gpio_pre_xfer(struct i2c_adapter *adapter)
++{
++	struct intel_gmbus *bus = container_of(adapter,
++					       struct intel_gmbus,
++					       adapter);
++	struct drm_i915_private *dev_priv = bus->dev_priv;
++
++	intel_i2c_reset(dev_priv->dev);
++	intel_i2c_quirk_set(dev_priv, true);
++	set_data(bus, 1);
++	set_clock(bus, 1);
++	udelay(I2C_RISEFALL_TIME);
++	return 0;
++}
++
++static void
++intel_gpio_post_xfer(struct i2c_adapter *adapter)
++{
++	struct intel_gmbus *bus = container_of(adapter,
++					       struct intel_gmbus,
++					       adapter);
++	struct drm_i915_private *dev_priv = bus->dev_priv;
++
++	set_data(bus, 1);
++	set_clock(bus, 1);
++	intel_i2c_quirk_set(dev_priv, false);
++}
++
+ static bool
+ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+ {
+@@ -166,6 +195,8 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+ 	algo->setscl = set_clock;
+ 	algo->getsda = get_data;
+ 	algo->getscl = get_clock;
++	algo->pre_xfer = intel_gpio_pre_xfer;
++	algo->post_xfer = intel_gpio_post_xfer;
+ 	algo->udelay = I2C_RISEFALL_TIME;
+ 	algo->timeout = usecs_to_jiffies(2200);
+ 	algo->data = bus;
+@@ -174,30 +205,6 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
  }
  
  static int
--gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
-+gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
-+		u32 gmbus1)
+-intel_i2c_quirk_xfer(struct intel_gmbus *bus,
+-		     struct i2c_msg *msgs,
+-		     int num)
+-{
+-	struct drm_i915_private *dev_priv = bus->dev_priv;
+-	int ret;
+-
+-	intel_i2c_reset(dev_priv->dev);
+-
+-	intel_i2c_quirk_set(dev_priv, true);
+-	set_data(bus, 1);
+-	set_clock(bus, 1);
+-	udelay(I2C_RISEFALL_TIME);
+-
+-	ret = i2c_bit_algo.master_xfer(&bus->adapter, msgs, num);
+-
+-	set_data(bus, 1);
+-	set_clock(bus, 1);
+-	intel_i2c_quirk_set(dev_priv, false);
+-
+-	return ret;
+-}
+-
+-static int
+ gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
+ 		bool last)
  {
- 	int reg_offset = dev_priv->gpio_mmio_base;
- 	u16 len = msg->len;
- 	u8 *buf = msg->buf;
+@@ -287,7 +294,7 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 	mutex_lock(&dev_priv->gmbus_mutex);
  
- 	I915_WRITE(GMBUS1 + reg_offset,
-+		   gmbus1 |
- 		   GMBUS_CYCLE_WAIT |
- 		   (len << GMBUS_BYTE_COUNT_SHIFT) |
- 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
-@@ -300,8 +302,34 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 	I915_WRITE(GMBUS0 + reg_offset, bus->reg0);
+ 	if (bus->force_bit) {
+-		ret = intel_i2c_quirk_xfer(bus, msgs, num);
++		ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
+ 		goto out;
+ 	}
  
- 	for (i = 0; i < num; i++) {
-+		bool last = i + 1 == num;
-+		u32 gmbus5 = 0;
-+		u32 gmbus1 = 0;
+@@ -351,8 +358,9 @@ timeout:
+ 		ret = -EIO;
+ 	} else {
+ 		bus->force_bit = true;
+-		ret = intel_i2c_quirk_xfer(bus, msgs, num);
++		ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
+ 	}
 +
-+		/*
-+		 * The gmbus controller can combine a 1 or 2 byte write with a
-+		 * read that immediately follows it by using an "INDEX" cycle.
-+		 */
-+		if (!last &&
-+		    !(msgs[i].flags & I2C_M_RD) &&
-+		    (msgs[i + 1].flags & I2C_M_RD) &&
-+		    msgs[i].len <= 2) {
-+			if (msgs[i].len == 2)
-+				gmbus5 = GMBUS_2BYTE_INDEX_EN |
-+					 msgs[i].buf[1] |
-+					 (msgs[i].buf[0] << 8);
-+			if (msgs[i].len == 1)
-+				gmbus1 = GMBUS_CYCLE_INDEX |
-+					 (msgs[i].buf[0] <<
-+					  GMBUS_SLAVE_INDEX_SHIFT);
-+			i += 1;  /* set i to the index of the read xfer */
-+		}
-+
-+		/* GMBUS5 holds 16-bit index, but must be 0 if not used */
-+		I915_WRITE(GMBUS5 + reg_offset, gmbus5);
-+
- 		if (msgs[i].flags & I2C_M_RD)
--			ret = gmbus_xfer_read(dev_priv, &msgs[i]);
-+			ret = gmbus_xfer_read(dev_priv, &msgs[i], gmbus1);
- 		else
- 			ret = gmbus_xfer_write(dev_priv, &msgs[i]);
- 
+ out:
+ 	mutex_unlock(&dev_priv->gmbus_mutex);
+ 	return ret;
 -- 
 1.7.7.3
 
