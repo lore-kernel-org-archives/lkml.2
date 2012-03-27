@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab2C0F6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 01:58:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63135 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab2C0F6l (ORCPT
+	id S1756744Ab2C0F77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 01:59:59 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53764 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756079Ab2C0F75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 01:58:41 -0400
-Message-ID: <4F71570D.4060507@openvz.org>
-Date: Tue, 27 Mar 2012 09:58:37 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Tue, 27 Mar 2012 01:59:57 -0400
+Date: Tue, 27 Mar 2012 08:59:42 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] SLAB changes for v3.4-rc0
+Message-ID: <alpine.LFD.2.02.1203270859170.2826@tux.localdomain>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/16] mm/unicore32: use vm_flags_t for vma flags
-References: <20120321065140.13852.52315.stgit@zurg> <20120321065645.13852.83925.stgit@zurg> <4F71361E.1000802@mprc.pku.edu.cn>
-In-Reply-To: <4F71361E.1000802@mprc.pku.edu.cn>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guan Xuetao wrote:
-> On 03/21/2012 02:56 PM, Konstantin Khlebnikov wrote:
->> The same magic like in arm: assembler code wants to test VM_EXEC,
->> but for big-endian we should get upper word for this.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Cc: Guan Xuetao<gxt@mprc.pku.edu.cn>
->> ---
->>    arch/unicore32/kernel/asm-offsets.c |    6 +++++-
->>    arch/unicore32/mm/fault.c           |    2 +-
->>    2 files changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/unicore32/kernel/asm-offsets.c b/arch/unicore32/kernel/asm-offsets.c
->> index ffcbe75..e3199b5 100644
->> --- a/arch/unicore32/kernel/asm-offsets.c
->> +++ b/arch/unicore32/kernel/asm-offsets.c
->> @@ -87,9 +87,13 @@ int main(void)
->>    	DEFINE(S_FRAME_SIZE,	sizeof(struct pt_regs));
->>    	BLANK();
->>    	DEFINE(VMA_VM_MM,	offsetof(struct vm_area_struct, vm_mm));
->> +#if defined(CONFIG_CPU_BIG_ENDIAN)&&   (NR_VMA_FLAGS>   32)
->> +	DEFINE(VMA_VM_FLAGS,	offsetof(struct vm_area_struct, vm_flags) + 4);
->> +#else
-> CONFIG_CPU_BIG/LITTLE_ENDIAN is defined only in some archs, and not
-> supported by unicore32.
+Hi Linus,
 
-Ok, I'll drop this in v2
+Please pull the latest SLAB tree from:
 
->
->>    	DEFINE(VMA_VM_FLAGS,	offsetof(struct vm_area_struct, vm_flags));
->> +#endif
->>    	BLANK();
->> -	DEFINE(VM_EXEC,		VM_EXEC);
->> +	DEFINE(VM_EXEC,		(__force unsigned int)VM_EXEC);
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
 
-> Is this check useful for asm-offsets.h?
+There's the new kmalloc_array() API, minor fixes and performance improvements,
+but quite honestly, nothing terribly exciting.
 
-this forced-typecast to make sparse happy, because  we use here only (int) part of vma->vm_flags.
+			Pekka
 
->
->>    	BLANK();
->>    	DEFINE(PAGE_SZ,		PAGE_SIZE);
->>    	BLANK();
->> diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
->> index 283aa4b..9137996 100644
->> --- a/arch/unicore32/mm/fault.c
->> +++ b/arch/unicore32/mm/fault.c
->> @@ -158,7 +158,7 @@ void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
->>     */
->>    static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
->>    {
->> -	unsigned int mask = VM_READ | VM_WRITE | VM_EXEC;
->> +	vm_flags_t mask = VM_READ | VM_WRITE | VM_EXEC;
->
-> I am confused  for the type of vm_flags in vm_area_struct being
-> 'unsigned long',  not vm_flags_t.
+------------------>
+The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
 
-Second patch in this patchset changes it.
-vm_flags_t will be unsigned long or or unsigned long long depending on vma flags count.
-But more likely it will be unsigned int, because I have another patchset in work,
-which currently drop four bits in vm_flags, so we can postpone its expansion.
+  Linux 3.3 (2012-03-18 16:15:34 -0700)
 
->
-> Regards,
->
-> Guan Xuetao
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
 
+Alex Shi (1):
+      slub: per cpu partial statistics change
+
+Christoph Lameter (2):
+      slub: Do not hold slub_lock when calling sysfs_slab_add()
+      slub: include include for prefetch
+
+Eric Dumazet (1):
+      slub: prefetch next freelist pointer in slab_alloc()
+
+Rafael Aquini (1):
+      mm: SLAB Out-of-memory diagnostics
+
+Xi Wang (1):
+      slab: introduce kmalloc_array()
+
+Zhao Jin (1):
+      slab, cleanup: remove unneeded return
+
+ include/linux/slab.h     |   17 +++++++++++--
+ include/linux/slub_def.h |    6 +++-
+ mm/slab.c                |   56 ++++++++++++++++++++++++++++++++++++++++++---
+ mm/slub.c                |   26 +++++++++++++++++----
+ 4 files changed, 91 insertions(+), 14 deletions(-)
