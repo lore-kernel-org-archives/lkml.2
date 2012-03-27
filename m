@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab2C0Vvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 17:51:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38481 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754196Ab2C0Vvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 17:51:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] firmware_class: Reorganize fw_create_instance()
-Date: Tue, 27 Mar 2012 23:56:02 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203260000.34377.rjw@sisk.pl> <201203272347.06621.rjw@sisk.pl> <20120327214941.GA21812@kroah.com>
-In-Reply-To: <20120327214941.GA21812@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203272356.02771.rjw@sisk.pl>
+	id S1756535Ab2C0Vwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 17:52:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43391 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab2C0Vwm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 17:52:42 -0400
+Message-ID: <1332885154.2528.2.camel@twins>
+Subject: Re: [tip:perf/urgent] perf/x86: Add SNB offcore event constraints
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Date: Tue, 27 Mar 2012 23:52:34 +0200
+In-Reply-To: <tip-n6vf6grjv94vnzvuccu0clcv@git.kernel.org>
+References: <tip-n6vf6grjv94vnzvuccu0clcv@git.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 27, 2012, Greg KH wrote:
-> On Tue, Mar 27, 2012 at 11:47:06PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, March 27, 2012, Stephen Boyd wrote:
-> > > Recent patches to split up the three phases of request_firmware()
-> > > lead to a casting away of const in fw_create_instance(). We can
-> > > avoid this cast by splitting up fw_create_instance() a bit.
-> > > 
-> > > Make _request_firmware_setup() return a struct fw_priv and use
-> > > that struct instead of passing struct firmware to
-> > > _request_firmware(). Move the uevent and device file creation
-> > > bits to the loading phase and rename the function to
-> > > _request_firmware_load() to better reflect its purpose.
-> > > 
-> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > 
-> > Looks good to me.
-> > 
-> > Greg, if that's fine with you, I'll add this patch (and the next one)
-> > to my firmware_class series you've looked at recently.
+On Tue, 2012-03-27 at 08:36 -0700, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  c370117c978adba861fad467427a9301c2c7082b
+> Gitweb:     http://git.kernel.org/tip/c370117c978adba861fad467427a9301c2c7082b
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Thu, 22 Mar 2012 11:41:23 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 27 Mar 2012 14:53:46 +0200
 > 
-> Yes, it's fine with me:
-> 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> perf/x86: Add SNB offcore event constraints
+> 
+> As found in the Intel SDM (March 2012 edition) in Volume 3
+> section 18.8.5, the offcore response events are constrained
+> to PMC0 and PMC3 resp..
 
-Cool, thanks!
+Ingo, Stephane talked to some Intel folks and the SDM was wrong, can you
+make this here patch go away?
 
-Rafael
+
