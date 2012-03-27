@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2C0NFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 09:05:01 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41735 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab2C0NE5 (ORCPT
+	id S1753992Ab2C0NFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 09:05:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33564 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab2C0NFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 09:04:57 -0400
-Date: Tue, 27 Mar 2012 17:03:50 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arun Murthy <arun.murthy@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the battery tree
-Message-ID: <20120327130350.GB7972@lizard>
-References: <20120315135609.2f9a2a030866c476dc736b9c@canb.auug.org.au>
- <20120326161132.GA6430@lizard>
- <20120327084414.dacbf074e0f4ddd65ff3ecfb@canb.auug.org.au>
+	Tue, 27 Mar 2012 09:05:19 -0400
+Date: Tue, 27 Mar 2012 15:05:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Luck <tony.luck@intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 4/4] ia64: vsyscall: Use seqcount instead of seqlock
+In-Reply-To: <CA+8MBbK5J_1veoDwGNNZrmjJqAhxEQCC3JPSp36sMSRnr6y-4w@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1203271502300.2542@ionos>
+References: <20120228194200.180923135@linutronix.de> <20120228194508.624811514@linutronix.de> <CA+8MBbK5J_1veoDwGNNZrmjJqAhxEQCC3JPSp36sMSRnr6y-4w@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120327084414.dacbf074e0f4ddd65ff3ecfb@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-947994331-1332853518=:2542"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 08:44:14AM +1100, Stephen Rothwell wrote:
-> Hi Anton,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-947994331-1332853518=:2542
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 26 Mar 2012, Tony Luck wrote:
+
+> >        /* used by fsys_gettimeofday in arch/ia64/kernel/fsys.S */
+> > -       DEFINE(IA64_GTOD_LOCK_OFFSET,
+> > -               offsetof (struct fsyscall_gtod_data_t, lock));
+> > +       DEFINE(IA64_GTOD_SEQ_OFFSET,
+> > +               offsetof (struct fsyscall_gtod_data_t, seq);
 > 
-> On Mon, 26 Mar 2012 20:11:32 +0400 Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> >
-> > I pulled my current battery tree into next-20120326, and I can't reproduce
-> > the issue (using allmodconfig on x86_64).
+> Thomas,
 > 
-> I have moved the battery tree to after the mfd tree in my merge sequence
-> so we will see if that helps.  I really hate having ordering dependencies
-> in linux-next (since they change over time and people have to remember to
-> tell me and to send stuff to Linus in the right order).  Also, it means
-> that you are not testing exactly what you are sending to me - I assume
-> that your testing must be including the mfd tree somehow.
-> 
-> These sort of things should be fixed by having the common code in a
-> separate (stable) branch that is merged into both trees.  Or in some
-> cases by merely cherry-picking a very small number of commits from one
-> tree to the other.
+> Could you spare one more ")" here please? The compiler likes
+> it if they match :-)
 
-Yes, I was thinking about cherry-picking a few MFD patches, but
-decided not to as the driver is quite big and completely new, so
-it would have some glitches anyway, and thus would need fixups.
-One less, one more.
+Duh, crap. /me rumages for an ia64 compiler
 
-But for such drivers I usually give my 'Acked-by' so that
-patches could be merged via single tree (i.e. mfd). But nobody
-asked me in this case.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+--8323328-947994331-1332853518=:2542--
