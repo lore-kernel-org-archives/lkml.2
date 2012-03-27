@@ -1,79 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2C0Sbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:31:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64312 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802Ab2C0Sbo convert rfc822-to-8bit (ORCPT
+	id S1755632Ab2C0Sdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:33:44 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35316 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880Ab2C0Sdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:31:44 -0400
+	Tue, 27 Mar 2012 14:33:42 -0400
+Date: Tue, 27 Mar 2012 20:33:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] perf tools: Including pre-generated flex files
+Message-ID: <20120327183335.GA27621@gmail.com>
+References: <20120327181547.GA7374@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <tip-n6vf6grjv94vnzvuccu0clcv@git.kernel.org>
-References: <tip-n6vf6grjv94vnzvuccu0clcv@git.kernel.org>
-Date: Tue, 27 Mar 2012 11:31:41 -0700
-Message-ID: <CABPqkBSwvzk629UHeMkbLLyGyuHMhK4F27fVmfdXngizLUzrBg@mail.gmail.com>
-Subject: Re: [tip:perf/urgent] perf/x86: Add SNB offcore event constraints
-From: Stephane Eranian <eranian@google.com>
-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        stable@kernel.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120327181547.GA7374@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 8:36 AM, tip-bot for Peter Zijlstra
-<a.p.zijlstra@chello.nl> wrote:
-> Commit-ID:  c370117c978adba861fad467427a9301c2c7082b
-> Gitweb:     http://git.kernel.org/tip/c370117c978adba861fad467427a9301c2c7082b
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Thu, 22 Mar 2012 11:41:23 +0100
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 27 Mar 2012 14:53:46 +0200
->
-> perf/x86: Add SNB offcore event constraints
->
-> As found in the Intel SDM (March 2012 edition) in Volume 3
-> section 18.8.5, the offcore response events are constrained
-> to PMC0 and PMC3 resp..
->
-I don't believe this is correct in the SDM. It may be a side effect
-of how Intel tools work. I'll check again.
 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: <stable@kernel.org>
-> Link: http://lkml.kernel.org/n/tip-n6vf6grjv94vnzvuccu0clcv@git.kernel.org
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> [...]
 >
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 26b3e2f..bab8c6d 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -96,12 +96,14 @@ static struct event_constraint intel_westmere_event_constraints[] __read_mostly
->
->  static struct event_constraint intel_snb_event_constraints[] __read_mostly =
->  {
-> -       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-> -       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-> -       FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-> -       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-> -       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-> -       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-> +       FIXED_EVENT_CONSTRAINT(0x00c0, 0),      /* INST_RETIRED.ANY */
-> +       FIXED_EVENT_CONSTRAINT(0x003c, 1),      /* CPU_CLK_UNHALTED.CORE */
-> +       FIXED_EVENT_CONSTRAINT(0x0300, 2),      /* CPU_CLK_UNHALTED.REF */
-> +       INTEL_EVENT_CONSTRAINT(0x48, 0x4),      /* L1D_PEND_MISS.PENDING */
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2),   /* INST_RETIRED.PREC_DIST */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),      /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-> +       INTEL_UEVENT_CONSTRAINT(0x01b7, 0x1),   /* OFFCORE_RSP_0 */
-> +       INTEL_UEVENT_CONSTRAINT(0x01bb, 0x8),   /* OFFCORE_RSP_1 */
->        EVENT_CONSTRAINT_END
->  };
->
+> 	But Ingo argues that flex and bison are just a 
+> yum/whatever install away, so we shouldn't clutter the kernel 
+> git history with things we can generate at build time.
+> 
+> 	What is your take on this?
+
+I.e. we could just autogenerate automatically via something like 
+the patch below.
+
+My main worry was that Linus would (somewhat rightfully) object 
+to the large diffstats that these things introduce:
+
+ tools/perf/util/parse-events-bison.c               | 1917 +++++++++++++++++
+ tools/perf/util/parse-events-bison.h               |   81 +
+ tools/perf/util/parse-events-flex.c                | 2272 ++++++++++++++++++++
+ tools/perf/util/parse-events-flex.h                |  316 +++
+ tools/perf/util/parse-events.c                     |  603 +++---
+ tools/perf/util/parse-events.h                     |   49 +
+ tools/perf/util/parse-events.l                     |  126 ++
+ tools/perf/util/parse-events.y                     |  229 ++
+ tools/perf/util/pmu-bison.c                        | 1663 ++++++++++++++
+ tools/perf/util/pmu-bison.h                        |   73 +
+ tools/perf/util/pmu-flex.c                         | 1821 ++++++++++++++++
+ tools/perf/util/pmu-flex.h                         |  316 +++
+
+I mean, since auto-generating them is in the Makefile *already*, 
+the only argument in favor of it is that whether we want to make 
+the perf build depend on bison and flex.
+
+Anyway, it would be nice if we could hear an official opinion on 
+this. I didn't want to send the latest perf/urgent with this 
+diffstat until this is settled one way or another.
+
+Thanks,
+
+	Ingo
+
+------------->
+>From 3cfa99c3a09224cc270ed1e1260cc4fe1b79cebc Mon Sep 17 00:00:00 2001
+From: Ingo Molnar <mingo@kernel.org>
+Date: Tue, 27 Mar 2012 14:07:50 +0200
+Subject: [PATCH] perf tools: Remove auto-generated bison/flex files
+
+These should not be in the Git history - they are auto-generated.
+
+Extend the Makefile rules of the parser files to include the generation
+run.
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/n/tip-h6jnlwdy7by4v7yljrvzbii0@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/Makefile                  |   25 +-
+ tools/perf/util/parse-events-bison.c | 1917 ----------------------------
+ tools/perf/util/parse-events-bison.h |   81 --
+ tools/perf/util/parse-events-flex.c  | 2272 ----------------------------------
+ tools/perf/util/parse-events-flex.h  |  316 -----
+ tools/perf/util/pmu-bison.c          | 1663 -------------------------
+ tools/perf/util/pmu-bison.h          |   73 --
+ tools/perf/util/pmu-flex.c           | 1821 ---------------------------
+ tools/perf/util/pmu-flex.h           |  316 -----
+ 9 files changed, 15 insertions(+), 8469 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2f42886..a9dfd1f 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -61,8 +61,6 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ 
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+-FLEX = $(CROSS_COMPILE)flex
+-BISON= $(CROSS_COMPILE)bison
+ 
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),i386)
+@@ -236,6 +234,21 @@ endif
+ 
+ export PERL_PATH
+ 
++FLEX = $(CROSS_COMPILE)flex
++BISON= $(CROSS_COMPILE)bison
++
++event-parser:
++	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o util/parse-events-bison.c
++	$(QUIET_FLEX)$(FLEX) --header-file=util/parse-events-flex.h -t util/parse-events.l > util/parse-events-flex.c
++
++util/parse-events-flex.c: event-parser
++
++pmu-parser:
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o util/pmu-bison.c
++	$(QUIET_FLEX)$(FLEX) --header-file=util/pmu-flex.h -t util/pmu.l > util/pmu-flex.c
++
++util/pmu-flex.c: pmu-parser
++
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
+ LIB_H += ../../include/linux/perf_event.h
+@@ -883,14 +896,6 @@ cscope:
+ 	$(RM) cscope*
+ 	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
+ 
+-event-parser:
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o util/parse-events-bison.c
+-	$(QUIET_FLEX)$(FLEX) --header-file=util/parse-events-flex.h -t util/parse-events.l > util/parse-events-flex.c
+-
+-pmu-parser:
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o util/pmu-bison.c
+-	$(QUIET_FLEX)$(FLEX) --header-file=util/pmu-flex.h -t util/pmu.l > util/pmu-flex.c
+-
+ ### Detect prefix changes
+ TRACK_CFLAGS = $(subst ','\'',$(ALL_CFLAGS)):\
+              $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
+[...]
