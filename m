@@ -1,204 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2C0Sh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:37:56 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:53107 "EHLO
+	id S1756297Ab2C0SiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:38:10 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:39485 "EHLO
 	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab2C0Sg2 (ORCPT
+	with ESMTP id S1755585Ab2C0Sg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:36:28 -0400
+	Tue, 27 Mar 2012 14:36:27 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
         David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 01/13 v4] drm/i915/intel_i2c: refactor gmbus_xfer
-Date: Wed, 28 Mar 2012 02:36:10 +0800
-Message-Id: <1332873382-29373-2-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 00/13 v4] fix gmbus writes and related issues
+Date: Wed, 28 Mar 2012 02:36:09 +0800
+Message-Id: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
-References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split out gmbus_xfer_read/write() helper functions.
+This patchset addresses a couple of issues with the i915 gmbus implementation:
+ * fixes misassigned pin port pair for HDMI-D
+ * fixes write transactions when they are the only transaction requested
+   (including large >4-byte writes) by terminating every transaction with a
+   WAIT cycle.
+ * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
+   i2c transaction failures
+ * optimizes the typical read transaction case by using the INDEX cycle
+v3:
+ * rebased onto Daniel Vetter's drm-intel-next-queued branch
+   at git://people.freedesktop.org/~danvet/drm-intel
+ * replace intel_i2c_quirk_xfer with pre/post_xfer i2c routines
+ * pre-allocate gmbus array
+ * drop interrupt approach since I could not make it stable, probably due to
+   difficulty in clearing and resetting the GMBUS interrupt which is buffered
+   behind the SDE's PCH interrupt.
+ * Fix zero-length writes
+ * Wait for IDLE before clearing NAK
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/i915/intel_i2c.c |  151 +++++++++++++++++++++++---------------
- 1 files changed, 92 insertions(+), 59 deletions(-)
+v4:
+ * refactored gmbus_xfer (great idea, danvet!)
+ * fixed refactoring braino (swapped [new] patches 6 & 7)
+ * added URLs for docs to commit message
+ * fixed checkpatch warnings in the "reuse GMBUS2" patch
+ * dropped the 'functionaltiy' part of v3 patch 3
+ * use WARN_ON instead of BUG_ON when an invalid port is requested
 
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 0713cc2..30675ce 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -198,6 +198,82 @@ intel_i2c_quirk_xfer(struct intel_gmbus *bus,
- }
- 
- static int
-+gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
-+		bool last)
-+{
-+	int reg_offset = dev_priv->gpio_mmio_base;
-+	u16 len = msg->len;
-+	u8 *buf = msg->buf;
-+
-+	I915_WRITE(GMBUS1 + reg_offset,
-+		   GMBUS_CYCLE_WAIT |
-+		   (last ? GMBUS_CYCLE_STOP : 0) |
-+		   (len << GMBUS_BYTE_COUNT_SHIFT) |
-+		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
-+		   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
-+	POSTING_READ(GMBUS2 + reg_offset);
-+	do {
-+		u32 val, loop = 0;
-+
-+		if (wait_for(I915_READ(GMBUS2 + reg_offset) &
-+			     (GMBUS_SATOER | GMBUS_HW_RDY),
-+			     50))
-+			return -ETIMEDOUT;
-+		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
-+			return -ENXIO;
-+
-+		val = I915_READ(GMBUS3 + reg_offset);
-+		do {
-+			*buf++ = val & 0xff;
-+			val >>= 8;
-+		} while (--len && ++loop < 4);
-+	} while (len);
-+
-+	return 0;
-+}
-+
-+static int
-+gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
-+		bool last)
-+{
-+	int reg_offset = dev_priv->gpio_mmio_base;
-+	u16 len = msg->len;
-+	u8 *buf = msg->buf;
-+	u32 val, loop;
-+
-+	val = loop = 0;
-+	do {
-+		val |= *buf++ << (8 * loop);
-+	} while (--len && ++loop < 4);
-+
-+	I915_WRITE(GMBUS3 + reg_offset, val);
-+	I915_WRITE(GMBUS1 + reg_offset,
-+		   GMBUS_CYCLE_WAIT |
-+		   (last ? GMBUS_CYCLE_STOP : 0) |
-+		   (msg->len << GMBUS_BYTE_COUNT_SHIFT) |
-+		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
-+		   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
-+	POSTING_READ(GMBUS2 + reg_offset);
-+	while (len) {
-+		if (wait_for(I915_READ(GMBUS2 + reg_offset) &
-+			     (GMBUS_SATOER | GMBUS_HW_RDY),
-+			     50))
-+			return -ETIMEDOUT;
-+		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
-+			return -ENXIO;
-+
-+		val = loop = 0;
-+		do {
-+			val |= *buf++ << (8 * loop);
-+		} while (--len && ++loop < 4);
-+
-+		I915_WRITE(GMBUS3 + reg_offset, val);
-+		POSTING_READ(GMBUS2 + reg_offset);
-+	}
-+	return 0;
-+}
-+
-+static int
- gmbus_xfer(struct i2c_adapter *adapter,
- 	   struct i2c_msg *msgs,
- 	   int num)
-@@ -220,65 +296,22 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 	I915_WRITE(GMBUS0 + reg_offset, bus->reg0);
- 
- 	for (i = 0; i < num; i++) {
--		u16 len = msgs[i].len;
--		u8 *buf = msgs[i].buf;
--
--		if (msgs[i].flags & I2C_M_RD) {
--			I915_WRITE(GMBUS1 + reg_offset,
--				   GMBUS_CYCLE_WAIT |
--				   (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
--				   (len << GMBUS_BYTE_COUNT_SHIFT) |
--				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
--				   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
--			POSTING_READ(GMBUS2+reg_offset);
--			do {
--				u32 val, loop = 0;
--
--				if (wait_for(I915_READ(GMBUS2 + reg_offset) & (GMBUS_SATOER | GMBUS_HW_RDY), 50))
--					goto timeout;
--				if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
--					goto clear_err;
--
--				val = I915_READ(GMBUS3 + reg_offset);
--				do {
--					*buf++ = val & 0xff;
--					val >>= 8;
--				} while (--len && ++loop < 4);
--			} while (len);
--		} else {
--			u32 val, loop;
--
--			val = loop = 0;
--			do {
--				val |= *buf++ << (8 * loop);
--			} while (--len && ++loop < 4);
--
--			I915_WRITE(GMBUS3 + reg_offset, val);
--			I915_WRITE(GMBUS1 + reg_offset,
--				   GMBUS_CYCLE_WAIT |
--				   (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
--				   (msgs[i].len << GMBUS_BYTE_COUNT_SHIFT) |
--				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
--				   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
--			POSTING_READ(GMBUS2+reg_offset);
--
--			while (len) {
--				if (wait_for(I915_READ(GMBUS2 + reg_offset) & (GMBUS_SATOER | GMBUS_HW_RDY), 50))
--					goto timeout;
--				if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
--					goto clear_err;
--
--				val = loop = 0;
--				do {
--					val |= *buf++ << (8 * loop);
--				} while (--len && ++loop < 4);
--
--				I915_WRITE(GMBUS3 + reg_offset, val);
--				POSTING_READ(GMBUS2+reg_offset);
--			}
--		}
--
--		if (i + 1 < num && wait_for(I915_READ(GMBUS2 + reg_offset) & (GMBUS_SATOER | GMBUS_HW_WAIT_PHASE), 50))
-+		bool last = i + 1 == num;
-+
-+		if (msgs[i].flags & I2C_M_RD)
-+			ret = gmbus_xfer_read(dev_priv, &msgs[i], last);
-+		else
-+			ret = gmbus_xfer_write(dev_priv, &msgs[i], last);
-+
-+		if (ret == -ETIMEDOUT)
-+			goto timeout;
-+		if (ret == -ENXIO)
-+			goto clear_err;
-+
-+		if (!last &&
-+		    wait_for(I915_READ(GMBUS2 + reg_offset) &
-+			     (GMBUS_SATOER | GMBUS_HW_WAIT_PHASE),
-+			     50))
- 			goto timeout;
- 		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
- 			goto clear_err;
+Daniel Kurtz (13):
+  drm/i915/intel_i2c: refactor gmbus_xfer
+  drm/i915/intel_i2c: cleanup error messages and comments
+  drm/i915/intel_i2c: assign HDMI port D to pin pair 6
+  drm/i915/intel_i2c: use i2c pre/post_xfer functions to setup gpio
+    xfers
+  drm/i915/intel_i2c: refactor using intel_gmbus_get_adapter
+  drm/i915/intel_i2c: gmbus disabled and reserved ports are invalid
+  drm/i915/intel_i2c: allocate gmbus array as part of drm_i915_private
+  drm/i915/intel_i2c: handle zero-length writes
+  drm/i915/intel_i2c: use double-buffered writes
+  drm/i915/intel_i2c: always wait for IDLE before clearing NAK
+  drm/i915/intel_i2c: use WAIT cycle, not STOP
+  drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
+  drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
+
+ drivers/gpu/drm/i915/i915_drv.h    |   10 +-
+ drivers/gpu/drm/i915/i915_reg.h    |    6 +-
+ drivers/gpu/drm/i915/intel_bios.c  |    4 +-
+ drivers/gpu/drm/i915/intel_crt.c   |   14 +-
+ drivers/gpu/drm/i915/intel_dvo.c   |    6 +-
+ drivers/gpu/drm/i915/intel_hdmi.c  |    9 +-
+ drivers/gpu/drm/i915/intel_i2c.c   |  356 ++++++++++++++++++++++--------------
+ drivers/gpu/drm/i915/intel_lvds.c  |    7 +-
+ drivers/gpu/drm/i915/intel_modes.c |    3 +-
+ drivers/gpu/drm/i915/intel_sdvo.c  |    9 +-
+ 10 files changed, 261 insertions(+), 163 deletions(-)
+
 -- 
 1.7.7.3
 
