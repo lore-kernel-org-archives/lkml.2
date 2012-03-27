@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab2C0Euf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 00:50:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34983 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab2C0EuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 00:50:08 -0400
-Message-ID: <4F7146EA.1030305@zytor.com>
-Date: Mon, 26 Mar 2012 21:49:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753189Ab2C0Ex1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 00:53:27 -0400
+Received: from foo.stuge.se ([212.116.89.98]:58310 "HELO foo.stuge.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751251Ab2C0ExZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 00:53:25 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Mar 2012 00:53:25 EDT
+Message-ID: <20120327044643.18911.qmail@stuge.se>
+Date: Tue, 27 Mar 2012 06:46:43 +0200
+From: Peter Stuge <peter@stuge.se>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
+        vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+        robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ACPI: Implement overriding of arbitrary ACPI tables
+	via initrd
+Mail-Followup-To: "H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Renninger <trenn@suse.de>, eric.piel@tremplin-utc.net,
+	vojcek@tlen.pl, dsdt@gaugusch.at, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org, x86@kernel.org,
+	Lin Ming <ming.m.lin@intel.com>, lenb@kernel.org,
+	robert.moore@intel.com, Al Viro <viro@zeniv.linux.org.uk>
+References: <1332512984-79664-1-git-send-email-trenn@suse.de> <201203240402.38749.trenn@suse.de> <4F6D50DD.4050306@zytor.com> <201203260245.43177.trenn@suse.de> <4F6FC57D.3050404@zytor.com>
 MIME-Version: 1.0
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        David Sharp <dhsharp@google.com>,
-        Justin Teravest <teravest@google.com>,
-        Laurent Chavey <chavey@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Michael Davidson <md@google.com>
-Subject: Re: [PATCH 2/6] trace: add support for 32 bit compat syscalls on
- x86_64
-References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com> <1332787168-20457-3-git-send-email-vnagarnaik@google.com>
-In-Reply-To: <1332787168-20457-3-git-send-email-vnagarnaik@google.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F6FC57D.3050404@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 11:39 AM, Vaibhav Nagarnaik wrote:
-> +/*
-> + * syscall metadata for 32 bit compatible system calls
-> + *
-> + * The metadata entries are in the same order as the system call table
-> + * but this is just to make it easier to check them for completeness
-> + * and correctness.
-> + */
-> +
-> +COMPAT_SYSCALL_METADATA0(restart_syscall)
-> +COMPAT_SYSCALL_METADATA1(exit, int, error_code)
-   [...]
-> +COMPAT_SYSCALL_METADATA5(recvmmsg, int, fd, struct mmsghdr __user *, mmsg, unsigned int, vlen, unsigned int, flags, struct timespec __user *, timeout)
+H. Peter Anvin wrote:
+> There are a lot of bootloaders, and one of the most commonly used ones
+> has a very adversarial relationship with the kernel maintainers.
 
-> +/*
-> + * This is truly horrible.
+A couple of less commonly used ones, by or near the coreboot project,
+haven't exactly been embraced by kernel maintainers. Dunno if it's
+because coreboot doesn't much like ACPI, and thinks that it would
+be interesting to explore and innovate firmware on x86.
 
-Yes, it is.  How on Earth do you expect the above to ever be maintained?
 
-> + *
-> + * There is no header file that defines a *complete* set of 32 bit system
-> + * call numbers (unistd_32.h only defines ones that are currently exported
-> + * to user space and omits lots of old system calls that are still implemented
-> + * by the kernel.
-
-> + * There is also no table that can be used to map a system call number into
-> + * the canonical name of that system call.
-
-arch/x86/syscalls has all of those.  If it's not in there, it doesn't
-exist, because that's where the system call table comes from.
-
-	-hpa
+//Peter
