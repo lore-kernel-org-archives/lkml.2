@@ -1,98 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2C0N5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 09:57:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60716 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab2C0N5U convert rfc822-to-8bit (ORCPT
+	id S1754718Ab2C0N5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 09:57:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55793 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab2C0N5d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 09:57:20 -0400
+	Tue, 27 Mar 2012 09:57:33 -0400
 MIME-Version: 1.0
-X-Originating-IP: [109.186.20.112]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C105792060C098E4@EXDCVYMBSTM005.EQ1STM.local>
-References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
- <201112091442.04294.arnd@arndb.de> <81C3A93C17462B4BBD7E272753C105792060B42C9C@EXDCVYMBSTM005.EQ1STM.local>
- <201203221657.09820.arnd@arndb.de> <81C3A93C17462B4BBD7E272753C105792060C098E4@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 27 Mar 2012 15:56:59 +0200
-Message-ID: <CAK=WgbY+n_CESWCSiC5tAXTm+8CJVEd2TOa4H0-iVeeb1=3C9Q@mail.gmail.com>
-Subject: Re: Using remoteproc with ST-Ericsson modem.
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Trevor Turner <turn3r.tr3v0r@gmail.com>
+Date: Tue, 27 Mar 2012 06:56:51 -0700
+X-Google-Sender-Auth: GgM67l6j3n2t-mdXXcUjdO-U2_U
+Message-ID: <CANYHJ6jjuO7yV_kbPsnJ6X+KXrsz2PRPPXHN4Rkr-vgoSG-E4A@mail.gmail.com>
+Subject: K7/Athlon Optimization Causes Build Fail on Kernel 3.3 i686
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+Hi,
+The other day when I was compiling 3.3 on my home server, enabling the
+K7/Athlon family optimizations seems to cause the build to fail. It
+fails without any erroneous output at the very end of the build and
+has been reproducible every time I've built with it enabled. This
+machine has a pair of Athlon 2000+ MP's and I'm using Arch Linux's
+makepkg system (which calls make localmodconfig, make nconfig, and
+make -j3 bzImage modules) to build my kernels. I have experienced this
+issue on both the stock -ARCH kernel, and the -CK kernel under a
+number of different configurations.
 
-On Tue, Mar 27, 2012 at 3:15 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
-> However, we have a couple of requirements that are different.
-> - We don't use a ELF binary for resource definition. We have resource
-> �definitions in a binary format outside the binary. (I'm afraid I'm
-> �not able to change this).
+This is a list of the situations I tested:
+-CK Localmod only : Success
+-CK Localmod, 100Hz Timer and No Pre-empt: Success
+-CK Localmod, 100Hz Timer, No Pre-empt and K7: Failed
+-CK Localmod and K7: Failed
+-ARCH Localmod only: Success
+-ARCH Localmod 100Hz timer and no Pre-empt : Success
+-ARCH Localmod, 100Hz Timer, No Pre-empt and K7: Failed
+-ARCH Localmod and K7 : Failed
 
-That's ok:
+This is the end of the output that it fails on:
+  LD [M]  sound/soc/snd-soc-core.ko
+  LD [M]  sound/soundcore.ko
+  LD [M]  sound/synth/emux/snd-emux-synth.ko
+  LD [M]  sound/synth/snd-util-mem.ko
+  LD [M]  sound/usb/6fire/snd-usb-6fire.ko
+  LD [M]  sound/usb/caiaq/snd-usb-caiaq.ko
+  LD [M]  sound/usb/snd-usb-audio.ko
+  LD [M]  sound/usb/misc/snd-ua101.ko
+  LD [M]  sound/usb/snd-usbmidi-lib.ko
+  LD [M]  sound/usb/usx2y/snd-usb-us122l.ko
+  LD [M]  sound/usb/usx2y/snd-usb-usx2y.ko
+  IHEX    firmware/adaptec/starfire_rx.bin
+  IHEX    firmware/adaptec/starfire_tx.bin
+  IHEX    firmware/bnx2/bnx2-mips-09-6.2.1a.fw
+  IHEX    firmware/bnx2/bnx2-rv2p-09ax-6.0.17.fw
+  IHEX    firmware/bnx2/bnx2-rv2p-09-6.0.17.fw
+  IHEX    firmware/bnx2/bnx2-mips-06-6.2.1.fw
+  IHEX    firmware/bnx2/bnx2-rv2p-06-6.0.15.fw
+  IHEX    firmware/cxgb3/t3b_psram-1.1.0.bin
+  IHEX    firmware/cxgb3/t3c_psram-1.1.0.bin
+  IHEX    firmware/cxgb3/t3fw-7.10.0.bin
+  IHEX    firmware/cxgb3/ael2005_twx_edc.bin
+  IHEX    firmware/cxgb3/ael2005_opt_edc.bin
+  IHEX    firmware/cxgb3/ael2020_twx_edc.bin
+  IHEX    firmware/radeon/R100_cp.bin
+  IHEX    firmware/radeon/R200_cp.bin
+  IHEX    firmware/radeon/R300_cp.bin
+  IHEX    firmware/radeon/R420_cp.bin
+  IHEX    firmware/radeon/RS690_cp.bin
+  IHEX    firmware/radeon/RS600_cp.bin
+  IHEX    firmware/radeon/R520_cp.bin
+  IHEX    firmware/radeon/R600_pfp.bin
+  IHEX    firmware/radeon/R600_me.bin
+  IHEX    firmware/radeon/RV610_pfp.bin
+  IHEX    firmware/radeon/RV610_me.bin
+  IHEX    firmware/radeon/RV630_pfp.bin
+  IHEX    firmware/radeon/RV630_me.bin
+  IHEX    firmware/radeon/RV620_pfp.bin
+  IHEX    firmware/radeon/RV620_me.bin
+  IHEX    firmware/radeon/RV635_pfp.bin
+  IHEX    firmware/radeon/RV635_me.bin
+  IHEX    firmware/radeon/RV670_pfp.bin
+  IHEX    firmware/radeon/RV670_me.bin
+  IHEX    firmware/radeon/RS780_pfp.bin
+  IHEX    firmware/radeon/RS780_me.bin
+  IHEX    firmware/radeon/RV770_pfp.bin
+  IHEX    firmware/radeon/RV770_me.bin
+  IHEX    firmware/radeon/RV730_me.bin
+  IHEX    firmware/radeon/RV730_pfp.bin
+  IHEX    firmware/radeon/RV710_me.bin
+  IHEX    firmware/radeon/RV710_pfp.bin
+  IHEX    firmware/e100/d101m_ucode.bin
+  IHEX    firmware/e100/d101s_ucode.bin
+  IHEX    firmware/e100/d102e_ucode.bin
+  IHEX    firmware/korg/k1212.dsp
+  IHEX    firmware/ositech/Xilinx7OD.bin
+  IHEX    firmware/ess/maestro3_assp_kernel.fw
+  IHEX    firmware/ess/maestro3_assp_minisrc.fw
+  IHEX    firmware/yamaha/ds1_ctrl.fw
+  IHEX    firmware/yamaha/ds1_dsp.fw
+  IHEX    firmware/yamaha/ds1e_ctrl.fw
+  IHEX    firmware/yamaha/yss225_registers.bin
+==> ERROR: A failure occurred in build().
+    Aborting...
 
-We coupled the resource table with the firmware binary in order to
-reflect the strong ties it has with the firmware's software and to
-prevent issues of loading the wrong table with a given firmware, but
-supporting an external resource table will help others as well so it's
-definitely in the plans (feel free to take a stab at it if you want).
+Contents of /proc/cpuinfo:
+processor : 0
+vendor_id : AuthenticAMD
+cpu family : 6
+model : 6
+model name : AMD Athlon(TM) MP 2000+
+stepping : 2
+cpu MHz : 1666.797
+cache size : 256 KB
+fdiv_bug : no
+hlt_bug : no
+f00f_bug : no
+coma_bug : no
+fpu : yes
+fpu_exception : yes
+cpuid level : 1
+wp : yes
+flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+pat pse36 mmx fxsr sse syscall mp mmxext 3dnowext 3dnow
+bogomips : 3333.59
+clflush size : 32
+cache_alignment : 32
+address sizes : 34 bits physical, 32 bits virtual
+power management: ts
 
-> In order to use remoteproc, I think it could be a good idea to make the
-> firmware, resource and possible Virtio handling pluggable. E.g:
->
-> static struct rproc_ops rproc_ops = {
-> � � �...
-> � � � .fw_sanity_check = fw_sanity_check,
-> � � � .fw_resource_handler = fw_resource_handler,
-> � � � .fw_load = fw_load,
-> � � � .fw_config_virtio = fw_config_virtio,
-> };
-
-Can you please elaborate why would you want that ? Let's go
-requirement by requirement.
-
-I strongly prefer to extend the generic code to support additional
-requirements rather than to allow platform-specific implementations to
-override it (the motivation is to prevent code duplication).
-
-> I think we need to be able to launch other Virtio device types than
-> VIRTIO_ID_RPMSG as well.
-
-Sure. Please note that we already support that today: a firmware can
-indicate any type of (and number of) virito devices it supports, and
-remoteproc will create those device as needed.
-
-> Most likely, I need to make a CAIF specific
-> VIRTIO type
-
-Have you considered making this an rpmsg driver ? it might make your
-implementation simpler.
-
-> due to the fact that I need RX direction to be reversed
-> (modem must be able to post it's payload buffer to Virtio ring).
-
-It sounds like something that Loic and Ludovic (cc'ed) have been
-dealing with recently too. To solve it, they have created a symmetric
-variation of vrings - you might want to take a look at their
-implementation.
-
-> We also define stream channels. As mentioned, I'm considering the possibility
-> of reusing Virtio console.
-
-Sounds nice. We tried virtio console with a remote processor and it
-worked quite nicely (there're still a few details that need some work
-in that front, mainly if your rproc is behind an IOMMU, but otherwise
-it should be quite smooth).
-
-Thanks,
-Ohad.
+processor : 1
+vendor_id : AuthenticAMD
+cpu family : 6
+model : 6
+model name : AMD Athlon(TM) MP 2000+
+stepping : 2
+cpu MHz : 1666.797
+cache size : 256 KB
+fdiv_bug : no
+hlt_bug : no
+f00f_bug : no
+coma_bug : no
+fpu : yes
+fpu_exception : yes
+cpuid level : 1
+wp : yes
+flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+pat pse36 mmx fxsr sse syscall mp mmxext 3dnowext 3dnow
+bogomips : 3333.45
+clflush size : 32
+cache_alignment : 32
+address sizes : 34 bits physical, 32 bits virtual
+power management: ts
