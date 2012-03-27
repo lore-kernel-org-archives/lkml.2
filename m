@@ -1,194 +1,701 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab2C0NQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 09:16:54 -0400
-Received: from countercultured.net ([209.51.175.25]:52896 "HELO
-	countercultured.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753238Ab2C0NQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 09:16:49 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Mar 2012 09:16:49 EDT
+	id S1754090Ab2C0NS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 09:18:57 -0400
+Received: from mta103.odn.ne.jp ([143.90.14.143]:51054 "EHLO cmta103.odn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118Ab2C0NSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 09:18:54 -0400
+Message-ID: <4F71BE3B.4040704@yahoo.co.jp>
+Date: Tue, 27 Mar 2012 22:18:51 +0900
+From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Gwendal Grignou <gwendal@google.com>
+CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
+ Sil3726
+References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com> <4F6C4967.80309@yahoo.co.jp> <4F6E728A.3090203@yahoo.co.jp> <CAMHSBOVtj8pXVtSK7qUmzSzXTCJWTK6-m7ZY6TB3gj-dT70ptw@mail.gmail.com> <4F6FBB3E.8060409@yahoo.co.jp> <4F6FD4CD.5040608@yahoo.co.jp> <4F703BEB.1040309@yahoo.co.jp> <4F70527A.4000005@world.odn.ne.jp> <CAMHSBOWOLj0igQYK16qQ+BznzmS2KV89dw4ahRz0h5tUw+YOdQ@mail.gmail.com> <4F71B208.2050606@yahoo.co.jp>
+In-Reply-To: <4F71B208.2050606@yahoo.co.jp>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Date: Tue, 27 Mar 2012 09:10:07 -0400
-From: David Quigley <selinux@davequigley.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: David Howells <dhowells@redhat.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        <linux-fsdevel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
-        <valerie.aurora@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <sds@tycho.nsa.gov>, <selinux@tycho.nsa.gov>,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
-In-Reply-To: <4F714463.7090508@schaufler-ca.com>
-References: <18418.1330238913@jrobl>
- <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
- <9343.1332771770@redhat.com> <4F714463.7090508@schaufler-ca.com>
-Message-ID: <12cbdde6e0fb9e497d7cd9c277ab9cf5@countercultured.net>
-User-Agent: RoundCube Webmail/0.8-svn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2012 00:38, Casey Schaufler wrote:
-> On 3/26/2012 7:22 AM, David Howells wrote:
->> J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->>
->>>>  (4) Added some code to override the credentials around upper 
->>>> inode
->>>>      creation to make sure the inode gets the right UID/GID.  This 
->>>> doesn't
->>>>      help if the lower inode has some sort of foreign user 
->>>> identifier.
->>>>
->>>>      Also, I'm not sure whether the LSM xattrs should be blindly 
->>>> copied up.
->>>>      Should the LSM policies applicable to the lower fs's apply to 
->>>> the upper
->>>>      fs too?
->>> Obviously the xattr entry may not have its meanings on the upper 
->>> fs,
->> True.  I'm not sure what's the best way to deal with that.  Possibly 
->> add an
->> extra flag to vfs_setxattr() and have the fs vet them...  OTOH, this 
->> gives us
->> files on the lowerfs that may well differ in appearance to files on 
->> the
->> upperfs with respect to their xattrs.
->
-> Are you suggesting that you would have heterogeneous filesystems
-> with different xattr behavior stacked at the same time as you're
-> using an LSM that cares about the behavior of xattrs? Oh dear. As
-> I typed that sentence I identified a viable use case.
+Oops! I have sent the result of pathced driver.
 
-The most common use case for union mounts is a livecd. In this case the 
-livecd iso has a tmpfs rw mount above it for copyup. I don't know how 
-useful having a smart xattr copyup mechanism is in that place as most of 
-the labels will be whatever is assigned to the iso. Another usecase is 
-snapshotting of a filesystem for rollback. In this case it is probably 
-important to retain the existing label as the copyup is supposed to be 
-to the same location. The last case which is similar to the snapshotting 
-case but with a persistant upper branch would be to have an NFS mount 
-and have local configuration changes stored locally. In that case as 
-well I can see simple copy up as being ok to do since you're using it 
-more as an overlay than a union mount.
+The result of 3.2.x driver is this:
+--- gscr.dump ---
+/sys/class/ata_device/dev1.0/gscr
+/sys/class/ata_device/dev1.1/gscr
+/sys/class/ata_device/dev10.0.0/gscr
+/sys/class/ata_device/dev10.0/gscr
+37261095 00001706 00000006 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000001 0400ffff 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+/sys/class/ata_device/dev10.1.0/gscr
+/sys/class/ata_device/dev10.10.0/gscr
+/sys/class/ata_device/dev10.11.0/gscr
+/sys/class/ata_device/dev10.12.0/gscr
+/sys/class/ata_device/dev10.13.0/gscr
+/sys/class/ata_device/dev10.14.0/gscr
+/sys/class/ata_device/dev10.2.0/gscr
+/sys/class/ata_device/dev10.3.0/gscr
+/sys/class/ata_device/dev10.4.0/gscr
+/sys/class/ata_device/dev10.5.0/gscr
+/sys/class/ata_device/dev10.6.0/gscr
+/sys/class/ata_device/dev10.7.0/gscr
+/sys/class/ata_device/dev10.8.0/gscr
+/sys/class/ata_device/dev10.9.0/gscr
+/sys/class/ata_device/dev2.0/gscr
+/sys/class/ata_device/dev2.1/gscr
+/sys/class/ata_device/dev3.0/gscr
+/sys/class/ata_device/dev4.0/gscr
+/sys/class/ata_device/dev5.0.0/gscr
+/sys/class/ata_device/dev5.0/gscr
+37261095 00001706 00000006 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000001 0400ffff 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+/sys/class/ata_device/dev5.1.0/gscr
+/sys/class/ata_device/dev5.10.0/gscr
+/sys/class/ata_device/dev5.11.0/gscr
+/sys/class/ata_device/dev5.12.0/gscr
+/sys/class/ata_device/dev5.13.0/gscr
+/sys/class/ata_device/dev5.14.0/gscr
+/sys/class/ata_device/dev5.2.0/gscr
+/sys/class/ata_device/dev5.3.0/gscr
+/sys/class/ata_device/dev5.4.0/gscr
+/sys/class/ata_device/dev5.5.0/gscr
+/sys/class/ata_device/dev5.6.0/gscr
+/sys/class/ata_device/dev5.7.0/gscr
+/sys/class/ata_device/dev5.8.0/gscr
+/sys/class/ata_device/dev5.9.0/gscr
+/sys/class/ata_device/dev6.0.0/gscr
+/sys/class/ata_device/dev6.0/gscr
+37261095 00001706 00000006 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000001 0400ffff 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+/sys/class/ata_device/dev6.1.0/gscr
+/sys/class/ata_device/dev6.10.0/gscr
+/sys/class/ata_device/dev6.11.0/gscr
+/sys/class/ata_device/dev6.12.0/gscr
+/sys/class/ata_device/dev6.13.0/gscr
+/sys/class/ata_device/dev6.14.0/gscr
+/sys/class/ata_device/dev6.2.0/gscr
+/sys/class/ata_device/dev6.3.0/gscr
+/sys/class/ata_device/dev6.4.0/gscr
+/sys/class/ata_device/dev6.5.0/gscr
+/sys/class/ata_device/dev6.6.0/gscr
+/sys/class/ata_device/dev6.7.0/gscr
+/sys/class/ata_device/dev6.8.0/gscr
+/sys/class/ata_device/dev6.9.0/gscr
+/sys/class/ata_device/dev7.0.0/gscr
+/sys/class/ata_device/dev7.0/gscr
+37261095 00001706 00000006 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000001 0400ffff 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+/sys/class/ata_device/dev7.1.0/gscr
+/sys/class/ata_device/dev7.10.0/gscr
+/sys/class/ata_device/dev7.11.0/gscr
+/sys/class/ata_device/dev7.12.0/gscr
+/sys/class/ata_device/dev7.13.0/gscr
+/sys/class/ata_device/dev7.14.0/gscr
+/sys/class/ata_device/dev7.2.0/gscr
+/sys/class/ata_device/dev7.3.0/gscr
+/sys/class/ata_device/dev7.4.0/gscr
+/sys/class/ata_device/dev7.5.0/gscr
+/sys/class/ata_device/dev7.6.0/gscr
+/sys/class/ata_device/dev7.7.0/gscr
+/sys/class/ata_device/dev7.8.0/gscr
+/sys/class/ata_device/dev7.9.0/gscr
+/sys/class/ata_device/dev8.0.0/gscr
+/sys/class/ata_device/dev8.0/gscr
+37261095 00001706 00000006 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000001 0400ffff 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+/sys/class/ata_device/dev8.1.0/gscr
+/sys/class/ata_device/dev8.10.0/gscr
+/sys/class/ata_device/dev8.11.0/gscr
+/sys/class/ata_device/dev8.12.0/gscr
+/sys/class/ata_device/dev8.13.0/gscr
+/sys/class/ata_device/dev8.14.0/gscr
+/sys/class/ata_device/dev8.2.0/gscr
+/sys/class/ata_device/dev8.3.0/gscr
+/sys/class/ata_device/dev8.4.0/gscr
+/sys/class/ata_device/dev8.5.0/gscr
+/sys/class/ata_device/dev8.6.0/gscr
+/sys/class/ata_device/dev8.7.0/gscr
+/sys/class/ata_device/dev8.8.0/gscr
+/sys/class/ata_device/dev8.9.0/gscr
+/sys/class/ata_device/dev9.0.0/gscr
+/sys/class/ata_device/dev9.0/gscr
+37261095 00001706 00000006 0000003f
+00000000 20202020 20202020 20202020
+46393951 3557364c 80000000 332e0004
+44204141 53542020 32303333 30413632
+20202020 20202020 20202020 20202020
+20202020 20202020 20202020 80102020
+2f000000 02004000 00070200 00103fff
+fc10003f 001000fb 0fffffff 00070000
+00000001 0400ffff 00000078 00000000
+00000000 00000000 00000000 00000000
+000000fe 7d01346b 34694023 40233c01
+0000203f fefe0000 604bfffe 0000d000
+00000000 00000000 2542eab0 00000000
+00000000 00004000 00000000 00000000
+00000000 00000000 01000000 00060000
+00000004 00000000 00000000 00000000
+00000009 eab02542 20202542 02b60002
+008a0000 3c0a3c06 07c60000 08000100
+30000f14 00800002 00000000 020200a0
+04040000 00000000 00000000 000b1200
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000009 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 46a50000
+/sys/class/ata_device/dev9.1.0/gscr
+/sys/class/ata_device/dev9.10.0/gscr
+/sys/class/ata_device/dev9.11.0/gscr
+/sys/class/ata_device/dev9.12.0/gscr
+/sys/class/ata_device/dev9.13.0/gscr
+/sys/class/ata_device/dev9.14.0/gscr
+/sys/class/ata_device/dev9.2.0/gscr
+/sys/class/ata_device/dev9.3.0/gscr
+/sys/class/ata_device/dev9.4.0/gscr
+/sys/class/ata_device/dev9.5.0/gscr
+/sys/class/ata_device/dev9.6.0/gscr
+/sys/class/ata_device/dev9.7.0/gscr
+/sys/class/ata_device/dev9.8.0/gscr
+/sys/class/ata_device/dev9.9.0/gscr
+------
 
-Now the tricky case is when you have two filesystems with two different 
-directories with the same name. You're going to merge those namespaces. 
-The problem occurs when the parent directories have different labels.
-
-For example /mnt/upper/foo is labeled foo_t and /mnt/lower/foo is 
-labeled foo2_t. What do you use for the label for files created in 
-/mnt/union/foo?
-
->
->>> or the upper fs may return an error when setting the xattr. 
->>> Additionally the
->>> returned errno may not follow the generic semantics (ENOTSUP, 
->>> ENOSPC, or
->>> EDQUOT) since the fs may return fs-specific error.
->> Also true.  It's possible that the best way is just to ignore 
->> everything but a
->> medium-related error such as EIO, ENOSPC and EDQUOT: We tried...  Oh 
->> well.
+(2012/03/27 21:26), ANEZAKI, Akira wrote:
+> Hello Gwendal,
+> 
+> Thank you for your kindness help.
+> 
+> (2012/03/27 20:17), Gwendal Grignou wrote:
+>> Regarding the machine with 30 disks: It seems the errors follow the
+>> disk enclosures.
 >>
->>> On the other hand, users may expect that the all xattrs are 
->>> copied-up,
->>> particulary when he knows that the xattrs works well on the upper 
->>> fs too.
->>> In copy-up, it will be hard to support all cases.
->> Yeah.  Ideally, the copied-up file would be indistinguishable from 
->> the lower
->> file, but in practice that's not possible unless inode numbers and 
->> other
->> physical characteristics of the lower file are recorded in the upper 
->> fs (say
->> on an xattr).
+>> Can you send me the output of:
 >>
->>> In order to leave users how to handle the xattrs, I'd suggest
->>> introducing some mount options, which are similar to cp(1).
->>> cp(1) has several options
->>> 	--preserve=mode,ownership,timestamps,context,links,xattr,all
->>> 	('mode' includes acl which are based upon xattr)
->>>
->>> Since the mode (without acl), ownership and timestamps should 
->>> always be
->>> copied-up, the new mount options will be something like
->>> 	cpup-xattr=acl,context,all
->> I would suggest 'cpyup' or 'copyup' rather than 'cpup' - the latter 
->> looks like
->> something to do with CPUs, but yes, it's worth considering.
->>
->>> And only when the option is specfied, the xattrs are copied up. No
->>> special error handling is necessary, all the errors should be 
->>> returned
->>> to users unconditionally.
->> That's not necessarily good enough.  What if and LSM, say SELinux, 
->> is in
->> force?  Now SELinux will happily label the files for you - but 
->> there's a
->> reasonable chance they won't be correct.  OTOH, they may not be 
->> correct even
->> if they are copied up.
->
-> The underlying storage (the "real" file) has to have the xattr 
-> attached
-> to it.
-> Any other behavior is incorrect. If the underlying filesystem does 
-> not
-> support
-> xattrs that lack of support has to be propagated upwards even if the 
-> higher
-> layer filesystem supports xattrs.
->
-> In the case of Smack filesystems that don't support xattrs are still 
-> given
-> labels based on mount options. If the lower filesystem is NTFS and 
-> the upper
-> ext4 you've got to respect the NTFS labeling behavior for files 
-> there.
->
->>> Does union-mount preserve mtime? If not, it is critical for some
->>> applications such like "make" I am afraid.
->> Ummm...  Interesting question.  If it copies up a file, then that 
->> file must
->> have been opened for writing.  Is the mtime altered by such an 
->> event, or only
->> by a write() having been issued?  Also, what about ctime?  That 
->> doesn't seem
->> to have been copied up either.
->
-> What is the expected behavior of union mounts for all attributes? Is 
-> it
-> specified anywhere?
->
-
-I would assume its under their documentation patch. I tried to lookup 
-up what we did for our copyup semantics for file attributes. Its not 
-simple or straight forward in the original UnionFS. I think its safe to 
-say all the first class attributes need to be copied up. When possible 
-we also copied the xattrs as well. Its important to realize though that 
-union mounts are namespace unification and not fileunification so if you 
-copy one xattr up you need to copy them all because any that don't get 
-copied will get left behind.
-
->>
->> David
->> --
->> To unsubscribe from this list: send the line "unsubscribe 
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
-> --
-> This message was distributed to subscribers of the selinux mailing 
-> list.
-> If you no longer wish to subscribe, send mail to 
-> majordomo@tycho.nsa.gov with
-> the words "unsubscribe selinux" without quotes as the message.
+>> for i in /sys/class/ata_device/*/gscr ; do echo $i ; cat $i ; done >
+>> /tmp/gscr.dump
+> 
+> I have attached later the output.
+> 
+>> Regarding the machine with 10 disks, I see that all the drives have
+>> been found; I don't see any other error from the /var/log/messages
+>> snippet that could explain md not finding the volumes.
+> 
+> Oops! I'm sorry. It has another 1 HDD to be used for dump. So, the
+> machine has 11 disks. I think you have already noticed from that RAID5
+> disk starts from /dev/sdd.
+> 
+> I'll send them later. But the log is more than 1000 lines. It is almost
+> maximum limitation of this mailing list.
+> 
+> Do you need after these lines? These are about 600 lines.
+>> [    1.425771] ata3: SATA link down (SStatus 0 SControl 300)
+>> [    1.512378] input: PS2++ Logitech Wheel Mouse as /devices/platform/i8042/serio1/input/input3
+>> [    1.565064] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+>> [    1.565168] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+>> [    1.576064] ata4: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+>> [    1.580317] ata4.00: ATA-7: Maxtor 7V250F0, VA111630, max UDMA/133
+>> [    1.580321] ata4.00: 490234752 sectors, multi 16: LBA48 NCQ (depth 0/32)
+>> [    1.581021] usb 4-1: new low-speed USB device number 2 using uhci_hcd
+>> [    1.587163] ata4.00: configured for UDMA/133
+>> [    1.608220] ata2.00: ATA-7: ST3320620AS, 3.AAJ, max UDMA/133
+>> [    1.608223] ata2.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 0/32)
+>> [    1.616082] ata1.00: ATA-7: ST3320620AS, 3.AAJ, max UDMA/133
+>> [    1.616086] ata1.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 0/32)
+>> [    1.662033] Refined TSC clocksource calibration: 2402.378 MHz.
+>> [    1.662038] Switching to clocksource tsc
+>> [    1.683190] ata2.00: configured for UDMA/133
+>> [    1.691047] ata1.00: configured for UDMA/133
+>> [    1.691200] scsi 0:0:0:0: Direct-Access     ATA      ST3320620AS      3.AA PQ: 0 ANSI: 5
+>> [    1.691402] sd 0:0:0:0: [sda] 625142448 512-byte logical blocks: (320 GB/298 GiB)
+>> [    1.691414] sd 0:0:0:0: Attached scsi generic sg0 type 0
+>> [    1.691473] sd 0:0:0:0: [sda] Write Protect is off
+>> [    1.691477] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+>> [    1.691511] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+>> [    1.691657] scsi 1:0:0:0: Direct-Access     ATA      ST3320620AS      3.AA PQ: 0 ANSI: 5
+>> [    1.691878] sd 1:0:0:0: [sdb] 625142448 512-byte logical blocks: (320 GB/298 GiB)
+>> [    1.691889] sd 1:0:0:0: Attached scsi generic sg1 type 0
+>> [    1.691988] sd 1:0:0:0: [sdb] Write Protect is off
+>> [    1.691992] sd 1:0:0:0: [sdb] Mode Sense: 00 3a 00 00
+>> [    1.692032] sd 1:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+>> [    1.692091] scsi 3:0:0:0: Direct-Access     ATA      Maxtor 7V250F0   VA11 PQ: 0 ANSI: 5
+>> [    1.692268] sd 3:0:0:0: [sdc] 490234752 512-byte logical blocks: (251 GB/233 GiB)
+>> [    1.692310] sd 3:0:0:0: Attached scsi generic sg2 type 0
+>> [    1.692360] sd 3:0:0:0: [sdc] Write Protect is off
+>> [    1.692364] sd 3:0:0:0: [sdc] Mode Sense: 00 3a 00 00
+>> [    1.692393] sd 3:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+>> [    1.715627]  sdc: sdc1
+>> [    1.715885] sd 3:0:0:0: [sdc] Attached SCSI disk
+>> [    1.722872]  sdb: sdb1 sdb2 sdb3
+>> [    1.723190] sd 1:0:0:0: [sdb] Attached SCSI disk
+>> [    1.730721]  sda: sda1 sda2 sda3
+>> [    1.730990] sd 0:0:0:0: [sda] Attached SCSI disk
+>> [    1.731061] Freeing unused kernel memory: 644k freed
+>    :
+> 
+> Best Regards,
+> Akira
+> 
+> --- gscr.dump ---
+> /sys/class/ata_device/dev1.0/gscr
+> /sys/class/ata_device/dev1.1/gscr
+> /sys/class/ata_device/dev10.0.0/gscr
+> /sys/class/ata_device/dev10.0/gscr
+> 37261095 00001706 00000006 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000001 0400ffff 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> /sys/class/ata_device/dev10.1.0/gscr
+> /sys/class/ata_device/dev10.10.0/gscr
+> /sys/class/ata_device/dev10.11.0/gscr
+> /sys/class/ata_device/dev10.12.0/gscr
+> /sys/class/ata_device/dev10.13.0/gscr
+> /sys/class/ata_device/dev10.14.0/gscr
+> /sys/class/ata_device/dev10.2.0/gscr
+> /sys/class/ata_device/dev10.3.0/gscr
+> /sys/class/ata_device/dev10.4.0/gscr
+> /sys/class/ata_device/dev10.5.0/gscr
+> /sys/class/ata_device/dev10.6.0/gscr
+> /sys/class/ata_device/dev10.7.0/gscr
+> /sys/class/ata_device/dev10.8.0/gscr
+> /sys/class/ata_device/dev10.9.0/gscr
+> /sys/class/ata_device/dev2.0/gscr
+> /sys/class/ata_device/dev2.1/gscr
+> /sys/class/ata_device/dev3.0/gscr
+> /sys/class/ata_device/dev4.0/gscr
+> /sys/class/ata_device/dev5.0.0/gscr
+> /sys/class/ata_device/dev5.0/gscr
+> 37261095 00001706 00000006 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000001 0400ffff 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> /sys/class/ata_device/dev5.1.0/gscr
+> /sys/class/ata_device/dev5.10.0/gscr
+> /sys/class/ata_device/dev5.11.0/gscr
+> /sys/class/ata_device/dev5.12.0/gscr
+> /sys/class/ata_device/dev5.13.0/gscr
+> /sys/class/ata_device/dev5.14.0/gscr
+> /sys/class/ata_device/dev5.2.0/gscr
+> /sys/class/ata_device/dev5.3.0/gscr
+> /sys/class/ata_device/dev5.4.0/gscr
+> /sys/class/ata_device/dev5.5.0/gscr
+> /sys/class/ata_device/dev5.6.0/gscr
+> /sys/class/ata_device/dev5.7.0/gscr
+> /sys/class/ata_device/dev5.8.0/gscr
+> /sys/class/ata_device/dev5.9.0/gscr
+> /sys/class/ata_device/dev6.0.0/gscr
+> /sys/class/ata_device/dev6.0/gscr
+> 37261095 00001706 00000006 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000001 0400ffff 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> /sys/class/ata_device/dev6.1.0/gscr
+> /sys/class/ata_device/dev6.10.0/gscr
+> /sys/class/ata_device/dev6.11.0/gscr
+> /sys/class/ata_device/dev6.12.0/gscr
+> /sys/class/ata_device/dev6.13.0/gscr
+> /sys/class/ata_device/dev6.14.0/gscr
+> /sys/class/ata_device/dev6.2.0/gscr
+> /sys/class/ata_device/dev6.3.0/gscr
+> /sys/class/ata_device/dev6.4.0/gscr
+> /sys/class/ata_device/dev6.5.0/gscr
+> /sys/class/ata_device/dev6.6.0/gscr
+> /sys/class/ata_device/dev6.7.0/gscr
+> /sys/class/ata_device/dev6.8.0/gscr
+> /sys/class/ata_device/dev6.9.0/gscr
+> /sys/class/ata_device/dev7.0.0/gscr
+> /sys/class/ata_device/dev7.0/gscr
+> 37261095 00001706 00000006 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000001 0400ffff 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> /sys/class/ata_device/dev7.1.0/gscr
+> /sys/class/ata_device/dev7.10.0/gscr
+> /sys/class/ata_device/dev7.11.0/gscr
+> /sys/class/ata_device/dev7.12.0/gscr
+> /sys/class/ata_device/dev7.13.0/gscr
+> /sys/class/ata_device/dev7.14.0/gscr
+> /sys/class/ata_device/dev7.2.0/gscr
+> /sys/class/ata_device/dev7.3.0/gscr
+> /sys/class/ata_device/dev7.4.0/gscr
+> /sys/class/ata_device/dev7.5.0/gscr
+> /sys/class/ata_device/dev7.6.0/gscr
+> /sys/class/ata_device/dev7.7.0/gscr
+> /sys/class/ata_device/dev7.8.0/gscr
+> /sys/class/ata_device/dev7.9.0/gscr
+> /sys/class/ata_device/dev8.0.0/gscr
+> /sys/class/ata_device/dev8.0/gscr
+> 37261095 00001706 00000006 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000001 0400ffff 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> /sys/class/ata_device/dev8.1.0/gscr
+> /sys/class/ata_device/dev8.10.0/gscr
+> /sys/class/ata_device/dev8.11.0/gscr
+> /sys/class/ata_device/dev8.12.0/gscr
+> /sys/class/ata_device/dev8.13.0/gscr
+> /sys/class/ata_device/dev8.14.0/gscr
+> /sys/class/ata_device/dev8.2.0/gscr
+> /sys/class/ata_device/dev8.3.0/gscr
+> /sys/class/ata_device/dev8.4.0/gscr
+> /sys/class/ata_device/dev8.5.0/gscr
+> /sys/class/ata_device/dev8.6.0/gscr
+> /sys/class/ata_device/dev8.7.0/gscr
+> /sys/class/ata_device/dev8.8.0/gscr
+> /sys/class/ata_device/dev8.9.0/gscr
+> /sys/class/ata_device/dev9.0.0/gscr
+> /sys/class/ata_device/dev9.0/gscr
+> 37261095 00001706 00000006 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000001 0400ffff 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000009 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> 00000000 00000000 00000000 00000000
+> /sys/class/ata_device/dev9.1.0/gscr
+> /sys/class/ata_device/dev9.10.0/gscr
+> /sys/class/ata_device/dev9.11.0/gscr
+> /sys/class/ata_device/dev9.12.0/gscr
+> /sys/class/ata_device/dev9.13.0/gscr
+> /sys/class/ata_device/dev9.14.0/gscr
+> /sys/class/ata_device/dev9.2.0/gscr
+> /sys/class/ata_device/dev9.3.0/gscr
+> /sys/class/ata_device/dev9.4.0/gscr
+> /sys/class/ata_device/dev9.5.0/gscr
+> /sys/class/ata_device/dev9.6.0/gscr
+> /sys/class/ata_device/dev9.7.0/gscr
+> /sys/class/ata_device/dev9.8.0/gscr
+> /sys/class/ata_device/dev9.9.0/gscr
+> ------
 
