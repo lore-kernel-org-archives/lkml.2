@@ -1,191 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2C0H6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 03:58:53 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:59460 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2C0H5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 03:57:53 -0400
-X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Mar 2012 03:57:51 EDT
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2R7o0TC007440, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 4/5] r8169: adjust some functions of 8111f
-Date: Tue, 27 Mar 2012 15:53:53 +0800
-Message-ID: <1332834834-5185-4-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332834834-5185-1-git-send-email-hayeswang@realtek.com>
-References: <1332834834-5185-1-git-send-email-hayeswang@realtek.com>
+	id S1754090Ab2C0IA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 04:00:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16898 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751229Ab2C0IA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 04:00:57 -0400
+X-IronPort-AV: E=Sophos;i="4.75,325,1330876800"; 
+   d="scan'208";a="4628802"
+Message-ID: <4F7174F0.1080504@cn.fujitsu.com>
+Date: Tue, 27 Mar 2012 16:06:08 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC] rcu: Make __rcu_read_lock() inlinable
+References: <20120325205249.GA29528@linux.vnet.ibm.com>
+In-Reply-To: <20120325205249.GA29528@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-27 15:58:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-27 15:58:42,
+	Serialize complete at 2012-03-27 15:58:42
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Put some settings of 8111f into one function which may be reused.
+On 03/26/2012 04:52 AM, Paul E. McKenney wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |   99 ++++++++++++++++------------------
- 1 files changed, 47 insertions(+), 52 deletions(-)
+> +void rcu_switch_from(void)
+>  {
+> -	current->rcu_read_lock_nesting++;
+> -	barrier();  /* needed if we ever invoke rcu_read_lock in rcutree.c */
+> +	current->rcu_read_lock_nesting_save =
+> +		__this_cpu_read(rcu_read_lock_nesting);
+> +	barrier();
+> +	__this_cpu_write(rcu_read_lock_nesting, 0);
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index ecf8042..6c2835f 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3005,6 +3005,28 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-+static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	/* For 4-corner performance improve */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b80);
-+	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0007);
-+	rtl_writephy(tp, 0x1e, 0x002d);
-+	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	/* Improve 10M EEE waveform */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b86);
-+	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+}
-+
- static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -3046,24 +3068,7 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- 
--	/* For 4-corner performance improve */
--	rtl_writephy(tp, 0x1f, 0x0005);
--	rtl_writephy(tp, 0x05, 0x8b80);
--	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
--	rtl_writephy(tp, 0x1f, 0x0000);
--
--	/* PHY auto speed down */
--	rtl_writephy(tp, 0x1f, 0x0007);
--	rtl_writephy(tp, 0x1e, 0x002d);
--	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
--
--	/* Improve 10M EEE waveform */
--	rtl_writephy(tp, 0x1f, 0x0005);
--	rtl_writephy(tp, 0x05, 0x8b86);
--	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
--	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl8168f_hw_phy_config(tp);
- 
- 	/* Improve 2-pair detection performance */
- 	rtl_writephy(tp, 0x1f, 0x0005);
-@@ -3076,24 +3081,7 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
- {
- 	rtl_apply_firmware(tp);
- 
--	/* For 4-corner performance improve */
--	rtl_writephy(tp, 0x1f, 0x0005);
--	rtl_writephy(tp, 0x05, 0x8b80);
--	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
--	rtl_writephy(tp, 0x1f, 0x0000);
--
--	/* PHY auto speed down */
--	rtl_writephy(tp, 0x1f, 0x0007);
--	rtl_writephy(tp, 0x1e, 0x002d);
--	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
--
--	/* Improve 10M EEE waveform */
--	rtl_writephy(tp, 0x1f, 0x0005);
--	rtl_writephy(tp, 0x05, 0x8b86);
--	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
--	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl8168f_hw_phy_config(tp);
- }
- 
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
-@@ -4665,20 +4653,12 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
- 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
- }
- 
--static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
-+static void rtl_hw_start_8168f(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
- 	struct pci_dev *pdev = tp->pci_dev;
--	static const struct ephy_info e_info_8168f_1[] = {
--		{ 0x06, 0x00c0,	0x0020 },
--		{ 0x08, 0x0001,	0x0002 },
--		{ 0x09, 0x0000,	0x0080 },
--		{ 0x19, 0x0000,	0x0224 }
--	};
--
--	rtl_csi_access_enable_1(tp);
- 
--	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
-+	rtl_csi_access_enable_2(tp);
- 
- 	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
- 
-@@ -4692,8 +4672,6 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
- 	rtl_w1w0_eri(ioaddr, 0x1d0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
- 	rtl_eri_write(ioaddr, 0xcc, ERIAR_MASK_1111, 0x00000050, ERIAR_EXGMAC);
- 	rtl_eri_write(ioaddr, 0xd0, ERIAR_MASK_1111, 0x00000060, ERIAR_EXGMAC);
--	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
--		     ERIAR_EXGMAC);
- 
- 	RTL_W8(MaxTxPacketSize, EarlySize);
- 
-@@ -4701,15 +4679,32 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
- 
- 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
- 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
--
--	/* Adjust EEE LED frequency */
--	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
--
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
- 	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
- 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
- }
- 
-+static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct ephy_info e_info_8168f_1[] = {
-+		{ 0x06, 0x00c0,	0x0020 },
-+		{ 0x08, 0x0001,	0x0002 },
-+		{ 0x09, 0x0000,	0x0080 },
-+		{ 0x19, 0x0000,	0x0224 }
-+	};
-+
-+	rtl_hw_start_8168f(tp);
-+
-+	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
-+
-+	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
-+		     ERIAR_EXGMAC);
-+
-+	/* Adjust EEE LED frequency */
-+	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
-+}
-+
- static void rtl_hw_start_8168(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
--- 
-1.7.7.6
+-	__this_cpu_write(rcu_read_lock_nesting, 0);
++	__this_cpu_write(rcu_read_lock_nesting, 1);
 
+if prev or next task has non-zero rcu_read_unlock_special,
+"__this_cpu_write(rcu_read_lock_nesting, 1)" will prevent wrong qs reporting
+when rcu_read_unlock() is called in any interrupt/tracing while doing switch_to().
+
+> +}
+> +
+> +/*
+> + * Restore the incoming task's value for rcu_read_lock_nesting at the
+> + * end of a context switch.
+> + */
+> +void rcu_switch_to(void)
+> +{
+> +	__this_cpu_write(rcu_read_lock_nesting,
+> +			 current->rcu_read_lock_nesting_save);
+> +	barrier();
+> +	current->rcu_read_lock_nesting_save = 0;
+>  }
+
+-	barrier();
+-	current->rcu_read_lock_nesting_save = 0;
+
+rcu_read_lock_nesting_save is set but not used before next set here, just remove it.
+
+
+I don't like it hooks too much into scheduler.
+
+Approaches:
+0) stay using function call
+1) hook into kbuild(https://lkml.org/lkml/2011/3/27/170,https://lkml.org/lkml/2011/3/27/171)
+2) hook into scheduler(still need more works for rcu_read_unlock())
+3) Add rcu_read_lock_nesting to thread_info like preempt_count
+4) resolve header-file dependence
+
+For me
+3=4>1>2>0
+
+Thanks,
+Lai
