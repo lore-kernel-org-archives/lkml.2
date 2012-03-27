@@ -1,308 +1,439 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab2C0AI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 20:08:29 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51233 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752450Ab2C0AI1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 20:08:27 -0400
+	id S1755512Ab2C0A07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 20:26:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33358 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab2C0A06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 20:26:58 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] vsprintf: optimize decimal conversion (again)
+Date: Tue, 27 Mar 2012 02:26:53 +0200
+User-Agent: KMail/1.8.2
+Cc: linux-kernel@vger.kernel.org, Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+References: <201203262047.17865.vda.linux@googlemail.com> <CAK1hOcNZ1QdsT2Gajv1y-yAfF85hOTH=18vqqH4itURLtgYfdQ@mail.gmail.com> <20120326131304.018a5f4b.akpm@linux-foundation.org>
+In-Reply-To: <20120326131304.018a5f4b.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <001401cd0b4f$bbf0e120$33d2a360$%szyprowski@samsung.com>
-References: <000301cd0286$2f4310d0$8dc93270$%cho@samsung.com>
-	<001401cd0b4f$bbf0e120$33d2a360$%szyprowski@samsung.com>
-Date: Tue, 27 Mar 2012 09:08:25 +0900
-X-Google-Sender-Auth: b6HGEomRcB6DgGlR8Zy5iwP9lsk
-Message-ID: <CAHQjnONY9f6jNLWGH+JtVOfWT42YHJxMdHtEGnDoqAL3B0M-yQ@mail.gmail.com>
-Subject: Re: [PATCH v12 3/3] iommu/exynos: Add iommu driver for Exynos Platforms
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201203270226.53890.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 9:55 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Hello,
->
-> I'm sorry for a delay, I was quite busy recently, but I have finally found some
-> time to review the code.
-No problem. Thank you.
+On Monday 26 March 2012 22:13, Andrew Morton wrote:
+> On Mon, 26 Mar 2012 21:56:38 +0200
+> Denys Vlasenko <vda.linux@googlemail.com> wrote:
+> 
+> > >> +#if BITS_PER_LONG != 32 || (~(0ULL)>>1) != ((1ULL<<63)-1)
+> > >
+> > > What's this for?
+> > 
+> > The second check should be just BITS_PER_LONG_LONG != 64,
+> > but we don't have BITS_PER_LONG_LONG.
+> 
+> So let's add BITS_PER_LONG_LONG rather than hacking around its absence!
 
->
-> On Thursday, March 15, 2012 9:33 AM Cho KyongHo wrote:
->
->> This is the System MMU driver and IOMMU API implementation for
->> Exynos SOC platforms. Exynos platforms has more than 10 System
->> MMUs dedicated for each multimedia accelerators.
->>
->> The System MMU driver is already in arc/arm/plat-s5p but it is
->> moved to drivers/iommu due to Ohad Ben-Cohen gathered IOMMU drivers
->> there
->>
->> Any device driver in Exynos platforms that needs to control its
->> System MMU must call platform_set_sysmmu() to inform System MMU
->> driver who will control it.
->> platform_set_sysmmu() is defined in <mach/sysmmu.h>
->>
->> Cc: Joerg Roedel <joerg.roedel@amd.com>
->> Cc: Kukjin Kim <kgene.kim@samsung.com>
->> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
->
->
-> (snipped)
->
->> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
->> new file mode 100644
->> index 0000000..b8daf7c
->> --- /dev/null
->> +++ b/drivers/iommu/exynos-iommu.c
->> @@ -0,0 +1,1057 @@
->> +/* linux/drivers/iommu/exynos_iommu.c
->> + *
->> + * Copyright (c) 2011 Samsung Electronics Co., Ltd.
->> + *           http://www.samsung.com
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->
-> (snipped)
->
->> +static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
->> +{
->> +     /* SYSMMU is in blocked when interrupt occurred. */
->> +     struct sysmmu_drvdata *data = dev_id;
->> +     struct resource *irqres;
->> +     struct platform_device *pdev;
->> +     enum exynos_sysmmu_inttype itype;
->> +     unsigned long addr = -1;
->> +
->> +     int i, ret = -ENOSYS;
->> +
->> +     read_lock(&data->lock);
->> +
->> +     WARN_ON(!is_sysmmu_active(data));
->> +
->> +     pdev = to_platform_device(data->sysmmu);
->> +     for (i = 0; i < pdev->num_resources; i++) {
->> +             irqres = platform_get_resource(pdev, IORESOURCE_IRQ, i);
->> +             if (irqres && ((int)irqres->start == irq))
->> +                     break;
->> +     }
->> +
->> +     if (i == pdev->num_resources) {
->> +             itype = SYSMMU_FAULT_UNKNOWN;
->> +     } else {
->> +             i /= 2;
->> +
->> +             itype = (enum exynos_sysmmu_inttype)
->> +                     __ffs(__raw_readl(data->sfrbases[i] + REG_INT_STATUS));
->> +             if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
->> +                     itype = SYSMMU_FAULT_UNKNOWN;
->> +             else
->> +                     addr = __raw_readl(
->> +                             data->sfrbases[i] + fault_reg_offset[itype]);
->> +     }
->> +
->> +     if (data->domain)
->> +             ret = report_iommu_fault(data->domain, data->dev,
->> +                             addr, itype);
->> +
->> +     if ((ret == -ENOSYS) && data->fault_handler) {
->> +             unsigned long base = data->pgtable;
->> +             if (itype != SYSMMU_FAULT_UNKNOWN)
->> +                     base = __raw_readl(
->> +                                     data->sfrbases[i] + REG_PT_BASE_ADDR);
->> +             ret = data->fault_handler(itype, base, addr);
->> +     }
->> +
->> +     if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
->> +             __raw_writel(1 << itype, data->sfrbases[i] + REG_INT_CLEAR);
->> +     else
->> +             dev_dbg(data->sysmmu, "(%s) %s is not handled.\n",
->> +                             data->dbgname, sysmmu_fault_name[itype]);
->> +
->> +     if (itype != SYSMMU_FAULT_UNKNOWN)
->> +             sysmmu_unblock(data->sfrbases[i]);
->> +
->> +     read_unlock(&data->lock);
->> +
->> +     return IRQ_HANDLED;
->> +}
->
-> (snipped)
->
->> +static int exynos_sysmmu_probe(struct platform_device *pdev)
->> +{
->> +     int i, ret;
->> +     struct device *dev;
->> +     struct sysmmu_drvdata *data;
->> +
->> +     dev = &pdev->dev;
->> +
->> +     data = kzalloc(sizeof(*data), GFP_KERNEL);
->> +     if (!data) {
->> +             dev_dbg(dev, "Not enough memory\n");
->> +             ret = -ENOMEM;
->> +             goto err_alloc;
->> +     }
->> +
->> +     ret = dev_set_drvdata(dev, data);
->> +     if (ret) {
->> +             dev_dbg(dev, "Unabled to initialize driver data\n");
->> +             goto err_init;
->> +     }
->> +
->> +     data->nsfrs = pdev->num_resources / 2;
->> +     data->sfrbases = kmalloc(sizeof(*data->sfrbases) * data->nsfrs,
->> +                                                             GFP_KERNEL);
->> +     if (data->sfrbases == NULL) {
->> +             dev_dbg(dev, "Not enough memory\n");
->> +             ret = -ENOMEM;
->> +             goto err_init;
->> +     }
->> +
->> +     for (i = 0; i < data->nsfrs; i++) {
->> +             struct resource *res;
->> +             res = platform_get_resource(pdev, IORESOURCE_MEM, i);
->> +             if (!res) {
->> +                     dev_dbg(dev, "Unable to find IOMEM region\n");
->> +                     ret = -ENOENT;
->> +                     goto err_res;
->> +             }
->> +
->> +             data->sfrbases[i] = ioremap(res->start, resource_size(res));
->> +             if (!data->sfrbases[i]) {
->> +                     dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n",
->> +                                                     res->start);
->> +                     ret = -ENOENT;
->> +                     goto err_res;
->> +             }
->> +     }
->> +
->> +     for (i = 0; i < data->nsfrs; i++) {
->> +             ret = platform_get_irq(pdev, i);
->> +             if (ret <= 0) {
->> +                     dev_dbg(dev, "Unable to find IRQ resource\n");
->> +                     goto err_irq;
->> +             }
->> +
->> +             ret = request_irq(ret, exynos_sysmmu_irq, 0,
->> +                                     dev_name(dev), data);
->> +             if (ret) {
->> +                     dev_dbg(dev, "Unabled to register interrupt handler\n");
->> +                     goto err_irq;
->> +             }
->> +     }
->
-> Please look at those loops and the interrupt function above. Those for-loops over
-> all the resources looks really ugly and makes the driver less portable. The previous
-> version (v8 afair) had much cleaned design.
->
-I agree.
-It might look unclear and the previous version is straightforward design.
-For some devices like MFC and ISP, many system MMUs pretend
-that they are a single device.
+Sure!
 
-> It would be better not to squash multiple sysmmu controllers into a single instance
-> of the driver. Please keep the driver simple. Sysmmu driver's resource should consist
-> only of one io register area and one irq, nothing more. Such approach will remove
-> the need for all that custom data in platform_data and it also make the future
-> integration much easier for other non-samsung platforms (the sysmmu hardware is also
-> used by other hw vendors). Support for device tree is also easier to add if the device
-> driver is kept simple (supporting only one instance of the hardware block).
->
-The current change that a single device descriptor for many System
-MMUs keeps all other
-parts of this device driver simpler. The only 2 parts of the driver,
-probe() and interrupt handler
-look unclear. A disadvantages of this change is that this driver needs
-platform_data
-and the definition of the data structure stored in the platform_data.
+Here is a new version. I also plugged a hole in num_to_str() -
+it was assuming it's safe to call put_dec() for num=0.
+(We never tripped over it before because the single caller
+of num_to_str() takes care of that case).
 
-> The only reason I can see, which might have suggested you to squash hardware sysmmu
-> controllers into one single instance was to provide the same virtual io mappings
-> for all these sub-devices (it is mainly used by fims-isp complex block).
->
-True.
-But there is another reason, atomicity.
-Enabling and disabling System MMU is in race condition. MFC driver
-enables System MMU
-before decoding a frame and disables it after decoding a frame, for example.
-Enabling and disabling it can be performed in different process
-contexts. System MMU is
-enabled in normal context but disabled in interrupt context.
-To protect enabling several system MMUs from racing, the entire region
-that includes
-from pm_runtime_get_sync() to accessing control registers must be
-inside a spinlock
-with IRQ disabled. Otherwise, a System MMU may be enabled while
-another System MMU is
-disabled at a moment even though they are in a block.
-However, as you know, pm_runtime_get_sync() is a blocking function.
+Signed-off-by and CC are also updated.
+-- 
+vda
 
-BTW, the problem can be solved in other way you may agree.
 
-> This can be achieved in a much clearer design by using one, common iommu domain
-> and attaching all these separate iommu controllers to it. Of course this will also
-> require having a separate platform devices for each sub-device, but sooner or later
-> you will need them anyway. The good example here is the MFC module, which already
-> have separate devices: mfc_l and mfc_r for each memory controller.
->
-Ok. I will look into MFC driver about your opinion.
+commit 469bfce8d60d1069424aacc83fef50f9da5701bf
+Author: Denys Vlasenko <vda.linux@googlemail.com>
+Date:   Tue Mar 27 02:18:46 2012 +0200
 
->> +     if (dev_get_platdata(dev)) {
->> +             char *deli, *beg;
->> +             struct sysmmu_platform_data *platdata = dev_get_platdata(dev);
->> +
->> +             beg = platdata->clockname;
->> +
->> +             for (deli = beg; (*deli != '\0') && (*deli != ','); deli++)
->> +                     /* NOTHING */;
->> +
->> +             if (*deli == '\0')
->> +                     deli = NULL;
->> +             else
->> +                     *deli = '\0';
->> +
->> +             data->clk[0] = clk_get(dev, beg);
->> +             if (IS_ERR(data->clk[0])) {
->> +                     data->clk[0] = NULL;
->> +                     dev_dbg(dev, "No clock descriptor registered\n");
->> +             }
->> +
->> +             if (data->clk[0] && deli) {
->> +                     *deli = ',';
->> +                     data->clk[1] = clk_get(dev, deli + 1);
->> +                     if (IS_ERR(data->clk[1]))
->> +                             data->clk[1] = NULL;
->> +             }
->> +
->> +             data->dbgname = platdata->dbgname;
->> +     }
->
-> Passing clocks via platform data is also considered as a bad idea, especially if
-> you need to parse string to extract the clock names. It would be much cleaner to
-> have 2 (or more if required) variants of sysmmu driver, each one for a different
-> version of the sysmmu hardware (I noticed only that some of the sysmmu units
-> require one clock, the other require 2 clocks).
+    vsprintf: optimize decimal conversion (again)
+    
+    This patch is based upon an original from Michal Nazarewicz.
+    
+    Previous code was using optimizations which were developed
+    to work well even on narrow-word CPUs (by today's standards).
+    But Linux runs only on 32-bit and wider CPUs. We can use that.
+    
+    First: using 32x32->64 multiply and trivial 32-bit shift,
+    we can correctly divide by 10 much larger numbers, and thus
+    we can print groups of 9 digits instead of groups of 5 digits.
+    
+    Next: there are two algorithms to print larger numbers.
+    One is generic: divide by 1000000000 and repeatedly print
+    groups of (up to) 9 digits. It's conceptually simple,
+    but requires an (unsigned long long) / 1000000000 division.
+    
+    Second algorithm splits 64-bit unsigned long long into 16-bit chunks,
+    manipulates them cleverly and generates groups of 4 decimal digits.
+    It so happens that it does NOT require long long division.
+    
+    If long is > 32 bits, division of 64-bit values is relatively easy,
+    and we will use the first algorithm.
+    If long long is > 64 bits (strange architecture with VERY large long long),
+    second algorithm can't be used, and we again use the first one.
+    
+    Else (if long is 32 bits and long long is 64 bits) we use second one.
+    
+    And third: there is a simple optimization which takes fast path
+    not only for zero as was done before, but for all one-digit numbers.
+    
+    In all tested cases new code is faster than old one, in many cases by 30%,
+    in few cases by more than 50% (for example, on x86-32, conversion of 12345678).
+    Code growth is ~0 in 32-bit case and ~130 bytes in 64-bit case.
+    
+    Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+    Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+    Cc: Douglas W Jones <jones@cs.uiowa.edu>
 
-I agree. Thanks.
-The reason of this approach is a block that has many System MMUs like ISP.
-Their clock gating sources are spread into 2 control registers.
-
-Thank you for review.
-
-KyongHo
+diff --git a/include/asm-generic/bitsperlong.h b/include/asm-generic/bitsperlong.h
+index 4ae54e0..a7b0914 100644
+--- a/include/asm-generic/bitsperlong.h
++++ b/include/asm-generic/bitsperlong.h
+@@ -28,5 +28,9 @@
+ #error Inconsistent word size. Check asm/bitsperlong.h
+ #endif
+ 
++#ifndef BITS_PER_LONG_LONG
++#define BITS_PER_LONG_LONG 64
++#endif
++
+ #endif /* __KERNEL__ */
+ #endif /* __ASM_GENERIC_BITS_PER_LONG */
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index abbabec..877a503 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -112,106 +112,191 @@ int skip_atoi(const char **s)
+ /* Decimal conversion is by far the most typical, and is used
+  * for /proc and /sys data. This directly impacts e.g. top performance
+  * with many processes running. We optimize it for speed
+- * using code from
+- * http://www.cs.uiowa.edu/~jones/bcd/decimal.html
+- * (with permission from the author, Douglas W. Jones). */
++ * using ideas described at <http://www.cs.uiowa.edu/~jones/bcd/divide.html>
++ * (with permission from the author, Douglas W. Jones).
++ */
+ 
+-/* Formats correctly any integer in [0,99999].
+- * Outputs from one to five digits depending on input.
+- * On i386 gcc 4.1.2 -O2: ~250 bytes of code. */
++#if BITS_PER_LONG != 32 || BITS_PER_LONG_LONG != 64
++/* Formats correctly any integer in [0, 999999999] */
+ static noinline_for_stack
+-char *put_dec_trunc(char *buf, unsigned q)
++char *put_dec_full9(char *buf, unsigned q)
+ {
+-	unsigned d3, d2, d1, d0;
+-	d1 = (q>>4) & 0xf;
+-	d2 = (q>>8) & 0xf;
+-	d3 = (q>>12);
+-
+-	d0 = 6*(d3 + d2 + d1) + (q & 0xf);
+-	q = (d0 * 0xcd) >> 11;
+-	d0 = d0 - 10*q;
+-	*buf++ = d0 + '0'; /* least significant digit */
+-	d1 = q + 9*d3 + 5*d2 + d1;
+-	if (d1 != 0) {
+-		q = (d1 * 0xcd) >> 11;
+-		d1 = d1 - 10*q;
+-		*buf++ = d1 + '0'; /* next digit */
+-
+-		d2 = q + 2*d2;
+-		if ((d2 != 0) || (d3 != 0)) {
+-			q = (d2 * 0xd) >> 7;
+-			d2 = d2 - 10*q;
+-			*buf++ = d2 + '0'; /* next digit */
+-
+-			d3 = q + 4*d3;
+-			if (d3 != 0) {
+-				q = (d3 * 0xcd) >> 11;
+-				d3 = d3 - 10*q;
+-				*buf++ = d3 + '0';  /* next digit */
+-				if (q != 0)
+-					*buf++ = q + '0'; /* most sign. digit */
+-			}
+-		}
+-	}
+-
++	unsigned r;
++
++	/* Possible ways to approx. divide by 10
++	 * (x * 0x1999999a) >> 32 x < 1073741829 (multiply must be 64-bit)
++	 * (x * 0xcccd) >> 19     x <      81920 (x < 262149 when 64-bit mul)
++	 * (x * 0x6667) >> 18     x <      43699
++	 * (x * 0x3334) >> 17     x <      16389
++	 * (x * 0x199a) >> 16     x <      16389
++	 * (x * 0x0ccd) >> 15     x <      16389
++	 * (x * 0x0667) >> 14     x <       2739
++	 * (x * 0x0334) >> 13     x <       1029
++	 * (x * 0x019a) >> 12     x <       1029
++	 * (x * 0x00cd) >> 11     x <       1029 shorter code than * 0x67 (on i386)
++	 * (x * 0x0067) >> 10     x <        179
++	 * (x * 0x0034) >>  9     x <         69 same
++	 * (x * 0x001a) >>  8     x <         69 same
++	 * (x * 0x000d) >>  7     x <         69 same, shortest code (on i386)
++	 * (x * 0x0007) >>  6     x <         19
++	 * See <http://www.cs.uiowa.edu/~jones/bcd/divide.html>
++	 */
++	r      = (q * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (q - 10 * r) + '0'; /* 1 */
++	q      = (r * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (r - 10 * q) + '0'; /* 2 */
++	r      = (q * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (q - 10 * r) + '0'; /* 3 */
++	q      = (r * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (r - 10 * q) + '0'; /* 4 */
++	r      = (q * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (q - 10 * r) + '0'; /* 5 */
++	/* Now value is under 10000, can avoid 64-bit multiply */
++	q      = (r * 0x199a) >> 16;
++	*buf++ = (r - 10 * q)  + '0'; /* 6 */
++	r      = (q * 0xcd) >> 11;
++	*buf++ = (q - 10 * r)  + '0'; /* 7 */
++	q      = (r * 0xcd) >> 11;
++	*buf++ = (r - 10 * q) + '0'; /* 8 */
++	*buf++ = q + '0'; /* 9 */
+ 	return buf;
+ }
+-/* Same with if's removed. Always emits five digits */
++#endif
++
++/* Similar to above but do not pad with zeros.
++ * Code can be easily arranged to print 9 digits too, but our callers
++ * always call put_dec_full9() instead when the number has 9 decimal digits.
++ */
+ static noinline_for_stack
+-char *put_dec_full(char *buf, unsigned q)
++char *put_dec_trunc8(char *buf, unsigned r)
+ {
+-	/* BTW, if q is in [0,9999], 8-bit ints will be enough, */
+-	/* but anyway, gcc produces better code with full-sized ints */
+-	unsigned d3, d2, d1, d0;
+-	d1 = (q>>4) & 0xf;
+-	d2 = (q>>8) & 0xf;
+-	d3 = (q>>12);
++	unsigned q;
++
++	/* Copy of previous function's body with added early returns */
++	q      = (r * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (r - 10 * q) + '0'; /* 2 */
++	if (q == 0) return buf;
++	r      = (q * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (q - 10 * r) + '0'; /* 3 */
++	if (r == 0) return buf;
++	q      = (r * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (r - 10 * q) + '0'; /* 4 */
++	if (q == 0) return buf;
++	r      = (q * (uint64_t)0x1999999a) >> 32;
++	*buf++ = (q - 10 * r) + '0'; /* 5 */
++	if (r == 0) return buf;
++	q      = (r * 0x199a) >> 16;
++	*buf++ = (r - 10 * q)  + '0'; /* 6 */
++	if (q == 0) return buf;
++	r      = (q * 0xcd) >> 11;
++	*buf++ = (q - 10 * r)  + '0'; /* 7 */
++	if (r == 0) return buf;
++	q      = (r * 0xcd) >> 11;
++	*buf++ = (r - 10 * q) + '0'; /* 8 */
++	if (q == 0) return buf;
++	*buf++ = q + '0'; /* 9 */
++	return buf;
++}
+ 
+-	/*
+-	 * Possible ways to approx. divide by 10
+-	 * gcc -O2 replaces multiply with shifts and adds
+-	 * (x * 0xcd) >> 11: 11001101 - shorter code than * 0x67 (on i386)
+-	 * (x * 0x67) >> 10:  1100111
+-	 * (x * 0x34) >> 9:    110100 - same
+-	 * (x * 0x1a) >> 8:     11010 - same
+-	 * (x * 0x0d) >> 7:      1101 - same, shortest code (on i386)
+-	 */
+-	d0 = 6*(d3 + d2 + d1) + (q & 0xf);
+-	q = (d0 * 0xcd) >> 11;
+-	d0 = d0 - 10*q;
+-	*buf++ = d0 + '0';
+-	d1 = q + 9*d3 + 5*d2 + d1;
+-		q = (d1 * 0xcd) >> 11;
+-		d1 = d1 - 10*q;
+-		*buf++ = d1 + '0';
+-
+-		d2 = q + 2*d2;
+-			q = (d2 * 0xd) >> 7;
+-			d2 = d2 - 10*q;
+-			*buf++ = d2 + '0';
+-
+-			d3 = q + 4*d3;
+-				q = (d3 * 0xcd) >> 11; /* - shorter code */
+-				/* q = (d3 * 0x67) >> 10; - would also work */
+-				d3 = d3 - 10*q;
+-				*buf++ = d3 + '0';
+-					*buf++ = q + '0';
++/* There are two algorithms to print larger numbers.
++ * One is generic: divide by 1000000000 and repeatedly print
++ * groups of (up to) 9 digits. It's conceptually simple,
++ * but requires a (unsigned long long) / 1000000000 division.
++ *
++ * Second algorithm splits 64-bit unsigned long long into 16-bit chunks,
++ * manipulates them cleverly and generates groups of 4 decimal digits.
++ * It so happens that it does NOT require long long division.
++ *
++ * If long is > 32 bits, division of 64-bit values is relatively easy,
++ * and we will use the first algorithm.
++ * If long long is > 64 bits (strange architecture with VERY large long long),
++ * second algorithm can't be used, and we again use the first one.
++ *
++ * Else (if long is 32 bits and long long is 64 bits) we use second one.
++ */
+ 
+-	return buf;
++#if BITS_PER_LONG != 32 || BITS_PER_LONG_LONG != 64
++
++/* First algorithm: generic */
++
++static
++char *put_dec(char *buf, unsigned long long n)
++{
++	if (n >= 100*1000*1000) {
++		while (n >= 1000*1000*1000)
++			buf = put_dec_full9(buf, do_div(n, 1000*1000*1000));
++		if (n >= 100*1000*1000)
++			return put_dec_full9(buf, n);
++	}
++	return put_dec_trunc8(buf, n);
+ }
+-/* No inlining helps gcc to use registers better */
++
++#else
++
++/* Second algorithm: valid only for 64-bit long longs */
++
+ static noinline_for_stack
+-char *put_dec(char *buf, unsigned long long num)
++char *put_dec_full4(char *buf, unsigned q)
+ {
+-	while (1) {
+-		unsigned rem;
+-		if (num < 100000)
+-			return put_dec_trunc(buf, num);
+-		rem = do_div(num, 100000);
+-		buf = put_dec_full(buf, rem);
+-	}
++	unsigned r;
++	r      = (q * 0xcccd) >> 19;
++	*buf++ = (q - 10 * r) + '0';
++	q      = (r * 0x199a) >> 16;
++	*buf++ = (r - 10 * q)  + '0';
++	r      = (q * 0xcd) >> 11;
++	*buf++ = (q - 10 * r)  + '0';
++	*buf++ = r + '0';
++	return buf;
+ }
+ 
++/* Based on code by Douglas W. Jones found at
++ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html#sixtyfour>
++ * (with permission from the author).
++ * Performs no 64-bit division and hence should be fast on 32-bit machines.
++ */
++static
++char *put_dec(char *buf, unsigned long long n)
++{
++	uint32_t d3, d2, d1, q, h;
++
++	if (n < 100*1000*1000)
++		return put_dec_trunc8(buf, n);
++
++	d1  = ((uint32_t)n >> 16); /* implicit "& 0xffff" */
++	h   = (n >> 32);
++	d2  = (h      ) & 0xffff;
++	d3  = (h >> 16); /* implicit "& 0xffff" */
++
++	q   = 656 * d3 + 7296 * d2 + 5536 * d1 + ((uint32_t)n & 0xffff);
++
++	buf = put_dec_full4(buf, q % 10000);
++	q   = q / 10000;
++
++	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
++	buf = put_dec_full4(buf, d1 % 10000);
++	q   = d1 / 10000;
++
++	d2  = q + 4749 * d3 + 42 * d2;
++	buf = put_dec_full4(buf, d2 % 10000);
++	q   = d2 / 10000;
++
++	d3  = q + 281 * d3;
++	if (!d3)
++		goto done;
++	buf = put_dec_full4(buf, d3 % 10000);
++	q   = d3 / 10000;
++	if (!q)
++		goto done;
++	buf = put_dec_full4(buf, q);
++ done:
++	while (buf[-1] == '0')
++		--buf;
++
++	return buf;
++}
++
++#endif
++
+ /*
+  * Convert passed number to decimal string.
+  * Returns the length of string.  On buffer overflow, returns 0.
+@@ -220,16 +305,22 @@ char *put_dec(char *buf, unsigned long long num)
+  */
+ int num_to_str(char *buf, int size, unsigned long long num)
+ {
+-	char tmp[21];		/* Enough for 2^64 in decimal */
++	char tmp[sizeof(num) * 3];
+ 	int idx, len;
+ 
+-	len = put_dec(tmp, num) - tmp;
++	/* put_dec() may work incorrectly for num = 0 (generate "", not "0") */
++	if (num <= 9) {
++		tmp[0] = '0' + num;
++		len = 1;
++	} else {
++		len = put_dec(tmp, num) - tmp;
++	}
+ 
+ 	if (len > size)
+ 		return 0;
+ 	for (idx = 0; idx < len; ++idx)
+ 		buf[idx] = tmp[len - idx - 1];
+-	return  len;
++	return len;
+ }
+ 
+ #define ZEROPAD	1		/* pad with zero */
+@@ -312,8 +403,8 @@ char *number(char *buf, char *end, unsigned long long num,
+ 
+ 	/* generate full string in tmp[], in reverse order */
+ 	i = 0;
+-	if (num == 0)
+-		tmp[i++] = '0';
++	if (num < spec.base)
++		tmp[i++] = digits[num] | locase;
+ 	/* Generic code, for any base:
+ 	else do {
+ 		tmp[i++] = (digits[do_div(num,base)] | locase);
+@@ -607,7 +698,7 @@ char *ip4_string(char *p, const u8 *addr, const char *fmt)
+ 	}
+ 	for (i = 0; i < 4; i++) {
+ 		char temp[3];	/* hold each IP quad in reverse order */
+-		int digits = put_dec_trunc(temp, addr[index]) - temp;
++		int digits = put_dec_trunc8(temp, addr[index]) - temp;
+ 		if (leading_zeros) {
+ 			if (digits < 3)
+ 				*p++ = '0';
+ 
