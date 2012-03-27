@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047Ab2C0KTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 06:19:20 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39946 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757992Ab2C0KTS (ORCPT
+	id S1758058Ab2C0KUC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 06:20:02 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36312 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757992Ab2C0KUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 06:19:18 -0400
-Date: Tue, 27 Mar 2012 13:19:09 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Randy Dunlap <rdunlap@xenotime.net>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, mingo@elte.hu
-Subject: Re: linux-next: Tree for Feb 2 (kvmtool)
-In-Reply-To: <4F2B1C1B.1040700@xenotime.net>
-Message-ID: <alpine.LFD.2.02.1203271318470.19093@tux.localdomain>
-References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au> <4F2B1C1B.1040700@xenotime.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 27 Mar 2012 06:20:00 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: qasdfgtyuiop <qasdfgtyuiop@gmail.com>
+Date: Tue, 27 Mar 2012 18:19:39 +0800
+Message-ID: <CAMtaSwTi=7rmG8diJ+K0c_CcV=0TcgXDjRFEdZGGiKE2K5x89A@mail.gmail.com>
+Subject: Small and unimportant description mistakes of Kernel compression mode
+ in kernel config
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Feb 2012, Randy Dunlap wrote:
-> On 02/01/2012 07:45 PM, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20120201:
-> 
-> 
-> On some randconfig i386 builds, I am seeing this:
-> 
-> warning: (KVMTOOL_TEST_ENABLE && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
-> 
-> because ARCH_SUPPORTS_MSI needs both X86_LOCAL_APIC and X86_IO_APIC
-> but configs don't necessarily have both of them enabled.
-> 
-> Do you want to add more selects here?
-> (this mess could continue for quite some time with other kconfig symbols)
+the mistake is enclosed by brackets[]
 
-Ping? Sasha, Ingo, thoughts?
+In bzip2 the description is:
+Its compression ratio and speed is intermediate.
+Decompression speed is slowest among the [three]. The kernel
+size is about 10% smaller with bzip2, in comparison to gzip.
+Bzip2 uses a large amount of memory. For modern kernels you
+will need at least 8MB RAM or more for booting.
 
-				Pekka
+In lzma the description is:
+The most recent compression algorithm.
+Its ratio is best, decompression speed is [between the other
+two]. Compression is slowest. The kernel size is about 33%
+smaller with LZMA in comparison to gzip.
+
+The LZO's description is:
+Its compression ratio is the poorest among the [4]. The kernel
+size is about 10% bigger than gzip; however its speed
+(both compression and decompression) is the fastest.
+
+But there are five compression algorithms in total :)
