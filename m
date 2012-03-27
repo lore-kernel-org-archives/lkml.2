@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab2C0EDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 00:03:14 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37651 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2C0EDN (ORCPT
+	id S1751704Ab2C0EDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 00:03:35 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40754 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2C0EDe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 00:03:13 -0400
-Date: Tue, 27 Mar 2012 00:03:01 -0400 (EDT)
-Message-Id: <20120327.000301.1122788061724345175.davem@davemloft.net>
-To: acme@ghostprotocols.net
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf: Do not include libgen.h
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 26 Mar 2012 21:03:05 -0700 (PDT)
+	Tue, 27 Mar 2012 00:03:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F6FF1E3.7080908@toshiba.co.jp>
+References: <1330497714-26504-3-git-send-email-santoshsy@gmail.com> <4F6FF1E3.7080908@toshiba.co.jp>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Tue, 27 Mar 2012 09:33:12 +0530
+Message-ID: <CALMYJDuzjQyBUwJQSq-bjOJ37CSYS9n1+AGLh6oGpQRo2G+m5g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] [SCSI] ufshcd: UFS UTP Transfer requests handling
+To: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd.bergmann@linaro.org, saugata.das@linaro.org, dsaxena@linaro.org,
+        stephen.doel@linaro.org, venkat@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
+        sreekumar.c@samsung.com, vinholikatti@gmail.com, linkinjeon@gmail.com,
+        michaelc@cs.wisc.edu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 26, 2012 at 10:04 AM, KOBAYASHI Yoshitake
+<yoshitake.kobayashi@toshiba.co.jp> wrote:
+> Santosh Y wrote:
+>>
+>> +        ucd_cmd_ptr->exp_data_transfer_len =
+>> +            cpu_to_be32(lrbp->cmd->transfersize);
+>> +
+>> +        memcpy(ucd_cmd_ptr->cdb,
+>> +               lrbp->cmd->cmnd,
+>> +               (min_t(unsigned short,
+>> +                  lrbp->cmd->cmd_len,
+>> +                  MAX_CDB_SIZE)));
+>
+>
+> "Exptected Data Transfer Length" field contains a value that
+> represents the number of bytes that are required to complete the
+> SCSI command request and the number of bytes that the Initiator
+> expects to be transferred to/from the Target.
+> (JEDEC Standard 220 Table7-7)
+> On the other hand, "transfersize" in a scsi_cmnd struct is trimmed
+> to the sector size when requested transfer length exceeds it.
+> You may derive the actual transfer length from SCSI command itself like
+> following.
+>
+> diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+> index feffe65..e63fecb 100644
+> --- a/drivers/scsi/ufs/ufshcd.c
+> +++ b/drivers/scsi/ufs/ufshcd.c
+> @@ -647,6 +647,34 @@ static void ufshcd_compose_upiu(struct ufshcd_lrb
+> *lrbp)
+>                       (min_t(unsigned short,
+>                              lrbp->cmd->cmd_len,
+>                              MAX_CDB_SIZE)));
+> +
+> +               /* Overwrite exptected transfer length by using
+> TRANSFER_LENGTH in SCSI commands */
+> +               switch(ucd_cmd_ptr->cdb[0]) {
+> +               case READ_6:
+> +               case WRITE_6:
+> +                       ucd_cmd_ptr->exp_data_transfer_len =
+> +                               cpu_to_be32(lrbp->cmd->transfersize *
+> +                                           ucd_cmd_ptr->cdb[4]);
+> +                       break;
+> +               case READ_10:
+> +               case WRITE_10:
+> +                       ucd_cmd_ptr->exp_data_transfer_len =
+> +                               cpu_to_be32(lrbp->cmd->transfersize *
+> +                                           ((ucd_cmd_ptr->cdb[7] << 8) |
+> +                                            ucd_cmd_ptr->cdb[8]));
+> +                       break;
+> +               case READ_12:
+> +               case WRITE_12:
+> +                       ucd_cmd_ptr->exp_data_transfer_len =
+> +                               cpu_to_be32(lrbp->cmd->transfersize *
+> +                                           ((ucd_cmd_ptr->cdb[10] << 24) |
+> +                                            (ucd_cmd_ptr->cdb[11] << 16) |
+> +                                            (ucd_cmd_ptr->cdb[12] << 8) |
+> +                                            ucd_cmd_ptr->cdb[13]));
+> +                       break;
+> +               default:
+> +                       break;
+> +               }
+>                break;
+>        case UTP_CMD_TYPE_DEV_MANAGE:
+>
+>                /* For query function implementation */
+>
 
-That causes us to end up using the XPG version of basename which can
-modify it's argument.
+Thanks, will incorporate the changes accordingly.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- tools/perf/util/symbol.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 472b467..c0a028c 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1,6 +1,5 @@
- #include <dirent.h>
- #include <errno.h>
--#include <libgen.h>
- #include <stdlib.h>
- #include <stdio.h>
- #include <string.h>
 -- 
-1.7.9.1
-
+~Santosh
