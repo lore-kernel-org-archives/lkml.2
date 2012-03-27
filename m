@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab2C0Cmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 22:42:35 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:18817
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753610Ab2C0Cme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 22:42:34 -0400
-X-SpamScore: -6
-X-BigFish: VPS-6(zz9371I542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 26 Mar 2012 22:42:20 -0400
-Subject: RE: [PATCH 2/2] regulator: ad5398: Use devm_kzalloc
-Thread-Topic: [PATCH 2/2] regulator: ad5398: Use devm_kzalloc
-Thread-Index: Ac0LvqwMwjSN0RrASgqG8AFZjkTArAABIovA
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F258A5B28@NWD2CMBX1.ad.analog.com>
-References: <1332814105.21855.1.camel@phoenix>
- <1332814182.21855.2.camel@phoenix>
-In-Reply-To: <1332814182.21855.2.camel@phoenix>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1757536Ab2C0Cvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 22:51:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:35412 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757247Ab2C0Cvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 22:51:45 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulmck@linux.vnet.ibm.com,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: CPU Hotplug rework
+In-Reply-To: <1332781541.23924.110.camel@gandalf.stny.rr.com>
+References: <4F674649.2000300@linux.vnet.ibm.com> <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins> <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins> <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com> <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com> <87bonkchxk.fsf@rustcorp.com.au> <1332748920.16159.65.camel@twins> <1332767386.23924.75.camel@gandalf.stny.rr.com> <1332769098.16159.111.camel@twins> <1332775340.23924.102.camel@gandalf.stny.rr.com> <1332778438.16159.136.camel@twins> <1332781541.23924.110.camel@gandalf.stny.rr.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 27 Mar 2012 12:02:31 +1030
+Message-ID: <87iphqbzgw.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2R2geja019445
 
-Acked-by: Sonic Zhang <sonic.zhang@analog.com>
+On Mon, 26 Mar 2012 13:05:41 -0400, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2012-03-26 at 18:13 +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-03-26 at 11:22 -0400, Steven Rostedt wrote:
+> 
+> > So how about we add another variant of kthread_freezable_should_stop(),
+> > maybe call it kthread_bound_should_stop() that checks if the cpu its
+> > bound to goes awol, if so, park it.
+> 
+> Do you mean to have this function automate the "park". When it is
+> called, if the cpu is going down it should simply schedule off and not
+> return until the CPU comes back on line?
+> 
+> Actually, why not just keep "kthread_should_stop()" and instead create a
+> "kthread_park()", and call that instead of kthread_stop(). Then when the
+> task calls kthread_should_stop(), that can park the thread then.
 
------Original Message-----
-From: Axel Lin [mailto:axel.lin@gmail.com]
-Sent: Tuesday, March 27, 2012 10:10 AM
-To: linux-kernel@vger.kernel.org
-Cc: Zhang, Sonic; Liam Girdwood; Mark Brown
-Subject: [PATCH 2/2] regulator: ad5398: Use devm_kzalloc
+Do we ever have to do this?  Why not say we never move kthreads, and if
+anyone really needs this, they have to do it themselves.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/ad5398.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+We *will* need a way for the kthreads to say "don't take this cpu away
+now" in a v. lightweight way, but I'm happy with the -rt solution that
+Steven mentioned.
 
-diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
-index ed58798..7d51793 100644
---- a/drivers/regulator/ad5398.c
-+++ b/drivers/regulator/ad5398.c
-@@ -220,7 +220,7 @@ static int __devinit ad5398_probe(struct i2c_client *client,
-        if (!init_data)
-                return -EINVAL;
+Basically, it's time to revisit cpu hotplug entirely.  Let's not get
+too caught up in what we've got now.
 
--       chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-+       chip = devm_kzalloc(&client->dev, sizeof(*chip), GFP_KERNEL);
-        if (!chip)
-                return -ENOMEM;
-
-@@ -246,7 +246,6 @@ static int __devinit ad5398_probe(struct i2c_client *client,
-        return 0;
-
- err:
--       kfree(chip);
-        return ret;
- }
-
-@@ -255,8 +254,6 @@ static int __devexit ad5398_remove(struct i2c_client *client)
-        struct ad5398_chip_info *chip = i2c_get_clientdata(client);
-
-        regulator_unregister(chip->rdev);
--       kfree(chip);
--
-        return 0;
- }
-
---
-1.7.5.4
-
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Cheers,
+Rusty.
+PS.  And I'm sure you'll finish the work while I'm on honeymoon :)
+-- 
+  How could I marry someone with more hair than me?  http://baldalex.org
