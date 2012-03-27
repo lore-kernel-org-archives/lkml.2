@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2C0Qr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:47:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54052 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab2C0Qr1 convert rfc822-to-8bit (ORCPT
+	id S1754748Ab2C0Qu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:50:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52271 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab2C0Qu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:47:27 -0400
-Message-ID: <1332866823.16159.246.camel@twins>
-Subject: Re: [PATCH 08/32] nohz: Try not to give the timekeeping duty to an
- adaptive tickless cpu
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>,
-        Dimitri Sivanich <sivanich@sgi.com>
-Date: Tue, 27 Mar 2012 18:47:03 +0200
-In-Reply-To: <alpine.DEB.2.00.1203271106130.1170@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	 <1332338318-5958-10-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1203210950500.20482@router.home>
-	 <20120327105034.GA13196@somewhere>
-	 <alpine.DEB.2.00.1203271106130.1170@router.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 27 Mar 2012 12:50:56 -0400
+Message-ID: <4F71EFED.6080409@gmail.com>
+Date: Tue, 27 Mar 2012 09:50:53 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH V2]drivers:staging:octeon Fix typos in staging:octeon
+References: <1332822858-14940-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1332822858-14940-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 11:08 -0500, Christoph Lameter wrote:
-> 
-> I wish you would disentangle the nohz work from the cpusets. Cpusets is
-> aged and being replaced by cgroups. And the cgroup work is something that
-> is not suitable for many loads given the VM overhead added. 
-
-What VM overhead? Are you talking about the memcg nonsense? That's
-entirely optional, you don't need to either build that or enable it.
-
-And if we ever get rid of that multiple hierarchy nonsense I don't see a
-reason to get rid of cpuset at all. The only reason to want to replace
-it is to avoid the dis-joint-ness it has with the cpu controller (and
-possible the memcg one).
-
-
+On 03/26/2012 09:34 PM, Justin P. Mattock wrote:
+> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>
+> The below patch is a resend to fix some typos and comments that
+> I have found while reading.
+>
+> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> ---
+>   drivers/staging/octeon/ethernet-rx.c   |    2 +-
+>   drivers/staging/octeon/ethernet-tx.c   |   10 +++++-----
+>   drivers/staging/octeon/ethernet-util.h |    2 +-
+>   drivers/staging/octeon/ethernet.c      |    2 +-
+>   4 files changed, 8 insertions(+), 8 deletions(-)
+>
+Acked-by: David Daney <david.daney@cavium.com>
