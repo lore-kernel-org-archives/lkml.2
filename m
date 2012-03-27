@@ -1,200 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2C0UOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 16:14:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35789 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab2C0UOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 16:14:16 -0400
-Date: Tue, 27 Mar 2012 22:14:01 +0200
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Ted Tso <tytso@mit.edu>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
-Message-ID: <20120327201401.GF5020@quack.suse.cz>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
- <20120322095342.GC14485@quack.suse.cz>
- <1332410747.18717.12.camel@sauron.fi.intel.com>
- <20120322103309.GA14484@quack.suse.cz>
- <1332854998.31549.40.camel@sauron.fi.intel.com>
+	id S1755180Ab2C0UWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 16:22:11 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56714 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab2C0UWH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 16:22:07 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="LZvS9be/3tNcYl/X"
-Content-Disposition: inline
-In-Reply-To: <1332854998.31549.40.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F70745F.40407@cn.fujitsu.com>
+References: <1331129834-1554-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	<1331129834-1554-2-git-send-email-gaowanlong@cn.fujitsu.com>
+	<4F6A6B2C.7030206@cn.fujitsu.com>
+	<4F70745F.40407@cn.fujitsu.com>
+Date: Tue, 27 Mar 2012 16:22:06 -0400
+Message-ID: <CACLa4pu2PWErdjb0=2RZm=6w-wc_ez_5nEXET3hy90h6m6MGYw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] selinux:avc:remove the useless fields in avc_add_callback
+From: Eric Paris <eparis@parisplace.org>
+To: gaowanlong@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, sds@tycho.nsa.gov
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'll get picked up when -rc1 is released and I'm allowed to start
+committing for 3.5.
 
---LZvS9be/3tNcYl/X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+-Eric
 
-On Tue 27-03-12 16:29:58, Artem Bityutskiy wrote:
-> On Thu, 2012-03-22 at 11:33 +0100, Jan Kara wrote:
-> >   Then we have ext4_mark_super_dirty() call from 4 places - I forgot about
-> > these originally... I kind of miss their purpose. Originally they were used
-> > so that we write total number of free blocks and inodes in the superblock
-> > but when we do not maintain them in the journal mode I don't see a reason
-> > to periodically sync them in no-journal mode. Ted, what is the purpose of
-> > these calls?
-> 
-> I do not understand what's the fundamental difference between journal
-> and non-journal mode. Why when we do have the journal we do not mark the
-> super-block as dirty in many places (e.g., in 'ext4_file_open()' - if we
-> do have the journal, when do we make sure we save the mount point path
-> change?).
-  We write it at least during ext4_put_super().
-
-> May be it has something to do with behaving like the ext2 driver when
-> mounting ext2-formatted media with the the ext4 driver?
-  I'm not really sure about this...
-
-> Jan, since Ted did not answer, may be you can figure out the reasons
-> from this commit message, which actually introduced the
-> 'ext4_mark_super_dirty()' function?
-  Anyway, attached are two patches which you can include in your series
-and which should make your cleanups simpler.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
-
---LZvS9be/3tNcYl/X
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-ext4-Remove-useless-marking-of-superblock-dirty.patch"
-
->From b66c62b32485ad708d91e03ebc66f618d4c9add4 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Tue, 27 Mar 2012 21:43:09 +0200
-Subject: [PATCH 1/2] ext4: Remove useless marking of superblock dirty
-
-Commit a0375156 properly notes that superblock doesn't need to be marked
-as dirty when only number of free inodes / blocks / number of directories
-changes since that is recomputed on each mount anyway. However that comment
-leaves some unnecessary markings as dirty in place. Remove these.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/ext4/ialloc.c  |    2 --
- fs/ext4/mballoc.c |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 25d8c97..f0a17c3 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -284,7 +284,6 @@ out:
- 		err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
- 		if (!fatal)
- 			fatal = err;
--		ext4_mark_super_dirty(sb);
- 	} else
- 		ext4_error(sb, "bit already cleared for inode %lu", ino);
- 
-@@ -846,7 +845,6 @@ got:
- 	percpu_counter_dec(&sbi->s_freeinodes_counter);
- 	if (S_ISDIR(mode))
- 		percpu_counter_inc(&sbi->s_dirs_counter);
--	ext4_mark_super_dirty(sb);
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		flex_group = ext4_flex_group(sbi, group);
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index cb990b2..7daea1f 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2875,7 +2875,6 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
- 	err = ext4_handle_dirty_metadata(handle, NULL, gdp_bh);
- 
- out_err:
--	ext4_mark_super_dirty(sb);
- 	brelse(bitmap_bh);
- 	return err;
- }
-@@ -4749,7 +4748,6 @@ do_more:
- 		put_bh(bitmap_bh);
- 		goto do_more;
- 	}
--	ext4_mark_super_dirty(sb);
- error_return:
- 	brelse(bitmap_bh);
- 	ext4_std_error(sb, err);
--- 
-1.7.1
-
-
---LZvS9be/3tNcYl/X
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0002-ext4-Convert-last-user-of-ext4_mark_super_dirty-to-e.patch"
-
->From 7d49e3df08597241677feaadbb8463758d6e282b Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Tue, 27 Mar 2012 22:05:18 +0200
-Subject: [PATCH 2/2] ext4: Convert last user of ext4_mark_super_dirty() to ext4_handle_dirty_super()
-
-The last user of ext4_mark_super_dirty() in ext4_file_open() is so rare it
-can well be modifying the superblock properly by journalling the change.
-Change it and get rid of ext4_mark_super_dirty() as it's not needed anymore.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/ext4/ext4.h |    6 ------
- fs/ext4/file.c |   15 ++++++++++++++-
- 2 files changed, 14 insertions(+), 7 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 513004f..4764d1e 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2204,12 +2204,6 @@ static inline void ext4_unlock_group(struct super_block *sb,
- 	spin_unlock(ext4_group_lock_ptr(sb, group));
- }
- 
--static inline void ext4_mark_super_dirty(struct super_block *sb)
--{
--	if (EXT4_SB(sb)->s_journal == NULL)
--		sb->s_dirt =1;
--}
--
- /*
-  * Block validity checking
-  */
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index cb70f18..d7a858c 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -181,9 +181,22 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
- 		path.dentry = mnt->mnt_root;
- 		cp = d_path(&path, buf, sizeof(buf));
- 		if (!IS_ERR(cp)) {
-+			handle_t *handle;
-+			int err;
-+
-+			handle = ext4_journal_start_sb(sb, 1);
-+			if (IS_ERR(handle))
-+				return PTR_ERR(handle);
-+			err = ext4_journal_get_write_access(handle,
-+							    EXT4_SB(sb)->s_sbh);
-+			if (err) {
-+				ext4_journal_stop(sb);
-+				return err;
-+			}
- 			strlcpy(sbi->s_es->s_last_mounted, cp,
- 				sizeof(sbi->s_es->s_last_mounted));
--			ext4_mark_super_dirty(sb);
-+			ext4_handle_dirty_super(handle, sb);
-+			ext4_journal_stop(handle);
- 		}
- 	}
- 	/*
--- 
-1.7.1
-
-
---LZvS9be/3tNcYl/X--
+On Mon, Mar 26, 2012 at 9:51 AM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> On 03/22/2012 07:58 AM, Wanlong Gao wrote:
+>
+>> Any comments?
+>
+>
+> Ping?
+>
+>>
+>>
+>>> avc_add_callback now just used for registering reset functions
+>>> in initcalls, and the callback functions just did reset operations.
+>>> So, reducing the arguments to only one event is enough now.
+>>>
+>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>>> ---
+>>>  security/selinux/avc.c         |   32 ++++++--------------------------
+>>>  security/selinux/include/avc.h |    6 +-----
+>>>  security/selinux/netif.c       |    6 ++----
+>>>  security/selinux/netnode.c     |    6 ++----
+>>>  security/selinux/netport.c     |    6 ++----
+>>>  security/selinux/ss/services.c |    6 ++----
+>>>  6 files changed, 15 insertions(+), 47 deletions(-)
+>>>
+>>> diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+>>> index c301679..fc8acaa 100644
+>>> --- a/security/selinux/avc.c
+>>> +++ b/security/selinux/avc.c
+>>> @@ -65,14 +65,8 @@ struct avc_cache {
+>>>  };
+>>>
+>>>  struct avc_callback_node {
+>>> -    int (*callback) (u32 event, u32 ssid, u32 tsid,
+>>> -                     u16 tclass, u32 perms,
+>>> -                     u32 *out_retained);
+>>> +    int (*callback) (u32 event);
+>>>      u32 events;
+>>> -    u32 ssid;
+>>> -    u32 tsid;
+>>> -    u16 tclass;
+>>> -    u32 perms;
+>>>      struct avc_callback_node *next;
+>>>  };
+>>>
+>>> @@ -546,22 +540,12 @@ int avc_audit(u32 ssid, u32 tsid,
+>>>   * avc_add_callback - Register a callback for security events.
+>>>   * @callback: callback function
+>>>   * @events: security events
+>>> - * @ssid: source security identifier or %SECSID_WILD
+>>> - * @tsid: target security identifier or %SECSID_WILD
+>>> - * @tclass: target security class
+>>> - * @perms: permissions
+>>>   *
+>>> - * Register a callback function for events in the set @events
+>>> - * related to the SID pair (@ssid, @tsid)
+>>> - * and the permissions @perms, interpreting
+>>> - * @perms based on @tclass.  Returns %0 on success or
+>>> - * -%ENOMEM if insufficient memory exists to add the callback.
+>>> + * Register a callback function for events in the set @events.
+>>> + * Returns %0 on success or -%ENOMEM if insufficient memory
+>>> + * exists to add the callback.
+>>>   */
+>>> -int __init avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+>>> -                                 u16 tclass, u32 perms,
+>>> -                                 u32 *out_retained),
+>>> -                 u32 events, u32 ssid, u32 tsid,
+>>> -                 u16 tclass, u32 perms)
+>>> +int __init avc_add_callback(int (*callback)(u32 event), u32 events)
+>>>  {
+>>>      struct avc_callback_node *c;
+>>>      int rc = 0;
+>>> @@ -574,9 +558,6 @@ int __init avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+>>>
+>>>      c->callback = callback;
+>>>      c->events = events;
+>>> -    c->ssid = ssid;
+>>> -    c->tsid = tsid;
+>>> -    c->perms = perms;
+>>>      c->next = avc_callbacks;
+>>>      avc_callbacks = c;
+>>>  out:
+>>> @@ -716,8 +697,7 @@ int avc_ss_reset(u32 seqno)
+>>>
+>>>      for (c = avc_callbacks; c; c = c->next) {
+>>>              if (c->events & AVC_CALLBACK_RESET) {
+>>> -                    tmprc = c->callback(AVC_CALLBACK_RESET,
+>>> -                                        0, 0, 0, 0, NULL);
+>>> +                    tmprc = c->callback(AVC_CALLBACK_RESET);
+>>>                      /* save the first error encountered for the return
+>>>                         value and continue processing the callbacks */
+>>>                      if (!rc)
+>>> diff --git a/security/selinux/include/avc.h b/security/selinux/include/avc.h
+>>> index 47fda96..0ac5c26 100644
+>>> --- a/security/selinux/include/avc.h
+>>> +++ b/security/selinux/include/avc.h
+>>> @@ -88,11 +88,7 @@ u32 avc_policy_seqno(void);
+>>>  #define AVC_CALLBACK_AUDITDENY_ENABLE       64
+>>>  #define AVC_CALLBACK_AUDITDENY_DISABLE      128
+>>>
+>>> -int avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+>>> -                                 u16 tclass, u32 perms,
+>>> -                                 u32 *out_retained),
+>>> -                 u32 events, u32 ssid, u32 tsid,
+>>> -                 u16 tclass, u32 perms);
+>>> +int avc_add_callback(int (*callback)(u32 event), u32 events);
+>>>
+>>>  /* Exported to selinuxfs */
+>>>  int avc_get_hash_stats(char *page);
+>>> diff --git a/security/selinux/netif.c b/security/selinux/netif.c
+>>> index 326f22c..47a49d1 100644
+>>> --- a/security/selinux/netif.c
+>>> +++ b/security/selinux/netif.c
+>>> @@ -252,8 +252,7 @@ static void sel_netif_flush(void)
+>>>      spin_unlock_bh(&sel_netif_lock);
+>>>  }
+>>>
+>>> -static int sel_netif_avc_callback(u32 event, u32 ssid, u32 tsid,
+>>> -                              u16 class, u32 perms, u32 *retained)
+>>> +static int sel_netif_avc_callback(u32 event)
+>>>  {
+>>>      if (event == AVC_CALLBACK_RESET) {
+>>>              sel_netif_flush();
+>>> @@ -292,8 +291,7 @@ static __init int sel_netif_init(void)
+>>>
+>>>      register_netdevice_notifier(&sel_netif_netdev_notifier);
+>>>
+>>> -    err = avc_add_callback(sel_netif_avc_callback, AVC_CALLBACK_RESET,
+>>> -                           SECSID_NULL, SECSID_NULL, SECCLASS_NULL, 0);
+>>> +    err = avc_add_callback(sel_netif_avc_callback, AVC_CALLBACK_RESET);
+>>>      if (err)
+>>>              panic("avc_add_callback() failed, error %d\n", err);
+>>>
+>>> diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
+>>> index 8636585..28f911c 100644
+>>> --- a/security/selinux/netnode.c
+>>> +++ b/security/selinux/netnode.c
+>>> @@ -297,8 +297,7 @@ static void sel_netnode_flush(void)
+>>>      spin_unlock_bh(&sel_netnode_lock);
+>>>  }
+>>>
+>>> -static int sel_netnode_avc_callback(u32 event, u32 ssid, u32 tsid,
+>>> -                                u16 class, u32 perms, u32 *retained)
+>>> +static int sel_netnode_avc_callback(u32 event)
+>>>  {
+>>>      if (event == AVC_CALLBACK_RESET) {
+>>>              sel_netnode_flush();
+>>> @@ -320,8 +319,7 @@ static __init int sel_netnode_init(void)
+>>>              sel_netnode_hash[iter].size = 0;
+>>>      }
+>>>
+>>> -    ret = avc_add_callback(sel_netnode_avc_callback, AVC_CALLBACK_RESET,
+>>> -                           SECSID_NULL, SECSID_NULL, SECCLASS_NULL, 0);
+>>> +    ret = avc_add_callback(sel_netnode_avc_callback, AVC_CALLBACK_RESET);
+>>>      if (ret != 0)
+>>>              panic("avc_add_callback() failed, error %d\n", ret);
+>>>
+>>> diff --git a/security/selinux/netport.c b/security/selinux/netport.c
+>>> index 7b9eb1f..d353797 100644
+>>> --- a/security/selinux/netport.c
+>>> +++ b/security/selinux/netport.c
+>>> @@ -234,8 +234,7 @@ static void sel_netport_flush(void)
+>>>      spin_unlock_bh(&sel_netport_lock);
+>>>  }
+>>>
+>>> -static int sel_netport_avc_callback(u32 event, u32 ssid, u32 tsid,
+>>> -                                u16 class, u32 perms, u32 *retained)
+>>> +static int sel_netport_avc_callback(u32 event)
+>>>  {
+>>>      if (event == AVC_CALLBACK_RESET) {
+>>>              sel_netport_flush();
+>>> @@ -257,8 +256,7 @@ static __init int sel_netport_init(void)
+>>>              sel_netport_hash[iter].size = 0;
+>>>      }
+>>>
+>>> -    ret = avc_add_callback(sel_netport_avc_callback, AVC_CALLBACK_RESET,
+>>> -                           SECSID_NULL, SECSID_NULL, SECCLASS_NULL, 0);
+>>> +    ret = avc_add_callback(sel_netport_avc_callback, AVC_CALLBACK_RESET);
+>>>      if (ret != 0)
+>>>              panic("avc_add_callback() failed, error %d\n", ret);
+>>>
+>>> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+>>> index 185f849..08123cd 100644
+>>> --- a/security/selinux/ss/services.c
+>>> +++ b/security/selinux/ss/services.c
+>>> @@ -3018,8 +3018,7 @@ out:
+>>>
+>>>  static int (*aurule_callback)(void) = audit_update_lsm_rules;
+>>>
+>>> -static int aurule_avc_callback(u32 event, u32 ssid, u32 tsid,
+>>> -                           u16 class, u32 perms, u32 *retained)
+>>> +static int aurule_avc_callback(u32 event)
+>>>  {
+>>>      int err = 0;
+>>>
+>>> @@ -3032,8 +3031,7 @@ static int __init aurule_init(void)
+>>>  {
+>>>      int err;
+>>>
+>>> -    err = avc_add_callback(aurule_avc_callback, AVC_CALLBACK_RESET,
+>>> -                           SECSID_NULL, SECSID_NULL, SECCLASS_NULL, 0);
+>>> +    err = avc_add_callback(aurule_avc_callback, AVC_CALLBACK_RESET);
+>>>      if (err)
+>>>              panic("avc_add_callback() failed, error %d\n", err);
+>>>
+>>
+>>
+>>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
