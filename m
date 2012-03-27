@@ -1,146 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab2C0Sm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:42:27 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:58628 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab2C0SmY (ORCPT
+	id S1755968Ab2C0Smv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:42:51 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39933 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab2C0Sms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:42:24 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 11/13 v4] drm/i915/intel_i2c: use WAIT cycle, not STOP
-Date: Wed, 28 Mar 2012 02:36:20 +0800
-Message-Id: <1332873382-29373-12-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
-References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
+	Tue, 27 Mar 2012 14:42:48 -0400
+Date: Tue, 27 Mar 2012 20:42:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org
+Subject: Re: [PATCH][GIT PULL][v3.4] tracing: Fix ent_size in trace output
+Message-ID: <20120327184243.GA25330@gmail.com>
+References: <1332869121.23924.130.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332869121.23924.130.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
-transaction) during a DATA or WAIT phase.  In other words, the
-controller rejects a STOP requested as part of the first transaction in a
-sequence.
 
-Thus, for the first transaction we must always use a WAIT cycle, detect
-when the device has finished (and is in a WAIT phase), and then either
-start the next transaction, or, if there are no more transactions,
-generate a STOP cycle.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Note: Theoretically, the last transaction of a multi-transaction sequence
-could initiate a STOP cycle.  However, this slight optimization is left
-for another patch.  We return -ETIMEDOUT if the hardware doesn't
-deactivate after the STOP cycle.
+> 
+> Ingo,
+> 
+> Please pull the latest tip/perf/urgent tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/urgent
+> 
+> Head SHA1: 12b5da349a8b94c9dbc3430a6bc42eabd9eaf50b
+> 
+> 
+> Steven Rostedt (1):
+>       tracing: Fix ent_size in trace output
+> 
+> ----
+>  kernel/trace/trace.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/i915/intel_i2c.c |   30 +++++++++++++++---------------
- 1 files changed, 15 insertions(+), 15 deletions(-)
+Pulled, thanks Steve!
 
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 1a5f52a..43a3ca3 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -204,8 +204,7 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
- }
- 
- static int
--gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
--		bool last)
-+gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
- {
- 	int reg_offset = dev_priv->gpio_mmio_base;
- 	u16 len = msg->len;
-@@ -213,7 +212,6 @@ gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
- 
- 	I915_WRITE(GMBUS1 + reg_offset,
- 		   GMBUS_CYCLE_WAIT |
--		   (last ? GMBUS_CYCLE_STOP : 0) |
- 		   (len << GMBUS_BYTE_COUNT_SHIFT) |
- 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
- 		   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
-@@ -239,8 +237,7 @@ gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
- }
- 
- static int
--gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
--		bool last)
-+gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
- {
- 	int reg_offset = dev_priv->gpio_mmio_base;
- 	u16 len = msg->len;
-@@ -256,7 +253,6 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
- 	I915_WRITE(GMBUS3 + reg_offset, val);
- 	I915_WRITE(GMBUS1 + reg_offset,
- 		   GMBUS_CYCLE_WAIT |
--		   (last ? GMBUS_CYCLE_STOP : 0) |
- 		   (msg->len << GMBUS_BYTE_COUNT_SHIFT) |
- 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
- 		   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
-@@ -289,7 +285,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 					       struct intel_gmbus,
- 					       adapter);
- 	struct drm_i915_private *dev_priv = bus->dev_priv;
--	int i, reg_offset, ret;
-+	int i, reg_offset;
-+	int ret = 0;
- 
- 	mutex_lock(&dev_priv->gmbus_mutex);
- 
-@@ -303,20 +300,17 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 	I915_WRITE(GMBUS0 + reg_offset, bus->reg0);
- 
- 	for (i = 0; i < num; i++) {
--		bool last = i + 1 == num;
--
- 		if (msgs[i].flags & I2C_M_RD)
--			ret = gmbus_xfer_read(dev_priv, &msgs[i], last);
-+			ret = gmbus_xfer_read(dev_priv, &msgs[i]);
- 		else
--			ret = gmbus_xfer_write(dev_priv, &msgs[i], last);
-+			ret = gmbus_xfer_write(dev_priv, &msgs[i]);
- 
- 		if (ret == -ETIMEDOUT)
- 			goto timeout;
- 		if (ret == -ENXIO)
- 			goto clear_err;
- 
--		if (!last &&
--		    wait_for(I915_READ(GMBUS2 + reg_offset) &
-+		if (wait_for(I915_READ(GMBUS2 + reg_offset) &
- 			     (GMBUS_SATOER | GMBUS_HW_WAIT_PHASE),
- 			     50))
- 			goto timeout;
-@@ -324,15 +318,21 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 			goto clear_err;
- 	}
- 
-+	/* Generate a STOP condition on the bus */
-+	I915_WRITE(GMBUS1 + reg_offset, GMBUS_CYCLE_STOP | GMBUS_SW_RDY);
-+
- 	/* Mark the GMBUS interface as disabled after waiting for idle.
- 	 * We will re-enable it at the start of the next xfer,
- 	 * till then let it sleep.
- 	 */
--	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
-+	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
-+		     10)) {
- 		DRM_INFO("GMBUS [%s] timed out waiting for idle\n",
- 			 adapter->name);
-+		ret = -ETIMEDOUT;
-+	}
- 	I915_WRITE(GMBUS0 + reg_offset, 0);
--	ret = i;
-+	ret = ret ?: i;
- 	goto out;
- 
- clear_err:
--- 
-1.7.7.3
-
+	Ingo
