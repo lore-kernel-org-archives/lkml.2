@@ -1,316 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab2C0AxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 20:53:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38644 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448Ab2C0AxJ (ORCPT
+	id S1755133Ab2C0BQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 21:16:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36481 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab2C0BQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 20:53:09 -0400
-Date: Mon, 26 Mar 2012 20:53:07 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-next@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-Subject: linux-next: triage for March 26th, 2012
-Message-ID: <20120327005307.GB26825@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Mar 2012 21:16:17 -0400
+Date: Tue, 27 Mar 2012 12:16:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Gerecke <killertofu@gmail.com>,
+        Chris Bagwell <chris@cnpbagwell.com>
+Subject: linux-next: manual merge of the input tree with Linus' tree
+Message-Id: <20120327121610.e39e648811d5b00ae328077b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like some SCSI fallout today. (don't forget the builds lag
-the tree creation by up to 24h.)
+--Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-New breakage since last report:
-	ARM:rpc_defconfig (scsi/arm/powertec.c: implicit 'seq_printf')
-	ARM:omap2plus_defconfig (board-omap4panda.c: 'btwilink_device' undecl)
-	m68k:sun3_defconfig,m68k_defconfig (sun3_NCR5380.c: static decl of
-				 'sun3scsi_proc_info' follows non-static)
-	ia64:defconfig (asm-offsets.c:322: unterm arg list invoking macro "DEFINE")
+Hi Dmitry,
 
-Randconfig fails that may or may not be new (by their very nature):
-	powerpc: mpc512x_shared.c: (fsl_diu_monitor_port declared in param list)
+Today's linux-next merge of the input tree got a conflict in
+drivers/input/tablet/wacom_sys.c between commit 24e3e5ae1e4c ("Input:
+wacom - fix physical size calculation for 3rd-gen Bamboo") from Linus'
+tree and commit 16bf288c4be6 ("Input: wacom - create inputs when wireless
+connect") from the input tree.
 
-Builds that are fixed since last report:
-	ARM:cam60_defconfig
-	ARM:ap4evb_defconfig
-	ARM:mxs_defconfig (kallsyms bug, so probably not "fixed").
-	ARM:at91x40_defconfig
+The latter seems to incorporate the former, so I used that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The following have fixes posted for quite some time now, but the fixes
-haven't yet been integrated.  Please have a look at these, as it would
-be nice to have them in tree before wk2 of the merge window closes.
-	ARM:magician_defconfig
-	ARM:collie_defconfig
-	ARM:iop32x_defconfig,iop33x_defconfig
-	ARM:em_x270_defconfig
-	AVR32:defconfig
+--Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Note: The randconfig fails are only listed once and not tracked
-in the below listing.
+iQIcBAEBCAAGBQJPcRTaAAoJEECxmPOUX5FE5aUP/0GCRAO2trsUrtjFO5Uv+ApI
+LZaU61tJ4emaBo8vleTjZuBSN+2jb6K1xdntn7tzW8QCTLWuLxvjW3eDP59WK4sv
+TD8dIjyMbSGNuhZ+5ZCjUgQukJwPSs55quydL0kVLfeCLQYVsoDHhdq7uFSCMPO4
+vm887XkuCC7Uo5QPygcxDgx7sfmaQfeOyRrWi1A1ZaQsuNq5uwi++VEmv6R+Ldo/
+7KavbZ8WQYWjtgww+DNTACPRhOTnVa5On/oOXOhMfyXrZZYeATjOoye/A4Z+SUG4
+k05iqCJavru+fxfhRSG2l7wCqI6O8mCHSshJXThMVDSnWXhCUaSw44M4Yi+kBTQS
+pi7gk+8P0dpQT0g2psnV6Ks5l2hsaFkui4j/2JZtUR1jaVPUDf7EtL3FNzYnenMF
+rfVrMxXoSVZtgQo5yupxhSCCPJSxYnC4n5CygOGQZCWde0HGvy4p7wxNs0qGq3DC
+xZUQiQKT50O11118hfM7iQM0Yep7Y5h4RTlCWibPBK4qQdspDiHHWyFk/J8xvCnj
+fcJ6G3hV9dyAvKCWUC3JbMW97b5CIxC6GUJzT/jTEoM8/Ra0Yccug0rt+LlfUgQN
+2Pupjz3zT1Vaa5tOfamLZsrASbIXCNXSVrKO9J2JJauaXh+c3Vi9gR8ZfSvOXU7p
+OxZExqfijZSXQd5X0p5d
+=QV5M
+-----END PGP SIGNATURE-----
 
-            ------------------------------------------------
-
-Latest results at:
-	http://kisskb.ellerman.id.au/kisskb/branch/9/
-
-Failures as of March 26th, 2012:
-================================
-
-AM33:asb2303_defconfig,asb2364_defconfig
-	when:	Mar 15
-	why:	cc1: error: unrecognized command line option '-mmem-funcs'
-	status:	Possible fix from TonyB sent for review.
-	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
-----------------
-
-ARM:omap2plus_defconfig
-	when:	Mar 26
-	why:	board-omap4panda.c: 'btwilink_device' undeclared
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5968352/
-
-ARM:rpc_defconfig
-	when:	Mar 26
-	why:	scsi/arm/powertec.c: implicit declaration 'seq_printf'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5967948/
-
-ARM:u300_defconfig
-	when:	Mar 24
-	why:	coh901327_wdt.c: 'struct watchdog_device' has no member named 'timout'
-	status:	reported (PaulG)
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133259959823119&w=2
-
-ARM:cm_x2xx_defconfig
-	when:	Mar 19
-	why:	it8152.c: redefinition of 'dma_set_coherent_mask'
-	status:	bisected and reported (PaulG)
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133226851818586&w=2
-
-ARM:netx_defconfig,pnx4008_defconfig 
-	when:	Mar 14
-	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
-	ref:	https://lkml.org/lkml/2012/3/13/670
-
-ARM:collie_defconfig
-	when:	Feb 14
-	why:	locomolcd.c: error: 'sa1100fb_lcd_power' undeclared
-	status:	fixed (PaulG) - pending integration
-	fix:	http://marc.info/?l=linux-next&m=133105157730749&w=2
-	ref:
-
-ARM:iop32x_defconfig,iop33x_defconfig
-	when:	Nov 23
-	why:	restart.c: implicit declaration of function 'soft_restart'
-	status:	fixed (PaulG) - pending integration
-	fix:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081461.html
-	fix:	https://lkml.org/lkml/2012/3/14/253
-	ref:
-
-ARM:ixp4xx_defconfig
-	when:	Oct 26
-	why:	gpio.h: implicit declaration of function '__gpio_get_value'
-	status:	fixed (Imre Kaloz) - but possibly needs rework?
-	fix:	https://lkml.org/lkml/2012/2/8/288
-	ref:	https://lkml.org/lkml/2012/2/8/287
-
-ARM:magician_defconfig
-	when:	Feb 13
-	why:	magician.c: unknown field 'dev' specified in initializer
-	status:	fixed (PaulG) - pending integration
-	fix:	http://marc.info/?l=linux-arm-kernel&m=133124258707457&w=2
-	ref:	http://marc.info/?l=linux-next&m=133106325903524&w=2
-
-ARM:em_x270_defconfig
-	when:	Feb 14
-	why:	em-x270.c: unknown field 'dev' specified in initializer
-	status:	 fixed (PaulG) - pending integration
-	fix:	http://www.spinics.net/lists/arm-kernel/msg164012.html
-	ref:	http://www.spinics.net/lists/arm-kernel/msg163135.html
-
-ARM:raumfeld_defconfig
-	when:	Nov 23
-	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
-	status:	perhaps broken since 2010?  See ref below.
-	fix:	
-	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
-
-ARM:arm-allnoconfig
-	when:	forever
-	why:	not supported
-	status:	nothing pending, but patches accepted
-	fix:	n/a
-	ref:	https://lkml.org/lkml/2009/4/30/105
-	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
-----------------
-
-AVR32:defconfig
-	when:	Mar 18
-	why:	board.h: atmel_nand.h: No such file or directory
-	status:	reported/fixed (PaulG)
-	fix:	http://marc.info/?l=linux-arm-kernel&m=133239363802517&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5917107/
-
-AVR32:allnoconfig
-	when:	May 26 2010, 20:49
-	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
-	status:
-	fix:
-	ref:
----------------
-
-bfin:***all-builds***
-	when:	Jan 20, 22:13
-	why:	undefined reference to [now multiple definition of] `vm_is_stack'
-	status:	WIP, fix from Siddhesh Poyarekar
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133269881015828&w=2
-	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
----------------
-
-cris:***all-builds***
-	when:	Mar 25, 22:05
-	why:	include/linux/types.h:25: error expected ... before 'ino_t'
-	status:	
-	fix:	
-	ref:	
-----------------
-
-crisv32:***all-builds***
-	when:	Mar 25, 22:05
-	why:	include/linux/types.h:25: error expected ... before 'ino_t'
-	status:	
-	fix:	
-	ref:	
-----------------
-
-frv:defconfig
-	when:	Mar 15
-	why:	arch/frv/kernel/head.S operand out of range
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884666/
-----------------
-
-h8300:defconfig
-	when:	Mar 15
-	why:	time.c: implicit declaration of function 'get_irq_regs'
-	why:	also seems gcc suffers an ICE
-	status:	ICE bug lodged with gcc folks (TonyB)
-	fix:
-	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
-----------------
-
-ia64:defconfig
-	when:	Mar 26
-	why:	asm-offsets.c:322: unterminated arg list invoking macro "DEFINE"
-	status:
-	fix:
-	ref:
-----------------
-
-i386:allmodconfig
-	when:	Mar 8, 20:41
-	why:	ERROR: "mdfld_set_brightness" [drivers/gpu/drm/gma500/gma500_gfx.ko] undefined!
-	status:	
-	fix:
-	ref:	https://lkml.org/lkml/2012/3/24/122
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878506/
-----------------
-
-m32r:m32700ut.smp_defconfig
-	when:	Mar 15
-	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
-----------------
-
-m68k:sun3_defconfig,m68k_defconfig
-	when:	Mar 26
-	why:	sun3_NCR5380.c: static decl of 'sun3scsi_proc_info' follows non-static
-	status:	
-	fix:	
-	ref:	http://marc.info/?l=linux-next&m=133279244817422&w=2
-
-m68k:allmodconfig
-	when:	Mar 16
-	why:	persistent_ram.c: implicit declaration of 'memblock_reserve'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
-	ref:	http://www.spinics.net/lists/linux-next/msg19343.html
-----------------
-
-mips:allmodconfig
-	when:
-	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
-	status: one of many fixes mips needs...
-	fix:	http://marc.info/?l=linux-wireless&m=133272031621916&w=2
-	ref:	http://patchwork.ozlabs.org/patch/148614/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
-----------------
-
-parisc:allmodconfig
-	when:
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-
-parisc64:a500_defconfig 
-	when:
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-powerpc:allyesconfig
-	when:	May 18 2009, 22:11
-	why:	fat ass kernel with everything simply won't link
-	status:	need to fix build config to ignore the final link
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
-------------------
-
-sh4:***all-builds***
-	when:	Feb 24, 17:38
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-tilegx:defconfig
-	when:	Mar 19
-	why:	`xfs_qm_exit' defined in discarded section `.exit.text' of fs/built-in.o
-	status:	
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133269971616104&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5924094/
-------------------
-
-um:um-defconfig
-	when:	Sep 16 2010, 01:28
-	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
-	status:	clearly broken forever, so does anyone care?
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
+--Signature=_Tue__27_Mar_2012_12_16_10_+1100_32vQm3OtyoPEBItL--
