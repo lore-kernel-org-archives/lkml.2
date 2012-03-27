@@ -1,146 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab2C0WqS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:46:18 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:36620 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175Ab2C0WqR (ORCPT
+	id S1757104Ab2C0WqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:46:24 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47353 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757005Ab2C0WqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:46:17 -0400
-Message-ID: <1332888376.2040.16.camel@shrek.rexursive.com>
-Subject: [PATCH v6]: Hibernation: lower/better control the amount of pages
- used for buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 28 Mar 2012 09:46:16 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 27 Mar 2012 18:46:22 -0400
+Date: Tue, 27 Mar 2012 22:46:40 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
+Message-ID: <20120327224640.GA5328@mail.hallyn.com>
+References: <20120326150924.GG19395@moon>
+ <20120326164347.GA24394@redhat.com>
+ <20120326183330.GM19395@moon>
+ <20120327152534.GA18478@redhat.com>
+ <20120327165853.GH11875@moon>
+ <20120327222923.GA31692@mail.hallyn.com>
+ <20120327223420.GB9669@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120327223420.GB9669@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Quoting Cyrill Gorcunov (gorcunov@openvz.org):
+> On Tue, Mar 27, 2012 at 10:29:23PM +0000, Serge E. Hallyn wrote:
+> > Quoting Cyrill Gorcunov (gorcunov@openvz.org):
+> > > On Tue, Mar 27, 2012 at 05:25:34PM +0200, Oleg Nesterov wrote:
+> > > > user_ns_map_uid() should translate uid_t from one namespace to another,
+> > > > in this case the namespace is the same.
+> > > > 
+> > > > user_ns_map_uid(cred->user_ns, cred) must be the identical mapping,
+> > > > no matter how we change the implementation.
+> > > > 
+> > > > What I think you need is
+> > > > user_ns_map_uid(current_user_ns(), filp->f_owner.cred), the only
+> > > > problem is that f_owner.cred doesn't exist.
+> > > > 
+> > > 
+> > > Hmm, I was confused by likely() in user_ns_map_uid. But indeed, I think
+> > > you're so right. Is there some reason why we can't carry f_owner.cred
+> > > pointer?
+> > 
+> > We would need that for this, yes.  However, Eric is working on a new
+> > patchset which changes the cross-userns uid mappings.  I think it's
+> > worth simply leaving a comment that this will need to be addressed,
+> > and leave in the unconverted uid.
+> 
+> Hi Serge, thanks for info. But if it will be unconverted uid, can't
+> be there some security problem with that which I missed?
 
-And with upper case macro definition.
+Noone is really using the user namespaces right now, but rather than
+adding the cred (and refcounting concerns), my suggestion for now
+would be to hardcode a check in modown() that current_user_ns() ==
+&init_user_ns.
 
----------------------------------------
-Hibernation/thaw improvements:
+I *did* have a patch in the past which added the cred to fown, but
+no idea where it is right now...
 
-1. Set maximum number of pages for read buffering consistently, instead
-of inadvertently depending on the size of the sector type.
-
-2. Use at most one quarter of free pages for read buffering.
-
-3. Require that number of free pages when writing the image never falls
-below three quarters of total free pages available.
-
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
----
- kernel/power/swap.c |   32 +++++++++++++++++++++-----------
- 1 files changed, 21 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 8742fd0..e907eff 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -6,7 +6,7 @@
-  *
-  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
-  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
-+ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  *
-@@ -51,6 +51,12 @@
- 
- #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
- 
-+/*
-+ * Number of pages required to be kept free while writing the image. Always
-+ * three quarters of all available pages before the writing starts.
-+ */
-+#define REQD_FREE_PAGES		((nr_free_pages() / 4) * 3)
-+
- struct swap_map_page {
- 	sector_t entries[MAP_PAGE_ENTRIES];
- 	sector_t next_swap;
-@@ -72,7 +78,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -316,8 +322,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = REQD_FREE_PAGES;
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -352,11 +357,15 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		handle->cur_swap = offset;
- 		handle->k = 0;
- 	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-+	if (bio_chain && nr_free_pages() < handle->reqd_free_pages) {
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		handle->written = 0;
-+		/*
-+		 * Recalculate the number of required free pages, to make sure
-+		 * we never take more than a quarter.
-+		 */
-+		handle->reqd_free_pages = REQD_FREE_PAGES;
- 	}
-  out:
- 	return error;
-@@ -404,7 +413,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
- #define LZO_THREADS	3
- 
- /* Maximum number of pages for read buffering. */
--#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
-+#define LZO_READ_PAGES	8192
- 
- 
- /**
-@@ -615,10 +624,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 	}
- 
- 	/*
--	 * Adjust number of free pages after all allocations have been done.
--	 * We don't want to run out of pages when writing.
-+	 * Adjust the number of required free pages after all allocations have
-+	 * been done. We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = REQD_FREE_PAGES;
- 
- 	/*
- 	 * Start the CRC32 thread.
-@@ -1129,8 +1138,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 
- 	/*
- 	 * Adjust number of pages for read buffering, in case we are short.
-+	 * Never take more than a quarter of all available pages.
- 	 */
--	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
-+	read_pages = (nr_free_pages() - snapshot_get_image_size()) / 4;
- 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
- 
- 	for (i = 0; i < read_pages; i++) {
----------------------------------------
-
--- 
-Bojan
-
+-serge
