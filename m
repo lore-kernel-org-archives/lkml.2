@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab2C0HHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 03:07:25 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:32897 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab2C0HHX convert rfc822-to-8bit (ORCPT
+	id S1757287Ab2C0HKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 03:10:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31208 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133Ab2C0HKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 03:07:23 -0400
+	Tue, 27 Mar 2012 03:10:54 -0400
+Date: Tue, 27 Mar 2012 10:10:36 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: array underflow in receive_SyncParam()?
+Message-ID: <20120327071036.GA19008@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <20120326203209.GA8182@mail.gnudd.com>
-References: <20120326203209.GA8182@mail.gnudd.com>
-Date: Tue, 27 Mar 2012 09:07:22 +0200
-Message-ID: <CACRpkdZXhJn241n8wMU8yUFwL7mpWrV3hP6C-_r_P1GGWgd_Og@mail.gmail.com>
-Subject: Re: [PATCH] amba-pl011: fix panic introduced by "clear pending interrupts"
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, gregkh@linuxfoundation.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090207.4F7167F6.0023,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 10:32 PM, Alessandro Rubini <rubini@gnudd.com> wrote:
+I had a question about the following code:
 
-> patch 9b96fba, currently in linux-next, clears interrupts using
-> uap->port.membase that has not been assigned.  My x86 system,
-> that uses a pci-to-amba bridge, panics with a message like:
->
->   BUG: unable to handle kernel NULL pointer dereference at 00000038
->   IP: [<c12c85ed>] pl011_probe+0x119/0x303
->
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+drivers/block/drbd/drbd_receiver.c
+  2808                  if (apv == 88) {
+  2809                          if (data_size > SHARED_SECRET_MAX) {
+  2810                                  dev_err(DEV, "verify-alg too long, "
+  2811                                      "peer wants %u, accepting only %u byte\n",
+  2812                                                  data_size, SHARED_SECRET_MAX);
+  2813                                  return false;
+  2814                          }
+  2815  
+  2816                          if (drbd_recv(mdev, p->verify_alg, data_size) != data_size)
+  2817                                  return false;
+  2818  
+  2819                          /* we expect NUL terminated string */
+  2820                          /* but just in case someone tries to be evil */
+  2821                          D_ASSERT(p->verify_alg[data_size-1] == 0);
+  2822                          p->verify_alg[data_size-1] = 0;
+                                              ^^^^^^^^^
+Is it possible for data_size to be zero here leading to an array
+underflow?  We test for overflows, but I don't see any place where we
+test for zero.
 
-Yep I know, already sent the remedy, just waiting for Greg to pick it up:
-http://marc.info/?l=linux-serial&m=133235774423240&w=2
-
-But thanks for the quick attention :-)
-
-Yours,
-Linus Walleij
+regards,
+dan carpenter
