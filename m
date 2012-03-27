@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab2C0DQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 23:16:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65310 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab2C0DQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 23:16:03 -0400
-Message-ID: <1332818156.21855.4.camel@phoenix>
-Subject: [PATCH] video: pxa3xx-gcu: Simplify the logic to exit while loop in
- pxa3xx_gcu_wait_idle
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Mack <daniel@caiaq.de>, Sven Neumann <s.neumann@raumfeld.com>,
-        Janine Kropp <nin@directfb.org>, Denis Oliver Kropp <dok@directfb.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Date: Tue, 27 Mar 2012 11:15:56 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1757568Ab2C0DSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 23:18:01 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:45687 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755541Ab2C0DR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 23:17:59 -0400
+Message-ID: <4F71319F.60605@mprc.pku.edu.cn>
+Date: Tue, 27 Mar 2012 11:18:55 +0800
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Kautuk Consul <consul.kautuk@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/20] unicore32/mm/fault.c: Port OOM changes to do_pf
+References: <1332249906-3106-1-git-send-email-consul.kautuk@gmail.com>
+In-Reply-To: <1332249906-3106-1-git-send-email-consul.kautuk@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If wait_event_interruptible_timeout returns a positive value, it means
-the condition evaluated is true. Which means priv->shared->hw_running is false.
-And then we will exit the loop.
+On 03/20/2012 09:25 PM, Kautuk Consul wrote:
+> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+> (mm: retry page fault when blocking on disk transfer) and
+> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+> (x86,mm: make pagefault killable)
+>
+> The above commits introduced changes into the x86 pagefault handler
+> for making the page fault handler retryable as well as killable.
+>
+> These changes reduce the mmap_sem hold time, which is crucial
+> during OOM killer invocation.
+>
+> Port these changes to unicore32.
+>
+> Signed-off-by: Kautuk Consul<consul.kautuk@gmail.com>
+> ---
+>
+Sorry for replying so late.
 
-This patch simplifies the logic to exit the while loop.
+I've tested the patch for compilation and running, but not triggered 
+VM_FAULT_RETRY.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/pxa3xx-gcu.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+Regards,
 
-diff --git a/drivers/video/pxa3xx-gcu.c b/drivers/video/pxa3xx-gcu.c
-index 1d71c08..0b4ae0c 100644
---- a/drivers/video/pxa3xx-gcu.c
-+++ b/drivers/video/pxa3xx-gcu.c
-@@ -316,12 +316,9 @@ pxa3xx_gcu_wait_idle(struct pxa3xx_gcu_priv *priv)
- 		ret = wait_event_interruptible_timeout(priv->wait_idle,
- 					!priv->shared->hw_running, HZ*4);
- 
--		if (ret < 0)
-+		if (ret != 0)
- 			break;
- 
--		if (ret > 0)
--			continue;
--
- 		if (gc_readl(priv, REG_GCRBEXHR) == rbexhr &&
- 		    priv->shared->num_interrupts == num) {
- 			QERROR("TIMEOUT");
--- 
-1.7.5.4
-
-
-
+Guan Xuetao
