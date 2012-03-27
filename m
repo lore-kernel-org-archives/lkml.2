@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab2C0CFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 22:05:12 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:59351 "EHLO
+	id S1756840Ab2C0CH1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 22:07:27 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59386 "EHLO
 	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab2C0CFI (ORCPT
+	with ESMTP id S1756395Ab2C0CHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 22:05:08 -0400
-Message-ID: <4F71202C.2040006@panasas.com>
-Date: Mon, 26 Mar 2012 19:04:28 -0700
+	Mon, 26 Mar 2012 22:07:24 -0400
+Message-ID: <4F7120B6.2090509@panasas.com>
+Date: Mon, 26 Mar 2012 19:06:46 -0700
 From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -29,8 +29,7 @@ CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: [PATCH 3/6] kmod: Move call_usermodehelper_fns() to .c file and unexport
- all it's helpers
+Subject: [PATCH 4/6 OPTION-A] completion: Add new wait_for_completion_timeout_state
 References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com>
 In-Reply-To: <4F711EA2.4030608@panasas.com>
 Content-Type: text/plain; charset="UTF-8"
@@ -40,137 +39,108 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-If we move call_usermodehelper_fns() to kmod.c file and EXPORT_SYMBOL it
-we can avoid exporting all it's helper functions:
-	call_usermodehelper_setup
-	call_usermodehelper_setfns
-	call_usermodehelper_exec
-And make all of them static to kmod.c
+There are sometime places where an API hides a completion
+inside it's implementation, and needs to expose the kind of
+wait it does to it's upper users. Instead of such cases that
+now need an ugly switch case to call the different
+wait_for_completion_xxx function define a generic one
+which can do all.
 
-Since the optimizer will see all these as a single call site it will inline them
-inside call_usermodehelper_fns(). So we loose the call to _fns but gain 3
-calls to the helpers. (Not that it matters)
+A new user will be added to this API in linux/kmod.h.
 
+The return value from this member is a more Linux Kernel natural.
+It will return:
+	0  - If the wait was actually completed by a complete() signal.
+	-ERESTARTSYS - If interrupted
+	-ETIMEDOUT - If timeout expired
+
+CC: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 ---
- include/linux/kmod.h |   30 ++----------------------------
- kernel/kmod.c        |   25 ++++++++++++++++++++++---
- 2 files changed, 24 insertions(+), 31 deletions(-)
+ include/linux/completion.h |    2 +
+ kernel/sched/core.c        |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index ba89dc2..ae3f9623 100644
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -66,36 +66,10 @@ struct subprocess_info {
- 	void *data;
- };
+diff --git a/include/linux/completion.h b/include/linux/completion.h
+index 51494e6..c41b836 100644
+--- a/include/linux/completion.h
++++ b/include/linux/completion.h
+@@ -85,6 +85,8 @@ extern long wait_for_completion_interruptible_timeout(
+ 	struct completion *x, unsigned long timeout);
+ extern long wait_for_completion_killable_timeout(
+ 	struct completion *x, unsigned long timeout);
++extern int wait_for_completion_timeout_state(
++	struct completion *x, unsigned long timeout, int state);
+ extern bool try_wait_for_completion(struct completion *x);
+ extern bool completion_done(struct completion *x);
  
--/* Allocate a subprocess_info structure */
--struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
--						  char **envp, gfp_t gfp_mask);
--
--/* Set various pieces of state into the subprocess_info structure */
--void call_usermodehelper_setfns(struct subprocess_info *info,
--		    int (*init)(struct subprocess_info *info, struct cred *new),
--		    void (*cleanup)(struct subprocess_info *info),
--		    void *data);
--
--/* Actually execute the sub-process */
--int call_usermodehelper_exec(struct subprocess_info *info, int wait);
--
--static inline int
-+extern int
- call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
- 			int (*init)(struct subprocess_info *info, struct cred *new),
--			void (*cleanup)(struct subprocess_info *), void *data)
--{
--	struct subprocess_info *info;
--	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
--
--	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
--
--	if (info == NULL)
--		return -ENOMEM;
--
--	call_usermodehelper_setfns(info, init, cleanup, data);
--
--	return call_usermodehelper_exec(info, wait);
--}
-+			void (*cleanup)(struct subprocess_info *), void *data);
- 
- static inline int
- call_usermodehelper(char *path, char **argv, char **envp, int wait)
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index c5af66a..309299a 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -422,6 +422,7 @@ static void helper_unlock(void)
-  * structure.  This should be passed to call_usermodehelper_exec to
-  * exec the process and free the structure.
-  */
-+static
- struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
- 						  char **envp, gfp_t gfp_mask)
- {
-@@ -437,7 +438,6 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
-   out:
- 	return sub_info;
- }
--EXPORT_SYMBOL(call_usermodehelper_setup);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 503d642..023ba27 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3664,6 +3664,62 @@ int __sched wait_for_completion_killable(struct completion *x)
+ EXPORT_SYMBOL(wait_for_completion_killable_timeout);
  
  /**
-  * call_usermodehelper_setfns - set a cleanup/init function
-@@ -455,6 +455,7 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
-  * Function must be runnable in either a process context or the
-  * context in which call_usermodehelper_exec is called.
-  */
-+static
- void call_usermodehelper_setfns(struct subprocess_info *info,
- 		    int (*init)(struct subprocess_info *info, struct cred *new),
- 		    void (*cleanup)(struct subprocess_info *info),
-@@ -464,7 +465,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
- 	info->init = init;
- 	info->data = data;
- }
--EXPORT_SYMBOL(call_usermodehelper_setfns);
- 
- /**
-  * call_usermodehelper_exec - start a usermode application
-@@ -478,6 +478,7 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
-  * asynchronously if wait is not set, and runs as a child of keventd.
-  * (ie. it runs with full root capabilities).
-  */
-+static
- int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- {
- 	DECLARE_COMPLETION_ONSTACK(done);
-@@ -519,7 +520,25 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	helper_unlock();
- 	return retval;
- }
--EXPORT_SYMBOL(call_usermodehelper_exec);
-+
-+int call_usermodehelper_fns(
-+	char *path, char **argv, char **envp, int wait,
-+	int (*init)(struct subprocess_info *info, struct cred *new),
-+	void (*cleanup)(struct subprocess_info *), void *data)
++ * wait_for_completion_timeout_state: - waits for completion of a task all modes
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ * @state: Can be either 0 or TASK_KILLABLE or TASK_INTERRUPTIBLE
++ *
++ * This waits for either a completion of a specific task to be
++ * signaled or for a specified timeout to expire.
++ * If @state == TASK_KILLABLE It can be interrupted by a kill signal only.
++ * If @state == TASK_INTERRUPTIBLE It can be interrupted by any signal.
++ *
++ * This is a Swiss-army-knife of all the above, for API's that needs to hide
++ * a completion, and needs to expose it's control to users.
++ *
++ * The return value is:
++ *	0 means completion was signaled with a complete call.
++ *	-ERESTARTSYS if interrupted
++ *	-ETIMEDOUT if timeout expired
++ *  Be careful the return value is Boolean opposite to the above _timeout
++ *  members.
++ */
++int __sched
++wait_for_completion_timeout_state(struct completion *x,
++				  unsigned long timeout, int state)
 +{
-+	struct subprocess_info *info;
-+	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
++	long t;
++	int ret;
 +
-+	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
++	if (!timeout)
++		timeout = MAX_SCHEDULE_TIMEOUT;
 +
-+	if (info == NULL)
-+		return -ENOMEM;
++	switch(state) {
++	default:
++		WARN_ON_ONCE(1);
++		/* fall through */
++	case 0:
++		state = TASK_UNINTERRUPTIBLE;
++		break;
++	case TASK_KILLABLE:
++	case TASK_INTERRUPTIBLE:
++		break;
++	}
 +
-+	call_usermodehelper_setfns(info, init, cleanup, data);
-+
-+	return call_usermodehelper_exec(info, wait);
++	t = wait_for_common(x, timeout, state);
++	if (likely(t > 0)) {
++		ret = 0;
++	} else  {
++		if (t < 0)
++			ret = t;
++		else
++			ret = -ETIMEDOUT;
++	}
++	return ret;
 +}
-+EXPORT_SYMBOL(call_usermodehelper_fns);
- 
- static int proc_cap_handler(struct ctl_table *table, int write,
- 			 void __user *buffer, size_t *lenp, loff_t *ppos)
++EXPORT_SYMBOL(wait_for_completion_timeout_state);
++
++/**
+  *	try_wait_for_completion - try to decrement a completion without blocking
+  *	@x:	completion structure
+  *
 -- 
 1.7.6.5
 
