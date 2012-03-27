@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2C0Cvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 22:51:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:35412 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757247Ab2C0Cvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 22:51:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: paulmck@linux.vnet.ibm.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-In-Reply-To: <1332781541.23924.110.camel@gandalf.stny.rr.com>
-References: <4F674649.2000300@linux.vnet.ibm.com> <87aa3cqht9.fsf@rustcorp.com.au> <1332240151.18960.401.camel@twins> <874ntic1ze.fsf@rustcorp.com.au> <1332320519.18960.466.camel@twins> <87d3859s9r.fsf@rustcorp.com.au> <20120322224919.GW2450@linux.vnet.ibm.com> <877gya99uj.fsf@rustcorp.com.au> <20120324002347.GD2450@linux.vnet.ibm.com> <87bonkchxk.fsf@rustcorp.com.au> <1332748920.16159.65.camel@twins> <1332767386.23924.75.camel@gandalf.stny.rr.com> <1332769098.16159.111.camel@twins> <1332775340.23924.102.camel@gandalf.stny.rr.com> <1332778438.16159.136.camel@twins> <1332781541.23924.110.camel@gandalf.stny.rr.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 27 Mar 2012 12:02:31 +1030
-Message-ID: <87iphqbzgw.fsf@rustcorp.com.au>
+	id S1757441Ab2C0DBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 23:01:41 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:39046
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755541Ab2C0DBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Mar 2012 23:01:40 -0400
+X-SpamScore: -6
+X-BigFish: VPS-6(zz9371I542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 26 Mar 2012 23:01:21 -0400
+Subject: RE: [PATCH 1/2] regulator: ad5398: show changing current in uA
+Thread-Topic: [PATCH 1/2] regulator: ad5398: show changing current in uA
+Thread-Index: Ac0LvoLLOSpXS15uRmiD8N3pX3TUDAAB1wQw
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F258A5B43@NWD2CMBX1.ad.analog.com>
+References: <1332814105.21855.1.camel@phoenix>
+In-Reply-To: <1332814105.21855.1.camel@phoenix>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2R32WnU019486
 
-On Mon, 26 Mar 2012 13:05:41 -0400, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2012-03-26 at 18:13 +0200, Peter Zijlstra wrote:
-> > On Mon, 2012-03-26 at 11:22 -0400, Steven Rostedt wrote:
-> 
-> > So how about we add another variant of kthread_freezable_should_stop(),
-> > maybe call it kthread_bound_should_stop() that checks if the cpu its
-> > bound to goes awol, if so, park it.
-> 
-> Do you mean to have this function automate the "park". When it is
-> called, if the cpu is going down it should simply schedule off and not
-> return until the CPU comes back on line?
-> 
-> Actually, why not just keep "kthread_should_stop()" and instead create a
-> "kthread_park()", and call that instead of kthread_stop(). Then when the
-> task calls kthread_should_stop(), that can park the thread then.
+Acked-by: Sonic Zhang <sonic.zhang@analog.com>
 
-Do we ever have to do this?  Why not say we never move kthreads, and if
-anyone really needs this, they have to do it themselves.
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@gmail.com]
+Sent: Tuesday, March 27, 2012 10:08 AM
+To: linux-kernel@vger.kernel.org
+Cc: Zhang, Sonic; Liam Girdwood; Mark Brown
+Subject: [PATCH 1/2] regulator: ad5398: show changing current in uA
 
-We *will* need a way for the kthreads to say "don't take this cpu away
-now" in a v. lightweight way, but I'm happy with the -rt solution that
-Steven mentioned.
+Integer division may truncate the result.
+Current code shows changing current is 0mA when selector is 1 ... 8.
 
-Basically, it's time to revisit cpu hotplug entirely.  Let's not get
-too caught up in what we've got now.
+For example:
+selector = 1
+ad5398_calc_current returns 117, debug message shows 117/1000 = 0mA
+selector = 2
+ad5398_calc_current returns 234, debug message shows 234/1000 = 0mA
+selector = 3
+ad5398_calc_current returns 351, debug message shows 351/1000 = 0mA
+............
+selector = 8
+ad5398_calc_current returns 937, debug message shows 937/1000 = 0mA
 
-Cheers,
-Rusty.
-PS.  And I'm sure you'll finish the work while I'm on honeymoon :)
--- 
-  How could I marry someone with more hair than me?  http://baldalex.org
+Show the changing current in uA makes it easier for debugging.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ad5398.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+index 26d23ad..ed58798 100644
+--- a/drivers/regulator/ad5398.c
++++ b/drivers/regulator/ad5398.c
+@@ -99,8 +99,8 @@ static int ad5398_set_current_limit(struct regulator_dev *rdev, int min_uA, int
+        if (ad5398_calc_current(chip, selector) > max_uA)
+                return -EINVAL;
+
+-       dev_dbg(&client->dev, "changing current %dmA\n",
+-               ad5398_calc_current(chip, selector) / 1000);
++       dev_dbg(&client->dev, "changing current %duA\n",
++               ad5398_calc_current(chip, selector));
+
+        /* read chip enable bit */
+        ret = ad5398_read_reg(client, &data);
+--
+1.7.5.4
+
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
