@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2C0FAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 01:00:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:23872 "EHLO mga09.intel.com"
+	id S1754284Ab2C0FBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 01:01:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35049 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab2C0FAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 01:00:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="125461545"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] max17042_battery: add suspend/resume hooks
-Date: Tue, 27 Mar 2012 02:23:40 +0530
-Message-Id: <1332795220-8343-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753836Ab2C0FBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 01:01:07 -0400
+Message-ID: <4F714982.6020208@zytor.com>
+Date: Mon, 26 Mar 2012 22:00:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Sharp <dhsharp@google.com>,
+        Justin Teravest <teravest@google.com>,
+        Laurent Chavey <chavey@google.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace
+ handler
+References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com> <1332787168-20457-5-git-send-email-vnagarnaik@google.com>
+In-Reply-To: <1332787168-20457-5-git-send-email-vnagarnaik@google.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds suspend/resume methods to the driver.
+On 03/26/2012 11:39 AM, Vaibhav Nagarnaik wrote:
+> The syscalls are a tricky bunch to trace, because of their multitude and
+> dynamic nature of the list. In order to solve this, a macro handled the
+> sycalls handler definition and it was expanded into setting up the
+> metadata for the syscall event. A handler hooked into the ptrace syscall
+> tracer to check whether an invoked syscall was supposed to be traced.
+> 
+> This added latency to all the invoked syscalls, since they had to be
+> checked for tracing and also affected the latency of syscall that was
+> actually getting traced. For e.g., using a simple program which invokes
+> getuid() in a repeated loop and calculates the average time per syscall
+> invocation found a latency of 570 - 117 = 453 ns added to every traced
+> syscall.
+> 
+> This patch changes the syscall macro expansion, to create a function
+> that adds the entry and exit tracepoints for the given syscall so that
+> the latency can be avoided. This was suggested by Mathieu Desnoyers in
+> https://lkml.org/lkml/2010/10/13/337
+> 
+> After this patch, the latency added is 370 - 117 = 253 ns per invocation
+> of a traced syscall. This is on par with a simple tracepoint added to
+> any kernel code path.
+> 
+> This patch also makes syscall tracing architecture independent as there
+> is no need to have a hook into the architecture specific syscall tracer
+> functions.
+> 
 
-In suspend method irq line is disabled to avoid i2c
-read/write errors from the interrupt handler as the
-i2c bus itself could be in suspend state.
-In resume function irq  line will be re-enabled.
+I am officially confused here.  You have a single, common, dispatch
+point for all system calls -- why don't you use it?  That is of course
+the system call table.  If you want to trace a system call, override the
+entry point in the syscall table to point to a hook function which can
+provide entry and exit hooks.  It's not even code, it's data, so you
+don't even have to play the code patching song and dance routine
+(although you may have to map it read/write which is normally not the
+case for security reasons.)
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- drivers/power/max17042_battery.c |   41 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 41 insertions(+), 0 deletions(-)
+The best part is that the cost for an untraced system call is *zero*.
 
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index d4868c5..cf5c855 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -28,6 +28,7 @@
- #include <linux/i2c.h>
- #include <linux/delay.h>
- #include <linux/interrupt.h>
-+#include <linux/pm.h>
- #include <linux/mod_devicetable.h>
- #include <linux/power_supply.h>
- #include <linux/power/max17042_battery.h>
-@@ -728,6 +729,40 @@ static int __devexit max17042_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int max17042_suspend(struct device *dev)
-+{
-+	struct max17042_chip *chip = dev_get_drvdata(dev);
-+
-+	/* disable the irq and enable irq_wake
-+	 * capability to the interrupt line.
-+	 */
-+	if (chip->client->irq) {
-+		disable_irq(chip->client->irq);
-+		enable_irq_wake(chip->client->irq);
-+	}
-+
-+	return 0;
-+}
-+
-+static int max17042_resume(struct device *dev)
-+{
-+	struct max17042_chip *chip = dev_get_drvdata(dev);
-+
-+	if (chip->client->irq) {
-+		disable_irq_wake(chip->client->irq);
-+		enable_irq(chip->client->irq);
-+		/* re-program the SOC thresholds to 1% change */
-+		max17042_set_soc_threshold(chip, 1);
-+	}
-+
-+	return 0;
-+}
-+#else
-+#define max17042_suspend NULL
-+#define max17042_resume NULL
-+#endif
-+
- #ifdef CONFIG_OF
- static const struct of_device_id max17042_dt_match[] = {
- 	{ .compatible = "maxim,max17042" },
-@@ -742,10 +777,16 @@ static const struct i2c_device_id max17042_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, max17042_id);
- 
-+static const struct dev_pm_ops max17042_pm_ops = {
-+	.suspend		= max17042_suspend,
-+	.resume			= max17042_resume,
-+};
-+
- static struct i2c_driver max17042_i2c_driver = {
- 	.driver	= {
- 		.name	= "max17042",
- 		.of_match_table = of_match_ptr(max17042_dt_match),
-+		.pm	= &max17042_pm_ops,
- 	},
- 	.probe		= max17042_probe,
- 	.remove		= __devexit_p(max17042_remove),
--- 
-1.7.0.4
+	-hpa
 
