@@ -1,126 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab2C0EjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 00:39:06 -0400
-Received: from nm24.access.bullet.mail.mud.yahoo.com ([66.94.237.89]:37660
-	"HELO nm24.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751862Ab2C0EjC (ORCPT
+	id S1752918Ab2C0EmV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 00:42:21 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42578 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab2C0EmU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 00:39:02 -0400
-X-Yahoo-Newman-Id: 288521.85814.bm@smtp103.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: CrRhcM4VM1nacgDFYfWepHL30xF4xrZABzAT3dWh4nUc5h8
- gicWf4PifGv2ufOyDvtj3lNxW_duDpyoClVcw2Ds5DjbvcbldtJ5PsOutYwq
- lBcgTIoFX26NDy.LNm4ZI8k2wnwTGN_N3cQjJ9AFTwey6IHZDWGyXcFi1T_s
- kO.lP.4HzMU9Xaq2zo_7SyU1eCIYGo09dwYII6vC34v.7cI83y5QAQN._HZC
- 82O10..zuiSQhFYaWaANnJPoojH5DbK6r.Fs8qRcHUCqu9weMJf_nXnfXrFp
- YEKgzsggdCf0EAhEYvcUcWZ16XMnRV4v6r7WSuPvu6td.286lPNFKdPL5UBT
- nuaNGD71x5TkQDF1w3ulL4QDtl39DZZ8HqvjBtgFqSdAsSjH1AUQuCGuTHKl
- 7Ylt7_eOTFlRTGDDECj.3VcAQcBSqIZkqWet0LFe03Yc5lJR_W2.TrtSDi0n
- m5sxw0Mpq3zJYEUQ7F6TDF0KXGnn9eIWnw2vVFR9sMM30lVkc9Im5OA--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4F714463.7090508@schaufler-ca.com>
-Date: Mon, 26 Mar 2012 21:38:59 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 27 Mar 2012 00:42:20 -0400
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: "J. R. Okajima" <hooanon05@yahoo.co.jp>, linux-fsdevel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, valerie.aurora@gmail.com,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
-References: <18418.1330238913@jrobl> <20120221175721.25235.8901.stgit@warthog.procyon.org.uk> <9343.1332771770@redhat.com>
-In-Reply-To: <9343.1332771770@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFyVELrXO50pfbL-eH48K3_3noRkKMDCqTSVsuSQ0hHRWw@mail.gmail.com>
+References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
+	<CABS55+D97mKFdQhGdAXjMGfyRiWd4Os8wfRq9YNa-FQAEQSR7Q@mail.gmail.com>
+	<CA+55aFyVELrXO50pfbL-eH48K3_3noRkKMDCqTSVsuSQ0hHRWw@mail.gmail.com>
+Date: Tue, 27 Mar 2012 00:42:19 -0400
+Message-ID: <CAMzpN2hqay2h111C6pWw6VEBMLDfO_UF-Xf41M1x5ewp5K90yw@mail.gmail.com>
+Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
+ any filesystems that depend on the exact VFS 'namehash' implementation?)
+From: Brian Gerst <brgerst@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jason Garrett-Glaser <jason@x264.com>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/26/2012 7:22 AM, David Howells wrote:
-> J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->
->>>  (4) Added some code to override the credentials around upper inode
->>>      creation to make sure the inode gets the right UID/GID.  This doesn't
->>>      help if the lower inode has some sort of foreign user identifier.
->>>
->>>      Also, I'm not sure whether the LSM xattrs should be blindly copied up.
->>>      Should the LSM policies applicable to the lower fs's apply to the upper
->>>      fs too?
->> Obviously the xattr entry may not have its meanings on the upper fs,
-> True.  I'm not sure what's the best way to deal with that.  Possibly add an
-> extra flag to vfs_setxattr() and have the fs vet them...  OTOH, this gives us
-> files on the lowerfs that may well differ in appearance to files on the
-> upperfs with respect to their xattrs.
-
-Are you suggesting that you would have heterogeneous filesystems
-with different xattr behavior stacked at the same time as you're
-using an LSM that cares about the behavior of xattrs? Oh dear. As
-I typed that sentence I identified a viable use case.
-
->> or the upper fs may return an error when setting the xattr. Additionally the
->> returned errno may not follow the generic semantics (ENOTSUP, ENOSPC, or
->> EDQUOT) since the fs may return fs-specific error.
-> Also true.  It's possible that the best way is just to ignore everything but a
-> medium-related error such as EIO, ENOSPC and EDQUOT: We tried...  Oh well.
->
->> On the other hand, users may expect that the all xattrs are copied-up,
->> particulary when he knows that the xattrs works well on the upper fs too.
->> In copy-up, it will be hard to support all cases.
-> Yeah.  Ideally, the copied-up file would be indistinguishable from the lower
-> file, but in practice that's not possible unless inode numbers and other
-> physical characteristics of the lower file are recorded in the upper fs (say
-> on an xattr).
->
->> In order to leave users how to handle the xattrs, I'd suggest
->> introducing some mount options, which are similar to cp(1).
->> cp(1) has several options
->> 	--preserve=mode,ownership,timestamps,context,links,xattr,all
->> 	('mode' includes acl which are based upon xattr)
+On Mon, Mar 5, 2012 at 12:38 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Mar 4, 2012 at 7:58 PM, Jason Garrett-Glaser <jason@x264.com> wrote:
 >>
->> Since the mode (without acl), ownership and timestamps should always be
->> copied-up, the new mount options will be something like
->> 	cpup-xattr=acl,context,all
-> I would suggest 'cpyup' or 'copyup' rather than 'cpup' - the latter looks like
-> something to do with CPUs, but yes, it's worth considering.
+>> There is an improvement you can make to this.  "bsf" is microcoded in
+>> many future CPUs (e.g. Piledriver) in favor of tzcnt, which has
+>> slightly different flag behavior and no undefined behavior and is part
+>> of BMI1.
 >
->> And only when the option is specfied, the xattrs are copied up. No
->> special error handling is necessary, all the errors should be returned
->> to users unconditionally.
-> That's not necessarily good enough.  What if and LSM, say SELinux, is in
-> force?  Now SELinux will happily label the files for you - but there's a
-> reasonable chance they won't be correct.  OTOH, they may not be correct even
-> if they are copied up.
-
-The underlying storage (the "real" file) has to have the xattr attached
-to it.
-Any other behavior is incorrect. If the underlying filesystem does not
-support
-xattrs that lack of support has to be propagated upwards even if the higher
-layer filesystem supports xattrs.
-
-In the case of Smack filesystems that don't support xattrs are still given
-labels based on mount options. If the lower filesystem is NTFS and the upper
-ext4 you've got to respect the NTFS labeling behavior for files there.
-
->> Does union-mount preserve mtime? If not, it is critical for some
->> applications such like "make" I am afraid.
-> Ummm...  Interesting question.  If it copies up a file, then that file must
-> have been opened for writing.  Is the mtime altered by such an event, or only
-> by a write() having been issued?  Also, what about ctime?  That doesn't seem
-> to have been copied up either.
-
-What is the expected behavior of union mounts for all attributes? Is it
-specified anywhere?
-
+> So I've gotten rid of 'bsf' because it really does have problems on
+> many CPU's. It's disgustingly slow on some older CPU's.
 >
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I asked around on G+ to see if that would be useful, and there's a
+> nice simple four-instruction sequence for the 32-bit case using just
+> trivial operations (one shift, one and, a couple of adds).
 >
+> For the 64-bit case, the bsf can be replaced with a single multiply
+> and shift. The bsf is still better on some CPU's, but the single
+> multiply and shift is more consistently good - and as long as it
+> doesn't stall the CPU, we're good, because the end result of it all
+> won't be used until several cycles later.
+>
+> So my current patch is attached - it does depend on the current -git
+> tree having moved dentry_cmp() into fs/dcache.c, so it's on top of
+> *tonights* -git tree, but this is something I'm pretty happy with, and
+> was planning on actually committing early in the 3.4 merge window.
+>
+> My profiling seems to show that the multiply is pretty much free on
+> 64-bit at least on the cpu's I have access to - it's not like a
+> multiply is free, but I do suspect it gets hidden very well by any OoO
+> instruction scheduling.
+>
+> A bit-count instructions (popcount or bsf or tzcnt is obviously in
+> *theory* less work than a 64-bit multiply, but the multiply is
+> "portable". Even if it isn't optimal, it shouldn't be horrible on any
+> 64-bit capable x86 CPU, and it also means (for example) that the code
+> might even work on non-x86 chips.
+>
+> I did only very limited profiling of the 32-bit case, but it's really
+> just four cheap ALU instructions there and didn't really show up at
+> all in the limited profiles I did. And at least I checked that the
+> code worked. I have to say that the advantage of "vectorizing" this
+> code is obviously much less if you can only do 4-byte "vectors", so I
+> didn't actually time whether the patch *improves* anything on x86-32.
+>
+>                                     Linus
 
+This patch is causing my system (x86-64, Fedora 16) to fail to boot
+when DEBUG_PAGEALLOC=n.  No oops, but these error messages were in the
+log for the bad kernel:
+
+type=1400 audit(1332802076.643:4): avc:  denied  { dyntransition } for
+ pid=1 comm="systemd" scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:init_exec_t:s0 tclass=process
+systemd[1]: Failed to transition into init label
+'system_u:object_r:init_exec_t:s0', ignoring.
+type=1400 audit(1332816477.781:5): avc:  denied  { create } for  pid=1
+comm="systemd" scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:init_exec_t:s0 tclass=unix_dgram_socket
+systemd[1]: systemd-shutdownd.socket failed to listen on sockets:
+Permission denied
+systemd[1]: Unit systemd-shutdownd.socket entered failed state.
+type=1400 audit(1332816477.782:6): avc:  denied  { create } for  pid=1
+comm="systemd" scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:syslogd_exec_t:s0 tclass=unix_dgram_socket
+systemd[1]: syslog.socket failed to listen on sockets: Permission denied
+systemd[1]: Unit syslog.socket entered failed state.
+systemd-kmsg-syslogd[457]: No or too many file descriptors passed.
+type=1400 audit(1332816477.847:7): avc:  denied  { create } for  pid=1
+comm="systemd" scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:udev_exec_t:s0
+tclass=netlink_kobject_uevent_socket
+systemd[1]: udev-kernel.socket failed to listen on sockets: Permission denied
+systemd[1]: Unit udev-kernel.socket entered failed state.
+type=1400 audit(1332816477.848:8): avc:  denied  { create } for  pid=1
+comm="systemd" scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:udev_exec_t:s0 tclass=unix_stream_socket
+systemd[1]: udev-control.socket failed to listen on sockets: Permission denied
+systemd[1]: Unit udev-control.socket entered failed state.
+type=1400 audit(1332816477.848:9): avc:  denied  { create } for  pid=1
+comm="systemd" scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:init_exec_t:s0 tclass=unix_stream_socket
+systemd[1]: systemd-stdout-syslog-bridge.socket failed to listen on
+sockets: Permission denied
+
+--
+Brian Gerst
