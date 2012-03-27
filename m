@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2C0SKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:10:15 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:53765 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754635Ab2C0SKL (ORCPT
+	id S1755585Ab2C0SQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:16:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57497 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab2C0SP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:10:11 -0400
-Message-ID: <4F72026C.3050604@fb.com>
-Date: Tue, 27 Mar 2012 11:09:48 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 27 Mar 2012 14:15:59 -0400
+Date: Tue, 27 Mar 2012 15:15:47 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [RFC] perf tools: Including pre-generated flex files
+Message-ID: <20120327181547.GA7374@infradead.org>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, "Paul Mackerras" <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Stephane Eranian" <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Tom Zanussi" <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v4)
-References: <1331746607-6706-1-git-send-email-asharma@fb.com> <20120315141402.GA550@somewhere.redhat.com> <4F622DCE.4090608@fb.com> <20120319155742.GF2660@somewhere> <4F691289.7080505@fb.com> <20120325021451.GA14971@somewhere.redhat.com>
-In-Reply-To: <20120325021451.GA14971@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-27_07:2012-03-27,2012-03-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/24/12 7:14 PM, Frederic Weisbecker wrote:
+Hi Linus,
 
->> The other problem in branch stacks/LBR is that they're
->> sampled branches. Just because I got a sample with:
->>
->> a ->  b
->> b ->  c
->>
->> doesn't necessarily mean that the callchain was a ->  b ->  c.
->
-> Not sure what you mean. If you have a ->  b, b ->  c in single
-> LBR sample it means you got a ->  b ->  c.
->
+	We now use lex and bison for the events and PMU parser:
 
-I was going by Stephane's commit message here:
+[acme@sandy linux]$ wc -l tools/perf/util/*.[yl]
+  126 tools/perf/util/parse-events.l
+  229 tools/perf/util/parse-events.y
+   43 tools/perf/util/pmu.l
+   93 tools/perf/util/pmu.y
+  491 total
 
-http://article.gmane.org/gmane.linux.kernel/1236999
+	Jiri and Peter agreed on having pre-generated files:
 
- > Statistical sampling of taken branch should not be confused
- > for branch tracing. Not all branches are necessarily captured
+[acme@sandy linux]$ wc -l tools/perf/util/*-{bison,flex}.[ch]
+  1917 tools/perf/util/parse-events-bison.c
+    81 tools/perf/util/parse-events-bison.h
+  1663 tools/perf/util/pmu-bison.c
+    73 tools/perf/util/pmu-bison.h
+  2272 tools/perf/util/parse-events-flex.c
+   316 tools/perf/util/parse-events-flex.h
+  1821 tools/perf/util/pmu-flex.c
+   316 tools/perf/util/pmu-flex.h
+  8459 total
 
-Stephane, could you please explain if the 16 filtered branches in LBR 
-are guaranteed to be from a given callchain to the leaf function? My 
-understanding is that it's not.
+so that we don't require even more tools to build the kernel, following
+the precedent of:
 
-callchain1: a -> b -> d -> e (sample a->b)
-callchain2: a -> c -> b -> f (sample b->f)
+[acme@sandy linux]$ wc -l scripts/*/*.[ch]_shipped
+  1976 scripts/dtc/dtc-lexer.lex.c_shipped
+  1946 scripts/dtc/dtc-parser.tab.c_shipped
+    86 scripts/dtc/dtc-parser.tab.h_shipped
+   220 scripts/genksyms/keywords.hash.c_shipped
+  2245 scripts/genksyms/lex.lex.c_shipped
+  2399 scripts/genksyms/parse.tab.c_shipped
+    95 scripts/genksyms/parse.tab.h_shipped
+   286 scripts/kconfig/zconf.hash.c_shipped
+  2420 scripts/kconfig/zconf.lex.c_shipped
+  2504 scripts/kconfig/zconf.tab.c_shipped
+ 14177 total
+[acme@sandy linux]$
 
-on PMU interrupt can we end up with:
+	But Ingo argues that flex and bison are just a yum/whatever
+install away, so we shouldn't clutter the kernel git history with things
+we can generate at build time.
 
-b -> f <- top of stack
-a -> b
-...
+	What is your take on this?
 
-even though a -> b -> f can never happen in the actual program flow?
-
-  -Arun
+- Arnaldo
