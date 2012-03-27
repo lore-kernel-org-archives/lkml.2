@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab2C0Qu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:50:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52271 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab2C0Qu4 (ORCPT
+	id S1754797Ab2C0QzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:55:21 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:9209 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590Ab2C0QzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:50:56 -0400
-Message-ID: <4F71EFED.6080409@gmail.com>
-Date: Tue, 27 Mar 2012 09:50:53 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 27 Mar 2012 12:55:17 -0400
+X-IronPort-AV: E=Sophos;i="4.75,327,1330905600"; 
+   d="scan'208";a="11583133"
+Date: Tue, 27 Mar 2012 17:56:16 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/2] xen: enter/exit lazy_mmu_mode around m2p_override
+ calls
+In-Reply-To: <20120327143142.GA31081@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1203271737280.15151@kaball-desktop>
+References: <1332856364-29995-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120327143142.GA31081@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH V2]drivers:staging:octeon Fix typos in staging:octeon
-References: <1332822858-14940-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1332822858-14940-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 09:34 PM, Justin P. Mattock wrote:
-> From: "Justin P. Mattock"<justinmattock@gmail.com>
->
-> The below patch is a resend to fix some typos and comments that
-> I have found while reading.
->
-> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
-> ---
->   drivers/staging/octeon/ethernet-rx.c   |    2 +-
->   drivers/staging/octeon/ethernet-tx.c   |   10 +++++-----
->   drivers/staging/octeon/ethernet-util.h |    2 +-
->   drivers/staging/octeon/ethernet.c      |    2 +-
->   4 files changed, 8 insertions(+), 8 deletions(-)
->
-Acked-by: David Daney <david.daney@cavium.com>
+On Tue, 27 Mar 2012, Konrad Rzeszutek Wilk wrote:
+> On Tue, Mar 27, 2012 at 02:52:43PM +0100, Stefano Stabellini wrote:
+> > This patch is a significant performance improvement for the
+> 
+> How much? 10%? 90%?
+
+I think you are overestimating the meaning of "significant" :)
+
+It is about 6% using grant_table and 2% using blkback.
+
+
+> > m2p_override.
+> 
+> Can you explain what those calls do in the git commit description please?
+
+Right, I have been way too concise.
+
+Each m2p_add/remove_override call issues a MULTI_grant_table_op and a
+__flush_tlb_single if kmap_op != NULL.
+Batching all the calls together is a great performance benefit because
+it means issuing one hypercall total rather than two hypercall per page.
+
+I'll resend with a proper commit message.
