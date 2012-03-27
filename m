@@ -1,136 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab2C0XA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 19:00:28 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:20805
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751365Ab2C0XA0 (ORCPT
+	id S1755528Ab2C0XDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 19:03:14 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:13417 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072Ab2C0XDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 19:00:26 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zzbb2dI103dK1432N98dKzz1202hzz8275bhz2fh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F724658.6010404@am.sony.com>
-Date: Tue, 27 Mar 2012 15:59:36 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Tue, 27 Mar 2012 19:03:12 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6662"; a="174065685"
+Message-ID: <4F724722.2000202@codeaurora.org>
+Date: Tue, 27 Mar 2012 16:02:58 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Alessio Igor Bogani <abogani@kernel.org>
-CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jan Beulich <jbeulich@novell.com>,
-        Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Bird, Tim" <Tim.Bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
-References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com>	<1310626276-4541-1-git-send-email-abogani@kernel.org>	<4F6D2BC5.9070200@am.sony.com>	<4F711EC0.3080708@am.sony.com> <CAPk1OjELnXiZVreaEh94e3RT306mmkQxxyg2DH5aYy=rQ9yr1w@mail.gmail.com>
-In-Reply-To: <CAPk1OjELnXiZVreaEh94e3RT306mmkQxxyg2DH5aYy=rQ9yr1w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] firmware_class: Move request_firmware_nowait() to
+ workqueues
+References: <201203260000.34377.rjw@sisk.pl> <201203280021.27582.rjw@sisk.pl> <20120327224837.GC22371@google.com> <201203280055.06624.rjw@sisk.pl>
+In-Reply-To: <201203280055.06624.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/12 00:19, Alessio Igor Bogani wrote:
-> Dear Mr. Rowand,
-> 
-> Il 27 marzo 2012 03:58, Frank Rowand <frank.rowand@am.sony.com> ha scritto:
->> On 03/23/12 19:04, Frank Rowand wrote:
->>> On 07/13/11 23:51, Alessio Igor Bogani wrote:
->>>> The commit f02e8a6 sorts symbols placing each of them in its own elf section.
->>>> The sorting and merging into the canonical sections are done by the linker.
->>>> Unfortunately modpost to generate Module.symvers file parses vmlinux
->>>
->>> Yet another unfortunately: modpost parses vmlinux.o instead of vmlinux (vmlinux
->>> does not yet exist at this point of the build).  vmlinux.o also does not have
->>> the many sections sorted and merged into the canonical sections.  As a result,
->>> the Module.symvers created my modpost incorrectly reports the license of all
->>> exports as "(unknown)".
->>>
->>> Can you fix this also please?
->>
->> The attached patch modifies your patch to also use export_from_secname()
->> for vmlinux and vmlinux.o.
->>
->> This is a rather blind shot at fixing the problem, so please review
->> carefully.  After applying the patch, Module.symvers reports the license
->> correctly for exports from vmlinux.o.
+On 03/27/12 15:55, Rafael J. Wysocki wrote:
+> On Wednesday, March 28, 2012, Tejun Heo wrote:
+>> On Wed, Mar 28, 2012 at 12:21:27AM +0200, Rafael J. Wysocki wrote:
+>>> On Wednesday, March 28, 2012, Tejun Heo wrote:
+>>>> On Tue, Mar 27, 2012 at 02:28:30PM -0700, Stephen Boyd wrote:
+>>>>> Oddly enough a work_struct was already part of the firmware_work
+>>>>> structure but nobody was using it. Instead of creating a new
+>>>>> kthread for each request_firmware_nowait() call just schedule the
+>>>>> work on the long system workqueue. This should avoid some overhead
+>>>>> in forking new threads when they're not strictly necessary.
+>>>>>
+>>>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>>>> ---
+>>>>>
+>>>>> Is it better to use alloc_workqueue() and not put these on the system
+>>>>> long workqueue?
+>>>> No, just use schedule_work() unless there are specific requirements
+>>>> which can't be fulfilled that way (e.g. it's on memory allocation
+>>>> path, may consume large amount of cpu cycles, ...)
+>>> It may wait quite long.
+>> That shouldn't matter.  system_long_wq's name is a bit misleading at
+>> this point.  The only reason it's used currently is to avoid cyclic
+>> dependency involving flush_workqueue(), which calls for clearer
+>> solution anyway.  So, yeap, using system_wq should be fine here.
+> Good, thanks for the explanation.
+>
+> Stephen, care to respin?
+>
 
-That version of my patch broke modpost for vmlinux.  I don't know if
-anyone uses modpost against vmlinux instead of vmlinux.o, but the
-attached patch works for both vmlinux and vmlinux.o
+Sure. We want system_wq instead of system_long_wq? If so let's use this
+patch.
 
-> 
-> Could you show me how reproduce that problem? Indeed on my system
-> "unknown" is reported (erroneously) in the v3.0 series before the
-> commit 62a2635610dbc83c5e8d724e00941eee4d18c186 (and obviously after
-> my patchset which adds that bug).
+-----8<-- cut here -->8------
 
-I'm not sure what you are asking here.
+Subject: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
 
-You mention "my patchset which adds that bug" (which from looking at
-the source, appears to me to probably be commit
-f02e8a6596b7dc9b2171f7ff5654039ef0950cdc).
+Oddly enough a work_struct was already part of the firmware_work
+structure but nobody was using it. Instead of creating a new
+kthread for each request_firmware_nowait() call just schedule the
+work on the system workqueue. This should avoid some overhead
+in forking new threads when they're not strictly necessary.
 
-The email that I originally replied to is your fix to modpost for modules,
-and shows up as commit 62a2635610dbc83c5e8d724e00941eee4d18c186.
-
-My attached fix is meant to extend 62a2635610dbc83c5e8d724e00941eee4d18c186
-to also fix modpost for vmlinux.o.
-
-> 
-> Thanks!
-> 
-> Ciao,
-> Alessio
-> 
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- scripts/mod/modpost.c |    7 	5 +	2 -	0 !
- scripts/mod/modpost.h |    1 	1 +	0 -	0 !
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/base/firmware_class.c |   27 +++++++--------------------
+ 1 file changed, 7 insertions(+), 20 deletions(-)
 
-Index: b/scripts/mod/modpost.c
-===================================================================
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -132,8 +132,10 @@ static struct module *new_module(char *m
- 	/* strip trailing .o */
- 	s = strrchr(p, '.');
- 	if (s != NULL)
--		if (strcmp(s, ".o") == 0)
-+		if (strcmp(s, ".o") == 0) {
- 			*s = '\0';
-+			mod->is_dot_o = 1;
-+		}
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index ae00a2f..5401814 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -16,10 +16,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/bitops.h>
+ #include <linux/mutex.h>
+-#include <linux/kthread.h>
++#include <linux/workqueue.h>
+ #include <linux/highmem.h>
+ #include <linux/firmware.h>
+ #include <linux/slab.h>
++#include <linux/sched.h>
  
- 	/* add to list */
- 	mod->name = p;
-@@ -589,7 +591,8 @@ static void handle_modversions(struct mo
- 	unsigned int crc;
- 	enum export export;
+ #define to_dev(obj) container_of(obj, struct device, kobj)
  
--	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
-+	if ((!is_vmlinux(mod->name) || mod->is_dot_o)
-+	    && strncmp(symname, "__ksymtab", 9) == 0)
- 		export = export_from_secname(info, get_secindex(info, sym));
- 	else
- 		export = export_from_sec(info, get_secindex(info, sym));
-Index: b/scripts/mod/modpost.h
-===================================================================
---- a/scripts/mod/modpost.h
-+++ b/scripts/mod/modpost.h
-@@ -115,6 +115,7 @@ struct module {
- 	char **markers;
- 	size_t nmarkers;
- 	char	     srcversion[25];
-+	int is_dot_o;
+@@ -630,19 +631,15 @@ struct firmware_work {
+ 	bool uevent;
  };
  
- struct elf_info {
+-static int request_firmware_work_func(void *arg)
++static void request_firmware_work_func(struct work_struct *work)
+ {
+-	struct firmware_work *fw_work = arg;
++	struct firmware_work *fw_work;
+ 	const struct firmware *fw;
+ 	struct firmware_priv *fw_priv;
+ 	long timeout;
+ 	int ret;
+ 
+-	if (!arg) {
+-		WARN_ON(1);
+-		return 0;
+-	}
+-
++	fw_work = container_of(work, struct firmware_work, work);
+ 	fw_priv = _request_firmware_prepare(&fw, fw_work->name, fw_work->device,
+ 			fw_work->uevent, true);
+ 	if (IS_ERR_OR_NULL(fw_priv)) {
+@@ -667,8 +664,6 @@ static int request_firmware_work_func(void *arg)
+ 
+ 	module_put(fw_work->module);
+ 	kfree(fw_work);
+-
+-	return ret;
+ }
+ 
+ /**
+@@ -694,7 +689,6 @@ request_firmware_nowait(
+ 	const char *name, struct device *device, gfp_t gfp, void *context,
+ 	void (*cont)(const struct firmware *fw, void *context))
+ {
+-	struct task_struct *task;
+ 	struct firmware_work *fw_work;
+ 
+ 	fw_work = kzalloc(sizeof (struct firmware_work), gfp);
+@@ -713,15 +707,8 @@ request_firmware_nowait(
+ 		return -EFAULT;
+ 	}
+ 
+-	task = kthread_run(request_firmware_work_func, fw_work,
+-			    "firmware/%s", name);
+-	if (IS_ERR(task)) {
+-		fw_work->cont(NULL, fw_work->context);
+-		module_put(fw_work->module);
+-		kfree(fw_work);
+-		return PTR_ERR(task);
+-	}
+-
++	INIT_WORK(&fw_work->work, request_firmware_work_func);
++	schedule_work(&fw_work->work);
+ 	return 0;
+ }
+ 
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
