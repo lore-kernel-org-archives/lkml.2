@@ -1,62 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2C0VHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 17:07:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45935 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879Ab2C0VHL (ORCPT
+	id S1756119Ab2C0VMO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 17:12:14 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52788 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab2C0VMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 17:07:11 -0400
-Date: Tue, 27 Mar 2012 14:07:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        <linux-security-module@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: Re: [PATCHSET 0/6 version 2] kmod: Optional timeout on the wait in
- call_usermodehelper_exec
-Message-Id: <20120327140709.60ab7bda.akpm@linux-foundation.org>
-In-Reply-To: <4F711EA2.4030608@panasas.com>
-References: <4F691059.30405@panasas.com>
-	<4F711EA2.4030608@panasas.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Mar 2012 17:12:13 -0400
+From: Alexandru Copot <alex.mihai.c@gmail.com>
+To: davem@davemloft.net, eric.dumazet@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandru Copot <alex.mihai.c@gmail.com>,
+        Daniel Baluta <dbaluta@ixiacom.com>
+Subject: [PATCH] tcp: bind() use stronger condition for bind_conflict
+Date: Wed, 28 Mar 2012 00:11:52 +0300
+Message-Id: <1332882712-10756-1-git-send-email-alex.mihai.c@gmail.com>
+X-Mailer: git-send-email 1.7.9.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Mar 2012 18:57:54 -0700
-Boaz Harrosh <bharrosh@panasas.com> wrote:
+We must try harder to get unique (addr, port) pairs when
+doing port autoselection for sockets with SO_REUSEADDR
+option set.
 
-> My motivation is that I added yet another Kernel dependency on the
-> call_usermodehelper() function and am not completely happy with the
-> error case of having the user-mode program stuck forever. In such
-> case I would like the Kernel part to timeout and properly error recover
-> and clean up. So therefor the proposed 5th patch.
+We achieve this by adding a relaxation parameter to
+inet_csk_bind_conflict. When 'relax' parameter is off
+we return a conflict whenever the current searched
+pair (addr, port) is not unique.
 
-Before adding a new feature we should hear more about why you think
-it's needed.  afaik we haven't needed this capability in the past ten
-years or so and may not need it for another ten.  Hence we probably
-shouldn't add it!
+This tries to address the problems reported in patch:
+	8d238b25b1ec22a73b1c2206f111df2faaff8285
+	Revert "tcp: bind() fix when many ports are bound"
 
-IOW, please explain at some length why you need this.  Do you think
-that there are existing call sites which can usefully use this feature?
-Do you expect that new callers are likely to need this?  etcetera.
+Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
+Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
+---
+ include/net/inet6_connection_sock.h |    2 +-
+ include/net/inet_connection_sock.h  |    4 ++--
+ net/ipv4/inet_connection_sock.c     |   17 +++++++++++++----
+ net/ipv6/inet6_connection_sock.c    |    3 ++-
+ 4 files changed, 18 insertions(+), 8 deletions(-)
 
+diff --git a/include/net/inet6_connection_sock.h b/include/net/inet6_connection_sock.h
+index 3207e58..9d29ae2 100644
+--- a/include/net/inet6_connection_sock.h
++++ b/include/net/inet6_connection_sock.h
+@@ -23,7 +23,7 @@ struct sock;
+ struct sockaddr;
+ 
+ extern int inet6_csk_bind_conflict(const struct sock *sk,
+-				   const struct inet_bind_bucket *tb);
++				   const struct inet_bind_bucket *tb, int relax);
+ 
+ extern struct dst_entry* inet6_csk_route_req(struct sock *sk,
+ 					     const struct request_sock *req);
+diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
+index dbf9aab..f05a032 100644
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -60,7 +60,7 @@ struct inet_connection_sock_af_ops {
+ #endif
+ 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
+ 	int	    (*bind_conflict)(const struct sock *sk,
+-				     const struct inet_bind_bucket *tb);
++				     const struct inet_bind_bucket *tb, int relax);
+ };
+ 
+ /** inet_connection_sock - INET connection oriented sock
+@@ -245,7 +245,7 @@ extern struct request_sock *inet_csk_search_req(const struct sock *sk,
+ 						const __be32 raddr,
+ 						const __be32 laddr);
+ extern int inet_csk_bind_conflict(const struct sock *sk,
+-				  const struct inet_bind_bucket *tb);
++				  const struct inet_bind_bucket *tb, int relax);
+ extern int inet_csk_get_port(struct sock *sk, unsigned short snum);
+ 
+ extern struct dst_entry* inet_csk_route_req(struct sock *sk,
+diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+index 19d66ce..bf50e77 100644
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -53,7 +53,7 @@ void inet_get_local_port_range(int *low, int *high)
+ EXPORT_SYMBOL(inet_get_local_port_range);
+ 
+ int inet_csk_bind_conflict(const struct sock *sk,
+-			   const struct inet_bind_bucket *tb)
++			   const struct inet_bind_bucket *tb, int relax)
+ {
+ 	struct sock *sk2;
+ 	struct hlist_node *node;
+@@ -79,6 +79,13 @@ int inet_csk_bind_conflict(const struct sock *sk,
+ 				    sk2_rcv_saddr == sk_rcv_saddr(sk))
+ 					break;
+ 			}
++			if (!relax && reuse && sk2->sk_reuse &&
++					sk2->sk_state != TCP_LISTEN) {
++				const __be32 sk2_rcv_saddr = sk_rcv_saddr(sk2);
++				if (!sk2_rcv_saddr || !sk_rcv_saddr(sk) ||
++						sk2_rcv_saddr == sk_rcv_saddr(sk))
++					break;
++			}
+ 		}
+ 	}
+ 	return node != NULL;
+@@ -122,12 +129,13 @@ again:
+ 					    (tb->num_owners < smallest_size || smallest_size == -1)) {
+ 						smallest_size = tb->num_owners;
+ 						smallest_rover = rover;
+-						if (atomic_read(&hashinfo->bsockets) > (high - low) + 1) {
++						if (atomic_read(&hashinfo->bsockets) > (high - low) + 1 &&
++							!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb, 0)) {
+ 							snum = smallest_rover;
+ 							goto tb_found;
+ 						}
+ 					}
+-					if (!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb)) {
++					if (!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb, 0)) {
+ 						snum = rover;
+ 						goto tb_found;
+ 					}
+@@ -178,12 +186,13 @@ tb_found:
+ 			goto success;
+ 		} else {
+ 			ret = 1;
+-			if (inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb)) {
++			if (inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb, 1)) {
+ 				if (sk->sk_reuse && sk->sk_state != TCP_LISTEN &&
+ 				    smallest_size != -1 && --attempts >= 0) {
+ 					spin_unlock(&head->lock);
+ 					goto again;
+ 				}
++
+ 				goto fail_unlock;
+ 			}
+ 		}
+diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
+index 02dd203..dfc8bc3 100644
+--- a/net/ipv6/inet6_connection_sock.c
++++ b/net/ipv6/inet6_connection_sock.c
+@@ -28,7 +28,8 @@
+ #include <net/inet6_connection_sock.h>
+ 
+ int inet6_csk_bind_conflict(const struct sock *sk,
+-			    const struct inet_bind_bucket *tb)
++			    const struct inet_bind_bucket *tb,
++				int relax)
+ {
+ 	const struct sock *sk2;
+ 	const struct hlist_node *node;
+-- 
+1.7.9.4
 
-Patches 1-3 are general cleanups and look good, so I grabbed those.
