@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751232Ab2C1Ej4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 00:39:56 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:6389 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750804Ab2C1Ejz (ORCPT
+	id S1751258Ab2C1EnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 00:43:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62090 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab2C1EnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 00:39:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJOVck95LEyG/2dsb2JhbAA/BrhngQiCCQEBBToNDzMIAxguFCUDIQESG4durAmOHBOKW4UuYwSVYIlQhl6Cew
-Date: Wed, 28 Mar 2012 15:39:51 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120328043951.GA32741@dastard>
-References: <20120313182220.GA11500@redhat.com>
- <20120327155149.d41a235b.akpm@linux-foundation.org>
- <20120328001550.GA3077@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328001550.GA3077@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Mar 2012 00:43:23 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of/irq: add empty irq_of_parse_and_map() for non-dt builds
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Rob Herring <robherring2@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        patches@linaro.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAJuYYwTjqdSAXBr6c+da85dSxRM5_-L=54RkBo1eJt9Jn=sCXw@mail.gmail.com>
+References: <1332581257-15989-1-git-send-email-thomas.abraham@linaro.org> <4F6DC847.8000902@gmail.com> <20120325004232.AD9793E0409@localhost> <CAJuYYwTjqdSAXBr6c+da85dSxRM5_-L=54RkBo1eJt9Jn=sCXw@mail.gmail.com>
+Date: Tue, 27 Mar 2012 16:28:27 -0600
+Message-Id: <20120327222827.576EE3E1551@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 08:15:50PM -0400, Dave Jones wrote:
-> On Tue, Mar 27, 2012 at 03:51:49PM -0700, Andrew Morton wrote:
->  > On Tue, 13 Mar 2012 14:22:20 -0400
->  > Dave Jones <davej@redhat.com> wrote:
->  > 
->  > > This size is user controllable, and so it's trivial for someone to trigger a
->  > > stream of order:4 page allocation errors.
->  > > 
->  > > Signed-off-by: Dave Jones <davej@redhat.com>
->  > > 
->  > > --- 
->  > > There's also a similar problem in setxattr, but I'm not sure how we want
->  > > to pass NOWARN down to memdup_user. Thoughts ?
->  > > 
->  > > diff --git a/fs/xattr.c b/fs/xattr.c
->  > > index 82f4337..544df90 100644
->  > > --- a/fs/xattr.c
->  > > +++ b/fs/xattr.c
->  > > @@ -496,7 +496,7 @@ listxattr(struct dentry *d, char __user *list, size_t size)
->  > >  	if (size) {
->  > >  		if (size > XATTR_LIST_MAX)
->  > >  			size = XATTR_LIST_MAX;
->  > > -		klist = kmalloc(size, GFP_KERNEL);
->  > > +		klist = kmalloc(size, __GFP_NOWARN | GFP_KERNEL);
->  > >  		if (!klist)
->  > >  			return -ENOMEM;
->  > >  	}
->  > 
->  > hm.  The patch is good, but one would hope that it isn't "trivial" to
->  > trigger a page allocation failure for a kmalloc(65536, GFP_KERNEL) -
->  > the VM is supposed to be able to handle that.
->  > 
->  > Is it really *that* easy, or is Something Unusual happening with that
->  > machine?
+On Sun, 25 Mar 2012 20:26:15 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> On 25 March 2012 06:12, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > On Sat, 24 Mar 2012 08:12:39 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> >> On 03/24/2012 04:27 AM, Thomas Abraham wrote:
+> >> > Add a empty irq_of_parse_and_map() that returns 0 for non-dt builds and
+> >> > avoid having #ifdef CONFIG_OF around all calls to irq_of_parse_and_map().
+> >> >
+> >> > Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+> >> > Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> >> > ---
+> >>
+> >> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> >>
+> >> Go ahead and merge with the rest of your series.
+> >
+> > Actually, it's not quite fully baked; the forward declaration of
+> > irq_of_parse_and_map() needs to be moved under the #if
+> > defined(CONFIG_OF_IRQ) block (just move the #if statement up 7 lines).
+> > After doing that you can add my acked-by and merge it with the rest of
+> > your series.  There is no sense merging it through my tree when you
+> > are the only user depending on it.
+> >
+> > Acked-by: Grant Likely <grant.likely@secretlab.ca>
 > 
-> Well, the unusual thing was that I was fuzzing system calls for a few hours.
-> 
-> My fuzzing tool was able to trigger these very easily after an hour or two
-> of uptime and memory had fragmented a little, so yeah, quite trivial.
+> Thanks. I will do that change which you have suggested and take it
+> through the Samsung tree. But I was thinking that if it goes through
+> your tree, there would be less chances of a merge conflict in
+> include/linux/of_irq.h, a file that might see updates from other
+> sources.
 
-We've recently been seeing reports of xfsdump trigging a similar
-allocation failures in the XFS attr code when we are doing hundreds
-of thousands of attribute lookups to back them up.
+Hmmm... is this going to be merged for v3.4 or v3.5?  If it is v3.5,
+then yes it probably does need to go through my tree since there may
+be others that need to pull it into their trees.  I was thinking that
+you needed this immediately.
 
-ad650f5 xfs: fallback to vmalloc for large buffers in xfs_attrmulti_attr_get
+g.
 
-I think that falling back to vmalloc here is much better solution
-than failing to retreive the attribute - it will work no matter how
-fragmented memory gets. That means we don't get incomplete
-backups occurring after days or months of uptime and successful
-backups...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
