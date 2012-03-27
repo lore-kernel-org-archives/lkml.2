@@ -1,20 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2C0VZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 17:25:50 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:30143 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab2C0VZq (ORCPT
+	id S1756225Ab2C0V2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 17:28:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:12527 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755817Ab2C0V2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 17:25:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6662"; a="176329080"
-Message-ID: <4F723059.9070003@codeaurora.org>
-Date: Tue, 27 Mar 2012 14:25:45 -0700
+	Tue, 27 Mar 2012 17:28:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6662"; a="174038997"
 From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-kernel@vger.kernel.org,
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Saravana Kannan <skannan@codeaurora.org>,
         Kay Sievers <kay.sievers@vrfy.org>,
@@ -22,83 +18,110 @@ CC: linux-kernel@vger.kernel.org,
         Christian Lamparter <chunkeey@googlemail.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 6/6] PM / Sleep: Mitigate race between the freezer and
- request_firmware()
-References: <201203032122.36745.chunkeey@googlemail.com> <201203260004.55956.rjw@sisk.pl> <4F70B261.7060402@codeaurora.org> <201203262206.08989.rjw@sisk.pl>
-In-Reply-To: <201203262206.08989.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/2] firmware_class: Move request_firmware_nowait() to workqueues
+Date: Tue, 27 Mar 2012 14:28:30 -0700
+Message-Id: <1332883710-7486-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.rc1.27.g498a0
+In-Reply-To: <1332883710-7486-1-git-send-email-sboyd@codeaurora.org>
+References: <1332883710-7486-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <201203260000.34377.rjw@sisk.pl>
+References: <201203260000.34377.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/12 13:06, Rafael J. Wysocki wrote:
-> On Monday, March 26, 2012, Stephen Boyd wrote:
->> On 03/25/12 15:04, Rafael J. Wysocki wrote:
->>> Index: linux/kernel/power/process.c
->>> ===================================================================
->>> --- linux.orig/kernel/power/process.c
->>> +++ linux/kernel/power/process.c
->>> @@ -135,6 +135,7 @@ int freeze_processes(void)
->>>  	error = try_to_freeze_tasks(true);
->>>  	if (!error) {
->>>  		printk("done.");
->>> +		__usermodehelper_reset(UMH_DISABLED);
->>>  		oom_killer_disable();
->>>  	}
->>>  	printk("\n");
->> nitpick: This doesn't seem to be doing a reset, more like a set. Perhaps
->> this function should be called __usermodehelper_set()?
-> Yes, you are right.  I changed that before, but somehow managed to send an old
-> patch.  The new version follows.
+Oddly enough a work_struct was already part of the firmware_work
+structure but nobody was using it. Instead of creating a new
+kthread for each request_firmware_nowait() call just schedule the
+work on the long system workqueue. This should avoid some overhead
+in forking new threads when they're not strictly necessary.
 
-Looks good. Thanks.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Sleep: Mitigate race between the freezer and request_firmware()
->
-> There is a race condition between the freezer and request_firmware()
-> such that if request_firmware() is run on one CPU and
-> freeze_processes() is run on another CPU and usermodehelper_disable()
-> called by it succeeds to grab umhelper_sem for writing before
-> usermodehelper_read_trylock() called from request_firmware()
-> acquires it for reading, the request_firmware() will fail and
-> trigger a WARN_ON() complaining that it was called at a wrong time.
-> However, in fact, it wasn't called at a wrong time and
-> freeze_processes() simply happened to be executed simultaneously.
->
-> To avoid this race, at least in some cases, modify
-> usermodehelper_read_trylock() so that it doesn't fail if the
-> freezing of tasks has just started and hasn't been completed yet.
-> Instead, during the freezing of tasks, it will try to freeze the
-> task that has called it so that it can wait until user space is
-> thawed without triggering the scary warning.
->
-> For this purpose, change usermodehelper_disabled so that it can
-> take three different values, UMH_ENABLED (0), UMH_FREEZING and
-> UMH_DISABLED.  The first one means that usermode helpers are
-> enabled, the last one means "hard disable" (i.e. the system is not
-> ready for usermode helpers to be used) and the second one
-> is reserved for the freezer.  Namely, when freeze_processes() is
-> started, it sets usermodehelper_disabled to UMH_FREEZING which
-> tells usermodehelper_read_trylock() that it shouldn't fail just
-> yet and should call try_to_freeze() if woken up and cannot
-> return immediately.  This way all freezable tasks that happen
-> to call request_firmware() right before freeze_processes() is
-> started and lose the race for umhelper_sem with it will be
-> frozen and will sleep until thaw_processes() unsets
-> usermodehelper_disabled.  [For the non-freezable callers of
-> request_firmware() the race for umhelper_sem against
-> freeze_processes() is unfortunately unavoidable.]
+Is it better to use alloc_workqueue() and not put these on the system
+long workqueue?
 
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+ drivers/base/firmware_class.c |   27 +++++++--------------------
+ 1 file changed, 7 insertions(+), 20 deletions(-)
 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->
-
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index ae00a2f..4d8cb8b 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -16,10 +16,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/bitops.h>
+ #include <linux/mutex.h>
+-#include <linux/kthread.h>
++#include <linux/workqueue.h>
+ #include <linux/highmem.h>
+ #include <linux/firmware.h>
+ #include <linux/slab.h>
++#include <linux/sched.h>
+ 
+ #define to_dev(obj) container_of(obj, struct device, kobj)
+ 
+@@ -630,19 +631,15 @@ struct firmware_work {
+ 	bool uevent;
+ };
+ 
+-static int request_firmware_work_func(void *arg)
++static void request_firmware_work_func(struct work_struct *work)
+ {
+-	struct firmware_work *fw_work = arg;
++	struct firmware_work *fw_work;
+ 	const struct firmware *fw;
+ 	struct firmware_priv *fw_priv;
+ 	long timeout;
+ 	int ret;
+ 
+-	if (!arg) {
+-		WARN_ON(1);
+-		return 0;
+-	}
+-
++	fw_work = container_of(work, struct firmware_work, work);
+ 	fw_priv = _request_firmware_prepare(&fw, fw_work->name, fw_work->device,
+ 			fw_work->uevent, true);
+ 	if (IS_ERR_OR_NULL(fw_priv)) {
+@@ -667,8 +664,6 @@ static int request_firmware_work_func(void *arg)
+ 
+ 	module_put(fw_work->module);
+ 	kfree(fw_work);
+-
+-	return ret;
+ }
+ 
+ /**
+@@ -694,7 +689,6 @@ request_firmware_nowait(
+ 	const char *name, struct device *device, gfp_t gfp, void *context,
+ 	void (*cont)(const struct firmware *fw, void *context))
+ {
+-	struct task_struct *task;
+ 	struct firmware_work *fw_work;
+ 
+ 	fw_work = kzalloc(sizeof (struct firmware_work), gfp);
+@@ -713,15 +707,8 @@ request_firmware_nowait(
+ 		return -EFAULT;
+ 	}
+ 
+-	task = kthread_run(request_firmware_work_func, fw_work,
+-			    "firmware/%s", name);
+-	if (IS_ERR(task)) {
+-		fw_work->cont(NULL, fw_work->context);
+-		module_put(fw_work->module);
+-		kfree(fw_work);
+-		return PTR_ERR(task);
+-	}
+-
++	INIT_WORK(&fw_work->work, request_firmware_work_func);
++	queue_work(system_long_wq, &fw_work->work);
+ 	return 0;
+ }
+ 
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
