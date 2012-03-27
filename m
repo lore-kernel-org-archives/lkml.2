@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2C0QYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:24:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19091 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab2C0QYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:24:33 -0400
-X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=3MQ0ZmHyo4IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=dOFtwhc8ZEl-KJzZ4hMA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1332865469.23924.129.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
- it
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Date: Tue, 27 Mar 2012 12:24:29 -0400
-In-Reply-To: <alpine.DEB.2.00.1203271111110.1170@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	 <1332338318-5958-13-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1203210953220.20482@router.home>
-	 <20120327121341.GE13196@somewhere>
-	 <alpine.DEB.2.00.1203271111110.1170@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754363Ab2C0Qd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:33:29 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:35500 "HELO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752688Ab2C0Qd1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 12:33:27 -0400
+From: Tziporet Koren <tziporet@mellanox.com>
+To: Roland Dreier <roland@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: RE: [GIT PULL] please pull infiniband.git
+Thread-Topic: [GIT PULL] please pull infiniband.git
+Thread-Index: AQHNBfNV99GZ7tvDO0+Ol3BBkzihDZZ9GzFg///iDYCAAWUygA==
+Date: Tue, 27 Mar 2012 16:33:06 +0000
+Message-ID: <CD250C48050CFB4D95E78C95F2FDDD6E61A7B8E9@MTLDAG02.mtl.com>
+References: <1332177079-14339-1-git-send-email-roland@kernel.org>
+ <CD250C48050CFB4D95E78C95F2FDDD6E61A79B2E@MTLDAG02.mtl.com>
+ <CAG4TOxPHziBpJ5hAoVCQTJWeR+-uC+2vM9S0aKE-6-B9JCEkWQ@mail.gmail.com>
+In-Reply-To: <CAG4TOxPHziBpJ5hAoVCQTJWeR+-uC+2vM9S0aKE-6-B9JCEkWQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.0.13.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 11:13 -0500, Christoph Lameter wrote:
+>> What about the IPoIB patches (e.g. use Interrupt moderation)
 
-> Please do not use "realtime" since I am not sure what you mean by that.
-> Its for a low latency applications that cannot use "realtime" because that
-> implies high latencies.
+> I have no idea what patch that might be.  We've had the modify_cq call in ipoib for years now, with moderation parameters set through ethtool.
 
-This statement totally confuses me, as the whole point of the -rt
-(realtime) patch, is for lower latencies. Where do you get "realtime"
-implies high latencies from?
+http://www.spinics.net/lists/linux-rdma/msg09142.html
+ and
+http://www.spinics.net/lists/linux-rdma/msg09143.html
 
--- Steve
-
-
+Tziporet
