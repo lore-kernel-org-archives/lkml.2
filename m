@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab2C0QGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:06:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab2C0QGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:06:15 -0400
-Date: Tue, 27 Mar 2012 12:06:01 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        jason.wessel@windriver.com
-Subject: Re: [PATCH] x86 NMI: Be smarter about invoking panic() inside NMI
- handler.
-Message-ID: <20120327160601.GA19273@redhat.com>
-References: <1330588483-30957-1-git-send-email-andrey.warkentin@gmail.com>
- <CANz0V+5ayWh3-xR1i4nCqTGF+6x+f7mOeokEhCCXhvG3a3pFhw@mail.gmail.com>
+	id S1753044Ab2C0QHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:07:34 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37185 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab2C0QHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 12:07:33 -0400
+Date: Tue, 27 Mar 2012 17:07:14 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Daniel Drake <dsd@laptop.org>,
+        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dilinger@queued.net, pgf@laptop.org
+Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
+Message-ID: <20120327160714.GA8398@srcf.ucam.org>
+References: <20120326180710.8DF9C9D401E@zog.reactivated.net>
+ <20120326142908.c5248aec.akpm@linux-foundation.org>
+ <4F70E042.4020703@zytor.com>
+ <20120326145146.23fde0db.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANz0V+5ayWh3-xR1i4nCqTGF+6x+f7mOeokEhCCXhvG3a3pFhw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120326145146.23fde0db.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 20, 2012 at 01:57:41PM -0400, Andrei E. Warkentin wrote:
-> Hi,
-> 
-> 2012/3/1 Andrei Warkentin <andrey.warkentin@gmail.com>:
-> > If two (or more) unknown NMIs arrive on different CPUs, there
-> > is a large chance both CPUs will wind up inside panic(). This
-> > is fine, unless you want to enter KDB - KDB cannot round up
-> > all CPUs, because some of them are stuck inside
-> > panic_smp_self_stop with NMI latched. This is
-> > easy to replicate with QEMU. Boot with -smp 4 and
-> > send NMI using the monitor.
-> >
-> > Solution for this - attempt to enter panic() from NMI
-> > handler. If panic() is already active in the system,
-> > just exit out of the NMI handler. This lets KDB round
-> > up CPUs.
-> >
-> > Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
-> > ---
-> 
-> Any feedback on this? Who are the right maintainers to bug about this?
+On Mon, Mar 26, 2012 at 02:51:46PM -0700, Andrew Morton wrote:
 
-Hmm, if try_panic fails, then the cpu continues on executing code.  This
-might further corrupt an already broken system.  So I don't think this
-patch will work as is.
+> Well, if a person had any contribution at all, we should seek their
+> Signed-off-by:.  Otherwise they could say "hey, you admitted using my
+> code but I did not authorise its use", or any other range of bad IANAL
+> things?
 
-Perhaps instead of panic'ing in the NMI context, we use irq_work and panic
-in an interrupt context instead.  We still get the system to stop (though
-it might still execute some interrupts) and it will be out of the NMI
-context.
+The Certificate of Origin says:
 
-However, you will still run into a similar problem when in the
-panic/reboot case we shutdown all the remote cpus and have them sitting in
-a similar cpu_relax loop in the NMI context, while the panic'ing cpu
-cleans things up.
+        (b) The contribution is based upon previous work that, to the best
+            of my knowledge, is covered under an appropriate open source
+            license and I have the right under that license to submit that
+            work with modifications, whether created in whole or in part
+            by me, under the same open source license (unless I am
+            permitted to submit under a different license), as indicated
+            in the file; or
 
-Cheers,
-Don
+If a previous author has given a Signed-off-by then they've clearly 
+indicated that their code is under an appropriate license and may be 
+submitted to the kernel. If someone else then takes that code, modifies 
+it and submits it then there's no obvious reason why we still need the 
+original Signed-off-by. Giving credit to the original author is 
+obviously appropriate, but I don't see why we need any more than that.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
