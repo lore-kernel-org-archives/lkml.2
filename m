@@ -1,35 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab2C0TJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 15:09:29 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:63340 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752299Ab2C0TJ2 (ORCPT
+	id S1756176Ab2C0TJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 15:09:59 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:54429 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab2C0TJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 15:09:28 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 01/13 v4] drm/i915/intel_i2c: refactor gmbus_xfer
-To: Daniel Kurtz <djkurtz@chromium.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-In-Reply-To: <1332873382-29373-2-git-send-email-djkurtz@chromium.org>
-References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org> <1332873382-29373-2-git-send-email-djkurtz@chromium.org>
-Date: Tue, 27 Mar 2012 20:09:11 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1332875365_117221@CP5-2952>
+	Tue, 27 Mar 2012 15:09:55 -0400
+From: Neal Cardwell <ncardwell@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neal Cardwell <ncardwell@google.com>, Ben Segall <bsegall@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] nohz: fix stale jiffies update in tick_nohz_restart()
+Date: Tue, 27 Mar 2012 15:09:37 -0400
+Message-Id: <1332875377-23014-1-git-send-email-ncardwell@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012 02:36:10 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> Split out gmbus_xfer_read/write() helper functions.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
+Fix tick_nohz_restart() to not use a stale ktime_t "now" value when
+calling tick_do_update_jiffies64(now).
 
+If we reach this point in the loop it means that we crossed a tick
+boundary since we grabbed the "now" timestamp, so at this point "now"
+refers to a time in the old jiffy, so using the old value for "now" is
+incorrect, and is likely to give us a stale jiffies value.
+
+In particular, the first time through the loop the
+tick_do_update_jiffies64(now) call is always a no-op, since the
+caller, tick_nohz_restart_sched_tick(), will have already called
+tick_do_update_jiffies64(now) with that "now" value.
+
+Note that tick_nohz_stop_sched_tick() already uses the correct
+approach: when we notice we cross a jiffy boundary, grab a new
+timestamp with ktime_get(), and *then* update jiffies.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-sched.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3526038..6a3a5b9 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -534,9 +534,9 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+ 				hrtimer_get_expires(&ts->sched_timer), 0))
+ 				break;
+ 		}
+-		/* Update jiffies and reread time */
+-		tick_do_update_jiffies64(now);
++		/* Reread time and update jiffies */
+ 		now = ktime_get();
++		tick_do_update_jiffies64(now);
+ 	}
+ }
+ 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.7.3
+
