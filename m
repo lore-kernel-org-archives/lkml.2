@@ -1,204 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2C0Qhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:37:31 -0400
-Received: from nm30.access.bullet.mail.mud.yahoo.com ([66.94.237.95]:36804
-	"HELO nm30.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752875Ab2C0Qh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:37:26 -0400
-X-Yahoo-Newman-Id: 426895.85896.bm@smtp102.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: N_WQQ1cVM1mWAL00lOSCuCQEyfdrUYAXk2ekMsmc2Ca3hMe
- ofSxBJxdzoc7MM0FbKz6JPpW_8OF1VrWv_9BuB7.vVrbSk_XxyCd5K0RgEkl
- BXBs1plcbfrVK269bRoBOilY9.fMlKTKsKTX541zRVgvXmdGa4P6Rnn_qdg6
- 4E4EFKMBLg4349kFSG8u7eVlHuGmCjbLelNWBTprt35aBKG1_OLYKzjtmun6
- AWgBb_dTA.m9cHFwUgEu7FaV6JHL7DFipdbcsLExKSLFBCX0xLsbcI8OvHtE
- QIOzcHoHh7GtLRxepuhrLKxcoXSprYmom99qmyaZNIFquw.nxJHiWZBBhY4L
- ArGcMGAqnVRHRnM.szMWIJdjHyMIFrqW6UosKiCxESwJdW0d5..di16ohOcc
- _o7Squ.VKWK2XFHHQKSGl7gGeNFLSFZs7xFB5.Am2tOmp0zXfz1GO.mVFSzK
- VqUbi5PU4klA7fi0jt9EFGw--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4F71ECC4.5080402@schaufler-ca.com>
-Date: Tue, 27 Mar 2012 09:37:24 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1754428Ab2C0QlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:41:25 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:41578 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796Ab2C0QlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 12:41:22 -0400
+Date: Tue, 27 Mar 2012 09:39:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC] rcu: Make __rcu_read_lock() inlinable
+Message-ID: <20120327163902.GQ2450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120325205249.GA29528@linux.vnet.ibm.com>
+ <1332748484.16159.61.camel@twins>
+ <20120326183232.GK2450@linux.vnet.ibm.com>
+ <1332787630.16159.182.camel@twins>
+ <20120327051515.GO2450@linux.vnet.ibm.com>
+ <1332851167.23924.125.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: David Quigley <selinux@davequigley.com>
-CC: David Howells <dhowells@redhat.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, valerie.aurora@gmail.com,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
-References: <18418.1330238913@jrobl> <20120221175721.25235.8901.stgit@warthog.procyon.org.uk> <9343.1332771770@redhat.com> <4F714463.7090508@schaufler-ca.com> <12cbdde6e0fb9e497d7cd9c277ab9cf5@countercultured.net>
-In-Reply-To: <12cbdde6e0fb9e497d7cd9c277ab9cf5@countercultured.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332851167.23924.125.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032716-9360-0000-0000-000004E6CBC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/27/2012 6:10 AM, David Quigley wrote:
-> On 03/27/2012 00:38, Casey Schaufler wrote:
->> On 3/26/2012 7:22 AM, David Howells wrote:
->>> J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->>>
->>>>>  (4) Added some code to override the credentials around upper inode
->>>>>      creation to make sure the inode gets the right UID/GID.  This
->>>>> doesn't
->>>>>      help if the lower inode has some sort of foreign user
->>>>> identifier.
->>>>>
->>>>>      Also, I'm not sure whether the LSM xattrs should be blindly
->>>>> copied up.
->>>>>      Should the LSM policies applicable to the lower fs's apply to
->>>>> the upper
->>>>>      fs too?
->>>> Obviously the xattr entry may not have its meanings on the upper fs,
->>> True.  I'm not sure what's the best way to deal with that.  Possibly
->>> add an
->>> extra flag to vfs_setxattr() and have the fs vet them...  OTOH, this
->>> gives us
->>> files on the lowerfs that may well differ in appearance to files on the
->>> upperfs with respect to their xattrs.
->>
->> Are you suggesting that you would have heterogeneous filesystems
->> with different xattr behavior stacked at the same time as you're
->> using an LSM that cares about the behavior of xattrs? Oh dear. As
->> I typed that sentence I identified a viable use case.
->
-> The most common use case for union mounts is a livecd. In this case
-> the livecd iso has a tmpfs rw mount above it for copyup. I don't know
-> how useful having a smart xattr copyup mechanism is in that place as
-> most of the labels will be whatever is assigned to the iso. Another
-> usecase is snapshotting of a filesystem for rollback. In this case it
-> is probably important to retain the existing label as the copyup is
-> supposed to be to the same location. The last case which is similar to
-> the snapshotting case but with a persistant upper branch would be to
-> have an NFS mount and have local configuration changes stored locally.
-> In that case as well I can see simple copy up as being ok to do since
-> you're using it more as an overlay than a union mount.
->
-> Now the tricky case is when you have two filesystems with two
-> different directories with the same name. You're going to merge those
-> namespaces. The problem occurs when the parent directories have
-> different labels.
->
-> For example /mnt/upper/foo is labeled foo_t and /mnt/lower/foo is
-> labeled foo2_t. What do you use for the label for files created in
-> /mnt/union/foo?
+On Tue, Mar 27, 2012 at 08:26:07AM -0400, Steven Rostedt wrote:
+> On Mon, 2012-03-26 at 22:15 -0700, Paul E. McKenney wrote:
+> 
+> > Hmmm...  I am not yet sure whether it is easier to make RCU use legal
+> > in switch_to() or to detect it.  I am inclined to take whatever course
+> > is easiest, which is likely to make it legal.  :-/
+> 
+> We could just declare that we do not allow tracepoints in arch specific
+> "switch_to" code. Then you shouldn't need to worry about RCU in
+> switch_to().
 
-The label for the directory on the filesystem on which the file
-physically resides.
-If all of the filesystem secede from the union, whichever directory will
-be the
-file's parent.
+Heh.  I expect that to work about as well as the earlier declaration
+that RCU not be used in the idle loop.  ;-)
 
+> sched_rcu can still work there correct? That is, a synchronize_sched()
+> should not be affected. As that is needed for the function tracing, and
+> that may be called within a switch_to.
 
->
->>
->>>> or the upper fs may return an error when setting the xattr.
->>>> Additionally the
->>>> returned errno may not follow the generic semantics (ENOTSUP,
->>>> ENOSPC, or
->>>> EDQUOT) since the fs may return fs-specific error.
->>> Also true.  It's possible that the best way is just to ignore
->>> everything but a
->>> medium-related error such as EIO, ENOSPC and EDQUOT: We tried...  Oh
->>> well.
->>>
->>>> On the other hand, users may expect that the all xattrs are copied-up,
->>>> particulary when he knows that the xattrs works well on the upper
->>>> fs too.
->>>> In copy-up, it will be hard to support all cases.
->>> Yeah.  Ideally, the copied-up file would be indistinguishable from
->>> the lower
->>> file, but in practice that's not possible unless inode numbers and
->>> other
->>> physical characteristics of the lower file are recorded in the upper
->>> fs (say
->>> on an xattr).
->>>
->>>> In order to leave users how to handle the xattrs, I'd suggest
->>>> introducing some mount options, which are similar to cp(1).
->>>> cp(1) has several options
->>>>     --preserve=mode,ownership,timestamps,context,links,xattr,all
->>>>     ('mode' includes acl which are based upon xattr)
->>>>
->>>> Since the mode (without acl), ownership and timestamps should
->>>> always be
->>>> copied-up, the new mount options will be something like
->>>>     cpup-xattr=acl,context,all
->>> I would suggest 'cpyup' or 'copyup' rather than 'cpup' - the latter
->>> looks like
->>> something to do with CPUs, but yes, it's worth considering.
->>>
->>>> And only when the option is specfied, the xattrs are copied up. No
->>>> special error handling is necessary, all the errors should be returned
->>>> to users unconditionally.
->>> That's not necessarily good enough.  What if and LSM, say SELinux,
->>> is in
->>> force?  Now SELinux will happily label the files for you - but
->>> there's a
->>> reasonable chance they won't be correct.  OTOH, they may not be
->>> correct even
->>> if they are copied up.
->>
->> The underlying storage (the "real" file) has to have the xattr attached
->> to it.
->> Any other behavior is incorrect. If the underlying filesystem does not
->> support
->> xattrs that lack of support has to be propagated upwards even if the
->> higher
->> layer filesystem supports xattrs.
->>
->> In the case of Smack filesystems that don't support xattrs are still
->> given
->> labels based on mount options. If the lower filesystem is NTFS and
->> the upper
->> ext4 you've got to respect the NTFS labeling behavior for files there.
->>
->>>> Does union-mount preserve mtime? If not, it is critical for some
->>>> applications such like "make" I am afraid.
->>> Ummm...  Interesting question.  If it copies up a file, then that
->>> file must
->>> have been opened for writing.  Is the mtime altered by such an
->>> event, or only
->>> by a write() having been issued?  Also, what about ctime?  That
->>> doesn't seem
->>> to have been copied up either.
->>
->> What is the expected behavior of union mounts for all attributes? Is it
->> specified anywhere?
->>
->
-> I would assume its under their documentation patch. I tried to lookup
-> up what we did for our copyup semantics for file attributes. Its not
-> simple or straight forward in the original UnionFS. I think its safe
-> to say all the first class attributes need to be copied up. When
-> possible we also copied the xattrs as well. Its important to realize
-> though that union mounts are namespace unification and not
-> fileunification so if you copy one xattr up you need to copy them all
-> because any that don't get copied will get left behind.
->
->>>
->>> David
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->>
->> -- 
->> This message was distributed to subscribers of the selinux mailing list.
->> If you no longer wish to subscribe, send mail to
->> majordomo@tycho.nsa.gov with
->> the words "unsubscribe selinux" without quotes as the message.
->
->
+Yep, good point.
+
+							Thanx, Paul
 
