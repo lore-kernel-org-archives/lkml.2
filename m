@@ -1,117 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab2C0RGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 13:06:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52348 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab2C0RGH (ORCPT
+	id S1755205Ab2C0RHC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 13:07:02 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42627 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab2C0RHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 13:06:07 -0400
-Date: Tue, 27 Mar 2012 10:06:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zsmalloc: add user-definable alloc/free funcs
-Message-ID: <20120327170600.GA18222@kroah.com>
-References: <1331931888-14175-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20120316213227.GB24556@kroah.com>
- <4F678100.1000707@linux.vnet.ibm.com>
- <20120319233409.GA16124@kroah.com>
- <20120326155018.GA6163@phenom.dumpdata.com>
+	Tue, 27 Mar 2012 13:07:00 -0400
+Date: Tue, 27 Mar 2012 19:06:55 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
+ buffer
+Message-ID: <20120327170655.GB7937@aftab>
+References: <1331040694-12558-1-git-send-email-bp@amd64.org>
+ <1331040694-12558-4-git-send-email-bp@amd64.org>
+ <4F563067.1090100@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
+ <20120312162646.GB7255@aftab>
+ <3908561D78D1C84285E8C5FCA982C28F15B61A1F@ORSMSX103.amr.corp.intel.com>
+ <20120312180359.GA8214@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120326155018.GA6163@phenom.dumpdata.com>
+In-Reply-To: <20120312180359.GA8214@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 11:50:19AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Mon, Mar 19, 2012 at 04:34:09PM -0700, Greg Kroah-Hartman wrote:
-> > On Mon, Mar 19, 2012 at 01:54:56PM -0500, Seth Jennings wrote:
-> > > > I'm sorry, I know this isn't fair for your specific patch, but we have
-> > > > to stop this sometime, and as this patch adds code isn't even used by
-> > > > anyone, its a good of a time as any.
-> > > 
-> > > So, this the my first "promotion from staging" rodeo.  I would love to
-> > > see this code mainlined ASAP.  How would I/we go about doing that?
+On Mon, Mar 12, 2012 at 07:03:59PM +0100, Borislav Petkov wrote:
+> On Mon, Mar 12, 2012 at 04:59:37PM +0000, Luck, Tony wrote:
+> > > Sounds better, especially the close-on-exit part. Please elaborate on
+> > > the races...
 > > 
-> > What subsystem should this code live in?  The -mm code, I'm guessing,
-> > right?  If so, submit it to the linux-mm mailing list for inclusion, you
-> > can point them at what is in drivers/staging right now, or probably it's
-> > easier if you just make a new patch that adds the code that is in
-> > drivers/staging/ to the correct location in the kernel.  That way it's
-> > easier to review and change.  When it finally gets accepted, we can then
-> > delete the drivers/staging code.
+> > Errors are happening asynchronously to everything. Race looks like:
+> > 
+> > Daemon exits (or is killed)
+> >    <<<< race begins here
+> > kernel close routine called
+> > close routine updates your global variable
+> >    <<<< race ends here
 > 
+> Well, in that case, we're going to miss logging a single error, or log
+> it incomplete.
 > 
-> Hey Greg,
+> Unless, we make the global variable atomic and make the daemon zero it
+> as the first action it does when it starts going away. If it is killed,
+> then we probably need some sanity-checking functionality which checks
+> periodically whether the daemon is still alive ...
 > 
-> Little background - for zcache to kick-butts (both Dan and Seth posted some
-> pretty awesome benchmark numbers) it depends on the frontswap - which is in
-> the #linux-next. Dan made an attempt to post it for a GIT PULL and an interesting
-> conversation ensued where folks decided it needs more additions before they were
-> comfortable with it. zcache isn't using those additions, but I don't see why
-> it couldn't use them.
-> 
-> The things that bouncing around in my head are:
->  - get a punch-out list (ie todo) of what MM needs for the zcache to get out.
->    I think posting it as a new driver would be right way to do it (And then
->    based on feedback work out the issues in drivers/staging). But what
->    about authorship - there are mulitple authors ?
+> This probably needs more meditation.
 
-What does authorship matter here?  To move files out of staging, just
-send a patch that does that, all authorship history is preserved.
+Ok, hm, how about we add a timer which runs for a safe period of say...
+a couple of minutes after the error has been logged into the buffer.
 
-And as a new driver, that's up to the mm developers, not me.
+Before it expires we expect that the userspace daemon comes in and
+consumes the information - we test explicitly whether it wrote to some
+file - or implicitly by checking whether the buffer got emptied in the
+meantime (the exact method is still TBD).
 
->  - zcache is a bit different that the normal drivers type - and it is unclear
->    yet what will be required to get it out - and both Seth and Nitin have this
->    hungry look in their eyes of wanting to make it super-duper. So doing
->    the work to do it - is not going to be a problem at all - just some form
->    of clear goals of what we need "now" vs "would love to have".
+In any case, if during the safe period of time we haven't received
+confirmation from userspace that the item has been consumed, we switch
+irreversibly back to the kernel log buffer and reissue the decoded info
+through printk.
 
-Again, work with the -mm developers.
+This way we
 
->  - folks are using it, which means continued -stable kernel back-porting.
+* don't introduce a device file with a ->close
 
-What do you mean by this?
+* remain races-agnostic: either the timeout has happened and userspace
+hasn't consumed the decoded data or it worked just fine and we continue
+on with our marry error collection.
 
-> So with that in mind I was wondering whether you would be up for:
->  - me sending to you before a merge window some updates to the zcache
->    as a git pull - that way you won't have to deal with a bunch of
->    small patches and when there is something you don't like we can fix
->    it up to your liking. The goal would be for us - Dan, Nitin, Seth and me
->    working on promoting the driver out of staging and you won't have to
->    be bugged every time we have a new change that might be perceived
->    as feature, but is in fact a step towards mainstreaming it. I figured
->    that is what you are most annoyed at - handling those uncoordinated
->    requests and not seeing a clear target.
+If other errors happen while the timer is running, we log them as usual
+and restart the timer to give the newest error an equal chance. Error
+size shouldn't overflow the buffer because we're reserving 4 pages per
+CPU currently and this can easily be enlarged...
 
-Lots of small patches are fine, as long as they are obviously working
-toward getting the code out of staging.  This specific patch was just
-adding a new feature, one that no one could even use, so that was not
-something that would help it get out of the staging tree.
+Hmm, thoughts..?
 
-So no, I don't need patches batched up, and a git pull, I just need to
-see that every patch I am sent is working toward getting it out of here.
+-- 
+Regards/Gruss,
+Boris.
 
->  - alongside of that, I work on making those frontswap changes folks
->    have asked for. Since those changes can affect zcache, that means
->    adding them in zcache alongside.
-
-Ok.
-
-> Hopefully, by the time those two items are done, both pieces can go in
-> the kernel at the same time-ish.
-
-That would be good to see have happen.
-
-thanks,
-
-greg k-h
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
