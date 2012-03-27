@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab2C0QNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:13:47 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:27621 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751365Ab2C0QNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:13:46 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ZqDzEN0VM1nGdY08XxcjviNCzS5F0YZABuq_X.Q.B1rHdCL
- a.Z.fuL.kplZ80lKGGlSOScsNZBvMs8jIAmJYIasqBUfq9OZTctw6Pu7As7O
- RjqHCtJ4TSQzHDzy_y6Um3k1pWVa2y5oY3xiaM6kA3yHqmYKznlRdQfEN5QB
- QfeLM_EHE7EiKfMqm0cZk6ixpLKlbdms43TAO2xlIJO_EjlxrEbJuDQMOAXA
- zbViHcODWnJ15YgGXTnY2tPdR8blg4S9F8K3Grj2RyXdaGl6Dh4vbIwuPgb8
- 9YNgL_q9iZr8W_gwc5sNkMBGf.NjrV4zH7AHLAmwcgozr_V3gBKEGITegfH2
- QUQBTQnHOBR4zoy.W6fxo1Rfd5iQYql8Ult7YcQAjh8HVe8kyIktm9VsFnaB
- Z
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 27 Mar 2012 11:13:39 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
+	id S1754675Ab2C0QQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:16:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752115Ab2C0QQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 12:16:32 -0400
+Date: Tue, 27 Mar 2012 18:15:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
- it
-In-Reply-To: <20120327121341.GE13196@somewhere>
-Message-ID: <alpine.DEB.2.00.1203271111110.1170@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com> <1332338318-5958-13-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1203210953220.20482@router.home> <20120327121341.GE13196@somewhere>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Dan Smith <danms@us.ibm.com>, Paul Turner <pjt@google.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>, linux-mm@kvack.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, Bharata B Rao <bharata.rao@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/39] autonuma: CPU follow memory algorithm
+Message-ID: <20120327161540.GS5906@redhat.com>
+References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
+ <1332783986-24195-12-git-send-email-aarcange@redhat.com>
+ <1332786353.16159.173.camel@twins>
+ <4F70C365.8020009@redhat.com>
+ <20120326194435.GW5906@redhat.com>
+ <CA+55aFwk0Etg_UhoZcKsfFJ7PQNLdQ58xxXiwcA-jemuXdZCZQ@mail.gmail.com>
+ <20120326203951.GZ5906@redhat.com>
+ <1332837595.16159.208.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332837595.16159.208.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012, Frederic Weisbecker wrote:
+On Tue, Mar 27, 2012 at 10:39:55AM +0200, Peter Zijlstra wrote:
+> I am most certainly not going to fix your mess as I completely disagree
+> with the approach taken.
 
-> > Is there any way for userspace to know that the tick is not off yet due to
-> > this? It would make sense for us to have busy loop in user space that
-> > waits until the OS has completed all processing if that avoids future
-> > latencies for the application.
->
-> What is the usecase you have in mind? Is it for realtime purpose?
+This is _purely_ a performance optimization so if my design is so bad,
+and you're also requiring all apps that spans over more than one NUMA
+node to be modified to use your new syscalls, you won't have problems
+to win against AutoNUMA in the benchmarks.
 
-Please do not use "realtime" since I am not sure what you mean by that.
-Its for a low latency applications that cannot use "realtime" because that
-implies high latencies.
+At the moment I can't believe your design has a chance to compete.
 
-> The "tick stopped" is a volatile and relative state.
+But please proof me wrong with the numbers, and I won't be stubborn
+and I'll rm -r autonuma and (if you let me), I'll be happy to contribute
+to your code.
 
-The use case is an application that cannot tolerate the latencies
-introduced by timer tick processing. It will only start running when the
-system is in a sufficiently quiet state.
+> You're in fact very unclear. You post patches without the RFC tag,
 
-> Relative because if a timer list is enqueued to fire 1 second later,
-> the tick will be stopped until that happens. How do we consider this (common)
-> case?
->
-> Also as Chris noted it is volatile because the tick can be restarted anytime
-> for random reasons: the CPU receives an IPI which makes it restart the
-> periodic tick.
-
-Ok some sort of notification would be good for that case. If a timer tick
-happens and that was unavoidable then it would be good to log the reason
-why this occured so that the system can be configured in such a way that
-these interruptions are minimized.
-
+Subject: [PATCH 00/39] [RFC] AutoNUMA alpha10
