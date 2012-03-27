@@ -1,502 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2C0SrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:47:24 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51065 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707Ab2C0SrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:47:21 -0400
-Date: Tue, 27 Mar 2012 14:32:42 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-03-27
-Message-ID: <20120327183242.GB20938@tuxdriver.com>
+	id S1756064Ab2C0St6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:49:58 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:50675 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755707Ab2C0Stw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 14:49:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F714397.6080608@codeaurora.org>
+References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com>
+ <1332214706-675-1-git-send-email-skannan@codeaurora.org> <1332214706-675-2-git-send-email-skannan@codeaurora.org>
+ <20120320072018.GC32469@S2101-09.ap.freescale.net> <cbd6490459b9fd68875fec4a7c7de073.squirrel@www.codeaurora.org>
+ <20120320094031.GI3852@pengutronix.de> <20120320141811.GF32469@S2101-09.ap.freescale.net>
+ <20120320181050.GN3852@pengutronix.de> <4F68E34A.70207@codeaurora.org>
+ <20120320231242.GP3852@pengutronix.de> <CAJOA=zOGTW7OqACWgJQW6HSPLVev+apdNhv4vNXjHTcp=7N+uQ@mail.gmail.com>
+ <4F694484.1030706@codeaurora.org> <4F714397.6080608@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 27 Mar 2012 11:49:25 -0700
+Message-ID: <CAJOA=zOq=kYfZUEnnQT_D4w=Kpp5n7R=k9oOCrxF59P5W-nw-w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] clk: Move init fields from clk to clk_hw
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 26, 2012 at 9:35 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Mike,
+>
+> (*nudge*) (*nudge*)
 
---5mCyUwZo2JvN/JJP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Saravana,
 
-commit 643c61e119459e9d750087b7b34be94491efebf9
+I spent some time mulling over the ideas this weekend and I agree that
+we have 3 types of data, so having the three structs makes some sense.
+ I'm checking this patch out more earnestly today.
 
-Dave,
+Regards,
+Mike
 
-Here is a little round-up of fixes intended for 3.4...
-
-First, we have a MAINTAINERS update -- not truly a "fix", but it might
-help to keep unwanted traffic out of Bob's inbox.  We also have a
-removal of an outdated comment that was overlooked when the related
-code was removed.
-
-Beyond those, we have a fix for a memory leak in ath9k, a cfg80211
-fix to prevent passing bad info over nl80211 to userspace, a tuning
-fix for some rtlwifi family drivers, a couple of minor ath9k tuning
-fixes, a mac80211 use-after-free fix, a couple of rt2x00 thinko fixes,
-an iwlegacy fix to properly set BSSID after an association, and an
-iwlegacy fix to avoid an oops by properly reinitializing a variable
-after reset.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit 8a78335442cea429afb2b964318b6e257448ea00:
-
-  usbnet: consider device busy at each recieved packet (2012-03-22 23:04:27=
- -0400)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git master
-
-Bob Copeland (1):
-      ath5k: drop self from MAINTAINERS
-
-Eliad Peller (1):
-      mac80211: remove outdated comment
-
-Eric Dumazet (1):
-      ath9k: fix a memory leak in ath_rx_tasklet()
-
-John W. Linville (1):
-      cfg80211: allow CFG80211_SIGNAL_TYPE_UNSPEC in station_info
-
-Larry Finger (1):
-      rtlwifi: rtl8192ce: rtl8192cu: rtl8192de: Fix low-gain setting when s=
-canning
-
-Rajkumar Manoharan (2):
-      ath9k: fix max noise floor threshold
-      ath9k: reduce listen time period
-
-Stanislaw Gruszka (5):
-      iwlegacy: do not nulify il->vif on reset
-      iwlegacy: fix BSSID setting
-      rt2x00: rt2800usb: schedule txdone work on timeout
-      rt2x00: rt2800usb: fix status register reread logic
-      mac80211: fix possible tid_rx->reorder_timer use after free
-
- MAINTAINERS                                        |    1 -
- drivers/net/wireless/ath/ath9k/calib.c             |    5 +--
- drivers/net/wireless/ath/ath9k/init.c              |    2 +-
- drivers/net/wireless/ath/ath9k/recv.c              |    4 +-
- drivers/net/wireless/iwlegacy/3945-mac.c           |    2 -
- drivers/net/wireless/iwlegacy/4965-mac.c           |    2 -
- drivers/net/wireless/iwlegacy/common.c             |   31 +++++++++++-----=
----
- drivers/net/wireless/rt2x00/rt2800usb.c            |   10 +++++-
- drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2 +-
- drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |    2 +-
- include/net/cfg80211.h                             |    6 ++-
- net/mac80211/agg-rx.c                              |    3 +-
- net/mac80211/main.c                                |    3 --
- net/wireless/nl80211.c                             |   29 ++++++++++++----=
---
- 14 files changed, 58 insertions(+), 44 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 92f9924..0ddc77fe 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1247,7 +1247,6 @@ ATHEROS ATH5K WIRELESS DRIVER
- M:	Jiri Slaby <jirislaby@gmail.com>
- M:	Nick Kossifidis <mickflemm@gmail.com>
- M:	"Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
--M:	Bob Copeland <me@bobcopeland.com>
- L:	linux-wireless@vger.kernel.org
- L:	ath5k-devel@lists.ath5k.org
- W:	http://wireless.kernel.org/en/users/Drivers/ath5k
-diff --git a/drivers/net/wireless/ath/ath9k/calib.c b/drivers/net/wireless/=
-ath/ath9k/calib.c
-index 2f4b48e..e5cceb0 100644
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -20,7 +20,6 @@
-=20
- /* Common calibration code */
-=20
--#define ATH9K_NF_TOO_HIGH	-60
-=20
- static int16_t ath9k_hw_get_nf_hist_mid(int16_t *nfCalBuffer)
- {
-@@ -346,10 +345,10 @@ static void ath9k_hw_nf_sanitize(struct ath_hw *ah, s=
-16 *nf)
- 			"NF calibrated [%s] [chain %d] is %d\n",
- 			(i >=3D 3 ? "ext" : "ctl"), i % 3, nf[i]);
-=20
--		if (nf[i] > ATH9K_NF_TOO_HIGH) {
-+		if (nf[i] > limit->max) {
- 			ath_dbg(common, CALIBRATE,
- 				"NF[%d] (%d) > MAX (%d), correcting to MAX\n",
--				i, nf[i], ATH9K_NF_TOO_HIGH);
-+				i, nf[i], limit->max);
- 			nf[i] =3D limit->max;
- 		} else if (nf[i] < limit->min) {
- 			ath_dbg(common, CALIBRATE,
-diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/a=
-th/ath9k/init.c
-index 60159f4..cb00645 100644
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -680,7 +680,7 @@ void ath9k_set_hw_capab(struct ath_softc *sc, struct ie=
-ee80211_hw *hw)
- 	hw->queues =3D 4;
- 	hw->max_rates =3D 4;
- 	hw->channel_change_time =3D 5000;
--	hw->max_listen_interval =3D 10;
-+	hw->max_listen_interval =3D 1;
- 	hw->max_rate_tries =3D 10;
- 	hw->sta_data_size =3D sizeof(struct ath_node);
- 	hw->vif_data_size =3D sizeof(struct ath_vif);
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/a=
-th/ath9k/recv.c
-index f4ae3ba..1c4583c 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -1913,13 +1913,13 @@ int ath_rx_tasklet(struct ath_softc *sc, int flush,=
- bool hp)
- 		if (sc->rx.frag) {
- 			int space =3D skb->len - skb_tailroom(hdr_skb);
-=20
--			sc->rx.frag =3D NULL;
--
- 			if (pskb_expand_head(hdr_skb, 0, space, GFP_ATOMIC) < 0) {
- 				dev_kfree_skb(skb);
- 				goto requeue_drop_frag;
- 			}
-=20
-+			sc->rx.frag =3D NULL;
-+
- 			skb_copy_from_linear_data(skb, skb_put(hdr_skb, skb->len),
- 						  skb->len);
- 			dev_kfree_skb_any(skb);
-diff --git a/drivers/net/wireless/iwlegacy/3945-mac.c b/drivers/net/wireles=
-s/iwlegacy/3945-mac.c
-index 0c12093..faec404 100644
---- a/drivers/net/wireless/iwlegacy/3945-mac.c
-+++ b/drivers/net/wireless/iwlegacy/3945-mac.c
-@@ -2673,8 +2673,6 @@ il3945_bg_restart(struct work_struct *data)
-=20
- 	if (test_and_clear_bit(S_FW_ERROR, &il->status)) {
- 		mutex_lock(&il->mutex);
--		/* FIXME: vif can be dereferenced */
--		il->vif =3D NULL;
- 		il->is_open =3D 0;
- 		mutex_unlock(&il->mutex);
- 		il3945_down(il);
-diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireles=
-s/iwlegacy/4965-mac.c
-index 7b54dbb..b88bb27 100644
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -5651,8 +5651,6 @@ il4965_bg_restart(struct work_struct *data)
-=20
- 	if (test_and_clear_bit(S_FW_ERROR, &il->status)) {
- 		mutex_lock(&il->mutex);
--		/* FIXME: do we dereference vif without mutex locked ? */
--		il->vif =3D NULL;
- 		il->is_open =3D 0;
-=20
- 		__il4965_down(il);
-diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/=
-iwlegacy/common.c
-index e5ac047..eaf24945 100644
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -4508,6 +4508,7 @@ il_mac_add_interface(struct ieee80211_hw *hw, struct =
-ieee80211_vif *vif)
- {
- 	struct il_priv *il =3D hw->priv;
- 	int err;
-+	bool reset;
-=20
- 	mutex_lock(&il->mutex);
- 	D_MAC80211("enter: type %d, addr %pM\n", vif->type, vif->addr);
-@@ -4518,7 +4519,12 @@ il_mac_add_interface(struct ieee80211_hw *hw, struct=
- ieee80211_vif *vif)
- 		goto out;
- 	}
-=20
--	if (il->vif) {
-+	/*
-+	 * We do not support multiple virtual interfaces, but on hardware reset
-+	 * we have to add the same interface again.
-+	 */
-+	reset =3D (il->vif =3D=3D vif);
-+	if (il->vif && !reset) {
- 		err =3D -EOPNOTSUPP;
- 		goto out;
- 	}
-@@ -4528,8 +4534,11 @@ il_mac_add_interface(struct ieee80211_hw *hw, struct=
- ieee80211_vif *vif)
-=20
- 	err =3D il_set_mode(il);
- 	if (err) {
--		il->vif =3D NULL;
--		il->iw_mode =3D NL80211_IFTYPE_STATION;
-+		IL_WARN("Fail to set mode %d\n", vif->type);
-+		if (!reset) {
-+			il->vif =3D NULL;
-+			il->iw_mode =3D NL80211_IFTYPE_STATION;
-+		}
- 	}
-=20
- out:
-@@ -5279,9 +5288,9 @@ il_mac_bss_info_changed(struct ieee80211_hw *hw, stru=
-ct ieee80211_vif *vif,
- 		D_MAC80211("BSSID %pM\n", bss_conf->bssid);
-=20
- 		/*
--		 * If there is currently a HW scan going on in the
--		 * background then we need to cancel it else the RXON
--		 * below/in post_associate will fail.
-+		 * If there is currently a HW scan going on in the background,
-+		 * then we need to cancel it, otherwise sometimes we are not
-+		 * able to authenticate (FIXME: why ?)
- 		 */
- 		if (il_scan_cancel_timeout(il, 100)) {
- 			D_MAC80211("leave - scan abort failed\n");
-@@ -5290,14 +5299,10 @@ il_mac_bss_info_changed(struct ieee80211_hw *hw, st=
-ruct ieee80211_vif *vif,
- 		}
-=20
- 		/* mac80211 only sets assoc when in STATION mode */
--		if (vif->type =3D=3D NL80211_IFTYPE_ADHOC || bss_conf->assoc) {
--			memcpy(il->staging.bssid_addr, bss_conf->bssid,
--			       ETH_ALEN);
-+		memcpy(il->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
-=20
--			/* currently needed in a few places */
--			memcpy(il->bssid, bss_conf->bssid, ETH_ALEN);
--		} else
--			il->staging.filter_flags &=3D ~RXON_FILTER_ASSOC_MSK;
-+		/* FIXME: currently needed in a few places */
-+		memcpy(il->bssid, bss_conf->bssid, ETH_ALEN);
- 	}
-=20
- 	/*
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless=
-/rt2x00/rt2800usb.c
-index cd490ab..001735f 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -163,7 +163,13 @@ static bool rt2800usb_tx_sta_fifo_read_completed(struc=
-t rt2x00_dev *rt2x00dev,
-=20
- 		/* Reschedule urb to read TX status again instantly */
- 		return true;
--	} else if (rt2800usb_txstatus_pending(rt2x00dev)) {
-+	}
-+
-+	/* Check if there is any entry that timedout waiting on TX status */
-+	if (rt2800usb_txstatus_timeout(rt2x00dev))
-+		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
-+
-+	if (rt2800usb_txstatus_pending(rt2x00dev)) {
- 		/* Read register after 250 us */
- 		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
- 			      HRTIMER_MODE_REL);
-@@ -178,7 +184,7 @@ stop_reading:
- 	 * here again if status reading is needed.
- 	 */
- 	if (rt2800usb_txstatus_pending(rt2x00dev) &&
--	    test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
-+	    !test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
- 		return true;
- 	else
- 		return false;
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/n=
-et/wireless/rtlwifi/rtl8192c/phy_common.c
-index 1eec3a0..4c01624 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-@@ -1893,7 +1893,7 @@ void rtl92c_phy_set_io(struct ieee80211_hw *hw)
- 		break;
- 	case IO_CMD_PAUSE_DM_BY_SCAN:
- 		rtlphy->initgain_backup.xaagccore1 =3D dm_digtable.cur_igvalue;
--		dm_digtable.cur_igvalue =3D 0x17;
-+		dm_digtable.cur_igvalue =3D 0x37;
- 		rtl92c_dm_write_dig(hw);
- 		break;
- 	default:
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c b/drivers/net/wir=
-eless/rtlwifi/rtl8192de/phy.c
-index 34591eeb..28fc5fb 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-@@ -3077,7 +3077,7 @@ static void rtl92d_phy_set_io(struct ieee80211_hw *hw)
- 		break;
- 	case IO_CMD_PAUSE_DM_BY_SCAN:
- 		rtlphy->initgain_backup.xaagccore1 =3D de_digtable.cur_igvalue;
--		de_digtable.cur_igvalue =3D 0x17;
-+		de_digtable.cur_igvalue =3D 0x37;
- 		rtl92d_dm_write_dig(hw);
- 		break;
- 	default:
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 69b7ad3..5ccac72 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -619,8 +619,10 @@ struct sta_bss_parameters {
-  * @llid: mesh local link id
-  * @plid: mesh peer link id
-  * @plink_state: mesh peer link state
-- * @signal: signal strength of last received packet in dBm
-- * @signal_avg: signal strength average in dBm
-+ * @signal: the signal strength, type depends on the wiphy's signal_type
-+	NOTE: For CFG80211_SIGNAL_TYPE_MBM, value is expressed in _dBm_.
-+ * @signal_avg: avg signal strength, type depends on the wiphy's signal_ty=
-pe
-+	NOTE: For CFG80211_SIGNAL_TYPE_MBM, value is expressed in _dBm_.
-  * @txrate: current unicast bitrate from this station
-  * @rxrate: current unicast bitrate to this station
-  * @rx_packets: packets received from this station
-diff --git a/net/mac80211/agg-rx.c b/net/mac80211/agg-rx.c
-index 1068f66..64d3ce5 100644
---- a/net/mac80211/agg-rx.c
-+++ b/net/mac80211/agg-rx.c
-@@ -49,6 +49,8 @@ static void ieee80211_free_tid_rx(struct rcu_head *h)
- 		container_of(h, struct tid_ampdu_rx, rcu_head);
- 	int i;
-=20
-+	del_timer_sync(&tid_rx->reorder_timer);
-+
- 	for (i =3D 0; i < tid_rx->buf_size; i++)
- 		dev_kfree_skb(tid_rx->reorder_buf[i]);
- 	kfree(tid_rx->reorder_buf);
-@@ -91,7 +93,6 @@ void ___ieee80211_stop_rx_ba_session(struct sta_info *sta=
-, u16 tid,
- 				     tid, WLAN_BACK_RECIPIENT, reason);
-=20
- 	del_timer_sync(&tid_rx->session_timer);
--	del_timer_sync(&tid_rx->reorder_timer);
-=20
- 	call_rcu(&tid_rx->rcu_head, ieee80211_free_tid_rx);
- }
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index b581a24..1633648 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -102,9 +102,6 @@ int ieee80211_hw_config(struct ieee80211_local *local, =
-u32 changed)
-=20
- 	might_sleep();
-=20
--	/* If this off-channel logic ever changes,  ieee80211_on_oper_channel
--	 * may need to change as well.
--	 */
- 	offchannel_flag =3D local->hw.conf.flags & IEEE80211_CONF_OFFCHANNEL;
- 	if (local->scan_channel) {
- 		chan =3D local->scan_channel;
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 4c1eb94..e49da27 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -2386,7 +2386,9 @@ nla_put_failure:
- }
-=20
- static int nl80211_send_station(struct sk_buff *msg, u32 pid, u32 seq,
--				int flags, struct net_device *dev,
-+				int flags,
-+				struct cfg80211_registered_device *rdev,
-+				struct net_device *dev,
- 				const u8 *mac_addr, struct station_info *sinfo)
- {
- 	void *hdr;
-@@ -2425,12 +2427,18 @@ static int nl80211_send_station(struct sk_buff *msg=
-, u32 pid, u32 seq,
- 	if (sinfo->filled & STATION_INFO_PLINK_STATE)
- 		NLA_PUT_U8(msg, NL80211_STA_INFO_PLINK_STATE,
- 			    sinfo->plink_state);
--	if (sinfo->filled & STATION_INFO_SIGNAL)
--		NLA_PUT_U8(msg, NL80211_STA_INFO_SIGNAL,
--			   sinfo->signal);
--	if (sinfo->filled & STATION_INFO_SIGNAL_AVG)
--		NLA_PUT_U8(msg, NL80211_STA_INFO_SIGNAL_AVG,
--			   sinfo->signal_avg);
-+	switch (rdev->wiphy.signal_type) {
-+	case CFG80211_SIGNAL_TYPE_MBM:
-+		if (sinfo->filled & STATION_INFO_SIGNAL)
-+			NLA_PUT_U8(msg, NL80211_STA_INFO_SIGNAL,
-+				   sinfo->signal);
-+		if (sinfo->filled & STATION_INFO_SIGNAL_AVG)
-+			NLA_PUT_U8(msg, NL80211_STA_INFO_SIGNAL_AVG,
-+				   sinfo->signal_avg);
-+		break;
-+	default:
-+		break;
-+	}
- 	if (sinfo->filled & STATION_INFO_TX_BITRATE) {
- 		if (!nl80211_put_sta_rate(msg, &sinfo->txrate,
- 					  NL80211_STA_INFO_TX_BITRATE))
-@@ -2523,7 +2531,7 @@ static int nl80211_dump_station(struct sk_buff *skb,
- 		if (nl80211_send_station(skb,
- 				NETLINK_CB(cb->skb).pid,
- 				cb->nlh->nlmsg_seq, NLM_F_MULTI,
--				netdev, mac_addr,
-+				dev, netdev, mac_addr,
- 				&sinfo) < 0)
- 			goto out;
-=20
-@@ -2568,7 +2576,7 @@ static int nl80211_get_station(struct sk_buff *skb, s=
-truct genl_info *info)
- 		return -ENOMEM;
-=20
- 	if (nl80211_send_station(msg, info->snd_pid, info->snd_seq, 0,
--				 dev, mac_addr, &sinfo) < 0) {
-+				 rdev, dev, mac_addr, &sinfo) < 0) {
- 		nlmsg_free(msg);
- 		return -ENOBUFS;
- 	}
-@@ -7596,7 +7604,8 @@ void nl80211_send_sta_event(struct cfg80211_registere=
-d_device *rdev,
- 	if (!msg)
- 		return;
-=20
--	if (nl80211_send_station(msg, 0, 0, 0, dev, mac_addr, sinfo) < 0) {
-+	if (nl80211_send_station(msg, 0, 0, 0,
-+				 rdev, dev, mac_addr, sinfo) < 0) {
- 		nlmsg_free(msg);
- 		return;
- 	}
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---5mCyUwZo2JvN/JJP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcgfKAAoJEJctW/TcYTgGesAP/2utd0r4gQJvpv3R98JF+PxK
-NK9Iooyi1XKuMJMEWc5XZpXcDW9QJCWVXon6DGI9fgFavVGN8QSTiVHLEsbdJD8u
-JMZ11iUnWOZ5ol/BTuyIjkRfUwUOFHo97SBMnUeyVzbK0JW/9nKsYSrHPiC5SRGP
-IHCJzyPKAwZV1irNg0K5sexLzBOxe+DinureUG21nV2GcXtmY1s95GLgtl9lx4lO
-mNko01ylDVNcAEFoc28UFYxzZ8UjwcnwASf3aQvYrjA8zwe6VhEe5QcaAFEllgxT
-YAgXJI4pE2kPb9LnDD35bgTxkgY0ws3bct+DgJdQT9Xmnnl6XEeRNyl5ZJ+px2cV
-XXovOSXvHr+nKrIRvIiOPoCnkzGEHX9zaS6ksXZmfpcoXKoH5E++YFpCmJ68KZ1+
-CxnjM6sLkGYII8Me5mGuIq3UHzGa72KvjS01Qp0xSMFGdz5cHU2hRkAdTpQzTbiU
-gGXcevVEBGgTvdrx6ajtXZ6ocbZB3R0amfZbkILeX3w9XZntosb/04E6vqAjttit
-fzVJvMFXGnoRKBaZd067xy82Y8bT6z6ZN2p5V1qSFmCtBMgWX75WRQ7kH0XNj9Dk
-GG240I7E76zlrIezN/1OSytSFd8Pql+C1w+hrYdvvmWlFd6Dkci4Se+DhuUOcPRI
-gtkA6Yt/RT5n40NUxlev
-=q4CS
------END PGP SIGNATURE-----
-
---5mCyUwZo2JvN/JJP--
+> -Saravana
+>
+>
+>
+> On 03/20/2012 08:01 PM, Saravana Kannan wrote:
+>>
+>> On 03/20/2012 06:47 PM, Turquette, Mike wrote:
+>>>
+>>> On Tue, Mar 20, 2012 at 4:12 PM, Sascha Hauer<s.hauer@pengutronix.de>
+>>> wrote:
+>>>>
+>>>> On Tue, Mar 20, 2012 at 01:06:34PM -0700, Saravana Kannan wrote:
+>>>>>
+>>>>> On 03/20/2012 11:10 AM, Sascha Hauer wrote:
+>>>>>>
+>>>>>> On Tue, Mar 20, 2012 at 10:18:14PM +0800, Shawn Guo wrote:
+>>>>>>>
+>>>>>>> On Tue, Mar 20, 2012 at 10:40:31AM +0100, Sascha Hauer wrote:
+>>>>>>> ...
+>>>>>>>>
+>>>>>>>> I am using these functions and don't need a static array, I just
+>>>>>>>> call
+>>>>>>>> the functions with the desired parameters.
+>>>>>>>>
+>>>>>>> With this patch getting in, you do not have to use them then. I feel
+>>>>>>> a static array will be much more readable than a long list of
+>>>>>>> function
+>>>>>>> calls with a long list of hardcoded arguments to each.
+>>>>>>
+>>>>>>
+>>>>>> I'm also not a fan of long argument lists; a divider like defined
+>>>>>> in my
+>>>>>> tree takes 5 arguments, a gate 4 and a mux 6. While 6 is already at
+>>>>>> the
+>>>>>> border I think it's still acceptable.
+>>>>>>
+>>>>>> What I like in terms of readability is one line per clock which makes
+>>>>>> for quite short clock files.
+>>>>>
+>>>>>
+>>>>> It certainly makes for short clock files, but it's definitely less
+>>>>> readable that the expanded struct. For the original author the "one
+>>>>> line per clock" looks readable since they wrote it. But for someone
+>>>>> looking at the code to modify it, the expanded one would be much
+>>>>> easier to read. Also, you can always declare your own macro if you
+>>>>> really want to follow the one line approach.
+>>>>>
+>>>>>> So when we use structs to initialize the clocks we'll probably have
+>>>>>> something like this:
+>>>>>>
+>>>>>> static struct clk_divider somediv = {
+>>>>>> .reg = CCM_BASE + 0x14,
+>>>>>> .width = 3,
+>>>>>> .shift = 17,
+>>>>>> .lock =&ccm_lock,
+>>>>>> .hw.parent = "someotherdiv",
+>>>>>> .hw.flags = CLK_SET_RATE_PARENT,
+>>>>>> };
+>>>>>
+>>>>>
+>>>>> Taken from your patches:
+>>>>>
+>>>>> imx_clk_mux("spll_sel", CCM_CSCR, 17, 1, spll_sel_clks,
+>>>>> ARRAY_SIZE(spll_sel_clks));
+>>>>>
+>>>>> Compare the struct to the one line call. Now tell me, what does "1"
+>>>>> represent? No clue. But in the struct, I can immediately tell what
+>>>>> each one of the parameters are.
+>>>>>
+>>>>> Anyway, my patch certainly isn't forcing you to use multiple lines.
+>>>>> So, hopefully this won't be a point of contention.
+>>>>>
+>>>>>> This will make a 4000 line file out of a 500 line file. Now when for
+>>>>>> some reason struct clk_divider changes we end with big patches. If the
+>>>>>> clk core gets a new fancy CLK_ flag which we want to have then again
+>>>>>> we end up with big patches. Then there's also the possibility that
+>>>>>> someone finds out that .lock and .hw.flags are common to all dividers
+>>>>>> and comes up with a #define DEFINE_CLK_DIVIDER again to share common
+>>>>>> fields.
+>>>>>
+>>>>>
+>>>>> This patch won't prevent you from doing any of that. You can still
+>>>>> create macros for that (there are already one for that). Also, what
+>>>>> you are pointing out is a bigger problem for the current
+>>>>> clk_register() function since you might have to change the no. of
+>>>>> params of all the callers even if a new field is optional.
+>>>>>
+>>>>>> All this can be solved when we introduce a small wrapper function and
+>>>>>> use it in the clock files:
+>>>>>>
+>>>>>> static inline struct clk *imx_clk_divider(const char *name, const
+>>>>>> char *parent,
+>>>>>> void __iomem *reg, u8 shift, u8 width)
+>>>>>> {
+>>>>>> return clk_register_divider(NULL, name, parent, CLK_SET_RATE_PARENT,
+>>>>>> reg, shift, width, 0,&imx_ccm_lock);
+>>>>>> }
+>>>>>>
+>>>>>> It decouples us from the structs used by the clock framework, we can
+>>>>>> add our preferred flags and still can share common fields like the
+>>>>>> lock.
+>>>>>>
+>>>>>> While this was not the intention when I first converted from struct
+>>>>>> initializers to function initializers I am confident that it will make
+>>>>>> a good job.
+>>>>>
+>>>>>
+>>>>> Now I'm confused -- it's not clear if you are leaning towards my
+>>>>> patch or away from it?
+>>>>
+>>>>
+>>>> There was a tendency to get rid of static initializers and I like the
+>>>> idea of not exposing any of the internally used members outside the
+>>>> clock framework.
+>>>
+>>>
+>>> I'm with Sascha on this. I feel that dividing the interface strictly
+>>> into two halves is the best way.
+>>
+>>
+>> I addressed this concern in my earlier comments. We can make a copy or
+>> we can agree the fields I moved to clk_hw aren't really useful wrt
+>> writing hacky code and call it a day. Can you please clarify why neither
+>> of these options are acceptable?
+>>
+>>> I have an uneasy feeling about
+>>> exposing this stuff into struct clk_hw (or clk_initializer or
+>>> whatever). This stretches the data out across three structures and
+>>> just doesn't feel right to me.
+>>
+>>
+>> Wrt this discussion, there are three distinct classes of data:
+>> 1) Those specific to the platform driver that the common code shouldn't
+>> care about.
+>> 2) Those specific to the common code that the platform driver shouldn't
+>> care about.
+>> 3) Stuff that's shared/passed between common code and the platform driver.
+>>
+>> When we have three classes of data, I don't what's wrong with having
+>> three struct types to contain them. If anything, it's better than the
+>> current approach of exposing the common clock code specific data (struct
+>> clk) to code outside of common clock code just because we want to allow
+>> static initialization. The end goal should be to move struct clk inside
+>> clk.c.
+>>
+>> I think this patch just takes us one step close to that since IMX and
+>> MSM won't have to include clk-private.h in any of our platform specific
+>> files while also allowing OMAP to include it for the near term.
+>>
+>>>> Now people try their best to make themselves comfortable with the
+>>>> static initializers and you even discussed the possibility of removing
+>>>> the clk_register_* functions (which make it possible for users not
+>>>> to use any of the internal struct members). That's what I don't like
+>>>> about your patches. But if we go for static initializers anyway then
+>>>> your
+>>>> patches probably change things for the better.
+>>>
+>>>
+>>> Static initialization is something I have fought for; in fact the
+>>> original patches provided no way to do it, so clearly what we have
+>>> today is some progress for the folks desiring static init.
+>>
+>>
+>> I too desire static init. Sorry if I was unclear and gave people the
+>> misconception that I wanted to remove static init.
+>>
+>>> The patch
+>>> above doesn't actually prevent allocation from happening as it still
+>>> must call into clk_register and kmalloc struct clk,
+>>
+>>
+>> Correct.
+>>
+>>> so besides
+>>> readability, I'm not sure what these patches buy us.
+>>
+>>
+>> I think readability is very important and if this buys us nothing but
+>> readability, we should still take this patch. But there are other
+>> benefits too -- I mentioned them in the commit text.
+>>
+>>> Assuming that C99 designated initializers (for the sole purpose of
+>>> readability) is the main draw of the above patch, please let me know
+>>> what you think about modifying the existing static init macros so that
+>>> your clock data looks like this:
+>>>
+>>> DEFINE_CLK_DIVIDER(dpll_iva_m5x2_ck,&dpll_iva_x2_ck, "dpll_iva_x2_ck",
+>>> .flags = 0x0,
+>>> .reg = OMAP4430_CM_DIV_M5_DPLL_IVA,
+>>> .shift = OMAP4430_HSDIVIDER_CLKOUT2_DIV_SHIFT,
+>>> .width = OMAP4430_HSDIVIDER_CLKOUT2_DIV_WIDTH,
+>>> .flags = CLK_DIVIDER_ONE_BASED,
+>>> .lock = NULL
+>>> );
+>>>
+>>> Note that the first argument is the name of this clock (and will be
+>>> properly stringified for .name = "whatever") and that the second and
+>>> third arguments are both the parent clock, used for initializing the
+>>> parent pointer and .parent_names, respectively. If that aspect of the
+>>> macro is too ugly then those can even be broken out into a separate
+>>> macro since they are independent data structure (struct clk **parents,
+>>> and char **parent_names). Or you could just open code those data
+>>> structures and only use a macro for struct clk and struct clk_foo.
+>>>
+>>> This gives you the readability of C99 designated initializers while
+>>> keeping struct clk's members totally hidden from the rest of the
+>>> world.
+>>
+>>
+>> But it still leaves the struct clk exposed to people who do static init
+>> of the clock tree. I think agreeing that the name, parent names, flags
+>> and ops are not used to hack with or just making a copy of all of them
+>> (and mark the originals as __init if that's doable). is a better
+>> solution than trying to go with macros and leave struct clk exposed to
+>> everyone who want to do static init of the clock tree.
+>>
+>> At a later point when we are ready to move struct clk inside clk.c, with
+>> this patch applied right now, IMX and MSM won't have to churn their code.
+>>
+>> Thanks,
+>> Saravana
+>>
+>
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
