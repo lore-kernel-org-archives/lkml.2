@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab2C0OPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 10:15:40 -0400
-Received: from mail2.charite.de ([141.42.206.200]:44869 "EHLO mail2.charite.de"
+	id S1754428Ab2C0OSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 10:18:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab2C0OPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 10:15:38 -0400
-Date: Tue, 27 Mar 2012 16:15:36 +0200
-From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
-To: linux-kernel@vger.kernel.org
-Subject: 3.3.0: "INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)"
-Message-ID: <20120327141536.GP25457@charite.de>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750977Ab2C0OSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 10:18:00 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: bhelgaas@google.com
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, stable@vger.kernel.org
+Subject: [PATCH] ASPM: Fix pcie devices with non-pcie children
+Date: Tue, 27 Mar 2012 10:17:41 -0400
+Message-Id: <1332857861-11562-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 4949be16822e92a18ea0cc1616319926628092ee changed the behaviour of
+pcie_aspm_sanity_check() to always return 0 if aspm is disabled, in order
+to avoid cases where we changed ASPM state on pre-PCIe 1.1 devices. This
+skipped the secondary function of pcie_aspm_sanity_check which was to avoid
+us enabling ASPM on devices that had non-PCIe children, causing us to hit
+a BUG_ON later on. Move the aspm_disabled check so we continue to honour
+that scenario.
 
-Mar 23 11:54:00 mail kernel:
-Mar 23 11:54:00 mail kernel: [347213.025005] INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
-Mar 23 11:54:00 mail kernel: [347213.025005] Pid: 12654, comm: cleanup Not tainted 3.3.0 #1
-Mar 23 11:54:00 mail kernel: [347213.025005] Call Trace:
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1062ccb>] ? __rcu_pending+0x10a/0x311
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c106388d>] ? rcu_check_callbacks+0x9b/0xa1
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c102c434>] ? update_process_times+0x2a/0x53
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c104f206>] ? tick_sched_timer+0x4f/0x90
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a101>] ? __remove_hrtimer+0x25/0x79
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a2ff>] ? __run_hrtimer.isra.32+0x38/0xbe
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103ad95>] ? hrtimer_interrupt+0xda/0x23d
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1016493>] ? smp_apic_timer_interrupt+0x4c/0x81
-Mar 23 11:54:00 mail kernel: [347213.025005]  [<c127b5d9>] ? apic_timer_interrupt+0x31/0x38
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/pci/pcie/aspm.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 86111d9..41e367b 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -521,9 +521,6 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
+ 	int pos;
+ 	u32 reg32;
+ 
+-	if (aspm_disabled)
+-		return 0;
+-
+ 	/*
+ 	 * Some functions in a slot might not all be PCIe functions,
+ 	 * very strange. Disable ASPM for the whole slot
+@@ -532,6 +529,16 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
+ 		pos = pci_pcie_cap(child);
+ 		if (!pos)
+ 			return -EINVAL;
++
++		/*
++		 * If ASPM is disabled then we're not going to change
++		 * the BIOS state. It's safe to continue even if it's a
++		 * pre-1.1 device
++		 */
++
++		if (aspm_disabled)
++			continue;
++
+ 		/*
+ 		 * Disable ASPM for pre-1.1 PCIe device, we follow MS to use
+ 		 * RBER bit to determine if a function is 1.1 version device
 -- 
-Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
-ralf.hildebrandt@charite.de        Campus Benjamin Franklin
-http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
-Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
+1.7.7.6
+
