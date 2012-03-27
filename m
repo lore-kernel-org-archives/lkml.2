@@ -1,295 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2C0Vgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 17:36:31 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:51927 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab2C0Vg2 (ORCPT
+	id S1756381Ab2C0ViT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 17:38:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab2C0ViQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 17:36:28 -0400
-Date: Tue, 27 Mar 2012 17:36:27 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-next@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: linux-next: triage for March 27, 2012
-Message-ID: <20120327213626.GA10022@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Mar 2012 17:38:16 -0400
+Date: Tue, 27 Mar 2012 14:38:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
+        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>
+Subject: Re: [PATCH 01/19] mm: Make default vm_ops provide ->page_mkwrite
+ handler
+Message-Id: <20120327143815.40456d38.akpm@linux-foundation.org>
+In-Reply-To: <20120327075527.GA5020@quack.suse.cz>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+	<1330963277-26336-2-git-send-email-jack@suse.cz>
+	<20120323154502.8072a755.akpm@linux-foundation.org>
+	<20120327075527.GA5020@quack.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New breakage since last report:
-	<none> 
+On Tue, 27 Mar 2012 09:55:27 +0200
+Jan Kara <jack@suse.cz> wrote:
 
-Randconfig fails that may or may not be new (by their very nature):
-	x86_64: No rule to make scsi/aic7xxx/aicasm/*.[chyl]
-                (http://kisskb.ellerman.id.au/kisskb/buildresult/5981187/)
+> On Fri 23-03-12 15:45:02, Andrew Morton wrote:
+> > On Mon,  5 Mar 2012 17:00:59 +0100
+> > Jan Kara <jack@suse.cz> wrote:
+> > 
+> > > --- a/mm/filemap.c
+> > > +++ b/mm/filemap.c
+> > > @@ -1759,8 +1759,28 @@ page_not_uptodate:
+> > >  }
+> > >  EXPORT_SYMBOL(filemap_fault);
+> > >  
+> > > +int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > > +{
+> > > +	struct page *page = vmf->page;
+> > > +	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
+> > > +	int ret = VM_FAULT_LOCKED;
+> > > +
+> > > +	file_update_time(vma->vm_file);
+> > > +	lock_page(page);
+> > > +	if ((page->mapping != inode->i_mapping) ||
+> > > +	    (page_offset(page) > i_size_read(inode))) {
+> > 
+> > Would benefit from a comment explaining how the page can come to be
+> > outside i_size, and why we fail in that case.
 
-Builds that are fixed since last report:
-	ARM:u300_defconfig
-	tilegx:defconfig
+This?
 
-The blackfin builds are no longer failing on vm_is_stack but instead
-are all failing with "L1 data A overflow!" at final link, which smells
-like some kind of binutils/toolchain issue.
+> > I don't think i_mutex is held here, so this test is rather meaningless
+> > and racy anyway?
+>   i_size test is racy if that's what you mean by "this test". Just I did
+> the test this way because it's like this in other places and I figured
+> truncate_pagecache() can take relatively long time so the test has some
+> effect. But if you think it's not worth it, I can remove it.
 
-The following have fixes posted for quite some time now, but the fixes
-haven't yet been integrated.  Please have a look at these, as it would
-be nice to have them in tree before wk2 of the merge window closes.
-	ARM:magician_defconfig
-	ARM:collie_defconfig
-	ARM:iop32x_defconfig,iop33x_defconfig
-	ARM:em_x270_defconfig
-	AVR32:defconfig
+It bugs me when we copy-n-paste code without remembering why we had it
+there in the first place :( iirc, mmapped pages outside i_size can and
+do happen in some race situations, and are benign.  But it's several
+years since I thought about it and all the details have evaporated and
+it would take a lot of work to reinstantiate it all.  argh.
 
-
-Note: The randconfig fails are only listed once and not tracked
-in the below listing.
-
-            ------------------------------------------------
-
-Latest results at:
-	http://kisskb.ellerman.id.au/kisskb/branch/9/
-
-Failures as of March 27th, 2012:
-================================
-
-AM33:asb2303_defconfig,asb2364_defconfig
-	when:	Mar 15
-	why:	cc1: error: unrecognized command line option '-mmem-funcs'
-	status:	Possible fix from TonyB sent for review.
-	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
-----------------
-
-ARM:omap2plus_defconfig
-	when:	Mar 26
-	why:	board-omap4panda.c: 'btwilink_device' undeclared
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5968352/
-
-ARM:rpc_defconfig
-	when:	Mar 26
-	why:	scsi/arm/powertec.c: implicit declaration 'seq_printf'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5967948/
-
-ARM:cm_x2xx_defconfig
-	when:	Mar 19
-	why:	it8152.c: redefinition of 'dma_set_coherent_mask'
-	status:	bisected and reported (PaulG)
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133226851818586&w=2
-
-ARM:netx_defconfig,pnx4008_defconfig 
-	when:	Mar 14
-	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
-	ref:	https://lkml.org/lkml/2012/3/13/670
-
-ARM:collie_defconfig
-	when:	Feb 14
-	why:	locomolcd.c: error: 'sa1100fb_lcd_power' undeclared
-	status:	fixed (PaulG) - pending integration
-	fix:	http://marc.info/?l=linux-next&m=133105157730749&w=2
-	ref:
-
-ARM:iop32x_defconfig,iop33x_defconfig
-	when:	Nov 23
-	why:	restart.c: implicit declaration of function 'soft_restart'
-	status:	fixed (PaulG) - pending integration
-	fix:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081461.html
-	fix:	https://lkml.org/lkml/2012/3/14/253
-	ref:
-
-ARM:ixp4xx_defconfig
-	when:	Oct 26
-	why:	gpio.h: implicit declaration of function '__gpio_get_value'
-	status:	fixed (Imre Kaloz) - but possibly needs rework?
-	fix:	https://lkml.org/lkml/2012/2/8/288
-	ref:	https://lkml.org/lkml/2012/2/8/287
-
-ARM:magician_defconfig
-	when:	Feb 13
-	why:	magician.c: unknown field 'dev' specified in initializer
-	status:	fixed (PaulG) - pending integration
-	fix:	http://marc.info/?l=linux-arm-kernel&m=133124258707457&w=2
-	ref:	http://marc.info/?l=linux-next&m=133106325903524&w=2
-
-ARM:em_x270_defconfig
-	when:	Feb 14
-	why:	em-x270.c: unknown field 'dev' specified in initializer
-	status:	 fixed (PaulG) - pending integration
-	fix:	http://www.spinics.net/lists/arm-kernel/msg164012.html
-	ref:	http://www.spinics.net/lists/arm-kernel/msg163135.html
-
-ARM:raumfeld_defconfig
-	when:	Nov 23
-	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
-	status:	perhaps broken since 2010?  See ref below.
-	fix:	
-	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
-
-ARM:arm-allnoconfig
-	when:	forever
-	why:	not supported
-	status:	nothing pending, but patches accepted
-	fix:	n/a
-	ref:	https://lkml.org/lkml/2009/4/30/105
-	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
-----------------
-
-AVR32:defconfig
-	when:	Mar 18
-	why:	board.h: atmel_nand.h: No such file or directory
-	status:	reported/fixed (PaulG)
-	fix:	http://marc.info/?l=linux-arm-kernel&m=133239363802517&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5917107/
-
-AVR32:allnoconfig
-	when:	May 26 2010, 20:49
-	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
-	status:
-	fix:
-	ref:
----------------
-
-bfin:***all-builds***
-	when:	Mar 26
-	why:	bfin-uclinux-ld: L1 data A overflow!
-	status:	unknown, binutils issue?
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5981475/
----------------
-
-cris:***all-builds***
-	when:	Mar 25, 22:05
-	why:	include/linux/types.h:25: error expected ... before 'ino_t'
-	status:	
-	fix:	
-	ref:	
-----------------
-
-crisv32:***all-builds***
-	when:	Mar 25, 22:05
-	why:	include/linux/types.h:25: error expected ... before 'ino_t'
-	status:	
-	fix:	
-	ref:	
-----------------
-
-frv:defconfig
-	when:	Mar 15
-	why:	arch/frv/kernel/head.S operand out of range
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884666/
-----------------
-
-h8300:defconfig
-	when:	Mar 15
-	why:	time.c: implicit declaration of function 'get_irq_regs'
-	why:	also seems gcc suffers an ICE
-	status:	ICE bug lodged with gcc folks (TonyB)
-	fix:
-	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
-----------------
-
-ia64:defconfig
-	when:	Mar 26
-	why:	asm-offsets.c:322: unterminated arg list invoking macro "DEFINE"
-	status:	trivial typo, missing ")"
-	fix:	
-	ref:	https://lkml.org/lkml/2012/3/26/496
-----------------
-
-i386:allmodconfig
-	when:	Mar 8, 20:41
-	why:	ERROR: "mdfld_set_brightness" [drivers/gpu/drm/gma500/gma500_gfx.ko] undefined!
-	status:	
-	fix:
-	ref:	https://lkml.org/lkml/2012/3/24/122
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878506/
-----------------
-
-m32r:m32700ut.smp_defconfig
-	when:	Mar 15
-	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
-----------------
-
-m68k:sun3_defconfig,m68k_defconfig
-	when:	Mar 26
-	why:	sun3_NCR5380.c: static decl of 'sun3scsi_proc_info' follows non-static
-	status:	
-	fix:	
-	ref:	http://marc.info/?l=linux-next&m=133279244817422&w=2
-
-m68k:allmodconfig
-	when:	Mar 16
-	why:	persistent_ram.c: implicit declaration of 'memblock_reserve'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
-	ref:	http://www.spinics.net/lists/linux-next/msg19343.html
-----------------
-
-mips:allmodconfig
-	when:
-	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
-	status: one of many fixes mips needs...
-	fix:	http://marc.info/?l=linux-wireless&m=133272031621916&w=2
-	ref:	http://patchwork.ozlabs.org/patch/148614/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
-----------------
-
-parisc:allmodconfig
-	when:
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-
-parisc64:a500_defconfig 
-	when:
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-powerpc:allyesconfig
-	when:	May 18 2009, 22:11
-	why:	fat ass kernel with everything simply won't link
-	status:	need to fix build config to ignore the final link
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
-------------------
-
-sh4:***all-builds***
-	when:	Feb 24, 17:38
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-um:um-defconfig
-	when:	Sep 16 2010, 01:28
-	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
-	status:	clearly broken forever, so does anyone care?
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
+Also, it's off-by-one, isn't it?  Should be page_offset(page) >= i_size?
