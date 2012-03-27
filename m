@@ -1,170 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936637Ab2C3XBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:01:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934859Ab2C3VFV (ORCPT
+	id S934846Ab2C3VFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:05:14 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934752Ab2C3VEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:21 -0400
-Message-Id: <20120330195728.391758872@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nishanth Aravamudan <nacc@us.ibm.com>,
-        Dave Hansen <haveblue@us.ibm.com>, Anton Blanchard <anton@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
-Subject: [ 044/108] bootmem/sparsemem: remove limit constraint in alloc_bootmem_section
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+	Fri, 30 Mar 2012 17:04:55 -0400
+Message-Id: <201203302104.q2UL4rg5006253@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 27 Mar 2012 13:53:30 -0400
+Subject: [PATCH] arch/tile/Kconfig: rename tile_defconfig to tilepro_defconfig
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:04:53.0866 (UTC) FILETIME=[C1042CA0:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+We switched to using "tilepro" for the 32-bit stuff a while ago,
+but missed this one usage.
 
-------------------
-
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-
-commit f5bf18fa22f8c41a13eb8762c7373eb3a93a7333 upstream.
-
-While testing AMS (Active Memory Sharing) / CMO (Cooperative Memory
-Overcommit) on powerpc, we tripped the following:
-
-  kernel BUG at mm/bootmem.c:483!
-  cpu 0x0: Vector: 700 (Program Check) at [c000000000c03940]
-      pc: c000000000a62bd8: .alloc_bootmem_core+0x90/0x39c
-      lr: c000000000a64bcc: .sparse_early_usemaps_alloc_node+0x84/0x29c
-      sp: c000000000c03bc0
-     msr: 8000000000021032
-    current = 0xc000000000b0cce0
-    paca    = 0xc000000001d80000
-      pid   = 0, comm = swapper
-  kernel BUG at mm/bootmem.c:483!
-  enter ? for help
-  [c000000000c03c80] c000000000a64bcc
-  .sparse_early_usemaps_alloc_node+0x84/0x29c
-  [c000000000c03d50] c000000000a64f10 .sparse_init+0x12c/0x28c
-  [c000000000c03e20] c000000000a474f4 .setup_arch+0x20c/0x294
-  [c000000000c03ee0] c000000000a4079c .start_kernel+0xb4/0x460
-  [c000000000c03f90] c000000000009670 .start_here_common+0x1c/0x2c
-
-This is
-
-        BUG_ON(limit && goal + size > limit);
-
-and after some debugging, it seems that
-
-	goal = 0x7ffff000000
-	limit = 0x80000000000
-
-and sparse_early_usemaps_alloc_node ->
-sparse_early_usemaps_alloc_pgdat_section calls
-
-	return alloc_bootmem_section(usemap_size() * count, section_nr);
-
-This is on a system with 8TB available via the AMS pool, and as a quirk
-of AMS in firmware, all of that memory shows up in node 0.  So, we end
-up with an allocation that will fail the goal/limit constraints.
-
-In theory, we could "fall-back" to alloc_bootmem_node() in
-sparse_early_usemaps_alloc_node(), but since we actually have HOTREMOVE
-defined, we'll BUG_ON() instead.  A simple solution appears to be to
-unconditionally remove the limit condition in alloc_bootmem_section,
-meaning allocations are allowed to cross section boundaries (necessary
-for systems of this size).
-
-Johannes Weiner pointed out that if alloc_bootmem_section() no longer
-guarantees section-locality, we need check_usemap_section_nr() to print
-possible cross-dependencies between node descriptors and the usemaps
-allocated through it.  That makes the two loops in
-sparse_early_usemaps_alloc_node() identical, so re-factor the code a
-bit.
-
-[akpm@linux-foundation.org: code simplification]
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Cc: Dave Hansen <haveblue@us.ibm.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-Cc: Robert Jennings <rcj@linux.vnet.ibm.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- mm/bootmem.c |    5 ++---
- mm/sparse.c  |   30 +++++++++++-------------------
- 2 files changed, 13 insertions(+), 22 deletions(-)
+ arch/tile/Kconfig |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -768,14 +768,13 @@ void * __init alloc_bootmem_section(unsi
- 				    unsigned long section_nr)
- {
- 	bootmem_data_t *bdata;
--	unsigned long pfn, goal, limit;
-+	unsigned long pfn, goal;
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 30413c1..30393aa 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -69,6 +69,9 @@ config ARCH_PHYS_ADDR_T_64BIT
+ config ARCH_DMA_ADDR_T_64BIT
+ 	def_bool y
  
- 	pfn = section_nr_to_pfn(section_nr);
- 	goal = pfn << PAGE_SHIFT;
--	limit = section_nr_to_pfn(section_nr + 1) << PAGE_SHIFT;
- 	bdata = &bootmem_node_data[early_pfn_to_nid(pfn)];
++config NEED_DMA_MAP_STATE
++	def_bool y
++
+ config LOCKDEP_SUPPORT
+ 	def_bool y
  
--	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, limit);
-+	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, 0);
- }
- #endif
+@@ -118,7 +121,7 @@ config 64BIT
  
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -353,29 +353,21 @@ static void __init sparse_early_usemaps_
+ config ARCH_DEFCONFIG
+ 	string
+-	default "arch/tile/configs/tile_defconfig" if !TILEGX
++	default "arch/tile/configs/tilepro_defconfig" if !TILEGX
+ 	default "arch/tile/configs/tilegx_defconfig" if TILEGX
  
- 	usemap = sparse_early_usemaps_alloc_pgdat_section(NODE_DATA(nodeid),
- 								 usemap_count);
--	if (usemap) {
--		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
--			if (!present_section_nr(pnum))
--				continue;
--			usemap_map[pnum] = usemap;
--			usemap += size;
-+	if (!usemap) {
-+		usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
-+		if (!usemap) {
-+			printk(KERN_WARNING "%s: allocation failed\n", __func__);
-+			return;
- 		}
--		return;
- 	}
- 
--	usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
--	if (usemap) {
--		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
--			if (!present_section_nr(pnum))
--				continue;
--			usemap_map[pnum] = usemap;
--			usemap += size;
--			check_usemap_section_nr(nodeid, usemap_map[pnum]);
--		}
--		return;
-+	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-+		if (!present_section_nr(pnum))
-+			continue;
-+		usemap_map[pnum] = usemap;
-+		usemap += size;
-+		check_usemap_section_nr(nodeid, usemap_map[pnum]);
- 	}
--
--	printk(KERN_WARNING "%s: allocation failed\n", __func__);
- }
- 
- #ifndef CONFIG_SPARSEMEM_VMEMMAP
-
+ source "init/Kconfig"
+-- 
+1.6.5.2
 
