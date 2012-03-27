@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2C0Hzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 03:55:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37012 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab2C0Hzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 03:55:41 -0400
-Date: Tue, 27 Mar 2012 09:55:27 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>
-Subject: Re: [PATCH 01/19] mm: Make default vm_ops provide ->page_mkwrite
- handler
-Message-ID: <20120327075527.GA5020@quack.suse.cz>
-References: <1330963277-26336-1-git-send-email-jack@suse.cz>
- <1330963277-26336-2-git-send-email-jack@suse.cz>
- <20120323154502.8072a755.akpm@linux-foundation.org>
+	id S1753959Ab2C0H5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 03:57:54 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:59460 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab2C0H5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 03:57:52 -0400
+X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Mar 2012 03:57:51 EDT
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2R7njMu007285, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 1/5] r8169: modify pll power function
+Date: Tue, 27 Mar 2012 15:53:50 +0800
+Message-ID: <1332834834-5185-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120323154502.8072a755.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-03-12 15:45:02, Andrew Morton wrote:
-> On Mon,  5 Mar 2012 17:00:59 +0100
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > --- a/mm/filemap.c
-> > +++ b/mm/filemap.c
-> > @@ -1759,8 +1759,28 @@ page_not_uptodate:
-> >  }
-> >  EXPORT_SYMBOL(filemap_fault);
-> >  
-> > +int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > +{
-> > +	struct page *page = vmf->page;
-> > +	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
-> > +	int ret = VM_FAULT_LOCKED;
-> > +
-> > +	file_update_time(vma->vm_file);
-> > +	lock_page(page);
-> > +	if ((page->mapping != inode->i_mapping) ||
-> > +	    (page_offset(page) > i_size_read(inode))) {
-> 
-> Would benefit from a comment explaining how the page can come to be
-> outside i_size, and why we fail in that case.
-> 
-> I don't think i_mutex is held here, so this test is rather meaningless
-> and racy anyway?
-  i_size test is racy if that's what you mean by "this test". Just I did
-the test this way because it's like this in other places and I figured
-truncate_pagecache() can take relatively long time so the test has some
-effect. But if you think it's not worth it, I can remove it.
+Adjust r810x_pll_power_down, r810x_pll_power_up, and r8168_pll_power_up.
+Always power up device during rtl_open. For r810x, turn off more power
+when the WOL is disabled.
 
-								Honza
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |   37 +++++++++++++++++++++++++++------
+ 1 files changed, 30 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 27c358c..3edb996 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3508,15 +3508,45 @@ static void r810x_phy_power_up(struct rtl8169_private *tp)
+ 
+ static void r810x_pll_power_down(struct rtl8169_private *tp)
+ {
++	void __iomem *ioaddr = tp->mmio_addr;
++
+ 	if (rtl_wol_pll_power_down(tp))
+ 		return;
+ 
+ 	r810x_phy_power_down(tp);
++
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_07:
++	case RTL_GIGA_MAC_VER_08:
++	case RTL_GIGA_MAC_VER_09:
++	case RTL_GIGA_MAC_VER_10:
++	case RTL_GIGA_MAC_VER_13:
++	case RTL_GIGA_MAC_VER_16:
++		break;
++	default:
++		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
++		break;
++	}
+ }
+ 
+ static void r810x_pll_power_up(struct rtl8169_private *tp)
+ {
++	void __iomem *ioaddr = tp->mmio_addr;
++
+ 	r810x_phy_power_up(tp);
++
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_07:
++	case RTL_GIGA_MAC_VER_08:
++	case RTL_GIGA_MAC_VER_09:
++	case RTL_GIGA_MAC_VER_10:
++	case RTL_GIGA_MAC_VER_13:
++	case RTL_GIGA_MAC_VER_16:
++		break;
++	default:
++		RTL_W8(PMCH, RTL_R8(PMCH) | 0x80);
++		break;
++	}
+ }
+ 
+ static void r8168_phy_power_up(struct rtl8169_private *tp)
+@@ -3620,13 +3650,6 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
+ {
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 
+-	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
+-	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
+-	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
+-	    r8168dp_check_dash(tp)) {
+-		return;
+-	}
+-
+ 	switch (tp->mac_version) {
+ 	case RTL_GIGA_MAC_VER_25:
+ 	case RTL_GIGA_MAC_VER_26:
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.7.6
+
