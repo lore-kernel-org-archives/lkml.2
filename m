@@ -1,201 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2C0Pm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 11:42:59 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53006 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab2C0Pm5 (ORCPT
+	id S1755421Ab2C0PnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 11:43:19 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:14327 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab2C0PnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 11:42:57 -0400
+	Tue, 27 Mar 2012 11:43:16 -0400
+Message-ID: <4F71E012.7050907@tilera.com>
+Date: Tue, 27 Mar 2012 11:43:14 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <4F71ADD6.2060407@gmail.com>
-References: <201203262047.17865.vda.linux@googlemail.com> <4F71ADD6.2060407@gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 27 Mar 2012 17:42:35 +0200
-Message-ID: <CAK1hOcOCG19U3sZAPDSH=BYsjgDMJ0VXjcoXV4EaoL30-dTO+A@mail.gmail.com>
-Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
-To: roma1390 <roma1390@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
-Content-Type: multipart/mixed; boundary=0016e6d99afe3675fb04bc3b5811
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        <linaro-sched-sig@lists.linaro.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com> <1332338318-5958-13-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1203210953220.20482@router.home> <CAOtvUMdkU92t0nj9OXsnzCenuOyjb12x6s11xR_GGJu1aJJ7GA@mail.gmail.com> <4F6B5ED1.1080300@tilera.com> <CAOtvUMdtprdVxG3d5B-W6Y98SNg1kZms=Q+tmamqN9YkWsiWBg@mail.gmail.com>
+In-Reply-To: <CAOtvUMdtprdVxG3d5B-W6Y98SNg1kZms=Q+tmamqN9YkWsiWBg@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d99afe3675fb04bc3b5811
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 3/27/2012 11:31 AM, Gilad Ben-Yossef wrote:
+> On Thu, Mar 22, 2012 at 7:18 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> On 3/22/2012 3:38 AM, Gilad Ben-Yossef wrote:
+>>> On Wed, Mar 21, 2012 at 4:54 PM, Christoph Lameter <cl@linux.com> wrote:
+>>>> On Wed, 21 Mar 2012, Frederic Weisbecker wrote:
+>>>>
+>>>>> If RCU is waiting for the current CPU to complete a grace
+>>>>> period, don't turn off the tick. Unlike dynctik-idle, we
+>>>>> are not necessarily going to enter into rcu extended quiescent
+>>>>> state, so we may need to keep the tick to note current CPU's
+>>>>> quiescent states.
+>>>> Is there any way for userspace to know that the tick is not off yet due to
+>>>> this? It would make sense for us to have busy loop in user space that
+>>>> waits until the OS has completed all processing if that avoids future
+>>>> latencies for the application.
+>>>>
+>>> I previously suggested having the user register to receive a signal
+>>> when the tick
+>>> is turned off. Since the tick is always turned off the user task is
+>>> the current task
+>>> by design, *I think* you can simply mark the signal pending when you
+>>> turn the tick off.
+>>>
+>>> The user would register a signal handler to set a flag when it is
+>>> called and then busy
+>>> loop waiting for a flag to clear.
+>> This sounds plausible, but the kernel would have to know that the tick not
+>> only was stopped currently, but also would still be stopped when the signal
+>> handler's sigreturn syscall was performed.
+> Well, I'd say send a signal when the tick is turned off and another
+> signal when it's
+> turned on again.
 
-On Tue, Mar 27, 2012 at 2:08 PM, roma1390 <roma1390@gmail.com> wrote:
-> On 2012.03.26 21:47, Denys Vlasenko wrote:
->>
->> Please find test programs attached.
->>
->> 32-bit test programs were built using gcc 4.6.2
->> 64-bit test programs were built using gcc 4.2.1
->> Command line: gcc --static [-m32] -O2 -Wall test_{org,new}.c
+The thing is, what our customers seem to want is to be able to tell the
+kernel to go away and not bother them again, ever, as long as their
+application is running correctly.  Obviously if it crashes, or if some
+intervention is required, or whatever, they want the kernel to step in, but
+otherwise the proposed signal mechanisms don't seem to help the case that
+they're interested in.  I don't think we've seen a customer application
+where the signal mechanism would be helpful (unfortunately, since it does
+seem like a cool idea).
+
+Basically if the kernel interrupts a nohz application core, that's a fail. 
+It's interesting to know that such a fail has happened, but sending a
+signal just makes it an even worse fail: more overhead.  One thing I could
+imagine that might be useful would be to register a region of user memory
+that the kernel could put statistics of some kind into, obviously the
+"bool" flag that says whether you're running tickless, but also things like
+a count of the number of interrupts (e.g. ticks, but really anything) the
+kernel had to deliver, the time of the last interrupt that was delivered,
+maybe some breakdown by type of interrupt, etc.  Then if the application
+detects an interruption, or perhaps just periodically, it can inspect that
+state area and report on any bad developments: and these would be basically
+kernel bugs from failing to protect the nohz core the way it had asked, or
+else application bugs from accidentally requesting a kernel service
+unintentionally.
+
+>> The problem we've seen is that
+>> it's sometimes somewhat nondeterministic when the kernel might decide it
+>> needed some more ticking, once you let kernel code start to run.  For
+>> example, for RCU ops the kernel can choose to ignore the nohz cpuset cores
+>> when they're running userspace code only, but as soon as they get back into
+>> the kernel for any reason, you may need to schedule a grace period, and so
+>> just returning from the "you have no more ticks!" signal handler ends up
+>> causing ticks to be scheduled.
+> There is no real difference from the user stand point between the
+> return signal sys call
+> doing something that causes the tick to be turned on and an IPI or
+> timer that turns on
+> the tick a nano second after the signal return system call returned.
 >
-> Can't compile reference for arm:
-> $ arm-linux-gnueabi-gcc -O2 -Wall test_org.c -o test_org
-> test_org.c: In function =91put_dec=92:
-> test_org.c:101: error: impossible constraint in =91asm=92
-> test_org.c:101: error: impossible constraint in =91asm=92
-> test_org.c:101: error: impossible constraint in =91asm=92
+> The return signal syscall setting the tick on is just a private,
+> though annoying, case of the
+> tick getting turned on by something.
 
-Please find a modified test_header.c attached.
-I tested and it builds in my arm emulator.
+Yes, but see above: the claim I'm making is that we can arrange for a
+well-behaved application to *expect* not to get kernel interrupts, so if
+they happen, something has gone wrong.
 
---=20
-vda
+>> The approach we took for the Tilera dataplane mode was to have a syscall
+>> that would hold the task in the kernel until any ticks were done, and only
+>> then return to userspace.  (This is the same set_dataplane() syscall that
+>> also offers some flags to control and debug the dataplane stuff in general;
+>> in fact the "hold in kernel" support is a mode we set for all syscalls, to
+>> keep things deterministic.)  This way the "busy loop" is done in the
+>> kernel, but in fact we explicitly go into idle until the next tick, so it's
+>> lower-power.
+>>
+> Yes, I saw that. My gripe with it is that puts the policy of what to do
+> while we wait for the tick to go away in the kernel. I usually hate the
+> kernel to take decisions on what to do. I want it to give mechanisms
+> and let the programmer set the policy.- e.g. have a led blink while
+> you're waiting for the
+> and the tick to go away so that the poor end user will know we are
+> still waiting for
+> the starts to align just right...
 
---0016e6d99afe3675fb04bc3b5811
-Content-Type: text/x-csrc; charset=US-ASCII; name="test_header.c"
-Content-Disposition: attachment; filename="test_header.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h0b45otz0
+This is a fair point.  On the other hand, the way we implemented it is
+basically just a mode flag that is checked on all returns from the kernel,
+that allow userspace to invoke kernel functions "synchronously", but
+slowly, and not get hammered later by unexpected interrupts.  So from that
+point of view, we don't expect userspace to have anything useful to do on
+return from syscalls or page faults other than wait in the kernel anyway. 
+But if the application did want to do something fancy for those few
+hundredths of a second while the ticks settle, you could imagine not using
+this "wait in kernel" mode, and instead spinning on the proposed data
+structure described above.
 
-I2luY2x1ZGUgPGZlYXR1cmVzLmg+CiNpbmNsdWRlIDxpbnR0eXBlcy5oPgojaW5jbHVkZSA8c3Rk
-aW50Lmg+CiNpbmNsdWRlIDxzdGRib29sLmg+CiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4gLyogc2l6
-ZV90ICovCiNpbmNsdWRlIDxsaW1pdHMuaD4KI2luY2x1ZGUgPHVuaXN0ZC5oPgojaW5jbHVkZSA8
-c3RkbGliLmg+CiNpbmNsdWRlIDxzdGRhcmcuaD4KI2luY2x1ZGUgPHN0ZGRlZi5oPgojaW5jbHVk
-ZSA8Y3R5cGUuaD4KI2luY2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSA8ZXJybm8uaD4KI2luY2x1
-ZGUgPHN0ZGlvLmg+IC8qIGZvciBGSUxFICovCiNpbmNsdWRlIDxzeXMvdGltZS5oPgojaW5jbHVk
-ZSA8dGltZS5oPgoKI2RlZmluZSBub2lubGluZV9mb3Jfc3RhY2sgX19hdHRyaWJ1dGVfXygobm9p
-bmxpbmUpKQp0eXBlZGVmIHVpbnQ4X3QgdTg7CnR5cGVkZWYgaW50MTZfdCBzMTY7CgovKgogKiBU
-aGUgc2VtYW50aWNzIG9mIGRvX2RpdigpIGFyZToKICoKICogdWludDMyX3QgZG9fZGl2KHVpbnQ2
-NF90ICpuLCB1aW50MzJfdCBiYXNlKQogKiB7CiAqIAl1aW50MzJfdCByZW1haW5kZXIgPSAqbiAl
-IGJhc2U7CiAqIAkqbiA9ICpuIC8gYmFzZTsKICogCXJldHVybiByZW1haW5kZXI7CiAqIH0KICoK
-ICogSW4gb3RoZXIgd29yZHMsIGEgNjQtYml0IGRpdmlkZW5kIHdpdGggYSAzMi1iaXQgZGl2aXNv
-ciBwcm9kdWNpbmcKICogYSA2NC1iaXQgcmVzdWx0IGFuZCBhIDMyLWJpdCByZW1haW5kZXIuICBU
-byBhY2NvbXBsaXNoIHRoaXMgb3B0aW1hbGx5CiAqIHdlIGNhbGwgYSBzcGVjaWFsIF9fZG9fZGl2
-NjQgaGVscGVyIHdpdGggY29tcGxldGVseSBub24gc3RhbmRhcmQKICogY2FsbGluZyBjb252ZW50
-aW9uIGZvciBhcmd1bWVudHMgYW5kIHJlc3VsdHMgKGJld2FyZSkuCiAqLwoKI2RlZmluZSBfX2Fz
-bWVxKHgsIHkpICAiLmlmbmMgIiB4ICIsIiB5ICIgOyAuZXJyIDsgLmVuZGlmXG5cdCIKCiNkZWZp
-bmUgX19MSU5VWF9BUk1fQVJDSF9fIDQKCiNpZmRlZiBfX0FSTUVCX18KI2RlZmluZSBfX3hoICJy
-MCIKI2RlZmluZSBfX3hsICJyMSIKI2Vsc2UKI2RlZmluZSBfX3hsICJyMCIKI2RlZmluZSBfX3ho
-ICJyMSIKI2VuZGlmCgojZGVmaW5lIF9fZG9fZGl2X2FzbShuLCBiYXNlKQkJCQkJXAooewkJCQkJ
-CQkJXAoJcmVnaXN0ZXIgdW5zaWduZWQgaW50IF9fYmFzZSAgICAgIGFzbSgicjQiKSA9IGJhc2U7
-CVwKCXJlZ2lzdGVyIHVuc2lnbmVkIGxvbmcgbG9uZyBfX24gICBhc20oInIwIikgPSBuOwlcCgly
-ZWdpc3RlciB1bnNpZ25lZCBsb25nIGxvbmcgX19yZXMgYXNtKCJyMiIpOwkJXAoJcmVnaXN0ZXIg
-dW5zaWduZWQgaW50IF9fcmVtICAgICAgIGFzbShfX3hoKTsJCVwKCWFzbSgJX19hc21lcSgiJTAi
-LCBfX3hoKQkJCQlcCgkJX19hc21lcSgiJTEiLCAicjIiKQkJCQlcCgkJX19hc21lcSgiJTIiLCAi
-cjAiKQkJCQlcCgkJX19hc21lcSgiJTMiLCAicjQiKQkJCQlcCgkJImJsCV9fZG9fZGl2NjQiCQkJ
-CVwKCQk6ICI9ciIgKF9fcmVtKSwgIj1yIiAoX19yZXMpCQkJXAoJCTogInIiIChfX24pLCAiciIg
-KF9fYmFzZSkJCQlcCgkJOiAiaXAiLCAibHIiLCAiY2MiKTsJCQkJXAoJbiA9IF9fcmVzOwkJCQkJ
-CVwKCV9fcmVtOwkJCQkJCQlcCn0pCgojaWYgX19HTlVDX18gPCA0CgovKgogKiBnY2MgdmVyc2lv
-bnMgZWFybGllciB0aGFuIDQuMCBhcmUgc2ltcGx5IHRvbyBwcm9ibGVtYXRpYyBmb3IgdGhlCiAq
-IG9wdGltaXplZCBpbXBsZW1lbnRhdGlvbiBiZWxvdy4gRmlyc3QgdGhlcmUgaXMgZ2NjIFBSIDE1
-MDg5IHRoYXQKICogdGVuZCB0byB0cmlnIG9uIG1vcmUgY29tcGxleCBjb25zdHJ1Y3RzLCBzcHVy
-aW91cyAuZ2xvYmFsIF9fdWRpdnNpMwogKiBhcmUgaW5zZXJ0ZWQgZXZlbiBpZiBub25lIG9mIHRo
-b3NlIHN5bWJvbHMgYXJlIHJlZmVyZW5jZWQgaW4gdGhlCiAqIGdlbmVyYXRlZCBjb2RlLCBhbmQg
-dGhvc2UgZ2NjIHZlcnNpb25zIGFyZSBub3QgYWJsZSB0byBkbyBjb25zdGFudAogKiBwcm9wYWdh
-dGlvbiBvbiBsb25nIGxvbmcgdmFsdWVzIGFueXdheS4KICovCiNkZWZpbmUgZG9fZGl2KG4sIGJh
-c2UpIF9fZG9fZGl2X2FzbShuLCBiYXNlKQoKI2VsaWYgX19HTlVDX18gPj0gNAoKLyoKICogSWYg
-dGhlIGRpdmlzb3IgaGFwcGVucyB0byBiZSBjb25zdGFudCwgd2UgZGV0ZXJtaW5lIHRoZSBhcHBy
-b3ByaWF0ZQogKiBpbnZlcnNlIGF0IGNvbXBpbGUgdGltZSB0byB0dXJuIHRoZSBkaXZpc2lvbiBp
-bnRvIGEgZmV3IGlubGluZQogKiBtdWx0aXBsaWNhdGlvbnMgaW5zdGVhZCB3aGljaCBpcyBtdWNo
-IGZhc3Rlci4gQW5kIHlldCBvbmx5IGlmIGNvbXBpbGluZwogKiBmb3IgQVJNdjQgb3IgaGlnaGVy
-ICh3ZSBuZWVkIHVtdWxsL3VtbGFsKSBhbmQgaWYgdGhlIGdjYyB2ZXJzaW9uIGlzCiAqIHN1ZmZp
-Y2llbnRseSByZWNlbnQgdG8gcGVyZm9ybSBwcm9wZXIgbG9uZyBsb25nIGNvbnN0YW50IHByb3Bh
-Z2F0aW9uLgogKiAoSXQgaXMgdW5mb3J0dW5hdGUgdGhhdCBnY2MgZG9lc24ndCBwZXJmb3JtIGFs
-bCB0aGlzIGludGVybmFsbHkuKQogKi8KI2RlZmluZSBkb19kaXYobiwgYmFzZSkJCQkJCQkJXAoo
-ewkJCQkJCQkJCVwKCXVuc2lnbmVkIGludCBfX3IsIF9fYiA9IChiYXNlKTsJCQkJCVwKCWlmICgh
-X19idWlsdGluX2NvbnN0YW50X3AoX19iKSB8fCBfX2IgPT0gMCB8fAkJCVwKCSAgICAoX19MSU5V
-WF9BUk1fQVJDSF9fIDwgNCAmJiAoX19iICYgKF9fYiAtIDEpKSAhPSAwKSkgewlcCgkJLyogbm9u
-LWNvbnN0YW50IGRpdmlzb3IgKG9yIHplcm8pOiBzbG93IHBhdGggKi8JCVwKCQlfX3IgPSBfX2Rv
-X2Rpdl9hc20obiwgX19iKTsJCQkJXAoJfSBlbHNlIGlmICgoX19iICYgKF9fYiAtIDEpKSA9PSAw
-KSB7CQkJCVwKCQkvKiBUcml2aWFsOiBfX2IgaXMgY29uc3RhbnQgYW5kIGEgcG93ZXIgb2YgMiAq
-LwkJXAoJCS8qIGdjYyBkb2VzIHRoZSByaWdodCB0aGluZyB3aXRoIHRoaXMgY29kZS4gICovCQlc
-CgkJX19yID0gbjsJCQkJCQlcCgkJX19yICY9IChfX2IgLSAxKTsJCQkJCVwKCQluIC89IF9fYjsJ
-CQkJCQlcCgl9IGVsc2UgewkJCQkJCQlcCgkJLyogTXVsdGlwbHkgYnkgaW52ZXJzZSBvZiBfX2I6
-IG4vYiA9IG4qKHAvYikvcCAgICAgICAqLwlcCgkJLyogV2UgcmVseSBvbiB0aGUgZmFjdCB0aGF0
-IG1vc3Qgb2YgdGhpcyBjb2RlIGdldHMgICAqLwlcCgkJLyogb3B0aW1pemVkIGF3YXkgYXQgY29t
-cGlsZSB0aW1lIGR1ZSB0byBjb25zdGFudCAgICAqLwlcCgkJLyogcHJvcGFnYXRpb24gYW5kIG9u
-bHkgYSBjb3VwbGUgaW5saW5lIGFzc2VtYmx5ICAgICAqLwlcCgkJLyogaW5zdHJ1Y3Rpb25zIHNo
-b3VsZCByZW1haW4uIEJldHRlciBhdm9pZCBhbnkgICAgICAqLwlcCgkJLyogY29kZSBjb25zdHJ1
-Y3QgdGhhdCBtaWdodCBwcmV2ZW50IHRoYXQuICAgICAgICAgICAqLwlcCgkJdW5zaWduZWQgbG9u
-ZyBsb25nIF9fcmVzLCBfX3gsIF9fdCwgX19tLCBfX24gPSBuOwlcCgkJdW5zaWduZWQgaW50IF9f
-YywgX19wLCBfX3ogPSAwOwkJCQlcCgkJLyogcHJlc2VydmUgbG93IHBhcnQgb2YgbiBmb3IgcmVt
-aW5kZXIgY29tcHV0YXRpb24gKi8JXAoJCV9fciA9IF9fbjsJCQkJCQlcCgkJLyogZGV0ZXJtaW5l
-IG51bWJlciBvZiBiaXRzIHRvIHJlcHJlc2VudCBfX2IgKi8JCVwKCQlfX3AgPSAxIDw8IF9fZGl2
-NjRfZmxzKF9fYik7CQkJCVwKCQkvKiBjb21wdXRlIF9fbSA9ICgoX19wIDw8IDY0KSArIF9fYiAt
-IDEpIC8gX19iICovCVwKCQlfX20gPSAofjBVTEwgLyBfX2IpICogX19wOwkJCQlcCgkJX19tICs9
-ICgoKH4wVUxMICUgX19iICsgMSkgKiBfX3ApICsgX19iIC0gMSkgLyBfX2I7CVwKCQkvKiBjb21w
-dXRlIF9fcmVzID0gX19tKih+MFVMTC9fX2IqX19iLTEpLyhfX3AgPDwgNjQpICovCVwKCQlfX3gg
-PSB+MFVMTCAvIF9fYiAqIF9fYiAtIDE7CQkJCVwKCQlfX3JlcyA9IChfX20gJiAweGZmZmZmZmZm
-KSAqIChfX3ggJiAweGZmZmZmZmZmKTsJXAoJCV9fcmVzID4+PSAzMjsJCQkJCQlcCgkJX19yZXMg
-Kz0gKF9fbSAmIDB4ZmZmZmZmZmYpICogKF9feCA+PiAzMik7CQlcCgkJX190ID0gX19yZXM7CQkJ
-CQkJXAoJCV9fcmVzICs9IChfX3ggJiAweGZmZmZmZmZmKSAqIChfX20gPj4gMzIpOwkJXAoJCV9f
-dCA9IChfX3JlcyA8IF9fdCkgPyAoMVVMTCA8PCAzMikgOiAwOwkJCVwKCQlfX3JlcyA9IChfX3Jl
-cyA+PiAzMikgKyBfX3Q7CQkJCVwKCQlfX3JlcyArPSAoX19tID4+IDMyKSAqIChfX3ggPj4gMzIp
-OwkJCVwKCQlfX3JlcyAvPSBfX3A7CQkJCQkJXAoJCS8qIE5vdyBzYW5pdGl6ZSBhbmQgb3B0aW1p
-emUgd2hhdCB3ZSd2ZSBnb3QuICovCQlcCgkJaWYgKH4wVUxMICUgKF9fYiAvIChfX2IgJiAtX19i
-KSkgPT0gMCkgewkJXAoJCQkvKiB0aG9zZSBjYXNlcyBjYW4gYmUgc2ltcGxpZmllZCB3aXRoOiAq
-LwlcCgkJCV9fbiAvPSAoX19iICYgLV9fYik7CQkJCVwKCQkJX19tID0gfjBVTEwgLyAoX19iIC8g
-KF9fYiAmIC1fX2IpKTsJCVwKCQkJX19wID0gMTsJCQkJCVwKCQkJX19jID0gMTsJCQkJCVwKCQl9
-IGVsc2UgaWYgKF9fcmVzICE9IF9feCAvIF9fYikgewkJCVwKCQkJLyogV2UgY2FuJ3QgZ2V0IGF3
-YXkgd2l0aG91dCBhIGNvcnJlY3Rpb24gICAgKi8JXAoJCQkvKiB0byBjb21wZW5zYXRlIGZvciBi
-aXQgdHJ1bmNhdGlvbiBlcnJvcnMuICAqLwlcCgkJCS8qIFRvIGF2b2lkIGl0IHdlJ2QgbmVlZCBh
-biBhZGRpdGlvbmFsIGJpdCAgICovCVwKCQkJLyogdG8gcmVwcmVzZW50IF9fbSB3aGljaCB3b3Vs
-ZCBvdmVyZmxvdyBpdC4gKi8JXAoJCQkvKiBJbnN0ZWFkIHdlIGRvIG09cC9iIGFuZCBuL2I9KG4q
-bSttKS9wLiAgICAqLwlcCgkJCV9fYyA9IDE7CQkJCQlcCgkJCS8qIENvbXB1dGUgX19tID0gKF9f
-cCA8PCA2NCkgLyBfX2IgKi8JCVwKCQkJX19tID0gKH4wVUxMIC8gX19iKSAqIF9fcDsJCQlcCgkJ
-CV9fbSArPSAoKH4wVUxMICUgX19iICsgMSkgKiBfX3ApIC8gX19iOwkJXAoJCX0gZWxzZSB7CQkJ
-CQkJXAoJCQkvKiBSZWR1Y2UgX19tL19fcCwgYW5kIHRyeSB0byBjbGVhciBiaXQgMzEgICAqLwlc
-CgkJCS8qIG9mIF9fbSB3aGVuIHBvc3NpYmxlIG90aGVyd2lzZSB0aGF0J2xsICAgICovCVwKCQkJ
-LyogbmVlZCBleHRyYSBvdmVyZmxvdyBoYW5kbGluZyBsYXRlci4gICAgICAgKi8JXAoJCQl1bnNp
-Z25lZCBpbnQgX19iaXRzID0gLShfX20gJiAtX19tKTsJCVwKCQkJX19iaXRzIHw9IF9fbSA+PiAz
-MjsJCQkJXAoJCQlfX2JpdHMgPSAofl9fYml0cykgPDwgMTsJCQlcCgkJCS8qIElmIF9fYml0cyA9
-PSAwIHRoZW4gc2V0dGluZyBiaXQgMzEgaXMgICAgICovCVwKCQkJLyogdW5hdm9pZGFibGUuICBT
-aW1wbHkgYXBwbHkgdGhlIG1heGltdW0gICAgKi8JXAoJCQkvKiBwb3NzaWJsZSByZWR1Y3Rpb24g
-aW4gdGhhdCBjYXNlLiAgICAgICAgICAqLwlcCgkJCS8qIE90aGVyd2lzZSB0aGUgTVNCIG9mIF9f
-Yml0cyBpbmRpY2F0ZXMgdGhlICovCVwKCQkJLyogYmVzdCByZWR1Y3Rpb24gd2Ugc2hvdWxkIGFw
-cGx5LiAgICAgICAgICAgKi8JXAoJCQlpZiAoIV9fYml0cykgewkJCQkJXAoJCQkJX19wIC89IChf
-X20gJiAtX19tKTsJCQlcCgkJCQlfX20gLz0gKF9fbSAmIC1fX20pOwkJCVwKCQkJfSBlbHNlIHsJ
-CQkJCVwKCQkJCV9fcCA+Pj0gX19kaXY2NF9mbHMoX19iaXRzKTsJCVwKCQkJCV9fbSA+Pj0gX19k
-aXY2NF9mbHMoX19iaXRzKTsJCVwKCQkJfQkJCQkJCVwKCQkJLyogTm8gY29ycmVjdGlvbiBuZWVk
-ZWQuICovCQkJXAoJCQlfX2MgPSAwOwkJCQkJXAoJCX0JCQkJCQkJXAoJCS8qIE5vdyB3ZSBoYXZl
-IGEgY29tYmluYXRpb24gb2YgMiBjb25kaXRpb25zOiAgICAgICAgKi8JXAoJCS8qIDEpIHdoZXRo
-ZXIgb3Igbm90IHdlIG5lZWQgYSBjb3JyZWN0aW9uIChfX2MpLCBhbmQgKi8JXAoJCS8qIDIpIHdo
-ZXRoZXIgb3Igbm90IHRoZXJlIG1pZ2h0IGJlIGFuIG92ZXJmbG93IGluICAgKi8JXAoJCS8qICAg
-IHRoZSBjcm9zcyBwcm9kdWN0IChfX20gJiAoKDE8PDYzKSB8ICgxPDwzMSkpKSAgKi8JXAoJCS8q
-IFNlbGVjdCB0aGUgYmVzdCBpbnNuIGNvbWJpbmF0aW9uIHRvIHBlcmZvcm0gdGhlICAgKi8JXAoJ
-CS8qIGFjdHVhbCBfX20gKiBfX24gLyAoX19wIDw8IDY0KSBvcGVyYXRpb24uICAgICAgICAgKi8J
-XAoJCWlmICghX19jKSB7CQkJCQkJXAoJCQlhc20gKAkidW11bGwJJVEwLCAlUjAsICUxLCAlUTJc
-blx0IgkJXAoJCQkJIm1vdgklUTAsICMwIgkJCVwKCQkJCTogIj0mciIgKF9fcmVzKQkJCQlcCgkJ
-CQk6ICJyIiAoX19tKSwgInIiIChfX24pCQkJXAoJCQkJOiAiY2MiICk7CQkJCVwKCQl9IGVsc2Ug
-aWYgKCEoX19tICYgKCgxVUxMIDw8IDYzKSB8ICgxVUxMIDw8IDMxKSkpKSB7CVwKCQkJX19yZXMg
-PSBfX207CQkJCQlcCgkJCWFzbSAoCSJ1bWxhbAklUTAsICVSMCwgJVExLCAlUTJcblx0IgkJXAoJ
-CQkJIm1vdgklUTAsICMwIgkJCVwKCQkJCTogIismciIgKF9fcmVzKQkJCQlcCgkJCQk6ICJyIiAo
-X19tKSwgInIiIChfX24pCQkJXAoJCQkJOiAiY2MiICk7CQkJCVwKCQl9IGVsc2UgewkJCQkJCVwK
-CQkJYXNtICgJInVtdWxsCSVRMCwgJVIwLCAlUTEsICVRMlxuXHQiCQlcCgkJCQkiY21uCSVRMCwg
-JVExXG5cdCIJCQlcCgkJCQkiYWRjcwklUjAsICVSMCwgJVIxXG5cdCIJCVwKCQkJCSJhZGMJJVEw
-LCAlMywgIzAiCQkJXAoJCQkJOiAiPSZyIiAoX19yZXMpCQkJCVwKCQkJCTogInIiIChfX20pLCAi
-ciIgKF9fbiksICJyIiAoX196KQlcCgkJCQk6ICJjYyIgKTsJCQkJXAoJCX0JCQkJCQkJXAoJCWlm
-ICghKF9fbSAmICgoMVVMTCA8PCA2MykgfCAoMVVMTCA8PCAzMSkpKSkgewkJXAoJCQlhc20gKAki
-dW1sYWwJJVIwLCAlUTAsICVSMSwgJVEyXG5cdCIJCVwKCQkJCSJ1bWxhbAklUjAsICVRMCwgJVEx
-LCAlUjJcblx0IgkJXAoJCQkJIm1vdgklUjAsICMwXG5cdCIJCQlcCgkJCQkidW1sYWwJJVEwLCAl
-UjAsICVSMSwgJVIyIgkJXAoJCQkJOiAiKyZyIiAoX19yZXMpCQkJCVwKCQkJCTogInIiIChfX20p
-LCAiciIgKF9fbikJCQlcCgkJCQk6ICJjYyIgKTsJCQkJXAoJCX0gZWxzZSB7CQkJCQkJXAoJCQlh
-c20gKAkidW1sYWwJJVIwLCAlUTAsICVSMiwgJVEzXG5cdCIJCVwKCQkJCSJ1bWxhbAklUjAsICUx
-LCAlUTIsICVSM1xuXHQiCQlcCgkJCQkibW92CSVSMCwgIzBcblx0IgkJCVwKCQkJCSJhZGRzCSVR
-MCwgJTEsICVRMFxuXHQiCQlcCgkJCQkiYWRjCSVSMCwgJVIwLCAjMFxuXHQiCQlcCgkJCQkidW1s
-YWwJJVEwLCAlUjAsICVSMiwgJVIzIgkJXAoJCQkJOiAiKyZyIiAoX19yZXMpLCAiKyZyIiAoX196
-KQkJXAoJCQkJOiAiciIgKF9fbSksICJyIiAoX19uKQkJCVwKCQkJCTogImNjIiApOwkJCQlcCgkJ
-fQkJCQkJCQlcCgkJX19yZXMgLz0gX19wOwkJCQkJCVwKCQkvKiBUaGUgcmVtaW5kZXIgY2FuIGJl
-IGNvbXB1dGVkIHdpdGggMzItYml0IHJlZ3MgICAgICovCVwKCQkvKiBvbmx5LCBhbmQgZ2NjIGlz
-IGdvb2QgYXQgdGhhdC4gICAgICAgICAgICAgICAgICAgICovCVwKCQl7CQkJCQkJCVwKCQkJdW5z
-aWduZWQgaW50IF9fcmVzMCA9IF9fcmVzOwkJCVwKCQkJdW5zaWduZWQgaW50IF9fYjAgPSBfX2I7
-CQkJXAoJCQlfX3IgLT0gX19yZXMwICogX19iMDsJCQkJXAoJCX0JCQkJCQkJXAoJCS8qIEJVR19P
-TihfX3IgPj0gX19iIHx8IF9fcmVzICogX19iICsgX19yICE9IG4pOyAqLwlcCgkJbiA9IF9fcmVz
-OwkJCQkJCVwKCX0JCQkJCQkJCVwKCV9fcjsJCQkJCQkJCVwKfSkKCi8qIG91ciBvd24gZmxzIGlt
-cGxlbWVudGF0aW9uIHRvIG1ha2Ugc3VyZSBjb25zdGFudCBwcm9wYWdhdGlvbiBpcyBmaW5lICov
-CiNkZWZpbmUgX19kaXY2NF9mbHMoYml0cykJCQkJCQlcCih7CQkJCQkJCQkJXAoJdW5zaWduZWQg
-aW50IF9fbGVmdCA9IChiaXRzKSwgX19uciA9IDA7CQkJCVwKCWlmIChfX2xlZnQgJiAweGZmZmYw
-MDAwKSBfX25yICs9IDE2LCBfX2xlZnQgPj49IDE2OwkJXAoJaWYgKF9fbGVmdCAmIDB4MDAwMGZm
-MDApIF9fbnIgKz0gIDgsIF9fbGVmdCA+Pj0gIDg7CQlcCglpZiAoX19sZWZ0ICYgMHgwMDAwMDBm
-MCkgX19uciArPSAgNCwgX19sZWZ0ID4+PSAgNDsJCVwKCWlmIChfX2xlZnQgJiAweDAwMDAwMDBj
-KSBfX25yICs9ICAyLCBfX2xlZnQgPj49ICAyOwkJXAoJaWYgKF9fbGVmdCAmIDB4MDAwMDAwMDIp
-IF9fbnIgKz0gIDE7CQkJCVwKCV9fbnI7CQkJCQkJCQlcCn0pCgojZW5kaWYK
---0016e6d99afe3675fb04bc3b5811--
+> I'm not sure that is so big a deal, but that is why I thought of a
+> signal handler.
+>
+>> An alternative approach, not so good for power but at least avoiding the
+>> "use the kernel to avoid the kernel" aspect of signals, would be to
+>> register a location in userspace that the kernel would write to when it
+>> disabled the tick, and userspace could then just spin reading memory.
+>>
+> That's cool for letting you know when the tick goes away but not for alarming
+> you when it suddenly came back... :-)
+
+Yes, and in fact delivering a signal is not a bad way to let the
+application know that either it, or the kernel, just screwed up.  Currently
+our dataplane code just handles this case with console backtraces (for the
+"debug" mode) or by shooting down the application with SIGKILL (in "strict"
+mode when it's said it wasn't going to use the kernel any more).
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
