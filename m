@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2C0QzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:55:21 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:9209 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab2C0QzR (ORCPT
+	id S1754708Ab2C0Q5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:57:32 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50861 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2C0Q5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:55:17 -0400
-X-IronPort-AV: E=Sophos;i="4.75,327,1330905600"; 
-   d="scan'208";a="11583133"
-Date: Tue, 27 Mar 2012 17:56:16 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 1/2] xen: enter/exit lazy_mmu_mode around m2p_override
- calls
-In-Reply-To: <20120327143142.GA31081@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1203271737280.15151@kaball-desktop>
-References: <1332856364-29995-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120327143142.GA31081@phenom.dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 27 Mar 2012 12:57:30 -0400
+Date: Tue, 27 Mar 2012 09:46:01 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC] rcu: Make __rcu_read_lock() inlinable
+Message-ID: <20120327164601.GR2450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120325205249.GA29528@linux.vnet.ibm.com>
+ <4F7174F0.1080504@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7174F0.1080504@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032716-5518-0000-0000-0000033F0846
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012, Konrad Rzeszutek Wilk wrote:
-> On Tue, Mar 27, 2012 at 02:52:43PM +0100, Stefano Stabellini wrote:
-> > This patch is a significant performance improvement for the
+On Tue, Mar 27, 2012 at 04:06:08PM +0800, Lai Jiangshan wrote:
+> On 03/26/2012 04:52 AM, Paul E. McKenney wrote:
 > 
-> How much? 10%? 90%?
-
-I think you are overestimating the meaning of "significant" :)
-
-It is about 6% using grant_table and 2% using blkback.
-
-
-> > m2p_override.
+> > +void rcu_switch_from(void)
+> >  {
+> > -	current->rcu_read_lock_nesting++;
+> > -	barrier();  /* needed if we ever invoke rcu_read_lock in rcutree.c */
+> > +	current->rcu_read_lock_nesting_save =
+> > +		__this_cpu_read(rcu_read_lock_nesting);
+> > +	barrier();
+> > +	__this_cpu_write(rcu_read_lock_nesting, 0);
 > 
-> Can you explain what those calls do in the git commit description please?
+> -	__this_cpu_write(rcu_read_lock_nesting, 0);
+> +	__this_cpu_write(rcu_read_lock_nesting, 1);
+> 
+> if prev or next task has non-zero rcu_read_unlock_special,
+> "__this_cpu_write(rcu_read_lock_nesting, 1)" will prevent wrong qs reporting
+> when rcu_read_unlock() is called in any interrupt/tracing while doing switch_to().
 
-Right, I have been way too concise.
+This is one approach that I have been considering.  I am concerned about
+interactions with ->rcu_read_unlock_special, however.  The approach that I
+am favoring at the moment is to save and restore ->rcu_read_unlock_special
+from another per-CPU variable, which would allow that per-CPU variable to
+be zeroed at this point.  Then because there can be no preemption at this
+point in the code, execution would stay out of rcu_read_unlock_special()
+for the duration of the context switch.
 
-Each m2p_add/remove_override call issues a MULTI_grant_table_op and a
-__flush_tlb_single if kmap_op != NULL.
-Batching all the calls together is a great performance benefit because
-it means issuing one hypercall total rather than two hypercall per page.
+> > +}
+> > +
+> > +/*
+> > + * Restore the incoming task's value for rcu_read_lock_nesting at the
+> > + * end of a context switch.
+> > + */
+> > +void rcu_switch_to(void)
+> > +{
+> > +	__this_cpu_write(rcu_read_lock_nesting,
+> > +			 current->rcu_read_lock_nesting_save);
+> > +	barrier();
+> > +	current->rcu_read_lock_nesting_save = 0;
+> >  }
+> 
+> -	barrier();
+> -	current->rcu_read_lock_nesting_save = 0;
+> 
+> rcu_read_lock_nesting_save is set but not used before next set here, just remove it.
 
-I'll resend with a proper commit message.
+Yep, as noted earlier.
+
+> I don't like it hooks too much into scheduler.
+> 
+> Approaches:
+> 0) stay using function call
+> 1) hook into kbuild(https://lkml.org/lkml/2011/3/27/170,https://lkml.org/lkml/2011/3/27/171)
+> 2) hook into scheduler(still need more works for rcu_read_unlock())
+> 3) Add rcu_read_lock_nesting to thread_info like preempt_count
+> 4) resolve header-file dependence
+> 
+> For me
+> 3=4>1>2>0
+
+The advantage of the current per-CPU-variable approach is that it
+permits x86 to reduce rcu_read_lock() to a single instruction, so it
+seems worthwhile persuing it.  In addition, having RCU-preempt hook
+at switch_to() eliminates needless task queuing in the case where the
+scheduler is entered, but no context switch actually takes place.
+
+							Thanx, Paul
+
