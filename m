@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2C0Qd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:33:29 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:35500 "HELO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752688Ab2C0Qd1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:33:27 -0400
-From: Tziporet Koren <tziporet@mellanox.com>
-To: Roland Dreier <roland@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1753759Ab2C0QgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:36:12 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:19868 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab2C0QgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 12:36:11 -0400
+X-IronPort-AV: E=Sophos;i="4.75,327,1330905600"; 
+   d="scan'208";a="11582395"
+Date: Tue, 27 Mar 2012 17:37:07 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
-Subject: RE: [GIT PULL] please pull infiniband.git
-Thread-Topic: [GIT PULL] please pull infiniband.git
-Thread-Index: AQHNBfNV99GZ7tvDO0+Ol3BBkzihDZZ9GzFg///iDYCAAWUygA==
-Date: Tue, 27 Mar 2012 16:33:06 +0000
-Message-ID: <CD250C48050CFB4D95E78C95F2FDDD6E61A7B8E9@MTLDAG02.mtl.com>
-References: <1332177079-14339-1-git-send-email-roland@kernel.org>
- <CD250C48050CFB4D95E78C95F2FDDD6E61A79B2E@MTLDAG02.mtl.com>
- <CAG4TOxPHziBpJ5hAoVCQTJWeR+-uC+2vM9S0aKE-6-B9JCEkWQ@mail.gmail.com>
-In-Reply-To: <CAG4TOxPHziBpJ5hAoVCQTJWeR+-uC+2vM9S0aKE-6-B9JCEkWQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.0.13.1]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 2/2] m2p_find_override: use list_for_each_entry_safe
+In-Reply-To: <20120327142654.GA30655@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1203271733370.15151@kaball-desktop>
+References: <1332856364-29995-1-git-send-email-stefano.stabellini@eu.citrix.com> <1332856364-29995-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120327142654.GA30655@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> What about the IPoIB patches (e.g. use Interrupt moderation)
+On Tue, 27 Mar 2012, Konrad Rzeszutek Wilk wrote:
+> On Tue, Mar 27, 2012 at 02:52:44PM +0100, Stefano Stabellini wrote:
+> > Use list_for_each_entry_safe and remove the spin_lock acquisition in
+> > m2p_find_override.
+> 
+> So this would allow us to get stale entries. Is that OK?
 
-> I have no idea what patch that might be.  We've had the modify_cq call in ipoib for years now, with moderation parameters set through ethtool.
-
-http://www.spinics.net/lists/linux-rdma/msg09142.html
- and
-http://www.spinics.net/lists/linux-rdma/msg09143.html
-
-Tziporet
+I think it is reasonable.
+In practice we should never get an m2p_find_override call looking for an
+entry that we are about to add/delete.
