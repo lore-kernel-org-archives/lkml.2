@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2C0IkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 04:40:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab2C0IkV convert rfc822-to-8bit (ORCPT
+	id S1756733Ab2C0Ims (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 04:42:48 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36282 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab2C0Imo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 04:40:21 -0400
-Message-ID: <1332837595.16159.208.camel@twins>
-Subject: Re: [PATCH 11/39] autonuma: CPU follow memory algorithm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dan Smith <danms@us.ibm.com>, Paul Turner <pjt@google.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>, linux-mm@kvack.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>, Bharata B Rao <bharata.rao@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
-Date: Tue, 27 Mar 2012 10:39:55 +0200
-In-Reply-To: <20120326203951.GZ5906@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
-	 <1332783986-24195-12-git-send-email-aarcange@redhat.com>
-	 <1332786353.16159.173.camel@twins> <4F70C365.8020009@redhat.com>
-	 <20120326194435.GW5906@redhat.com>
-	 <CA+55aFwk0Etg_UhoZcKsfFJ7PQNLdQ58xxXiwcA-jemuXdZCZQ@mail.gmail.com>
-	 <20120326203951.GZ5906@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 27 Mar 2012 04:42:44 -0400
+Message-ID: <4F717D80.9040207@suse.cz>
+Date: Tue, 27 Mar 2012 10:42:40 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120320 Thunderbird/13.0a2
+MIME-Version: 1.0
+To: Keith Packard <keithp@keithp.com>
+CC: dri-devel@lists.freedesktop.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
+References: <4F717CE3.4040206@suse.cz>
+In-Reply-To: <4F717CE3.4040206@suse.cz>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 22:39 +0200, Andrea Arcangeli wrote:
-
-> > No, you can't just say that it's limited to some large constant, and thus
-> > the same as O(1).
+On 03/27/2012 10:40 AM, Jiri Slaby wrote:
+> Hi,
 > 
-> I pointed out it is O(1) just because if we use the O notation we may
-> as well do the math right about it.
+> I'm getting spurious interrupts leading to disabling the interrupt:
+>  42:    1916853    2471662   PCI-MSI-edge      i915@pci:0000:00:02.0
+> 
+> The message:
+> irq 42: nobody cared (try booting with the "irqpoll" option)
+> Pid: 20716, comm: virtuoso-t Not tainted 3.3.0-next-20120326_64+ #1673
+> 
+> It is not new, but now I can reproduce it more-or-less reliably after an
+> hour or so. It usually happens when playing a game using wine.
+> 
+> Do you want me to dump some registers when IRQ_NONE is returned from the
+> ISR? As this is MSI, nobody else can sit there.
 
-I think you have a fundamental mis-understanding of the concepts here.
-You do not get to fill in n for whatever specific instance of the
-problem you have.
+Also lspci:
+00:02.0 VGA compatible controller [0300]: Intel Corporation 82G33/G31
+Express Integrated Graphics Controller [8086:29c2] (rev 02) (prog-if 00
+[VGA controller])
+        Subsystem: Intel Corporation 82G33/G31 Express Integrated
+Graphics Controller [8086:29c2]
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 42
+        Region 0: Memory at feb80000 (32-bit, non-prefetchable) [size=512K]
+        Region 1: I/O ports at ec00 [size=8]
+        Region 2: Memory at d0000000 (32-bit, prefetchable) [size=256M]
+        Region 3: Memory at fea00000 (32-bit, non-prefetchable) [size=1M]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+                Address: fee0300c  Data: 4179
+        Capabilities: [d0] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Kernel driver in use: i915
+00: 86 80 c2 29 07 04 90 00 02 00 00 03 00 00 00 00
+10: 00 00 b8 fe 01 ec 00 00 08 00 00 d0 00 00 a0 fe
+20: 00 00 00 00 00 00 00 00 00 00 00 00 86 80 c2 29
+30: 00 00 00 00 90 00 00 00 00 00 00 00 05 01 00 00
+40: 09 00 0b 01 00 00 00 00 01 00 00 00 00 00 00 00
+50: 00 00 30 02 c9 03 00 00 00 00 00 00 00 00 80 af
+60: 00 00 02 02 00 00 00 00 00 00 00 00 00 00 00 00
+70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+90: 05 d0 01 00 0c 30 e0 fe 79 41 00 00 00 00 00 00
+a0: 11 11 00 00 00 00 06 03 00 00 00 00 00 00 00 00
+b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+d0: 01 00 22 00 00 00 00 00 00 00 00 00 00 01 02 00
+e0: 00 00 00 00 00 00 00 00 00 80 00 00 00 00 00 00
+f0: 10 00 00 00 00 00 00 00 90 0f 03 00 e4 e0 5b af
 
-The traveling salesman problem can be solved in O(n!), simply because
-you know your route will not be larger than 10 houses doesn't mean you
-can say your algorithm will be O(10!) and thus O(1).
+> thanks,
+-- js suse labs
 
-That's simply not how it works.
-
-You can talk pretty much anything down to O(1) that way. Take an
-algorithm that is O(n) in the number of tasks, since you know you have a
-pid-space constraint of 30bits you can never have more than 2^30 (aka
-1Gi) tasks, hence your algorithm is O(2^30) aka O(1).
-
-> I also would welcome people who knows the scheduler so much better
-> than me to rewrite or fix it as they like it.
-
-Again, you seem unclear on how things work, you want this nonsense, you
-get to write it.
-
-I am most certainly not going to fix your mess as I completely disagree
-with the approach taken.
-
-> I probably wasn't clear enough, but I already implicitly meant it
-> shall be optimized further later.
-
-You're in fact very unclear. You post patches without the RFC tag,
-meaning you think they're ready to be considered. You write huge
-misleading comments instead of /* XXX crap, needs fixing */.
-
-Also, I find your language to be overly obtuse and hard to parse, but
-that could be my fault, we're both non-native speakers.
