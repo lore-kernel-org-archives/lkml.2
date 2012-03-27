@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab2C0WWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:22:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53923 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249Ab2C0WWU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:22:20 -0400
-Date: Tue, 27 Mar 2012 15:22:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the scsi tree
-Message-ID: <20120327222216.GB469@kroah.com>
-References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
- <1332748641.2836.8.camel@dabdike>
- <20120326140721.GA19827@kroah.com>
- <20120327221721.GA3233@p183.telecom.by>
+	id S1756796Ab2C0WZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:25:10 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:31614 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756026Ab2C0WZJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 18:25:09 -0400
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I542M1432N98dK4015Izz1202hzz8275dhz2fh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+ watermark
+Thread-Topic: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+ watermark
+Thread-Index: AQHNDGcrP2ipc95FY0ig5urgrbLA6ZZ+tuaAgAABG5A=
+Date: Tue, 27 Mar 2012 22:25:00 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DD17B5A@TK5EX14MBXC222.redmond.corp.microsoft.com>
+References: <1332886987-11613-1-git-send-email-haiyangz@microsoft.com>
+ <1332886987-11613-2-git-send-email-haiyangz@microsoft.com>
+ <20120327222045.GA469@kroah.com>
+In-Reply-To: <20120327222045.GA469@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327221721.GA3233@p183.telecom.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 01:17:21AM +0300, Alexey Dobriyan wrote:
-> On Mon, Mar 26, 2012 at 07:07:21AM -0700, Greg KH wrote:
-> > On Mon, Mar 26, 2012 at 08:57:21AM +0100, James Bottomley wrote:
-> > > On Mon, 2012-03-26 at 12:17 +1100, Stephen Rothwell wrote:
-> > > > Hi James,
-> > > > 
-> > > > After merging the scsi tree, today's linux-next build (x86_64 allmodconfig)
-> > > > failed like this:
-> > > > 
-> > > > drivers/staging/keucr/scsiglue.c:349:2: error: unknown field 'proc_info' specified in initializer
-> > > > drivers/staging/rts_pstor/rtsx.c:258:2: error: unknown field 'proc_info' specified in initializer
-> > > > drivers/staging/rts5139/rts51x_scsi.c:2190:2: error: unknown field 'proc_info' specified in initializer
-> > > > 
-> > > > Caused by commit 104c4fe25dc9 ("[SCSI] remove scsi_host_template::proc_info").
-> > > > 
-> > > > Since this is a staging driver, I applied these following patches:
-> > > 
-> > > Yes, that looks about right, thanks.  We haven't seen anything about
-> > > these drivers on the SCSI list, so I've no idea where they are in
-> > > development.
-> > 
-> > Why is new patches going into your tree right now, during the 3.4 merge
-> > window?  API changes should have happened weeks ago, to let others fix
-> > up things like this.
-> > 
-> > As for the "where they are in development", they vary, but, a simple
-> > grep should have shown you that these in-kernel drivers should also be
-> > fixed up, or at the least, give me the heads up to let me do it for you.
-> > 
-> > Care to send me the patch that causes this problem so I can create a fix
-> > for this?
-> 
-> See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
-> Especially the first one.
-> 
-> Probably the best course of action is to remove proc_info code from
-> these drivers because the interface was deprecated for a long time.
 
-If the interface is depreciated, yes, I can remove it now, just let me
-know and I will do so.
 
-> The amount of code once removed from staging prevented me from doing
-> any work on them.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, March 27, 2012 6:21 PM
+> To: Haiyang Zhang
+> Cc: davem@davemloft.net; netdev@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
+> watermark
 > 
-> Looking at staging ->read_proc users this is going to be a problem for
-> its removal. :-(
+> On Tue, Mar 27, 2012 at 03:23:07PM -0700, Haiyang Zhang wrote:
+> > --- a/include/linux/hyperv.h
+> > +++ b/include/linux/hyperv.h
+> > @@ -274,6 +274,35 @@ struct hv_ring_buffer_debug_info {
+> >  	u32 bytes_avail_towrite;
+> >  };
+> >
+> > +/* Amount of space to write to */
+> > +#define BYTES_AVAIL_TO_WRITE(r, w, z) \
+> > +	(((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w)))
+> > +
+> 
+> That's a very bad #define to use in a .h file, please do not do that.
+> 
+> > +
+> > +/*
+> > + *
+> > + * hv_get_ringbuffer_availbytes()
+> > + *
+> > + * Get number of bytes available to read and to write to
+> > + * for the specified ring buffer
+> > + */
+> > +extern inline void
+> > +hv_get_ringbuffer_availbytes(struct hv_ring_buffer_info *rbi,
+> > +			  u32 *read, u32 *write)
+> 
+> What does "extern inline" mean?
+> 
+> Please fix.
 
-Why?
+Will do.
+
+Thanks,
+- Haiyang
+
