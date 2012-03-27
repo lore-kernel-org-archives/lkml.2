@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2C0QHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 12:07:34 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37185 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab2C0QHd (ORCPT
+	id S1753590Ab2C0QIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 12:08:12 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:45948 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751003Ab2C0QIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 12:07:33 -0400
-Date: Tue, 27 Mar 2012 17:07:14 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Daniel Drake <dsd@laptop.org>,
-        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dilinger@queued.net, pgf@laptop.org
-Subject: Re: [PATCH v4] x86, olpc: add debugfs interface for EC commands
-Message-ID: <20120327160714.GA8398@srcf.ucam.org>
-References: <20120326180710.8DF9C9D401E@zog.reactivated.net>
- <20120326142908.c5248aec.akpm@linux-foundation.org>
- <4F70E042.4020703@zytor.com>
- <20120326145146.23fde0db.akpm@linux-foundation.org>
+	Tue, 27 Mar 2012 12:08:11 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 6TBdAUIVM1kGlUpZnNnJuvJOuRt2GgiEddsQg4CjA3RuDCy
+ Pm48uFLHYu_TQ13o1eb2.riOO.d45YqmJg2Fux9sVwDmtRvlC5p4MG6c_ZTF
+ Z8LoaTFThlypp_10KMj2Jrymx2kmiMTl6kE4SvXAWuVOIrWWZ6ui.j_JePzx
+ vO4.K3eUVo_iAME2Fjhr8LfxEmC3KpX6FVE4gbLO6CBxKM_3.B1aeaBxNrNg
+ Nl7A8IUX8FuBGNo1JGn7l0id6_evq.UkV8qn6QH6Btmj_vBB3tmC1GHnvqRA
+ clkVew.6zhQA8se7O4aUgT4UJlhNKuPZCINj20TKkE9priKK6Bgp7PFju5.Q
+ inCBWyHCQV5DMxCjZk07AMRYwuGEv7s5fWLokScNzDSiW26DJYKaNOAPU_sl
+ Gb5cp8ytp7A_jkJXOwvUQkAKCLkDY7kWoJ8yvHb.wh9zHd.STMP7wHN3WwM6
+ jfofmoITsNd8vhg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 27 Mar 2012 11:08:05 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>,
+        Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 08/32] nohz: Try not to give the timekeeping duty to an
+ adaptive tickless cpu
+In-Reply-To: <20120327105034.GA13196@somewhere>
+Message-ID: <alpine.DEB.2.00.1203271106130.1170@router.home>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com> <1332338318-5958-10-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1203210950500.20482@router.home> <20120327105034.GA13196@somewhere>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120326145146.23fde0db.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 02:51:46PM -0700, Andrew Morton wrote:
+On Tue, 27 Mar 2012, Frederic Weisbecker wrote:
 
-> Well, if a person had any contribution at all, we should seek their
-> Signed-off-by:.  Otherwise they could say "hey, you admitted using my
-> code but I did not authorise its use", or any other range of bad IANAL
-> things?
+> > Any way to manually specify which cpu? We f.e. always "sacrifice" cpu 0
+> > for OS activities. We would like to have all Os processing things
+> > restricted to cpu 0 so that the rest of the processors do not experience
+> > the OS noise.
+>
+> Somebody tries to do this: https://lkml.org/lkml/2011/11/8/346
+>
+> But in the case of nohz cpusets there is a problem to solve:
+>
+> What if every CPUs are tickless (idle or busy), who must take
+> the timekeeping duty? Should we pick one of the busy CPUs? Or
+> keep one CPU with the tick even if it's idle? How do we choose
+> this CPU?
 
-The Certificate of Origin says:
+Then its the users fault because he specified the processor to use. There
+is no picking if its manually assigned.
 
-        (b) The contribution is based upon previous work that, to the best
-            of my knowledge, is covered under an appropriate open source
-            license and I have the right under that license to submit that
-            work with modifications, whether created in whole or in part
-            by me, under the same open source license (unless I am
-            permitted to submit under a different license), as indicated
-            in the file; or
+> May be we need to define another flag on cpusets to assign the
+> timekeeping duty to any CPU on a flagged set. This way we can
+> force that duty to the CPU(s) we want.
 
-If a previous author has given a Signed-off-by then they've clearly 
-indicated that their code is under an appropriate license and may be 
-submitted to the kernel. If someone else then takes that code, modifies 
-it and submits it then there's no obvious reason why we still need the 
-original Signed-off-by. Giving credit to the original author is 
-obviously appropriate, but I don't see why we need any more than that.
+I wish you would disentangle the nohz work from the cpusets. Cpusets is
+aged and being replaced by cgroups. And the cgroup work is something that
+is not suitable for many loads given the VM overhead added.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
