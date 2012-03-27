@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab2C0B7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Mar 2012 21:59:13 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:15673
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755771Ab2C0B7F (ORCPT
+	id S1756491Ab2C0CBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Mar 2012 22:01:23 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59252 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755999Ab2C0CBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Mar 2012 21:59:05 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275bh8275dhz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F711EC0.3080708@am.sony.com>
-Date: Mon, 26 Mar 2012 18:58:24 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Mon, 26 Mar 2012 22:01:21 -0400
+Message-ID: <4F711F4C.7030902@panasas.com>
+Date: Mon, 26 Mar 2012 19:00:44 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Alessio Igor Bogani <abogani@kernel.org>
-CC: <frank.rowand@am.sony.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jan Beulich <jbeulich@novell.com>,
-        Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Bird, Tim" <Tim.Bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
-References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com> <1310626276-4541-1-git-send-email-abogani@kernel.org> <4F6D2BC5.9070200@am.sony.com>
-In-Reply-To: <4F6D2BC5.9070200@am.sony.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        <linux-security-module@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
+Subject: [PATCH 1/6] kmod: Unexport call_usermodehelper_freeinfo()
+References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com>
+In-Reply-To: <4F711EA2.4030608@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/12 19:04, Frank Rowand wrote:
-> On 07/13/11 23:51, Alessio Igor Bogani wrote:
->> The commit f02e8a6 sorts symbols placing each of them in its own elf section.
->> The sorting and merging into the canonical sections are done by the linker.
->> Unfortunately modpost to generate Module.symvers file parses vmlinux
-> 
-> Yet another unfortunately: modpost parses vmlinux.o instead of vmlinux (vmlinux
-> does not yet exist at this point of the build).  vmlinux.o also does not have
-> the many sections sorted and merged into the canonical sections.  As a result,
-> the Module.symvers created my modpost incorrectly reports the license of all
-> exports as "(unknown)".
-> 
-> Can you fix this also please?
 
-The attached patch modifies your patch to also use export_from_secname()
-for vmlinux and vmlinux.o.
+call_usermodehelper_freeinfo() is not used outside of kmod.c. So
+unexport it, and make it static to kmod.c
 
-This is a rather blind shot at fixing the problem, so please review
-carefully.  After applying the patch, Module.symvers reports the license
-correctly for exports from vmlinux.o.
-
-> 
-> 
->> (already linked) and all modules object files (which aren't linked yet).
->> These aren't sanitized by the linker yet. That breaks modpost that can't
->> detect license properly for modules. This patch makes modpost aware of
->> the new exported symbols structure.
->>
->> Thanks to Arnaud Lacombe <lacombar@gmail.com> and Anders Kaseorg
->> <andersk@ksplice.com> for providing useful suggestions about code.
->>
->> This work was supported by a hardware donation from the CE Linux Forum.
->>
->> Reported-by: Jan Beulich <jbeulich@novell.com>
->> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
->> ---
->>  scripts/mod/modpost.c |   29 ++++++++++++++++++++++++++++-
->>  1 files changed, 28 insertions(+), 1 deletions(-)
-> 
-> < snip >
-> 
-> -Frank Rowand
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 ---
- scripts/mod/modpost.c |    2 	1 +	1 -	0 !
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/kmod.h |    4 ----
+ kernel/kmod.c        |    2 +-
+ 2 files changed, 1 insertions(+), 5 deletions(-)
 
-Index: b/scripts/mod/modpost.c
-===================================================================
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -589,7 +589,7 @@ static void handle_modversions(struct mo
- 	unsigned int crc;
- 	enum export export;
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 9efeae6..ba89dc2 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -79,10 +79,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
+ /* Actually execute the sub-process */
+ int call_usermodehelper_exec(struct subprocess_info *info, int wait);
  
--	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
-+	if (strncmp(symname, "__ksymtab", 9) == 0)
- 		export = export_from_secname(info, get_secindex(info, sym));
- 	else
- 		export = export_from_sec(info, get_secindex(info, sym));
+-/* Free the subprocess_info. This is only needed if you're not going
+-   to call call_usermodehelper_exec */
+-void call_usermodehelper_freeinfo(struct subprocess_info *info);
+-
+ static inline int
+ call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
+ 			int (*init)(struct subprocess_info *info, struct cred *new),
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 957a7aa..c5af66a 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -221,13 +221,13 @@ static int ____call_usermodehelper(void *data)
+ 	return 0;
+ }
+ 
++static
+ void call_usermodehelper_freeinfo(struct subprocess_info *info)
+ {
+ 	if (info->cleanup)
+ 		(*info->cleanup)(info);
+ 	kfree(info);
+ }
+-EXPORT_SYMBOL(call_usermodehelper_freeinfo);
+ 
+ static void umh_complete(struct subprocess_info *sub_info)
+ {
+-- 
+1.7.6.5
+
 
