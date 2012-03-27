@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab2C0SiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 14:38:10 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:39485 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab2C0Sg1 (ORCPT
+	id S1756247Ab2C0SiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 14:38:07 -0400
+Received: from mail-gx0-f202.google.com ([209.85.161.202]:41337 "EHLO
+	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755654Ab2C0Sg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 14:36:27 -0400
+	Tue, 27 Mar 2012 14:36:28 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
         David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 00/13 v4] fix gmbus writes and related issues
-Date: Wed, 28 Mar 2012 02:36:09 +0800
-Message-Id: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 07/13 v4] drm/i915/intel_i2c: allocate gmbus array as part of drm_i915_private
+Date: Wed, 28 Mar 2012 02:36:16 +0800
+Message-Id: <1332873382-29373-8-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
+References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset addresses a couple of issues with the i915 gmbus implementation:
- * fixes misassigned pin port pair for HDMI-D
- * fixes write transactions when they are the only transaction requested
-   (including large >4-byte writes) by terminating every transaction with a
-   WAIT cycle.
- * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
-   i2c transaction failures
- * optimizes the typical read transaction case by using the INDEX cycle
-v3:
- * rebased onto Daniel Vetter's drm-intel-next-queued branch
-   at git://people.freedesktop.org/~danvet/drm-intel
- * replace intel_i2c_quirk_xfer with pre/post_xfer i2c routines
- * pre-allocate gmbus array
- * drop interrupt approach since I could not make it stable, probably due to
-   difficulty in clearing and resetting the GMBUS interrupt which is buffered
-   behind the SDE's PCH interrupt.
- * Fix zero-length writes
- * Wait for IDLE before clearing NAK
+This memory is always allocated, and it is always a fixed size, so just
+allocate it along with the rest of the driver state.
 
-v4:
- * refactored gmbus_xfer (great idea, danvet!)
- * fixed refactoring braino (swapped [new] patches 6 & 7)
- * added URLs for docs to commit message
- * fixed checkpatch warnings in the "reuse GMBUS2" patch
- * dropped the 'functionaltiy' part of v3 patch 3
- * use WARN_ON instead of BUG_ON when an invalid port is requested
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/i915_drv.h  |    2 +-
+ drivers/gpu/drm/i915/intel_i2c.c |   10 ----------
+ 2 files changed, 1 insertions(+), 11 deletions(-)
 
-Daniel Kurtz (13):
-  drm/i915/intel_i2c: refactor gmbus_xfer
-  drm/i915/intel_i2c: cleanup error messages and comments
-  drm/i915/intel_i2c: assign HDMI port D to pin pair 6
-  drm/i915/intel_i2c: use i2c pre/post_xfer functions to setup gpio
-    xfers
-  drm/i915/intel_i2c: refactor using intel_gmbus_get_adapter
-  drm/i915/intel_i2c: gmbus disabled and reserved ports are invalid
-  drm/i915/intel_i2c: allocate gmbus array as part of drm_i915_private
-  drm/i915/intel_i2c: handle zero-length writes
-  drm/i915/intel_i2c: use double-buffered writes
-  drm/i915/intel_i2c: always wait for IDLE before clearing NAK
-  drm/i915/intel_i2c: use WAIT cycle, not STOP
-  drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
-  drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
-
- drivers/gpu/drm/i915/i915_drv.h    |   10 +-
- drivers/gpu/drm/i915/i915_reg.h    |    6 +-
- drivers/gpu/drm/i915/intel_bios.c  |    4 +-
- drivers/gpu/drm/i915/intel_crt.c   |   14 +-
- drivers/gpu/drm/i915/intel_dvo.c   |    6 +-
- drivers/gpu/drm/i915/intel_hdmi.c  |    9 +-
- drivers/gpu/drm/i915/intel_i2c.c   |  356 ++++++++++++++++++++++--------------
- drivers/gpu/drm/i915/intel_lvds.c  |    7 +-
- drivers/gpu/drm/i915/intel_modes.c |    3 +-
- drivers/gpu/drm/i915/intel_sdvo.c  |    9 +-
- 10 files changed, 261 insertions(+), 163 deletions(-)
-
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index c5ad7b9..6983b4b 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -326,7 +326,7 @@ typedef struct drm_i915_private {
+ 	/** gt_lock is also taken in irq contexts. */
+ 	struct spinlock gt_lock;
+ 
+-	struct intel_gmbus *gmbus;
++	struct intel_gmbus gmbus[GMBUS_NUM_PORTS];
+ 
+ 	/** gmbus_mutex protects against concurrent usage of the single hw gmbus
+ 	 * controller on different i2c buses. */
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index dcde6f6..c12db72 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -387,11 +387,6 @@ int intel_setup_gmbus(struct drm_device *dev)
+ 	else
+ 		dev_priv->gpio_mmio_base = 0;
+ 
+-	dev_priv->gmbus = kcalloc(GMBUS_NUM_PORTS, sizeof(struct intel_gmbus),
+-				  GFP_KERNEL);
+-	if (dev_priv->gmbus == NULL)
+-		return -ENOMEM;
+-
+ 	mutex_init(&dev_priv->gmbus_mutex);
+ 
+ 	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
+@@ -428,8 +423,6 @@ err:
+ 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
+ 		i2c_del_adapter(&bus->adapter);
+ 	}
+-	kfree(dev_priv->gmbus);
+-	dev_priv->gmbus = NULL;
+ 	return ret;
+ }
+ 
+@@ -468,7 +461,4 @@ void intel_teardown_gmbus(struct drm_device *dev)
+ 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
+ 		i2c_del_adapter(&bus->adapter);
+ 	}
+-
+-	kfree(dev_priv->gmbus);
+-	dev_priv->gmbus = NULL;
+ }
 -- 
 1.7.7.3
 
