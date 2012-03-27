@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab2C0WqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 18:46:24 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47353 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757005Ab2C0WqW (ORCPT
+	id S1757047Ab2C0Wso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 18:48:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47673 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab2C0Wsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 18:46:22 -0400
-Date: Tue, 27 Mar 2012 22:46:40 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120327224640.GA5328@mail.hallyn.com>
-References: <20120326150924.GG19395@moon>
- <20120326164347.GA24394@redhat.com>
- <20120326183330.GM19395@moon>
- <20120327152534.GA18478@redhat.com>
- <20120327165853.GH11875@moon>
- <20120327222923.GA31692@mail.hallyn.com>
- <20120327223420.GB9669@moon>
+	Tue, 27 Mar 2012 18:48:42 -0400
+Date: Tue, 27 Mar 2012 15:48:37 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] firmware_class: Move request_firmware_nowait() to
+ workqueues
+Message-ID: <20120327224837.GC22371@google.com>
+References: <201203260000.34377.rjw@sisk.pl>
+ <1332883710-7486-2-git-send-email-sboyd@codeaurora.org>
+ <20120327220108.GB22371@google.com>
+ <201203280021.27582.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120327223420.GB9669@moon>
+In-Reply-To: <201203280021.27582.rjw@sisk.pl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> On Tue, Mar 27, 2012 at 10:29:23PM +0000, Serge E. Hallyn wrote:
-> > Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> > > On Tue, Mar 27, 2012 at 05:25:34PM +0200, Oleg Nesterov wrote:
-> > > > user_ns_map_uid() should translate uid_t from one namespace to another,
-> > > > in this case the namespace is the same.
-> > > > 
-> > > > user_ns_map_uid(cred->user_ns, cred) must be the identical mapping,
-> > > > no matter how we change the implementation.
-> > > > 
-> > > > What I think you need is
-> > > > user_ns_map_uid(current_user_ns(), filp->f_owner.cred), the only
-> > > > problem is that f_owner.cred doesn't exist.
-> > > > 
+On Wed, Mar 28, 2012 at 12:21:27AM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, March 28, 2012, Tejun Heo wrote:
+> > On Tue, Mar 27, 2012 at 02:28:30PM -0700, Stephen Boyd wrote:
+> > > Oddly enough a work_struct was already part of the firmware_work
+> > > structure but nobody was using it. Instead of creating a new
+> > > kthread for each request_firmware_nowait() call just schedule the
+> > > work on the long system workqueue. This should avoid some overhead
+> > > in forking new threads when they're not strictly necessary.
 > > > 
-> > > Hmm, I was confused by likely() in user_ns_map_uid. But indeed, I think
-> > > you're so right. Is there some reason why we can't carry f_owner.cred
-> > > pointer?
+> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > > ---
+> > > 
+> > > Is it better to use alloc_workqueue() and not put these on the system
+> > > long workqueue?
 > > 
-> > We would need that for this, yes.  However, Eric is working on a new
-> > patchset which changes the cross-userns uid mappings.  I think it's
-> > worth simply leaving a comment that this will need to be addressed,
-> > and leave in the unconverted uid.
+> > No, just use schedule_work() unless there are specific requirements
+> > which can't be fulfilled that way (e.g. it's on memory allocation
+> > path, may consume large amount of cpu cycles, ...)
 > 
-> Hi Serge, thanks for info. But if it will be unconverted uid, can't
-> be there some security problem with that which I missed?
+> It may wait quite long.
 
-Noone is really using the user namespaces right now, but rather than
-adding the cred (and refcounting concerns), my suggestion for now
-would be to hardcode a check in modown() that current_user_ns() ==
-&init_user_ns.
+That shouldn't matter.  system_long_wq's name is a bit misleading at
+this point.  The only reason it's used currently is to avoid cyclic
+dependency involving flush_workqueue(), which calls for clearer
+solution anyway.  So, yeap, using system_wq should be fine here.
 
-I *did* have a patch in the past which added the cred to fown, but
-no idea where it is right now...
+Thank you.
 
--serge
+-- 
+tejun
