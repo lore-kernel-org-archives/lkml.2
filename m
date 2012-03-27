@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014Ab2C0ECC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 00:02:02 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37592 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab2C0ECA convert rfc822-to-8bit (ORCPT
+	id S1751354Ab2C0EDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 00:03:14 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:37651 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2C0EDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 00:02:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F6FF179.5090600@toshiba.co.jp>
-References: <1330497714-26504-2-git-send-email-santoshsy@gmail.com> <4F6FF179.5090600@toshiba.co.jp>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Tue, 27 Mar 2012 09:31:37 +0530
-Message-ID: <CALMYJDu5+=wQSkR9SGMFqOSRARPeSK0XzmG8sfjuj2qUn9jOLA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] [SCSI] ufshcd: UFS Host controller driver
-To: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd.bergmann@linaro.org, saugata.das@linaro.org, dsaxena@linaro.org,
-        stephen.doel@linaro.org, venkat@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, girish.shivananjappa@linaro.org,
-        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
-        sreekumar.c@samsung.com, vinholikatti@gmail.com, linkinjeon@gmail.com,
-        michaelc@cs.wisc.edu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Mar 2012 00:03:13 -0400
+Date: Tue, 27 Mar 2012 00:03:01 -0400 (EDT)
+Message-Id: <20120327.000301.1122788061724345175.davem@davemloft.net>
+To: acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Do not include libgen.h
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 26 Mar 2012 21:03:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 10:02 AM, KOBAYASHI Yoshitake
-<yoshitake.kobayashi@toshiba.co.jp> wrote:
->> > +        utrdlp[i].response_upiu_length =
->> > +                cpu_to_le16(ALIGNED_UPIU_SIZE);
->
->
-> Response UPIU Length(RUL) shows the response UPIU length in Dword.
-> (JEDEC Standard No.223 6.2.1 UTP Transfer Request Descriptor)
-> The following will be correct.
->
-> diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-> index 07ec973..feffe65 100644
-> --- a/drivers/scsi/ufs/ufshcd.c
-> +++ b/drivers/scsi/ufs/ufshcd.c
-> @@ -836,7 +836,7 @@ static void ufshcd_host_memory_configure(struct ufs_hba
-> *hba)
->                utrdlp[i].prd_table_offset =
->                                cpu_to_le16((prdt_offset >> 2));
->                utrdlp[i].response_upiu_length =
-> -                               cpu_to_le16(ALIGNED_UPIU_SIZE);
-> +                               cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
->
->
->                hba->lrb[i].utr_descriptor_ptr = (utrdlp + i);
->                hba->lrb[i].ucd_cmd_ptr =
->
 
-Thanks, i'll update it.
+That causes us to end up using the XPG version of basename which can
+modify it's argument.
 
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ tools/perf/util/symbol.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 472b467..c0a028c 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1,6 +1,5 @@
+ #include <dirent.h>
+ #include <errno.h>
+-#include <libgen.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
 -- 
-~Santosh
+1.7.9.1
+
