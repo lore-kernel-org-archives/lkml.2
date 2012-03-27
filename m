@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2C0MNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 08:13:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41716 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2C0MNe (ORCPT
+	id S1753879Ab2C0MNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 08:13:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56997 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab2C0MNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 08:13:34 -0400
-Message-ID: <4F71AE95.9080600@mvista.com>
-Date: Tue, 27 Mar 2012 16:12:05 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Tue, 27 Mar 2012 08:13:48 -0400
+Date: Tue, 27 Mar 2012 14:13:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+Message-ID: <20120327121341.GE13196@somewhere>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+ <1332338318-5958-13-git-send-email-fweisbec@gmail.com>
+ <alpine.DEB.2.00.1203210953220.20482@router.home>
 MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] amba-pl011: fix panic introduced by "clear pending interrupts"
-References: <20120326203209.GA8182@mail.gnudd.com>
-In-Reply-To: <20120326203209.GA8182@mail.gnudd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1203210953220.20482@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Mar 21, 2012 at 09:54:39AM -0500, Christoph Lameter wrote:
+> On Wed, 21 Mar 2012, Frederic Weisbecker wrote:
+> 
+> > If RCU is waiting for the current CPU to complete a grace
+> > period, don't turn off the tick. Unlike dynctik-idle, we
+> > are not necessarily going to enter into rcu extended quiescent
+> > state, so we may need to keep the tick to note current CPU's
+> > quiescent states.
+> 
+> Is there any way for userspace to know that the tick is not off yet due to
+> this? It would make sense for us to have busy loop in user space that
+> waits until the OS has completed all processing if that avoids future
+> latencies for the application.
 
-On 27-03-2012 0:32, Alessandro Rubini wrote:
+What is the usecase you have in mind? Is it for realtime purpose?
+The "tick stopped" is a volatile and relative state.
 
-> patch 9b96fba, currently in linux-next, clears interrupts using
+Relative because if a timer list is enqueued to fire 1 second later,
+the tick will be stopped until that happens. How do we consider this (common)
+case?
 
-    Please also specify the summary of this commit in parens.
-
-> uap->port.membase that has not been assigned.  My x86 system,
-> that uses a pci-to-amba bridge, panics with a message like:
-
->     BUG: unable to handle kernel NULL pointer dereference at 00000038
->     IP: [<c12c85ed>] pl011_probe+0x119/0x303
-
-> Signed-off-by: Alessandro Rubini<rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi<giancarlo.asnaghi@st.com>
-
-WBR, Sergei
+Also as Chris noted it is volatile because the tick can be restarted anytime
+for random reasons: the CPU receives an IPI which makes it restart the
+periodic tick.
