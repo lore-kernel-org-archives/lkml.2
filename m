@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab2C1S0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:26:46 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:57545 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608Ab2C1S0o (ORCPT
+	id S932787Ab2C1S11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 14:27:27 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:51647 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376Ab2C1S0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:26:44 -0400
+	Wed, 28 Mar 2012 14:26:46 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
         David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 3/7 v6] drm/i915/intel_i2c: always wait for IDLE before clearing NAK
-Date: Thu, 29 Mar 2012 02:26:35 +0800
-Message-Id: <1332959199-32161-4-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 7/7 v6] drm/i915/intel_i2c: remove POSTING_READ() from gmbus transfers
+Date: Thu, 29 Mar 2012 02:26:39 +0800
+Message-Id: <1332959199-32161-8-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
 References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
@@ -23,84 +23,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GMBUS controller can report a NAK condition while a transaction is
-still active. If the driver is fast enough, and the bus is slow enough,
-the driver may clear the NAK condition while the controller is still
-busy, resulting in a confused GMBUS controller.  This will leave the
-controller in a bad state such that the next transaction may fail.
-
-Also, return -ENXIO if a device NAKs a transaction.
-
-Note: this patch also refactors gmbus_xfer to remove the "done" label.
+The POSTING_READ() calls were originally added to make sure the writes
+were flushed before any timing delays and across loops.
+Now that the code has settled a bit, let's remove them.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 ---
- drivers/gpu/drm/i915/intel_i2c.c |   41 ++++++++++++++++++++++++++++---------
- 1 files changed, 31 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/i915/intel_i2c.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index f02e52a..9707868 100644
+index 60f90cb..73431ed 100644
 --- a/drivers/gpu/drm/i915/intel_i2c.c
 +++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -324,26 +324,47 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 			goto clear_err;
- 	}
+@@ -217,7 +217,6 @@ gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
+ 		   (len << GMBUS_BYTE_COUNT_SHIFT) |
+ 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
+ 		   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
+-	POSTING_READ(GMBUS2 + reg_offset);
+ 	do {
+ 		int ret;
+ 		u32 val, loop = 0;
+@@ -261,7 +260,6 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
+ 		   (msg->len << GMBUS_BYTE_COUNT_SHIFT) |
+ 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
+ 		   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
+-	POSTING_READ(GMBUS2 + reg_offset);
+ 	while (len) {
+ 		int ret;
+ 		u32 gmbus2;
+@@ -272,7 +270,6 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
+ 		} while (--len && ++loop < 4);
  
--	goto done;
-+	/* Mark the GMBUS interface as disabled after waiting for idle.
-+	 * We will re-enable it at the start of the next xfer,
-+	 * till then let it sleep.
-+	 */
-+	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
-+		DRM_INFO("GMBUS [%s] timed out waiting for idle\n",
-+			 adapter->name);
-+	I915_WRITE(GMBUS0 + reg_offset, 0);
-+	ret = i;
-+	goto out;
+ 		I915_WRITE(GMBUS3 + reg_offset, val);
+-		POSTING_READ(GMBUS2 + reg_offset);
  
- clear_err:
-+	/*
-+	 * Wait for bus to IDLE before clearing NAK.
-+	 * If we clear the NAK while bus is still active, then it will stay
-+	 * active and the next transaction may fail.
-+	 */
-+	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
-+		     10))
-+		DRM_INFO("GMBUS [%s] timed out after NAK\n", adapter->name);
-+
- 	/* Toggle the Software Clear Interrupt bit. This has the effect
- 	 * of resetting the GMBUS controller and so clearing the
- 	 * BUS_ERROR raised by the slave's NAK.
- 	 */
- 	I915_WRITE(GMBUS1 + reg_offset, GMBUS_SW_CLR_INT);
- 	I915_WRITE(GMBUS1 + reg_offset, 0);
-+	I915_WRITE(GMBUS0 + reg_offset, 0);
- 
--done:
--	/* Mark the GMBUS interface as disabled after waiting for idle.
--	 * We will re-enable it at the start of the next xfer,
--	 * till then let it sleep.
-+	DRM_DEBUG_DRIVER("GMBUS [%s] NAK for addr: %04x %c(%d)\n",
-+			 adapter->name, msgs[i].addr,
-+			 (msgs[i].flags & I2C_M_RD) ? 'r' : 'w', msgs[i].len);
-+
-+	/*
-+	 * If no ACK is received during the address phase of a transaction,
-+	 * the adapter must report -ENXIO.
-+	 * It is not clear what to return if no ACK is received at other times.
-+	 * So, we always return -ENXIO in all NAK cases, to ensure we send
-+	 * it at least during the one case that is specified.
- 	 */
--	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
--		DRM_INFO("GMBUS [%s] timed out waiting for idle\n",
--			 bus->adapter.name);
--	I915_WRITE(GMBUS0 + reg_offset, 0);
--	ret = i;
-+	ret = -ENXIO;
- 	goto out;
- 
- timeout:
+ 		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
+ 			       (GMBUS_SATOER | GMBUS_HW_RDY),
 -- 
 1.7.7.3
 
