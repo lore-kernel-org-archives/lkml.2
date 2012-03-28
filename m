@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab2C1LgC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:36:02 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:46746 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365Ab2C1LgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:36:00 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 02/10] hugetlbfs: don't use ERR_PTR with VM_FAULT* values
-In-Reply-To: <20120328092547.GC20949@tiehlicka.suse.cz>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120328092547.GC20949@tiehlicka.suse.cz>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 28 Mar 2012 17:05:49 +0530
-Message-ID: <87vclpyn3e.fsf@skywalker.in.ibm.com>
+	id S932577Ab2C1Lgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:36:32 -0400
+Received: from tundra.namei.org ([65.99.196.166]:52968 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932365Ab2C1Lg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 07:36:29 -0400
+Date: Wed, 28 Mar 2012 22:36:21 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/9] KEYS: Use the compat keyctl() syscall wrapper on
+ Sparc64 for Sparc32 compat
+In-Reply-To: <10701.1332931934@redhat.com>
+Message-ID: <alpine.LRH.2.02.1203282233480.30781@tundra.namei.org>
+References: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk> <10701.1332931934@redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12032801-9264-0000-0000-0000012461BA
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+On Wed, 28 Mar 2012, David Howells wrote:
 
-> On Fri 16-03-12 23:09:22, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> Using VM_FAULT_* codes with ERR_PTR will require us to make sure
->> VM_FAULT_* values will not exceed MAX_ERRNO value.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> ---
->>  mm/hugetlb.c |   18 +++++++++++++-----
->>  1 files changed, 13 insertions(+), 5 deletions(-)
->> 
->> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
->> index d623e71..3782da8 100644
->> --- a/mm/hugetlb.c
->> +++ b/mm/hugetlb.c
-> [...]
->> @@ -1047,7 +1047,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->>  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->>  		if (!page) {
->>  			hugetlb_put_quota(inode->i_mapping, chg);
->> -			return ERR_PTR(-VM_FAULT_SIGBUS);
->> +			return ERR_PTR(-ENOSPC);
->
-> Hmm, so one error code abuse replaced by another?
-> I know that ENOMEM would revert 4a6018f7 which would be unfortunate but
-> ENOSPC doesn't feel right as well.
->
+> 
+> Can you push these to Linus in this merge window, please?
 
-File systems do map ENOSPC to SIGBUS. block_page_mkwrite_return() does
-that.
+Only serious bugs at this point.
 
--aneesh
+Patch #1 seems like the only candidate.  What impact does it have?
 
+If DaveM has patches still to push for Sparc, it could go in those.
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
