@@ -1,96 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab2C1Ks6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:48:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32574 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758045Ab2C1Ks5 convert rfc822-to-8bit (ORCPT
+	id S932325Ab2C1KtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:49:22 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39162 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758026Ab2C1KtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:48:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124244726"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: RE: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
- platform
-Thread-Topic: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
- platform
-Thread-Index: AQHNC26FH2ez92xyOki5fg3RT1zzipZ/YqGA
-Date: Wed, 28 Mar 2012 10:48:53 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233510CE6F@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
- <20120324003111.GA11777@andromeda.dapyr.net>
- <DE8DF0795D48FD4CA783C40EC8292335105AAF@SHSMSX101.ccr.corp.intel.com>
- <20120326163558.GC10236@phenom.dumpdata.com>
-In-Reply-To: <20120326163558.GC10236@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Mar 2012 06:49:20 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F72EC43.3040105@jp.fujitsu.com>
+Date: Wed, 28 Mar 2012 19:47:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [RFC][PATCH 1/6] memcg: add methods to access pc->mem_cgroup
+References: <4F72EB84.7080000@jp.fujitsu.com>
+In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> 
->>> Liu,
->>> 
->>> With this patch: "  xen/enlighten: Expose MWAIT and MWAIT_LEAF if
->>> hypervisor OKs it." which is now in 3.4-rc0:
->>> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/x86/xen/enlighten.c;h=b132ade26f778f2cfec7c2d5c7b6db48afe424d5;hp=4172af8ceeb363d06912af15bf89e8508752b794;hb=d4c6fa73fe984e504d52f3d6bba291fd76fe49f7;hpb=aab008db8063364dc3c8ccf4981c21124866b395)
->>> it means that now that the drivers/acpi/acpi_pad.c can run
->>> as is under Xen (as the MWAIT_LEAF is exposed) What is the impact
->>> of that? Is the monitor call causing a trap to the hypervisor which
->>> will ignore the call? Or will it have some more worrysome
->>> consequences? 
->>> 
->> 
->> IMO this patch doesn't affect acpi_pad logic (both native and xen
->> acpi_pad). 
-> 
-> You are sure? The acpi_pad logic will now be activated so the native
-> driver 
-> will run under Xen. My question is - what is the impact of that?
 
-I know what you mean now. What I mean is, w/ xen_acpi_pad patches, native acpi_pad only work under baremetal and xen_acpi_pad work under Xen (so no problem exposing mwait). What you mean is, w/o xen_acpi_pad patches, native acpi_pad will be actived under Xen and then risk occur ... I agree.
+In order to encode pc->mem_cgroup and pc->flags to be in a word,
+access function to pc->mem_cgroup is required.
 
-But just curious, what's the purpose and benefit of exposing mwait to dom0? I remember xen against doing so before.
+This patch replaces access to pc->mem_cgroup with
+ pc_to_mem_cgroup(pc)          : pc->mem_cgroup
+ pc_set_mem_cgroup(pc, memcg)  : pc->mem_cgroup = memcg
 
-> 
-> My assumption is that the __monitor call will trap and we end up in
-> the hypervisor - so that is not so bad, but not sure.
+Changelog:
+ - rebased onto linux-next-Mar 27 2012 handle THP move_page
 
-Have you added code to hypervisor side (do_invalid_op)? if not, I think it would be problem (break dom0). Dom0 __monitor would trigger UD, then not handled by hypervisor, and bounce back to dom0 kernel, and kill itself.
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Glauber Costa <glommer@parallels.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |   12 +++++++
+ mm/memcontrol.c             |   71 ++++++++++++++++++++++--------------------
+ 2 files changed, 49 insertions(+), 34 deletions(-)
 
-But the point is, if exposing mwait, it would be risk for all logic which executed __monitor. So need add native_monitor/ xen_monitor.
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index a88cdba..92768cb 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -82,6 +82,18 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
++
++static inline struct mem_cgroup* pc_to_mem_cgroup(struct page_cgroup *pc)
++{
++	return pc->mem_cgroup;
++}
++
++static inline void
++pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
++{
++	pc->mem_cgroup = memcg;
++}
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct page_cgroup;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b2ee6df..8077460 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1034,9 +1034,9 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
+ /*
+  * Following LRU functions are allowed to be used without PCG_LOCK.
+  * Operations are called by routine of global LRU independently from memcg.
+- * What we have to take care of here is validness of pc->mem_cgroup.
++ * What we have to take care of here is validness of pc's mem_cgroup.
+  *
+- * Changes to pc->mem_cgroup happens when
++ * Changes to pc's mem_cgroup happens when
+  * 1. charge
+  * 2. moving account
+  * In typical case, "charge" is done before add-to-lru. Exception is SwapCache.
+@@ -1068,7 +1068,7 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+ 		return &zone->lruvec;
+ 
+ 	pc = lookup_page_cgroup(page);
+-	memcg = pc->mem_cgroup;
++	memcg = pc_to_mem_cgroup(pc);
+ 
+ 	/*
+ 	 * Surreptitiously switch any uncharged page to root:
+@@ -1077,10 +1077,12 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+ 	 *
+ 	 * Our caller holds lru_lock, and PageCgroupUsed is updated
+ 	 * under page_cgroup lock: between them, they make all uses
+-	 * of pc->mem_cgroup safe.
++	 * of pc's mem_cgroup safe.
+ 	 */
+-	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup)
+-		pc->mem_cgroup = memcg = root_mem_cgroup;
++	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup) {
++		pc_set_mem_cgroup(pc, root_mem_cgroup);
++		memcg = root_mem_cgroup;
++	}
+ 
+ 	mz = page_cgroup_zoneinfo(memcg, page);
+ 	/* compound_order() is stabilized through lru_lock */
+@@ -1108,7 +1110,7 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
+ 		return;
+ 
+ 	pc = lookup_page_cgroup(page);
+-	memcg = pc->mem_cgroup;
++	memcg = pc_to_mem_cgroup(pc);
+ 	VM_BUG_ON(!memcg);
+ 	mz = page_cgroup_zoneinfo(memcg, page);
+ 	/* huge page split is done under lru_lock. so, we have no races. */
+@@ -1255,9 +1257,9 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
+ 	pc = lookup_page_cgroup(page);
+ 	if (!PageCgroupUsed(pc))
+ 		return NULL;
+-	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
++	/* Ensure pc's mem_cgroup is visible after reading PCG_USED. */
+ 	smp_rmb();
+-	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
++	mz = page_cgroup_zoneinfo(pc_to_mem_cgroup(pc), page);
+ 	return &mz->reclaim_stat;
+ }
+ 
+@@ -1334,7 +1336,7 @@ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
+  *
+  * mem_cgroup_stolen() -  checking whether a cgroup is mc.from or not. This
+  *			  is used for avoiding races in accounting.  If true,
+- *			  pc->mem_cgroup may be overwritten.
++ *			  pc's mem_cgroup may be overwritten.
+  *
+  * mem_cgroup_under_move() - checking a cgroup is mc.from or mc.to or
+  *			  under hierarchy of moving cgroups. This is for
+@@ -1907,8 +1909,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
+  * file-stat operations happen after a page is attached to radix-tree. There
+  * are no race with "charge".
+  *
+- * Considering "uncharge", we know that memcg doesn't clear pc->mem_cgroup
+- * at "uncharge" intentionally. So, we always see valid pc->mem_cgroup even
++ * Considering "uncharge", we know that memcg doesn't clear pc's mem_cgroup
++ * at "uncharge" intentionally. So, we always see valid pc's mem_cgroup even
+  * if there are race with "uncharge". Statistics itself is properly handled
+  * by flags.
+  *
+@@ -1925,7 +1927,7 @@ void __mem_cgroup_begin_update_page_stat(struct page *page,
+ 
+ 	pc = lookup_page_cgroup(page);
+ again:
+-	memcg = pc->mem_cgroup;
++	memcg = pc_to_mem_cgroup(pc);
+ 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
+ 		return;
+ 	/*
+@@ -1938,7 +1940,7 @@ again:
+ 		return;
+ 
+ 	move_lock_mem_cgroup(memcg, flags);
+-	if (memcg != pc->mem_cgroup || !PageCgroupUsed(pc)) {
++	if (memcg != pc_to_mem_cgroup(pc) || !PageCgroupUsed(pc)) {
+ 		move_unlock_mem_cgroup(memcg, flags);
+ 		goto again;
+ 	}
+@@ -1950,11 +1952,11 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
+ 	struct page_cgroup *pc = lookup_page_cgroup(page);
+ 
+ 	/*
+-	 * It's guaranteed that pc->mem_cgroup never changes while
+-	 * lock is held because a routine modifies pc->mem_cgroup
++	 * It's guaranteed that pc's mem_cgroup never changes while
++	 * lock is held because a routine modifies pc's mem_cgroup
+ 	 * should take move_lock_page_cgroup().
+ 	 */
+-	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
++	move_unlock_mem_cgroup(pc_to_mem_cgroup(pc), flags);
+ }
+ 
+ void mem_cgroup_update_page_stat(struct page *page,
+@@ -1967,7 +1969,7 @@ void mem_cgroup_update_page_stat(struct page *page,
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 
+-	memcg = pc->mem_cgroup;
++	memcg = pc_to_mem_cgroup(pc);
+ 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
+ 		return;
+ 
+@@ -2264,7 +2266,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+  * has TIF_MEMDIE, this function returns -EINTR while writing root_mem_cgroup
+  * to *ptr. There are two reasons for this. 1: fatal threads should quit as soon
+  * as possible without any hazards. 2: all pages should have a valid
+- * pc->mem_cgroup. If mm is NULL and the caller doesn't pass a valid memcg
++ * pc's mem_cgroup. If mm is NULL and the caller doesn't pass a valid memcg
+  * pointer, that is treated as a charge to root_mem_cgroup.
+  *
+  * So __mem_cgroup_try_charge() will return
+@@ -2457,7 +2459,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		memcg = pc->mem_cgroup;
++		memcg = pc_to_mem_cgroup(pc);
+ 		if (memcg && !css_tryget(&memcg->css))
+ 			memcg = NULL;
+ 	} else if (PageSwapCache(page)) {
+@@ -2509,11 +2511,11 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 		}
+ 	}
+ 
+-	pc->mem_cgroup = memcg;
++	pc_set_mem_cgroup(pc, memcg);
+ 	/*
+ 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+-	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+-	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
++	 * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
++	 * is accessed after testing USED bit. To make pc's mem_cgroup visible
+ 	 * before USED bit, we need memory barrier here.
+ 	 * See mem_cgroup_add_lru_list(), etc.
+  	 */
+@@ -2558,13 +2560,14 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ {
+ 	struct page_cgroup *head_pc = lookup_page_cgroup(head);
+ 	struct page_cgroup *pc;
++	struct mem_cgroup *memcg = pc_to_mem_cgroup(head_pc);
+ 	int i;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 	for (i = 1; i < HPAGE_PMD_NR; i++) {
+ 		pc = head_pc + i;
+-		pc->mem_cgroup = head_pc->mem_cgroup;
++		pc_set_mem_cgroup(pc, memcg);
+ 		smp_wmb();/* see __commit_charge() */
+ 		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
+ 	}
+@@ -2615,7 +2618,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 	lock_page_cgroup(pc);
+ 
+ 	ret = -EINVAL;
+-	if (!PageCgroupUsed(pc) || pc->mem_cgroup != from)
++	if (!PageCgroupUsed(pc) || pc_to_mem_cgroup(pc) != from)
+ 		goto unlock;
+ 
+ 	move_lock_mem_cgroup(from, &flags);
+@@ -2633,7 +2636,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 		__mem_cgroup_cancel_charge(from, nr_pages);
+ 
+ 	/* caller should have done css_get */
+-	pc->mem_cgroup = to;
++	pc_set_mem_cgroup(pc, to);
+ 	mem_cgroup_charge_statistics(to, anon, nr_pages);
+ 	/*
+ 	 * We charges against "to" which may not have any tasks. Then, "to"
+@@ -2976,7 +2979,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 
+ 	lock_page_cgroup(pc);
+ 
+-	memcg = pc->mem_cgroup;
++	memcg = pc_to_mem_cgroup(pc);
+ 
+ 	if (!PageCgroupUsed(pc))
+ 		goto unlock_out;
+@@ -3012,7 +3015,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 
+ 	ClearPageCgroupUsed(pc);
+ 	/*
+-	 * pc->mem_cgroup is not cleared here. It will be accessed when it's
++	 * pc's mem_cgroup is not cleared here. It will be accessed when it's
+ 	 * freed from LRU. This is safe because uncharged page is expected not
+ 	 * to be reused (freed soon). Exception is SwapCache, it's handled by
+ 	 * special functions.
+@@ -3234,7 +3237,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		memcg = pc->mem_cgroup;
++		memcg = pc_to_mem_cgroup(pc);
+ 		css_get(&memcg->css);
+ 		/*
+ 		 * At migrating an anonymous page, its mapcount goes down
+@@ -3379,7 +3382,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	pc = lookup_page_cgroup(oldpage);
+ 	/* fix accounting on old pages */
+ 	lock_page_cgroup(pc);
+-	memcg = pc->mem_cgroup;
++	memcg = pc_to_mem_cgroup(pc);
+ 	mem_cgroup_charge_statistics(memcg, false, -1);
+ 	ClearPageCgroupUsed(pc);
+ 	unlock_page_cgroup(pc);
+@@ -3390,7 +3393,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	/*
+ 	 * Even if newpage->mapping was NULL before starting replacement,
+ 	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
+-	 * LRU while we overwrite pc->mem_cgroup.
++	 * LRU while we overwrite pc's mem_cgroup.
+ 	 */
+ 	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
+ }
+@@ -3426,7 +3429,7 @@ void mem_cgroup_print_bad_page(struct page *page)
+ 	pc = lookup_page_cgroup_used(page);
+ 	if (pc) {
+ 		printk(KERN_ALERT "pc:%p pc->flags:%lx pc->mem_cgroup:%p\n",
+-		       pc, pc->flags, pc->mem_cgroup);
++		       pc, pc->flags, pc_to_mem_cgroup(pc));
+ 	}
+ }
+ #endif
+@@ -5238,7 +5241,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
+ 		 * mem_cgroup_move_account() checks the pc is valid or not under
+ 		 * the lock.
+ 		 */
+-		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++		if (PageCgroupUsed(pc) && pc_to_mem_cgroup(pc) == mc.from) {
+ 			ret = MC_TARGET_PAGE;
+ 			if (target)
+ 				target->page = page;
+@@ -5274,7 +5277,7 @@ static enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
+ 	if (!move_anon())
+ 		return ret;
+ 	pc = lookup_page_cgroup(page);
+-	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++	if (PageCgroupUsed(pc) && pc_to_mem_cgroup(pc) == mc.from) {
+ 		ret = MC_TARGET_PAGE;
+ 		if (target) {
+ 			get_page(page);
+-- 
+1.7.4.1
 
-> 
-> But what I wonder is if what is the impact of the _OST call by the
-> native driver? 
-> 
-> Say the firmware tells us - please offline 4 CPUS (we have eight). We
-> enter 'acpi_pad_handle_notify' -  create four threads, and each
-> thread calls __monitor (which ends up in the hypervisor - and the
-> hypervisor might not persue the __monitor call).
-> 
-> During this time, the Linux kernel calls the _OST with 4 CPUs and ..
-> 
-> what then? What happens if the _OST values are actually ignored (as
-> it seems 
-> it would be in this case?) Is that OK? Or is that going to lead to the
-> firmware turning off some of the cores anyhow?
-
-Hmm, if __monitor was tolerated silently as you assume, it would bring problem for _OST.
-
-Thanks,
-Jinsong
 
