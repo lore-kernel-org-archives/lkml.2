@@ -1,45 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab2C1K6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:58:11 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40009 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab2C1K6J (ORCPT
+	id S1758216Ab2C1K7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:59:05 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52128 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757857Ab2C1K7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:58:09 -0400
-Date: Wed, 28 Mar 2012 12:00:40 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Paul G. Allen" <pgallen@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Support for Perle SXPCI Universal Serial Cards
-Message-ID: <20120328120040.616a4588@pyramind.ukuu.org.uk>
-In-Reply-To: <CAN4-gUF33wb=4Ry7em_-4Hp-OTWDmnSJjzJmE_0c-J4S_mhU2A@mail.gmail.com>
-References: <CAN4-gUF33wb=4Ry7em_-4Hp-OTWDmnSJjzJmE_0c-J4S_mhU2A@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Mar 2012 06:59:02 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F72EE86.9030005@jp.fujitsu.com>
+Date: Wed, 28 Mar 2012 19:57:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [RFC][PATCH 3/6] memcg: add PageCgroupReset()
+References: <4F72EB84.7080000@jp.fujitsu.com>
+In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can anyone tell me if this card is currently supported in a recent
-> Linux kernel (the last kernel I have seen support in is 2.6.9), or if
 
-The rio and sx drivers had no maintainer and have security holes and
-other problems so when nobody stepped up they went in the recycling.
+ A commit "memcg: simplify LRU handling by new rule" removes PCG_ACCT_LRU.
+ and the bug introduced by it was fixed by "memcg: fix GPF when cgroup removal
+ races with last exit"
 
-> deal with Windows 7, or upgrade to Linux, even if it means porting the
-> older Perle code to a newer kernel.
+This was for reducing flags on pc->flags....Now, we have 3bits of flags.
+but this patch adds a new flag, I'm sorry. (Considering alignment of
+kmalloc(), we'll able to have 5 bits..)
 
-The generic serial layer has gone (and is unfixably insecure without
-major rewrite), the core tty code has changed a fair bit too - so it'll
-need some porting over to the tty_port infrastructure instead but the low
-level stuff should all be pretty much fine.
+This patch adds PCG_RESET which is similar to PCG_ACCT_LRU. This is set
+when mem_cgroup_add_lru_list() finds we cannot trust the pc's mem_cgroup.
 
-If someone does that work then there's no reason it can't go back into
-the tree. We just ran out of people who cared about it with everyone now
-using USB or the vast array of PCI 16x50 based generic boards.
+The reason why this patch adds a (renamed) flag again is for merging
+pc->flags and pc->mem_cgroup. Assume pc's mem_cgroup is encoded as
 
-Alan
+	mem_cgroup = pc->flags & ~0x7
+
+Updating multiple bits of pc->flags without talking lock_page_cgroup()
+is very dangerous. And mem_cgroup_add_lru_list() updates pc->mem_cgroup
+without taking lock. Then I add RESET bit. After this, pc_to_mem_cgroup()
+is written as
+
+	if (PageCgroupReset(pc))
+		return root_mem_cgroup;
+	return pc->mem_cgroup;
+
+This update of Reset bit can be done in atomic by set_bit(). And
+cleared when USED bit is set.
+
+Considering kmalloc()'s alignment, having 4bits of flags will be ok....
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |   15 ++++++++-------
+ mm/memcontrol.c             |    5 +++--
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 2707809..3f3b4ff 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -8,6 +8,7 @@ enum {
+ 	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
+ 	PCG_USED, /* this object is in use. */
+ 	PCG_MIGRATION, /* under page migration */
++	PCG_RESET,     /* have been reset to root_mem_cgroup */
+ 	__NR_PCG_FLAGS,
+ };
+ 
+@@ -70,6 +71,9 @@ SETPCGFLAG(Migration, MIGRATION)
+ CLEARPCGFLAG(Migration, MIGRATION)
+ TESTPCGFLAG(Migration, MIGRATION)
+ 
++TESTPCGFLAG(Reset, RESET)
++SETPCGFLAG(Reset, RESET)
++
+ static inline void lock_page_cgroup(struct page_cgroup *pc)
+ {
+ 	/*
+@@ -84,16 +88,13 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
++extern struct mem_cgroup*  root_mem_cgroup;
+ 
+ static inline struct mem_cgroup* pc_to_mem_cgroup(struct page_cgroup *pc)
+ {
+-	return pc->mem_cgroup;
+-}
+-
+-static inline void
+-pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
+-{
+-	pc->mem_cgroup = memcg;
++	if (likely(!PageCgroupReset(pc)))
++		return pc->mem_cgroup;
++	return root_mem_cgroup;
+ }
+ 
+ static inline void
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d366b60..622fd2e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1080,7 +1080,8 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+ 	 * of pc's mem_cgroup safe.
+ 	 */
+ 	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup) {
+-		pc_set_mem_cgroup(pc, root_mem_cgroup);
++		/* this reset bit is cleared when the page is charged */
++		SetPageCgroupReset(pc);
+ 		memcg = root_mem_cgroup;
+ 	}
+ 
+@@ -2626,7 +2627,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 		__mem_cgroup_cancel_charge(from, nr_pages);
+ 
+ 	/* caller should have done css_get */
+-	pc_set_mem_cgroup(pc, to);
++	pc_set_mem_cgroup_and_flags(pc, to, BIT(PCG_USED) | BIT(PCG_LOCK));
+ 	mem_cgroup_charge_statistics(to, anon, nr_pages);
+ 	/*
+ 	 * We charges against "to" which may not have any tasks. Then, "to"
+-- 
+1.7.4.1
+
+
