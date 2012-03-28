@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259Ab2C1TeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 15:34:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64342 "EHLO
+	id S1758228Ab2C1ThD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 15:37:03 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59707 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757996Ab2C1TeK (ORCPT
+	with ESMTP id S1758101Ab2C1ThB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 15:34:10 -0400
-Message-ID: <4F7367AE.4020002@suse.cz>
-Date: Wed, 28 Mar 2012 21:34:06 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120320 Thunderbird/13.0a2
+	Wed, 28 Mar 2012 15:37:01 -0400
 MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alan Cox <alan@linux.intel.com>,
-        Andrea Shepard <andrea@persephoneslair.org>
-Subject: Re: [PATCH 1/1] NET: pc300, move to staging as it is broken
-References: <1332962915-18146-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1332962915-18146-1-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1332918842-13521-5-git-send-email-olof@lixom.net>
+References: <1332918842-13521-1-git-send-email-olof@lixom.net> <1332918842-13521-5-git-send-email-olof@lixom.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Mar 2012 12:36:39 -0700
+X-Google-Sender-Auth: vhizWWrDYTpA_RVy8jbMPfKAp3c
+Message-ID: <CA+55aFy4QNiDTL2b37Y870kZ-09sFp9qsFn+SaKCbzWqm8xtoQ@mail.gmail.com>
+Subject: Re: [GIT PULL 4/5] ARM: More device tree support updates
+To: Olof Johansson <olof@lixom.net>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 09:28 PM, Jiri Slaby wrote:
-> It was marked as BROKEN back in 2008. It is because the tty handling
-> in the driver is really broken.
-> 
-> And since nobody stepped in and rewrote the driver, it is time to move
-> it out of line now. And drop it some time later if nobody comes up
-> with patches to fix the driver.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+On Wed, Mar 28, 2012 at 12:14 AM, Olof Johansson <olof@lixom.net> wrote:
+>
+> Merge conflicts and proposed solutions:
+>
+> arch/arm/mach-ux500/Kconfig: Two new config options. Keep both.
 
-NACK.
+Guys, I'm seeing merge problems that go way beyond this.
 
-I've just found some recent activity in respect to fix this driver which
-didn't reach my radar before.
+Look at that MACH_U8500 config option. It got renamed to MACH_MOP500,
+but it continues to live in the tree.
 
-Andrea, what's the status of the patchset?
+This rename conflict happened earlier and I didn't notice (grep for
+it: it's used by a staging driver), so it's already in my pushed out
+tree. But it seems to be getting worse, and your proposed merge
+solution doesn't cover it.
 
-sorry for the noise,
+I'll try to fix things up, but you need to verify my merge. And you
+guys should have noticed and noted it, rather than leave it to my
+random bumbling about.
 
--- js suse labs
-
+                     Linus
