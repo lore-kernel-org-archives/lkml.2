@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab2C1CG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 22:06:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64356 "EHLO
+	id S1757074Ab2C1CHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 22:07:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64976 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab2C1CG6 (ORCPT
+	with ESMTP id S1756956Ab2C1CHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 22:06:58 -0400
-Message-ID: <1332900405.7846.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: Remove unused name and client fields from
- struct tps62360_chip
+	Tue, 27 Mar 2012 22:07:45 -0400
+Message-ID: <1332900460.7846.2.camel@phoenix>
+Subject: [PATCH 2/2] regulator: tps65023: Remove unused client field from
+ struct tps_pmic
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>,
         Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 28 Mar 2012 10:06:45 +0800
+Date: Wed, 28 Mar 2012 10:07:40 +0800
+In-Reply-To: <1332900405.7846.1.camel@phoenix>
+References: <1332900405.7846.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -24,39 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The client field of struct tps62360_chip is not used after converting to regmap.
-The name field of struct tps62360_chip is not used in this driver.
+The client field of struct tps_pmic is not used after converting to regmap API.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/tps62360-regulator.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/regulator/tps65023-regulator.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index e2ec730..b18b7ca 100644
---- a/drivers/regulator/tps62360-regulator.c
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -56,10 +56,8 @@ enum chips {TPS62360, TPS62361};
- 
- /* tps 62360 chip information */
- struct tps62360_chip {
--	const char *name;
- 	struct device *dev;
- 	struct regulator_desc desc;
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index 08b3b41..5c9a900 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -139,7 +139,6 @@ struct tps_info {
+ /* PMIC details */
+ struct tps_pmic {
+ 	struct regulator_desc desc[TPS65023_NUM_REGULATOR];
 -	struct i2c_client *client;
- 	struct regulator_dev *rdev;
+ 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
+ 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
  	struct regmap *regmap;
- 	int chip_id;
-@@ -297,9 +295,7 @@ static int __devinit tps62360_probe(struct i2c_client *client,
- 	tps->en_internal_pulldn = pdata->en_internal_pulldn;
- 	tps->vsel0_gpio = pdata->vsel0_gpio;
- 	tps->vsel1_gpio = pdata->vsel1_gpio;
+@@ -407,7 +406,6 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 	}
+ 
+ 	/* common for all regulators */
 -	tps->client = client;
- 	tps->dev = &client->dev;
--	tps->name = id->name;
- 	tps->voltage_base = (id->driver_data == TPS62360) ?
- 				TPS62360_BASE_VOLTAGE : TPS62361_BASE_VOLTAGE;
- 	tps->voltage_reg_mask = (id->driver_data == TPS62360) ? 0x3F : 0x7F;
+ 	tps->core_regulator = drv_data->core_regulator;
+ 
+ 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++, info++, init_data++) {
 -- 
 1.7.5.4
 
