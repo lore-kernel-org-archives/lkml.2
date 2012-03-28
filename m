@@ -1,149 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab2C1LUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:20:42 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:57723 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2C1LUl (ORCPT
+	id S1758243Ab2C1LXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:23:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54528 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758070Ab2C1LXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:20:41 -0400
-Date: Wed, 28 Mar 2012 13:20:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: Re: [PATCH 21/32] nohz/cpuset: Flush cputime on threads in nohz
- cpusets when waiting leader
-Message-ID: <20120328112030.GA17189@somewhere.redhat.com>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
- <1332338318-5958-23-git-send-email-fweisbec@gmail.com>
- <CAOtvUMegNxbb4OHRo6cB3EWT6R0F0rpzZAd8d=pxoHjehSCgKw@mail.gmail.com>
- <CAOtvUMdUuBhPZ3FARn+daOM3fYRxwTVBhOOBXKZo6KzOOioPUA@mail.gmail.com>
+	Wed, 28 Mar 2012 07:23:21 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: roma1390 <roma1390@gmail.com>
+Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
+Date: Wed, 28 Mar 2012 13:23:18 +0200
+User-Agent: KMail/1.8.2
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+References: <201203262047.17865.vda.linux@googlemail.com> <201203281213.07856.vda.linux@googlemail.com> <4F72E893.9070502@gmail.com>
+In-Reply-To: <4F72E893.9070502@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOtvUMdUuBhPZ3FARn+daOM3fYRxwTVBhOOBXKZo6KzOOioPUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201203281323.18194.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 04:23:14PM +0200, Gilad Ben-Yossef wrote:
-> On Tue, Mar 27, 2012 at 4:10 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> > On Wed, Mar 21, 2012 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> When we wait for a zombie task, flush the cputimes on nohz cpusets
-> >> in case we are waiting for a group leader that has threads running
-> >> in nohz CPUs. This way thread_group_times() doesn't report stale
-> >> values.
-> >>
-> >> <doubts>
-> >> If I understood well the code, by the time we call that thread_group_times(),
-> >> we may have childs that are still running, so this is necessary.
-> >> But I need to check deeper.
-> >> </doubts>
-> >>
-> > ...
-> >>
-> >> diff --git a/kernel/exit.c b/kernel/exit.c
-> >> index 4b4042f..c194662 100644
-> >> --- a/kernel/exit.c
-> >> +++ b/kernel/exit.c
-> >> @@ -52,6 +52,7 @@
-> >>  #include <linux/hw_breakpoint.h>
-> >>  #include <linux/oom.h>
-> >>  #include <linux/writeback.h>
-> >> +#include <linux/cpuset.h>
-> >>
-> >>  #include <asm/uaccess.h>
-> >>  #include <asm/unistd.h>
-> >> @@ -1712,6 +1713,13 @@ repeat:
-> >>           (!wo->wo_pid || hlist_empty(&wo->wo_pid->tasks[wo->wo_type])))
-> >>                goto notask;
-> >>
-> >> +       /*
-> >> +        * For cputime in sub-threads before adding them.
-> >> +        * Must be called outside tasklist_lock lock because write lock
-> >> +        * can be acquired under irqs disabled.
-> >> +        */
-> >> +       cpuset_nohz_flush_cputimes();
-> >> +
-> >>        set_current_state(TASK_INTERRUPTIBLE);
-> >>        read_lock(&tasklist_lock);
-> >>        tsk = current;
-> >> --
-> >> 1.7.5.4
-> >>
-> >
-> > I believe this patch is not needed because after this point we call
-> > do_wait_thread /ptrace_do_wait, which both call wait_consider_task,
-> > which calls wait_task_stopped/zombie/continued, which all eventually
-> > calls getrusage, which calls k_getrusage where you added a call to
-> > cpuset_noz_flush_cputimes() in another patch :-)
-> >
-> 
-> OK, I now see that wait_task_zombie actually calls
-> thread_group_times() directly, unlike other wait_task_*
-> what I wrote above is not needed.
-> 
-> It does result in more then one IPI for each isolated core (something
-> like 3 really) for the other cases though:
-> one from this patch and the rest from the one in k_getrusage calls.
+On Wednesday 28 March 2012 12:31, roma1390 wrote:
+> On 2012.03.28 13:13, Denys Vlasenko wrote:
+> > Third: switch to algorithm #1 and test whether it fares better.
+> > To do that, go to test_new.c
+> > and replace
+> >    #if LONG_MAX>  ((1UL<<31)-1) || LLONG_MAX>  ((1ULL<<63)-1)
+> > with
+> >    #if 1   ////LONG_MAX>  ((1UL<<31)-1) || LLONG_MAX>  ((1ULL<<63)-1)
+> > (there are two instances of this line there),
+> > then recompile and rerun the test, and post the result.
 
-Yeah I realize we may be calling getrusage() from each of the wait_*()
-things if the user request the rusage. That plus the IPI done in this
-patch this is too much.
+> but affter this diff:
+> --- test_new-with-ifdefs.c      2012-03-28 13:29:04.000000000 +0300
+> +++ test_new.c  2012-03-28 13:29:12.000000000 +0300
+> @@ -1,4 +1,4 @@
+> -#include "test_header.c"
+> +#include "test_header_arm.c"
+> 
+>   /* Decimal conversion is by far the most typical, and is used
+>    * for /proc and /sys data. This directly impacts e.g. top performance
+> 
+> compiles fine.
+> 
+> result are:
+> ./test_new2
+> Conversions per second: 8:5420000 123:4452000 123456:3556000 12345678:3368000 
+> 123456789:2904000 2^32:2412000 2^64:1556000
+> Conversions per second: 8:5428000 123:4500000 123456:3644000 12345678:3328000 
+> 123456789:2832000 2^32:2408000 2^64:1572000
+> Conversions per second: 8:5372000 123:4396000 123456:3644000 12345678:3368000 
+> 123456789:2900000 2^32:2392000 2^64:1532000
+> Conversions per second: 8:5424000 123:4500000 123456:3608000 12345678:3284000 
+> 123456789:2896000 2^32:2416000 2^64:1572000
 
-> 
-> I wonder what would be a better way to do it. In theory we can send
-> the IPI only to nohz cpuset cores that actually
-> run tasks form the thread group. Finding which is not trivial though...
+It looks ok - it is a bit faster that original code;
+but I expect algorithm #2 will do better.
 
-I also realize that we only call wait_task_zombie() on group leaders
-if they don't have any subthread left (see delay_group_leader() test).
-But then we call thread_group_times() to get the time of all threads
-in the group from wait_task_zombie().
+BTW, please always run test of original code too when you measure speed,
+and post both results.
 
-Now I'm confused.
-
-> 
-> Gilad
-> 
-> > Gilad
-> >
-> > --
-> > Gilad Ben-Yossef
-> > Chief Coffee Drinker
-> > gilad@benyossef.com
-> > Israel Cell: +972-52-8260388
-> > US Cell: +1-973-8260388
-> > http://benyossef.com
-> >
-> > "If you take a class in large-scale robotics, can you end up in a
-> > situation where the homework eats your dog?"
-> >  -- Jean-Baptiste Queru
-> 
-> 
-> 
-> -- 
-> Gilad Ben-Yossef
-> Chief Coffee Drinker
-> gilad@benyossef.com
-> Israel Cell: +972-52-8260388
-> US Cell: +1-973-8260388
-> http://benyossef.com
-> 
-> "If you take a class in large-scale robotics, can you end up in a
-> situation where the homework eats your dog?"
->  -- Jean-Baptiste Queru
+-- 
+vda
