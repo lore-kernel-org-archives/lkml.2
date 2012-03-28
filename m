@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab2C1SdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:33:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63207 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381Ab2C1SdQ (ORCPT
+	id S932766Ab2C1Sdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 14:33:41 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57821 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758615Ab2C1Sdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:33:16 -0400
+	Wed, 28 Mar 2012 14:33:39 -0400
+Message-ID: <4F73593D.5020305@linux.vnet.ibm.com>
+Date: Thu, 29 Mar 2012 00:02:29 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1203230043470.2542@ionos>
-References: <20120319231253.GA20893@www.outflux.net>
-	<20120320133141.GC2918@peqn>
-	<alpine.LFD.2.02.1203201758220.2542@ionos>
-	<CAGXu5jKVx41+NSEWsw0YF74z5_heSQ6GOmkuDi1DXNPcO4sjTQ@mail.gmail.com>
-	<20120320172300.GA8888@gmail.com>
-	<alpine.LFD.2.02.1203230043470.2542@ionos>
-Date: Wed, 28 Mar 2012 11:33:15 -0700
-X-Google-Sender-Auth: 5bBU1hmndw-skTGK5C7cwzZ7UD8
-Message-ID: <CAGXu5jKRGmfhS48gpuur7P1cbnoBPdnNe3qPbok52TKQD8Sy9w@mail.gmail.com>
-Subject: Re: [PATCH] futex: do not leak robust list to unprivileged process
-From: Kees Cook <keescook@chromium.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        kernel-hardening@lists.openwall.com, spender@grsecurity.net
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Alexander Graf <agraf@suse.de>,
+        Gleb Natapov <gleb@redhat.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 <x86@kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V5 0/6] kvm : Paravirt-spinlock support for KVM guests
+References: <20120323080503.14568.43092.sendpatchset@codeblue>
+In-Reply-To: <20120323080503.14568.43092.sendpatchset@codeblue>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12032808-1618-0000-0000-0000012D12CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 4:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 20 Mar 2012, Ingo Molnar wrote:
->> * Kees Cook <keescook@chromium.org> wrote:
->> > On Tue, Mar 20, 2012 at 10:02 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > > I really wonder why we have this syscall at all.
->> >
->> > The documentation I found yesterday while looking at this was:
->> > http://linux.die.net/man/2/get_robust_list
->> >
->> > Which says "The system call is only available for debugging
->> > purposes and is not needed for normal operations. Both system
->> > calls are not available to application programs as functions;
->> > they can be called using the syscall(3) function."
->> >
->> > Dropping the syscall entirely would certainly make it secure.
->> > ;)
->>
->> The thinking was API completeness. In general it's possible for
->> a sufficiently privileged task to figure out all the state of a
->> task. We can query timers, fds - the robust list is such a
->> resource as well. The information leakage was obviously not
->> intended.
+On 03/23/2012 01:35 PM, Raghavendra K T wrote:
+> The 6-patch series to follow this email extends KVM-hypervisor and Linux guest
+> running on KVM-hypervisor to support pv-ticket spinlocks, based on Xen's
+> implementation.
 >
-> So I think it's safe to take Kees' patch as is. On top of that we
-> should add a WARN_ONCE when the syscall is invoked and schedule the
-> sucker for removal.
+> One hypercall is introduced in KVM hypervisor,that allows a vcpu to kick
+> another vcpu out of halt state.
+> The blocking of vcpu is done using halt() in (lock_spinning) slowpath.
+> one MSR is added to aid live migration.
+>
+> Changes in V5:
+> - rebased to 3.3-rc6
+> - added PV_UNHALT_MSR that would help in live migration (Avi)
+> - removed PV_LOCK_KICK vcpu request and pv_unhalt flag (re)added.
 
-Can someone claim the first patch? It looks like not everyone agrees
-about removal, but I'd like to see at least the first one get in. :)
+Sorry for pinging
+I know it is busy time. But I hope to get response on these patches in 
+your free time, so that I can target next merge window for this. 
+(whether it has reached some good state or it is heading in reverse 
+direction!). it would really boost my morale.
+especially MSR stuff and dropping vcpu request bit for PV unhalt.
 
--Kees
+- Raghu
 
--- 
-Kees Cook
-ChromeOS Security
