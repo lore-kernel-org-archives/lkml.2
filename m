@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab2C1HEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:04:43 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59927 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2C1HEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:04:39 -0400
-Date: Wed, 28 Mar 2012 00:04:36 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        Arnaud Lacombe <lacombar@gmail.com>, Christoph Lameter <cl@linux.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: randconfig chosing more than one slab allocator
-In-Reply-To: <alpine.LFD.2.02.1203271323420.19093@tux.localdomain>
-Message-ID: <alpine.DEB.2.00.1203272359290.16201@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1203041404590.18555@chino.kir.corp.google.com> <alpine.DEB.2.00.1203111432020.790@chino.kir.corp.google.com> <alpine.LFD.2.02.1203271323420.19093@tux.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752200Ab2C1HM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:12:27 -0400
+Received: from [221.122.61.228] ([221.122.61.228]:53072 "EHLO mx.nrchpc.ac.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751467Ab2C1HM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 03:12:26 -0400
+From: "Liu Yu" <liuyums@bwstor.com.cn>
+To: <linux-kernel@vger.kernel.org>
+Subject: Wrong use of MAX_JIFFY_OFFSET?
+Date: Wed, 28 Mar 2012 15:12:24 +0800
+Message-ID: <006001cd0cb2$20f547b0$62dfd710$@com.cn>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Ac0LuHcq4+htNpIgTZi70dBijjy9Mw==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012, Pekka Enberg wrote:
+Hi guys,
 
-> > > make randconfig seems to allow chosing more than one slab allocator 
-> > > although they are all part of a choice,endchoice block (and none are 
-> > > tristate).  The following quickly finds both CONFIG_SLUB and CONFIG_SLOB 
-> > > enabled:
-> > > 
-> > > $ while [ 1 ]; do make randconfig &> /dev/null; if [ $(grep "CONFIG_SL[OU]B=y" .config | wc -l) == 2 ]; then break; fi; done
-> > > $ grep CONFIG_SL[OU]B=y .config
-> > > CONFIG_SLUB=y
-> > > CONFIG_SLOB=y
-> > 
-> > Ping on this?
-> 
-> I'm fairly sure this is a kbuild issue and that init/Kconfig is correct.
-> 
+I saw a couple of places in current kernel have this kind of code:
 
-Right, but it happens because SLOB is only available for CONFIG_EXPERT 
-(the CONFIG_EMBEDDED restriction dates back to 81819f0fc828 in May 2007) 
-so I was wondering if the kconfig folks would know what's going on without 
-having to investigate it myself.
+> static inline unsigned int elapsed_jiffies_msecs(unsigned long start)
+> {
+>         unsigned long end = jiffies;
+>
+>         if (end >= start)
+>                return jiffies_to_msecs(end - start);
+>
+>         return jiffies_to_msecs(end + (MAX_JIFFY_OFFSET - start) + 1);
+> }
+
+As you know, jiffies has a type of unsigned long, so if we know which is the
+end and
+which is the start, then (end - start) can simply figure out how much
+jiffies flies,
+without worry about the overflow.
+
+Look at the code above, assume that there is just an overflow happening on
+jiffies: end=0 and start=~0UL.
+Since end < start, then the return value of the function is
+jiffies_to_msecs(MAX_JIFFY_OFFSET+2).
+But shouldn't the correct value be jiffies_to_msecs(1)?
+
+could someone tell me that am I missing anything?
+
+Thanks,
+Yu
+
