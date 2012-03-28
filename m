@@ -1,173 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab2C1Tmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 15:42:53 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:59213 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758216Ab2C1Tmw (ORCPT
+	id S1758457Ab2C1Tqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 15:46:48 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36343 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab2C1Tqr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 15:42:52 -0400
-Date: Wed, 28 Mar 2012 19:43:12 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120328194312.GA22211@mail.hallyn.com>
-References: <20120327152534.GA18478@redhat.com>
- <20120327165853.GH11875@moon>
- <20120327222923.GA31692@mail.hallyn.com>
- <20120327223420.GB9669@moon>
- <20120327224640.GA5328@mail.hallyn.com>
- <m162dpo45j.fsf@fess.ebiederm.org>
- <20120328064838.GA2286@moon>
- <m1k425mae1.fsf@fess.ebiederm.org>
- <20120328075549.GA2204@moon>
- <20120328081639.GB2286@moon>
+	Wed, 28 Mar 2012 15:46:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328081639.GB2286@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120327181547.GA7374@infradead.org>
+References: <20120327181547.GA7374@infradead.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Mar 2012 12:46:25 -0700
+X-Google-Sender-Auth: DR9vfL1Y4sXtz4SvRNe7d_Iam8U
+Message-ID: <CA+55aFynFze+AJxUtkiAaOTJ58cK8=aiDi-fQqQ3bDV54w-=+A@mail.gmail.com>
+Subject: Re: [RFC] perf tools: Including pre-generated flex files
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> Something like below i think (yet untested).
-> 
-> 	Cyrill
-> ---
-> From: Cyrill Gorcunov <gorcunov@openvz.org>
-> Subject: fcntl: Add F_GETOWNER_UIDS option v2
-> 
-> When we restore file descriptors we would like
-> them to look exactly as they were at dumping time.
-> 
-> With help of fcntl it's almost possible, the missing
-> snippet is file owners UIDs.
-> 
-> To be able to read their values the F_GETOWNER_UIDS
-> is introduced.
-> 
-> This option is valid iif CONFIG_CHECKPOINT_RESTORE
-> is turned on, otherwise returning -EINVAL.
-> 
-> Also the call must be done from initial user-namespace
-> for a while. This limitation migh be relaxed after, once
-> proper [e]uids mapping between namespaces and file owners
-> will be implemented.
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> CC: "Serge E. Hallyn" <serge@hallyn.com>
+On Tue, Mar 27, 2012 at 11:15 AM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+>
+>        But Ingo argues that flex and bison are just a yum/whatever
+> install away, so we shouldn't clutter the kernel git history with things
+> we can generate at build time.
+>
+>        What is your take on this?
 
-Sorry to cause trouble, cause as i say it's not particularly important
-right now, but note that what you're doing here only ensures that the
-person doing the checkpoint is in init_user_ns.  It says nothing about
-the credentials in the fown_struct.
+I think I agree.
 
-If you want to go with this patch, it's fine by me.  If you want to
-just add the struct cred to the f_owner and do proper uid conversion,
-I'll support that too.  (Just grab a ref to the cred in
-fs/fcntl.c:f_modown(), and drop the ref in fs/file_table.c:__fput() ).
+Building the *basic* kernel is different - I want people to be able to
+build the kernel and install it and test it out with a fairly minimal
+development environment.
 
-Nit: note the indenting in the init_user_ns check below.
+But the perf tools
+ (a) are mainly useful for developers who can easily install these
+things *anyway* (ie we're not talking the same kind of usage cases
+where we want to encourage random people off the street to build and
+test)
+ (b) already require things that are *much* less common than flex (ie
+the whole libelf-devel stuff etc)
+so I think having pre-generated lex/yacc files is just silly - just
+install the tool.
 
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> ---
->  fs/fcntl.c                  |   32 ++++++++++++++++++++++++++++++++
->  include/asm-generic/fcntl.h |    4 ++++
->  security/selinux/hooks.c    |    1 +
->  3 files changed, 37 insertions(+)
-> 
-> Index: linux-2.6.git/fs/fcntl.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/fcntl.c
-> +++ linux-2.6.git/fs/fcntl.c
-> @@ -20,6 +20,7 @@
->  #include <linux/signal.h>
->  #include <linux/rcupdate.h>
->  #include <linux/pid_namespace.h>
-> +#include <linux/user_namespace.h>
->  
->  #include <asm/poll.h>
->  #include <asm/siginfo.h>
-> @@ -340,6 +341,34 @@ static int f_getown_ex(struct file *filp
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +static int f_getowner_uids(struct file *filp, unsigned long arg)
-> +{
-> +	struct user_namespace *user_ns = current_user_ns();
-> +	uid_t * __user dst = (void * __user)arg;
-> +	uid_t src[2];
-> +	int err;
-> +
-> +        if (user_ns != &init_user_ns)
-> +                return -EINVAL;
-> +
-> +	read_lock(&filp->f_owner.lock);
-> +	src[0] = filp->f_owner.uid;
-> +	src[1] = filp->f_owner.euid;
-> +	read_unlock(&filp->f_owner.lock);
-> +
-> +	err  = put_user(src[0], &dst[0]);
-> +	err |= put_user(src[1], &dst[1]);
-> +
-> +	return err;
-> +}
-> +#else
-> +static int f_getowner_uids(struct file *filp, unsigned long arg)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif
-> +
->  static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
->  		struct file *filp)
->  {
-> @@ -396,6 +425,9 @@ static long do_fcntl(int fd, unsigned in
->  	case F_SETOWN_EX:
->  		err = f_setown_ex(filp, arg);
->  		break;
-> +	case F_GETOWNER_UIDS:
-> +		err = f_getowner_uids(filp, arg);
-> +		break;
->  	case F_GETSIG:
->  		err = filp->f_owner.signum;
->  		break;
-> Index: linux-2.6.git/include/asm-generic/fcntl.h
-> ===================================================================
-> --- linux-2.6.git.orig/include/asm-generic/fcntl.h
-> +++ linux-2.6.git/include/asm-generic/fcntl.h
-> @@ -120,6 +120,10 @@
->  #define F_GETOWN_EX	16
->  #endif
->  
-> +#ifndef F_GETOWNER_UIDS
-> +#define F_GETOWNER_UIDS	17
-> +#endif
-> +
->  #define F_OWNER_TID	0
->  #define F_OWNER_PID	1
->  #define F_OWNER_PGRP	2
-> Index: linux-2.6.git/security/selinux/hooks.c
-> ===================================================================
-> --- linux-2.6.git.orig/security/selinux/hooks.c
-> +++ linux-2.6.git/security/selinux/hooks.c
-> @@ -3138,6 +3138,7 @@ static int selinux_file_fcntl(struct fil
->  	case F_GETFL:
->  	case F_GETOWN:
->  	case F_GETSIG:
-> +	case F_GETOWNER_UIDS:
->  		/* Just check FD__USE permission */
->  		err = file_has_perm(cred, file, 0);
->  		break;
+                    Linus
