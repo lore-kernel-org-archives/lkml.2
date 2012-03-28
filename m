@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2C1OkV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:40:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60535 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751390Ab2C1OkU (ORCPT
+	id S1757145Ab2C1Oo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:44:57 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57351 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab2C1Oo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:40:20 -0400
-Date: Wed, 28 Mar 2012 15:40:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        s.hauer@pengutronix.de, fabio.estevam@freescale.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mfd: mc13xxx: add I2C support fix building for v3.4
-Message-ID: <20120328144017.GV3232@opensource.wolfsonmicro.com>
-References: <1332943273-22447-1-git-send-email-alexg@meprolight.com>
+	Wed, 28 Mar 2012 10:44:56 -0400
+Date: Wed, 28 Mar 2012 07:44:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, cw00.choi@samsung.com
+Subject: Re: [PATCH v7 0/6] Introduce External Connector Class (extcon)
+Message-ID: <20120328144450.GA19030@kroah.com>
+References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
+ <CAJ0PZbTScHq0MMjSWZ0X5qHChhS+6TL-xSnsqEwS34N2VFLaSw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332943273-22447-1-git-send-email-alexg@meprolight.com>
-X-Cookie: You will be run over by a beer truck.
+In-Reply-To: <CAJ0PZbTScHq0MMjSWZ0X5qHChhS+6TL-xSnsqEwS34N2VFLaSw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 28, 2012 at 06:39:08PM +0900, MyungJoo Ham wrote:
+> Dear Arnd,
+> 
+> Could you please consider the EXTCON patchset for the current merge window?
 
---AonAANj1daC6QcQu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Wait, no, the current merge window for new stuff closed a week or so
+_before_ 3.3 came out.  This needs to be in linux-next before the merge
+window opens to ensure that things work properly there before it can be
+accepted into the mainline tree.
 
-On Wed, Mar 28, 2012 at 04:01:13PM +0200, Alex Gershgorin wrote:
+So this could go into 3.5 at the earliest.
 
-> index c3fbc5e..2119732 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -577,6 +577,8 @@ config MFD_MC13XXX
->  	depends on SPI_MASTER || I2C
->  	select MFD_CORE
->  	select MFD_MC13783
-> +	select REGMAP_I2C if I2C
-> +	select REGMAP_SPI if SPI_MASTER
->  	help
->  	  Enable support for the Freescale MC13783 and MC13892 PMICs.
->  	  This driver provides common support for accessing the device,
+thanks,
 
-I'd really expect this to be squashed into the patches adding the regmap
-usage for I2C and SPI, how can those patches work without this?
-
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index 31dbf91..5a60273 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
-> @@ -616,7 +616,7 @@ static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
->  #ifdef CONFIG_OF
->  static int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
->  {
-> -	struct device_node *np = mc13xxx->dev.of_node;
-> +	struct device_node *np = mc13xxx->dev->of_node;
-
-This looks like it should be submitted properly as a bug fix for
-inclusion on 3.4 or squashed into whatever change introduces the issue
-if it's not present in 3.4.
-
---AonAANj1daC6QcQu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcyLEAAoJEBus8iNuMP3d+igP/2nX8ghAFfo6LKzNRKOTug6d
-IpVso55eIKkaRynrNwe37/Rncy6YMbvhjXWjn/ejnEL5nYFZFPg4BrryGRRcxkRM
-Ts1vyr3Hc/ytG/dRePNHCCyslOkUI5HSb2dlTsWOxc0ZyfWvWbXuWWAlm9A0PcLO
-MlMEOIe6tUCCilcLsdoe1s24cNQ57giXLrCcUM5JirGspL4jGdAVyhcPRmyHb6H0
-4gVRNntdIvvYNLxeozVBzhubetya+RYKIheixdnJbnbxEp5v8M/guik5i9AIAJkE
-6oMQqHfSuHNg8OZxh2TRk/d0R0hAY4zAJp2vWI48XvSgxrANt3JT9im4ZsIVvUB/
-h4s2l+SKHk5V1uMh2uV+OECU9dmeLk/SHcwiw48+oRbWhR5JbZ4Sz+dmiCNvBce9
-L84sbu2kYNCtgWjME+SF/Hnog//ooteHD3NfeESczdz/Xy7khfLYMRB5Yxuygl76
-M9n+6qPupLmb6qmdFK1HxbPE/SzrCdtfeChhF7TMq8LkLFr+tIxRV9MlUxH+FUI9
-H+sb9xQMld+fABWGmTbkUJCiVu/ScA/7mihKkkWUmN5hgdrSGxgHKI1fnC0oLwUB
-EFfGrpnbj4AjTWiga6w4+Nq/69QolOe46lg74o3hlWtxRHBJQA13V+yKTVd5jdgE
-WFoN1v8V285IYnD+SyCo
-=oSIi
------END PGP SIGNATURE-----
-
---AonAANj1daC6QcQu--
+greg k-h
