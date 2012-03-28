@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2C1MVo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 08:21:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57175 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab2C1MVn (ORCPT
+	id S1752530Ab2C1Mec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 08:34:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62161 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab2C1Meb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 08:21:43 -0400
-Date: Wed, 28 Mar 2012 14:21:37 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
- it
-Message-ID: <20120328122135.GD17189@somewhere.redhat.com>
-References: <alpine.DEB.2.00.1203210953220.20482@router.home>
- <20120327121341.GE13196@somewhere>
- <alpine.DEB.2.00.1203271111110.1170@router.home>
- <1332865469.23924.129.camel@gandalf.stny.rr.com>
- <alpine.DEB.2.00.1203271939170.11825@router.home>
- <1332896805.23924.148.camel@gandalf.stny.rr.com>
- <alpine.DEB.2.00.1203272013260.13193@router.home>
- <1332898535.23924.157.camel@gandalf.stny.rr.com>
- <1332904677.23924.174.camel@gandalf.stny.rr.com>
- <CAOtvUMen0N1rTa3b4KtK+Aw6nV_=3DMq2RB5CE5smSJDFtGrfA@mail.gmail.com>
+	Wed, 28 Mar 2012 08:34:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Olof Johansson <olof@lixom.net>
+Subject: Re: [GIT PULL 1/5] ARM: cleanups of io includes
+Date: Wed, 28 Mar 2012 12:34:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1332918842-13521-1-git-send-email-olof@lixom.net> <20120328082501.GA22414@n2100.arm.linux.org.uk> <CAOesGMjwZOON9kFNvaEq8QhSvjAgsJT_J1Ysb9-AbePd6g+-rQ@mail.gmail.com>
+In-Reply-To: <CAOesGMjwZOON9kFNvaEq8QhSvjAgsJT_J1Ysb9-AbePd6g+-rQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOtvUMen0N1rTa3b4KtK+Aw6nV_=3DMq2RB5CE5smSJDFtGrfA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203281234.10632.arnd@arndb.de>
+X-Provags-ID: V02:K0:GYTkIabrvCeaAsKrSQMgQ/5yA5nzhhhQ2Hhlpk619ON
+ IBorNVyNvAhoN2h2bfJlhiFtP3U0v8L1Bxc+DUvs0nwree/pac
+ EJTTfB4oQlHNXY5N7bMuF+05PUAB4/SdVo0LZ8d4iPYcbErYGp
+ xwsAyIlnrCUlAcDl8jH/Ta0votdx3ZMFxz1U3BAQ52HawHcfaU
+ SMwAo/E6i5lgWovxWzfzR+r75fFJQjiEU1KKUkXk7b/on6EYEF
+ 6+4IKuRzccp3mWLAzP9EHo3La9hWIvYis3eoMtdjqSxqr69ICv
+ HyUXPRcCzqMDAUyW9vHr1xYjpe+9hVoENrgp9qraYx4kISZDae
+ 7uKPqwO0xRH/t6dnaT2o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 09:55:37AM +0200, Gilad Ben-Yossef wrote:
-> On Wed, Mar 28, 2012 at 5:17 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Tue, 2012-03-27 at 21:35 -0400, Steven Rostedt wrote:
-> >
-> >> > > I call that "lower overhead".
-> >> >
-> >> > Good marketing but it does not change the facts.
-> >
-> > I'm replying again because this comment just pisses me off.
-> >
-> > I'm the only male in my household, living with a wife, two teenage
-> > daughters and two bitches (I own two female dogs). This is not the time
-> > of month to be arguing with me!
+On Wednesday 28 March 2012, Olof Johansson wrote:
+> If you prefer to let it sit in linux-next for a day or two before
+> going in, that's fine. But I verified that the original build problem
+> introduced was fixed before I sent it out.
 > 
-> LOL. I'm married with two daughters. I feel your pain  :-)
+> Unfortunately, PXA is also broken due to the regulator changes
+> mentioned in the above referenced mail, which is already upstream and
+> unrelated to the changes in this branch.
 > 
-> >
-> > The fact is, you live in your own little world. You see things from your
-> > own little perspective. You can define the time a system call takes as a
-> > latency, but that is just one very small aspect of latencies. There's
-> > lots of other kinds of latencies and if you did the search I told you
-> > to, you would see that. In fact, the latency caused by system calls is
-> > such a small niche of the types of latencies there are. I'm not counting
-> > the time a system call waits for a device. Although a preempt kernel
-> > would be faster for such a case.
-> >
-> 
-> At the risk of butting in on this little flame war, I think it is
-> worth mentioning
-> that this discussion arouse in the context of of a feature
-> (cpuset/nohz) that deals
-> with a single task running alone on a CPU and making zero use of
-> kernel services,
-> from scheduling, through interrupts, to system calls. It's just a pure
-> 100% cpu  bound task.
+> Linus; the rest of the pull requests should be OK to go in
+> independently of this, so please go ahead with those if you don't
+> mind. The only changes to those branches in the last few days is the
+> merge resolution I did to the drivers2 branch/tag.
 
-Note that cpu isolation is a specific usecase of nohz cpusets. But it's
-intended to be more generally useful (probably for most workloads). That
-means we really want to support syscalls, interrupts and everything. That's
-why it is called adaptive tickless and not just userspace isolated tickless.
+Yes, sounds good. I've also verified that none of the other branches
+depends on this one.
 
-Not that what I'm saying is making the debate on latency moving forward,
-I just wanted to ensure there is no misunderstanding of this patchset :)
+	Arnd
