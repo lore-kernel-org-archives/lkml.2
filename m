@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab2C1Lii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:38:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55285 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932285Ab2C1Lih (ORCPT
+	id S932590Ab2C1Ljd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:39:33 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:57647 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932527Ab2C1Ljc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:38:37 -0400
-Date: Wed, 28 Mar 2012 12:38:11 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org,
-        mika.westerberg@iki.fi, lrg@ti.com, perex@perex.cz, tiwai@suse.de
-Subject: Re: [PATCH] ASoC: ep93xx-ac97: use devm_* helpers to cleanup probe
-Message-ID: <20120328113811.GN3232@opensource.wolfsonmicro.com>
-References: <201203261600.09454.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AA9g+nFNFPYNJKiL"
-Content-Disposition: inline
-In-Reply-To: <201203261600.09454.hartleys@visionengravers.com>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Mar 2012 07:39:32 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 08/13 v4] drm/i915/intel_i2c: handle zero-length writes
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+In-Reply-To: <CAGS+omCX+_T9sDbtmdhivn4wb6b8LMGYwKxXak4G_HxeQ1Kfsw@mail.gmail.com>
+References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org> <1332873382-29373-9-git-send-email-djkurtz@chromium.org> <1332875657_117263@CP5-2952> <CAGS+omCX+_T9sDbtmdhivn4wb6b8LMGYwKxXak4G_HxeQ1Kfsw@mail.gmail.com>
+Date: Wed, 28 Mar 2012 12:39:12 +0100
+X-Originating-IP: 78.156.66.37
+Message-ID: <1332934765_126523@CP5-2952>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 28 Mar 2012 19:32:27 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> Unfortunately there is a bug in both my original patch (it wasn't
+> incrementing loop), and in your suggested cleanup (it always
+> decrements len, even when it is already 0... or if the loop test
+> fails).  How about the following; despite its pythonic nature, it
+> always completes with len holding the number of bytes remaining.
+> 
+> 	val = loop = 0;
+> 	while (len && loop < 4) {
+> 		val |= *buf++ << (8 * loop++);
+> 		len -= 1;
+> 	}
 
---AA9g+nFNFPYNJKiL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm getting over my aversion ;-)
 
-On Mon, Mar 26, 2012 at 04:00:08PM -0700, H Hartley Sweeten wrote:
-> Use the devm_* helpers to cleanup the probe routine. This also eliminates
-> having to carry the mem and irq values in the private data for the remove.
+As we are here, have you considered doing an optimised u32 variant whilst
+len >= 4, which should be reasonably common during EDID transfer. Though
+I am not sure if that loop is merely in the noise compared to the rest of
+the mmio.
+-Chris
 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Mika Westerberg <mika.westerberg@iki.fi>
-> Cc: Liam Girdwood <lrg@ti.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Jaroslav Kysela <perex@perex.cz>
-> CC: Takashi Iwai <tiwai@suse.de>
-
-Applied, but please:
-
- - Think more about your CC list.
- - Try to avoid putting it in the body of the e-mail.
-
---AA9g+nFNFPYNJKiL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcvfbAAoJEBus8iNuMP3dHJsP/3UKtNyTkgbFo3rIuSWJT0g3
-NvCpXWI5d7P39QZF1xSohcbf2uIjpHa7/KbgqNm2v18hDLmVNeoF0zQMxg4lsZCs
-BABTJJAQcEHXn6fi3ifV9sNn227akHszqFdoyVmd3ayqCp8yegdn8Jqnt8la6MG9
-N1W5f9Vc63nynbbSJXnUkD3fObAkLxxM+uLDX2CDGW9oPiNVLcTwmi9y4/WiF3l9
-cYsG6Pdx2ZNHLbwHmkWYaI0vlMScYpE4ah25CxfBRKg+RIF1hvILhCwRMHvwxKjS
-eh/Lf/Y+AyCgbeU/zqafK0Nj8w1bL1thzNgLVVNxaZIWst2RVPsydW6AFkQhNIrr
-j4flpVh5PVtCwhqVsgzSvb4HcqVxcPPY7YEBwmq4XhTKq+RZ41MpFlBoMb92uy8d
-YdMcXh3leVESUmk1CAnJkfRwYMHb7fAk2C+2Mt98nQwd7QnqZimNphon1rMDr0zl
-qGIXKR0yPdDFsnRp3JaVcy7dYxJsPArLnb+STXoyLA/lqQCvZmAqmkHFItoBjRYc
-dlczftj3lnP5Mi4Wmk/MWUyBag3OP4FBeT0q2x3AvcIJjqkZb/GLYmQTmmUtye8x
-jdU1vHVQs6lscwHuEuZp+dnc2JFdRJwd/vfeX/FXKYuMllJGqQeNmQM2Eb88iRRa
-Ko7yvrBIMsudrERkTXZz
-=qx3B
------END PGP SIGNATURE-----
-
---AA9g+nFNFPYNJKiL--
+-- 
+Chris Wilson, Intel Open Source Technology Centre
