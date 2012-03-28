@@ -1,138 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab2C1K7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:59:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52128 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab2C1K7C (ORCPT
+	id S1758234Ab2C1K7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:59:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37810 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758068Ab2C1K7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:59:02 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F72EE86.9030005@jp.fujitsu.com>
-Date: Wed, 28 Mar 2012 19:57:10 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Wed, 28 Mar 2012 06:59:15 -0400
+Date: Wed, 28 Mar 2012 11:58:50 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2] regulator: Convert tps6524x to set_voltage_sel
+Message-ID: <20120328105849.GI3232@opensource.wolfsonmicro.com>
+References: <1332457828.9382.0.camel@phoenix>
+ <20120326175029.GJ3789@opensource.wolfsonmicro.com>
+ <CAF+7xWnrY5jjznuJyNFA-CNpnrdpnX9kVS1myq1PzAXEmCGdWA@mail.gmail.com>
 MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [RFC][PATCH 3/6] memcg: add PageCgroupReset()
-References: <4F72EB84.7080000@jp.fujitsu.com>
-In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ijf6z65S790CMqo8"
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWnrY5jjznuJyNFA-CNpnrdpnX9kVS1myq1PzAXEmCGdWA@mail.gmail.com>
+X-Cookie: You will be run over by a beer truck.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
- A commit "memcg: simplify LRU handling by new rule" removes PCG_ACCT_LRU.
- and the bug introduced by it was fixed by "memcg: fix GPF when cgroup removal
- races with last exit"
+--ijf6z65S790CMqo8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This was for reducing flags on pc->flags....Now, we have 3bits of flags.
-but this patch adds a new flag, I'm sorry. (Considering alignment of
-kmalloc(), we'll able to have 5 bits..)
+On Tue, Mar 27, 2012 at 08:52:25AM +0800, Axel Lin wrote:
 
-This patch adds PCG_RESET which is similar to PCG_ACCT_LRU. This is set
-when mem_cgroup_add_lru_list() finds we cannot trust the pc's mem_cgroup.
+> I'm not sure if you still keep both patches, if a resend is required,
+> just let me know.
 
-The reason why this patch adds a (renamed) flag again is for merging
-pc->flags and pc->mem_cgroup. Assume pc's mem_cgroup is encoded as
+Please resend.
 
-	mem_cgroup = pc->flags & ~0x7
+--ijf6z65S790CMqo8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Updating multiple bits of pc->flags without talking lock_page_cgroup()
-is very dangerous. And mem_cgroup_add_lru_list() updates pc->mem_cgroup
-without taking lock. Then I add RESET bit. After this, pc_to_mem_cgroup()
-is written as
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-	if (PageCgroupReset(pc))
-		return root_mem_cgroup;
-	return pc->mem_cgroup;
+iQIcBAEBAgAGBQJPcu7jAAoJEBus8iNuMP3dThkP+wRIUzuWnl9Y6PaP+EeHzQCw
+gxjHL+ck6+A05qAN90bnG5uYKTuhhzu2f+KoNCPv81ASFRVyTCGkAoEHhRvVIpV2
+lChVDpWo9Uwn34RIMBXUMC4CD/5ivDHVivCjtM0VpKzFkrXOmo0UNjuilk1rXc6S
+GuA2r9H1I38NT1oKacO9qYI+98WXRz6gajYzC/ok6qIjoV+1sR75+JD3cvR755KG
+FwnZx9FsR7efhzC47ltxk/cg43Sea7zWpfoyKP20+jzClOVr/HzS5owE/hnv+xf0
+ZVbvlqgZRDVfiE5kzhqViEf3AEkp1KmLUQCZm2vK7q6VZjqK9XH3DdXVcheFONqF
+XYDr5K/C0rOMCCpklSTsOJdBdzTaJg7XsJzMEws0xOeZC3KyMOyXJ6iFlX/nrQ+T
+QMPncHWe7nC4gGoDmLpiGvV5+/HxnqnVjfwGR860y4d3uZvWohf2SeBVXjf2a4lC
+lGbvvmCSanP6TPymJv3SxJl/T6Ok+9q0m5ii+vY2xUpIDYb393R6JFlxaICHpHOQ
+a/hW3nDwMCPZ5Ogp+bHKkK3siubKcvAtnZK/8U0g2hfLtdWIUPCdGtrFy4KE7JQH
+DxchycZH1MUzD+S/7Qr4Nyj3aqY74xvbDLs80YkhYkKPCtSe3kvNMnxxDHsJ7Mvp
+T/27pa9pA5AwYuAHxVSB
+=eyJi
+-----END PGP SIGNATURE-----
 
-This update of Reset bit can be done in atomic by set_bit(). And
-cleared when USED bit is set.
-
-Considering kmalloc()'s alignment, having 4bits of flags will be ok....
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/page_cgroup.h |   15 ++++++++-------
- mm/memcontrol.c             |    5 +++--
- 2 files changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 2707809..3f3b4ff 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -8,6 +8,7 @@ enum {
- 	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
- 	PCG_USED, /* this object is in use. */
- 	PCG_MIGRATION, /* under page migration */
-+	PCG_RESET,     /* have been reset to root_mem_cgroup */
- 	__NR_PCG_FLAGS,
- };
- 
-@@ -70,6 +71,9 @@ SETPCGFLAG(Migration, MIGRATION)
- CLEARPCGFLAG(Migration, MIGRATION)
- TESTPCGFLAG(Migration, MIGRATION)
- 
-+TESTPCGFLAG(Reset, RESET)
-+SETPCGFLAG(Reset, RESET)
-+
- static inline void lock_page_cgroup(struct page_cgroup *pc)
- {
- 	/*
-@@ -84,16 +88,13 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
- 	bit_spin_unlock(PCG_LOCK, &pc->flags);
- }
- 
-+extern struct mem_cgroup*  root_mem_cgroup;
- 
- static inline struct mem_cgroup* pc_to_mem_cgroup(struct page_cgroup *pc)
- {
--	return pc->mem_cgroup;
--}
--
--static inline void
--pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
--{
--	pc->mem_cgroup = memcg;
-+	if (likely(!PageCgroupReset(pc)))
-+		return pc->mem_cgroup;
-+	return root_mem_cgroup;
- }
- 
- static inline void
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d366b60..622fd2e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1080,7 +1080,8 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
- 	 * of pc's mem_cgroup safe.
- 	 */
- 	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup) {
--		pc_set_mem_cgroup(pc, root_mem_cgroup);
-+		/* this reset bit is cleared when the page is charged */
-+		SetPageCgroupReset(pc);
- 		memcg = root_mem_cgroup;
- 	}
- 
-@@ -2626,7 +2627,7 @@ static int mem_cgroup_move_account(struct page *page,
- 		__mem_cgroup_cancel_charge(from, nr_pages);
- 
- 	/* caller should have done css_get */
--	pc_set_mem_cgroup(pc, to);
-+	pc_set_mem_cgroup_and_flags(pc, to, BIT(PCG_USED) | BIT(PCG_LOCK));
- 	mem_cgroup_charge_statistics(to, anon, nr_pages);
- 	/*
- 	 * We charges against "to" which may not have any tasks. Then, "to"
--- 
-1.7.4.1
-
-
+--ijf6z65S790CMqo8--
