@@ -1,56 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab2C1GmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:42:05 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:49116 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab2C1GmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 02:42:04 -0400
-Date: Wed, 28 Mar 2012 08:41:57 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: padata: Fixes for 3.4
-Message-ID: <20120328064157.GD16191@secunet.com>
+	id S1751805Ab2C1GmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:42:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35546 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab2C1GmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 02:42:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 28 Mar 2012 06:41:57.0811 (UTC) FILETIME=[DF41A830:01CD0CAD]
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Tue, 27 Mar 2012 23:41:49 -0700
+X-Google-Sender-Auth: 8rQg4iagyV7F0lyjLM0KtWqvh3Q
+Message-ID: <CAB=NE6WgTMdDtU4_ZgYVr2XzSuiicT5o=q2RvV24jeQj0rZfFw@mail.gmail.com>
+Subject: compat-wireless releases based on v3.3
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        netdev@vger.kernel.org, lf_driver_backport@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains the following changes:
+Linux v3.3 is out, so we make kernel backport releases based on this
+release to allow you to compile subsystems / drivers from this kernel
+on older kernels. One kernel backport release is based on v3.3 vanilla
+[0], and another which cherry picks 14 patches from linux-next.git
+[1]. The linux-next-cherry-picks patches are just one of the type of
+extra categories of patches which the projects allows, for more
+details refer to the additional patches page [2]. For details on the
+changes that went into the kernel for the subsystem / drivers we
+include in this release please refer to the ChangeLog [3]. Details to
+compat and compat-wireless are provided below.
 
-1) Add a reference to the padata api documentation to the code.
-   Suggested by Peter Zijlstra.
+Worth mentioning is we now have a documentation page for the compat
+module alone [4]. I've also dumped into a Google Fusion Table kernel
+backport statistics [5] which we can use to keep metrics across
+different releases. If anyone is interested in helping with these
+stats or creating visualizations please let me know, for now anyone
+can view the content. I'm still working on the columns, it seems there
+a few bugs still with Fusion Table but the prospects of using it are
+very nice. In particular I hope it can help organizations keep track
+of deltas not upstream, help categorize clearly and keep metrics of
+what is not even posted but needed (we call this crap), etc. There are
+also slides available now [6] that will be used to for the Linux
+Collaboration Summit talk on Automatically backporting the Linux
+kernel [7]. Hope the new set of documentation helps understand this
+process a little better.
 
-2) We use the active cpumask to determine the superset of cpus
-   to use for parallelization. The active cpumask is not the appropriate
-   cpumask for these purposes. Replace the cpu active usage by cpu online.
-   Reported by Peter Zijlstra.
+The 14 cherry picked patches:
 
-3)  On cpu hotplug, we don't remove the cpu that went offline from our cpumasks.
-    Fix this by removing this cpu from the padata cpumasks.
+mcgrof@tux ~/devel/compat-wireless (git::linux-3.3.y)$ ls -1
+linux-next-cherry-picks/
+0001-mac80211-Fix-incorrect-num_sta_ps-decrement-in-__sta.patch
+0002-mac80211-Fix-incorrect-num_sta_ps-decrement-in-ap_st.patch
+0003-mac80211-Move-num_sta_ps-counter-decrement-after-syn.patch
+0004-ath9k-Initialize-NF-values-properly.patch
+0005-ath9k-Fix-programming-SYNTH4-for-AR9462.patch
+0006-ath9k-Fix-descriptor-length-for-AR9462.patch
+0007-mac80211-handle-non-bufferable-MMPDUs-correctly.patch
+0008-Revert-ath9k_hw-Fix-false-tx-hung-detection-in-AR900.patch
+0009-ath9k-do-not-call-ath9k_hw_txprocdesc-on-AR9003-outs.patch
+0010-ath9k_hw-enable-interrupts-for-beacon-tx-completion-.patch
+0011-ath9k-fix-drv_tx_last_beacon-on-AR9003-by-processing.patch
+0012-ath9k_hw-use-cold-instead-of-warm-reset-on-AR9280.patch
+0013-mac80211-add-an-rx-flag-for-ignoring-a-packet-s-sign.patch
+0014-ath9k-fix-signal-strength-reporting-issues.patch
 
-Please pull or apply.
 
-The patchset is based on the crypto-2.6 tree and is available via git:
+===============================================
+ChangeLog for compat-wireless for linux-3.3
+===============================================
 
-The following changes since commit ff0a70fe053614e763eb3ac88bfea9c5615fce3b:
-  Jussi Kivilinna (1):
-        crypto: twofish-x86_64-3way - module init/exit functions should be static
+This is the ChangeLog for the Linux kernel project compat-wireless.
+It provides a backport of a few Linux kernel subsystems down to
+older kernels:
 
-are available in the git repository at:
+  * 802.11
+  * Bluetooth
+  * Ethernet
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/klassert/linux-stk padata-fixes
+For more details refer to the home page:
 
-Steffen Klassert (3):
-      padata: Add a reference to the api documentation
-      padata: Use the online cpumask as the default
-      padata: Fix cpu hotplug
+http://wireless.kernel.org/en/users/Download/stable/
 
- kernel/padata.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+The compat-wireless project consists of code from three projects:
+
+  * The Linux kernel: linux-2.6-allstable.git
+  * Compat-wirelesS: compat-wireless.git
+  * Compat: compat.git
+
+The compat-wireless stable releases incorporates code from from
+each of these git trees for the respective upstream Linux kernel
+stable release. A branch called linux-3.x.y exists for each
+stable release. Below we provide the ChangeLog of changes from
+the previous branched release to the new branched release.
+
+Release: linux-3.3
+
+Updates from the compat.git project:
+====================================
+
+git shortlog linux-3.2.y..linux-3.3.y
+
+Felix Fietkau (3):
+      compat: fix misplaced #ifdef for the workqueue backport
+      compat: backport atomic64 support
+      compat: fix security_sk_clone dummy backport compile
+
+Hauke Mehrtens (6):
+      compat: add support for kernel 3.2
+      compat: backport kfree_rcu()
+      compat: backport netdev_features_t
+      compat: add config var for CORDIC and CRC8
+      compat: add module_usb_driver and module_platform_driver
+      compat: add __cancel_delayed_work()
+
+John W. Linville (7):
+      compat: use separate CONFIG_COMPAT_KFIFO option for building kfifo.o
+      compat: add CONFIG_COMPAT_FIRMWARE_DATA_RW_NEEDS_FILP
+      compat: check CONFIG_COMPAT_FIRMWARE_CLASS in compat-2.6.33.h
+      compat: support RHEL6 as a build target
+      compat: avoid warning in compat_system_workqueue_create
+      compat: implement dummy security_sk_clone
+      compat: use kconfig.h in compat-2.6.h for 3.1 and later kernels
+
+Luis R. Rodriguez (4):
+      compat: fix building for 3.0 kernels
+      compat: export compat kernel versions info
+      compat: add .gitignore
+      compat: add compat kernel checker and downloader
+
+Nikolay Martynov (1):
+      Add dma_zalloc_coherent to fix build with kernels older than 3.2
+
+Updates from the compat-wireless.git project:
+=============================================
+
+git shortlog linux-3.2.y..linux-3.3.y
+
+Dominique Martinet (1):
+      compat-wireless: build: Throw error if space in path
+
+Eliad Peller (1):
+      compat-wireless: fix patches/08-rename-config-options.patch
+
+Hauke Mehrtens (17):
+      compat-wireless: add support for kernel 3.2
+      compat-wireless: remove kfree_rcu() patch
+      compat-wireless: make patches apply again
+      compat-wireless: make patches apply again
+      compat-wireless: escape &
+      compat-wireless: add config var for CORDIC and CRC8
+      compat-wireless: remove some modules from Makefile
+      compat-wireless: fix driver-select for intel
+      compat-wireless: add some missing config options
+      compat-wireless: fix brcm80211 driver-select
+      compat-wireless deactivate mac80211 tracing for old kernels
+      compat-wireless: compile fix for commit patches/09-threaded-irq.patch
+      compat-wireless: remove platform_device_id for kernel < 2.6.30
+      compat-wireless: CONFIG_BT_L2CAP and CONFIG_BT_SCO removed
+      compat-wireless: make patches apply again
+      compat-wireless: use other workqueue
+      compat-wireless: no trans_start on netdev_queue
+
+Johannes Berg (1):
+      compat-wireless: disable SKB TX status stamping in mac80211
+
+John W. Linville (9):
+      compat-wireless: add CONFIG_COMPAT_KFIFO setting to config.mk
+      compat-wireless: remove leading whitespace from
+CONFIG_COMPAT_FIRMWARE_CLASS
+      compat-wireless: add CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN
+      compat-wireless: support RHEL6 as a build target
+      compat-wireless: change CONFIG_IWLAGN -> CONFIG_IWLWIFI
+      compat-wireless: fix patches/11-dev-pm-ops.patch
+      compat-wireless: fix patches/38-led-max-brightness.patch
+      compat-wireless: fix patches/39-remove_blink_set.patch
+      Enable CONFIG_RT2800{PCI,USB}_RT53XX
+
+Luciano Coelho (1):
+      compat-wireless: check if modprobe exists before using it
+
+Luis R. Rodriguez (22):
+      compat-wireless: fix patches/08-rename-config-options.patch
+      compat-wireless: refresh patches
+      compat-wireless: refresh patches
+      compat-wireless: fix patches/09-threaded-irq.patch
+      compat-wireless: refresh patches
+      compat-wireless: copy driver files only if present
+      compat-wireless: clarify patches/47-no_trans_start_on_netdev_queue.patch
+      compat-wireless: clarify patches/46-use_other_workqueue.patch
+      compat-wireless: refresh patches
+      compat-wireless: refresh patches for next-20120109
+      compat-wirless: refresh patches
+      compat-wireless: refresh patches for 3.3-rc1
+      compat-wireless: use linux-stable instead of linux-2.6-allstable
+      compat-wireless: fix patches/16-bluetooth.patch
+      compat-wireless: refresh patches
+      compat-wireless: add driver-select option ath9k_ap
+      compat-wireless: fix allowing jobserver
+      compat-wireless: add linux-next-cherry-picks for 3.3 recommended by nbd
+      compat-wireless: refresh linux-next-cherry-picks patches
+      compat-wireless: remove ath9k packet log crap
+      compat-wireless: remove stale pending-stable ignore patch
+      compat-wireless: refresh patches for v3.0 release
+
+[0] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.3/compat-wireless-3.3-1.tar.bz2
+[1] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.3/compat-wireless-3.3-1-n.tar.bz2
+[2] http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
+[3] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.3/ChangeLog-3.3-wireless
+[4] http://mcgrof.github.com/compat/
+[5] https://www.google.com/fusiontables/DataSource?docid=1wXnm0VFUHBpaMmxwjaZZD58B4o8K1iPFCCOx50Q
+[6] https://docs.google.com/presentation/d/1axVNEGwKZjnzG1ocdd289WMqPxzJ3qfMv70ghGcnUKc/edit
+[7] https://events.linuxfoundation.org/events/collaboration-summit/rodriguez-backporting
+
+  Luis
