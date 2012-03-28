@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab2C1FYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 01:24:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51788 "EHLO mx1.redhat.com"
+	id S1751382Ab2C1FZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 01:25:25 -0400
+Received: from linux-sh.org ([111.68.239.195]:48254 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab2C1FYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 01:24:48 -0400
-From: Weiping Pan <wpan@redhat.com>
-To: netdev@vger.kernel.org
-Cc: fubar@us.ibm.com, andy@greyhouse.net, lwang@redhat.com,
-        linux-kernel@vger.kernel.org, Weiping Pan <wpan@redhat.com>
-Subject: [PATCH net] bonding: emit event when bonding changes MAC
-Date: Wed, 28 Mar 2012 13:18:24 +0800
-Message-Id: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
+	id S1750878Ab2C1FZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 01:25:24 -0400
+Date: Wed, 28 Mar 2012 14:25:04 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 1/2] dma: shdma: fix runtime PM: clear channel buffers on reset
+Message-ID: <20120328052503.GP26543@linux-sh.org>
+References: <Pine.LNX.4.64.1201041528570.30506@axis700.grange> <Pine.LNX.4.64.1201041532290.30506@axis700.grange>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1201041532290.30506@axis700.grange>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a bonding device is configured with fail_over_mac=active,
-we expect to see the MAC address of the new active slave as the source MAC
-address after failover. But we see that the source MAC address is the MAC
-address of previous active slave.
+On Wed, Jan 04, 2012 at 03:34:17PM +0100, Guennadi Liakhovetski wrote:
+> On platforms, supporting power domains, if the domain, containing a DMAC
+> instance is powered down, the driver fails to resume correctly. On those
+> platforms DMAC channels have an additional CHCLR register for clearing
+> channel buffers. Using this register during runtime resume fixes the
+> problem.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-Emit NETDEV_CHANGEADDR event when bonding changes its MAC address, in order
-to let arp_netdev_event flush neighbour cache and route cache.
+..
 
-How to reproduce this bug ?
-
-                       -----------hostB----------------
-hostA ----- switch ---|-- eth0--bond0(192.168.100.2/24)|
-(192.168.100.1/24  \--|-- eth1-/                       |
-                       --------------------------------
-
-1 on hostB,
-modprobe bonding mode=1 miimon=500 fail_over_mac=active downdelay=1000
-num_grat_arp=1
-ifconfig bond0 192.168.100.2/24 up
-ifenslave bond0 eth0
-ifenslave bond0 eth1
-
-then eth0 is the active slave, and MAC of bond0 is MAC of eth0.
-
-2 on hostA, ping 192.168.100.2
-
-3 on hostB,
-tcpdump -i bond0 -p icmp -XXX
-you will see bond0 uses MAC of eth0 as source MAC in icmp reply.
-
-4 on hostB,
-ifconfig eth0 down
-tcpdump -i bond0 -p icmp -XXX (just keep it running in step 3)
-you will see first bond0 uses MAC of eth1 as source MAC in icmp
-reply, then it will use MAC of eth0 as source MAC.
-
-Signed-off-by: Weiping Pan <wpan@redhat.com>
----
- drivers/net/bonding/bond_main.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index b920d82..a20b585 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -892,9 +892,15 @@ static void bond_do_fail_over_mac(struct bonding *bond,
- 
- 	switch (bond->params.fail_over_mac) {
- 	case BOND_FOM_ACTIVE:
--		if (new_active)
-+		if (new_active) {
- 			memcpy(bond->dev->dev_addr,  new_active->dev->dev_addr,
- 			       new_active->dev->addr_len);
-+			write_unlock_bh(&bond->curr_slave_lock);
-+			read_unlock(&bond->lock);
-+			call_netdevice_notifiers(NETDEV_CHANGEADDR, bond->dev);
-+			read_lock(&bond->lock);
-+			write_lock_bh(&bond->curr_slave_lock);
-+		}
- 		break;
- 	case BOND_FOM_FOLLOW:
- 		/*
--- 
-1.7.4
-
+> @@ -139,6 +157,10 @@ static int sh_dmae_rst(struct sh_dmae_device *shdev)
+>  		dev_warn(shdev->common.dev, "Can't initialize DMAOR.\n");
+>  		return -EIO;
+>  	}
+> +	if (shdev->pdata->dmaor_init & ~dmaor)
+> +		dev_warn(shdev->common.dev,
+> +			 "DMAOR=0x%x hasn't latched the initial value 0x%x.\n",
+> +			 dmaor, shdev->pdata->dmaor_init);
+>  	return 0;
+>  }
+>  
+I've just hit this on SH7786, which I suspect means that I've got it
+wired up incorrectly somehow. This hunk also appears completely unrelated
+to the changelog, so I'm wondering what exactly it's for. If this is a
+probe attempt then presumably we should be handing down an error and
+-ENODEV'ing in the init path? Is it expected that this is non-fatal in
+the other reset cases?
