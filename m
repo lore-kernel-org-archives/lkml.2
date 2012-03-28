@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab2C1LxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:53:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38557 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab2C1LxM (ORCPT
+	id S1752420Ab2C1L64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:58:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52733 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab2C1L6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:53:12 -0400
-Date: Wed, 28 Mar 2012 13:53:07 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
- it
-Message-ID: <20120328115304.GC17189@somewhere.redhat.com>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
- <1332338318-5958-13-git-send-email-fweisbec@gmail.com>
- <alpine.DEB.2.00.1203210953220.20482@router.home>
- <20120327121341.GE13196@somewhere>
- <alpine.DEB.2.00.1203271111110.1170@router.home>
+	Wed, 28 Mar 2012 07:58:55 -0400
+Date: Wed, 28 Mar 2012 04:58:30 -0700
+From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
+Message-ID: <tip-160594e99dbbb0a5600ad922c630952c7c1c14bf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, paul@paulmenage.org, tglx@linutronix.de,
+        dan.carpenter@oracle.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, paul@paulmenage.org,
+        dan.carpenter@oracle.com
+In-Reply-To: <20120328104608.GD29022@elgon.mountain>
+References: <20120328104608.GD29022@elgon.mountain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] cpusets: Remove an unused variable
+Git-Commit-ID: 160594e99dbbb0a5600ad922c630952c7c1c14bf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1203271111110.1170@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 28 Mar 2012 04:58:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 11:13:39AM -0500, Christoph Lameter wrote:
-> On Tue, 27 Mar 2012, Frederic Weisbecker wrote:
-> 
-> > > Is there any way for userspace to know that the tick is not off yet due to
-> > > this? It would make sense for us to have busy loop in user space that
-> > > waits until the OS has completed all processing if that avoids future
-> > > latencies for the application.
-> >
-> > What is the usecase you have in mind? Is it for realtime purpose?
-> 
-> Please do not use "realtime" since I am not sure what you mean by that.
-> Its for a low latency applications that cannot use "realtime" because that
-> implies high latencies.
-> 
-> > The "tick stopped" is a volatile and relative state.
-> 
-> The use case is an application that cannot tolerate the latencies
-> introduced by timer tick processing. It will only start running when the
-> system is in a sufficiently quiet state.
-> 
-> > Relative because if a timer list is enqueued to fire 1 second later,
-> > the tick will be stopped until that happens. How do we consider this (common)
-> > case?
-> >
-> > Also as Chris noted it is volatile because the tick can be restarted anytime
-> > for random reasons: the CPU receives an IPI which makes it restart the
-> > periodic tick.
-> 
-> Ok some sort of notification would be good for that case. If a timer tick
-> happens and that was unavoidable then it would be good to log the reason
-> why this occured so that the system can be configured in such a way that
-> these interruptions are minimized.
+Commit-ID:  160594e99dbbb0a5600ad922c630952c7c1c14bf
+Gitweb:     http://git.kernel.org/tip/160594e99dbbb0a5600ad922c630952c7c1c14bf
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Wed, 28 Mar 2012 13:46:09 +0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 28 Mar 2012 13:40:44 +0200
 
-tracing is probably the right place to log these things. But that's
-about debugging. This won't be a notification on top of which your app
-could recover.
+cpusets: Remove an unused variable
+
+We don't use "cpu" any more after 2baab4e904 "sched: Fix
+select_fallback_rq() vs cpu_active/cpu_online".
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120328104608.GD29022@elgon.mountain
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/cpuset.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index c9837b7..4ef4d7e 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2198,7 +2198,6 @@ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+ {
+ 	const struct cpuset *cs;
+-	int cpu;
+ 
+ 	rcu_read_lock();
+ 	cs = task_cs(tsk);
