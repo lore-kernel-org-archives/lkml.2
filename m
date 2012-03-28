@@ -1,62 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab2C1KQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:16:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54590 "EHLO mx2.suse.de"
+	id S1758015Ab2C1KVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:21:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39628 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757731Ab2C1KQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:16:05 -0400
-Date: Wed, 28 Mar 2012 12:15:49 +0200
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Ted Tso <tytso@mit.edu>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
-Message-ID: <20120328101549.GB18751@quack.suse.cz>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
- <20120322095342.GC14485@quack.suse.cz>
- <1332410747.18717.12.camel@sauron.fi.intel.com>
- <20120322103309.GA14484@quack.suse.cz>
- <1332854998.31549.40.camel@sauron.fi.intel.com>
- <20120327201401.GF5020@quack.suse.cz>
- <1332924282.31549.51.camel@sauron.fi.intel.com>
+	id S1757747Ab2C1KVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:21:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: myungjoo.ham@gmail.com
+Subject: Re: [PATCH v4] PM / QoS: add pm_qos_update_request_timeout API
+Date: Wed, 28 Mar 2012 12:25:48 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, Mark Gross <markgross@thegnar.org>,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+References: <CAJ0PZbThSc=WkmeOYtykTKZ7bhBHJa7KYYPeWPLNy_suCD0f+A@mail.gmail.com> <201203280003.59332.rjw@sisk.pl> <CAJ0PZbR6WW66Nr=rMELQOURaeKDA3hqUsbEsn1kAgCfDpDa2zw@mail.gmail.com>
+In-Reply-To: <CAJ0PZbR6WW66Nr=rMELQOURaeKDA3hqUsbEsn1kAgCfDpDa2zw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332924282.31549.51.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203281225.48779.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-03-12 11:44:42, Artem Bityutskiy wrote:
-> On Tue, 2012-03-27 at 22:14 +0200, Jan Kara wrote:
-> > @@ -181,9 +181,22 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
-> >                 path.dentry = mnt->mnt_root;
-> >                 cp = d_path(&path, buf, sizeof(buf));
-> >                 if (!IS_ERR(cp)) {
-> > +                       handle_t *handle;
-> > +                       int err;
-> > +
-> > +                       handle = ext4_journal_start_sb(sb, 1);
-> > +                       if (IS_ERR(handle))
-> > +                               return PTR_ERR(handle);
-> > +                       err = ext4_journal_get_write_access(handle,
-> > +                                                           EXT4_SB(sb)->s_sbh);
+On Wednesday, March 28, 2012, MyungJoo Ham wrote:
+> 2012/3/28 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Tuesday, March 27, 2012, MyungJoo Ham wrote:
+> >> The new API, pm_qos_update_request_timeout() is to provide a timeout
+> >> with pm_qos_update_request.
+> >>
+> >> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+> >> QoS request on req with value 100 will be active for 1000 jiffies.
+> >> After 1000 jiffies, the QoS request thru req is rolled back to the
+> >> request status when pm_qos_update_request_timeout() was called. If there
+> >> were another pm_qos_update_request(req, x) during the 1000 jiffies, this
+> >> new request with value x will override as this is another request on the
+> >> same req handle.
+> >
+> > Can you please update the above part of the changelog to reflect the
+> > fact that microseconds are the new timeout units?
 > 
-> Why do we need to bother with journal in this case - AFAIU, we update a
-> single field, not critical, and we do not really need the journal for
-> this - we can just call 'mark_buffer_dirty(sbi->s_sbh)' and let the SB
-> be written out directly and asynchronously.
-  Well, except that if someone is trying to modify the superblock via the
-journal in parallel, the journalling layer will loudly complain about
-buffer becoming dirty under it's hands... So there are only two ways you
-can reasonably do this in ext3/ext4 - just modify the data (which is a bit
-ugly but works), or do full journalling.
+> Sure, I've just sent another.
+> 
+> >
+> >> A new request on the same req handle will always
+> >> override the previous request whether it is the conventional request or
+> >> it is the new timeout request.
+> >>
+> >> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >> Acked-by: Mark Gross <markgross@thegnar.org>
+> >
+> > It is kind of too late for the 3.4 merge window, so I'd prefer to keep that
+> > for the v3.5 cycle, unless you urgently need it in v3.4, in which case please
+> > let me know.
+> >
+> > Thanks,
+> > Rafael
+> >
+> 
+> Could you please put it with 3.4 if possible? We want to use this
+> feature with 3.4.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Can you please give any details, if possible?
+
+Rafael
+
+
+> >> --
+> >> Changes from v3
+> >> - The timeout value is expresses in us (1/1000000 sec), not ms (1/1000 sec).
+> >> Changes from v2
+> >> - Rebased to avoid merge conflict
+> >> Chages from v1(RFC)
+> >> - The semmantics of timeout changed. A timeout now means that the
+> >>  corresponding qos-req object is being cancelled, not rolling back to
+> >> the qos request state at the time of API call. With this changes,
+> >> combined with the conventional update_request API, there exists up to
+> >> only one qos request per qos-req object.
+> >> - The timeout value is expressed in ms (1/1000 sec), not jiffies.
+> >> - Style changes, removing unnecessary changes.
+> >> - Bugfixes regarding pending timeout work.
+> >> ---
+> >>  include/linux/pm_qos.h |    4 +++
+> >>  kernel/power/qos.c     |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  2 files changed, 54 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> >> index c8a541e..18689737 100644
+> >> --- a/include/linux/pm_qos.h
+> >> +++ b/include/linux/pm_qos.h
+> >> @@ -8,6 +8,7 @@
+> >>  #include <linux/notifier.h>
+> >>  #include <linux/miscdevice.h>
+> >>  #include <linux/device.h>
+> >> +#include <linux/workqueue.h>
+> >>
+> >>  enum {
+> >>       PM_QOS_RESERVED = 0,
+> >> @@ -29,6 +30,7 @@ enum {
+> >>  struct pm_qos_request {
+> >>       struct plist_node node;
+> >>       int pm_qos_class;
+> >> +     struct delayed_work work; /* for pm_qos_update_request_timeout */
+> >>  };
+> >>
+> >>  struct dev_pm_qos_request {
+> >> @@ -73,6 +75,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+> >>                       s32 value);
+> >>  void pm_qos_update_request(struct pm_qos_request *req,
+> >>                          s32 new_value);
+> >> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
+> >> +                                s32 new_value, unsigned long timeout_us);
+> >>  void pm_qos_remove_request(struct pm_qos_request *req);
+> >>
+> >>  int pm_qos_request(int pm_qos_class);
+> >> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> >> index d6d6dbd..6a031e6 100644
+> >> --- a/kernel/power/qos.c
+> >> +++ b/kernel/power/qos.c
+> >> @@ -230,6 +230,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
+> >>  EXPORT_SYMBOL_GPL(pm_qos_request_active);
+> >>
+> >>  /**
+> >> + * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
+> >> + * @work: work struct for the delayed work (timeout)
+> >> + *
+> >> + * This cancels the timeout request by falling back to the default at timeout.
+> >> + */
+> >> +static void pm_qos_work_fn(struct work_struct *work)
+> >> +{
+> >> +     struct pm_qos_request *req = container_of(to_delayed_work(work),
+> >> +                                               struct pm_qos_request,
+> >> +                                               work);
+> >> +
+> >> +     pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
+> >> +}
+> >> +
+> >> +/**
+> >>   * pm_qos_add_request - inserts new qos request into the list
+> >>   * @req: pointer to a preallocated handle
+> >>   * @pm_qos_class: identifies which list of qos request to use
+> >> @@ -253,6 +268,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
+> >>               return;
+> >>       }
+> >>       req->pm_qos_class = pm_qos_class;
+> >> +     INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
+> >>       pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
+> >>                            &req->node, PM_QOS_ADD_REQ, value);
+> >>  }
+> >> @@ -279,6 +295,9 @@ void pm_qos_update_request(struct pm_qos_request *req,
+> >>               return;
+> >>       }
+> >>
+> >> +     if (delayed_work_pending(&req->work))
+> >> +             cancel_delayed_work_sync(&req->work);
+> >> +
+> >>       if (new_value != req->node.prio)
+> >>               pm_qos_update_target(
+> >>                       pm_qos_array[req->pm_qos_class]->constraints,
+> >> @@ -287,6 +306,34 @@ void pm_qos_update_request(struct pm_qos_request *req,
+> >>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
+> >>
+> >>  /**
+> >> + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
+> >> + * @req : handle to list element holding a pm_qos request to use
+> >> + * @new_value: defines the temporal qos request
+> >> + * @timeout_us: the effective duration of this qos request in usecs.
+> >> + *
+> >> + * After timeout_us, this qos request is cancelled automatically.
+> >> + */
+> >> +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
+> >> +                                unsigned long timeout_us)
+> >> +{
+> >> +     if (!req)
+> >> +             return;
+> >> +     if (WARN(!pm_qos_request_active(req),
+> >> +              "%s called for unknown object.", __func__))
+> >> +             return;
+> >> +
+> >> +     if (delayed_work_pending(&req->work))
+> >> +             cancel_delayed_work_sync(&req->work);
+> >> +
+> >> +     if (new_value != req->node.prio)
+> >> +             pm_qos_update_target(
+> >> +                     pm_qos_array[req->pm_qos_class]->constraints,
+> >> +                     &req->node, PM_QOS_UPDATE_REQ, new_value);
+> >> +
+> >> +     schedule_delayed_work(&req->work, usecs_to_jiffies(timeout_us));
+> >> +}
+> >> +
+> >> +/**
+> >>   * pm_qos_remove_request - modifies an existing qos request
+> >>   * @req: handle to request list element
+> >>   *
+> >> @@ -305,6 +352,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
+> >>               return;
+> >>       }
+> >>
+> >> +     if (delayed_work_pending(&req->work))
+> >> +             cancel_delayed_work_sync(&req->work);
+> >> +
+> >>       pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
+> >>                            &req->node, PM_QOS_REMOVE_REQ,
+> >>                            PM_QOS_DEFAULT_VALUE);
+> >>
+> >
+> 
+> 
+> 
+> 
+
