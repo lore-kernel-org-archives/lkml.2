@@ -1,31 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab2C1BXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 21:23:07 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45009 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325Ab2C1BXF (ORCPT
+	id S1757610Ab2C1Bdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 21:33:50 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:47527 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756467Ab2C1Bdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 21:23:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F701AB1.2050200@monstr.eu>
-References: <4F701AB1.2050200@monstr.eu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 27 Mar 2012 18:22:43 -0700
-X-Google-Sender-Auth: eUf4Gs1cMnV1Kzru9Zzv2VTDRGY
-Message-ID: <CA+55aFyQ54NA2VpjQP+L5G18BWfeRNn6pZ_vOXQY4ob4bwgGEg@mail.gmail.com>
-Subject: Re: [GIT PULL] arch/microblaze fixes for 3.4
-To: Michal Simek <monstr@monstr.eu>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Mar 2012 21:33:49 -0400
+Date: Tue, 27 Mar 2012 21:32:44 -0400 (EDT)
+Message-Id: <20120327.213244.340230223876758625.davem@davemloft.net>
+To: andi@firstfloor.org
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 10/13] smsc911x: Use lockdep_assert_held instead of
+ home grown buggy construct
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1332895637-32572-11-git-send-email-andi@firstfloor.org>
+References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
+	<1332895637-32572-11-git-send-email-andi@firstfloor.org>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 27 Mar 2012 18:32:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 12:28 AM, Michal Simek <monstr@monstr.eu> wrote:
->
-> Please pull the following two patches.
+From: Andi Kleen <andi@firstfloor.org>
+Date: Tue, 27 Mar 2012 17:47:14 -0700
 
-Two patches? There's much more than that there, and you list them too. Whazzup?
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-                      Linus
+Acked-by: David S. Miller <davem@davemloft.net>
