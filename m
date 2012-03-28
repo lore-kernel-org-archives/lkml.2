@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab2C1L0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:26:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37972 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425Ab2C1L0i convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:26:38 -0400
-Message-ID: <1332933968.2528.26.camel@twins>
-Subject: Re: [PATCH 11/39] autonuma: CPU follow memory algorithm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dan Smith <danms@us.ibm.com>, Paul Turner <pjt@google.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>, linux-mm@kvack.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>, Bharata B Rao <bharata.rao@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
-Date: Wed, 28 Mar 2012 13:26:08 +0200
-In-Reply-To: <20120327161540.GS5906@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
-	 <1332783986-24195-12-git-send-email-aarcange@redhat.com>
-	 <1332786353.16159.173.camel@twins> <4F70C365.8020009@redhat.com>
-	 <20120326194435.GW5906@redhat.com>
-	 <CA+55aFwk0Etg_UhoZcKsfFJ7PQNLdQ58xxXiwcA-jemuXdZCZQ@mail.gmail.com>
-	 <20120326203951.GZ5906@redhat.com> <1332837595.16159.208.camel@twins>
-	 <20120327161540.GS5906@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932487Ab2C1L22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:28:28 -0400
+Received: from mail2.charite.de ([141.42.206.200]:36505 "EHLO mail2.charite.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932383Ab2C1L20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 07:28:26 -0400
+Date: Wed, 28 Mar 2012 13:28:22 +0200
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: 3.3.0: "INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)"
+Message-ID: <20120328112822.GH16671@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <20120327141536.GP25457@charite.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120327141536.GP25457@charite.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 18:15 +0200, Andrea Arcangeli wrote:
-> This is _purely_ a performance optimization so if my design is so bad,
-> and you're also requiring all apps that spans over more than one NUMA
-> node to be modified to use your new syscalls, you won't have problems
-> to win against AutoNUMA in the benchmarks. 
+* Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>:
+> 
+> Mar 23 11:54:00 mail kernel:
+> Mar 23 11:54:00 mail kernel: [347213.025005] INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
+> Mar 23 11:54:00 mail kernel: [347213.025005] Pid: 12654, comm: cleanup Not tainted 3.3.0 #1
+> Mar 23 11:54:00 mail kernel: [347213.025005] Call Trace:
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1062ccb>] ? __rcu_pending+0x10a/0x311
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c106388d>] ? rcu_check_callbacks+0x9b/0xa1
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c102c434>] ? update_process_times+0x2a/0x53
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c104f206>] ? tick_sched_timer+0x4f/0x90
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a101>] ? __remove_hrtimer+0x25/0x79
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a2ff>] ? __run_hrtimer.isra.32+0x38/0xbe
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103ad95>] ? hrtimer_interrupt+0xda/0x23d
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1016493>] ? smp_apic_timer_interrupt+0x4c/0x81
+> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c127b5d9>] ? apic_timer_interrupt+0x31/0x38
 
-Right, so can we agree that the only case where they diverge is single
-processes that have multiple threads and are bigger than a single node (either
-in memory, cputime or both)?
+I read http://www.kernel.org/doc/Documentation/RCU/stallwarn.txt
+but couldn't find "rcu_bh detected stall" being mentioned there.
 
-I've asked you several times why you care about that one case so much, but
-without answer.
+I reported the same issue on 3.2.9 (same machine!) on the 13th of march:
 
-I'll grant you that unmodified such processes might do better with your
-stuff, however:
+Mar 12 12:58:38 mail kernel: [440746.244002] INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies)
+Mar 12 12:58:38 mail kernel: [440746.244002] Pid: 27980, comm: /usr/sbin/amavi Tainted: G        W    3.2.9 #1
+Mar 12 12:58:38 mail kernel: [440746.244002] Call Trace:
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1061d26>] ? __rcu_pending+0x10a/0x30e
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c10626ca>] ? rcu_check_callbacks+0xd4/0xde
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1035cf2>] ? update_process_times+0x2a/0x53
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c104e1d2>] ? tick_sched_timer+0x4d/0x8e
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1043b53>] ? __remove_hrtimer+0x25/0x79
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1043d4f>] ? __run_hrtimer.isra.32+0x37/0xbd
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c10445d5>] ? hrtimer_interrupt+0xdb/0x23d
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1015e4c>] ? smp_apic_timer_interrupt+0x4c/0x81
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1275491>] ? apic_timer_interrupt+0x31/0x38 
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b8c2>] ? do_page_fault+0x141/0x38f
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1030d8d>] ? irq_exit+0x34/0x87
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1015e51>] ? smp_apic_timer_interrupt+0x51/0x81
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
+Mar 12 12:58:38 mail kernel: [440746.244002]  [<c12756b7>] ? error_code+0x67/0x6c
 
- - your stuff assumes there is a fair amount of locality to exploit.
+and so did Tilman Schmidt in February:
+https://lkml.org/lkml/2012/2/18/34
 
-   I'm not seeing how this is true in general, since data partitioning is hard
-   and for those problems where its possible people tend to already do so,
-   yielding natural points to add the syscalls.
-
- - your stuff doesn't actually nest, since a guest kernel has no clue as to
-   what constitutes a node (or if there even is such a thing) it will randomly
-   move tasks around on the vcpus, with complete disrespect for whatever host
-   vcpu<->page mappings you set up.
-
-   guest kernels actively scramble whatever relations you're building by
-   scanning, destroying whatever (temporal) locality you think you might
-   have found.
-
- - also, by not exposing NUMA to the guest kernel, the guest kernel/userspace
-   has no clue it needs to behave as if there's multiple nodes etc..
-
-Furthermore, most applications that are really big tend to have already thought
-about parallelism and have employed things like data-parallelism if at all
-possible. If this is not possible (many problems fall in this category) there
-really isn't much you can do.
-
-Related to this is that all applications that currently use mbind() and
-sched_setaffinity() are trivial to convert.
-
-Also, really big threaded programs have a natural enemy, the shared state that
-makes it a process, most dominantly the shared address space (mmap_sem etc..).
-
-There's also the reason Avi mentioned, core count tends to go up, which means
-nodes are getting bigger and bigger.
-
-But most importantly, your solution is big, complex and costly specifically to
-handle this case which, as per the above reasons, I think is not very
-interesting.
-
-So why not do the simple thing first before going overboard for a case that
-might be irrelevant?
-
+-- 
+Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
+ralf.hildebrandt@charite.de        Campus Benjamin Franklin
+http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
+Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
