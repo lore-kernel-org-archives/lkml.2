@@ -1,104 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab2C1JtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 05:49:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50819 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754636Ab2C1JtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 05:49:09 -0400
-Date: Wed, 28 Mar 2012 11:48:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>
-Subject: Re: [PATCH 01/19] mm: Make default vm_ops provide ->page_mkwrite
- handler
-Message-ID: <20120328094856.GA18751@quack.suse.cz>
-References: <1330963277-26336-1-git-send-email-jack@suse.cz>
- <1330963277-26336-2-git-send-email-jack@suse.cz>
- <20120323154502.8072a755.akpm@linux-foundation.org>
- <20120327075527.GA5020@quack.suse.cz>
- <20120327143815.40456d38.akpm@linux-foundation.org>
- <20120327220819.GK5020@quack.suse.cz>
- <20120327224553.GG5091@dastard>
+	id S1757952Ab2C1Jvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 05:51:32 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49231 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab2C1Jvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 05:51:31 -0400
+Date: Wed, 28 Mar 2012 11:51:25 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@amd64.org>, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] tools: Add a toplevel Makefile
+Message-ID: <20120328095125.GA16369@aftab>
+References: <1332513788-9726-1-git-send-email-bp@amd64.org>
+ <20120324074412.GE20145@gmail.com>
+ <20120326122632.GC32090@aftab>
+ <20120326151432.GA8527@gmail.com>
+ <20120326154132.GJ32090@aftab>
+ <20120328072528.GA22885@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120327224553.GG5091@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120328072528.GA22885@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-03-12 09:45:53, Dave Chinner wrote:
-> On Wed, Mar 28, 2012 at 12:08:19AM +0200, Jan Kara wrote:
-> > On Tue 27-03-12 14:38:15, Andrew Morton wrote:
-> > > On Tue, 27 Mar 2012 09:55:27 +0200
-> > > Jan Kara <jack@suse.cz> wrote:
-> > > > On Fri 23-03-12 15:45:02, Andrew Morton wrote:
-> > > > > On Mon,  5 Mar 2012 17:00:59 +0100
-> > > > > Jan Kara <jack@suse.cz> wrote:
-> > > > > 
-> > > > > > --- a/mm/filemap.c
-> > > > > > +++ b/mm/filemap.c
-> > > > > > @@ -1759,8 +1759,28 @@ page_not_uptodate:
-> > > > > >  }
-> > > > > >  EXPORT_SYMBOL(filemap_fault);
-> > > > > >  
-> > > > > > +int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > > > > > +{
-> > > > > > +	struct page *page = vmf->page;
-> > > > > > +	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
-> > > > > > +	int ret = VM_FAULT_LOCKED;
-> > > > > > +
-> > > > > > +	file_update_time(vma->vm_file);
-> > > > > > +	lock_page(page);
-> > > > > > +	if ((page->mapping != inode->i_mapping) ||
-> > > > > > +	    (page_offset(page) > i_size_read(inode))) {
-> > > > > 
-> > > > > Would benefit from a comment explaining how the page can come to be
-> > > > > outside i_size, and why we fail in that case.
-> > > 
-> > > This?
-> > > 
-> > > > > I don't think i_mutex is held here, so this test is rather meaningless
-> > > > > and racy anyway?
-> > > >   i_size test is racy if that's what you mean by "this test". Just I did
-> > > > the test this way because it's like this in other places and I figured
-> > > > truncate_pagecache() can take relatively long time so the test has some
-> > > > effect. But if you think it's not worth it, I can remove it.
-> > > 
-> > > It bugs me when we copy-n-paste code without remembering why we had it
-> > > there in the first place :( iirc, mmapped pages outside i_size can and
-> > > do happen in some race situations, and are benign.
-> >   Yeah. Certainly there can be pages beyond i_size because we first set
-> > file size and then go and remove pages beyond new i_size one by one when we
-> > do truncate. We must be careful not to create any new pages beyond i_size
-> > but that's what filemap_fault() takes care of. So I think i_size check in
-> > ->page_mkwrite() isn't strictly needed.
+On Wed, Mar 28, 2012 at 09:25:28AM +0200, Ingo Molnar wrote:
 > 
-> Actually, I think it is. In __do_fault(), we drop the page lock
-> between the .fault call and the .page_mkwrite() call, so the size
-> checks in .fault for the given page being faulted are no longer
-> valid as truncate serialises only on the page lock. Hence we have to
-> repeat the truncate race checks again in .page_mkwrite() after we
-> relock the page.
-  I was thinking about this scenario as well but I think doesn't cause any
-problems. But maybe there's some noise in what the condition actually is.
-So I currently have:
-	if (page->mapping != inode->i_mapping)
-		bail..
-	do stuff.
-And I think that is enough. Because only filemap_fault() creates new page,
-->page_mkwrite() only uses the page reference from vmf->page. So the only
-thing that can happen after __do_fault() drops page lock is that
-truncate_pagecache() will go and truncate the page (thus page->mapping will
-be NULL) and the condition I currently have should be enough to catch that.
+> * Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > On Mon, Mar 26, 2012 at 05:14:32PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Borislav Petkov <bp@amd64.org> wrote:
+> > > 
+> > > > On Sat, Mar 24, 2012 at 08:44:12AM +0100, Ingo Molnar wrote:
+> > > > > Could this also be accessible via 'make tools' in the toplevel 
+> > > > > Makefile?
+> > > > > 
+> > > > > I'd love to be able to type:
+> > > > > 
+> > > > >   make -j tools perf install
+> > > > 
+> > > > Well,
+> > > > 
+> > > > you could do
+> > > > 
+> > > > $ make -j -C tools perf
+> > > 
+> > > Arguably I could also type:
+> > > 
+> > >   cd tools/perf; make -j install
+> > > 
+> > > :-)
+> > > 
+> > > So I just wanted to bring this up, that integrating it into the 
+> > > top level Makefile might make sense. Or not.
+> > 
+> > Right,
+> > 
+> > so from dealing with make in the last days, I can say that it's not a
+> > fun walk in the park :). The problem is having multiple targets like the
+> > following:
+> > 
+> > $ make -j tools perf install
+> > 
+> > I have to be able to differentiate in the Makefile which of the targets
+> > is a directory ("tools"), which is the actual tool name to build
+> > ("perf") and which is a special target ("install") which relates to the
+> > tool name coming before it on the command line and is not the "install"
+> > target of the main Makefile.
+> > 
+> > And it becomes nasty very fast if you reorder them
+> > 
+> > $ make -j install perf tools
+> > 
+> > where all that sequential info doesn't mean anything anymore.
+> > 
+> > So, the question is, what we actually want?
+> > 
+> > $ make -j tools perf install
+> > 
+> > is pretty cryptic wrt to which target we're actually building and having
+> > the -C switch makes stuff a bit clearer IMHO:
+> > 
+> > $ make -j -C tools perf install
+> > 
+> > Also, having "install" as the last target means IMO to build the tool
+> > before it and then install it.
+> > 
+> > In the end of the day, probably the most important thing is what is
+> > the use case for tools/ which makes most sense. I definitely think the
+> > 'help' target is a step in that direction. Being able to do
+> > 
+> > $ make -C tools
+> > 
+> > and it give you a short description is pretty helpful.
+> > 
+> > How about we have:
+> > 
+> > make tools-<toolname> install
+> > 
+> > or
+> > 
+> > make tools/perf install
+> > 
+> > from the toplevel kernel directory? Would that make more sense from a
+> > usability perspective?
+> 
+> I have no strong preference currently. I think since it affects 
+> kbuild it would be nice to know the opinion of the kbuild folks 
+> (Cc:-ed): how should the integration of tools/ proceed?
 
-								Honza
+Btw,
+
+I'm currently thinking I want to give the make tools/{perf,help,...}
+approach a try because it is clear that it is a subdir of the kernel src
+tree and it probably could support all the targets we thought about.
+
+Let me play around with it a bit...
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
