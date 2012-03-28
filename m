@@ -1,69 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab2C1NcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:32:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52545 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758015Ab2C1NcW (ORCPT
+	id S1758013Ab2C1Nio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:38:44 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:40762 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757605Ab2C1Nin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:32:22 -0400
-Date: Wed, 28 Mar 2012 14:32:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        marc.reilly@gmail.com, s.hauer@pengutronix.de,
-        fabio.estevam@freescale.com
-Subject: Re: [PATCH v1] mfd: mc13xxx: add I2C support fix building for v3.3
-Message-ID: <20120328133220.GR3232@opensource.wolfsonmicro.com>
-References: <1332846260-18145-1-git-send-email-alexg@meprolight.com>
+	Wed, 28 Mar 2012 09:38:43 -0400
+Date: Wed, 28 Mar 2012 15:38:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
+Subject: Re: [PATCH 11/32] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+Message-ID: <20120328133835.GF17189@somewhere.redhat.com>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+ <1332338318-5958-13-git-send-email-fweisbec@gmail.com>
+ <alpine.DEB.2.00.1203210953220.20482@router.home>
+ <CAOtvUMdkU92t0nj9OXsnzCenuOyjb12x6s11xR_GGJu1aJJ7GA@mail.gmail.com>
+ <alpine.DEB.2.00.1203221117100.25011@router.home>
+ <CAOtvUMeMhA_scQyJwDpfNZ7BipAKfLTqODqkn342mcxS_yL9OQ@mail.gmail.com>
+ <20120328123912.GE17189@somewhere.redhat.com>
+ <CAOtvUMfJyuLXqa7oOcYcxov9JEkqnxwTnv-bRG-_5Whq6N7uMw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gV1yUYniiDLxW66s"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1332846260-18145-1-git-send-email-alexg@meprolight.com>
-X-Cookie: You will be run over by a beer truck.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOtvUMfJyuLXqa7oOcYcxov9JEkqnxwTnv-bRG-_5Whq6N7uMw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 28, 2012 at 02:57:44PM +0200, Gilad Ben-Yossef wrote:
+> On Wed, Mar 28, 2012 at 2:39 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Tue, Mar 27, 2012 at 05:21:34PM +0200, Gilad Ben-Yossef wrote:
+> >> On Thu, Mar 22, 2012 at 6:18 PM, Christoph Lameter <cl@linux.com> wrote:
+> >> > On Thu, 22 Mar 2012, Gilad Ben-Yossef wrote:
+> >> >
+> >> >> > Is there any way for userspace to know that the tick is not off yet due to
+> >> >> > this? It would make sense for us to have busy loop in user space that
+> >> >> > waits until the OS has completed all processing if that avoids future
+> >> >> > latencies for the application.
+> >> >> >
+> >> >>
+> >> >> I previously suggested having the user register to receive a signal
+> >> >> when the tick
+> >> >> is turned off. Since the tick is always turned off the user task is
+> >> >> the current task
+> >> >> by design, *I think* you can simply mark the signal pending when you
+> >> >> turn the tick off.
+> >> >
+> >> > Ok that sounds good. You would define a new signal for this?
+> >> >
+> >>
+> >> My gut instinct is to let the process register with a specific signal
+> >> (properly the RT range)
+> >> it wants to receive when the tick goes off and/or on.
+> >
+> > Note the signal itself could trigger an event that could restart the tick.
+> > Calling call_rcu() is sufficient for that. We can probably optimize that
+> > one day by assigning another CPU to handle the callbacks of a tickless
+> > CPU but for now...
+> >
+> 
+> 
+> 
+> >>
+> >> > So we would startup the application. App will do all prep work (memory
+> >> > allocation, device setup etc etc) and then wait for the signal to be
+> >> > received. After that it would enter the low latency processing phase.
+> >> >
+> >> > Could we also get a signal if something disrupts the peace and switches
+> >> > the timer interrupt on again?
+> >> >
+> >>
+> >> I think you'll have to since once you have the tick turned off there
+> >> is no guarantee that
+> >> it wont get turned on by a timer scheduling an task or an IPI.
+> >
+> > The problem with this scheme is that if the task is running with the
+> > guarantee that nothing is going to disturb it (it assumes so when it
+> > is notified that the timer is stopped), can it seriously recover from
+> > the fact the timer has been restarted once it gets notified about it?
+> 
+> Recovery in this context involves a programmer/system architect looking
+> into what made the tick start and making sure that wont happen the next
+> time around.
+> 
+> I know it's not quite what you had in mind, but it works :-)
 
---gV1yUYniiDLxW66s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So this is about fixing bugs. Tracing may fit better for that.
 
-On Tue, Mar 27, 2012 at 01:04:20PM +0200, Alex Gershgorin wrote:
-> This patch fixes the following compilation errors,
-> when using a series mc13xxx-add-I2C-support-V4
+> 
+> >
+> > I have a hard time to imagine that. It's like an RT task running a
+> > critical part that suddenly receives a notification from the kernel that
+> > says "what's up dude? hey by the way you're not real time anymore" :)
+> > How are we recovering from that?
+> 
+> The point is that it is the difference between a QA report that says:
+> 
+> "Performance dropped below acceptable level for 10 ms some when
+> during the test run"
+> 
+> and
+> 
+> "We got an indication that the kernel resumed the tick on us, so the test
+> was stopped and here is the stack trace for all the tasks running,
+> plus the logs".
 
-> 1)
-> drivers/mfd/mc13xxx-spi.c:50: error: unknown field 'pad_bits'
-> specified in initializer
+That's about post run analysis, that's sounds to be a job for tracing.
 
-This (and probably some of the other stuff) is already merged.  Is this
-just a backport of stuff for 3.4/5 to enable testing on 3.3 or are there
-any errors that need to be fixed in the relevant places?
-
---gV1yUYniiDLxW66s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcxLbAAoJEBus8iNuMP3dlmAP/A+8bhVcxFcpKUW9fQc4a3Kn
-LNq1EXyK8anupT9ok8JBxP3LBSsdb4e8+mY0weKtPFe6QkuqqvVf5bAlDYCmJQwG
-apdboQ8zE+s9om/svexSNMQKNa5062MvvdRDMoKjBYyVngwy0WkT/0zHqnD5O0HJ
-0GaerjPp2Xn/fbse3Wm8zob5fw53mT+IzsApIUdh6OUgpEsXDxgTBa/vJnPLxDBU
-56PAxYLu02KmEHoWuChftBQiCBakg+27KTX/66jQZbyjT/hnRl1pa2mpSXBjHX7d
-DcBNfPCteq7dkdtLIlaDkCgh9DI+MWPyDY42bZzEQsPpEYrLLej02rch4lb80Swz
-yz6CwDr0vVSVbmUemVu/7GWIZqxYNKxC1voV3Z5xRIaBh/89O6KVTirqkDWzq69a
-xmz50+IvlFrUxhjDv2v89mnlcK0asQ8lfYs0+n1ie86KSai8+mVDZ2M6Jkza4g0X
-cqEMrXmhtj1y3AB8cWVPyq/f3aZ8Yq7AHpSlbvEGGnuptLtS72ixDiwDfIEzVMGV
-kj8Th49KHf4TEYbaKEhhoY6bSwsANoGEh7htnRUjAeR1s8bDBFaOxoYIPftdaz2O
-dzAmUKF09zZk3KvV+ZjwPOiGcuxv4S4Fkh7UeeWLL91KMygXFbGoe+1o4mivzODn
-jESDWhtyd6WbibRIczic
-=wadX
------END PGP SIGNATURE-----
-
---gV1yUYniiDLxW66s--
+> 
+> 
+> > May be instead of focusing on these notifications, we should try hard to
+> > shut down the tick before we reach userspace: delegate RCU work
+> > to another CPU, avoid needless IPIs, avoid needless timer list timers, etc...
+> > Fix those things one by one such that we can configure things to the point we
+> > get closer to a guarantee of CPU isolation.
+> >
+> > Does that sound reasonable?
+> 
+> It does to me :-)
+> 
+> Gilad
+> 
+> 
+> -- 
+> Gilad Ben-Yossef
+> Chief Coffee Drinker
+> gilad@benyossef.com
+> Israel Cell: +972-52-8260388
+> US Cell: +1-973-8260388
+> http://benyossef.com
+> 
+> "If you take a class in large-scale robotics, can you end up in a
+> situation where the homework eats your dog?"
+>  -- Jean-Baptiste Queru
