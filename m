@@ -1,237 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab2C1JcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 05:32:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51552 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932231Ab2C1JcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 05:32:19 -0400
-Date: Wed, 28 Mar 2012 02:32:01 -0700
-From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Message-ID: <tip-136d249ef7dbf0fefa292082cc40be1ea864cbd6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        jeremy.fitzhardinge@citrix.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        jeremy.fitzhardinge@citrix.com
-In-Reply-To: <1332385090-18056-2-git-send-email-konrad.wilk@oracle.com>
-References: <1332385090-18056-2-git-send-email-konrad.wilk@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/ioapic:
-  Add io_apic_ops driver layer to allow interception
-Git-Commit-ID: 136d249ef7dbf0fefa292082cc40be1ea864cbd6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752168Ab2C1Jf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 05:35:58 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:48900 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751786Ab2C1Jf4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 05:35:56 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>
+Date: Wed, 28 Mar 2012 11:33:08 +0200
+Subject: RE: Using remoteproc with ST-Ericsson modem.
+Thread-Topic: Using remoteproc with ST-Ericsson modem.
+Thread-Index: Ac0MIYjq0JMCsLEfRH+R0JKklhUcQAAGdj9Q
+Message-ID: <81C3A93C17462B4BBD7E272753C105792060C09F1D@EXDCVYMBSTM005.EQ1STM.local>
+References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
+ <201112091442.04294.arnd@arndb.de>
+ <81C3A93C17462B4BBD7E272753C105792060B42C9C@EXDCVYMBSTM005.EQ1STM.local>
+ <201203221657.09820.arnd@arndb.de>
+ <81C3A93C17462B4BBD7E272753C105792060C098E4@EXDCVYMBSTM005.EQ1STM.local>
+ <CAK=WgbY+n_CESWCSiC5tAXTm+8CJVEd2TOa4H0-iVeeb1=3C9Q@mail.gmail.com>
+In-Reply-To: <CAK=WgbY+n_CESWCSiC5tAXTm+8CJVEd2TOa4H0-iVeeb1=3C9Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 28 Mar 2012 02:32:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  136d249ef7dbf0fefa292082cc40be1ea864cbd6
-Gitweb:     http://git.kernel.org/tip/136d249ef7dbf0fefa292082cc40be1ea864cbd6
-Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-AuthorDate: Wed, 21 Mar 2012 22:58:08 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 28 Mar 2012 09:49:29 +0200
+Hi Ohad,
 
-x86/ioapic: Add io_apic_ops driver layer to allow interception
+> Can you please elaborate why would you want that ? Let's go
+> requirement by requirement.
 
-Xen dom0 needs to paravirtualize IO operations to the IO APIC,
-so add a io_apic_ops for it to intercept.  Do this as ops
-structure because there's at least some chance that another
-paravirtualized environment may want to intercept these.
+1) Resource descriptors and parameters such as size of vring,
+size of the "carved-out" shared memory, as well as proprietary
+(CAIF specific) parameters, should be supported. These parameters
+must be available to the Virtio device-drivers (CAIF interface),
+and to the modem. The resource/parameter configuration has to be
+stored in shared memory before booting the modem.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: jwboyer@redhat.com
-Cc: yinghai@kernel.org
-Link: http://lkml.kernel.org/r/1332385090-18056-2-git-send-email-konrad.wilk@oracle.com
-[ Made all the affected code easier on the eyes ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/io_apic.h |    9 ++++++
- arch/x86/kernel/apic/io_apic.c |   58 +++++++++++++++++++++++++++++++++++-----
- 2 files changed, 60 insertions(+), 7 deletions(-)
+2a) The resource descriptors and configuration parameters are pre-
+formatted in the proprietary binary format. Remoteproc (or it's plugin)
+must then be able to parse this proprietary format, extract
+configuration parameters, and load the binary image into shared memory.
+OR 
+2b) Configuration parameters and firmware can be provided separately.
+The remoteproc (or it's plugin) must be able to format the provided
+configuration parameters in a proprietary format understood by the
+modem boot-loader and store the firmware and configuration in
+shared memory. A user-space API for configuration (e.g. netlink)
+must be supported.
+OR
+2c) As in 2a, the image in proprietary format containing both firmware 
+and parameters could be provided. In addition configuration parameters
+could be provided to remoteproc separately. The binary-image and
+configuration parameters will in this case hold identical configuration
+information. A user-space API for configuration (e.g. netlink)
+must be supported.
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 690d1cc..2c4943d 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -21,6 +21,15 @@
- #define IO_APIC_REDIR_LEVEL_TRIGGER	(1 << 15)
- #define IO_APIC_REDIR_MASKED		(1 << 16)
- 
-+struct io_apic_ops {
-+	void		(*init)  (void);
-+	unsigned int	(*read)  (unsigned int apic, unsigned int reg);
-+	void		(*write) (unsigned int apic, unsigned int reg, unsigned int value);
-+	void		(*modify)(unsigned int apic, unsigned int reg, unsigned int value);
-+};
-+
-+void __init set_io_apic_ops(const struct io_apic_ops *);
-+
- /*
-  * The structure of the IO-APIC:
-  */
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 2c428c5..e88300d 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -64,9 +64,28 @@
- #include <asm/apic.h>
- 
- #define __apicdebuginit(type) static type __init
-+
- #define for_each_irq_pin(entry, head) \
- 	for (entry = head; entry; entry = entry->next)
- 
-+static void		__init __ioapic_init_mappings(void);
-+
-+static unsigned int	__io_apic_read  (unsigned int apic, unsigned int reg);
-+static void		__io_apic_write (unsigned int apic, unsigned int reg, unsigned int val);
-+static void		__io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
-+
-+static struct io_apic_ops io_apic_ops = {
-+	.init	= __ioapic_init_mappings,
-+	.read	= __io_apic_read,
-+	.write	= __io_apic_write,
-+	.modify = __io_apic_modify,
-+};
-+
-+void __init set_io_apic_ops(const struct io_apic_ops *ops)
-+{
-+	io_apic_ops = *ops;
-+}
-+
- /*
-  *      Is the SiS APIC rmw bug present ?
-  *      -1 = don't know, 0 = no, 1 = yes
-@@ -294,6 +313,22 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
- 	irq_free_desc(at);
- }
- 
-+static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-+{
-+	return io_apic_ops.read(apic, reg);
-+}
-+
-+static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
-+{
-+	io_apic_ops.write(apic, reg, value);
-+}
-+
-+static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
-+{
-+	io_apic_ops.modify(apic, reg, value);
-+}
-+
-+
- struct io_apic {
- 	unsigned int index;
- 	unsigned int unused[3];
-@@ -314,16 +349,17 @@ static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
- 	writel(vector, &io_apic->eoi);
- }
- 
--static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-+static unsigned int __io_apic_read(unsigned int apic, unsigned int reg)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(reg, &io_apic->index);
- 	return readl(&io_apic->data);
- }
- 
--static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
-+static void __io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
-+
- 	writel(reg, &io_apic->index);
- 	writel(value, &io_apic->data);
- }
-@@ -334,7 +370,7 @@ static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned i
-  *
-  * Older SiS APIC requires we rewrite the index register
-  */
--static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
-+static void __io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 
-@@ -377,6 +413,7 @@ static struct IO_APIC_route_entry __ioapic_read_entry(int apic, int pin)
- 
- 	eu.w1 = io_apic_read(apic, 0x10 + 2 * pin);
- 	eu.w2 = io_apic_read(apic, 0x11 + 2 * pin);
-+
- 	return eu.entry;
- }
- 
-@@ -384,9 +421,11 @@ static struct IO_APIC_route_entry ioapic_read_entry(int apic, int pin)
- {
- 	union entry_union eu;
- 	unsigned long flags;
-+
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	eu.entry = __ioapic_read_entry(apic, pin);
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-+
- 	return eu.entry;
- }
- 
-@@ -396,8 +435,7 @@ static struct IO_APIC_route_entry ioapic_read_entry(int apic, int pin)
-  * the interrupt, and we need to make sure the entry is fully populated
-  * before that happens.
-  */
--static void
--__ioapic_write_entry(int apic, int pin, struct IO_APIC_route_entry e)
-+static void __ioapic_write_entry(int apic, int pin, struct IO_APIC_route_entry e)
- {
- 	union entry_union eu = {{0, 0}};
- 
-@@ -409,6 +447,7 @@ __ioapic_write_entry(int apic, int pin, struct IO_APIC_route_entry e)
- static void ioapic_write_entry(int apic, int pin, struct IO_APIC_route_entry e)
- {
- 	unsigned long flags;
-+
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	__ioapic_write_entry(apic, pin, e);
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-@@ -435,8 +474,7 @@ static void ioapic_mask_entry(int apic, int pin)
-  * shared ISA-space IRQs, so we have to support them. We are super
-  * fast in the common case, and fast for shared ISA-space IRQs.
-  */
--static int
--__add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
-+static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
- {
- 	struct irq_pin_list **last, *entry;
- 
-@@ -521,6 +559,7 @@ static void io_apic_sync(struct irq_pin_list *entry)
- 	 * a dummy read from the IO-APIC
- 	 */
- 	struct io_apic __iomem *io_apic;
-+
- 	io_apic = io_apic_base(entry->apic);
- 	readl(&io_apic->data);
- }
-@@ -3894,6 +3933,11 @@ static struct resource * __init ioapic_setup_resources(int nr_ioapics)
- 
- void __init ioapic_and_gsi_init(void)
- {
-+	io_apic_ops.init();
-+}
-+
-+static void __init __ioapic_init_mappings(void)
-+{
- 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
- 	struct resource *ioapic_res;
- 	int i;
+I had a quick look at the patch from Loic and Ludovic and they seem to
+provide resource-table and firmware separately.
+
+In my case, the best solution seems to be 2a). I.e to parse parameters
+from the provided firmware, and avoid any extra configuration parameters
+provided from user-space. It seems to me we could do this by adding a
+callback function to remoteproc that parses the firmware and returns
+a resource table.
+
+>> I think we need to be able to launch other Virtio device types than
+>> VIRTIO_ID_RPMSG as well.
+> 
+> Sure. Please note that we already support that today: a firmware can
+> indicate any type of (and number of) virito devices it supports, and
+> remoteproc will create those device as needed.
+
+Excellent.
+
+>> Most likely, I need to make a CAIF specific VIRTIO type
+> 
+> Have you considered making this an rpmsg driver ? it might make your
+> implementation simpler.
+
+Hm, there are some issue we need to handle in that case: last time I
+looked rpmsg did blocking calls, but CAIF may be running in soft-irq context.
+As mentioned before I need rpmsg to do "reversed/symmetric Vrings" for
+the RX direction. I also need performance specific tweaks such as
+disabling kicks and go into poll-mode at upon high load.
+
+However there might be new requirements we have in common such as:
+buffer pools with different fixed sized buffers, zero-copy handling of
+SKBs (TX), and DMA for (RX). Even if I end up not using rpmsg we should
+definitely look for opportunities for common code. I think we will be
+trying to solve the same type of problems.
+
+>> due to the fact that I need RX direction to be reversed
+>> (modem must be able to post its payload buffer to Virtio ring).
+> 
+> It sounds like something that Loic and Ludovic (cc'ed) have been
+> dealing with recently too. To solve it, they have created a symmetric
+> variation of vrings - you might want to take a look at their
+> implementation.
+
+Thanks for info, I've already started talking to them :-)
+
+>> We also define stream channels. As mentioned, I'm considering the possibility
+>> of reusing Virtio console.
+> 
+> Sounds nice. We tried virtio console with a remote processor and it
+> worked quite nicely.
+
+OK, good to hear. I'll definitely look into this more closely.
+
+Regards,
+Sjur
