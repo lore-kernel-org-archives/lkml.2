@@ -1,119 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab2C1VrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 17:47:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15963 "EHLO mga01.intel.com"
+	id S1758072Ab2C1VvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 17:51:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40892 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab2C1VrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 17:47:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134375140"
-From: Andi Kleen <andi@firstfloor.org>
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] ext4: Remove non scalable extent cache hit statistics
-Date: Wed, 28 Mar 2012 14:46:35 -0700
-Message-Id: <1332971195-1842-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1751941Ab2C1VvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 17:51:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v4 resend] PM / QoS: add pm_qos_update_request_timeout API
+Date: Wed, 28 Mar 2012 23:55:32 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, Mark Gross <markgross@thegnar.org>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
+        linux-kernel@vger.kernel.org
+References: <201203280003.59332.rjw@sisk.pl> <1332899243-24020-1-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1332899243-24020-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203282355.33066.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Wednesday, March 28, 2012, MyungJoo Ham wrote:
+> The new API, pm_qos_update_request_timeout() is to provide a timeout
+> with pm_qos_update_request.
+> 
+> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+> QoS request on req with value 100 will be active for 1000 microseconds.
+> After 1000 microseconds, the QoS request thru req is reset. If there
+> were another pm_qos_update_request(req, x) during the 1000 us, this
+> new request with value x will override as this is another request on the
+> same req handle. A new request on the same req handle will always
+> override the previous request whether it is the conventional request or
+> it is the new timeout request.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: Mark Gross <markgross@thegnar.org>
 
-We found that the cache line in the superblock that has the new extent
-cache hit/miss counters is extremly hot and causes significant slowdowns
-on larger systems.
+Applied to linux-pm/linux-next.
 
-The counter is also buggy: does not use atomics so there can be always
-lost updates.
+Thanks,
+Rafael
 
-Completely remove the two counters for now. If someone really needs them
-(which is dubious given the bad information they always gave) they would
-need to be implemented with per cpu counters.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- fs/ext4/ext4.h    |    4 ----
- fs/ext4/extents.c |    6 ------
- fs/ext4/super.c   |   16 ----------------
- 3 files changed, 0 insertions(+), 26 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 513004f..6161b26 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1193,10 +1193,6 @@ struct ext4_sb_info {
- 	unsigned long s_ext_blocks;
- 	unsigned long s_ext_extents;
- #endif
--	/* ext4 extent cache stats */
--	unsigned long extent_cache_hits;
--	unsigned long extent_cache_misses;
--
- 	/* for buddy allocator */
- 	struct ext4_group_info ***s_group_info;
- 	struct inode *s_buddy_cache;
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 7310b0e..f0a0270 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2049,12 +2049,6 @@ static int ext4_ext_check_cache(struct inode *inode, ext4_lblk_t block,
- 		ret = 1;
- 	}
- errout:
--#if 0
--	if (!ret)
--		sbi->extent_cache_misses++;
--	else
--		sbi->extent_cache_hits++;
--#endif
- 	trace_ext4_ext_in_cache(inode, block, ret);
- 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
- 	return ret;
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 502c61f..14dbc78 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2503,18 +2503,6 @@ static ssize_t lifetime_write_kbytes_show(struct ext4_attr *a,
- 			  EXT4_SB(sb)->s_sectors_written_start) >> 1)));
- }
- 
--static ssize_t extent_cache_hits_show(struct ext4_attr *a,
--				      struct ext4_sb_info *sbi, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_hits);
--}
--
--static ssize_t extent_cache_misses_show(struct ext4_attr *a,
--					struct ext4_sb_info *sbi, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_misses);
--}
--
- static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
- 					  struct ext4_sb_info *sbi,
- 					  const char *buf, size_t count)
-@@ -2572,8 +2560,6 @@ static struct ext4_attr ext4_attr_##name = __ATTR(name, mode, show, store)
- EXT4_RO_ATTR(delayed_allocation_blocks);
- EXT4_RO_ATTR(session_write_kbytes);
- EXT4_RO_ATTR(lifetime_write_kbytes);
--EXT4_RO_ATTR(extent_cache_hits);
--EXT4_RO_ATTR(extent_cache_misses);
- EXT4_ATTR_OFFSET(inode_readahead_blks, 0644, sbi_ui_show,
- 		 inode_readahead_blks_store, s_inode_readahead_blks);
- EXT4_RW_ATTR_SBI_UI(inode_goal, s_inode_goal);
-@@ -2589,8 +2575,6 @@ static struct attribute *ext4_attrs[] = {
- 	ATTR_LIST(delayed_allocation_blocks),
- 	ATTR_LIST(session_write_kbytes),
- 	ATTR_LIST(lifetime_write_kbytes),
--	ATTR_LIST(extent_cache_hits),
--	ATTR_LIST(extent_cache_misses),
- 	ATTR_LIST(inode_readahead_blks),
- 	ATTR_LIST(inode_goal),
- 	ATTR_LIST(mb_stats),
--- 
-1.7.7.6
+> --
+> Resend v4
+> - Corrected changelog
+> Changes from v3
+> - The timeout value is expresses in us (1/1000000 sec), not ms (1/1000 sec).
+> Changes from v2
+> - Rebased to avoid merge conflict
+> Chages from v1(RFC)
+> - The semmantics of timeout changed. A timeout now means that the
+>  corresponding qos-req object is being cancelled, not rolling back to
+> the qos request state at the time of API call. With this changes,
+> combined with the conventional update_request API, there exists up to
+> only one qos request per qos-req object.
+> - The timeout value is expressed in ms (1/1000 sec), not jiffies.
+> - Style changes, removing unnecessary changes.
+> - Bugfixes regarding pending timeout work.
+> ---
+>  include/linux/pm_qos.h |    4 +++
+>  kernel/power/qos.c     |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index c8a541e..18689737 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -8,6 +8,7 @@
+>  #include <linux/notifier.h>
+>  #include <linux/miscdevice.h>
+>  #include <linux/device.h>
+> +#include <linux/workqueue.h>
+>  
+>  enum {
+>  	PM_QOS_RESERVED = 0,
+> @@ -29,6 +30,7 @@ enum {
+>  struct pm_qos_request {
+>  	struct plist_node node;
+>  	int pm_qos_class;
+> +	struct delayed_work work; /* for pm_qos_update_request_timeout */
+>  };
+>  
+>  struct dev_pm_qos_request {
+> @@ -73,6 +75,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+>  			s32 value);
+>  void pm_qos_update_request(struct pm_qos_request *req,
+>  			   s32 new_value);
+> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
+> +				   s32 new_value, unsigned long timeout_us);
+>  void pm_qos_remove_request(struct pm_qos_request *req);
+>  
+>  int pm_qos_request(int pm_qos_class);
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index d6d6dbd..6a031e6 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -230,6 +230,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
+>  EXPORT_SYMBOL_GPL(pm_qos_request_active);
+>  
+>  /**
+> + * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
+> + * @work: work struct for the delayed work (timeout)
+> + *
+> + * This cancels the timeout request by falling back to the default at timeout.
+> + */
+> +static void pm_qos_work_fn(struct work_struct *work)
+> +{
+> +	struct pm_qos_request *req = container_of(to_delayed_work(work),
+> +						  struct pm_qos_request,
+> +						  work);
+> +
+> +	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
+> +}
+> +
+> +/**
+>   * pm_qos_add_request - inserts new qos request into the list
+>   * @req: pointer to a preallocated handle
+>   * @pm_qos_class: identifies which list of qos request to use
+> @@ -253,6 +268,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
+>  		return;
+>  	}
+>  	req->pm_qos_class = pm_qos_class;
+> +	INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
+>  	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
+>  			     &req->node, PM_QOS_ADD_REQ, value);
+>  }
+> @@ -279,6 +295,9 @@ void pm_qos_update_request(struct pm_qos_request *req,
+>  		return;
+>  	}
+>  
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+>  	if (new_value != req->node.prio)
+>  		pm_qos_update_target(
+>  			pm_qos_array[req->pm_qos_class]->constraints,
+> @@ -287,6 +306,34 @@ void pm_qos_update_request(struct pm_qos_request *req,
+>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
+>  
+>  /**
+> + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
+> + * @req : handle to list element holding a pm_qos request to use
+> + * @new_value: defines the temporal qos request
+> + * @timeout_us: the effective duration of this qos request in usecs.
+> + *
+> + * After timeout_us, this qos request is cancelled automatically.
+> + */
+> +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
+> +				   unsigned long timeout_us)
+> +{
+> +	if (!req)
+> +		return;
+> +	if (WARN(!pm_qos_request_active(req),
+> +		 "%s called for unknown object.", __func__))
+> +		return;
+> +
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+> +	if (new_value != req->node.prio)
+> +		pm_qos_update_target(
+> +			pm_qos_array[req->pm_qos_class]->constraints,
+> +			&req->node, PM_QOS_UPDATE_REQ, new_value);
+> +
+> +	schedule_delayed_work(&req->work, usecs_to_jiffies(timeout_us));
+> +}
+> +
+> +/**
+>   * pm_qos_remove_request - modifies an existing qos request
+>   * @req: handle to request list element
+>   *
+> @@ -305,6 +352,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
+>  		return;
+>  	}
+>  
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+>  	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
+>  			     &req->node, PM_QOS_REMOVE_REQ,
+>  			     PM_QOS_DEFAULT_VALUE);
+> 
 
