@@ -1,56 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097Ab2C1Nxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:53:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63073 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757928Ab2C1Nxl convert rfc822-to-8bit (ORCPT
+	id S1758070Ab2C1Nzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:55:55 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35587 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933Ab2C1Nzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:53:41 -0400
-Date: Wed, 28 Mar 2012 15:53:36 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
- linux kernel 3.3.0
-Message-ID: <20120328135336.GA1841@fancy-poultry.org>
-References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
- <201203240553.32526.gene.heskett@gmail.com>
- <57375.1332641134@turing-police.cc.vt.edu>
- <20120328051243.GA2138@fancy-poultry.org>
- <jkv0q5$kgu$1@dough.gmane.org>
+	Wed, 28 Mar 2012 09:55:53 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 04/10] memcg: Add HugeTLB extension
+In-Reply-To: <20120328113304.GE20949@tiehlicka.suse.cz>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120328113304.GE20949@tiehlicka.suse.cz>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 28 Mar 2012 19:10:36 +0530
+Message-ID: <87d37wetd7.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <jkv0q5$kgu$1@dough.gmane.org>
-Organization: private site
-X-OpenPGP-KeyID: 0x898F89DE
-X-OpenPGP-Fingerprint: 0815 20AD E896 A2B7 488F  4659 4C7B 8951 898F 89DE
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+52 (c26dbc7021f4) (2011-07-01)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:c2j0I6UqJBVBXUvp8h7ZgfvvgpDYu+YIYn5Xp/yqHqW
- Qa4lfRB/C5wTtezc9+2VVAL4bvo6hyFnvjsrYR4pcYndXtYmC3
- JiqsZoAbBeuD7QsMf5JO/aNhQ10Zyx7KkoWywnR9AJwtkPjq23
- 6bPEqqCzI4Drl4gnLRrW6nvr/O3yFsuxE+/WLdcYIVDz/lVlPx
- TreP2gDlgdZx8RlJ8/2qSCk9fQv2qpYBbIBRmbIfz2Kg5SC5Ci
- r692lluoZOwXtC8U8aymHjd5V8zeaob3rjk+fV8lmevcP9TyS4
- lj7FLVqwOMffN0y0wPOzlI9TddYVLt9/RlRvfue2qxniLLFVha
- bb6Rz9mOsumAB4oUL5mYmLv+1bwLd4SojK8WAT8H/
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12032813-9574-0000-0000-00000201D181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.03.2012, Nikos Chantziaras wrote: 
+Michal Hocko <mhocko@suse.cz> writes:
 
-> CFS: ALSA XRUNs in JACK.
-> BFS: much less ALSA XRUNs in JACK
+> On Fri 16-03-12 23:09:24, Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> This patch implements a memcg extension that allows us to control
+>> HugeTLB allocations via memory controller.
+>
+> And the infrastructure is not used at this stage (you forgot to
+> mention).
+> The changelog should be much more descriptive.
 
-BFS runs on all of my machines, and I know why. But that's not the
-point here. Why do people not accept and learn from each other? I'm
-quite shure that both CFS and BFS has good and bad things, why not
-take the best from both of them and improve it further?
 
-Just my 5ø.
+Will update the changelog.
+
+>
+>> 
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>>  include/linux/hugetlb.h    |    1 +
+>>  include/linux/memcontrol.h |   42 +++++++++++++
+>>  init/Kconfig               |    8 +++
+>>  mm/hugetlb.c               |    2 +-
+>>  mm/memcontrol.c            |  138 ++++++++++++++++++++++++++++++++++++++++++++
+>>  5 files changed, 190 insertions(+), 1 deletions(-)
+>> 
+> [...]
+>> diff --git a/init/Kconfig b/init/Kconfig
+>> index 3f42cd6..f0eb8aa 100644
+>> --- a/init/Kconfig
+>> +++ b/init/Kconfig
+>> @@ -725,6 +725,14 @@ config CGROUP_PERF
+>>  
+>>  	  Say N if unsure.
+>>  
+>> +config MEM_RES_CTLR_HUGETLB
+>> +	bool "Memory Resource Controller HugeTLB Extension (EXPERIMENTAL)"
+>> +	depends on CGROUP_MEM_RES_CTLR && HUGETLB_PAGE && EXPERIMENTAL
+>> +	default n
+>> +	help
+>> +	  Add HugeTLB management to memory resource controller. When you
+>> +	  enable this, you can put a per cgroup limit on HugeTLB usage.
+>
+> How does it interact with the hard/soft limists etc...
 
 
+There is no softlimit support for HugeTLB extension.
+
+>
+> [...]
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 6728a7a..4b36c5e 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -235,6 +235,10 @@ struct mem_cgroup {
+>>  	 */
+>>  	struct res_counter memsw;
+>>  	/*
+>> +	 * the counter to account for hugepages from hugetlb.
+>> +	 */
+>> +	struct res_counter hugepage[HUGE_MAX_HSTATE];
+>> +	/*
+>>  	 * Per cgroup active and inactive list, similar to the
+>>  	 * per zone LRU lists.
+>>  	 */
+>> @@ -3156,6 +3160,128 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
+>>  }
+>>  #endif
+>>  
+>> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+>> +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+>> +{
+>> +	int idx;
+>> +	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+>
+> Maybe we should expose for_each_hstate as well...
+
+
+That will not really help here. If we use for_each_hstate then we will
+need to use hstate_index to get the index.
+
+>
+>> +		if (memcg->hugepage[idx].usage > 0)
+>> +			return 1;
+>> +	}
+>> +	return 0;
+>> +}
+>> +
+>> +int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
+>> +				   struct mem_cgroup **ptr)
+>> +{
+>> +	int ret = 0;
+>> +	struct mem_cgroup *memcg;
+>> +	struct res_counter *fail_res;
+>> +	unsigned long csize = nr_pages * PAGE_SIZE;
+>> +
+>> +	if (mem_cgroup_disabled())
+>> +		return 0;
+>> +again:
+>> +	rcu_read_lock();
+>> +	memcg = mem_cgroup_from_task(current);
+>> +	if (!memcg)
+>> +		memcg = root_mem_cgroup;
+>> +	if (mem_cgroup_is_root(memcg)) {
+>> +		rcu_read_unlock();
+>> +		goto done;
+>> +	}
+>> +	if (!css_tryget(&memcg->css)) {
+>> +		rcu_read_unlock();
+>> +		goto again;
+>> +	}
+>> +	rcu_read_unlock();
+>> +
+>> +	ret = res_counter_charge(&memcg->hugepage[idx], csize, &fail_res);
+>> +	css_put(&memcg->css);
+>> +done:
+>> +	*ptr = memcg;
+>
+> Why do we set ptr even for the failure case after we dropped a
+> reference?
+
+
+That ensures that *ptr is NULL. 
+
+>
+>> +	return ret;
+>> +}
+>> +
+>> +void mem_cgroup_hugetlb_commit_charge(int idx, unsigned long nr_pages,
+>> +				      struct mem_cgroup *memcg,
+>> +				      struct page *page)
+>> +{
+>> +	struct page_cgroup *pc;
+>> +
+>> +	if (mem_cgroup_disabled())
+>> +		return;
+>> +
+>> +	pc = lookup_page_cgroup(page);
+>> +	lock_page_cgroup(pc);
+>> +	if (unlikely(PageCgroupUsed(pc))) {
+>> +		unlock_page_cgroup(pc);
+>> +		mem_cgroup_hugetlb_uncharge_memcg(idx, nr_pages, memcg);
+>> +		return;
+>> +	}
+>> +	pc->mem_cgroup = memcg;
+>> +	/*
+>> +	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+>> +	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+>> +	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
+>> +	 * before USED bit, we need memory barrier here.
+>> +	 * See mem_cgroup_add_lru_list(), etc.
+>> +	 */
+>> +	smp_wmb();
+>
+> Is this really necessary for hugetlb pages as well?
+
+I used to do that in cgroup_rmdir path, I later changed that part of the code. I
+will look at the patches again to see if we really need this.
+
+
+>
+>> +	SetPageCgroupUsed(pc);
+>> +
+>> +	unlock_page_cgroup(pc);
+>> +	return;
+>> +}
+>> +
+> [...]
+>> @@ -4887,6 +5013,7 @@ err_cleanup:
+>>  static struct cgroup_subsys_state * __ref
+>>  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+>>  {
+>> +	int idx;
+>>  	struct mem_cgroup *memcg, *parent;
+>>  	long error = -ENOMEM;
+>>  	int node;
+>> @@ -4929,9 +5056,14 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+>>  		 * mem_cgroup(see mem_cgroup_put).
+>>  		 */
+>>  		mem_cgroup_get(parent);
+>> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
+>
+> Do we have to init all hstates or is hugetlb_max_hstate enough?
+
+
+Yes. we do call mem_cgroup_create for root cgroup before initialzing
+hugetlb hstate.
+
+>
+>> +			res_counter_init(&memcg->hugepage[idx],
+>> +					 &parent->hugepage[idx]);
+>>  	} else {
+>>  		res_counter_init(&memcg->res, NULL);
+>>  		res_counter_init(&memcg->memsw, NULL);
+>> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
+>> +			res_counter_init(&memcg->hugepage[idx], NULL);
+>
+> Same here
+> -- 
+
+-aneesh
 
