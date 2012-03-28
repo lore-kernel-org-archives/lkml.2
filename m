@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab2C1AVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:21:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58645 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755965Ab2C1AVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 20:21:37 -0400
-Date: Tue, 27 Mar 2012 20:21:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: WARNING: at drivers/gpu/drm/radeon/radeon_object.c:236
-Message-ID: <20120328002127.GA8368@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <20120326213250.GA16328@redhat.com>
- <1332829303.2882.52.camel@pasglop>
- <1332836421.5395.338.camel@thor.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1332836421.5395.338.camel@thor.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757001Ab2C1AWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:22:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46902 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab2C1AWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 20:22:40 -0400
+Date: Tue, 27 Mar 2012 17:26:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>
+Cc: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suppress page allocation failure warnings from sys_listxattr
+Message-Id: <20120327172622.827fd6ab.akpm@linux-foundation.org>
+In-Reply-To: <20120328001550.GA3077@redhat.com>
+References: <20120313182220.GA11500@redhat.com>
+	<20120327155149.d41a235b.akpm@linux-foundation.org>
+	<20120328001550.GA3077@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 10:20:21AM +0200, Michel Dänzer wrote:
- > On Die, 2012-03-27 at 17:21 +1100, Benjamin Herrenschmidt wrote:
- > >         On Mon, 2012-03-26 at 17:32 -0400, Dave Jones wrote:
- > >         > Seeing this in Linus' tree as of v3.3-6972-ge22057c
- > >         
- > >         Same WARN_ON hit here on a G5 with rv350
- > 
- > Thanks for the report, guys. Does the patch below help?
- > 
- > 
- > diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
- > index f441d58..ad9d450 100644
- > --- a/drivers/gpu/drm/radeon/radeon_object.c
- > +++ b/drivers/gpu/drm/radeon/radeon_object.c
- > @@ -233,7 +233,17 @@ int radeon_bo_pin_restricted(struct radeon_bo *bo, u32 domain, u64 max_offset,
- >  		bo->pin_count++;
- >  		if (gpu_addr)
- >  			*gpu_addr = radeon_bo_gpu_offset(bo);
- > -		WARN_ON_ONCE(max_offset != 0);
- > +
- > +		if (max_offset != 0) {
- > +			u64 domain_start;
- > +
- > +			if (domain == RADEON_GEM_DOMAIN_VRAM)
- > +				domain_start = bo->rdev->mc.vram_start;
- > +			else
- > +				domain_start = bo->rdev->mc.gtt_start;
- > +			WARN_ON_ONCE((*gpu_addr - domain_start) > max_offset);
- > +		}
- > +
- >  		return 0;
+On Tue, 27 Mar 2012 20:15:50 -0400 Dave Jones <davej@redhat.com> wrote:
 
-Stops the warning, and there are no additional side-effects,
-so looks all good here.
+> On Tue, Mar 27, 2012 at 03:51:49PM -0700, Andrew Morton wrote:
+>  > On Tue, 13 Mar 2012 14:22:20 -0400
+>  > Dave Jones <davej@redhat.com> wrote:
+>  > 
+>  > > This size is user controllable, and so it's trivial for someone to trigger a
+>  > > stream of order:4 page allocation errors.
+>  > > 
+>  > > Signed-off-by: Dave Jones <davej@redhat.com>
+>  > > 
+>  > > --- 
+>  > > There's also a similar problem in setxattr, but I'm not sure how we want
+>  > > to pass NOWARN down to memdup_user. Thoughts ?
+>  > > 
+>  > > diff --git a/fs/xattr.c b/fs/xattr.c
+>  > > index 82f4337..544df90 100644
+>  > > --- a/fs/xattr.c
+>  > > +++ b/fs/xattr.c
+>  > > @@ -496,7 +496,7 @@ listxattr(struct dentry *d, char __user *list, size_t size)
+>  > >  	if (size) {
+>  > >  		if (size > XATTR_LIST_MAX)
+>  > >  			size = XATTR_LIST_MAX;
+>  > > -		klist = kmalloc(size, GFP_KERNEL);
+>  > > +		klist = kmalloc(size, __GFP_NOWARN | GFP_KERNEL);
+>  > >  		if (!klist)
+>  > >  			return -ENOMEM;
+>  > >  	}
+>  > 
+>  > hm.  The patch is good, but one would hope that it isn't "trivial" to
+>  > trigger a page allocation failure for a kmalloc(65536, GFP_KERNEL) -
+>  > the VM is supposed to be able to handle that.
+>  > 
+>  > Is it really *that* easy, or is Something Unusual happening with that
+>  > machine?
+> 
+> Well, the unusual thing was that I was fuzzing system calls for a few hours.
+> 
+> My fuzzing tool was able to trigger these very easily after an hour or two
+> of uptime and memory had fragmented a little, so yeah, quite trivial.
+> 
 
-Tested-by: Dave Jones <davej@redhat.com>
+/*
+ * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
+ * costly to service.  That is between allocation orders which should
+ * coelesce naturally under reasonable reclaim pressure and those which
+ * will not.
+ */
+#define PAGE_ALLOC_COSTLY_ORDER 3
 
-thanks,
 
-	Dave
-
+Death to magic numbers :(
