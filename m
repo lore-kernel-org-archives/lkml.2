@@ -1,31 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab2C1KwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:52:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753949Ab2C1KwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:52:21 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
-References: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/9] KEYS: Use the compat keyctl() syscall wrapper on Sparc64 for Sparc32 compat
-Date: Wed, 28 Mar 2012 11:52:14 +0100
-Message-ID: <10701.1332931934@redhat.com>
+	id S1758146Ab2C1KxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:53:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47148 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab2C1KxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:53:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F72ED25.60307@jp.fujitsu.com>
+Date: Wed, 28 Mar 2012 19:51:17 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [RFC][PATCH 2/6] memcg: add pc_set_mem_cgroup_and_flags()
+References: <4F72EB84.7080000@jp.fujitsu.com>
+In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Consolidate a code for setting pc->mem_cgroup and USED bit which requires smp_wmb().
+And remove a macro PCGF_NOCOPY_AT_SPLIT which isn't helpful to read code, now.
 
-Can you push these to Linus in this merge window, please?
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |   18 ++++++++++++++++++
+ mm/memcontrol.c             |   18 ++++--------------
+ 2 files changed, 22 insertions(+), 14 deletions(-)
 
-David
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 92768cb..2707809 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -1,6 +1,8 @@
+ #ifndef __LINUX_PAGE_CGROUP_H
+ #define __LINUX_PAGE_CGROUP_H
+ 
++#include <linux/smp.h>
++
+ enum {
+ 	/* flags for mem_cgroup */
+ 	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
+@@ -94,6 +96,22 @@ pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
+ 	pc->mem_cgroup = memcg;
+ }
+ 
++static inline void
++pc_set_mem_cgroup_and_flags(struct page_cgroup *pc, struct mem_cgroup *memcg,
++			unsigned long flags)
++{
++	pc->mem_cgroup = memcg;
++	/*
++	 * We access a page_cgroup asynchronously without lock_page_cgroup().
++	 * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
++	 * is accessed after testing USED bit. To make pc's mem_cgroup visible
++	 * before USED bit, we need memory barrier here.
++	 * See mem_cgroup_add_lru_list(), etc.
++	 */
++	smp_wmb();
++	pc->flags = flags;
++}
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct page_cgroup;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8077460..d366b60 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2511,16 +2511,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 		}
+ 	}
+ 
+-	pc_set_mem_cgroup(pc, memcg);
+-	/*
+-	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+-	 * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
+-	 * is accessed after testing USED bit. To make pc's mem_cgroup visible
+-	 * before USED bit, we need memory barrier here.
+-	 * See mem_cgroup_add_lru_list(), etc.
+- 	 */
+-	smp_wmb();
+-	SetPageCgroupUsed(pc);
++	pc_set_mem_cgroup_and_flags(pc, memcg, BIT(PCG_USED) | BIT(PCG_LOCK));
+ 
+ 	if (lrucare) {
+ 		if (was_on_lru) {
+@@ -2549,7 +2540,6 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 
+-#define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MIGRATION))
+ /*
+  * Because tail pages are not marked as "used", set it. We're under
+  * zone->lru_lock, 'splitting on pmd' and compound_lock.
+@@ -2565,11 +2555,11 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ 
+ 	if (mem_cgroup_disabled())
+ 		return;
++	if (!PageCgroupUsed(head_pc))
++		return;
+ 	for (i = 1; i < HPAGE_PMD_NR; i++) {
+ 		pc = head_pc + i;
+-		pc_set_mem_cgroup(pc, memcg);
+-		smp_wmb();/* see __commit_charge() */
+-		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
++		pc_set_mem_cgroup_and_flags(pc, memcg, BIT(PCG_USED));
+ 	}
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+-- 
+1.7.4.1
+
+
