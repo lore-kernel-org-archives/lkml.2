@@ -1,173 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab2C1FtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 01:49:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab2C1FtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 01:49:19 -0400
-Subject: [V6 PATCH] virtio-net: send gratuitous packets when needed
-To: netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-From: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, qemu-devel@nongnu.org
-Date: Wed, 28 Mar 2012 13:44:28 +0800
-Message-ID: <20120328054428.34415.75432.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1751462Ab2C1F4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 01:56:36 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56189 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab2C1F4e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 01:56:34 -0400
+Message-ID: <4F72A80F.7000801@gmail.com>
+Date: Wed, 28 Mar 2012 08:56:31 +0300
+From: roma1390 <roma1390@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
+References: <201203262047.17865.vda.linux@googlemail.com> <4F71ADD6.2060407@gmail.com> <CAK1hOcOCG19U3sZAPDSH=BYsjgDMJ0VXjcoXV4EaoL30-dTO+A@mail.gmail.com>
+In-Reply-To: <CAK1hOcOCG19U3sZAPDSH=BYsjgDMJ0VXjcoXV4EaoL30-dTO+A@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As hypervior does not have the knowledge of guest network configuration, it's
-better to ask guest to send gratuitous packets when needed.
+On 2012.03.27 18:42, Denys Vlasenko wrote:
+> On Tue, Mar 27, 2012 at 2:08 PM, roma1390<roma1390@gmail.com>  wrote:
+>> On 2012.03.26 21:47, Denys Vlasenko wrote:
+>>>
+>>> Please find test programs attached.
+>>>
+>>> 32-bit test programs were built using gcc 4.6.2
+>>> 64-bit test programs were built using gcc 4.2.1
+>>> Command line: gcc --static [-m32] -O2 -Wall test_{org,new}.c
+>>
+>> Can't compile reference for arm:
+>> $ arm-linux-gnueabi-gcc -O2 -Wall test_org.c -o test_org
+>> test_org.c: In function ‘put_dec’:
+>> test_org.c:101: error: impossible constraint in ‘asm’
+>> test_org.c:101: error: impossible constraint in ‘asm’
+>> test_org.c:101: error: impossible constraint in ‘asm’
+>
+> Please find a modified test_header.c attached.
+> I tested and it builds in my arm emulator.
 
-Guest tests VIRTIO_NET_S_ANNOUNCE bit during config change interrupt and when it
-is set, a workqueue is scheduled to send gratuitous packet through
-NETDEV_NOTIFY_PEERS. This feature is negotiated through bit
-VIRTIO_NET_F_GUEST_ANNOUNCE.
 
-Changes from v5:
-- notify the chain before acking the link annoucement
-- ack the link announcement notification through control vq
+Run on same:
+  2.6.32-5-kirkwood #1 Tue Jan 17 05:11:52 UTC 2012 armv5tel GNU/Linux
+GCC version:
+  gcc version 4.4.5 (Debian 4.4.5-8), Target: arm-linux-gnueabi
+Compiled with:
+  arm-linux-gnueabi-gcc -O2 -Wall test_{org,new}.c -o test_{org,new}
 
-Changes from v4:
-- typos
-- handle workqueue unconditionally
-- move VIRTIO_NET_S_ANNOUNCE to bit 8 to separate rw bits from ro bits
 
-Changes from v3:
-- cancel the workqueue during freeze
+run default priority on almost idle machine:
 
-Changes from v2:
-- fix the race between unregister_dev() and workqueue
+  ./test_org
+Conversions per second: 8:4716000 123:3896000 123456:2756000 12345678:2412000 
+123456789:2380000 2^32:2348000 2^64:1400000
+Conversions per second: 8:4556000 123:3892000 123456:2760000 12345678:2496000 
+123456789:2384000 2^32:2264000 2^64:1400000
+Conversions per second: 8:4716000 123:3896000 123456:2664000 12345678:2496000 
+123456789:2388000 2^32:2348000 2^64:1400000
+Conversions per second: 8:4716000 123:3892000 123456:2760000 12345678:2496000 
+123456789:2292000 2^32:2348000 2^64:1400000
+  ./test_org
+Conversions per second: 8:4716000 123:3748000 123456:2760000 12345678:2496000 
+123456789:2388000 2^32:2348000 2^64:1348000
+Conversions per second: 8:4716000 123:3896000 123456:2756000 12345678:2408000 
+123456789:2384000 2^32:2348000 2^64:1400000
+Conversions per second: 8:4540000 123:3896000 123456:2648000 12345678:2496000 
+123456789:2388000 2^32:2268000 2^64:1400000
+Conversions per second: 8:4716000 123:3888000 123456:2664000 12345678:2496000 
+123456789:2388000 2^32:2344000 2^64:1400000
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/virtio_net.c   |   32 +++++++++++++++++++++++++++++++-
- include/linux/virtio_net.h |   13 +++++++++++++
- 2 files changed, 44 insertions(+), 1 deletions(-)
+./test_new
+Conversions per second: 8:5496000 123:4564000 123456:3536000 12345678:3408000 
+123456789:1168000 2^32:976000 2^64:532000
+Conversions per second: 8:5524000 123:4568000 123456:3692000 12345678:3404000 
+123456789:1132000 2^32:972000 2^64:532000
+Conversions per second: 8:5528000 123:4404000 123456:3684000 12345678:3408000 
+123456789:1168000 2^32:976000 2^64:516000
+Conversions per second: 8:5528000 123:4568000 123456:3692000 12345678:3288000 
+123456789:1168000 2^32:976000 2^64:532000
+./test_new
+Conversions per second: 8:5524000 123:4416000 123456:3688000 12345678:3400000 
+123456789:1172000 2^32:972000 2^64:516000
+Conversions per second: 8:5520000 123:4568000 123456:3692000 12345678:3276000 
+123456789:1168000 2^32:976000 2^64:532000
+Conversions per second: 8:5344000 123:4552000 123456:3692000 12345678:3404000 
+123456789:1168000 2^32:944000 2^64:532000
+Conversions per second: 8:5528000 123:4568000 123456:3556000 12345678:3404000 
+123456789:1168000 2^32:976000 2^64:532000
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 4880aa8..0f60da7 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -72,6 +72,9 @@ struct virtnet_info {
- 	/* Work struct for refilling if we run low on memory. */
- 	struct delayed_work refill;
- 
-+	/* Work struct for sending gratuitous packets. */
-+	struct work_struct announce;
-+
- 	/* Chain pages by the private ptr. */
- 	struct page *pages;
- 
-@@ -781,12 +784,30 @@ static bool virtnet_send_command(struct virtnet_info *vi, u8 class, u8 cmd,
- 	return status == VIRTIO_NET_OK;
- }
- 
-+static void virtnet_ack_link_announce(struct virtnet_info *vi)
-+{
-+	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_ANNOUNCE,
-+				  VIRTIO_NET_CTRL_ANNOUNCE_ACK, NULL,
-+				  0, 0)) {
-+		dev_warn(&vi->dev->dev, "Failed to ack link nnounce.\n");
-+	}
-+}
-+
-+static void announce_work(struct work_struct *work)
-+{
-+	struct virtnet_info *vi = container_of(work, struct virtnet_info,
-+					       announce);
-+	netif_notify_peers(vi->dev);
-+	virtnet_ack_link_announce(vi);
-+}
-+
- static int virtnet_close(struct net_device *dev)
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 
- 	/* Make sure refill_work doesn't re-enable napi! */
- 	cancel_delayed_work_sync(&vi->refill);
-+	cancel_work_sync(&vi->announce);
- 	napi_disable(&vi->napi);
- 
- 	return 0;
-@@ -962,11 +983,17 @@ static void virtnet_update_status(struct virtnet_info *vi)
- 		return;
- 
- 	/* Ignore unknown (future) status bits */
--	v &= VIRTIO_NET_S_LINK_UP;
-+	v &= VIRTIO_NET_S_LINK_UP | VIRTIO_NET_S_ANNOUNCE;
- 
- 	if (vi->status == v)
- 		return;
- 
-+	if (v & VIRTIO_NET_S_ANNOUNCE) {
-+		v &= ~VIRTIO_NET_S_ANNOUNCE;
-+		if (v & VIRTIO_NET_S_LINK_UP)
-+			schedule_work(&vi->announce);
-+	}
-+
- 	vi->status = v;
- 
- 	if (vi->status & VIRTIO_NET_S_LINK_UP) {
-@@ -1076,6 +1103,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 		goto free;
- 
- 	INIT_DELAYED_WORK(&vi->refill, refill_work);
-+	INIT_WORK(&vi->announce, announce_work);
- 	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
- 	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
- 
-@@ -1187,6 +1215,7 @@ static int virtnet_freeze(struct virtio_device *vdev)
- 	virtqueue_disable_cb(vi->svq);
- 	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ))
- 		virtqueue_disable_cb(vi->cvq);
-+	cancel_work_sync(&vi->announce);
- 
- 	netif_device_detach(vi->dev);
- 	cancel_delayed_work_sync(&vi->refill);
-@@ -1233,6 +1262,7 @@ static unsigned int features[] = {
- 	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
- 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
-+	VIRTIO_NET_F_GUEST_ANNOUNCE,
- };
- 
- static struct virtio_driver virtio_net_driver = {
-diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
-index 970d5a2..383e8a0 100644
---- a/include/linux/virtio_net.h
-+++ b/include/linux/virtio_net.h
-@@ -49,8 +49,10 @@
- #define VIRTIO_NET_F_CTRL_RX	18	/* Control channel RX mode support */
- #define VIRTIO_NET_F_CTRL_VLAN	19	/* Control channel VLAN filtering */
- #define VIRTIO_NET_F_CTRL_RX_EXTRA 20	/* Extra RX mode control support */
-+#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can send gratituous packet */
- 
- #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
-+#define VIRTIO_NET_S_ANNOUNCE   2	/* Announcement is needed */
- 
- struct virtio_net_config {
- 	/* The config defining mac address (if VIRTIO_NET_F_MAC) */
-@@ -152,4 +154,15 @@ struct virtio_net_ctrl_mac {
-  #define VIRTIO_NET_CTRL_VLAN_ADD             0
-  #define VIRTIO_NET_CTRL_VLAN_DEL             1
- 
-+/*
-+ * Control link announce acknowledgement
-+ *
-+ * The command VIRTIO_NET_CTRL_ANNOUNCE_ACK is used to indicate that
-+ * driver has recevied the notification and device would clear the
-+ * VIRTIO_NET_S_ANNOUNCE bit in the status filed after it received
-+ * this command.
-+ */
-+#define VIRTIO_NET_CTRL_ANNOUNCE       3
-+ #define VIRTIO_NET_CTRL_ANNOUNCE_ACK         0
-+
- #endif /* _LINUX_VIRTIO_NET_H */
+I will run the long running correctness test, and post results later. But this 
+can take a while...
 
