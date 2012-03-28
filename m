@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab2C1UYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:24:38 -0400
+	id S932810Ab2C1UYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:24:45 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:42688 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758517Ab2C1UYa (ORCPT
+	with ESMTP id S932567Ab2C1UYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:24:30 -0400
+	Wed, 28 Mar 2012 16:24:42 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 02/16] vfs: reorganize do_last()
-Date: Wed, 28 Mar 2012 22:24:31 +0200
-Message-Id: <1332966285-30358-3-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 09/16] nfs: don't use intents for checking atomic open
+Date: Wed, 28 Mar 2012 22:24:38 +0200
+Message-Id: <1332966285-30358-10-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
 References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
@@ -24,169 +24,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
+is_atomic_open() is now only used by nfs4_lookup_revalidate() to check whether
+it's okay to skip normal revalidation.
 
-This allows atomic_open to be hooked into the slow lookup part.
+It does a racy check for mount read-onlyness and falls back to normal
+revalidation if the open would fail.  This makes little sense now that this
+function isn't used for determining whether to actually open the file or not.
+
+The d_mountpoint() check still makes sense since it is an indication that we
+might be following a mount and so open may not revalidate the dentry.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   92 ++++++++++++++++++++++++++++++++++++------------------------
- 1 files changed, 55 insertions(+), 37 deletions(-)
+ fs/nfs/dir.c |   24 ++++--------------------
+ 1 files changed, 4 insertions(+), 20 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 936648c..ff3c47b 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2108,6 +2108,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	int want_write = 0;
- 	int acc_mode = op->acc_mode;
- 	struct file *filp;
-+	struct inode *inode;
-+	int symlink_ok = 0;
- 	int error;
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 35fa125..48260a5 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1340,24 +1340,6 @@ const struct dentry_operations nfs4_dentry_operations = {
+ 	.d_release	= nfs_d_release,
+ };
  
- 	nd->flags &= ~LOOKUP_PARENT;
-@@ -2139,47 +2141,38 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	}
- 
- 	if (!(open_flag & O_CREAT)) {
--		int symlink_ok = 0;
- 		if (nd->last.name[nd->last.len])
- 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
- 		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
- 			symlink_ok = 1;
- 		/* we _can_ be in RCU mode here */
--		error = walk_component(nd, path, &nd->last, LAST_NORM,
--					!symlink_ok);
--		if (error < 0)
--			return ERR_PTR(error);
--		if (error) /* symlink */
--			return NULL;
--		/* sayonara */
-+		error = lookup_fast(nd, &nd->last, path, &inode);
-+		if (error <= 0) {
-+			if (error)
-+				goto terminate;
-+
-+			goto finish_lookup;
-+		}
-+		/* cached lookup failed, no longer in RCU mode */
-+	} else {
-+		/* create side of things */
-+
-+		/*
-+		 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED
-+		 * has been cleared when we got to the last component we are
-+		 * about to look up
-+		 */
- 		error = complete_walk(nd);
- 		if (error)
- 			return ERR_PTR(error);
- 
--		error = -ENOTDIR;
--		if (nd->flags & LOOKUP_DIRECTORY) {
--			if (!nd->inode->i_op->lookup)
--				goto exit;
--		}
--		audit_inode(pathname, nd->path.dentry);
--		goto ok;
-+		audit_inode(pathname, dir);
-+		error = -EISDIR;
-+		/* trailing slashes? */
-+		if (nd->last.name[nd->last.len])
-+			goto exit;
- 	}
- 
--	/* create side of things */
--	/*
--	 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED has been
--	 * cleared when we got to the last component we are about to look up
--	 */
--	error = complete_walk(nd);
--	if (error)
--		return ERR_PTR(error);
+-/*
+- * Use intent information to determine whether we need to substitute
+- * the NFSv4-style stateful OPEN for the LOOKUP call
+- */
+-static int is_atomic_open(struct nameidata *nd)
+-{
+-	if (nd == NULL || nfs_lookup_check_intent(nd, LOOKUP_OPEN) == 0)
+-		return 0;
+-	/* NFS does not (yet) have a stateful open for directories */
+-	if (nd->flags & LOOKUP_DIRECTORY)
+-		return 0;
+-	/* Are we trying to write to a read only partition? */
+-	if (__mnt_is_readonly(nd->path.mnt) &&
+-	    (nd->intent.open.flags & (O_CREAT|O_TRUNC|O_ACCMODE)))
+-		return 0;
+-	return 1;
+-}
 -
--	audit_inode(pathname, dir);
--	error = -EISDIR;
--	/* trailing slashes? */
--	if (nd->last.name[nd->last.len])
--		goto exit;
--
- 	mutex_lock(&dir->d_inode->i_mutex);
+ static fmode_t flags_to_mode(int flags)
+ {
+ 	fmode_t res = (__force fmode_t)flags & FMODE_EXEC;
+@@ -1513,10 +1495,12 @@ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	if (nd->flags & LOOKUP_RCU)
+ 		return -ECHILD;
  
- 	dentry = lookup_hash(nd);
-@@ -2192,9 +2185,14 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	path->dentry = dentry;
- 	path->mnt = nd->path.mnt;
+-	inode = dentry->d_inode;
+-	if (!is_atomic_open(nd) || d_mountpoint(dentry))
++	if (!(nd->flags & LOOKUP_OPEN) || (nd->flags & LOOKUP_DIRECTORY))
++		goto no_open;
++	if (d_mountpoint(dentry))
+ 		goto no_open;
  
--	/* Negative dentry, just create the file */
-+	/* Negative dentry, create the file if O_CREAT */
- 	if (!dentry->d_inode) {
- 		umode_t mode = op->mode;
-+
-+		error = -ENOENT;
-+		if (!(open_flag & O_CREAT))
-+			goto exit_mutex_unlock;
-+
- 		if (!IS_POSIXACL(dir->d_inode))
- 			mode &= ~current_umask();
- 		/*
-@@ -2238,22 +2236,38 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	if (error)
- 		goto exit_dput;
++	inode = dentry->d_inode;
+ 	parent = dget_parent(dentry);
+ 	dir = parent->d_inode;
  
-+	inode = path->dentry->d_inode;
-+finish_lookup:
- 	error = -ENOENT;
--	if (!path->dentry->d_inode)
--		goto exit_dput;
-+	if (!inode) {
-+		path_to_nameidata(path, nd);
-+		goto terminate;
-+	}
- 
--	if (path->dentry->d_inode->i_op->follow_link)
-+	if (should_follow_link(inode, !symlink_ok)) {
-+		if (nd->flags & LOOKUP_RCU) {
-+			if (unlikely(unlazy_walk(nd, path->dentry))) {
-+				error = -ECHILD;
-+				goto terminate;
-+			}
-+		}
- 		return NULL;
-+	}
- 
- 	path_to_nameidata(path, nd);
--	nd->inode = path->dentry->d_inode;
--	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
-+	nd->inode = inode;
-+
- 	error = complete_walk(nd);
- 	if (error)
- 		return ERR_PTR(error);
- 	error = -EISDIR;
--	if (S_ISDIR(nd->inode->i_mode))
-+	if ((open_flag & O_CREAT) && S_ISDIR(inode->i_mode))
-+		goto exit;
-+	error = -ENOTDIR;
-+	if ((nd->flags & LOOKUP_DIRECTORY) && !inode->i_op->lookup)
- 		goto exit;
-+
-+	audit_inode(pathname, nd->path.dentry);
- ok:
- 	if (!S_ISREG(nd->inode->i_mode))
- 		will_truncate = 0;
-@@ -2298,6 +2312,10 @@ exit_dput:
- exit:
- 	filp = ERR_PTR(error);
- 	goto out;
-+
-+terminate:
-+	terminate_walk(nd);
-+	return ERR_PTR(error);
- }
- 
- static struct file *path_openat(int dfd, const char *pathname,
 -- 
 1.7.7
 
