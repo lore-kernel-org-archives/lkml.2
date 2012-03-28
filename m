@@ -1,38 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758954Ab2C1Wti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:49:38 -0400
-Received: from home.keithp.com ([63.227.221.253]:58996 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758801Ab2C1Wtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:49:31 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Jiri Kosina <jkosina@suse.cz>, Dave Jones <davej@redhat.com>
-Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: Corrupted files after suspend to disk
-In-Reply-To: <alpine.LNX.2.00.1203290011230.25526@pobox.suse.cz>
-References: <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de> <jj684d$6ng$1@ID-44327.news.uni-berlin.de> <CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com> <4F574113.8030906@01019freenet.de> <alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz> <CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com> <alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz> <CAFLxGvyXwFwLRYw7=eHGLZsiAB9Adcu16z=UPhLtL_Ze3bF-9g@mail.gmail.com> <alpine.LNX.2.00.1203121402460.18356@pobox.suse.cz> <4F5DF8F0.5010801@01019freenet.de> <20120312214914.GA8628@redhat.com> <alpine.LNX.2.00.1203290011230.25526@pobox.suse.cz>
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 28 Mar 2012 15:49:26 -0700
-Message-ID: <868vikwdc9.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758948Ab2C1Wvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:51:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38246 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757682Ab2C1Wvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 18:51:39 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: [PATCHSET] block: modularize blkcg config and stat file handling
+Date: Wed, 28 Mar 2012 15:51:10 -0700
+Message-Id: <1332975091-10950-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<#part sign=pgpmime>
-On Thu, 29 Mar 2012 00:12:53 +0200 (CEST), Jiri Kosina <jkosina@suse.cz> wrote:
+Hello,
 
-> So this keeps happening to me on almost every resume still ... Keith, is 
-> there any way I could help you debug this?
+The way configuration and statistics are handled in block cgroup is
+rather depressing.  Every configuration and stat counter are defined
+in blkcg core and specific policy implementations should go through
+some blkcg interface to access and manipulate them and be notified of
+the changes.
 
-Let me know what you find with Dave's patch -- it's the most promising
-lead we've had. We've had no luck reproducing this at Intel, though a
-couple of engineers have been trying to make it happen for several days
-now...
+By doing things this way, it achieves both complexity and
+inflexibility - the code paths are unnecessarily complex while not
+achieving any layering or modularity.  A configuration or statistics
+counter cannot be added to policies without modifying multiple places
+in blkcg core code.  Wanna implement a new policy?  Good luck.  The
+implementation details are sad too.  Stuff goes through needless
+layers of functions with hard coded cases on specific counters and
+configurations and fields specific to policies are thrown into common
+area with some shared and others unused.
 
--- 
-keith.packard@intel.com
+This patchset is an attempt at bringing some sanity to blkcg config
+and stat file handling.  It makes use of the pending dynamic cgroup
+file type addition / removal support [1], which will be merged into
+cgroup/for-3.5 once 3.4-rc1 is released.
+
+All conf and stat file handling is moved into the policy
+implementaiton the files belong to and blkcg supplies helpers to ease
+file handling in policy implementations without requiring full
+knowledge of all configurations and statistic counters.
+
+This patchset sheds >500 lines of code while maintaining the same
+features and with more comments and much more modular design.  Yeah,
+it was just wrong.
+
+This patchset contains the following 21 patches
+
+ 0001-blkcg-remove-unused-pol-and-plid-parameters.patch
+ 0002-blkcg-BLKIO_STAT_CPU_SECTORS-doesn-t-have-subcounter.patch
+ 0003-blkcg-introduce-blkg_stat-and-blkg_rwstat.patch
+ 0004-blkcg-restructure-statistics-printing.patch
+ 0005-blkcg-drop-blkiocg_file_write_u64.patch
+ 0006-blkcg-restructure-configuration-printing.patch
+ 0007-blkcg-restructure-blkio_group-configruation-setting.patch
+ 0008-blkcg-blkg_conf_prep.patch
+ 0009-blkcg-export-conf-stat-helpers-to-prepare-for-reorga.patch
+ 0010-blkcg-implement-blkio_policy_type-cftypes.patch
+ 0011-blkcg-move-conf-stat-file-handling-code-to-policies.patch
+ 0012-cfq-collapse-cfq.h-into-cfq-iosched.c.patch
+ 0013-blkcg-move-statistics-update-code-to-policies.patch
+ 0014-blkcg-cfq-doesn-t-need-per-cpu-dispatch-stats.patch
+ 0015-blkcg-add-blkio_policy_ops-operations-for-exit-and-s.patch
+ 0016-blkcg-move-blkio_group_stats-to-cfq-iosched.c.patch
+ 0017-blkcg-move-blkio_group_stats_cpu-and-friends-to-blk-.patch
+ 0018-blkcg-move-blkio_group_conf-weight-to-cfq.patch
+ 0019-blkcg-move-blkio_group_conf-iops-and-bps-to-blk-thro.patch
+ 0020-blkcg-pass-around-pd-pdata-instead-of-pd-itself-in-p.patch
+ 0021-blkcg-drop-BLKCG_STAT_-PRIV-POL-OFF-macros.patch
+
+and is on top of
+
+  block/for-3.5/core eb7d8c07f9 "cfq: fix cfqg ref handling..."
++ [1] cgroup-cftypes d954ca6469 "cgroup: implement cgroup_rm_cftypes()"
+
+Note that the cgroup branch is temporary and the merge between the two
+branches aren't trivial.  I'll prepare a proper merged branch once the
+cgroup/for-3.5 branch is settled.
+
+This patchset is also available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-files
+
+diffstat follows.
+
+ block/blk-cgroup.c   | 1343 ++++++---------------------------------------------
+ block/blk-cgroup.h   |  414 ++++++---------
+ block/blk-throttle.c |  318 ++++++++++--
+ block/cfq-iosched.c  |  567 +++++++++++++++++++--
+ block/cfq.h          |  118 ----
+ 5 files changed, 1102 insertions(+), 1658 deletions(-)
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel.containers/22623
