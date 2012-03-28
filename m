@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab2C1SyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:54:17 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:54320 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750845Ab2C1SyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:54:16 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 7/7 v6] drm/i915/intel_i2c: remove POSTING_READ() from gmbus transfers
-To: Daniel Kurtz <djkurtz@chromium.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-In-Reply-To: <1332959199-32161-8-git-send-email-djkurtz@chromium.org>
-References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org> <1332959199-32161-8-git-send-email-djkurtz@chromium.org>
-Date: Wed, 28 Mar 2012 19:53:57 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1332960849_131204@CP5-2952>
+	id S1757769Ab2C1TMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 15:12:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756928Ab2C1TMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 15:12:32 -0400
+Date: Wed, 28 Mar 2012 15:11:47 -0400
+From: Kyle McMartin <kyle@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: khali@linux-fr.org, guenter.roeck@ericsson.com, lm-sensors@lm-sensors.org,
+        djwong@us.ibm.com
+Subject: [PATCH] acpi_power_meter: fix lockdep spew due to non-static lock
+ class
+Message-ID: <20120328191147.GK25886@redacted.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012 02:26:39 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> The POSTING_READ() calls were originally added to make sure the writes
-> were flushed before any timing delays and across loops.
-> Now that the code has settled a bit, let's remove them.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
+Similar to a30dcb4f which fixed asus_atk0110.ko, I recently received a
+bug report from someone hitting the same issue in acpi_power_meter.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+[   13.963168] power_meter ACPI000D:00: Found ACPI power meter.
+[   13.963900] BUG: key ffff8802161f3920 not in .data!
+[   13.963904] ------------[ cut here ]------------
+[   13.963915] WARNING: at kernel/lockdep.c:2986
+	lockdep_init_map+0x52f/0x560()
+
+So let's fix that up for them by statically declaring the
+lockdep_class_key.
+
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+
+--- a/drivers/hwmon/acpi_power_meter.c
++++ b/drivers/hwmon/acpi_power_meter.c
+@@ -632,6 +632,7 @@ static int register_ro_attrs(struct acpi_power_meter_resource *resource,
+ 		sensors->dev_attr.show = ro->show;
+ 		sensors->index = ro->index;
+ 
++		sysfs_attr_init(&sensors->dev_attr.attr);
+ 		res = device_create_file(dev, &sensors->dev_attr);
+ 		if (res) {
+ 			sensors->dev_attr.attr.name = NULL;
+@@ -661,6 +662,7 @@ static int register_rw_attrs(struct acpi_power_meter_resource *resource,
+ 		sensors->dev_attr.store = rw->set;
+ 		sensors->index = rw->index;
+ 
++		sysfs_attr_init(&sensors->dev_attr.attr);
+ 		res = device_create_file(dev, &sensors->dev_attr);
+ 		if (res) {
+ 			sensors->dev_attr.attr.name = NULL;
