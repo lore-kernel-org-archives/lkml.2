@@ -1,357 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab2C1GoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:44:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25773 "EHLO mga14.intel.com"
+	id S1752522Ab2C1GoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:44:25 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:49183 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab2C1Gn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 02:43:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="82461635"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com
-Cc: linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: [PATCH 3/5] perf: Add Nehalem and Sandy Bridge uncore support
-Date: Wed, 28 Mar 2012 14:43:16 +0800
-Message-Id: <1332916998-10628-4-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
-References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
+	id S1752208Ab2C1GoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 02:44:23 -0400
+Date: Wed, 28 Mar 2012 08:44:07 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: [PATCH 3/3] padata: Fix cpu hotplug
+Message-ID: <20120328064407.GG16191@secunet.com>
+References: <20120328064157.GD16191@secunet.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328064157.GD16191@secunet.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 28 Mar 2012 06:44:07.0500 (UTC) FILETIME=[2C8EA0C0:01CD0CAE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+We don't remove the cpu that went offline from our cpumasks
+on cpu hotplug. This got lost somewhere along the line, so
+restore it. This fixes a hang of the padata instance on cpu
+hotplug.
 
-Add Intel Nehalem and Sandy Bridge uncore pmu support.
-
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  240 +++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   50 +++++
- 2 files changed, 290 insertions(+), 0 deletions(-)
+ kernel/padata.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index d159e3e..39a1c0e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -21,6 +21,237 @@ static struct event_constraint constraint_fixed =
+diff --git a/kernel/padata.c b/kernel/padata.c
+index de3d0d9..89fe3d1 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -748,6 +748,9 @@ static int __padata_remove_cpu(struct padata_instance *pinst, int cpu)
+ 			return -ENOMEM;
  
- static DEFINE_SPINLOCK(uncore_box_lock);
- 
-+DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
-+DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
+ 		padata_replace(pinst, pd);
 +
-+/* Sandy Bridge uncore support */
-+static void snb_uncore_msr_disable_all(struct intel_uncore_box *box)
-+{
-+	u64 config;
-+	unsigned msr;
-+	int i;
-+
-+	for (i = 0; i < UNCORE_PMC_IDX_MAX; i++) {
-+		if (!test_bit(i, box->active_mask))
-+			continue;
-+
-+		if (i < UNCORE_PMC_IDX_FIXED)
-+			msr = uncore_msr_event_ctl(box, i);
-+		else
-+			msr = uncore_msr_fixed_ctl(box);
-+
-+		rdmsrl(msr, config);
-+		config &= ~SNB_UNC_CTL_EN;
-+		wrmsrl(msr, config);
-+	}
-+}
-+
-+static void snb_uncore_msr_enable_all(struct intel_uncore_box *box)
-+{
-+	u64 config;
-+	unsigned msr;
-+	int i;
-+
-+	for (i = 0; i < UNCORE_PMC_IDX_MAX; i++) {
-+		if (!test_bit(i, box->active_mask))
-+			continue;
-+
-+		if (i < UNCORE_PMC_IDX_FIXED)
-+			msr = uncore_msr_event_ctl(box, i);
-+		else
-+			msr = uncore_msr_fixed_ctl(box);
-+
-+		msr = uncore_msr_event_ctl(box, i);
-+		rdmsrl(msr, config);
-+		config |= SNB_UNC_CTL_EN;
-+		wrmsrl(msr, config);
-+	}
-+}
-+
-+static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
-+}
-+
-+static void snb_uncore_msr_disable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	wrmsrl(event->hw.config_base, 0);
-+}
-+
-+static u64 snb_uncore_msr_read_counter(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	u64 count;
-+	rdmsrl(event->hw.event_base, count);
-+	return count;
-+}
-+
-+static void snb_uncore_msr_box_init(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->pmu_idx == 0) {
-+		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
-+			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
-+	}
-+}
-+
-+static struct attribute *snb_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask5.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group snb_uncore_format_group = {
-+	.name = "format",
-+	.attrs = snb_uncore_formats_attr,
-+};
-+
-+static struct intel_uncore_ops snb_uncore_msr_ops = {
-+	.init		= snb_uncore_msr_box_init,
-+	.disable_all	= snb_uncore_msr_disable_all,
-+	.enable_all	= snb_uncore_msr_enable_all,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= snb_uncore_msr_enable_event,
-+	.read_counter	= snb_uncore_msr_read_counter,
-+};
-+
-+static struct event_constraint snb_uncore_cbo_constraints[] = {
-+	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
-+	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct intel_uncore_type snb_uncore_cbo = {
-+	.name		= "cbo",
-+	.num_counters   = 2,
-+	.num_boxes	= 4,
-+	.perf_ctr_bits	= 44,
-+	.fixed_ctr_bits	= 48,
-+	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
-+	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
-+	.fixed_ctr	= SNB_UNC_FIXED_CTR,
-+	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
-+	.single_fixed	= 1,
-+	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
-+	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
-+	.constraints	= snb_uncore_cbo_constraints,
-+	.ops		= &snb_uncore_msr_ops,
-+	.format_group	= &snb_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *snb_msr_uncores[] = {
-+	&snb_uncore_cbo,
-+	NULL,
-+};
-+/* end of Sandy Bridge uncore support */
-+
-+/* Nehalem uncore support */
-+static void nhm_uncore_msr_disable_all(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
-+}
-+
-+static void nhm_uncore_msr_enable_all(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL,
-+		NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
-+}
-+
-+static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
-+}
-+
-+static void nhm_uncore_msr_box_init(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
-+}
-+
-+static struct attribute *nhm_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask8.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group nhm_uncore_format_group = {
-+	.name = "format",
-+	.attrs = nhm_uncore_formats_attr,
-+};
-+
-+static struct uncore_event_desc nhm_uncore_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, 0xffff),
-+	/* full cache line writes to DRAM */
-+	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL.ANY, 0xf2f),
-+	/* Quickpath Memory Controller medium and low priority read requests */
-+	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS.ANY, 0xf2c),
-+	/* Quickpath Home Logic read requests from the IOH */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST.IOH_READS, 0x120),
-+	/* Quickpath Home Logic write requests from the IOH */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST.IOH_WRITES, 0x220),
-+	/* Quickpath Home Logic read requests from a remote socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST.REMOTE_READS, 0x420),
-+	/* Quickpath Home Logic write requests from a remote socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST.REMOTE_WRITES, 0x820),
-+	/* Quickpath Home Logic read requests from the local socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST.LOCAL_READS, 0x1020),
-+	/* Quickpath Home Logic write requests from the local socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST.LOCAL_WRITES, 0x2020),
-+	{ /* end: all zeroes */ },
-+};
-+
-+static struct intel_uncore_ops nhm_uncore_msr_ops = {
-+	.init		= nhm_uncore_msr_box_init,
-+	.disable_all	= nhm_uncore_msr_disable_all,
-+	.enable_all	= nhm_uncore_msr_enable_all,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= nhm_uncore_msr_enable_event,
-+	.read_counter	= snb_uncore_msr_read_counter,
-+};
-+
-+static struct intel_uncore_type nhm_uncore = {
-+	.name		= "nhm",
-+	.num_counters   = 8,
-+	.num_boxes	= 1,
-+	.perf_ctr_bits	= 48,
-+	.fixed_ctr_bits	= 48,
-+	.event_ctl	= NHM_UNC_PERFEVTSEL0,
-+	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
-+	.fixed_ctr	= NHM_UNC_FIXED_CTR,
-+	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
-+	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
-+	.event_descs	= nhm_uncore_events,
-+	.ops		= &nhm_uncore_msr_ops,
-+	.format_group	= &nhm_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *nhm_msr_uncores[] = {
-+	&nhm_uncore,
-+	NULL,
-+};
-+/* end of Nehalem uncore support */
-+
- static void uncore_assign_hw_event(struct intel_uncore_box *box,
- 				   struct perf_event *event, int idx)
- {
-@@ -754,6 +985,15 @@ static int __init uncore_cpu_init(void)
- 	int ret, cpu;
- 
- 	switch (boot_cpu_data.x86_model) {
-+	case 26: /* Nehalem */
-+	case 30:
-+	case 31:
-+	case 37: /* Westmere */
-+		msr_uncores = nhm_msr_uncores;
-+		break;
-+	case 42: /* Sandy Bridge */
-+		msr_uncores = snb_msr_uncores;
-+		break;
- 	default:
- 		return 0;
++		cpumask_clear_cpu(cpu, pd->cpumask.cbcpu);
++		cpumask_clear_cpu(cpu, pd->cpumask.pcpu);
  	}
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index b5d7124..389e996 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -15,6 +15,56 @@
  
- #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
- 
-+/* SNB event control */
-+#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
-+#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
-+#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
-+#define SNB_UNC_CTL_EN				(1 << 22)
-+#define SNB_UNC_CTL_INVERT			(1 << 23)
-+#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
-+#define NHM_UNC_CTL_CMASK_MASK			0xff000000
-+#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
-+
-+#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 SNB_UNC_CTL_CMASK_MASK)
-+
-+#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 NHM_UNC_CTL_CMASK_MASK)
-+
-+/* NHM & SNB global control register */
-+#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
-+#define SNB_UNC_FIXED_CTR_CTRL                  0x394
-+#define SNB_UNC_FIXED_CTR                       0x395
-+
-+/* SNB uncore global control */
-+#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
-+#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
-+
-+/* SNB Cbo register */
-+#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
-+#define SNB_UNC_CBO_0_PER_CTR0                  0x706
-+#define SNB_UNC_CBO_MSR_OFFSET                  0x10
-+
-+/* NHM global control register */
-+#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
-+#define NHM_UNC_FIXED_CTR                       0x394
-+#define NHM_UNC_FIXED_CTR_CTRL                  0x395
-+
-+/* NHM uncore global control */
-+#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
-+#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
-+
-+/* NHM uncore register */
-+#define NHM_UNC_PERFEVTSEL0                     0x3c0
-+#define NHM_UNC_UNCORE_PMC0                     0x3b0
-+
-+
- struct intel_uncore_ops;
- struct intel_uncore_pmu;
- struct intel_uncore_box;
+ 	return 0;
 -- 
-1.7.7.6
+1.7.0.4
 
