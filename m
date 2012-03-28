@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab2C1PJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 11:09:32 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:38038 "EHLO relay.sw.ru"
+	id S1758335Ab2C1PJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 11:09:45 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:46859 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753507Ab2C1PJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 11:09:29 -0400
-Subject: [PATCH 4/8] nfsd: use exp_put() for svc_export_cache put
+	id S1758314Ab2C1PJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 11:09:42 -0400
+Subject: [PATCH 6/8] nfsd: use hash table from cache detail in nfsd export seq
+ ops
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 28 Mar 2012 19:09:22 +0400
-Message-ID: <20120328150921.2646.46229.stgit@localhost6.localdomain6>
+Date: Wed, 28 Mar 2012 19:09:35 +0400
+Message-ID: <20120328150935.2646.18885.stgit@localhost6.localdomain6>
 In-Reply-To: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
 References: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -22,41 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces cache_put() call for svc_export_cache by exp_put() call.
+Hard-code is redundant and will prevent from making caches per net ns.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfsd/export.c |    2 +-
- fs/nfsd/nfsfh.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/export.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 99ea4c0..c20a405 100644
+index 1495320..9fe7156 100644
 --- a/fs/nfsd/export.c
 +++ b/fs/nfsd/export.c
-@@ -1205,7 +1205,7 @@ static int e_show(struct seq_file *m, void *p)
- 	cache_get(&exp->h);
- 	if (cache_check(&svc_export_cache, &exp->h, NULL))
- 		return 0;
--	cache_put(&exp->h, &svc_export_cache);
-+	exp_put(exp);
- 	return svc_export_show(m, &svc_export_cache, cp);
- }
+@@ -1035,6 +1035,7 @@ static void *e_start(struct seq_file *m, loff_t *pos)
+ 	unsigned hash, export;
+ 	struct cache_head *ch;
+ 	struct cache_detail *cd = m->private;
++	struct cache_head **export_table = cd->hash_table;
  
-diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
-index 68454e7..cc79300 100644
---- a/fs/nfsd/nfsfh.c
-+++ b/fs/nfsd/nfsfh.c
-@@ -636,7 +636,7 @@ fh_put(struct svc_fh *fhp)
- #endif
- 	}
- 	if (exp) {
--		cache_put(&exp->h, &svc_export_cache);
-+		exp_put(exp);
- 		fhp->fh_export = NULL;
- 	}
- 	return;
+ 	read_lock(&cd->hash_lock);
+ 	if (!n--)
+@@ -1061,6 +1062,8 @@ static void *e_next(struct seq_file *m, void *p, loff_t *pos)
+ {
+ 	struct cache_head *ch = p;
+ 	int hash = (*pos >> 32);
++	struct cache_detail *cd = m->private;
++	struct cache_head **export_table = cd->hash_table;
+ 
+ 	if (p == SEQ_START_TOKEN)
+ 		hash = 0;
 
