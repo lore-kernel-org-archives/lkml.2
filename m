@@ -1,110 +1,573 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab2C1HPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:15:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52614 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab2C1HOl (ORCPT
+	id S1753118Ab2C1HSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:18:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33028 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab2C1HS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:14:41 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 2/5] ARM: More SoC driver updates
-Date: Wed, 28 Mar 2012 00:13:59 -0700
-Message-Id: <1332918842-13521-3-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.9.2.359.gebfc2
-In-Reply-To: <1332918842-13521-1-git-send-email-olof@lixom.net>
-References: <1332918842-13521-1-git-send-email-olof@lixom.net>
+	Wed, 28 Mar 2012 03:18:28 -0400
+Message-ID: <4F72BB7F.8080704@gmail.com>
+Date: Wed, 28 Mar 2012 03:19:27 -0400
+From: Richard Farina <sidhayn@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US; rv:1.8.1.6) Gecko/20070728 Thunderbird/2.0.0.6 Mnenhy/0.7.5.0
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+CC: linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        netdev@vger.kernel.org, lf_driver_backport@lists.linux-foundation.org
+Subject: Re: compat-wireless releases based on v3.3
+References: <CAB=NE6WgTMdDtU4_ZgYVr2XzSuiicT5o=q2RvV24jeQj0rZfFw@mail.gmail.com>
+In-Reply-To: <CAB=NE6WgTMdDtU4_ZgYVr2XzSuiicT5o=q2RvV24jeQj0rZfFw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This branch contains a handful of driver updates, mostly to
-the LPC32xx platform but also for Samsung EXYNOS and Davinci.
+On 03/28/12 02:41, Luis R. Rodriguez wrote:
+> Linux v3.3 is out, so we make kernel backport releases based on this
+> release to allow you to compile subsystems / drivers from this kernel
+> on older kernels. One kernel backport release is based on v3.3 vanilla
+> [0], and another which cherry picks 14 patches from linux-next.git
+> [1]. The linux-next-cherry-picks patches are just one of the type of
+> extra categories of patches which the projects allows, for more
+> details refer to the additional patches page [2]. For details on the
+> changes that went into the kernel for the subsystem / drivers we
+> include in this release please refer to the ChangeLog [3]. Details to
+> compat and compat-wireless are provided below.
+>
+> Worth mentioning is we now have a documentation page for the compat
+> module alone [4]. I've also dumped into a Google Fusion Table kernel
+> backport statistics [5] which we can use to keep metrics across
+> different releases. If anyone is interested in helping with these
+> stats or creating visualizations please let me know, for now anyone
+> can view the content. I'm still working on the columns, it seems there
+> a few bugs still with Fusion Table but the prospects of using it are
+> very nice. In particular I hope it can help organizations keep track
+> of deltas not upstream, help categorize clearly and keep metrics of
+> what is not even posted but needed (we call this crap), etc. There are
+> also slides available now [6] that will be used to for the Linux
+> Collaboration Summit talk on Automatically backporting the Linux
+> kernel [7]. Hope the new set of documentation helps understand this
+> process a little better.
+-1 compiles perfectly for me
+> The 14 cherry picked patches:
+>
+> mcgrof@tux ~/devel/compat-wireless (git::linux-3.3.y)$ ls -1
+> linux-next-cherry-picks/
+> 0001-mac80211-Fix-incorrect-num_sta_ps-decrement-in-__sta.patch
+> 0002-mac80211-Fix-incorrect-num_sta_ps-decrement-in-ap_st.patch
+> 0003-mac80211-Move-num_sta_ps-counter-decrement-after-syn.patch
+> 0004-ath9k-Initialize-NF-values-properly.patch
+> 0005-ath9k-Fix-programming-SYNTH4-for-AR9462.patch
+> 0006-ath9k-Fix-descriptor-length-for-AR9462.patch
+> 0007-mac80211-handle-non-bufferable-MMPDUs-correctly.patch
+> 0008-Revert-ath9k_hw-Fix-false-tx-hung-detection-in-AR900.patch
+> 0009-ath9k-do-not-call-ath9k_hw_txprocdesc-on-AR9003-outs.patch
+> 0010-ath9k_hw-enable-interrupts-for-beacon-tx-completion-.patch
+> 0011-ath9k-fix-drv_tx_last_beacon-on-AR9003-by-processing.patch
+> 0012-ath9k_hw-use-cold-instead-of-warm-reset-on-AR9280.patch
+> 0013-mac80211-add-an-rx-flag-for-ignoring-a-packet-s-sign.patch
+> 0014-ath9k-fix-signal-strength-reporting-issues.patch
+>
+Something goes wrong with 1-n:
 
+make -j1 KLIB_BUILD=/lib/modules/3.2.2-pentoo/build
+./scripts/gen-compat-autoconf.sh config.mk > include/linux/compat_autoconf.h
+make -C /lib/modules/3.2.2-pentoo/build
+M=/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n
+modules
+make[1]: Entering directory `/usr/src/linux-3.2.2-pentoo'
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/compat/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/compat/main.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/compat/compat.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/scan.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/core.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/sprom.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/driver_chipcommon.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/driver_chipcommon_pmu.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/driver_pci.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/host_pci.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bcma/bcma.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_vhci.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btmrvl_main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btmrvl_debugfs.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_ldisc.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_h4.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_bcsp.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_ll.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_ath.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/hci_uart.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/bcm203x.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/bpa10x.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/bfusb.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/dtl1_cs.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/bt3c_cs.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/bluecard_cs.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btuart_cs.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btusb.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btsdio.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/ath3k.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btmrvl.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btmrvl_sdio.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/bluetooth/btwilink.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/misc/eeprom/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/misc/eeprom/eeprom_93cx6.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/built-in.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1c/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1c/atl1c_main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1c/atl1c_hw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1c/atl1c_ethtool.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1c/atl1c.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1e/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1e/atl1e_main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1e/atl1e_hw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1e/atl1e_ethtool.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1e/atl1e_param.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atl1e/atl1e.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atlx/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atlx/atl1.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/atheros/atlx/atl2.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/broadcom/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/broadcom/b44.o
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/ethernet/broadcom/b44.c:13:0:
+warning: "pr_fmt" redefined
+include/linux/printk.h:152:0: note: this is the location of the previous
+definition
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/usb/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/usb/cdc_ether.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/usb/rndis_host.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/usb/usbnet.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/regd.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/hw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/key.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/caps.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/initvals.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/eeprom.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/gpio.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/desc.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/dma.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/qcu.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/pcu.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/phy.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/reset.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/attach.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/base.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/led.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/rfkill.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/ani.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/sysfs.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/mac80211-ops.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/pci.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath5k/ath5k.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/debug.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/hif.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/htc.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/bmi.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/cfg80211.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/init.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/txrx.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/wmi.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/sdio.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath6kl/ath6kl.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/beacon.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/gpio.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/init.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/recv.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/xmit.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/mci.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/rc.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/pci.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ahb.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/common.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/htc_hst.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/hif_usb.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/wmi.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/htc_drv_txrx.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/htc_drv_main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/htc_drv_beacon.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/htc_drv_init.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/htc_drv_gpio.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9002_hw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_hw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/hw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_phy.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9002_phy.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar5008_phy.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9002_calib.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_calib.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_rtt.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/calib.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/eeprom.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/eeprom_def.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/eeprom_4k.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/eeprom_9287.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ani.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/btcoex.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/mac.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9002_mac.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_mac.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_eeprom.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_paprd.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ar9003_mci.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ath9k.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ath9k_hw.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ath9k_common.o
+  LD [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/ath9k/ath9k_htc.o
+  LD     
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/built-in.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/main.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/usb.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/cmd.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/mac.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/phy.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/led.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/fw.o
+  CC [M] 
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/tx.o
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/tx.c:
+In function 'carl9170_tx_ps_drop':
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/tx.c:1248:26:
+error: 'IEEE80211_TX_CTL_POLL_RESPONSE' undeclared (first use in this
+function)
+/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/tx.c:1248:26:
+note: each undeclared identifier is reported only once for each function
+it appears in
+make[5]: ***
+[/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170/tx.o]
+Error 1
+make[4]: ***
+[/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath/carl9170]
+Error 2
+make[3]: ***
+[/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless/ath]
+Error 2
+make[2]: ***
+[/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n/drivers/net/wireless]
+Error 2
+make[1]: ***
+[_module_/var/tmp/portage/net-wireless/compat-wireless-3.3/work/compat-wireless-3.3-1-n]
+Error 2
+make[1]: Leaving directory `/usr/src/linux-3.2.2-pentoo'
+make: *** [modules] Error 2
 
+thanks!
 
-It had a few context conflicts against patches already merged through
-fixes-non-critical. We should have resolved this early during the
-development cycle by pulling them in as a dependency, instead I did it
-after the fact this time.
+-Rick
+> ===============================================
+> ChangeLog for compat-wireless for linux-3.3
+> ===============================================
+>
+> This is the ChangeLog for the Linux kernel project compat-wireless.
+> It provides a backport of a few Linux kernel subsystems down to
+> older kernels:
+>
+>   * 802.11
+>   * Bluetooth
+>   * Ethernet
+>
+> For more details refer to the home page:
+>
+> http://wireless.kernel.org/en/users/Download/stable/
+>
+> The compat-wireless project consists of code from three projects:
+>
+>   * The Linux kernel: linux-2.6-allstable.git
+>   * Compat-wirelesS: compat-wireless.git
+>   * Compat: compat.git
+>
+> The compat-wireless stable releases incorporates code from from
+> each of these git trees for the respective upstream Linux kernel
+> stable release. A branch called linux-3.x.y exists for each
+> stable release. Below we provide the ChangeLog of changes from
+> the previous branched release to the new branched release.
+>
+> Release: linux-3.3
+>
+> Updates from the compat.git project:
+> ====================================
+>
+> git shortlog linux-3.2.y..linux-3.3.y
+>
+> Felix Fietkau (3):
+>       compat: fix misplaced #ifdef for the workqueue backport
+>       compat: backport atomic64 support
+>       compat: fix security_sk_clone dummy backport compile
+>
+> Hauke Mehrtens (6):
+>       compat: add support for kernel 3.2
+>       compat: backport kfree_rcu()
+>       compat: backport netdev_features_t
+>       compat: add config var for CORDIC and CRC8
+>       compat: add module_usb_driver and module_platform_driver
+>       compat: add __cancel_delayed_work()
+>
+> John W. Linville (7):
+>       compat: use separate CONFIG_COMPAT_KFIFO option for building kfifo.o
+>       compat: add CONFIG_COMPAT_FIRMWARE_DATA_RW_NEEDS_FILP
+>       compat: check CONFIG_COMPAT_FIRMWARE_CLASS in compat-2.6.33.h
+>       compat: support RHEL6 as a build target
+>       compat: avoid warning in compat_system_workqueue_create
+>       compat: implement dummy security_sk_clone
+>       compat: use kconfig.h in compat-2.6.h for 3.1 and later kernels
+>
+> Luis R. Rodriguez (4):
+>       compat: fix building for 3.0 kernels
+>       compat: export compat kernel versions info
+>       compat: add .gitignore
+>       compat: add compat kernel checker and downloader
+>
+> Nikolay Martynov (1):
+>       Add dma_zalloc_coherent to fix build with kernels older than 3.2
+>
+> Updates from the compat-wireless.git project:
+> =============================================
+>
+> git shortlog linux-3.2.y..linux-3.3.y
+>
+> Dominique Martinet (1):
+>       compat-wireless: build: Throw error if space in path
+>
+> Eliad Peller (1):
+>       compat-wireless: fix patches/08-rename-config-options.patch
+>
+> Hauke Mehrtens (17):
+>       compat-wireless: add support for kernel 3.2
+>       compat-wireless: remove kfree_rcu() patch
+>       compat-wireless: make patches apply again
+>       compat-wireless: make patches apply again
+>       compat-wireless: escape &
+>       compat-wireless: add config var for CORDIC and CRC8
+>       compat-wireless: remove some modules from Makefile
+>       compat-wireless: fix driver-select for intel
+>       compat-wireless: add some missing config options
+>       compat-wireless: fix brcm80211 driver-select
+>       compat-wireless deactivate mac80211 tracing for old kernels
+>       compat-wireless: compile fix for commit patches/09-threaded-irq.patch
+>       compat-wireless: remove platform_device_id for kernel < 2.6.30
+>       compat-wireless: CONFIG_BT_L2CAP and CONFIG_BT_SCO removed
+>       compat-wireless: make patches apply again
+>       compat-wireless: use other workqueue
+>       compat-wireless: no trans_start on netdev_queue
+>
+> Johannes Berg (1):
+>       compat-wireless: disable SKB TX status stamping in mac80211
+>
+> John W. Linville (9):
+>       compat-wireless: add CONFIG_COMPAT_KFIFO setting to config.mk
+>       compat-wireless: remove leading whitespace from
+> CONFIG_COMPAT_FIRMWARE_CLASS
+>       compat-wireless: add CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN
+>       compat-wireless: support RHEL6 as a build target
+>       compat-wireless: change CONFIG_IWLAGN -> CONFIG_IWLWIFI
+>       compat-wireless: fix patches/11-dev-pm-ops.patch
+>       compat-wireless: fix patches/38-led-max-brightness.patch
+>       compat-wireless: fix patches/39-remove_blink_set.patch
+>       Enable CONFIG_RT2800{PCI,USB}_RT53XX
+>
+> Luciano Coelho (1):
+>       compat-wireless: check if modprobe exists before using it
+>
+> Luis R. Rodriguez (22):
+>       compat-wireless: fix patches/08-rename-config-options.patch
+>       compat-wireless: refresh patches
+>       compat-wireless: refresh patches
+>       compat-wireless: fix patches/09-threaded-irq.patch
+>       compat-wireless: refresh patches
+>       compat-wireless: copy driver files only if present
+>       compat-wireless: clarify patches/47-no_trans_start_on_netdev_queue.patch
+>       compat-wireless: clarify patches/46-use_other_workqueue.patch
+>       compat-wireless: refresh patches
+>       compat-wireless: refresh patches for next-20120109
+>       compat-wirless: refresh patches
+>       compat-wireless: refresh patches for 3.3-rc1
+>       compat-wireless: use linux-stable instead of linux-2.6-allstable
+>       compat-wireless: fix patches/16-bluetooth.patch
+>       compat-wireless: refresh patches
+>       compat-wireless: add driver-select option ath9k_ap
+>       compat-wireless: fix allowing jobserver
+>       compat-wireless: add linux-next-cherry-picks for 3.3 recommended by nbd
+>       compat-wireless: refresh linux-next-cherry-picks patches
+>       compat-wireless: remove ath9k packet log crap
+>       compat-wireless: remove stale pending-stable ignore patch
+>       compat-wireless: refresh patches for v3.0 release
+>
+> [0] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.3/compat-wireless-3.3-1.tar.bz2
+> [1] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.3/compat-wireless-3.3-1-n.tar.bz2
+> [2] http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
+> [3] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.3/ChangeLog-3.3-wireless
+> [4] http://mcgrof.github.com/compat/
+> [5] https://www.google.com/fusiontables/DataSource?docid=1wXnm0VFUHBpaMmxwjaZZD58B4o8K1iPFCCOx50Q
+> [6] https://docs.google.com/presentation/d/1axVNEGwKZjnzG1ocdd289WMqPxzJ3qfMv70ghGcnUKc/edit
+> [7] https://events.linuxfoundation.org/events/collaboration-summit/rodriguez-backporting
+>
+>   Luis
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-
--Olof
-
-----------------------------------------------------------------
-
-The following changes since commit 7700a7305fe11c06900bc813df4e49381d429b89:
-
-  Merge tag 'cleanup2' into for-next
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/drivers2
-
-for you to fetch changes up to 1f5b7dcfdad3840d4bce27ab0b3cc8f376b81544:
-
-  Merge branch 'fixes-non-critical' into next/drivers2
-
-----------------------------------------------------------------
-
-Arnd Bergmann (4):
-      Merge branches 'lpc32xx/mach-lpc32xx-eth' and 'lpc32xx/mach-lpc32xx-usb' of git://git.antcom.de/linux-2.6 into lpc32xx/drivers
-      Merge branch 'lpc32xx/drivers' into next/drivers
-      Merge branch 'v3.4/features' of git://gitorious.org/linux-davinci/linux-davinci into next/drivers
-      Merge branch 'next/soc-exynos5250-gpio' of git://git.kernel.org/.../kgene/linux-samsung into next/drivers
-
-Manjunath Hadli (2):
-      ARM: davinci: dm644x: add support for v4l2 video display
-      ARM: davinci: dm644x evm: add support for VPBE display
-
-Olof Johansson (2):
-      Merge branch 'next/devel-samsung-pd' of git://git.kernel.org/.../kgene/linux-samsung into next/drivers
-      Merge branch 'fixes-non-critical' into next/drivers2
-
-Roland Stigge (12):
-      ARM: LPC32xx: Added lpc32xx_defconfig
-      ARM: LPC32xx: clock.c: warning fix
-      ARM: LPC32xx: clock.c: Fix mutex lock issues
-      ARM: LPC32XX: Remove broken non-static declaration
-      ARM: LPC32xx: clock.c: Missing header file
-      ARM: LPC32xx: clock.c: jiffies wrapping
-      ARM: LPC32xx: clock.c: Clock registration fixes
-      Merge branch 'lpc32xx/fixup' of git://git.kernel.org/.../arm/arm-soc into lpc32xx/tmp
-      Merge branch 'lpc32xx/fixup2' of git://git.kernel.org/.../arm/arm-soc into lpc32xx/tmp
-      Merge branch 'lpc32xx/drivers' of git://git.kernel.org/.../arm/arm-soc into lpc32xx/tmp
-      ARM: LPC32xx: USB Support
-      ARM: LPC32xx: Ethernet support
-
-Sachin Kamat (2):
-      ARM: EXYNOS: Hook up G2D PD to generic PD infrastructure
-      ARM: EXYNOS: Hook up JPEG PD to generic PD infrastructure
-
-Sangsu Park (3):
-      ARM: EXYNOS: add support GPIO for EXYNOS5250
-      gpio/samsung: add support GPIOlib for EXYNOS5250
-      gpio/samsung: use ioremap() for EXYNOS4 GPIOlib
-
-Wolfram Sang (1):
-      arm: lpc32xx: phy3250: add rtc & touch device
-
-
- arch/arm/mach-davinci/board-dm644x-evm.c   |  109 ++++-
- arch/arm/mach-davinci/davinci.h            |    8 +-
- arch/arm/mach-davinci/dm644x.c             |  166 +++++++-
- arch/arm/mach-exynos/common.c              |   15 -
- arch/arm/mach-exynos/include/mach/gpio.h   |  239 ++++++++---
- arch/arm/mach-exynos/include/mach/map.h    |    4 +
- arch/arm/mach-exynos/pm_domains.c          |    6 +
- arch/arm/mach-lpc32xx/Kconfig              |   25 ++
- arch/arm/mach-lpc32xx/clock.c              |   87 ++--
- arch/arm/mach-lpc32xx/common.c             |   47 +++
- arch/arm/mach-lpc32xx/common.h             |    4 +-
- arch/arm/mach-lpc32xx/include/mach/board.h |   24 ++
- arch/arm/mach-lpc32xx/irq.c                |    4 +
- arch/arm/mach-lpc32xx/phy3250.c            |    3 +
- drivers/gpio/gpio-samsung.c                |  487 +++++++++++++++++++++--
- 15 files changed, 1080 insertions(+), 148 deletions(-)
- create mode 100644 arch/arm/mach-lpc32xx/include/mach/board.h
