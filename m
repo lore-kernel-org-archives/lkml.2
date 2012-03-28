@@ -1,95 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab2C1RDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 13:03:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab2C1RDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 13:03:21 -0400
-Date: Wed, 28 Mar 2012 19:02:34 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, acme@redhat.com,
-        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, linux-kernel@vger.kernel.org, mjw@redhat.com
-Subject: Re: [PATCH 04/15] perf: Add ability to dump user regs
-Message-ID: <20120328170234.GE1647@m.brq.redhat.com>
-References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
- <1332938158-5244-5-git-send-email-jolsa@redhat.com>
- <20120328140115.GE4826@redhat.com>
- <20120328142021.GC1647@m.brq.redhat.com>
- <20120328151230.GF4826@redhat.com>
- <20120328160610.GH17189@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328160610.GH17189@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758531Ab2C1RDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 13:03:32 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:54568 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758430Ab2C1RDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 13:03:30 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=UTF-8
+Date: Wed, 28 Mar 2012 19:03:28 +0200
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH v4 2/2] regulator: add device tree support for max8997
+In-reply-to: <1332582590-16382-3-git-send-email-thomas.abraham@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        Rajendra Nayak <rnayak@ti.com>
+Message-id: <4F734460.4060605@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <1332582590-16382-1-git-send-email-thomas.abraham@linaro.org>
+ <1332582590-16382-3-git-send-email-thomas.abraham@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 06:06:13PM +0200, Frederic Weisbecker wrote:
-> On Wed, Mar 28, 2012 at 11:12:30AM -0400, Frank Ch. Eigler wrote:
-> > Hi, Jiri -
-> > 
-> > > [...]
-> > > > [...]  Upon a normal syscall entry to the kernel, not
-> > > > all user registers are saved explicitly for such easy retrieval.  The
-> > > > others may be spilled to the stack by gcc during the various sys_*
-> > > > functions or elsewhere.  [...]
-> > > 
-> > > Are you reffering to x86_64 where only portion of registers
-> > > is stored by SAVE_ARGS macro? Seems like 32 bits stores the
-> > > whole pt_regs.
-> > 
-> > I believe that's the right area.  I'm not sure even the 32-bit variant
-> > is complete enough, for example exempting MMX/SSE registers.  These
-> > may also contain spilled registers before long.
-> > 
-> > 
-> > > Generally you could need all the registers to start the unwind, but
-> > > I was assuming that for most cases the stack pointer and instruction
-> > > pointer should be enough.. but I might be wrong here.
-> > 
-> > Yeah; the question is how much is missed besides those "most cases".
-> > 
-> > 
-> > > > To recover these registers at run time, we found that the kernel
-> > > > stack itself has to be partially unwound [... Without that, it ...]
-> > > > may accidentally pass garbage data to perf userspace.  Correcting
-> > > > this could require a kernel-space libunwind.
-> > 
-> > > AFAIK not going to happen any time soon ;)
-> > 
-> > Understood.  Then the code needs to ensure that it does not purport to
-> > pass register values that it does not know.  (Back when we were at
-> > this stage in systemtap, we got some reasonable backtraces even
-> > without kernel unwinding, ie. tolerating missing registers.)
-> 
-> Right.
-> 
-> I think in normal syscall case we save rdi, rsi, rdx, rax and rip.
-> If we take the syscall slow path we save rbx, rbp, r12-15.
-> 
-> Unfortunately we don't save rsp, which must be the most important
-> for cfi unwinding.
+On 24.03.2012 10:49, Thomas Abraham wrote:
 
-hm, I think we always have stack pointer
+Hi Thomas!
 
-should be saved by cpu itself together with other control
-regs like: ip cs eflags sp ss
+> Add device tree based discovery support for max8997.
+... 
+> +Regulators: The regulators of max8997 that have to be instantiated should be
+> +included in a sub-node named 'regulators'. Regulator nodes included in this
+> +sub-node should be of the format as below. Note: The 'n' in LDOn and BUCKn
+> +represents the LDO or BUCK number as per the datasheet of max8997.
+> +
+> +    For LDO's:
+> +		LDOn {
+> +			standard regulator bindings here
+> +		};
+> +
+> +    For BUCK's:
+> +		BUCKn {
+> +			standard regulator bindings here
+> +		};
+> +
 
-For syscalls, we also have the ones stored by SAVE_ARGS
-The rest of the registers (SAVE_REST) are available
-only for the sake of the syscall_trace_enter during
-the slow path, but it's poped out before executing
-the actuall syscall.
 
-jirka
+Small note - driver supports[1] configuring following regulators by
+using respective DT node names:
 
-> 
-> We probably need to check what is saved in irqs (set_irq_regs())
-> and exceptions as well.
+ - EN32KHz_AP
+ - EN32KHz_CP
+ - ENVICHG
+ - ESAFEOUT1
+ - ESAFEOUT2
+ - CHARGER
+ - CHARGER_CV
+ - CHARGER_TOPOFF
+
+I wonder if these should be mentioned in documentation too.
+
+[1] These are used in e.g. mach-nuri.c
+
+> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c> index 9657929..dce8aaf 100644
+
+> --- a/drivers/regulator/max8997.c
+> +++ b/drivers/regulator/max8997.c
+..
+> +static int max8997_pmic_dt_parse_pdata(struct max8997_dev *iodev,
+> +					struct max8997_platform_data *pdata)
+> +{
+> +	struct device_node *pmic_np, *regulators_np, *reg_np;
+> +	struct max8997_regulator_data *rdata;
+> +	unsigned int i, dvs_voltage_nr = 1, ret;
+> +
+> +	pmic_np = iodev->dev->of_node;
+> +	if (!pmic_np) {
+> +		dev_err(iodev->dev, "could not find pmic sub-node\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	regulators_np = of_find_node_by_name(pmic_np, "regulators");
+> +	if (!regulators_np) {
+> +		dev_err(iodev->dev, "could not find regulators sub-node\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* count the number of regulators to be supported in pmic */
+> +	pdata->num_regulators = 0;
+> +	for_each_child_of_node(regulators_np, reg_np)
+> +		pdata->num_regulators++;
+> +
+> +	rdata = devm_kzalloc(iodev->dev, sizeof(*rdata) *
+> +				pdata->num_regulators, GFP_KERNEL);
+> +	if (!rdata) {
+> +		dev_err(iodev->dev, "could not allocate memory for "
+> +						"regulator data\n");
+> +		return -ENOMEM;
+> +	}
+
+> +	pdata->regulators = rdata;
+
+> +	for_each_child_of_node(regulators_np, reg_np) {
+> +		for (i = 0; i < ARRAY_SIZE(regulators); i++)
+> +			if (!of_node_cmp(reg_np->name, regulators[i].name))
+> +				break;
+> +		rdata->id = i;
+
+
+rdata->id will be equal to ARRAY_SIZE(regulators) when one adds DT node
+name (below "regulators") which is different from what can be found in
+regulators[] table.
+
+On my test machine this results in hard lockup - possibly because
+something tries to access regulators[ARRAY_SIZE(regulators)]
+later on.
+
+Following patch fixes this on my machine (using DTS with misspelled LDO1 for LDx1):
+
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index dce8aaf..c20fd72 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -1011,6 +1011,13 @@ static int max8997_pmic_dt_parse_pdata(struct max8997_dev *iodev,
+                for (i = 0; i < ARRAY_SIZE(regulators); i++)
+                        if (!of_node_cmp(reg_np->name, regulators[i].name))
+                                break;
++
++               if (i == ARRAY_SIZE(regulators)) {
++                       dev_warn(iodev->dev, "don't know how to configure regulator %s\n",
++                                reg_np->name);
++                       continue;
++               }
++
+                rdata->id = i;
+                rdata->initdata = of_get_regulator_init_data(
+                                                iodev->dev, reg_np);
+
+
+Regards,
+-- 
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
