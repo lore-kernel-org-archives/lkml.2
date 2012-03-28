@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab2C1OII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:08:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42844 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757767Ab2C1OIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:08:06 -0400
-Date: Wed, 28 Mar 2012 10:01:15 -0400
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        rostedt@goodmis.org, robert.richter@amd.com,
-        linux-kernel@vger.kernel.org, mjw@redhat.com
-Subject: Re: [PATCH 04/15] perf: Add ability to dump user regs
-Message-ID: <20120328140115.GE4826@redhat.com>
-References: <1332938158-5244-1-git-send-email-jolsa@redhat.com> <1332938158-5244-5-git-send-email-jolsa@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332938158-5244-5-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1758146Ab2C1OJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:09:27 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51005 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757767Ab2C1OJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 10:09:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332943060-18374-1-git-send-email-hagen@jauu.net>
+References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
+Date: Wed, 28 Mar 2012 16:09:24 +0200
+Message-ID: <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
+Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>, jbaron@redhat.com,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jiri -
+On Wed, Mar 28, 2012 at 3:57 PM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
+> High performance server sometimes create one listening socket (e.g. port
+> 80), create a epoll file descriptor and add the socket. Afterwards
+> create SC_NPROCESSORS_ONLN threads and wait for events. This often
+> result in a thundering herd problem because all CPUs are scheduled.
+>
+> This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
+> If a descriptor is added with this flag only one CPU is scheduled in.
+>
+> Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+> ---
+> Dave rejected the patch and said not network specific. Because there
+> is no epoll maintainer this time directly.
 
-On Wed, Mar 28, 2012 at 02:35:47PM +0200, Jiri Olsa wrote:
-> [...]
-> The register value here are those of the user space context as
-> it was before the user entered the kernel for whatever reason
-> (syscall, irq, exception, or a PMI happening in userspace).
-> [...]
+CC'ing maintainers for you...
+Please use scripts/get_maintainer.pl.
 
-As I understand the situation, there is a complication here that you
-haven't accounted for.  Upon a normal syscall entry to the kernel, not
-all user registers are saved explicitly for such easy retrieval.  The
-others may be spilled to the stack by gcc during the various sys_*
-functions or elsewhere.  It turns out that some of these saved
-registers are sometimes necessary to accomplish a user-space unwind.
-
-To recover these registers at run time, we found that the kernel stack
-itself has to be partially unwound - and not via frame pointers, but
-the full dwarf unwind/cfi machinery.  This RFC code does not appear
-aware of the difference between the explicitly saved and the
-incidentally-spilled registers, and thus may accidentally pass garbage
-data to perf userspace.  Correcting this could require a kernel-space
-libunwind.
-
-- FChE
+-- 
+Thanks,
+//richard
