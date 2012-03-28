@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab2C1UYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:24:40 -0400
+	id S932663Ab2C1UYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:24:38 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:42688 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567Ab2C1UYg (ORCPT
+	with ESMTP id S1758517Ab2C1UYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:24:36 -0400
+	Wed, 28 Mar 2012 16:24:30 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 05/16] nfs: don't open in ->d_revalidate
-Date: Wed, 28 Mar 2012 22:24:34 +0200
-Message-Id: <1332966285-30358-6-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 02/16] vfs: reorganize do_last()
+Date: Wed, 28 Mar 2012 22:24:31 +0200
+Message-Id: <1332966285-30358-3-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
 References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
@@ -24,196 +24,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-NFSv4 can't do reliable opens in d_revalidate, since it cannot know whether a
-mount needs to be followed or not.  It does check d_mountpoint() on the dentry,
-which can result in a weird error if the VFS found that the mount does not in
-fact need to be followed, e.g.:
+Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
 
-  # mount --bind /mnt/nfs /mnt/nfs-clone
-  # echo something > /mnt/nfs/tmp/bar
-  # echo x > /tmp/file
-  # mount --bind /tmp/file /mnt/nfs-clone/tmp/bar
-  # cat  /mnt/nfs/tmp/bar
-  cat: /mnt/nfs/tmp/bar: Not a directory
-
-Which should, by any sane filesystem, result in "something" being printed.
-
-So instead do the open in f_op->open() and in the unlikely case that the cached
-dentry turned out to be invalid, drop the dentry and return ESTALE to let the
-VFS retry.
+This allows atomic_open to be hooked into the slow lookup part.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- fs/nfs/dir.c  |   47 ++++----------------------------------
- fs/nfs/file.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 70 insertions(+), 46 deletions(-)
+ fs/namei.c |   92 ++++++++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 55 insertions(+), 37 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index fd9a872..715a8c1 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1328,10 +1328,10 @@ out:
- }
+diff --git a/fs/namei.c b/fs/namei.c
+index 936648c..ff3c47b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2108,6 +2108,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	int want_write = 0;
+ 	int acc_mode = op->acc_mode;
+ 	struct file *filp;
++	struct inode *inode;
++	int symlink_ok = 0;
+ 	int error;
  
- #ifdef CONFIG_NFS_V4
--static int nfs_open_revalidate(struct dentry *, struct nameidata *);
-+static int nfs4_lookup_revalidate(struct dentry *, struct nameidata *);
+ 	nd->flags &= ~LOOKUP_PARENT;
+@@ -2139,47 +2141,38 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	}
  
- const struct dentry_operations nfs4_dentry_operations = {
--	.d_revalidate	= nfs_open_revalidate,
-+	.d_revalidate	= nfs4_lookup_revalidate,
- 	.d_delete	= nfs_dentry_delete,
- 	.d_iput		= nfs_dentry_iput,
- 	.d_automount	= nfs_d_automount,
-@@ -1489,12 +1489,11 @@ no_open:
- 	return nfs_lookup(dir, dentry, nd);
- }
- 
--static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
-+static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct dentry *parent = NULL;
- 	struct inode *inode;
- 	struct inode *dir;
--	struct nfs_open_context *ctx;
- 	int openflags, ret = 0;
- 
- 	if (nd->flags & LOOKUP_RCU)
-@@ -1523,49 +1522,13 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	/* We cannot do exclusive creation on a positive dentry */
- 	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
- 		goto no_open_dput;
--	/* We can't create new files, or truncate existing ones here */
--	openflags &= ~(O_CREAT|O_EXCL|O_TRUNC);
- 
--	ctx = create_nfs_open_context(dentry, openflags);
--	ret = PTR_ERR(ctx);
--	if (IS_ERR(ctx))
--		goto out;
--	/*
--	 * Note: we're not holding inode->i_mutex and so may be racing with
--	 * operations that change the directory. We therefore save the
--	 * change attribute *before* we do the RPC call.
--	 */
--	inode = NFS_PROTO(dir)->open_context(dir, ctx, openflags, NULL);
--	if (IS_ERR(inode)) {
--		ret = PTR_ERR(inode);
--		switch (ret) {
--		case -EPERM:
--		case -EACCES:
--		case -EDQUOT:
--		case -ENOSPC:
--		case -EROFS:
--			goto out_put_ctx;
--		default:
--			goto out_drop;
--		}
--	}
--	iput(inode);
--	if (inode != dentry->d_inode)
--		goto out_drop;
-+	/* Let f_op->open() actually open (and revalidate) the file */
-+	ret = 1;
- 
--	nfs_set_verifier(dentry, nfs_save_change_attribute(dir));
--	ret = nfs_intent_set_file(nd, ctx);
--	if (ret >= 0)
--		ret = 1;
- out:
- 	dput(parent);
- 	return ret;
--out_drop:
--	d_drop(dentry);
--	ret = 0;
--out_put_ctx:
--	put_nfs_open_context(ctx);
--	goto out;
- 
- no_open_dput:
- 	dput(parent);
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index c43a452..4e626ec 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -870,12 +870,73 @@ const struct file_operations nfs_file_operations = {
- static int
- nfs4_file_open(struct inode *inode, struct file *filp)
- {
-+	struct nfs_open_context *ctx;
-+	struct dentry *dentry = filp->f_path.dentry;
-+	struct dentry *parent = NULL;
-+	struct inode *dir;
-+	unsigned openflags = filp->f_flags;
-+	int err;
+ 	if (!(open_flag & O_CREAT)) {
+-		int symlink_ok = 0;
+ 		if (nd->last.name[nd->last.len])
+ 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
+ 		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
+ 			symlink_ok = 1;
+ 		/* we _can_ be in RCU mode here */
+-		error = walk_component(nd, path, &nd->last, LAST_NORM,
+-					!symlink_ok);
+-		if (error < 0)
+-			return ERR_PTR(error);
+-		if (error) /* symlink */
+-			return NULL;
+-		/* sayonara */
++		error = lookup_fast(nd, &nd->last, path, &inode);
++		if (error <= 0) {
++			if (error)
++				goto terminate;
 +
-+	BUG_ON(inode != dentry->d_inode);
- 	/*
--	 * NFSv4 opens are handled in d_lookup and d_revalidate. If we get to
--	 * this point, then something is very wrong
-+	 * If no cached dentry exists or if it's negative, NFSv4 handled the
-+	 * opens in ->lookup() or ->create().
-+	 *
-+	 * We only get this far for a cached positive dentry.  We skipped
-+	 * revalidation, so handle it here by dropping the dentry and returning
-+	 * -ESTALE.  The VFS will retry the lookup/create/open.
- 	 */
--	dprintk("NFS: %s called! inode=%p filp=%p\n", __func__, inode, filp);
--	return -ENOTDIR;
-+
-+	dprintk("NFS: open file(%s/%s)\n",
-+		dentry->d_parent->d_name.name,
-+		dentry->d_name.name);
-+
-+	if ((openflags & O_ACCMODE) == 3)
-+		openflags--;
-+
-+	/* We can't create new files, or truncate existing ones here */
-+	openflags &= ~(O_CREAT|O_EXCL|O_TRUNC);
-+
-+	parent = dget_parent(dentry);
-+	dir = parent->d_inode;
-+
-+	ctx = alloc_nfs_open_context(filp->f_path.dentry, filp->f_mode);
-+	err = PTR_ERR(ctx);
-+	if (IS_ERR(ctx))
-+		goto out;
-+
-+	inode = NFS_PROTO(dir)->open_context(dir, ctx, openflags, NULL);
-+	if (IS_ERR(inode)) {
-+		err = PTR_ERR(inode);
-+		switch (err) {
-+		case -EPERM:
-+		case -EACCES:
-+		case -EDQUOT:
-+		case -ENOSPC:
-+		case -EROFS:
-+			goto out_put_ctx;
-+		default:
-+			goto out_drop;
++			goto finish_lookup;
 +		}
++		/* cached lookup failed, no longer in RCU mode */
++	} else {
++		/* create side of things */
++
++		/*
++		 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED
++		 * has been cleared when we got to the last component we are
++		 * about to look up
++		 */
+ 		error = complete_walk(nd);
+ 		if (error)
+ 			return ERR_PTR(error);
+ 
+-		error = -ENOTDIR;
+-		if (nd->flags & LOOKUP_DIRECTORY) {
+-			if (!nd->inode->i_op->lookup)
+-				goto exit;
+-		}
+-		audit_inode(pathname, nd->path.dentry);
+-		goto ok;
++		audit_inode(pathname, dir);
++		error = -EISDIR;
++		/* trailing slashes? */
++		if (nd->last.name[nd->last.len])
++			goto exit;
+ 	}
+ 
+-	/* create side of things */
+-	/*
+-	 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED has been
+-	 * cleared when we got to the last component we are about to look up
+-	 */
+-	error = complete_walk(nd);
+-	if (error)
+-		return ERR_PTR(error);
+-
+-	audit_inode(pathname, dir);
+-	error = -EISDIR;
+-	/* trailing slashes? */
+-	if (nd->last.name[nd->last.len])
+-		goto exit;
+-
+ 	mutex_lock(&dir->d_inode->i_mutex);
+ 
+ 	dentry = lookup_hash(nd);
+@@ -2192,9 +2185,14 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	path->dentry = dentry;
+ 	path->mnt = nd->path.mnt;
+ 
+-	/* Negative dentry, just create the file */
++	/* Negative dentry, create the file if O_CREAT */
+ 	if (!dentry->d_inode) {
+ 		umode_t mode = op->mode;
++
++		error = -ENOENT;
++		if (!(open_flag & O_CREAT))
++			goto exit_mutex_unlock;
++
+ 		if (!IS_POSIXACL(dir->d_inode))
+ 			mode &= ~current_umask();
+ 		/*
+@@ -2238,22 +2236,38 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (error)
+ 		goto exit_dput;
+ 
++	inode = path->dentry->d_inode;
++finish_lookup:
+ 	error = -ENOENT;
+-	if (!path->dentry->d_inode)
+-		goto exit_dput;
++	if (!inode) {
++		path_to_nameidata(path, nd);
++		goto terminate;
 +	}
-+	iput(inode);
-+	if (inode != dentry->d_inode)
-+		goto out_drop;
+ 
+-	if (path->dentry->d_inode->i_op->follow_link)
++	if (should_follow_link(inode, !symlink_ok)) {
++		if (nd->flags & LOOKUP_RCU) {
++			if (unlikely(unlazy_walk(nd, path->dentry))) {
++				error = -ECHILD;
++				goto terminate;
++			}
++		}
+ 		return NULL;
++	}
+ 
+ 	path_to_nameidata(path, nd);
+-	nd->inode = path->dentry->d_inode;
+-	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
++	nd->inode = inode;
 +
-+	nfs_set_verifier(dentry, nfs_save_change_attribute(dir));
-+	nfs_file_set_open_context(filp, ctx);
-+	err = 0;
+ 	error = complete_walk(nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+ 	error = -EISDIR;
+-	if (S_ISDIR(nd->inode->i_mode))
++	if ((open_flag & O_CREAT) && S_ISDIR(inode->i_mode))
++		goto exit;
++	error = -ENOTDIR;
++	if ((nd->flags & LOOKUP_DIRECTORY) && !inode->i_op->lookup)
+ 		goto exit;
 +
-+out_put_ctx:
-+	put_nfs_open_context(ctx);
-+out:
-+	dput(parent);
-+	return err;
++	audit_inode(pathname, nd->path.dentry);
+ ok:
+ 	if (!S_ISREG(nd->inode->i_mode))
+ 		will_truncate = 0;
+@@ -2298,6 +2312,10 @@ exit_dput:
+ exit:
+ 	filp = ERR_PTR(error);
+ 	goto out;
 +
-+out_drop:
-+	d_drop(dentry);
-+	err = -ESTALE;
-+	goto out_put_ctx;
++terminate:
++	terminate_walk(nd);
++	return ERR_PTR(error);
  }
  
- const struct file_operations nfs4_file_operations = {
+ static struct file *path_openat(int dfd, const char *pathname,
 -- 
 1.7.7
 
