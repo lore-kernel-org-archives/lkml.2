@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab2C1SNq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:13:46 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:48894 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758634Ab2C1SNn (ORCPT
+	id S1758670Ab2C1SN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 14:13:59 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:42506 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758559Ab2C1SNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:13:43 -0400
+	Wed, 28 Mar 2012 14:13:23 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-16.tower-132.messagelabs.com!1332958412!6798794!28
-X-Originating-IP: [216.166.12.72]
+X-Msg-Ref: server-9.tower-131.messagelabs.com!1332958366!17427977!40
+X-Originating-IP: [216.166.12.178]
 X-StarScan-Version: 6.5.7; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] blackfin: Use the plat_nand default partition parser
-Date: Wed, 28 Mar 2012 11:13:19 -0700
+Subject: [PATCH 1/5] mtd: plat_nand: Add default partition parser to driver
+Date: Wed, 28 Mar 2012 11:13:05 -0700
 User-Agent: KMail/1.9.9
-CC: <linux-mtd@lists.infradead.org>, <uclinux-dist-devel@blackfin.uclinux.org>,
-        <vapier@gentoo.org>
+CC: <linux-mtd@lists.infradead.org>, <dwmw2@infradead.org>,
+        <artem.bityutskiy@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201203281113.19827.hartleys@visionengravers.com>
+Message-ID: <201203281113.05362.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the default partition parser, cmdlinepart, provided by the plat_nand driver.
+Use cmdlinepart as the default partition parser and allow the arch setup code
+to still use their own partition parsers.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
 ---
 
-diff --git a/arch/blackfin/mach-bf561/boards/acvilon.c b/arch/blackfin/mach-bf561/boards/acvilon.c
-index f6ffd6f..0b74218 100644
---- a/arch/blackfin/mach-bf561/boards/acvilon.c
-+++ b/arch/blackfin/mach-bf561/boards/acvilon.c
-@@ -248,8 +248,6 @@ static struct platform_device bfin_uart0_device = {
+diff --git a/drivers/mtd/nand/plat_nand.c b/drivers/mtd/nand/plat_nand.c
+index 6404e6e..5856399 100644
+--- a/drivers/mtd/nand/plat_nand.c
++++ b/drivers/mtd/nand/plat_nand.c
+@@ -23,6 +23,8 @@ struct plat_nand_data {
+ 	void __iomem		*io_base;
+ };
  
- #if defined(CONFIG_MTD_NAND_PLATFORM) || defined(CONFIG_MTD_NAND_PLATFORM_MODULE)
++static const char *part_probe_types[] = { "cmdlinepart", NULL };
++
+ /*
+  * Probe for the NAND device.
+  */
+@@ -31,6 +33,7 @@ static int __devinit plat_nand_probe(struct platform_device *pdev)
+ 	struct platform_nand_data *pdata = pdev->dev.platform_data;
+ 	struct plat_nand_data *data;
+ 	struct resource *res;
++	const char **part_types;
+ 	int err = 0;
  
--const char *part_probes[] = { "cmdlinepart", NULL };
--
- static struct mtd_partition bfin_plat_nand_partitions[] = {
- 	{
- 	 .name = "params(nand)",
-@@ -289,7 +287,6 @@ static struct platform_nand_data bfin_plat_nand_data = {
- 	.chip = {
- 		 .nr_chips = 1,
- 		 .chip_delay = 30,
--		 .part_probe_types = part_probes,
- 		 .partitions = bfin_plat_nand_partitions,
- 		 .nr_partitions = ARRAY_SIZE(bfin_plat_nand_partitions),
- 		 },
+ 	if (pdata->chip.nr_chips < 1) {
+@@ -98,8 +101,9 @@ static int __devinit plat_nand_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	err = mtd_device_parse_register(&data->mtd,
+-					pdata->chip.part_probe_types, NULL,
++	part_types = pdata->chip.part_probe_types ? : part_probe_types;
++
++	err = mtd_device_parse_register(&data->mtd, part_types, NULL,
+ 					pdata->chip.partitions,
+ 					pdata->chip.nr_partitions);
+ 
