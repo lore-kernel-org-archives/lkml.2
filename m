@@ -1,198 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966Ab2C1U1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:27:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:57206 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760Ab2C1UYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:24:44 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
-        sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 10/16] fuse: implement i_op->atomic_create()
-Date: Wed, 28 Mar 2012 22:24:39 +0200
-Message-Id: <1332966285-30358-11-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
-References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
+	id S1758696Ab2C1U1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:27:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932760Ab2C1U11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 16:27:27 -0400
+Date: Wed, 28 Mar 2012 22:19:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
+Subject: Re: [PATCHSET 0/6 version 2] kmod: Optional timeout on the wait in
+	call_usermodehelper_exec
+Message-ID: <20120328201904.GA4517@redhat.com>
+References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <20120327140709.60ab7bda.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120327140709.60ab7bda.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 03/27, Andrew Morton wrote:
+>
+> IOW, please explain at some length why you need this.  Do you think
+> that there are existing call sites which can usefully use this feature?
+> Do you expect that new callers are likely to need this?  etcetera.
 
-Replace fuse's ->create implementation with a ->atomic_create implementation.
-No functionality is changed.
+Cough. Can't resist... Could you also explain why
+http://marc.info/?l=linux-nfs&m=133252084301205 can't work?
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/dir.c |   97 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 69 insertions(+), 28 deletions(-)
+To clarify, I am just curious, I am not arguing. I am asking because
+if UMH_WAIT_PROC(timeout) fails with -ETIMEDOUT, then perhaps it makes
+sense to not "leak" the user-space process servicing the kernel request
+we were waiting for.
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 2066328..75e5142 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -369,8 +369,9 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
-  * If the filesystem doesn't support this, then fall back to separate
-  * 'mknod' + 'open' requests.
-  */
--static int fuse_create_open(struct inode *dir, struct dentry *entry,
--			    umode_t mode, struct nameidata *nd)
-+static struct file *fuse_create_open(struct inode *dir, struct dentry *entry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode)
- {
- 	int err;
- 	struct inode *inode;
-@@ -382,17 +383,15 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	struct fuse_entry_out outentry;
- 	struct fuse_file *ff;
- 	struct file *file;
--	int flags = nd->intent.open.flags;
--
--	if (fc->no_create)
--		return -ENOSYS;
- 
-+	err = -EINVAL;
- 	if (flags & O_DIRECT)
--		return -EINVAL;
-+		goto out_err;
- 
- 	forget = fuse_alloc_forget();
-+	err = -ENOMEM;
- 	if (!forget)
--		return -ENOMEM;
-+		goto out_err;
- 
- 	req = fuse_get_req(fc);
- 	err = PTR_ERR(req);
-@@ -431,11 +430,8 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	req->out.args[1].value = &outopen;
- 	fuse_request_send(fc, req);
- 	err = req->out.h.error;
--	if (err) {
--		if (err == -ENOSYS)
--			fc->no_create = 1;
-+	if (err)
- 		goto out_free_ff;
--	}
- 
- 	err = -EIO;
- 	if (!S_ISREG(outentry.attr.mode) || invalid_nodeid(outentry.nodeid))
-@@ -451,28 +447,78 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
- 		fuse_sync_release(ff, flags);
- 		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
--		return -ENOMEM;
-+		err = -ENOMEM;
-+		goto out_err;
- 	}
- 	kfree(forget);
- 	d_instantiate(entry, inode);
- 	fuse_change_entry_timeout(entry, &outentry);
- 	fuse_invalidate_attr(dir);
--	file = lookup_instantiate_filp(nd, entry, generic_file_open);
-+	file = finish_open(od, entry, generic_file_open);
- 	if (IS_ERR(file)) {
- 		fuse_sync_release(ff, flags);
--		return PTR_ERR(file);
-+	} else {
-+		file->private_data = fuse_file_get(ff);
-+		fuse_finish_open(inode, file);
- 	}
--	file->private_data = fuse_file_get(ff);
--	fuse_finish_open(inode, file);
--	return 0;
-+	return file;
- 
-- out_free_ff:
-+out_free_ff:
- 	fuse_file_free(ff);
-- out_put_request:
-+out_put_request:
- 	fuse_put_request(fc, req);
-- out_put_forget_req:
-+out_put_forget_req:
- 	kfree(forget);
--	return err;
-+out_err:
-+	return ERR_PTR(err);
-+}
-+
-+static int fuse_mknod(struct inode *, struct dentry *, umode_t, dev_t);
-+static struct file *fuse_atomic_open(struct inode *dir, struct dentry *entry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode, bool *created)
-+{
-+	int err;
-+	struct fuse_conn *fc = get_fuse_conn(dir);
-+	struct file *file;
-+	struct dentry *res = NULL;
-+
-+	if (d_unhashed(entry)) {
-+		res = fuse_lookup(dir, entry, NULL);
-+		if (IS_ERR(res))
-+			return ERR_CAST(res);
-+
-+		if (res)
-+			entry = res;
-+	}
-+
-+	if (!(flags & O_CREAT) || entry->d_inode)
-+		goto no_open;
-+
-+	/* Only creates */
-+	*created = true;
-+
-+	if (fc->no_create)
-+		goto mknod;
-+
-+	file = fuse_create_open(dir, entry, od, flags, mode);
-+	if (PTR_ERR(file) == -ENOSYS) {
-+		fc->no_create = 1;
-+		goto mknod;
-+	}
-+out_dput:
-+	dput(res);
-+	return file;
-+
-+mknod:
-+	err = fuse_mknod(dir, entry, mode, 0);
-+	if (err) {
-+		file = ERR_PTR(err);
-+		goto out_dput;
-+	}
-+no_open:
-+	finish_no_open(od, res);
-+	return NULL;
- }
- 
- /*
-@@ -576,12 +622,6 @@ static int fuse_mknod(struct inode *dir, struct dentry *entry, umode_t mode,
- static int fuse_create(struct inode *dir, struct dentry *entry, umode_t mode,
- 		       struct nameidata *nd)
- {
--	if (nd) {
--		int err = fuse_create_open(dir, entry, mode, nd);
--		if (err != -ENOSYS)
--			return err;
--		/* Fall back on mknod */
--	}
- 	return fuse_mknod(dir, entry, mode, 0);
- }
- 
-@@ -1632,6 +1672,7 @@ static const struct inode_operations fuse_dir_inode_operations = {
- 	.link		= fuse_link,
- 	.setattr	= fuse_setattr,
- 	.create		= fuse_create,
-+	.atomic_open	= fuse_atomic_open,
- 	.mknod		= fuse_mknod,
- 	.permission	= fuse_permission,
- 	.getattr	= fuse_getattr,
--- 
-1.7.7
+Oleg.
 
