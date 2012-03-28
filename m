@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab2C1Txx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 15:53:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14339 "EHLO mx1.redhat.com"
+	id S1758611Ab2C1T7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 15:59:07 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:56576 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758501Ab2C1Txw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 15:53:52 -0400
-Date: Wed, 28 Mar 2012 21:46:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120328194613.GA3678@redhat.com>
-References: <20120327165853.GH11875@moon> <20120327222923.GA31692@mail.hallyn.com> <20120327223420.GB9669@moon> <20120327224640.GA5328@mail.hallyn.com> <m162dpo45j.fsf@fess.ebiederm.org> <20120328064838.GA2286@moon> <m1k425mae1.fsf@fess.ebiederm.org> <20120328075549.GA2204@moon> <20120328081639.GB2286@moon> <20120328194312.GA22211@mail.hallyn.com>
+	id S1758510Ab2C1T7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 15:59:05 -0400
+Message-ID: <1332964559.21301.144.camel@groeck-laptop>
+Subject: Re: [PATCH] acpi_power_meter: fix lockdep spew due to non-static
+ lock class
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Kyle McMartin <kyle@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>
+Date: Wed, 28 Mar 2012 12:55:59 -0700
+In-Reply-To: <20120328191147.GK25886@redacted.bos.redhat.com>
+References: <20120328191147.GK25886@redacted.bos.redhat.com>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328194312.GA22211@mail.hallyn.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28, Serge E. Hallyn wrote:
->
-> If you want to
-> just add the struct cred to the f_owner and do proper uid conversion,
-> I'll support that too.  (Just grab a ref to the cred in
-> fs/fcntl.c:f_modown(), and drop the ref in fs/file_table.c:__fput() ).
+On Wed, 2012-03-28 at 15:11 -0400, Kyle McMartin wrote:
+> Similar to a30dcb4f which fixed asus_atk0110.ko, I recently received a
+> bug report from someone hitting the same issue in acpi_power_meter.
+> 
+> [   13.963168] power_meter ACPI000D:00: Found ACPI power meter.
+> [   13.963900] BUG: key ffff8802161f3920 not in .data!
+> [   13.963904] ------------[ cut here ]------------
+> [   13.963915] WARNING: at kernel/lockdep.c:2986
+> 	lockdep_init_map+0x52f/0x560()
+> 
+> So let's fix that up for them by statically declaring the
+> lockdep_class_key.
+> 
+> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+> 
+Applied.
 
-In this case f_owner.*uid should go away, I guess. And sigio_perm()
-should be unified with kill_ok_by_cred() somehow (modulo
-security_file_send_sigiotask).
+Thanks,
+Guenter
 
-Right?
-
-Oleg.
 
