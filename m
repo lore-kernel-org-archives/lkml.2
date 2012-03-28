@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab2C1Od1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:33:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63244 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab2C1OdY (ORCPT
+	id S1757752Ab2C1Odf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:33:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28617 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210Ab2C1Odc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:33:24 -0400
-From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] HID: autoload hid-multitouch as needed
-Date: Wed, 28 Mar 2012 16:33:18 +0200
-Message-Id: <1332945198-2518-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Wed, 28 Mar 2012 10:33:32 -0400
+Date: Wed, 28 Mar 2012 10:27:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Jinsong Liu <jinsong.liu@intel.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Message-ID: <20120328142742.GD18161@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120324003111.GA11777@andromeda.dapyr.net>
+ <DE8DF0795D48FD4CA783C40EC8292335105AAF@SHSMSX101.ccr.corp.intel.com>
+ <20120326163558.GC10236@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233510CE6F@SHSMSX101.ccr.corp.intel.com>
+ <4F732365020000780007B6A1@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F732365020000780007B6A1@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090207.4F7320ED.0084,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+On Wed, Mar 28, 2012 at 01:42:45PM +0100, Jan Beulich wrote:
+> >>> On 28.03.12 at 12:48, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
+> > But just curious, what's the purpose and benefit of exposing mwait to dom0? 
 
-When the generic hid parsing of the report descriptors in hid-core
-detects that the device contains the field ContactID, the device should
-be handled by hid-multitouch, and hid-core should release it.
-This patch implements a temporary fix for hid-core to automatically
-call the loading of hid-multitouch. A better solution would involve
-userspace.
+So that cstate.c can evaluate properly the deeper C-states and xen-acpi-processor
+can upload them to the hypervisor.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
+> > I remember xen against doing so before.
+> 
+> And I don't recall anything having changed in that regard.
 
-Hi guys,
+Jan, you Acked the patch in question: https://lkml.org/lkml/2012/2/24/129
 
-This is the v3 of the patch.
-Changes since v2:
-- make the working queue global to the module. As noted by Henrik,
-there is no need to have a per-device working queue.
-- removed the boolean that tells if the working queue has been initialized
-and filled: we have only one wq that is initialized at the loading of the
-module. I didn't put any threading guards: as far as I understood, working
-queues are thread safe.
-
-There is still one problem: this works for hotplugged devices. Coldplugged
-ones (before booting then) are not loading hid-multitouch on my computer.
-I don't think the previous implementation worked either. However, I don't
-think it's a big issue as we may ask end-user to add hid-multitouch in this
-case in their /etc/modules-load.d/.
-
-Cheers,
-Benjamin
-
- drivers/hid/hid-core.c |   40 +++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 39 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 990fe19..f694aa1 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1210,6 +1210,39 @@ static struct bin_attribute dev_bin_attr_report_desc = {
- 	.size = HID_MAX_DESCRIPTOR_SIZE,
- };
- 
-+#if defined(CONFIG_MODULES) && defined(MODULE)
-+/* This is a temporary fix to make hid-multitouch loadable from
-+ * the kernel before we come up with more robust attitude
-+ * (with userspace involvement).
-+ * In case we detect a multitouch device through the parsing of
-+ * hid-core, we request hid-multitouch to be loaded. */
-+static struct work_struct request_hid_mt_module_wk;
-+
-+static void hid_request_hid_mt_module_async(struct work_struct *work)
-+{
-+	request_module("hid-multitouch");
-+}
-+
-+static inline void hid_request_hid_mt_module(void)
-+{
-+	schedule_work(&request_hid_mt_module_wk);
-+}
-+
-+static inline void hid_flush_request_modules(void)
-+{
-+	flush_work_sync(&request_hid_mt_module_wk);
-+}
-+
-+static inline void hid_init_request_modules(void)
-+{
-+	INIT_WORK(&request_hid_mt_module_wk, hid_request_hid_mt_module_async);
-+}
-+#else
-+#define hid_request_hid_mt_module()
-+#define hid_flush_request_modules()
-+#define hid_init_request_modules()
-+#endif /* CONFIG_MODULES */
-+
- int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- {
- 	static const char *types[] = { "Device", "Pointer", "Mouse", "Device",
-@@ -1235,7 +1268,9 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- 				connect_mask & HID_CONNECT_HIDINPUT_FORCE))
- 		hdev->claimed |= HID_CLAIMED_INPUT;
- 	if (hdev->quirks & HID_QUIRK_MULTITOUCH) {
--		/* this device should be handled by hid-multitouch, skip it */
-+		/* this device should be handled by hid-multitouch, request
-+		 * for hid-multitouch to be loaded and leave the device to it */
-+		hid_request_hid_mt_module();
- 		return -ENODEV;
- 	}
- 
-@@ -2210,6 +2245,8 @@ static int __init hid_init(void)
- 
- 	hid_debug_init();
- 
-+	hid_init_request_modules();
-+
- 	return 0;
- err_bus:
- 	bus_unregister(&hid_bus_type);
-@@ -2219,6 +2256,7 @@ err:
- 
- static void __exit hid_exit(void)
- {
-+	hid_flush_request_modules();
- 	hid_debug_exit();
- 	hidraw_exit();
- 	bus_unregister(&hid_bus_type);
--- 
-1.7.7.6
-
+> 
+> Jan
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
