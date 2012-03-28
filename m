@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab2C1R5J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 13:57:09 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53335 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758165Ab2C1R5H (ORCPT
+	id S1758624Ab2C1R5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 13:57:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52859 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758531Ab2C1R5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 13:57:07 -0400
-Date: Wed, 28 Mar 2012 19:57:01 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] tools: Add a toplevel Makefile
-Message-ID: <20120328175701.GB13426@aftab>
-References: <1332513788-9726-1-git-send-email-bp@amd64.org>
- <20120324074412.GE20145@gmail.com>
- <20120326122632.GC32090@aftab>
- <20120326151432.GA8527@gmail.com>
- <20120326154132.GJ32090@aftab>
- <20120328072528.GA22885@gmail.com>
- <20120328095125.GA16369@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328095125.GA16369@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Mar 2012 13:57:20 -0400
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: linux-cifs@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] CIFS: Fix VFS lock usage for oplocked files
+Date: Wed, 28 Mar 2012 21:56:19 +0400
+Message-Id: <1332957379-5922-1-git-send-email-piastry@etersoft.ru>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 11:51:25AM +0200, Borislav Petkov wrote:
-> I'm currently thinking I want to give the make tools/{perf,help,...}
-> approach a try because it is clear that it is a subdir of the kernel src
-> tree and it probably could support all the targets we thought about.
-> 
-> Let me play around with it a bit...
+We can deadlock if we have a write oplock and two processes
+use the same file handle. In this case the first process can't
+unlock its lock if the second process blocked on the lock in the
+same time.
 
-Yeah, nasty. I've almost got it to build a tool when doing
+Fix it by using posix_lock_file rather than posix_lock_file_wait
+under cinode->lock_mutex. If we request a blocking lock and
+posix_lock_file indicates that there is another lock that prevents
+us, wait untill that lock is released and restart our call.
 
-$ make tools/<toolname>
+Cc: stable@kernel.org
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+---
+ fs/cifs/file.c     |   10 +++++++++-
+ fs/locks.c         |    3 ++-
+ include/linux/fs.h |    5 +++++
+ 3 files changed, 16 insertions(+), 2 deletions(-)
 
-but it fails on all the targets which have implicit build rules. (It
-seems to build perf fine though because perf Makefile doesn't have
-implicit rules for %.c -> %.o etc). And I can see that implicit rules
-are being cleared in the toplevel kernel Makefile so that they don't
-kick in.
-
-At this moment, I'm open for hints from the kbuild people, if we use the
-toplevel Makefile to build tools/, should all the tools' Makefiles have
-explicit rules or ...? Any suggestions are appreciated.
-
-Thanks.
-
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 460d87b..fae765d 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -835,13 +835,21 @@ cifs_posix_lock_set(struct file *file, struct file_lock *flock)
+ 	if ((flock->fl_flags & FL_POSIX) == 0)
+ 		return rc;
+ 
++try_again:
+ 	mutex_lock(&cinode->lock_mutex);
+ 	if (!cinode->can_cache_brlcks) {
+ 		mutex_unlock(&cinode->lock_mutex);
+ 		return rc;
+ 	}
+-	rc = posix_lock_file_wait(file, flock);
++
++	rc = posix_lock_file(file, flock, NULL);
+ 	mutex_unlock(&cinode->lock_mutex);
++	if (rc == FILE_LOCK_DEFERRED) {
++		rc = wait_event_interruptible(flock->fl_wait, !flock->fl_next);
++		if (!rc)
++			goto try_again;
++		locks_delete_block(flock);
++	}
+ 	return rc;
+ }
+ 
+diff --git a/fs/locks.c b/fs/locks.c
+index 637694b..0d68f1f 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -510,12 +510,13 @@ static void __locks_delete_block(struct file_lock *waiter)
+ 
+ /*
+  */
+-static void locks_delete_block(struct file_lock *waiter)
++void locks_delete_block(struct file_lock *waiter)
+ {
+ 	lock_flocks();
+ 	__locks_delete_block(waiter);
+ 	unlock_flocks();
+ }
++EXPORT_SYMBOL(locks_delete_block);
+ 
+ /* Insert waiter into blocker's block list.
+  * We use a circular list so that processes can be easily woken up in
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index fa63f1b..d8fd8df 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1211,6 +1211,7 @@ extern int vfs_setlease(struct file *, long, struct file_lock **);
+ extern int lease_modify(struct file_lock **, int);
+ extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
+ extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
++extern void locks_delete_block(struct file_lock *waiter);
+ extern void lock_flocks(void);
+ extern void unlock_flocks(void);
+ #else /* !CONFIG_FILE_LOCKING */
+@@ -1355,6 +1356,10 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
+ 	return 1;
+ }
+ 
++static inline void locks_delete_block(struct file_lock *waiter)
++{
++}
++
+ static inline void lock_flocks(void)
+ {
+ }
 -- 
-Regards/Gruss,
-Boris.
+1.7.1
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
