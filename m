@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758812Ab2C1WQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:16:57 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2748 "EHLO mga14.intel.com"
+	id S1758825Ab2C1WTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:19:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758112Ab2C1WQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:16:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124511473"
-Message-Id: <20120328131153.227169439@intel.com>
-User-Agent: quilt/0.51-1
-Date: Wed, 28 Mar 2012 20:13:10 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Linux Memory Management List <linux-mm@kvack.org>
-cc: Vivek Goyal <vgoyal@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Suresh Jayaraman <sjayaraman@suse.com>,
-        Andrea Righi <andrea@betterlinux.com>
-cc: Jeff Moyer <jmoyer@redhat.com>
-cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/6] blk-cgroup: account dirtied pages
-References: <20120328121308.568545879@intel.com>
-Content-Disposition: inline; filename=blk-cgroup-nr-dirtied.patch
+	id S1756079Ab2C1WS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 18:18:59 -0400
+Date: Wed, 28 Mar 2012 18:18:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        keithp@keithp.com, airlied@redhat.com
+Subject: Re: Corrupted files after suspend to disk
+Message-ID: <20120328221823.GA1897@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jiri Kosina <jkosina@suse.cz>,
+	Andreas Hartmann <andihartmann@01019freenet.de>,
+	richard -rw- weinberger <richard.weinberger@gmail.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+	keithp@keithp.com, airlied@redhat.com
+References: <CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+ <4F574113.8030906@01019freenet.de>
+ <alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
+ <CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com>
+ <alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz>
+ <CAFLxGvyXwFwLRYw7=eHGLZsiAB9Adcu16z=UPhLtL_Ze3bF-9g@mail.gmail.com>
+ <alpine.LNX.2.00.1203121402460.18356@pobox.suse.cz>
+ <4F5DF8F0.5010801@01019freenet.de>
+ <20120312214914.GA8628@redhat.com>
+ <alpine.LNX.2.00.1203290011230.25526@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1203290011230.25526@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 29, 2012 at 12:12:53AM +0200, Jiri Kosina wrote:
+ > On Mon, 12 Mar 2012, Dave Jones wrote:
+ > 
+ > >  > https://bugzilla.novell.com/show_bug.cgi?id=732908
+ > >  > 
+ > >  > Following the link, you are able to compare the used chips - maybe there
+ > >  > are some equal components?
+ > > 
+ > > This looks like the i915 corruption problem mentioned in a few other threads.
+ > > 
+ > > if you compare the hexdump of the good/bad files, you find that the corruption
+ > > happens in 8x 4 byte writes of either 0x00000000 or 0x00aaaaaa.
+ > > 
+ > > KeithP clued me in last week that that looks like an ARGB pixel quad, so these
+ > > writes are likely 8 pixel strips.
+ > 
+ > So this keeps happening to me on almost every resume still ... Keith, is 
+ > there any way I could help you debug this?
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- block/blk-cgroup.c         |    4 ++++
- include/linux/blk-cgroup.h |    1 +
- mm/page-writeback.c        |    6 ++++++
- 3 files changed, 11 insertions(+)
+Try this https://bugzilla.kernel.org/attachment.cgi?id=72739
 
---- linux-next.orig/block/blk-cgroup.c	2012-03-28 14:55:47.522142976 +0800
-+++ linux-next/block/blk-cgroup.c	2012-03-28 15:39:46.722088815 +0800
-@@ -1594,6 +1594,7 @@ static void blkiocg_destroy(struct cgrou
- 
- 	free_css_id(&blkio_subsys, &blkcg->css);
- 	rcu_read_unlock();
-+	percpu_counter_destroy(&blkcg->nr_dirtied);
- 	if (blkcg != &blkio_root_cgroup)
- 		kfree(blkcg);
- }
-@@ -1619,6 +1620,9 @@ done:
- 	INIT_HLIST_HEAD(&blkcg->blkg_list);
- 
- 	INIT_LIST_HEAD(&blkcg->policy_list);
-+
-+	percpu_counter_init(&blkcg->nr_dirtied, 0);
-+
- 	return &blkcg->css;
- }
- 
---- linux-next.orig/include/linux/blk-cgroup.h	2012-03-28 14:55:47.530142977 +0800
-+++ linux-next/include/linux/blk-cgroup.h	2012-03-28 15:40:27.754087973 +0800
-@@ -117,6 +117,7 @@ struct blkio_cgroup {
- 	spinlock_t lock;
- 	struct hlist_head blkg_list;
- 	struct list_head policy_list; /* list of blkio_policy_node */
-+	struct percpu_counter nr_dirtied;
- };
- 
- struct blkio_group_stats {
---- linux-next.orig/mm/page-writeback.c	2012-03-28 14:55:47.510142976 +0800
-+++ linux-next/mm/page-writeback.c	2012-03-28 15:40:39.366087735 +0800
-@@ -34,6 +34,7 @@
- #include <linux/syscalls.h>
- #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
- #include <linux/pagevec.h>
-+#include <linux/blk-cgroup.h>
- #include <trace/events/writeback.h>
- 
- /*
-@@ -1933,6 +1934,11 @@ int __set_page_dirty_no_writeback(struct
- void account_page_dirtied(struct page *page, struct address_space *mapping)
- {
- 	if (mapping_cap_account_dirty(mapping)) {
-+#ifdef CONFIG_BLK_DEV_THROTTLING
-+		struct blkio_cgroup *blkcg = task_blkio_cgroup(current);
-+		if (blkcg)
-+			__percpu_counter_add(&blkcg->nr_dirtied, 1, BDI_STAT_BATCH);
-+#endif
- 		__inc_zone_page_state(page, NR_FILE_DIRTY);
- 		__inc_zone_page_state(page, NR_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-
+	Dave
 
