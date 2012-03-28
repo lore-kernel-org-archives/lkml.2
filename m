@@ -1,100 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab2C1IWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 04:22:49 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:56966 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab2C1IW2 (ORCPT
+	id S1756283Ab2C1IZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 04:25:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50476 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab2C1IZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 04:22:28 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2S8MK1c007688, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 1/5] r8169: modify pll power function
-Date: Wed, 28 Mar 2012 16:26:50 +0800
-Message-ID: <1332923214-5071-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.7.6
+	Wed, 28 Mar 2012 04:25:28 -0400
+Date: Wed, 28 Mar 2012 09:25:01 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL 1/5] ARM: cleanups of io includes
+Message-ID: <20120328082501.GA22414@n2100.arm.linux.org.uk>
+References: <1332918842-13521-1-git-send-email-olof@lixom.net> <1332918842-13521-2-git-send-email-olof@lixom.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332918842-13521-2-git-send-email-olof@lixom.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust r810x_pll_power_down, r810x_pll_power_up, and r8168_pll_power_up.
-Always power up device during rtl_open. For r810x, turn off more power
-when the WOL is disabled.
+On Wed, Mar 28, 2012 at 12:13:58AM -0700, Olof Johansson wrote:
+> Rob Herring has done a sweeping change cleaning up all of the mach/io.h includes,
+> moving some of the oft-repeated macros to a common location and removing a bunch of
+> boiler plate. This is another step closer to a common zImage for multiple platforms.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |   37 +++++++++++++++++++++++++++------
- 1 files changed, 30 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 27c358c..3edb996 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3508,15 +3508,45 @@ static void r810x_phy_power_up(struct rtl8169_private *tp)
- 
- static void r810x_pll_power_down(struct rtl8169_private *tp)
- {
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
- 	if (rtl_wol_pll_power_down(tp))
- 		return;
- 
- 	r810x_phy_power_down(tp);
-+
-+	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_07:
-+	case RTL_GIGA_MAC_VER_08:
-+	case RTL_GIGA_MAC_VER_09:
-+	case RTL_GIGA_MAC_VER_10:
-+	case RTL_GIGA_MAC_VER_13:
-+	case RTL_GIGA_MAC_VER_16:
-+		break;
-+	default:
-+		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
-+		break;
-+	}
- }
- 
- static void r810x_pll_power_up(struct rtl8169_private *tp)
- {
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
- 	r810x_phy_power_up(tp);
-+
-+	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_07:
-+	case RTL_GIGA_MAC_VER_08:
-+	case RTL_GIGA_MAC_VER_09:
-+	case RTL_GIGA_MAC_VER_10:
-+	case RTL_GIGA_MAC_VER_13:
-+	case RTL_GIGA_MAC_VER_16:
-+		break;
-+	default:
-+		RTL_W8(PMCH, RTL_R8(PMCH) | 0x80);
-+		break;
-+	}
- }
- 
- static void r8168_phy_power_up(struct rtl8169_private *tp)
-@@ -3620,13 +3650,6 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
- 
--	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
--	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
--	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
--	    r8168dp_check_dash(tp)) {
--		return;
--	}
--
- 	switch (tp->mac_version) {
- 	case RTL_GIGA_MAC_VER_25:
- 	case RTL_GIGA_MAC_VER_26:
--- 
-1.7.7.6
-
+NAK.  Linus, do not pull this.  This breaks PXA compilation, which has
+been known about for more than a week.
