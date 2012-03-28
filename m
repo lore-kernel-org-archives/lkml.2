@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab2C1KKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:10:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51172 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751943Ab2C1KKY (ORCPT
+	id S1757985Ab2C1KLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:11:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49898 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757651Ab2C1KLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:10:24 -0400
-Date: Wed, 28 Mar 2012 11:09:57 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Michael Bohan <mbohan@codeaurora.org>
-Cc: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: Regulator supplies when using Device Tree
-Message-ID: <20120328100957.GD3232@opensource.wolfsonmicro.com>
-References: <4F6BCF47.4090200@codeaurora.org>
- <20120326130005.GQ3098@opensource.wolfsonmicro.com>
- <4F726B96.8070508@codeaurora.org>
+	Wed, 28 Mar 2012 06:11:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jCrbxBqMcLqd4mOl"
-Content-Disposition: inline
-In-Reply-To: <4F726B96.8070508@codeaurora.org>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3A8C969225424C4D8E6BEE65ED8552DA07889037@XMB-BGL-41C.cisco.com>
+References: <3A8C969225424C4D8E6BEE65ED8552DA07889037@XMB-BGL-41C.cisco.com>
+Date: Wed, 28 Mar 2012 15:41:12 +0530
+Message-ID: <CABJk5knEkDvNkpN+Gq1+yPM5pQ0AnBFJR=QNWONZr=uVaSwd0g@mail.gmail.com>
+Subject: Re: FW: Kernel: low stack detected by irq handler
+From: radiatejava <radiatejava@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have an update to this case (note that this kernel module is
+trapping every packet entering into the system and processing it as
+needed) - recently some functions were added to in the processing path
+of the packet to log the packet contents to a log file
+(/var/log/messages). Logging functions were all written as 'inline'
+functions. We just tried removing the inline keyword from the function
+definitions and we are no longer observing the issue of kernel crash
+and low stack by irq handler. Can anyone explain to me what is the
+impact of having the function inline ? Appreciate your response. In
+case the original issue is not visible here, I am putting the link
+http://marc.info/?l=linux-kernel&m=131805703608420&w=2
 
---jCrbxBqMcLqd4mOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks in advance.
 
-On Tue, Mar 27, 2012 at 06:38:30PM -0700, Michael Bohan wrote:
-> On 3/26/2012 6:00 AM, Mark Brown wrote:
-
-> >Supplies are *always* specified using the name from the part data sheet,
-> >anything to do with regulator-regulator supplies is a Linux
-> >implementation detail.
-
-> So before filling out the supply_name when calling
-> regulator_register(), does that mean we should expect regulator
-> drivers that optionally support supplies to always check with
-> of_get_property()? And which name should we check? It sounds like
-
-I have no idea what this means, sorry.
-
-> the answer is that we should invent another binding to portray the
-> name of the supply the driver should be checking against. But then
-> it would seem silly to have two bindings that pertain to supply
-> names.
-
-Absolutely not, that would be broken.  The whole point here is that
-supplies of all kinds are always requested with the name the chip uses
-for the supply.
-
---jCrbxBqMcLqd4mOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcuNnAAoJEBus8iNuMP3dHvYP/03VbvgOeXh4vy/IP3K73hQJ
-G7NtO35T1Ez3GHIyWZiSt9J65ibGMa2CZKA/080wyEI/FRgUBXRNhdW06cycV4T2
-BJSjzBymBEuHKLYxUFIAPqW2BDf84QXVKScllfZh4pIglkJzRMKYXLmQ9Hw+Ke2a
-eLMsblp7mQpyOKT3QIWRUGW/IypZua/CnzVEDACknvH/5UXC6ls+wro2QFCczhlc
-aA1Xhe10KwyixYdV26joOgogvrwglO4lGbUp0FjvjKrfPy4BZj81gaU7v/zv8MKw
-lJ6qvSny4iusoqX7adyiLlwIRuqI4gIQuZaVqCWIL0h9ne3ldBBZ4Q+u7PAozTmr
-I9LUuNFuiaixRs/FxMi+WGYzOeGT6BTArFrrvTU7gvTDPCm+9X5y0rN85A4JSqla
-CU+ckTD/suJOm8elZ4yjyFiGko+wMFYhgHxf6EGsFjFn4s4XaPp3ss+SWqv9V3Nf
-8bs3railipHYNiQaLGnp4DlNEKHz1+GmrUPWKKtAuoU11MoQmsKcCpecCODYxYeV
-lv5waZidi5CtKzbdmyqSmOQh2bnrYBkjVqXG9PPL/0e9SG74xAodt105pOXNxdZ/
-FZdtVYkxz7dSqtkefEUzu9Aq/FWFXtwfwt1+K2+RfOqWRccTnstwf5YvxRysEVf2
-FpYZco5+HGWS4IDc39QF
-=+/hv
------END PGP SIGNATURE-----
-
---jCrbxBqMcLqd4mOl--
+>> Hello experts,
+>> I have recently moved from kernel 2.6.18-128 to 2.6.18-194. I have my
+>> own kernel module also (click). With the new 2.6.18-194 version of
+>> kernel, I am getting this error:
+>>
+>> Kernel: low stack detected by irq handler
+>
+> You are using too much stack basically and the kernel is catching this.
+> The call trace should let you work out which path through your code is
+> the problem.
+>
+> You've got an IRQ in the middle so it may well be its the combination of
+> too much stack being used by the main code paths and an IRQ at just the
+> wrong moment causing further high stack usage in the IRQ path that tips
+> it over the edge.
