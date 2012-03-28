@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2C1NL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:11:56 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:35273 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214Ab2C1NLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:11:54 -0400
-Date: Wed, 28 Mar 2012 08:11:49 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>
-Subject: Re: [PATCH 08/32] nohz: Try not to give the timekeeping duty to an
- adaptive tickless cpu
-Message-ID: <20120328131149.GA16417@sgi.com>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
- <1332338318-5958-10-git-send-email-fweisbec@gmail.com>
- <alpine.DEB.2.00.1203210950500.20482@router.home>
- <20120327105034.GA13196@somewhere>
- <alpine.DEB.2.00.1203271106130.1170@router.home>
- <1332866823.16159.246.camel@twins>
- <alpine.DEB.2.00.1203271943320.11825@router.home>
- <1332923983.2528.12.camel@twins>
+	id S1757727Ab2C1NMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:12:53 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:36548
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754878Ab2C1NMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 09:12:51 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzz8275bhz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1LJD7-01-60L-02
+X-M-MSG: 
+Date: Wed, 28 Mar 2012 15:12:40 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, amd: Be more verbose about LVT offset assignments
+Message-ID: <20120328131240.GB16533@erda.amd.com>
+References: <1332876615-29219-1-git-send-email-robert.richter@amd.com>
+ <20120328114944.GB17936@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1332923983.2528.12.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120328114944.GB17936@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 10:39:43AM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-03-27 at 20:12 -0500, Christoph Lameter wrote:
-> > On Tue, 27 Mar 2012, Peter Zijlstra wrote:
-> > 
-> > > On Tue, 2012-03-27 at 11:08 -0500, Christoph Lameter wrote:
-> > > >
-> > > > I wish you would disentangle the nohz work from the cpusets. Cpusets is
-> > > > aged and being replaced by cgroups. And the cgroup work is something that
-> > > > is not suitable for many loads given the VM overhead added.
-> > >
-> > > What VM overhead? Are you talking about the memcg nonsense? That's
-> > > entirely optional, you don't need to either build that or enable it.
-> > 
-> > cgroups in general cause a much more complex VM processing with multiple
-> > LRUs and additional checks in various places.
+On 28.03.12 13:49:45, Ingo Molnar wrote:
 > 
-> Uhm, not if you don't have the memcg thing enabled, the controllers are
-> separate.
+> * Robert Richter <robert.richter@amd.com> wrote:
 > 
-> > Even just adding cpusets enables the group scheduler functionality f.e.
-> > which creates significantly larger scheduling latencies. Also complicates
-> > key allocation VM paths etc etc.
+> > Add information about LVT offset assignments to better debug 
+> > firmware bug messages related to this.
 > 
-> No, you're mistaken.
-> 
-> Its perfectly possible to compile a kernel with
-> 
-> CONFIG_CGROUPS=y
-> CONFIG_CPUSETS=y
-> CONFIG_CGROUP_MEM_RES_CTLR=n
-> CONFIG_CGROUP_SCHED=n
-> 
-> That will give you cpusets, but not the cpu (sched) controller crap and
-> not the memcg (vm) controller muck.
-> 
-> > > And if we ever get rid of that multiple hierarchy nonsense I don't see a
-> > > reason to get rid of cpuset at all. The only reason to want to replace
-> > > it is to avoid the dis-joint-ness it has with the cpu controller (and
-> > > possible the memcg one).
-> > 
-> > I like cpusets much more than cgroups. I agree with you.
-> 
-> cpusets is a cgroup controller..
-> 
-> > But I am not sure that cpusets are needed for nohz. We already have an
-> > isolcpu set and it sounds to me that nohz is generally useful.
-> 
-> I really really want to kill isolcpu in favour of cpusets, the amount of
-> disparity and overlap in features is driving me insane.
-> 
-> isolcpu will only create separate cpus, you can do the same with cpusets
-> by creating 1 cpu sets and disabling load_balance on the root set.
-> 
-> The only difference is that isolcpu will never have had a task running
-> on the cpu and hence its timer lists etc will be guaranteed empty. So
-> once we add an interface to push away and/or wait for a cpu to quiesce
-> we should end up with the same state.
+> Which particular bug message(s) is this related to, can you 
+> quote an example perhaps?
 
-That is the main reason why I've been in favor of keeping isolcpus.  If there
-was some way to cleanup the timer lists, etc.. in a cpuset, then I would use
-that in place of isolcpus.
+Yeah, should have put it into the commit message. Updated patch below.
 
-However, I suggested something to move timers quite a while back and it
-met with resistance (due to having to ensure that every timer was not somehow
-constrained to a single cpu).
+-Robert
 
-> 
-> At that point I'll rip isolcpu out. 
-> 
-> > It would seem that the nohz patches would be much simpler if it would not
-> > require cpusets to administer. The only thing that would be needed is to
-> > have one cpu that is not subject to nohz. The logical choice is a
-> > timekeeper cpu (which is usually cpu 0). Having that configurable would be
-> > an extra bonus.
-> 
-> Like Frederic has been telling, the nohz stuff adds syscall overhead, it
-> needs to timestamp on kernel entry/exit etc.. Making it unconditional
-> will add this overhead to everybody and this might not be acceptable.
-> 
-> 
+
+>From efb205d18ba569a058555283c4a66d736118ca6d Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Tue, 27 Mar 2012 20:04:02 +0200
+Subject: [PATCH] x86, amd: Be more verbose about LVT offset assignments
+
+Add information about LVT offset assignments to better debug firmware
+bugs related to this. See following examples.
+
+ # dmesg | grep -i 'offset\|ibs'
+ LVT offset 0 assigned for vector 0xf9
+ [Firmware Bug]: cpu 0, try to use APIC500 (LVT offset 0) for vector 0x10400, but the register is already in use for vector 0xf9 on another cpu
+ [Firmware Bug]: cpu 0, IBS interrupt offset 0 not available (MSRC001103A=0x0000000000000100)
+ Failed to setup IBS, -22
+
+In this case the BIOS assigns both offsets for MCE (0xf9) and IBS
+(0x400) vectors to offset 0, which is why the second APIC setup (IBS)
+failed.
+
+With correct setup you get:
+
+ # dmesg | grep -i 'offset\|ibs'
+ LVT offset 0 assigned for vector 0xf9
+ LVT offset 1 assigned for vector 0x400
+ IBS: LVT offset 1 assigned
+ perf: AMD IBS detected (0x00000007)
+ oprofile: AMD IBS detected (0x00000007)
+
+Note: The vector includes also the message type to handle also NMIs
+(0x400). In the firmware bug message the format is the same as of the
+APIC500 register and includes the mask bit (bit 16) in addition.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/apic/apic.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 2eec05b..11544d8 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -383,20 +383,25 @@ static inline int eilvt_entry_is_changeable(unsigned int old, unsigned int new)
+ 
+ static unsigned int reserve_eilvt_offset(int offset, unsigned int new)
+ {
+-	unsigned int rsvd;			/* 0: uninitialized */
++	unsigned int rsvd, vector;
+ 
+ 	if (offset >= APIC_EILVT_NR_MAX)
+ 		return ~0;
+ 
+-	rsvd = atomic_read(&eilvt_offsets[offset]) & ~APIC_EILVT_MASKED;
++	rsvd = atomic_read(&eilvt_offsets[offset]);
+ 	do {
+-		if (rsvd &&
+-		    !eilvt_entry_is_changeable(rsvd, new))
++		vector = rsvd & ~APIC_EILVT_MASKED;	/* 0: unassigned */
++		if (vector && !eilvt_entry_is_changeable(vector, new))
+ 			/* may not change if vectors are different */
+ 			return rsvd;
+ 		rsvd = atomic_cmpxchg(&eilvt_offsets[offset], rsvd, new);
+ 	} while (rsvd != new);
+ 
++	rsvd &= ~APIC_EILVT_MASKED;
++	if (rsvd && rsvd != vector)
++		pr_info("LVT offset %d assigned for vector 0x%02x\n",
++			offset, rsvd);
++
+ 	return new;
+ }
+ 
+-- 
+1.7.8.4
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
