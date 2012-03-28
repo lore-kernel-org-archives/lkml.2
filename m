@@ -1,147 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758404Ab2C1PKB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 11:10:01 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20576 "EHLO relay.sw.ru"
+	id S1758158Ab2C1PNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 11:13:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758378Ab2C1PKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 11:10:00 -0400
-Subject: [PATCH 8/8] nfsd: pass pointer to expkey cache down to stack wherever
- possible.
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 28 Mar 2012 19:09:50 +0400
-Message-ID: <20120328150950.2646.70232.stgit@localhost6.localdomain6>
-In-Reply-To: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
-References: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755707Ab2C1PNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 11:13:13 -0400
+Date: Wed, 28 Mar 2012 11:12:30 -0400
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        rostedt@goodmis.org, robert.richter@amd.com,
+        linux-kernel@vger.kernel.org, mjw@redhat.com
+Subject: Re: [PATCH 04/15] perf: Add ability to dump user regs
+Message-ID: <20120328151230.GF4826@redhat.com>
+References: <1332938158-5244-1-git-send-email-jolsa@redhat.com> <1332938158-5244-5-git-send-email-jolsa@redhat.com> <20120328140115.GE4826@redhat.com> <20120328142021.GC1647@m.brq.redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328142021.GC1647@m.brq.redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This cache will be per-net soon. And it's easier to get the pointer to desired
-per-net instance only once and then pass it down instead of discovering it in
-every place were required.
+Hi, Jiri -
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> [...]
+> > [...]  Upon a normal syscall entry to the kernel, not
+> > all user registers are saved explicitly for such easy retrieval.  The
+> > others may be spilled to the stack by gcc during the various sys_*
+> > functions or elsewhere.  [...]
+> 
+> Are you reffering to x86_64 where only portion of registers
+> is stored by SAVE_ARGS macro? Seems like 32 bits stores the
+> whole pt_regs.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+I believe that's the right area.  I'm not sure even the 32-bit variant
+is complete enough, for example exempting MMX/SSE registers.  These
+may also contain spilled registers before long.
 
----
- fs/nfsd/export.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index c237b0a..429b2f5 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -71,9 +71,9 @@ static int expkey_upcall(struct cache_detail *cd, struct cache_head *h)
- 	return sunrpc_cache_pipe_upcall(cd, h, expkey_request);
- }
- 
--static struct svc_expkey *svc_expkey_update(struct svc_expkey *new, struct svc_expkey *old);
--static struct svc_expkey *svc_expkey_lookup(struct svc_expkey *);
--static struct cache_detail svc_expkey_cache;
-+static struct svc_expkey *svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
-+					    struct svc_expkey *old);
-+static struct svc_expkey *svc_expkey_lookup(struct cache_detail *cd, struct svc_expkey *);
- 
- static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
- {
-@@ -131,7 +131,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
- 	key.ek_fsidtype = fsidtype;
- 	memcpy(key.ek_fsid, buf, len);
- 
--	ek = svc_expkey_lookup(&key);
-+	ek = svc_expkey_lookup(cd, &key);
- 	err = -ENOMEM;
- 	if (!ek)
- 		goto out;
-@@ -145,7 +145,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
- 	err = 0;
- 	if (len == 0) {
- 		set_bit(CACHE_NEGATIVE, &key.h.flags);
--		ek = svc_expkey_update(&key, ek);
-+		ek = svc_expkey_update(cd, &key, ek);
- 		if (!ek)
- 			err = -ENOMEM;
- 	} else {
-@@ -155,7 +155,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
- 
- 		dprintk("Found the path %s\n", buf);
- 
--		ek = svc_expkey_update(&key, ek);
-+		ek = svc_expkey_update(cd, &key, ek);
- 		if (!ek)
- 			err = -ENOMEM;
- 		path_put(&key.ek_path);
-@@ -268,13 +268,12 @@ svc_expkey_hash(struct svc_expkey *item)
- }
- 
- static struct svc_expkey *
--svc_expkey_lookup(struct svc_expkey *item)
-+svc_expkey_lookup(struct cache_detail *cd, struct svc_expkey *item)
- {
- 	struct cache_head *ch;
- 	int hash = svc_expkey_hash(item);
- 
--	ch = sunrpc_cache_lookup(&svc_expkey_cache, &item->h,
--				 hash);
-+	ch = sunrpc_cache_lookup(cd, &item->h, hash);
- 	if (ch)
- 		return container_of(ch, struct svc_expkey, h);
- 	else
-@@ -282,13 +281,13 @@ svc_expkey_lookup(struct svc_expkey *item)
- }
- 
- static struct svc_expkey *
--svc_expkey_update(struct svc_expkey *new, struct svc_expkey *old)
-+svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
-+		  struct svc_expkey *old)
- {
- 	struct cache_head *ch;
- 	int hash = svc_expkey_hash(new);
- 
--	ch = sunrpc_cache_update(&svc_expkey_cache, &new->h,
--				 &old->h, hash);
-+	ch = sunrpc_cache_update(cd, &new->h, &old->h, hash);
- 	if (ch)
- 		return container_of(ch, struct svc_expkey, h);
- 	else
-@@ -763,7 +762,8 @@ svc_export_update(struct svc_export *new, struct svc_export *old)
- 
- 
- static struct svc_expkey *
--exp_find_key(svc_client *clp, int fsid_type, u32 *fsidv, struct cache_req *reqp)
-+exp_find_key(struct cache_detail *cd, svc_client *clp, int fsid_type,
-+	     u32 *fsidv, struct cache_req *reqp)
- {
- 	struct svc_expkey key, *ek;
- 	int err;
-@@ -775,10 +775,10 @@ exp_find_key(svc_client *clp, int fsid_type, u32 *fsidv, struct cache_req *reqp)
- 	key.ek_fsidtype = fsid_type;
- 	memcpy(key.ek_fsid, fsidv, key_len(fsid_type));
- 
--	ek = svc_expkey_lookup(&key);
-+	ek = svc_expkey_lookup(cd, &key);
- 	if (ek == NULL)
- 		return ERR_PTR(-ENOMEM);
--	err = cache_check(&svc_expkey_cache, &ek->h, reqp);
-+	err = cache_check(cd, &ek->h, reqp);
- 	if (err)
- 		return ERR_PTR(err);
- 	return ek;
-@@ -883,7 +883,7 @@ static struct svc_export *exp_find(struct cache_detail *cd,
- 				   u32 *fsidv, struct cache_req *reqp)
- {
- 	struct svc_export *exp;
--	struct svc_expkey *ek = exp_find_key(clp, fsid_type, fsidv, reqp);
-+	struct svc_expkey *ek = exp_find_key(&svc_expkey_cache, clp, fsid_type, fsidv, reqp);
- 	if (IS_ERR(ek))
- 		return ERR_CAST(ek);
- 
+> Generally you could need all the registers to start the unwind, but
+> I was assuming that for most cases the stack pointer and instruction
+> pointer should be enough.. but I might be wrong here.
 
+Yeah; the question is how much is missed besides those "most cases".
+
+
+> > To recover these registers at run time, we found that the kernel
+> > stack itself has to be partially unwound [... Without that, it ...]
+> > may accidentally pass garbage data to perf userspace.  Correcting
+> > this could require a kernel-space libunwind.
+
+> AFAIK not going to happen any time soon ;)
+
+Understood.  Then the code needs to ensure that it does not purport to
+pass register values that it does not know.  (Back when we were at
+this stage in systemtap, we got some reasonable backtraces even
+without kernel unwinding, ie. tolerating missing registers.)
+
+
+- FChE
