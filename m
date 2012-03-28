@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab2C1GnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:43:00 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:49140 "EHLO a.mx.secunet.com"
+	id S1751987Ab2C1GnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:43:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25773 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab2C1Gm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 02:42:58 -0400
-Date: Wed, 28 Mar 2012 08:42:34 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: [PATCH 1/3] padata: Add a reference to the api documentation
-Message-ID: <20120328064234.GE16191@secunet.com>
-References: <20120328064157.GD16191@secunet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328064157.GD16191@secunet.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 28 Mar 2012 06:42:34.0999 (UTC) FILETIME=[F56C1870:01CD0CAD]
+	id S1751892Ab2C1GnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 02:43:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="82461614"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com
+Cc: linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+Subject: [RFC PATCH 0/5] perf: Intel uncore pmu counting support
+Date: Wed, 28 Mar 2012 14:43:13 +0800
+Message-Id: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a reference to the padata api documentation at Documentation/padata.txt
+Hi, all
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
----
- kernel/padata.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Here is the RFC patches to add uncore counting support for Nehalem,
+Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
+The code is based on Lin Ming's old patches.
 
-diff --git a/kernel/padata.c b/kernel/padata.c
-index 6f10eb2..7875088 100644
---- a/kernel/padata.c
-+++ b/kernel/padata.c
-@@ -1,6 +1,8 @@
- /*
-  * padata.c - generic interface to process data streams in parallel
-  *
-+ * See Documentation/padata.txt for an api documentation.
-+ *
-  * Copyright (C) 2008, 2009 secunet Security Networks AG
-  * Copyright (C) 2008, 2009 Steffen Klassert <steffen.klassert@secunet.com>
-  *
--- 
-1.7.0.4
+You can use 'perf stat' to access to the uncore pmu. For example:
+perf stat -a -C 0 -e 'uncore_nhm/config=0xffff/' sleep 1
+
+For Nehalem and Sandy Bridge-EP, A few general events are exported
+under directory:
+/sys/bus/event_source/devices/uncore_xxx/events/
+
+Any comment is appreciated.
+Thank you
 
