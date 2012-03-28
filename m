@@ -1,340 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab2C1KtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:49:22 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39162 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758026Ab2C1KtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:49:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F72EC43.3040105@jp.fujitsu.com>
-Date: Wed, 28 Mar 2012 19:47:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1758088Ab2C1Kuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:50:35 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50867 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758025Ab2C1Kud convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:50:33 -0400
 MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [RFC][PATCH 1/6] memcg: add methods to access pc->mem_cgroup
-References: <4F72EB84.7080000@jp.fujitsu.com>
-In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1330863946-3136-1-git-send-email-linkinjeon@gmail.com>
+References: <1330863946-3136-1-git-send-email-linkinjeon@gmail.com>
+Date: Wed, 28 Mar 2012 16:20:31 +0530
+Message-ID: <CADDb1s3mZNd0GV3P_W1E+5F3UTptqE_mZVjf1yU==SW41a1z8A@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] ext4: add error handling when discarding is fail
+ in FITRIM ioctl.
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: tytso@mit.edu
+Cc: Namjae Jeon <linkinjeon@gmail.com>, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ted,
 
-In order to encode pc->mem_cgroup and pc->flags to be in a word,
-access function to pc->mem_cgroup is required.
+Can you please update us about the status of this patch? Please let us
+know in case there are any suggestions about this.
+Looking forward to hear your opinion about the same.
 
-This patch replaces access to pc->mem_cgroup with
- pc_to_mem_cgroup(pc)          : pc->mem_cgroup
- pc_set_mem_cgroup(pc, memcg)  : pc->mem_cgroup = memcg
+Thanks & Regards,
+Amit Sahrawat
 
-Changelog:
- - rebased onto linux-next-Mar 27 2012 handle THP move_page
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Glauber Costa <glommer@parallels.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/page_cgroup.h |   12 +++++++
- mm/memcontrol.c             |   71 ++++++++++++++++++++++--------------------
- 2 files changed, 49 insertions(+), 34 deletions(-)
-
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index a88cdba..92768cb 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -82,6 +82,18 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
- 	bit_spin_unlock(PCG_LOCK, &pc->flags);
- }
- 
-+
-+static inline struct mem_cgroup* pc_to_mem_cgroup(struct page_cgroup *pc)
-+{
-+	return pc->mem_cgroup;
-+}
-+
-+static inline void
-+pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
-+{
-+	pc->mem_cgroup = memcg;
-+}
-+
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct page_cgroup;
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b2ee6df..8077460 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1034,9 +1034,9 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
- /*
-  * Following LRU functions are allowed to be used without PCG_LOCK.
-  * Operations are called by routine of global LRU independently from memcg.
-- * What we have to take care of here is validness of pc->mem_cgroup.
-+ * What we have to take care of here is validness of pc's mem_cgroup.
-  *
-- * Changes to pc->mem_cgroup happens when
-+ * Changes to pc's mem_cgroup happens when
-  * 1. charge
-  * 2. moving account
-  * In typical case, "charge" is done before add-to-lru. Exception is SwapCache.
-@@ -1068,7 +1068,7 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
- 		return &zone->lruvec;
- 
- 	pc = lookup_page_cgroup(page);
--	memcg = pc->mem_cgroup;
-+	memcg = pc_to_mem_cgroup(pc);
- 
- 	/*
- 	 * Surreptitiously switch any uncharged page to root:
-@@ -1077,10 +1077,12 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
- 	 *
- 	 * Our caller holds lru_lock, and PageCgroupUsed is updated
- 	 * under page_cgroup lock: between them, they make all uses
--	 * of pc->mem_cgroup safe.
-+	 * of pc's mem_cgroup safe.
- 	 */
--	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup)
--		pc->mem_cgroup = memcg = root_mem_cgroup;
-+	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup) {
-+		pc_set_mem_cgroup(pc, root_mem_cgroup);
-+		memcg = root_mem_cgroup;
-+	}
- 
- 	mz = page_cgroup_zoneinfo(memcg, page);
- 	/* compound_order() is stabilized through lru_lock */
-@@ -1108,7 +1110,7 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
- 		return;
- 
- 	pc = lookup_page_cgroup(page);
--	memcg = pc->mem_cgroup;
-+	memcg = pc_to_mem_cgroup(pc);
- 	VM_BUG_ON(!memcg);
- 	mz = page_cgroup_zoneinfo(memcg, page);
- 	/* huge page split is done under lru_lock. so, we have no races. */
-@@ -1255,9 +1257,9 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
- 	pc = lookup_page_cgroup(page);
- 	if (!PageCgroupUsed(pc))
- 		return NULL;
--	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-+	/* Ensure pc's mem_cgroup is visible after reading PCG_USED. */
- 	smp_rmb();
--	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
-+	mz = page_cgroup_zoneinfo(pc_to_mem_cgroup(pc), page);
- 	return &mz->reclaim_stat;
- }
- 
-@@ -1334,7 +1336,7 @@ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
-  *
-  * mem_cgroup_stolen() -  checking whether a cgroup is mc.from or not. This
-  *			  is used for avoiding races in accounting.  If true,
-- *			  pc->mem_cgroup may be overwritten.
-+ *			  pc's mem_cgroup may be overwritten.
-  *
-  * mem_cgroup_under_move() - checking a cgroup is mc.from or mc.to or
-  *			  under hierarchy of moving cgroups. This is for
-@@ -1907,8 +1909,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
-  * file-stat operations happen after a page is attached to radix-tree. There
-  * are no race with "charge".
-  *
-- * Considering "uncharge", we know that memcg doesn't clear pc->mem_cgroup
-- * at "uncharge" intentionally. So, we always see valid pc->mem_cgroup even
-+ * Considering "uncharge", we know that memcg doesn't clear pc's mem_cgroup
-+ * at "uncharge" intentionally. So, we always see valid pc's mem_cgroup even
-  * if there are race with "uncharge". Statistics itself is properly handled
-  * by flags.
-  *
-@@ -1925,7 +1927,7 @@ void __mem_cgroup_begin_update_page_stat(struct page *page,
- 
- 	pc = lookup_page_cgroup(page);
- again:
--	memcg = pc->mem_cgroup;
-+	memcg = pc_to_mem_cgroup(pc);
- 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
- 		return;
- 	/*
-@@ -1938,7 +1940,7 @@ again:
- 		return;
- 
- 	move_lock_mem_cgroup(memcg, flags);
--	if (memcg != pc->mem_cgroup || !PageCgroupUsed(pc)) {
-+	if (memcg != pc_to_mem_cgroup(pc) || !PageCgroupUsed(pc)) {
- 		move_unlock_mem_cgroup(memcg, flags);
- 		goto again;
- 	}
-@@ -1950,11 +1952,11 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
- 
- 	/*
--	 * It's guaranteed that pc->mem_cgroup never changes while
--	 * lock is held because a routine modifies pc->mem_cgroup
-+	 * It's guaranteed that pc's mem_cgroup never changes while
-+	 * lock is held because a routine modifies pc's mem_cgroup
- 	 * should take move_lock_page_cgroup().
- 	 */
--	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
-+	move_unlock_mem_cgroup(pc_to_mem_cgroup(pc), flags);
- }
- 
- void mem_cgroup_update_page_stat(struct page *page,
-@@ -1967,7 +1969,7 @@ void mem_cgroup_update_page_stat(struct page *page,
- 	if (mem_cgroup_disabled())
- 		return;
- 
--	memcg = pc->mem_cgroup;
-+	memcg = pc_to_mem_cgroup(pc);
- 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
- 		return;
- 
-@@ -2264,7 +2266,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
-  * has TIF_MEMDIE, this function returns -EINTR while writing root_mem_cgroup
-  * to *ptr. There are two reasons for this. 1: fatal threads should quit as soon
-  * as possible without any hazards. 2: all pages should have a valid
-- * pc->mem_cgroup. If mm is NULL and the caller doesn't pass a valid memcg
-+ * pc's mem_cgroup. If mm is NULL and the caller doesn't pass a valid memcg
-  * pointer, that is treated as a charge to root_mem_cgroup.
-  *
-  * So __mem_cgroup_try_charge() will return
-@@ -2457,7 +2459,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
--		memcg = pc->mem_cgroup;
-+		memcg = pc_to_mem_cgroup(pc);
- 		if (memcg && !css_tryget(&memcg->css))
- 			memcg = NULL;
- 	} else if (PageSwapCache(page)) {
-@@ -2509,11 +2511,11 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- 		}
- 	}
- 
--	pc->mem_cgroup = memcg;
-+	pc_set_mem_cgroup(pc, memcg);
- 	/*
- 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
--	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
--	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
-+	 * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
-+	 * is accessed after testing USED bit. To make pc's mem_cgroup visible
- 	 * before USED bit, we need memory barrier here.
- 	 * See mem_cgroup_add_lru_list(), etc.
-  	 */
-@@ -2558,13 +2560,14 @@ void mem_cgroup_split_huge_fixup(struct page *head)
- {
- 	struct page_cgroup *head_pc = lookup_page_cgroup(head);
- 	struct page_cgroup *pc;
-+	struct mem_cgroup *memcg = pc_to_mem_cgroup(head_pc);
- 	int i;
- 
- 	if (mem_cgroup_disabled())
- 		return;
- 	for (i = 1; i < HPAGE_PMD_NR; i++) {
- 		pc = head_pc + i;
--		pc->mem_cgroup = head_pc->mem_cgroup;
-+		pc_set_mem_cgroup(pc, memcg);
- 		smp_wmb();/* see __commit_charge() */
- 		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
- 	}
-@@ -2615,7 +2618,7 @@ static int mem_cgroup_move_account(struct page *page,
- 	lock_page_cgroup(pc);
- 
- 	ret = -EINVAL;
--	if (!PageCgroupUsed(pc) || pc->mem_cgroup != from)
-+	if (!PageCgroupUsed(pc) || pc_to_mem_cgroup(pc) != from)
- 		goto unlock;
- 
- 	move_lock_mem_cgroup(from, &flags);
-@@ -2633,7 +2636,7 @@ static int mem_cgroup_move_account(struct page *page,
- 		__mem_cgroup_cancel_charge(from, nr_pages);
- 
- 	/* caller should have done css_get */
--	pc->mem_cgroup = to;
-+	pc_set_mem_cgroup(pc, to);
- 	mem_cgroup_charge_statistics(to, anon, nr_pages);
- 	/*
- 	 * We charges against "to" which may not have any tasks. Then, "to"
-@@ -2976,7 +2979,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 
- 	lock_page_cgroup(pc);
- 
--	memcg = pc->mem_cgroup;
-+	memcg = pc_to_mem_cgroup(pc);
- 
- 	if (!PageCgroupUsed(pc))
- 		goto unlock_out;
-@@ -3012,7 +3015,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 
- 	ClearPageCgroupUsed(pc);
- 	/*
--	 * pc->mem_cgroup is not cleared here. It will be accessed when it's
-+	 * pc's mem_cgroup is not cleared here. It will be accessed when it's
- 	 * freed from LRU. This is safe because uncharged page is expected not
- 	 * to be reused (freed soon). Exception is SwapCache, it's handled by
- 	 * special functions.
-@@ -3234,7 +3237,7 @@ int mem_cgroup_prepare_migration(struct page *page,
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
--		memcg = pc->mem_cgroup;
-+		memcg = pc_to_mem_cgroup(pc);
- 		css_get(&memcg->css);
- 		/*
- 		 * At migrating an anonymous page, its mapcount goes down
-@@ -3379,7 +3382,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
- 	pc = lookup_page_cgroup(oldpage);
- 	/* fix accounting on old pages */
- 	lock_page_cgroup(pc);
--	memcg = pc->mem_cgroup;
-+	memcg = pc_to_mem_cgroup(pc);
- 	mem_cgroup_charge_statistics(memcg, false, -1);
- 	ClearPageCgroupUsed(pc);
- 	unlock_page_cgroup(pc);
-@@ -3390,7 +3393,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
- 	/*
- 	 * Even if newpage->mapping was NULL before starting replacement,
- 	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
--	 * LRU while we overwrite pc->mem_cgroup.
-+	 * LRU while we overwrite pc's mem_cgroup.
- 	 */
- 	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
- }
-@@ -3426,7 +3429,7 @@ void mem_cgroup_print_bad_page(struct page *page)
- 	pc = lookup_page_cgroup_used(page);
- 	if (pc) {
- 		printk(KERN_ALERT "pc:%p pc->flags:%lx pc->mem_cgroup:%p\n",
--		       pc, pc->flags, pc->mem_cgroup);
-+		       pc, pc->flags, pc_to_mem_cgroup(pc));
- 	}
- }
- #endif
-@@ -5238,7 +5241,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
- 		 * mem_cgroup_move_account() checks the pc is valid or not under
- 		 * the lock.
- 		 */
--		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-+		if (PageCgroupUsed(pc) && pc_to_mem_cgroup(pc) == mc.from) {
- 			ret = MC_TARGET_PAGE;
- 			if (target)
- 				target->page = page;
-@@ -5274,7 +5277,7 @@ static enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
- 	if (!move_anon())
- 		return ret;
- 	pc = lookup_page_cgroup(page);
--	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-+	if (PageCgroupUsed(pc) && pc_to_mem_cgroup(pc) == mc.from) {
- 		ret = MC_TARGET_PAGE;
- 		if (target) {
- 			get_page(page);
--- 
-1.7.4.1
-
-
+On Sun, Mar 4, 2012 at 5:55 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> Although free extents is proper not trimmed(mmc driver return error code while sending trim command), currently FITRIM ioctl return success.
+> I tried to add exception routine to inform user error code.
+>
+> #> ./fitrim_test
+> end_request: I/O error, dev mmcblk0, sector 27232
+> EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857: Discard command returned error -5
+> #>
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> Reviewed-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/ext4/mballoc.c |   24 ++++++++++++++++--------
+>  1 files changed, 16 insertions(+), 8 deletions(-)
+>
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index cb990b2..94182d4 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -4901,10 +4901,11 @@ error_return:
+>  * one will allocate those blocks, mark it as used in buddy bitmap. This must
+>  * be called with under the group lock.
+>  */
+> -static void ext4_trim_extent(struct super_block *sb, int start, int count,
+> +static int ext4_trim_extent(struct super_block *sb, int start, int count,
+>                             ext4_group_t group, struct ext4_buddy *e4b)
+>  {
+>        struct ext4_free_extent ex;
+> +       int err;
+>
+>        trace_ext4_trim_extent(sb, group, start, count);
+>
+> @@ -4920,9 +4921,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
+>         */
+>        mb_mark_used(e4b, &ex);
+>        ext4_unlock_group(sb, group);
+> -       ext4_issue_discard(sb, group, start, count);
+> +       err = ext4_issue_discard(sb, group, start, count);
+>        ext4_lock_group(sb, group);
+>        mb_free_blocks(NULL, e4b, start, ex.fe_len);
+> +       return err;
+>  }
+>
+>  /**
+> @@ -4951,7 +4953,7 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+>        void *bitmap;
+>        ext4_grpblk_t next, count = 0, free_count = 0;
+>        struct ext4_buddy e4b;
+> -       int ret;
+> +       int ret = 0;
+>
+>        trace_ext4_trim_all_free(sb, group, start, max);
+>
+> @@ -4978,15 +4980,21 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+>                next = mb_find_next_bit(bitmap, max, start);
+>
+>                if ((next - start) >= minblocks) {
+> -                       ext4_trim_extent(sb, start,
+> -                                        next - start, group, &e4b);
+> -                       count += next - start;
+> +                       ret = ext4_trim_extent(sb, start,
+> +                                               next - start, group, &e4b);
+> +                       if (ret < 0) {
+> +                               if (ret != -EOPNOTSUPP)
+> +                                       ext4_warning(sb, "Discard command "
+> +                                                "returned error %d\n", ret);
+> +                               break;
+> +                       } else
+> +                               count += next - start;
+>                }
+>                free_count += next - start;
+>                start = next + 1;
+>
+>                if (fatal_signal_pending(current)) {
+> -                       count = -ERESTARTSYS;
+> +                       ret = -ERESTARTSYS;
+>                        break;
+>                }
+>
+> @@ -5009,7 +5017,7 @@ out:
+>        ext4_debug("trimmed %d blocks in the group %d\n",
+>                count, group);
+>
+> -       return count;
+> +       return (ret < 0) ? ret : count;
+>  }
+>
+>  /**
+> --
+> 1.7.5.4
+>
